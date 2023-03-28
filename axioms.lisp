@@ -2052,6 +2052,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro list (&rest args)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (list-macro args))
 
 (defun and-macro (lst)
@@ -2066,6 +2070,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro and (&rest args)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
  (and-macro args))
 
 (defun or-macro (lst)
@@ -2081,6 +2089,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro or (&rest args)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
    (or-macro args))
 
 #+acl2-loop-only
@@ -2298,6 +2310,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro cond (&rest clauses)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (declare (xargs :guard (cond-clausesp clauses)))
   (cond-macro clauses))
 
@@ -2399,6 +2415,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro cadr (x)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (list 'car (list 'cdr x)))
 
 #+acl2-loop-only
@@ -2407,6 +2427,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro cddr (x)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (list 'cdr (list 'cdr x)))
 
 #+acl2-loop-only
@@ -6369,6 +6393,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Keep in sync with value@par.
 
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   `(mv nil ,x state))
 
 (defun legal-constantp1 (name)
@@ -6386,22 +6413,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (eql (char s 0) #\*)
              (eql (char s (1- (length s))) #\*)))))
 
-#+acl2-loop-only
-(defmacro value-triple (form &key
-                             on-skip-proofs
-                             check
-                             (safe-mode ':same)
-                             (stobjs-out 'nil)
-                             (ctx ''value-triple))
-
-; Value-triple is used in mutual-recursion, which is called in axioms.lisp
-; before the definition of state-global-let*, which is used in value-triple-fn.
-; So we avoid calling value-triple-fn in some of the most common cases, which
-; also aids efficiency in those cases.
+(defun value-triple-macro-fn (form on-skip-proofs check safe-mode stobjs-out
+                                   ctx)
 
 ; Warning: The checks below should be at least as strong as those in
 ; chk-value-triple.
 
+  (declare (xargs :guard t))
   `(let ((form ',form)
          (on-skip-proofs ,on-skip-proofs)
          (check ,check)
@@ -6432,6 +6450,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (t (value-triple-fn form
                                on-skip-proofs check safe-mode
                                stobjs-out ,ctx state)))))
+
+#+acl2-loop-only
+(defmacro value-triple (form &key
+                             on-skip-proofs
+                             check
+                             (safe-mode ':same)
+                             (stobjs-out 'nil)
+                             (ctx ''value-triple))
+
+; Value-triple is used in mutual-recursion, which is called in axioms.lisp
+; before the definition of state-global-let*, which is used in value-triple-fn.
+; So we avoid calling value-triple-fn in some of the most common cases, which
+; also aids efficiency in those cases.
+
+  (value-triple-macro-fn form on-skip-proofs check safe-mode stobjs-out ctx))
 
 (defmacro assert-event (assertion &key
                                   event
@@ -6989,6 +7022,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro progn (&rest r)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
 
 ; Like defun, defmacro, and in-package, progn does not have quite the same
 ; semantics as the Common Lisp function.  This is useful only for sequences at
@@ -7838,7 +7874,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (cond (evisc-p `(with-evisc-tuple ,form ,@evisc))
             (t form))))))
 
-(defmacro with-output! (&rest args)
+(defun with-output!-fn (args)
+  (declare (xargs :guard (true-listp args)
+                  :mode :program))
   `(if (eq (ld-skip-proofsp state) 'include-book)
        ,(car (last args))
      ,(let ((val (with-output-fn 'with-output args
@@ -7853,13 +7891,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      "Macroexpansion of ~q0 failed."
                      (list (cons #\0 (cons 'with-output args))))))))
 
+(defmacro with-output! (&rest args)
+  (with-output!-fn args))
+
 #-acl2-loop-only
 (defmacro with-output (&rest args)
   (car (last args)))
 
 #+acl2-loop-only
 (defmacro with-output (&rest args)
-  `(with-output! ,@args))
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
+  (with-output!-fn args))
 
 (defun defun-nx-dcls (form dcls)
   (declare (xargs :guard (consp form)))
@@ -9918,11 +9963,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     "Illegal severity, ~x0; macroexpansion of ER@PAR failed!"
                     (list (cons #\0 severity)))))))
 
-#+acl2-loop-only
-(defmacro defthmd (&whole event-form
-                          name term
-                          &rest rst)
-  (declare (xargs :guard t) (ignore term))
+(defun defthmd-fn (event-form name rst)
+  (declare (xargs :mode :program))
   (let ((tmp (member :rule-classes rst)))
     (cond
      ((and tmp
@@ -9956,6 +9998,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (list 'value-triple
                           (list 'quote (event-keyword-name 'defthmd name))
                           :on-skip-proofs t)))))))
+
+#+acl2-loop-only
+(defmacro defthmd (&whole event-form
+                          name term
+                          &rest rst)
+  (declare (xargs :guard t)
+           (ignore term))
+  (defthmd-fn event-form name rst))
 
 #+(and acl2-loop-only :non-standard-analysis)
 (defmacro defthm-std (&whole event-form
@@ -10140,6 +10190,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro table (&whole event-form name &rest args)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -12391,6 +12444,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro f-get-global (x st)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (list 'get-global x st))
 
 #-acl2-loop-only

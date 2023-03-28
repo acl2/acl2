@@ -11412,6 +11412,12 @@
                     alist)
               form wrld state-vars)))))
 
+(defun macro-args-er-cmp (form)
+  (declare (xargs :guard t))
+  (er-cmp *macro-expansion-ctx*
+          "Wrong number of args in macro expansion of ~x0."
+          form))
+
 (defun bind-macro-args1 (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
                               (macro-arglist1p args)
@@ -11430,9 +11436,7 @@
   (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
-               (t (er-cmp *macro-expansion-ctx*
-                      "Wrong number of args in macro expansion of ~x0."
-                      form))))
+               (t (macro-args-er-cmp form))))
         ((member-eq (car args) '(&rest &body))
          (bind-macro-args-after-rest
           (cddr args) actuals
@@ -11444,9 +11448,7 @@
         ((eq (car args) '&key)
          (bind-macro-args-keys (cdr args) actuals alist form wrld state-vars))
         ((null actuals)
-         (er-cmp *macro-expansion-ctx*
-             "Wrong number of args in macro expansion of ~x0."
-             form))
+         (macro-args-er-cmp form))
         (t (bind-macro-args1 (cdr args) (cdr actuals)
                              (cons (cons (car args) (car actuals))
                                    alist)
@@ -11519,17 +11521,55 @@
 ; cases listed in the definition of macroexpand1*-cmp.  (But the two will be
 ; logically equivalent if both complete without error.)
 
-  (let ((gc-off (gc-off1 (access state-vars state-vars :guard-checking-on))))
-    (er-let*-cmp
-     ((alist (bind-macro-args
-              (macro-args (car x) wrld)
-              x wrld state-vars)))
-     (mv-let (erp guard-val)
-             (ev-w (guard (car x) nil wrld) alist wrld
-                   nil ; user-stobj-alist
-                   t
-                   gc-off
-                   nil
+  (case (car x)
+    (and (value-cmp (and-macro (cdr x))))
+    (or (value-cmp (or-macro (cdr x))))
+    (with-output (value-cmp (with-output!-fn (cdr x))))
+; Note: We haven't seen enough use of with-output! to justify adding an entry
+; for it like the one for with-output.
+    (value (if (and (consp (cdr x)) (null (cddr x)))
+               (value-cmp `(mv nil ,(cadr x) state))
+             (macro-args-er-cmp x)))
+    (f-get-global (if (and (consp (cdr x)) (consp (cddr x)) (null (cdddr x)))
+                      (value-cmp (list 'get-global (cadr x) (caddr x)))
+                    (macro-args-er-cmp x)))
+    (cond (if (cond-clausesp (cdr x))
+              (value-cmp (cond-macro (cdr x)))
+            (macro-guard-er-msg x ctx wrld)))
+    (table (if (consp (cdr x))
+               (value-cmp (list 'table-fn
+                                (list 'quote (cadr x))
+                                (list 'quote (cddr x))
+                                'state
+                                (list 'quote x)))
+             (macro-args-er-cmp x)))
+    (progn (value-cmp (list 'progn-fn
+                            (list 'quote (cdr x))
+                            'state)))
+    (cadr (if (and (consp (cdr x)) (null (cddr x)))
+              (value-cmp (list 'car (list 'cdr (cadr x))))
+            (macro-args-er-cmp x)))
+    (cddr (if (and (consp (cdr x)) (null (cddr x)))
+              (value-cmp (list 'cdr (list 'cdr (cadr x))))
+            (macro-args-er-cmp x)))
+    (list (value-cmp (list-macro (cdr x))))
+    (otherwise
+     (let ((gc-off (gc-off1 (access state-vars state-vars :guard-checking-on))))
+       (er-let*-cmp
+           ((alist (bind-macro-args
+                    (macro-args (car x) wrld)
+                    x wrld state-vars)))
+         (mv-let (erp guard-val)
+           (let ((guard (guard (car x) nil wrld)))
+             (cond
+              ((equal guard *t*)
+               (mv nil t))
+              (t
+               (ev-w (guard (car x) nil wrld) alist wrld
+                     nil ; user-stobj-alist
+                     t
+                     gc-off
+                     nil
 
 ; It is probably critical to use nil for the aok argument of this call.
 ; Otherwise, one can imagine a book with sequence of events
@@ -11540,43 +11580,42 @@
 ; different event to be exported from the book, for EVENT0, than the local one
 ; originally admitted.
 
-                   nil)
-             (cond
-              (erp (er-cmp ctx
-                           "In the attempt to macroexpand the form ~x0 ~
-                            evaluation of the guard for ~x2 caused the ~
-                            error below.~|~%~@1"
-                           x
-                           guard-val
-                           (car x)))
-              ((null guard-val)
-               (macro-guard-er-msg x ctx wrld))
-              (t (mv-let (erp expansion)
-                         (ev-w
-                          (getpropc (car x) 'macro-body
-                                    '(:error "Apparently macroexpand1 was ~
-                                              called where there was no ~
-                                              macro-body.")
-                                    wrld)
-                          alist wrld
-                          nil ; user-stobj-alist
-                          (not (access state-vars state-vars
+                     nil))))
+           (cond
+            (erp (er-cmp ctx
+                         "In the attempt to macroexpand the form ~x0 ~
+                          evaluation of the guard for ~x2 caused the error ~
+                          below.~|~%~@1"
+                         x
+                         guard-val
+                         (car x)))
+            ((null guard-val)
+             (macro-guard-er-msg x ctx wrld))
+            (t (mv-let (erp expansion)
+                 (ev-w
+                  (getpropc (car x) 'macro-body
+                            '(:error "Apparently macroexpand1 was called ~
+                                      where there was no macro-body.")
+                            wrld)
+                  alist wrld
+                  nil ; user-stobj-alist
+                  (not (access state-vars state-vars
 
 ; Note that if state-vars comes from (default-state-vars nil), then this flag
 ; is nil so safe-mode is t, which is acceptable, merely being needlessly
 ; conservative when the actual state global 'boot-strap-flg is t and hence
 ; safe-mode could have been nil here.
 
-                                       :boot-strap-flg)) ; safe-mode
-                          gc-off nil nil)
-                         (cond (erp
-                                (er-cmp ctx
-                                        "In the attempt to macroexpand the ~
+                               :boot-strap-flg)) ; safe-mode
+                  gc-off nil nil)
+                 (cond (erp
+                        (er-cmp ctx
+                                "In the attempt to macroexpand the ~
                                          form ~x0, evaluation of the macro ~
                                          body caused the error below.~|~%~@1"
-                                        x
-                                        expansion))
-                               (t (value-cmp expansion))))))))))
+                                x
+                                expansion))
+                       (t (value-cmp expansion))))))))))))
 
 (defun macroexpand1 (x ctx state)
 
