@@ -8531,12 +8531,7 @@
 ; after making changes to it.
 
                                 nil)
-                               (*file-clock* *file-clock*)
-                               (*t-stack* *t-stack*)
-                               (*t-stack-length* *t-stack-length*)
-                               (*32-bit-integer-stack* *32-bit-integer-stack*)
-                               (*32-bit-integer-stack-length*
-                                *32-bit-integer-stack-length*)))))
+                               (*file-clock* *file-clock*)))))
                ,(let ((p (if w
                              (oneify producer flet-fns w program-p)
                            producer)))
