@@ -1222,7 +1222,7 @@
    <2 (TAU-TERM ((NIL)
                  (INTEGERP (NIL . 3) NIL . 18)
                  ((166 . FILE-CLOCK-P)
-                  (155 . 32-BIT-INTEGERP)
+                  (155 . 32-BIT-INTEGERP) ; probably not after 3/29/2023
                   (20 . O-FINP)
                   (19 . POSP)
                   (17 . NATP)
@@ -1272,7 +1272,7 @@
  (decode-tau '((NIL)
                (INTEGERP (NIL . 3) NIL . 18)
                ((166 . FILE-CLOCK-P)
-                (155 . 32-BIT-INTEGERP)
+                (155 . 32-BIT-INTEGERP) ; probably not after 3/29/2023
                 (20 . O-FINP)
                 (19 . POSP)
                 (17 . NATP)
@@ -1324,7 +1324,7 @@
       (NATP (BINARY-+ '3 X))
       (POSP (BINARY-+ '3 X))
       (O-FINP (BINARY-+ '3 X))
-      (32-BIT-INTEGERP (BINARY-+ '3 X))
+      (32-BIT-INTEGERP (BINARY-+ '3 X)) ; probably not after 3/29/2023
       (FILE-CLOCK-P (BINARY-+ '3 X))
       (<= 3 (BINARY-+ '3 X))                     ; <---
       (<= (BINARY-+ '3 X) 18)                    ; <---

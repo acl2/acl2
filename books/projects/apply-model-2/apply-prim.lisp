@@ -67,8 +67,8 @@
 
 ; Note that stobj creators take no stobjs in but return stobjs.  We don't want
 ; any such functions in our answer!  Also, we don't want to think about
-; functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
-; STATE-STATE as a formal preventing their execution.
+; functions like BOUNDP-GLOBAL1 that use STATE-STATE as a formal preventing
+; their execution.
 
           (first-order-like-terms-and-out-arities1
            (cdr runes)

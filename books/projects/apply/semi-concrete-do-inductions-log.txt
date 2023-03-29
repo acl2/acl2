@@ -1005,47 +1005,54 @@ We have been told to use induction.  One induction scheme is suggested
 by this conjecture.  
 
 We will induct according to a scheme suggested by 
-(DO$ (LAMBDA$ (ALIST)
-       (DECLARE (XARGS :GUARD (AND (ALISTP ALIST)
-                                   (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                                   (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-       (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-             (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
-         (DECLARE (IGNORABLE I N))
-         (NFIX (BINARY-+ N (UNARY-- I)))))
-     (LIST (CONS 'I III) (CONS 'N NNN))
-     (LAMBDA$ (ALIST)
-       (DECLARE (XARGS :GUARD (AND (ALISTP ALIST)
-                                   (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                                   (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-       (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-             (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
-         (DECLARE (IGNORABLE I N))
-         (IF (< I N)
-             (CONS 'NIL
-                   (CONS 'NIL
-                         (CONS ((LAMBDA (I N)
-                                  (CONS (CONS 'I I)
-                                        (CONS (CONS 'N N) 'NIL)))
-                                (BINARY-+ I '1)
-                                N)
-                               'NIL)))
-           (CONS ':RETURN
-                 (CONS 'T
-                       (CONS (CONS (CONS 'I I)
-                                   (CONS (CONS 'N N) 'NIL))
-                             'NIL))))))
-     (LAMBDA$ (ALIST)
-       (DECLARE (XARGS :GUARD (ALISTP ALIST)))
-       (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-             (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
-         (DECLARE (IGNORABLE I N))
-         (CONS 'NIL
-               (CONS 'NIL
-                     (CONS (CONS (CONS 'I I)
-                                 (CONS (CONS 'N N) 'NIL))
-                           'NIL)))))
-     NIL NIL NIL).
+(DO$
+ (LAMBDA$ (ALIST)
+  (DECLARE
+   (XARGS
+        :GUARD
+        (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
+                                    (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                    (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+  (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+        (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+    (DECLARE (IGNORABLE I N))
+    (NFIX (BINARY-+ N (UNARY-- I)))))
+ (LIST (CONS 'I III) (CONS 'N NNN))
+ (LAMBDA$ (ALIST)
+  (DECLARE
+   (XARGS
+        :GUARD
+        (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
+                                    (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                    (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+  (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+        (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+    (DECLARE (IGNORABLE I N))
+    (IF (< I N)
+        (CONS 'NIL
+              (CONS 'NIL
+                    (CONS ((LAMBDA (I N)
+                             (CONS (CONS 'I I)
+                                   (CONS (CONS 'N N) 'NIL)))
+                           (BINARY-+ I '1)
+                           N)
+                          'NIL)))
+      (CONS ':RETURN
+            (CONS 'T
+                  (CONS (CONS (CONS 'I I)
+                              (CONS (CONS 'N N) 'NIL))
+                        'NIL))))))
+ (LAMBDA$ (ALIST)
+   (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))))
+   (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+         (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+     (DECLARE (IGNORABLE I N))
+     (CONS 'NIL
+           (CONS 'NIL
+                 (CONS (CONS (CONS 'I I)
+                             (CONS (CONS 'N N) 'NIL))
+                       'NIL)))))
+ NIL NIL NIL).
 
 This suggestion was produced using the :induction rule DO$.  If we
 let (:P III NNN) denote *1 above then the induction scheme we'll use

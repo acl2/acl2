@@ -1621,11 +1621,12 @@ ACL2 !>
     '(LAMBDA
       (ALIST)
       (DECLARE
-       (XARGS :GUARD (IF (ALISTP ALIST)
-                         (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                             'NIL)
-                         'NIL)
+       (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                      (IF (ALISTP ALIST)
+                          (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                              'NIL)
+                          'NIL))
               :SPLIT-TYPES T)
        (IGNORABLE ALIST))
       (RETURN-LAST
@@ -1633,9 +1634,10 @@ ACL2 !>
        '(LAMBDA$
          (ALIST)
          (DECLARE
-          (XARGS :GUARD (AND (ALISTP ALIST)
-                             (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+          (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                         (AND (ALISTP ALIST)
+                              (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
          (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
                (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
@@ -1652,11 +1654,12 @@ ACL2 !>
     '(LAMBDA
       (ALIST)
       (DECLARE
-       (XARGS :GUARD (IF (ALISTP ALIST)
-                         (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                             'NIL)
-                         'NIL)
+       (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                      (IF (ALISTP ALIST)
+                          (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                              'NIL)
+                          'NIL))
               :SPLIT-TYPES T)
        (IGNORABLE ALIST))
       (RETURN-LAST
@@ -1664,9 +1667,10 @@ ACL2 !>
        '(LAMBDA$
          (ALIST)
          (DECLARE
-          (XARGS :GUARD (AND (ALISTP ALIST)
-                             (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+          (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                         (AND (ALISTP ALIST)
+                              (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
          (LET
           ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
            (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
@@ -1727,14 +1731,14 @@ ACL2 !>
         (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
     '(LAMBDA
       (ALIST)
-      (DECLARE (XARGS :GUARD (ALISTP ALIST)
+      (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))
                       :SPLIT-TYPES T)
                (IGNORABLE ALIST))
       (RETURN-LAST
        'PROGN
        '(LAMBDA$
          (ALIST)
-         (DECLARE (XARGS :GUARD (ALISTP ALIST)))
+         (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))))
          (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
                (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
@@ -1778,11 +1782,12 @@ ACL2 !>
       '(LAMBDA
         (ALIST)
         (DECLARE
-         (XARGS :GUARD (IF (ALISTP ALIST)
-                           (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                               'NIL)
-                           'NIL)
+         (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                        (IF (ALISTP ALIST)
+                            (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                'NIL)
+                            'NIL))
                 :SPLIT-TYPES T)
          (IGNORABLE ALIST))
         (RETURN-LAST
@@ -1790,9 +1795,10 @@ ACL2 !>
          '(LAMBDA$
            (ALIST)
            (DECLARE
-            (XARGS :GUARD (AND (ALISTP ALIST)
-                               (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+            (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                           (AND (ALISTP ALIST)
+                                (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
            (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                  (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
                  (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
@@ -1809,11 +1815,12 @@ ACL2 !>
       '(LAMBDA
         (ALIST)
         (DECLARE
-         (XARGS :GUARD (IF (ALISTP ALIST)
-                           (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                               'NIL)
-                           'NIL)
+         (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                        (IF (ALISTP ALIST)
+                            (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                'NIL)
+                            'NIL))
                 :SPLIT-TYPES T)
          (IGNORABLE ALIST))
         (RETURN-LAST
@@ -1821,9 +1828,10 @@ ACL2 !>
          '(LAMBDA$
            (ALIST)
            (DECLARE
-            (XARGS :GUARD (AND (ALISTP ALIST)
-                               (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+            (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                           (AND (ALISTP ALIST)
+                                (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
            (LET
             ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
              (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
@@ -1884,14 +1892,14 @@ ACL2 !>
           (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
       '(LAMBDA
         (ALIST)
-        (DECLARE (XARGS :GUARD (ALISTP ALIST)
+        (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))
                         :SPLIT-TYPES T)
                  (IGNORABLE ALIST))
         (RETURN-LAST
          'PROGN
          '(LAMBDA$
            (ALIST)
-           (DECLARE (XARGS :GUARD (ALISTP ALIST)))
+           (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))))
            (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                  (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
                  (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
