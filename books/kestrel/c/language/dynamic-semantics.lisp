@@ -1052,51 +1052,7 @@
         (:arrsub
          (b* ((arr (expr-arrsub->arr left))
               (sub (expr-arrsub->sub left)))
-           (cond ((expr-case arr :ident)
-                  (b* ((eval (exec-expr-pure arr compst))
-                       ((when (errorp eval)) eval)
-                       (eval (apconvert-expr-value eval))
-                       ((when (errorp eval)) eval)
-                       (ptr (expr-value->value eval))
-                       ((unless (value-case ptr :pointer))
-                        (error (list :mistype-array
-                                     :required :pointer
-                                     :supplied (type-of-value ptr))))
-                       ((unless (value-pointer-validp ptr))
-                        (error (list :invalid-pointer ptr)))
-                       (objdes (value-pointer->designator ptr))
-                       (reftype (value-pointer->reftype ptr))
-                       (array (read-object objdes compst))
-                       ((when (errorp array)) array)
-                       ((unless (value-case array :array))
-                        (error (list :not-array arr (compustate-fix compst))))
-                       ((unless (equal reftype (value-array->elemtype array)))
-                        (error (list :mistype-array-read
-                                     :pointer reftype
-                                     :array (value-array->elemtype array))))
-                       (index (exec-expr-pure sub compst))
-                       ((when (errorp index)) index)
-                       (index (apconvert-expr-value index))
-                       ((when (errorp index)) index)
-                       (index (expr-value->value index))
-                       ((unless (value-integerp index))
-                        (error (list :mistype-array-index
-                                     :required :integer
-                                     :found index)))
-                       (index (value-integer->get index))
-                       ((when (< index 0)) (error (list :negative-array-index
-                                                        :pointer ptr
-                                                        :array array
-                                                        :index index)))
-                       (eval (exec-expr-pure right compst))
-                       ((when (errorp eval)) eval)
-                       (eval (apconvert-expr-value eval))
-                       ((when (errorp eval)) eval)
-                       (val (expr-value->value eval))
-                       (new-array (value-array-write index val array))
-                       ((when (errorp new-array)) new-array))
-                    (write-object objdes new-array compst)))
-                 ((expr-case arr :member)
+           (cond ((expr-case arr :member)
                   (b* ((str (expr-member->target arr))
                        (mem (expr-member->name arr))
                        ((unless (expr-case str :ident))

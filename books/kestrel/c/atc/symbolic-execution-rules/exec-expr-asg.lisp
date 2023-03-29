@@ -30,6 +30,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled value-integerp-when-scharp
+  (implies (scharp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-ucharp
+  (implies (ucharp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-sshortp
+  (implies (sshortp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-ushortp
+  (implies (ushortp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-sintp
+  (implies (sintp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-uintp
+  (implies (uintp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-slongp
+  (implies (slongp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-ulongp
+  (implies (ulongp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-sllongp
+  (implies (sllongp x)
+           (value-integerp x)))
+
+(defruled value-integerp-when-ullongp
+  (implies (ullongp x)
+           (value-integerp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-exec-expr-asg-ident-rules
   :short "Rules for executing assignment expressions to identifier expressions."
 
@@ -203,6 +245,8 @@
           (pack afixtype '-array-write-alt-def))
          (elemtype-when-apred
           (pack 'value-array->elemtype-when- apred))
+         (value-kind-when-epred (pack 'value-kind-when- epred))
+         (value-integerp-when-ipred (pack 'value-integerp-when- ipred))
          (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
          (formula
           `(implies
@@ -250,15 +294,23 @@
                                  compst))))
          (event `(defruled ,name
                    ,formula
+                   :expand ((exec-expr-pure (expr-binary->arg1 e) compst)
+                            (exec-expr-pure (expr-arrsub->arr
+                                             (expr-binary->arg1 e)) compst))
                    :enable (exec-expr-asg
                             ,@*atc-value-integer->get-rules*
                             ,atype-array-itype-index-okp
                             ,atype-array-write-itype
                             ,atype-array-write-alt-def
                             ,elemtype-when-apred
-                            exec-expr-pure
                             exec-ident
-                            read-object-of-objdesign-of-var-to-read-var)
+                            exec-arrsub
+                            read-object-of-objdesign-of-var-to-read-var
+                            apconvert-expr-value-when-not-value-array-alt
+                            write-object
+                            not-errorp-when-expr-valuep
+                            ,value-kind-when-epred
+                            ,value-integerp-when-ipred)
                    :prep-lemmas
                    ((defrule lemma1
                       (implies (and (,atype-array-index-okp array index)
@@ -275,7 +327,13 @@
                                (not (errorp
                                      (value-array-write index val array))))
                       :use (:instance ,atype-array-write-alt-def
-                            (elem val)))))))
+                                      (elem val)))
+                    (defrule lemma3
+                      (implies (and (expr-valuep (apconvert-expr-value eval))
+                                    (,epred (expr-value->value
+                                             (apconvert-expr-value eval))))
+                               (,epred (expr-value->value eval)))
+                      :enable apconvert-expr-value)))))
       (mv name event)))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)
