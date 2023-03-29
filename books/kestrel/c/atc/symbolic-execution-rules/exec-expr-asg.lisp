@@ -18,6 +18,7 @@
 (include-book "arrays")
 (include-book "value-integer-get")
 (include-book "apconvert")
+(include-book "integers")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -27,48 +28,6 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled value-integerp-when-scharp
-  (implies (scharp x)
-           (value-integerp x)))
-
-(defruled value-integerp-when-ucharp
-  (implies (ucharp x)
-           (value-integerp x)))
-
-(defruled value-integerp-when-sshortp
-  (implies (sshortp x)
-           (value-integerp x)))
-
-(defruled value-integerp-when-ushortp
-  (implies (ushortp x)
-           (value-integerp x)))
-
-(defruled value-integerp-when-sintp
-  (implies (sintp x)
-           (value-integerp x)))
-
-(defruled value-integerp-when-uintp
-  (implies (uintp x)
-           (value-integerp x)))
-
-(defruled value-integerp-when-slongp
-  (implies (slongp x)
-           (value-integerp x)))
-
-(defruled value-integerp-when-ulongp
-  (implies (ulongp x)
-           (value-integerp x)))
-
-(defruled value-integerp-when-sllongp
-  (implies (sllongp x)
-           (value-integerp x)))
-
-(defruled value-integerp-when-ullongp
-  (implies (ullongp x)
-           (value-integerp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
