@@ -29,6 +29,7 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
 
 ;; ;; A coefficient is an element of the field.  TODO: Consider, for readability,
 ;; ;; allowing large coefficients to be represented by negative numbers.
@@ -322,6 +323,14 @@
 (verify-guards dot-product
   :hints (("Goal" :in-theory (e/d (valuation-bindsp)
                                   (strip-cars)))))
+
+(defthm dot-product-of-append
+  (implies (posp prime)
+           (equal (dot-product (append vec1 vec2) valuation prime)
+                  (add (dot-product vec1 valuation prime)
+                       (dot-product vec2 valuation prime)
+                       prime)))
+  :hints (("Goal" :in-theory (enable dot-product append))))
 
 ;; Check whether the VALUATION satisfies the CONSTRAINT.
 (defund r1cs-constraint-holdsp (constraint valuation prime)
