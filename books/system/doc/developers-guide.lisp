@@ -3480,7 +3480,7 @@
 
  <p>Title: Some Illustrations of ACL2 Development<br/>
  Speaker: Matt Kaufmann<br/>
- Date/venue: March 24, 2023, over zoom</p>
+ Date/venue: March 31, 2023, over zoom</p>
 
  <p>Abstract:</p>
 
@@ -3613,18 +3613,10 @@
 
  <p>I had to add to @('state-vars'), but I didn't want to worry about impacting
  efficiency.  So my modification had minimal effect on only one existing field,
- namely, @('do-expressionp').</p>
+ namely, @('do-expressionp').  From the source code (comments omitted here):</p>
 
  @({
  (defrec state-vars
-
- ; Warning: Keep this in sync with default-state-vars.
-
- ; Note that do-expressionp is not actually a state global, even though most
- ; fields do name a state global.  That's OK, as we are careful about this in
- ; default-state-vars.  Also note that its value is either nil or a
- ; do-expressionp record.
-
    (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
     .
     ((ld-skip-proofsp . temp-touchable-fns) .
@@ -3639,10 +3631,11 @@
  <h4>COMPLICATION 2: RUN-SCRIPT</h4>
 
  <p>Testing is obviously important, and the @(tsee run-script) utility was very
- helpful, especially for this effort.  I could check that new mods didn't
- introduce new errors.</p>
+ helpful, especially for this effort.  During development I added to the tests
+ incrementally, and I checked that new mods didn't introduce unfortunate
+ changes to the output.</p>
 
- <p>I added these files to test output; see @(see run-script).</p>
+ <p>I added the following files to test output; see @(see run-script).</p>
 
  @({
  books/system/tests/warnings-as-errors-input.lsp
@@ -3651,10 +3644,17 @@
  books/system/tests/warnings-as-errors-log.txt
  })
 
- <p>Because @('warning$-cw1') uses @('*standard-co*'), I wasn't seeing warnings
- in the redirected @(tsee standard-co).  So I put the following hack near the
- top of @('warnings-as-errors-input.lsp') since by then @('standard-co') was
- being redirected to a file.</p>
+ <p>Recall that @('*standard-co*') is the default character output channel for
+ standard output (see @(see IO) and that @('(standard-co state)') is the
+ <i>current</i> such channel.  @('Run-tests') redirects output so that
+ @('(standard-co state)') points to a file (the generated @('*-log.out') file).
+ Also note that @('warning$-cw1') uses @('*standard-co*') and not @(tsee
+ standard-co), since changes to files should be recorded in the ACL2 @(see
+ state) but @('warning$-cw1') doesn't take or return state.</p>
+
+ <p>So, warnings produced by @('warning$-cw1') were going to the terminal, not
+ to the intended output file.  Therefore I put the following hack near the top
+ of @('warnings-as-errors-input.lsp').</p>
 
  @({
  (redef+)
@@ -3754,11 +3754,11 @@
 
  </blockquote>
 
- <p><i>ISSUE.</i> Some warnings are intended to be followed by errors.  Here is
- how we avoid converting those warnings to errors, from :DOC @(see
- set-warnings-as-errors).  NOTE: Some of you may have noticed testing failures
- that were missing such warnings, and the following from that :DOC addresses
- that problem.</p>
+ <p><i>ISSUE.</i> Some warnings are intended to be followed by errors, so we
+ avoid converting those warnings to errors, as explained in :DOC @(see
+ set-warnings-as-errors).  NOTE: Some of you may have noticed recent testing
+ failures that were missing such warnings, and the following from that :DOC
+ addresses that problem.</p>
 
  <ul>
  <li>No warning whose type specified by constant
@@ -3773,9 +3773,9 @@
  definition of @('*protected-system-state-globals*').  But that setting will
  revert after @(tsee certify-book) or @(tsee include-book), as noted below.</p>
 
- <p><i>ISSUE.</i> If I ship you a book, I want it to be OK even if you are
- setting warnings as errors.  So, again quoting :DOC @(see
- set-warnings-as-errors):</p>
+ <p><i>ISSUE.</i> If I ship you a book, you'll want @(tsee certify-book) to
+ succeed even if you are setting warnings as errors.  So, again quoting :DOC
+ @(see set-warnings-as-errors):</p>
 
  <blockquote>
 
@@ -3859,7 +3859,7 @@
 
  <h4>SOME GENERAL ADVICE before modifying sources</h4>
 
- <p>This advice is from both of us (Matt and J).</p>
+ <p>This advice is from both me (Matt) and J.</p>
 
  <ul>
  <li>Read relevant documentation.</li>
@@ -3943,9 +3943,8 @@
  </blockquote>
 
  <p>Sol requested this because @('cert.pl') loads @('.port') files of included
- books &mdash; essentially, @('.acl2') files &mdash; which might contain @(see
- local) @(tsee include-book) forms for very large books that shouldn't be
- included.</p>
+ books (stemming from @('.acl2') files), but those may contain expensive @(see
+ local) @(tsee include-book) forms books that should be ignored.</p>
 
  @({
  (local (include-book ...)) ; form in a .port file to be ignored
@@ -3960,8 +3959,8 @@
  <li>a helpful chat with J,</li>
  </ul>
 
- <p>then I decided to add an @('LD') special (see @(tsee ld) &mdash; think,
- keyword argument of @('LD')).  So after this change, Sol arranged for
+ <p>then I decided to add an @('LD') <i>special</i> (see @(tsee ld) &mdash;
+ think, keyword argument of @('LD')).  So after this change, Sol arranged for
  @('cert.pl') to load @('.port') files roughly as follows (see
  @('books/build/make_cert_help.pl')).</p>
 
@@ -4047,7 +4046,7 @@
 
  <blockquote>
 
- <p>I added the @('LD') special, @(tsee ld-always-skip-top-level-locals).</p>
+ <p>I added a new @('LD') special, @(tsee ld-always-skip-top-level-locals).</p>
 
  </blockquote>
 
@@ -4066,8 +4065,8 @@
  <blockquote>
 
  <p>It is bound to @('nil') for @(tsee certify-book), @(tsee include-book), and
- @(tsee encapsulate).  Those need to behave as intended without regard to
- globally skipping @(tsee local)s.</p>
+ @(tsee encapsulate).  Those need to behave as intended, without skipping
+ @(tsee local) events.</p>
 
  <p>Binding to @('nil') for @('encapsulate') but not @('progn') was easy.  The
  trick was to bind @('ld-always-skip-top-level-locals') to @('nil') in
