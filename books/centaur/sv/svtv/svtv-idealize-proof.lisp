@@ -1111,8 +1111,7 @@
                     (flatnorm-setup->monotonify x.flatnorm-setup)
                     
 
-                    (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
-                    (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                    (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-pipe-env spec-run)
                     (svtv-override-triplemaplist-syntax-check
                      x.pipeline-setup.override-tests x.pipeline-setup.override-vals
                      x.pipeline-setup.probes triplemaps)
@@ -1220,8 +1219,7 @@
                     (flatnorm-setup->monotonify x.flatnorm-setup)
                     
 
-                    (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
-                    (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                    (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-pipe-env spec-run)
                     
                     (svtv-override-triplemaplist-syntax-check
                      x.pipeline-setup.override-tests x.pipeline-setup.override-vals
@@ -1294,8 +1292,7 @@
                      (flatnorm-setup->monotonify x.flatnorm-setup)
                     
 
-                     (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
-                     (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-pipe-env spec-run)
                      (svtv-override-triplemaplist-syntax-check
                       x.pipeline-setup.override-tests x.pipeline-setup.override-vals
                       x.pipeline-setup.probes triplemaps)
@@ -1412,8 +1409,7 @@
                     (flatnorm-setup->monotonify x.flatnorm-setup)
                     
 
-                    (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
-                    (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                    (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-pipe-env spec-run)
                     
                     (svtv-override-triplemaplist-syntax-check
                      x.pipeline-setup.override-tests x.pipeline-setup.override-vals

@@ -29,7 +29,7 @@
 (set-waterfall-parallelism nil)
 
 ;; TEMP
-(include-book "svtv-override-proof")
+;; (include-book "svtv-override-proof")
 
 
 (include-book "svtv-idealize-defs")
@@ -56,9 +56,9 @@
                            SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-SPEC-RUN
                            SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-IDEAL-SPEC-RUN
                            svex-env-reduce-<<=-same
-                           svtv-override-triplemaplist-muxes-<<=-of-same-envs
-                           svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
-                           4vec-override-mux-<<=-of-same-test/val))
+                           svtv-override-triplemaplist-envs-ok-of-same-envs
+                           4vec-override-mux-<<=-of-same-test/val
+                           4vec-override-mux-ok-of-same-test/val))
 
 
 (defthmd delays-of-design->flatnorm-of-svtv-data-obj
@@ -490,8 +490,7 @@
               (spec-run (svtv-spec-run spec spec-pipe-env :base-ins spec-base-ins :initst spec-initst))
               (impl-run (svtv-run (<name>) pipe-env)))
            (implies (and
-                     (svtv-override-triplemaplist-muxes-<<= (<name>-triplemaplist) pipe-env spec-pipe-env spec-run)
-                     (svtv-override-triplemaplist-muxtests-subsetp (<name>-triplemaplist) spec-pipe-env pipe-env)
+                     (svtv-override-triplemaplist-envs-ok (<name>-triplemaplist) pipe-env spec-pipe-env spec-run)
 
                      (svex-env-<<= (svex-env-reduce (<name>-input-vars) pipe-env)
                                    spec-pipe-env)
@@ -520,8 +519,7 @@
               (spec-run (svtv-spec-run spec spec-pipe-env :base-ins spec-base-ins :initst spec-initst))
               (impl-run (svtv-spec-run spec pipe-env)))
            (implies (and
-                     (svtv-override-triplemaplist-muxes-<<= (<name>-triplemaplist) pipe-env spec-pipe-env spec-run)
-                     (svtv-override-triplemaplist-muxtests-subsetp (<name>-triplemaplist) spec-pipe-env pipe-env)
+                     (svtv-override-triplemaplist-envs-ok (<name>-triplemaplist) pipe-env spec-pipe-env spec-run)
 
                      (svex-env-<<= (svex-env-reduce (<name>-input-vars) pipe-env)
                                    spec-pipe-env)
@@ -551,8 +549,7 @@
            (implies (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil)
                     (svex-env-<<= impl-run spec-run)))
          :hints (("goal" :in-theory '(<ideal-name>-refines-<name>
-                                      svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
-                                      svtv-override-triplemaplist-muxes-<<=-of-same-envs
+                                      svtv-override-triplemaplist-envs-ok-of-same-envs
                                       svex-env-reduce-<<=-same
                                       (svex-envlist-all-keys)
                                       (svarlist-override-p)))))
@@ -564,8 +561,7 @@
            (implies (svarlist-override-p (svex-envlist-all-keys spec-base-ins) nil)
                     (svex-env-<<= impl-run spec-run)))
          :hints (("goal" :in-theory '(<ideal-name>-refines-<ideal-name>
-                                      svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
-                                      svtv-override-triplemaplist-muxes-<<=-of-same-envs
+                                      svtv-override-triplemaplist-envs-ok-of-same-envs
                                       svex-env-reduce-<<=-same
                                       (svex-envlist-all-keys)
                                       (svarlist-override-p))))))
@@ -1001,115 +997,113 @@
 
 
 
+;; ;; Simplifying the svtv-override-triplemaplist-muxtests-subsetp.  We should
+;; ;; concrete values for all the tests -- from the impl-env, we have the
+;; ;; substitution with svtv-override-subst-matches-env, and from the spec-env, we
+;; ;; have spec-override-consts.
 
-;; Simplifying the svtv-override-triplemaplist-muxtests-subsetp.  We should
-;; concrete values for all the tests -- from the impl-env, we have the
-;; substitution with svtv-override-subst-matches-env, and from the spec-env, we
-;; have spec-override-consts.
+;; ;; So for muxtests-subsetp, we should be able to just check these two envs by
+;; ;; execution and not leave behind any further proof obligations.
 
-;; So for muxtests-subsetp, we should be able to just check these two envs by
-;; execution and not leave behind any further proof obligations.
-
-(define svtv-override-test-check-muxtest-subsetp ((test svex-p)
-                                                  (impl-subst svex-alist-p)
-                                                  (spec-override-consts svex-env-p))
-  :returns (ok)
-  (b* (((when (svex-case test :quote))
-        ;; Doesn't need to be checked because impl and spec test will both evaluate to the same.
-        t)
-       (spec-test (svex-eval test spec-override-consts))
-       ((when (equal (4vec-1mask spec-test) 0))
-        ;; Always satisfies 4vec-muxtest-subsetp
-        t)
-       (impl-test (svex-subst test impl-subst))
-       ((when (equal impl-test (svex-quote (2vec -1))))
-        ;; Always satisfies 4vec-muxtest-subsetp
-        t))
-    (svex-case impl-test
-      :quote (or (4vec-muxtest-subsetp spec-test impl-test.val)
-                 (cw "======  WARNING  =======~%~
-Muxtest check failed: ~x0 evaluated to ~x1 (spec), ~x2 (impl) which does not satisfy ~x3~%"
-                     test spec-test impl-test.val))
-      :otherwise (cw "======  WARNING  =======~%~
-Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant for impl: ~x2~%"
-                     test spec-test impl-test)))
-  ///
-  (defretd 4vec-muxtest-subsetp-when-<fn>
-    :pre-bind ((test (svtv-override-triple->test triple)))
-    (implies (and (svtv-override-triple-envs-match triple spec-env spec-override-consts)
-                  (svtv-override-subst-matches-env impl-subst impl-env)
-                  ok)
-             (4vec-muxtest-subsetp (svex-eval test spec-env)
-                                   (svex-eval test impl-env)))
-    :hints(("Goal" :in-theory (e/d (svtv-override-triple-envs-match
-                                    svtv-override-subst-matches-env)
-                                   (svex-eval-of-svex-subst))
-            :use ((:instance svex-eval-of-svex-subst
-                   (pat (svtv-override-triple->test triple))
-                   (al impl-subst)
-                   (env impl-env)))))))
-
-
-(define svtv-override-triplemap-check-muxtest-subsetp ((x svtv-override-triplemap-p)
-                                                       (impl-subst svex-alist-p)
-                                                       (spec-override-consts svex-env-p))
-  :returns (ok)
-  (if (atom x)
-      t
-    (and (or (not (mbt (and (consp (car x))
-                            (svar-p (caar x)))))
-             (svtv-override-test-check-muxtest-subsetp (svtv-override-triple->test (cdar x))
-                                                       impl-subst spec-override-consts))
-         (svtv-override-triplemap-check-muxtest-subsetp (cdr x) impl-subst spec-override-consts)))
-  ///
-  (defretd svex-envs-svexlist-muxtests-subsetp-when-<fn>
-    (implies (and (svtv-override-triplemap-envs-match x spec-env spec-override-consts)
-                  (svtv-override-subst-matches-env impl-subst impl-env)
-                  ok)
-             (svex-envs-svexlist-muxtests-subsetp (svtv-override-triplemap->tests x) spec-env impl-env))
-    :hints(("Goal" :in-theory (e/d (svtv-override-triplemap-envs-match
-                                    svex-envs-svexlist-muxtests-subsetp
-                                    svtv-override-triplemap->tests
-                                    4vec-muxtest-subsetp-when-svtv-override-test-check-muxtest-subsetp)))))
-
-  (local (in-theory (enable svtv-override-triplemap-fix))))
+;; (define svtv-override-test-check-muxtest-subsetp ((test svex-p)
+;;                                                   (impl-subst svex-alist-p)
+;;                                                   (spec-override-consts svex-env-p))
+;;   :returns (ok)
+;;   (b* (((when (svex-case test :quote))
+;;         ;; Doesn't need to be checked because impl and spec test will both evaluate to the same.
+;;         t)
+;;        (spec-test (svex-eval test spec-override-consts))
+;;        ((when (equal (4vec-1mask spec-test) 0))
+;;         ;; Always satisfies 4vec-muxtest-subsetp
+;;         t)
+;;        (impl-test (svex-subst test impl-subst))
+;;        ((when (equal impl-test (svex-quote (2vec -1))))
+;;         ;; Always satisfies 4vec-muxtest-subsetp
+;;         t))
+;;     (svex-case impl-test
+;;       :quote (or (4vec-muxtest-subsetp spec-test impl-test.val)
+;;                  (cw "======  WARNING  =======~%~
+;; Muxtest check failed: ~x0 evaluated to ~x1 (spec), ~x2 (impl) which does not satisfy ~x3~%"
+;;                      test spec-test impl-test.val))
+;;       :otherwise (cw "======  WARNING  =======~%~
+;; Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant for impl: ~x2~%"
+;;                      test spec-test impl-test)))
+;;   ///
+;;   (defretd 4vec-muxtest-subsetp-when-<fn>
+;;     :pre-bind ((test (svtv-override-triple->test triple)))
+;;     (implies (and (svtv-override-triple-envs-match triple spec-env spec-override-consts)
+;;                   (svtv-override-subst-matches-env impl-subst impl-env)
+;;                   ok)
+;;              (4vec-muxtest-subsetp (svex-eval test spec-env)
+;;                                    (svex-eval test impl-env)))
+;;     :hints(("Goal" :in-theory (e/d (svtv-override-triple-envs-match
+;;                                     svtv-override-subst-matches-env)
+;;                                    (svex-eval-of-svex-subst))
+;;             :use ((:instance svex-eval-of-svex-subst
+;;                    (pat (svtv-override-triple->test triple))
+;;                    (al impl-subst)
+;;                    (env impl-env)))))))
 
 
-(define svtv-override-triplemaplist-check-muxtest-subsetp ((x svtv-override-triplemaplist-p)
-                                                           (impl-subst svex-alist-p)
-                                                           (spec-override-consts svex-env-p))
-  :returns (ok)
-  (if (atom x)
-      t
-    (and (svtv-override-triplemap-check-muxtest-subsetp (car x) impl-subst spec-override-consts)
-         (svtv-override-triplemaplist-check-muxtest-subsetp (cdr x) impl-subst spec-override-consts)))
-  ///
-  (defretd svtv-override-triplemaplist-muxtests-subsetp-when-<fn>
-    (implies (and (svtv-override-triplemaplist-envs-match x spec-env spec-override-consts)
-                  (svtv-override-subst-matches-env impl-subst impl-env)
-                  ok)
-             (svtv-override-triplemaplist-muxtests-subsetp x spec-env impl-env))
-    :hints(("Goal" :in-theory (e/d (svtv-override-triplemaplist-envs-match
-                                    svtv-override-triplemaplist-muxtests-subsetp
-                                    svex-envs-svexlist-muxtests-subsetp-when-svtv-override-triplemap-check-muxtest-subsetp)))))
+;; (define svtv-override-triplemap-check-muxtest-subsetp ((x svtv-override-triplemap-p)
+;;                                                        (impl-subst svex-alist-p)
+;;                                                        (spec-override-consts svex-env-p))
+;;   :returns (ok)
+;;   (if (atom x)
+;;       t
+;;     (and (or (not (mbt (and (consp (car x))
+;;                             (svar-p (caar x)))))
+;;              (svtv-override-test-check-muxtest-subsetp (svtv-override-triple->test (cdar x))
+;;                                                        impl-subst spec-override-consts))
+;;          (svtv-override-triplemap-check-muxtest-subsetp (cdr x) impl-subst spec-override-consts)))
+;;   ///
+;;   (defretd svex-envs-svexlist-muxtests-subsetp-when-<fn>
+;;     (implies (and (svtv-override-triplemap-envs-match x spec-env spec-override-consts)
+;;                   (svtv-override-subst-matches-env impl-subst impl-env)
+;;                   ok)
+;;              (svex-envs-svexlist-muxtests-subsetp (svtv-override-triplemap->tests x) spec-env impl-env))
+;;     :hints(("Goal" :in-theory (e/d (svtv-override-triplemap-envs-match
+;;                                     svex-envs-svexlist-muxtests-subsetp
+;;                                     svtv-override-triplemap->tests
+;;                                     4vec-muxtest-subsetp-when-svtv-override-test-check-muxtest-subsetp)))))
 
-  ;; !!! This will be used to compute the list of tests that need to be
-  ;; resolved when generalizing an SVTV theorem.
-  (defthmd svtv-override-triplemaplist-muxtests-subsetp-simplify-for-idealize
-    (implies (and (syntaxp (cmr::term-variable-free-p x))
-                  (svtv-override-triplemaplist-envs-match x spec-env spec-override-consts)
-                  (bind-free (b* (((mv ok subst) (svex-env-term-extract-substitution impl-env)))
-                               (and ok
-                                    `((impl-subst . ',(make-fast-alist subst)))))
-                             (impl-subst))
-                  (svtv-override-subst-matches-env impl-subst impl-env)
-                  (svtv-override-triplemaplist-check-muxtest-subsetp x impl-subst (make-fast-alist spec-override-consts)))
-             (svtv-override-triplemaplist-muxtests-subsetp x spec-env impl-env))
-    :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-muxtests-subsetp-when-svtv-override-triplemaplist-check-muxtest-subsetp))))
+;;   (local (in-theory (enable svtv-override-triplemap-fix))))
 
-  (cmr::def-force-execute svtv-override-triplemaplist-check-muxtest-subsetp-when-variable-free
-    svtv-override-triplemaplist-check-muxtest-subsetp))
 
+;; (define svtv-override-triplemaplist-check-muxtest-subsetp ((x svtv-override-triplemaplist-p)
+;;                                                            (impl-subst svex-alist-p)
+;;                                                            (spec-override-consts svex-env-p))
+;;   :returns (ok)
+;;   (if (atom x)
+;;       t
+;;     (and (svtv-override-triplemap-check-muxtest-subsetp (car x) impl-subst spec-override-consts)
+;;          (svtv-override-triplemaplist-check-muxtest-subsetp (cdr x) impl-subst spec-override-consts)))
+;;   ///
+;;   (defretd svtv-override-triplemaplist-muxtests-subsetp-when-<fn>
+;;     (implies (and (svtv-override-triplemaplist-envs-match x spec-env spec-override-consts)
+;;                   (svtv-override-subst-matches-env impl-subst impl-env)
+;;                   ok)
+;;              (svtv-override-triplemaplist-muxtests-subsetp x spec-env impl-env))
+;;     :hints(("Goal" :in-theory (e/d (svtv-override-triplemaplist-envs-match
+;;                                     svtv-override-triplemaplist-muxtests-subsetp
+;;                                     svex-envs-svexlist-muxtests-subsetp-when-svtv-override-triplemap-check-muxtest-subsetp)))))
+
+;;   ;; !!! This will be used to compute the list of tests that need to be
+;;   ;; resolved when generalizing an SVTV theorem.
+;;   (defthmd svtv-override-triplemaplist-muxtests-subsetp-simplify-for-idealize
+;;     (implies (and (syntaxp (cmr::term-variable-free-p x))
+;;                   (svtv-override-triplemaplist-envs-match x spec-env spec-override-consts)
+;;                   (bind-free (b* (((mv ok subst) (svex-env-term-extract-substitution impl-env)))
+;;                                (and ok
+;;                                     `((impl-subst . ',(make-fast-alist subst)))))
+;;                              (impl-subst))
+;;                   (svtv-override-subst-matches-env impl-subst impl-env)
+;;                   (svtv-override-triplemaplist-check-muxtest-subsetp x impl-subst (make-fast-alist spec-override-consts)))
+;;              (svtv-override-triplemaplist-muxtests-subsetp x spec-env impl-env))
+;;     :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-muxtests-subsetp-when-svtv-override-triplemaplist-check-muxtest-subsetp))))
+
+;;   (cmr::def-force-execute svtv-override-triplemaplist-check-muxtest-subsetp-when-variable-free
+;;     svtv-override-triplemaplist-check-muxtest-subsetp))
 
 
 
@@ -1119,6 +1113,10 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
 
 
+;; For resolving the svtv-override-triplemaplist-envs-ok check, we'll analyze
+;; the known constants and produce a list of things we still need to check.
+;; These will take the form of a svtv-override-checklist.  Each item to check
+;; shows that a certain triplemap entry satisfies svtv-override-triple-envs-ok.
 
 
 
@@ -1127,11 +1125,16 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
    (impl-val svex-p)
    (spec-test svex-p)
    (spec-val svex-p)
-   (refvar svar-p))
+   (refvar maybe-svar-p))
   :layout :list)
 
 
 (deflist svtv-override-checklist :elt-type svtv-override-check :true-listp t)
+
+
+
+  
+                              
 
 
 (define svtv-override-checklist-ok ((x svtv-override-checklist-p)
@@ -1142,18 +1145,29 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
   (if (atom x)
       t
     (and (b* (((svtv-override-check x1) (car x)))
-           (4vec-override-mux-<<= (svex-eval x1.impl-test impl-env)
+           (mbe :logic
+                (4vec-override-mux-ok  (svex-eval x1.impl-test impl-env)
                                   (svex-eval x1.impl-val impl-env)
                                   (svex-eval x1.spec-test spec-env)
                                   (svex-eval x1.spec-val spec-env)
-                                  (svex-env-lookup x1.refvar ref-env)))
+                                  x1.refvar
+                                  (svex-env-lookup x1.refvar ref-env))
+                :exec
+                (4vec-override-mux-ok  (svex-eval x1.impl-test impl-env)
+                                  (svex-eval x1.impl-val impl-env)
+                                  (svex-eval x1.spec-test spec-env)
+                                  (svex-eval x1.spec-val spec-env)
+                                  x1.refvar
+                                  (if x1.refvar
+                                      (svex-env-lookup x1.refvar ref-env)
+                                    0))))
          (svtv-override-checklist-ok (cdr x) impl-env spec-env ref-env)))
   ///
   (defthm svtv-override-checklist-ok-of-cons-quote
     (implies (syntaxp (quotep x1))
              (equal (svtv-override-checklist-ok (cons x1 rest) impl-env spec-env ref-env)
                     (and (b* (((svtv-override-check x1)))
-                           (4vec-override-mux-<<=
+                           (4vec-override-mux-ok
                             (svex-case x1.impl-test
                               :quote x1.impl-test.val
                               :var (svex-env-lookup x1.impl-test.name impl-env)
@@ -1170,6 +1184,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                               :quote x1.spec-val.val
                               :var (svex-env-lookup x1.spec-val.name spec-env)
                               :otherwise (svex-eval x1.spec-val spec-env))
+                            x1.refvar
                             (svex-env-lookup x1.refvar ref-env)))
                          (svtv-override-checklist-ok rest impl-env spec-env ref-env))))
     :hints(("Goal" :in-theory (enable svex-eval))))
@@ -1177,10 +1192,11 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
   (defthm svtv-override-checklist-ok-of-cons
     (equal (svtv-override-checklist-ok (cons x1 rest) impl-env spec-env ref-env)
            (and (b* (((svtv-override-check x1)))
-                  (4vec-override-mux-<<= (svex-eval x1.impl-test impl-env)
+                  (4vec-override-mux-ok (svex-eval x1.impl-test impl-env)
                                   (svex-eval x1.impl-val impl-env)
                                   (svex-eval x1.spec-test spec-env)
                                   (svex-eval x1.spec-val spec-env)
+                                  x1.refvar
                                   (svex-env-lookup x1.refvar ref-env)))
                 (svtv-override-checklist-ok rest impl-env spec-env ref-env))))
 
@@ -1205,9 +1221,14 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
            (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref))
   :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=))))
 
+;; (defthm 4vec-override-mux-ok-when-impl-test-empty
+;;   (implies (equal (4vec-1mask impl-test) 0)
+;;            (4vec-override-mux-ok 0 impl-val spec-test spec-val spec-ref))
+;;   :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=))))
 
 
-(define svtv-override-triple-analyze-necessary-mux-<<=-check ((x svtv-override-triple-p)
+
+(define svtv-override-triple-analyze-necessary-envs-ok-check ((x svtv-override-triple-p)
                                                               (impl-subst svex-alist-p)
                                                               (spec-override-consts svex-env-p))
   :returns (checks svtv-override-checklist-p)
@@ -1217,17 +1238,29 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
         ;; Doesn't need to be checked because 4vec-override-mux-<<= of same tests and vals is always true.
         nil)
        (impl-test (svex-subst x.test impl-subst))
-       ((when (and (svex-case impl-test :quote)
-                   (equal (4vec-1mask (svex-quote->val impl-test)) 0)))
-        ;; Doesn't need to be checked because 4vec-override-mux-<<= is true when 4vec-mask of impl-test is 0
-        nil)
        (impl-val (svex-subst x.val impl-subst))
-       ((when (equal impl-val (svex-x)))
-        ;; Doesn't need to be checked because 4vec-override-mux-<<= is true when impl-val is x.
-        nil)
        (spec-test (svex-eval x.test spec-override-consts))
        (spec-val  (svex-eval x.val spec-override-consts))
-       (spec-val-expr (if (2vec-p spec-val) (svex-quote spec-val) x.val)))
+       (spec-val-expr (if (2vec-p spec-val) (svex-quote spec-val) x.val))
+
+       (mux-<<=-ok (or (and (svex-case impl-test :quote)
+                            (equal (4vec-1mask (svex-quote->val impl-test)) 0))
+                       (equal impl-val (svex-x))))
+       (muxtest-ok (svex-case impl-test
+                     :quote (or (if x.refvar
+                                    (4vec-muxtest-subsetp spec-test impl-test.val)
+                                  (equal spec-test impl-test.val))
+                                (cw "======  WARNING  =======~%~
+Muxtest check failed: ~x0 evaluated to ~x1 (spec), ~x2 (impl) which does not satisfy ~x3~%"
+                                    x.test spec-test impl-test.val
+                                    (if x.refvar '4vec-muxtest-subsetp 'equal)))
+                     :otherwise
+                     (or (and x.refvar (eql (4vec-1mask spec-test) 0))
+                         (cw "======  WARNING  =======~%~
+Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant for impl: ~x2~%"
+                             x.test spec-test impl-test))))
+       ((when (and mux-<<=-ok muxtest-ok))
+        nil))
     (list (svtv-override-check impl-test impl-val
                                (svex-quote spec-test)
                                spec-val-expr
@@ -1237,8 +1270,9 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     (implies (and (svtv-override-subst-matches-env impl-subst impl-env)
                   (svtv-override-triple-envs-match x spec-env spec-override-consts))
              (equal (svtv-override-checklist-ok checks impl-env spec-env ref-env)
-                    (svtv-override-triple-mux-<<= x impl-env spec-env ref-env)))
-    :hints(("Goal" :in-theory (e/d (svtv-override-triple-mux-<<=
+                    (svtv-override-triple-envs-ok x impl-env spec-env ref-env)))
+    :hints(("Goal" :in-theory (e/d (svtv-override-triple-envs-ok
+                                    4vec-override-mux-ok
                                     svtv-override-triple-envs-match
                                     svtv-override-subst-matches-env)
                                    (svex-eval-of-svex-subst))
@@ -1253,52 +1287,52 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
 
 
-(define svtv-override-triplemap-analyze-necessary-mux-<<=-checks ((x svtv-override-triplemap-p)
+(define svtv-override-triplemap-analyze-necessary-envs-ok-checks ((x svtv-override-triplemap-p)
                                                                   (impl-subst svex-alist-p)
                                                                   (spec-override-consts svex-env-p))
   :returns (checks svtv-override-checklist-p)
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x))
                           (svar-p (caar x)))))
-        (svtv-override-triplemap-analyze-necessary-mux-<<=-checks (cdr x) impl-subst spec-override-consts))
-       (checks1 (svtv-override-triple-analyze-necessary-mux-<<=-check (cdar x) impl-subst spec-override-consts)))
+        (svtv-override-triplemap-analyze-necessary-envs-ok-checks (cdr x) impl-subst spec-override-consts))
+       (checks1 (svtv-override-triple-analyze-necessary-envs-ok-check (cdar x) impl-subst spec-override-consts)))
     (mbe :logic (append checks1
-                        (svtv-override-triplemap-analyze-necessary-mux-<<=-checks (cdr x) impl-subst spec-override-consts))
+                        (svtv-override-triplemap-analyze-necessary-envs-ok-checks (cdr x) impl-subst spec-override-consts))
          :exec (if checks1
                    (append checks1
-                           (svtv-override-triplemap-analyze-necessary-mux-<<=-checks (cdr x) impl-subst spec-override-consts))
-                 (svtv-override-triplemap-analyze-necessary-mux-<<=-checks (cdr x) impl-subst spec-override-consts))))
+                           (svtv-override-triplemap-analyze-necessary-envs-ok-checks (cdr x) impl-subst spec-override-consts))
+                 (svtv-override-triplemap-analyze-necessary-envs-ok-checks (cdr x) impl-subst spec-override-consts))))
   ///
   (defret <fn>-correct
     (implies (and (svtv-override-subst-matches-env impl-subst impl-env)
                   (svtv-override-triplemap-envs-match x spec-env spec-override-consts))
              (equal (svtv-override-checklist-ok checks impl-env spec-env ref-env)
-                    (svtv-override-triplemap-muxes-<<= x impl-env spec-env ref-env)))
-    :hints(("Goal" :in-theory (e/d (svtv-override-triplemap-muxes-<<=
+                    (svtv-override-triplemap-envs-ok x impl-env spec-env ref-env)))
+    :hints(("Goal" :in-theory (e/d (svtv-override-triplemap-envs-ok
                                     svtv-override-triplemap-envs-match)))))
 
   (local (in-theory (enable svtv-override-triplemap-fix))))
 
-(define svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks ((x svtv-override-triplemaplist-p)
+(define svtv-override-triplemaplist-analyze-necessary-envs-ok-checks ((x svtv-override-triplemaplist-p)
                                                                       (impl-subst svex-alist-p)
                                                                       (spec-override-consts svex-env-p))
   :returns (checks svtv-override-checklist-p)
   (if (atom x)
       nil
-    (append (svtv-override-triplemap-analyze-necessary-mux-<<=-checks (car x) impl-subst spec-override-consts)
-            (svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks (cdr x) impl-subst spec-override-consts)))
+    (append (svtv-override-triplemap-analyze-necessary-envs-ok-checks (car x) impl-subst spec-override-consts)
+            (svtv-override-triplemaplist-analyze-necessary-envs-ok-checks (cdr x) impl-subst spec-override-consts)))
   ///
   (defret <fn>-correct
     (implies (and (svtv-override-subst-matches-env impl-subst impl-env)
                   (svtv-override-triplemaplist-envs-match x spec-env spec-override-consts))
              (equal (svtv-override-checklist-ok checks impl-env spec-env spec-run)
-                    (svtv-override-triplemaplist-muxes-<<= x impl-env spec-env spec-run)))
-    :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-muxes-<<=
+                    (svtv-override-triplemaplist-envs-ok x impl-env spec-env spec-run)))
+    :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-envs-ok
                                       svtv-override-triplemaplist-envs-match))))
 
   ;; !!! This will be used to compute the list of tests that need to be
   ;; resolved when generalizing an SVTV theorem.
-  (defthmd svtv-override-triplemaplist-muxes-<<=-simplify-for-idealize
+  (defthmd svtv-override-triplemaplist-envs-ok-simplify-for-idealize
     (implies (and (syntaxp (cmr::term-variable-free-p x))
                   (svtv-override-triplemaplist-envs-match x spec-env spec-override-consts)
                   (bind-free (b* (((mv ok subst) (svex-env-term-extract-substitution impl-env)))
@@ -1306,14 +1340,14 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                                     `((impl-subst . ',(make-fast-alist subst)))))
                              (impl-subst))
                   (svtv-override-subst-matches-env impl-subst impl-env))
-             (equal (svtv-override-triplemaplist-muxes-<<= x impl-env spec-env spec-run)
+             (equal (svtv-override-triplemaplist-envs-ok x impl-env spec-env spec-run)
                     (svtv-override-checklist-ok
-                     (svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks x impl-subst (make-fast-alist spec-override-consts))
+                     (svtv-override-triplemaplist-analyze-necessary-envs-ok-checks x impl-subst (make-fast-alist spec-override-consts))
                      impl-env spec-env spec-run)))
-    :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks-correct))))
+    :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-analyze-necessary-envs-ok-checks-correct))))
 
-  (cmr::def-force-execute svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks-when-variable-free
-    svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks))
+  (cmr::def-force-execute svtv-override-triplemaplist-analyze-necessary-envs-ok-checks-when-variable-free
+    svtv-override-triplemaplist-analyze-necessary-envs-ok-checks))
 
 
 
@@ -1329,10 +1363,12 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
          (bitops::logbitp-reasoning)))
 
 
-(defthm 4vec-override-mux-<<=-when-no-spec-override-and-impl-val-same-as-ref
-  (implies (equal (4vec-1mask spec-test) 0)
-           (4vec-override-mux-<<= impl-test val spec-test spec-val val))
-  :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=))))
+(defthm 4vec-override-mux-ok-when-no-spec-override-and-impl-val-same-as-ref
+  (implies (and (equal (4vec-1mask spec-test) 0)
+                val-p)
+           (4vec-override-mux-ok impl-test val spec-test spec-val val-p val))
+  :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=
+                                    4vec-override-mux-ok))))
 
 
 
@@ -1342,10 +1378,9 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
      CONS-4VEC-EQUIV-CONGRUENCE-ON-V-UNDER-SVEX-ENV-EQUIV)
     (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1)
     (:DEFINITION 4VEC-EQUIV$INLINE)
-    (:definition svtv-override-triple-mux-<<=)
+    (:definition svtv-override-triple-envs-ok)
 
     (:DEFINITION SVEX-ENV-FASTLOOKUP)
-    (:DEFINITION SVTV-OVERRIDE-TRIPLE-MUX-<<=)
     (:DEFINITION SYNP)
     (:EXECUTABLE-COUNTERPART 2VEC-P$INLINE)
     (:EXECUTABLE-COUNTERPART 4VEC-<<=)
@@ -1373,10 +1408,10 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     (:executable-counterpart svtv-override-check->spec-val$inline)
     (:executable-counterpart svtv-override-check->refvar$inline)
     (:executable-counterpart 4vec-1mask)
-    (:executable-counterpart SVTV-OVERRIDE-TRIPLEMAPLIST-ANALYZE-NECESSARY-MUX-<<=-CHECKS)
+    (:executable-counterpart SVTV-OVERRIDE-TRIPLEMAPLIST-ANALYZE-NECESSARY-ENVS-OK-CHECKS)
     (:META HONS-INTERSECTION-FORCE-EXECUTE)
-    (:meta svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks-when-variable-free)
-    (:meta svtv-override-triplemaplist-check-muxtest-subsetp-when-variable-free)
+    (:meta svtv-override-triplemaplist-analyze-necessary-envs-ok-checks-when-variable-free)
+    ;; (:meta svtv-override-triplemaplist-check-muxtest-subsetp-when-variable-free)
     (:meta svtv-override-subst-matches-env-meta)
     (:REWRITE 4VEC-<<=-2VEC)
     (:rewrite 4vec-<<=-self)
@@ -1410,20 +1445,31 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
     (:rewrite svtv-override-checklist-ok-of-cons-quote)
     (:rewrite svtv-override-checklist-ok-of-nil)
-    (:rewrite svtv-override-triplemaplist-muxtests-subsetp-simplify-for-idealize)
-    (:rewrite svtv-override-triplemaplist-muxes-<<=-simplify-for-idealize)
+    ;; (:rewrite svtv-override-triplemaplist-muxtests-subsetp-simplify-for-idealize)
+    (:rewrite svtv-override-triplemaplist-envs-ok-simplify-for-idealize)
     ;; (:rewrite SVTV-OVERRIDE-TRIPLEMAPLIST-MUXES-<<=-SIMPLIFY-WHEN-KEYS)
     ;; (:rewrite SVTV-OVERRIDE-TRIPLELIST-MUXES-<<=-OF-CONS)
     ;; (:rewrite SVTV-OVERRIDE-TRIPLELIST-MUXES-<<=-OF-nil)
 
-    (:rewrite 4VEC-OVERRIDE-MUX-<<=-OF-SAME-TEST/VAL)
-    (:rewrite 4vec-override-mux-<<=-when-no-spec-override-and-impl-val-same-as-ref)
+    (:rewrite 4VEC-OVERRIDE-MUX-OK-OF-SAME)
+    (:rewrite 4vec-override-MUX-ok-when-no-spec-override-and-impl-val-same-as-ref)
 
     (:rewrite svex-env-lookup-of-svex-env-reduce)
     (:executable-counterpart member-equal)
     (:executable-counterpart svarlist-fix$inline)
     ))
 
+(define svtv-override-triplemap->tests ((triplemap svtv-override-triplemap-p))
+  :returns (tests svexlist-p)
+  (if (atom triplemap)
+      nil
+    (if (mbt (and (consp (car triplemap))
+                  (svar-p (caar triplemap))))
+        (cons (svtv-override-triple->test (cdar triplemap))
+              (svtv-override-triplemap->tests (cdr triplemap)))
+      (svtv-override-triplemap->tests (cdr triplemap))))
+  ///
+  (local (in-theory (enable svtv-override-triplemap-fix))))
 
 (define svtv-override-triplemaplist->tests ((x svtv-override-triplemaplist-p))
   :returns (tests svexlist-p)

@@ -99,10 +99,10 @@
 (defsvtv$ mod-run
   :design *design*
   :phases ((:overrides
-            (("a" a :cond a-ovr :output a)
-             ("b" b :cond b-ovr :output b)
-             ("op" op :cond op-ovr :output op)
-             ("res1" res1 :cond res1-ovr :output res1)
+            (("a" a :cond a-ovr)
+             ("b" b :cond b-ovr :output b-out)
+             ("op" op :cond op-ovr :output op-out)
+             ("res1" res1 :cond res1-ovr :output res1-out)
              ("res2" res2 :cond res2-ovr :output res2))
             :outputs
             (("res3" res3)))))
@@ -116,15 +116,18 @@
 
 (value-triple (acl2::tshell-ensure))
 
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
+(acl2::use-trivial-ancestors-check)
+
 (def-svtv-idealized-thm mod-run-res1-correct
   :override-vars (b)
   :spec-override-vars (a)
   :override-var-bindings ((op 0))
-  :output-vars (res1)
+  :output-vars (res1-out)
   :svtv mod-run
   :ideal mod-ideal
   :unsigned-byte-hyps t
-  :concl (equal res1 (loghead 4 (+ a b))))
+  :concl (equal res1-out (loghead 4 (+ a b))))
 
 (def-svtv-idealized-thm mod-run-res2-correct
   :override-vars (res1)
@@ -164,11 +167,11 @@
   :override-vars (b)
   :spec-override-vars (a)
   :spec-override-var-bindings ((op 0))
-  :output-vars (res1)
+  :output-vars (res1-out)
   :svtv mod-run
   :ideal mod-ideal
   :unsigned-byte-hyps t
-  :concl (equal res1 (loghead 4 (+ a b))))
+  :concl (equal res1-out (loghead 4 (+ a b))))
 
 
 

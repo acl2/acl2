@@ -4390,7 +4390,7 @@ environments."
   
   (defret <fn>-implies
     (implies (and ok
-                  (svtv-override-triplemap-muxes-<<= triplemap pipe-env spec-env
+                  (svtv-override-triplemap-envs-ok triplemap pipe-env spec-env
                                                      (svtv-probealist-extract probes ref-envs)))
              (svar-override-keys-check-separate-envs-muxes-<<= keys
                                                                (svex-alist-eval test-alist pipe-env)
@@ -4401,15 +4401,30 @@ environments."
     :hints(("Goal" :in-theory (enable svar-override-keys-check-separate-envs-muxes-<<=
                                       svtv-override-triplemap-key-check-implies-lookup-in-triplemap))))
 
+  (local
+   (defret <fn>-implies-4vec-muxtest-subsetp-rw
+     (implies (and ok
+                   (bind-free '((ref-env . ref-env)) (ref-env))
+                   (svtv-override-triple-envs-ok (cdr (hons-assoc-equal (svar-fix key) triplemap))
+                                                 pipe-env spec-env ref-env))
+              (4vec-muxtest-subsetp
+               (svex-eval (svex-lookup key test-alist) spec-env)
+               (svex-eval (svex-lookup key test-alist) pipe-env)))
+     :hints (("goal" :use <fn>-implies-4vec-muxtest-subsetp))
+    :fn svtv-override-triplemap-key-check))
+  
   (defret <fn>-implies-muxtests-subsetp
     (implies (and ok
-                  (svex-envs-svexlist-muxtests-subsetp (svtv-override-triplemap->tests triplemap) spec-env pipe-env))
+                  (svtv-override-triplemap-envs-ok triplemap pipe-env spec-env
+                                                   ref-env)
+                  ;; (svex-envs-svexlist-muxtests-subsetp (svtv-override-triplemap->tests triplemap) spec-env pipe-env)
+                  )
              (svex-env-muxtests-subsetp keys
                                         (svex-alist-eval test-alist spec-env)
                                         (svex-alist-eval test-alist pipe-env)))
     :hints(("Goal" :in-theory (enable ;; svex-envs-svexlist-muxtests-subsetp
                                       svex-env-muxtests-subsetp
-                                      svtv-override-triplemap->tests
+                                      ;; svtv-override-triplemap->tests
                                       svtv-override-triplemap-key-check-implies-lookup-in-triplemap))))
 
   
@@ -4417,7 +4432,7 @@ environments."
   (defret <fn>-implies-test-alist-keys
     :pre-bind ((keys (svex-alist-keys test-alist)))
     (implies (and ok
-                  (svtv-override-triplemap-muxes-<<= triplemap pipe-env spec-env
+                  (svtv-override-triplemap-envs-ok triplemap pipe-env spec-env
                                               (svtv-probealist-extract probes ref-envs)))
              (svex-separate-envs-override-muxes-<<= (svex-alist-eval test-alist pipe-env)
                                                     (svex-alist-eval val-alist pipe-env)
@@ -4432,20 +4447,47 @@ environments."
                     (svtv-override-triplemap-key-check key phase test-alist val-alist probes triplemap))
            :hints(("Goal" :in-theory (enable svarlist-fix)))))
 
+  (local (defret triplemap-lookup-when-syntax-check-and-member-keys
+           (implies (and ok
+                         (member-equal (svar-fix key) (svarlist-fix keys))
+                         (svex-lookup key test-alist))
+                    (hons-assoc-equal (svar-fix key) triplemap))
+           :hints(("Goal" :in-theory (enable svarlist-fix
+                                             svtv-override-triplemap-key-check)))))
+
+  ;; (local
+  ;;  (defret member-tests-when-<fn>-rw
+  ;;    (implies (and (bind-free '((phase . phase) (val-alist . val-alist) (probes . probes))
+  ;;                             (phase val-alist probes))
+  ;;                  ok
+  ;;                  (svex-lookup key test-alist))
+  ;;             (member-equal (svex-lookup key test-alist)
+  ;;                           (svtv-override-triplemap->tests triplemap)))
+  ;;    :fn svtv-override-triplemap-key-check))
+
   (local
-   (defret member-tests-when-<fn>-rw
-     (implies (and (bind-free '((phase . phase) (val-alist . val-alist) (probes . probes))
-                              (phase val-alist probes))
+   (defret <fn>-implies-4vec-muxtest-subsetp-rw2
+     (implies (and (bind-free '((ref-env . ref-env)
+                                (phase . phase)
+                                (val-alist . val-alist)
+                                (probes . probes)
+                                (triplemap . triplemap))
+                              (ref-env phase val-alist probes triplemap))
                    ok
-                   (svex-lookup key test-alist))
-              (member-equal (svex-lookup key test-alist)
-                            (svtv-override-triplemap->tests triplemap)))
-     :fn svtv-override-triplemap-key-check))
+                   (svtv-override-triple-envs-ok (cdr (hons-assoc-equal (svar-fix key) triplemap))
+                                                 pipe-env spec-env ref-env))
+              (4vec-muxtest-subsetp
+               (svex-eval (svex-lookup key test-alist) spec-env)
+               (svex-eval (svex-lookup key test-alist) pipe-env)))
+     :hints (("goal" :use <fn>-implies-4vec-muxtest-subsetp))
+    :fn svtv-override-triplemap-key-check))
   
   (defret <fn>-implies-muxtests-subsetp-when-test-alist-keys
     :pre-bind ((keys (svex-alist-keys test-alist)))
     (implies (and ok
-                  (svex-envs-svexlist-muxtests-subsetp (svtv-override-triplemap->tests triplemap) spec-env pipe-env))
+                  (svtv-override-triplemap-envs-ok triplemap pipe-env spec-env ref-env)
+                  ;; (svex-envs-svexlist-muxtests-subsetp (svtv-override-triplemap->tests triplemap) spec-env pipe-env)
+                  )
              (svex-env-muxtests-subsetp any-keys
                                         (svex-alist-eval test-alist spec-env)
                                         (svex-alist-eval test-alist pipe-env)))
@@ -4463,10 +4505,33 @@ environments."
                         (not impl-vals))
                     (svex-separate-envlists-override-muxes-<<= impl-tests impl-vals spec-tests spec-vals refs))
            :hints(("Goal" :in-theory (enable svex-separate-envlists-override-muxes-<<=)))))
+
+  (local (defthm svtv-override-triplemap-syntax-check-when-no-triples
+           (iff (svtv-override-triplemap-syntax-check keys phase test-alist val-alist probes nil)
+                (not (intersectp-equal (svarlist-fix keys) (svex-alist-keys test-alist))))
+           :hints(("Goal" :in-theory (enable svtv-override-triplemap-syntax-check
+                                             svtv-override-triplemap-key-check)))))
+
+  (local (defthm intersectp-self
+           (iff (intersectp-equal x x)
+                (consp x))
+           :hints(("Goal" :in-theory (enable intersectp-equal)))))
+
+  (local (defthm svex-alist-equiv-nil-when-not-consp-svex-alist-keys
+           (implies (not (consp (svex-alist-keys x)))
+                    (svex-alist-equiv x nil))
+           :hints(("Goal" :in-theory (enable svex-alist-keys
+                                             svex-alist-fix)))
+           :rule-classes :forward-chaining))
+
+  (local (defthm svex-alist-eval-nil
+           (equal (svex-alist-eval nil env) nil)
+           :hints(("Goal" :in-theory (enable svex-alist-eval)))))
+                  
   
   (defretd <fn>-implies
     (implies (and ok
-                  (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-env
+                  (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env
                                                          (svtv-probealist-extract probes ref-envs)))
              (svex-separate-envlists-override-muxes-<<= (svex-alistlist-eval test-alists pipe-env)
                                                         (svex-alistlist-eval val-alists pipe-env)
@@ -4475,20 +4540,22 @@ environments."
                                                         (nthcdr phase ref-envs)))
     :hints (("goal" :induct <call>
              :in-theory (enable svex-separate-envlists-override-muxes-<<=
-                                svtv-override-triplemaplist-muxes-<<=
+                                svtv-override-triplemaplist-envs-ok
                                 svex-alistlist-eval
                                 nthcdr)
-             :expand ((:Free (ref-env) (svtv-override-triplemap-muxes-<<= nil pipe-env spec-env ref-env))))))
+             ;; :expand ((:Free (ref-env) (svtv-override-triplemap-muxes-<<= nil pipe-env spec-env ref-env)))
+             )))
 
   (defret <fn>-implies-muxtests-subsetp
     (implies (and ok
-                  (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-env pipe-env))
+                  (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env ref-env))
              (svex-envlists-muxtests-subsetp keys
                                              (svex-alistlist-eval test-alists spec-env)
                                              (svex-alistlist-eval test-alists pipe-env)))
     :hints(("Goal" :in-theory (enable ;; svex-envs-svexlist-muxtests-subsetp
+                               svtv-override-triplemaplist-envs-ok
                                svex-envlists-muxtests-subsetp
-                               svtv-override-triplemaplist-muxtests-subsetp
+                               ;; svtv-override-triplemaplist-muxtests-subsetp
                                svex-alistlist-eval)
             :induct t)
            (and stable-under-simplificationp
@@ -4502,7 +4569,7 @@ environments."
   
   (defret <fn>-implies
     (implies (and ok
-                  (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-env
+                  (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env
                                                   (svtv-probealist-extract probes ref-envs)))
              (svex-separate-envlists-override-muxes-<<= (svex-alistlist-eval test-alists pipe-env)
                                                         (svex-alistlist-eval val-alists pipe-env)
@@ -4515,7 +4582,8 @@ environments."
 
   (defret <fn>-implies-muxtests-subsetp
     (implies (and ok
-                  (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-env pipe-env))
+                  (bind-free '((ref-env . ref-env)) (ref-env))
+                  (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env ref-env))
              (svex-envlists-muxtests-subsetp keys
                                              (svex-alistlist-eval test-alists spec-env)
                                              (svex-alistlist-eval test-alists pipe-env)))))
@@ -4524,7 +4592,7 @@ environments."
 (defthm svtv-override-triplemaplist-muxes-<<=-of-spec-outs-implies-svar-override-keys-check-separate-override-envlists-of-spec-ins
   (b* (((svtv-spec spec)))
     (implies (and
-              (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-env
+              (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env
                                                      (svtv-spec-phase-outs->pipe-out spec phase-outs))
               (svtv-override-triplemaplist-syntax-check
                spec.override-test-alists spec.override-val-alists
@@ -4632,7 +4700,7 @@ environments."
 (defthm svtv-override-triplemaplist-muxtests-subsetp-of-spec-outs-implies-svex-envlists-muxtests-subsetp
   (b* (((svtv-spec spec)))
     (implies (and
-              (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-env pipe-env)
+              (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env ref-env)
               (svtv-override-triplemaplist-syntax-check
                spec.override-test-alists spec.override-val-alists
                spec.probes triplemaps)
@@ -4661,7 +4729,7 @@ environments."
 (defthm svtv-override-triplemaplist-muxtests-subsetp-of-spec-outs-implies-svex-envlists-muxtests-subsetp-testvars
   (b* (((svtv-spec spec)))
     (implies (and
-              (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-env pipe-env)
+              (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env ref-env)
               (svtv-override-triplemaplist-syntax-check
                spec.override-test-alists spec.override-val-alists
                spec.probes triplemaps)
@@ -6319,28 +6387,35 @@ environments."
   (4vec-override-mux-<<= test val test val ref)
   :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=-by-badbit))))
 
-(defthm svtv-override-triplemap-muxes-<<=-of-same-envs
-  (svtv-override-triplemap-muxes-<<= triplemap pipe-env pipe-env spec-run)
-  :hints(("Goal" :in-theory (enable svtv-override-triplemap-muxes-<<=
-                                    svtv-override-triple-mux-<<=))))
 
-(defthm svtv-override-triplemaplist-muxes-<<=-of-same-envs
-  (svtv-override-triplemaplist-muxes-<<= triplemaplist pipe-envs pipe-envs spec-run)
-  :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-muxes-<<=))))
 
 (defthm 4vec-muxtest-subsetp-of-same
   (4vec-muxtest-subsetp x x)
   :hints(("Goal" :in-theory (enable 4vec-muxtest-subsetp))))
 
-(defthm svex-envs-svexlist-muxtests-subsetp-of-same-env
-  (svex-envs-svexlist-muxtests-subsetp tests pipe-env pipe-env)
-  :hints(("Goal" :in-theory (enable svex-envs-svexlist-muxtests-subsetp))))
+(defthm 4vec-override-mux-ok-of-same
+  (4vec-override-mux-ok test val test val ref-p ref)
+  :hints(("Goal" :in-theory (enable 4vec-override-mux-ok))))
 
-(defthm svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
-  (svtv-override-triplemaplist-muxtests-subsetp triplemaplist pipe-env pipe-env)
-  :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-muxtests-subsetp))))
+(defthm svtv-override-triplemap-envs-ok-of-same-envs
+  (svtv-override-triplemap-envs-ok triplemap pipe-env pipe-env spec-run)
+  :hints(("Goal" :in-theory (enable svtv-override-triplemap-envs-ok
+                                    svtv-override-triple-envs-ok))))
+
+(defthm svtv-override-triplemaplist-envs-ok-of-same-envs
+  (svtv-override-triplemaplist-envs-ok triplemaplist pipe-envs pipe-envs spec-run)
+  :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-envs-ok))))
+
+;; (defthm svex-envs-svexlist-muxtests-subsetp-of-same-env
+;;   (svex-envs-svexlist-muxtests-subsetp tests pipe-env pipe-env)
+;;   :hints(("Goal" :in-theory (enable svex-envs-svexlist-muxtests-subsetp))))
+
+;; (defthm svtv-override-triplemaplist-muxtests-subsetp-of-same-envs
+;;   (svtv-override-triplemaplist-muxtests-subsetp triplemaplist pipe-env pipe-env)
+;;   :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-muxtests-subsetp))))
 
 
 
 
   
+

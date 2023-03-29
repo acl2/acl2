@@ -247,14 +247,13 @@
 
 
 
-(local
- (defsection 4vec-override-mux-<<=-extra-facts
+(defsection 4vec-override-mux-<<=-extra-facts
 
-   (local (defthm 4vec-bit?!-else-4vec-bit?!-same-test
-            (equal (4vec-bit?! test then1 (4vec-bit?! test then2 else2))
-                   (4vec-bit?! test then1 else2))
-            :hints(("Goal" :in-theory (enable 4vec-bit?!))
-                   (acl2::logbitp-reasoning))))
+  (local (defthm 4vec-bit?!-else-4vec-bit?!-same-test
+           (equal (4vec-bit?! test then1 (4vec-bit?! test then2 else2))
+                  (4vec-bit?! test then1 else2))
+           :hints(("Goal" :in-theory (enable 4vec-bit?!))
+                  (acl2::logbitp-reasoning))))
 
   (local (defthm logeqv-is-lognot-logxor
            (equal (logeqv x y)
@@ -282,7 +281,7 @@
      :otf-flg t))
 
 
-  (defthm 4vec-<=-4vec-bit?!-same-test-same-else-normalize
+  (defthmd 4vec-<=-4vec-bit?!-same-test-same-else-normalize
     (implies (syntaxp (not (equal c1 ''0)))
              (equal (4vec-<<= (4vec-bit?! a b1 c1)
                               (4vec-bit?! a b2 c1))
@@ -292,13 +291,67 @@
              ((4vec-<<= (4vec-bit?! a b1 c1)
                         (4vec-bit?! a b2 c1))))))
   
-  (defthm 4vec-override-mux-<<=-same
+  (defthmd 4vec-override-mux-<<=-same
     (equal (4vec-override-mux-<<= test val1 test val2 ref)
            (4vec-<<= (4vec-bit?! test val1 0)
                      (4vec-bit?! test val2 0)))
     :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=)
             :cases ((4vec-<<= (4vec-bit?! test val1 0)
-                              (4vec-bit?! test val2 0))))))))
+                              (4vec-bit?! test val2 0)))))))
+
+(local (in-theory (enable 4vec-<=-4vec-bit?!-same-test-same-else-normalize
+                          4vec-override-mux-<<=-same)))
+
+
+(define 4vec-override-mux-ok ((impl-test 4vec-p)
+                              (impl-val 4vec-p)
+                              (spec-test 4vec-p)
+                              (spec-val 4vec-p)
+                              (ref-p)
+                              (ref-val 4vec-p))
+  :returns (ok)
+  (and (4vec-override-mux-<<= impl-test impl-val spec-test spec-val
+                              (if ref-p ref-val 0))
+       (if ref-p
+           (4vec-muxtest-subsetp spec-test impl-test)
+         (4vec-equiv spec-test impl-test)))
+  ///
+  (defret 4vec-override-mux-<<=-when-<fn>
+    (implies ok
+             (4vec-override-mux-<<= impl-test
+                                    impl-val
+                                    spec-test
+                                    spec-val
+                                    ref-val))
+    ;; :hints ((and stable-under-simplificationp
+    ;;              '(:in-theory (enable 4vec-override-mux-<<=))))
+    )
+
+  (defret 4vec-muxtest-subsetp-when-<fn>
+    (implies ok
+             (4vec-muxtest-subsetp spec-test impl-test))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable 4vec-muxtest-subsetp)))))
+
+  
+  (defret <fn>-of-greater-refval
+    (implies (and ok
+                  (4vec-<<= ref-val ref-val2))
+             (4vec-override-mux-ok impl-test impl-val spec-test spec-val ref-p ref-val2)))
+
+  (defretd <fn>-redef
+    (equal ok
+           (and (4vec-override-mux-<<= impl-test impl-val spec-test spec-val ref-val)
+                (4vec-muxtest-subsetp spec-test impl-test)
+                (implies (not ref-p)
+                         (4vec-equiv spec-test impl-test))))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable 4vec-muxtest-subsetp)))))
+
+  (defthm <fn>-normalize-ref-val-when-not-ref-p
+    (implies (syntaxp (not (equal ref-val ''0)))
+             (equal (4vec-override-mux-ok impl-test impl-val spec-test spec-val nil ref-val)
+                    (4vec-override-mux-ok impl-test impl-val spec-test spec-val nil 0)))))
 
 (define svtv-override-triple-envs-ok ((triple svtv-override-triple-p)
                                       (pipe-env svex-env-p)
@@ -306,24 +359,37 @@
                                       (spec-run svex-env-p))
   :returns (ok)
   (b* (((svtv-override-triple triple)))
-    (if triple.refvar
-        (and (4vec-override-mux-<<= (svex-eval triple.test pipe-env)
-                                    (svex-eval triple.val pipe-env)
-                                    (svex-eval triple.test spec-env)
-                                    (svex-eval triple.val spec-env)
-                                    (svex-env-lookup triple.refvar spec-run))
-             (4vec-muxtest-subsetp (svex-eval triple.test spec-env)
-                                   (svex-eval triple.test pipe-env)))
-      (and (equal (svex-eval triple.test spec-env)
-                  (svex-eval triple.test pipe-env))
-           (4vec-<<= (4vec-bit?! (svex-eval triple.test spec-env)
-                                 (svex-eval triple.val pipe-env)
-                                 0)
-                     (4vec-bit?! (svex-eval triple.test spec-env)
-                                 (svex-eval triple.val spec-env)
-                                 0)))))
+    (mbe :logic
+         (4vec-override-mux-ok (svex-eval triple.test pipe-env)
+                          (svex-eval triple.val pipe-env)
+                          (svex-eval triple.test spec-env)
+                          (svex-eval triple.val spec-env)
+                          triple.refvar
+                          (svex-env-lookup triple.refvar spec-run))
+         :exec
+         (4vec-override-mux-ok (svex-eval triple.test pipe-env)
+                          (svex-eval triple.val pipe-env)
+                          (svex-eval triple.test spec-env)
+                          (svex-eval triple.val spec-env)
+                          triple.refvar
+                          (if triple.refvar
+                              (svex-env-lookup triple.refvar spec-run)
+                            0))))
   ///
+  
 
+  (defthm svtv-override-triple-envs-ok-when-<<=
+    (implies (and (svtv-override-triple-envs-ok x pipe-env spec-env spec-run1)
+                  (svex-env-<<= spec-run1 spec-run2))
+             (svtv-override-triple-envs-ok x pipe-env spec-env spec-run2)))
+
+
+  (defcong svex-envs-similar equal (svtv-override-triple-envs-ok x impl-env spec-env ref-env) 2)
+  (defcong svex-envs-similar equal (svtv-override-triple-envs-ok x impl-env spec-env ref-env) 3)
+  (defcong svex-envs-similar equal (svtv-override-triple-envs-ok x impl-env spec-env ref-env) 4)
+
+
+  
 
   
   (defret 4vec-override-mux-<<=-when-<fn>
@@ -344,37 +410,7 @@
                (4vec-muxtest-subsetp (svex-eval triple.test spec-env)
                                      (svex-eval triple.test pipe-env))))
     :hints((and stable-under-simplificationp
-                '(:in-theory (enable 4vec-muxtest-subsetp)))))
-
-  
-
-  (defthm svtv-override-triple-envs-ok-when-<<=
-    (implies (and (svtv-override-triple-envs-ok x pipe-env spec-env spec-run1)
-                  (svex-env-<<= spec-run1 spec-run2))
-             (svtv-override-triple-envs-ok x pipe-env spec-env spec-run2)))
-
-
-  (defretd <fn>-redef
-    (equal ok
-           (b* (((svtv-override-triple triple)))
-             (and (4vec-override-mux-<<= (svex-eval triple.test pipe-env)
-                                         (svex-eval triple.val pipe-env)
-                                         (svex-eval triple.test spec-env)
-                                         (svex-eval triple.val spec-env)
-                                         (svex-env-lookup triple.refvar spec-run))
-                  (4vec-muxtest-subsetp (svex-eval triple.test spec-env)
-                                        (svex-eval triple.test pipe-env))
-                  (implies (not triple.refvar)
-                           (equal (svex-eval triple.test pipe-env)
-                                  (svex-eval triple.test spec-env))))))
-    :hints ((and stable-under-simplificationp
-                 '(:in-theory (enable 4vec-override-mux-<<=
-                                      4vec-muxtest-subsetp)))))
-
-  
-  (defcong svex-envs-similar equal (svtv-override-triple-envs-ok x impl-env spec-env ref-env) 2)
-  (defcong svex-envs-similar equal (svtv-override-triple-envs-ok x impl-env spec-env ref-env) 3)
-  (defcong svex-envs-similar equal (svtv-override-triple-envs-ok x impl-env spec-env ref-env) 4))
+                '(:in-theory (enable 4vec-muxtest-subsetp))))))
 
 
 (define svtv-override-triplemap-envs-ok ((triplemap svtv-override-triplemap-p)
@@ -668,7 +704,17 @@ signal is the key and time is the current phase."
               (svex-eval (svex-lookup key test-alist) spec-env)
               (svex-eval (svex-lookup key val-alist) spec-env)
               (svex-env-lookup key (nth phase ref-envs))))
-    :hints(("Goal" :in-theory (enable svtv-override-triple-envs-ok-redef))))
+    :hints(("Goal" :in-theory (enable svtv-override-triple-envs-ok
+                                      4vec-override-mux-ok))))
+
+  (defret <fn>-implies-4vec-muxtest-subsetp
+    (implies (and ok
+                  (svtv-override-triple-envs-ok (cdr (hons-assoc-equal (svar-fix key) triplemap))
+                                                pipe-env spec-env ref-env))
+             (4vec-muxtest-subsetp
+              (svex-eval (svex-lookup key test-alist) spec-env)
+              (svex-eval (svex-lookup key test-alist) pipe-env)))
+    :hints(("Goal" :in-theory (enable svtv-override-triple-envs-ok))))
 
 
   ;; (defret <fn>-implies-4vec-muxtest-subsetp
@@ -911,3 +957,4 @@ signal is the key and time is the current phase."
       nil
     (cons (acl2::fal-extract (Svarlist-fix (car keyslist)) (svtv-name-lhs-map-fix x))
           (svtv-name-lhs-map-extract-list (cdr keyslist) x))))
+
