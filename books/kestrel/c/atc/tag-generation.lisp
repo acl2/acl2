@@ -1056,7 +1056,19 @@
                 apconvert-expr-value-when-not-value-array-alt
                 ,value-kind-when-elemtypep
                 ,value-kind-when-indextypep
-                expr-value-fix-when-expr-valuep)
+                expr-value-fix-when-expr-valuep
+                exec-ident
+                expr-fix-when-exprp
+                exprp-of-expr-member->target
+                not-errorp-when-expr-valuep
+                expr-valuep-of-expr-value
+                expr-value->value-of-expr-value
+                read-object-of-objdesign-of-var-to-read-var
+                objdesign-of-var-when-valuep-of-read-var)
+              :expand
+              ((exec-expr-pure (expr-member->target
+                                (expr-arrsub->arr (expr-binary->arg1 e)))
+                               compst))
               :use
               ((:instance
                 ,writer-return-thm

@@ -1059,8 +1059,9 @@
                         (error (list :expr-asg-arrsub-member-not-supported
                                      str)))
                        (var (expr-ident->get str))
-                       (struct (read-var var compst))
-                       ((when (errorp struct)) struct)
+                       (eval (exec-expr-pure str compst))
+                       ((when (errorp eval)) eval)
+                       (struct (expr-value->value eval))
                        ((unless (value-case struct :struct))
                         (error (list :not-struct str (compustate-fix compst))))
                        (array (value-struct-read mem struct))
