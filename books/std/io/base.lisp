@@ -56,7 +56,6 @@
                            timer-alistp
                            known-package-alistp
                            true-listp
-                           32-bit-integer-listp
                            integer-listp
                            readable-files-p
                            written-files-p

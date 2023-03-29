@@ -7790,10 +7790,6 @@
                                       PRINT-OBJECT$-FN
                                       MAKUNBOUND-GLOBAL
                                       PUT-GLOBAL
-                                      EXTEND-T-STACK
-                                      SHRINK-T-STACK
-                                      ASET-T-STACK
-                                      SHRINK-32-BIT-INTEGER-STACK
                                       OPEN-INPUT-CHANNEL
                                       OPEN-OUTPUT-CHANNEL
                                       GET-OUTPUT-STREAM-STRING$-FN
