@@ -17,6 +17,7 @@
 
 (include-book "arrays")
 (include-book "value-integer-get")
+(include-book "apconvert")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -80,6 +81,7 @@
          (constructor (pack 'type- fixtype))
          (type-of-value-when-pred (pack 'type-of-value-when- pred))
          (not-pred-of-value-pointer (pack 'not- pred '-of-value-pointer))
+         (value-kind-when-pred (pack 'value-kind-when- pred))
          (name (pack 'exec-expr-asg-indir-when- pred))
          (formula
           `(implies
@@ -112,15 +114,28 @@
                                  compst))))
          (event `(defruled ,name
                    ,formula
+                   :expand ((exec-expr-pure (expr-binary->arg1 e) compst)
+                            (exec-expr-pure (expr-unary->arg
+                                             (expr-binary->arg1 e)) compst))
                    :enable (exec-expr-asg
-                            exec-expr-pure
                             exec-unary
                             exec-indir
                             exec-ident
-                            apconvert-expr-value
+                            apconvert-expr-value-when-not-value-array-alt
+                            value-kind-when-scharp
                             read-object-of-objdesign-of-var-to-read-var
                             ,type-of-value-when-pred
-                            ,not-pred-of-value-pointer))))
+                            ,not-pred-of-value-pointer
+                            ,value-kind-when-pred)
+                   :disable (equal-of-error
+                             equal-of-expr-value)
+                   :prep-lemmas
+                   ((defrule lemma
+                      (implies (and (expr-valuep (apconvert-expr-value eval))
+                                    (,pred (expr-value->value
+                                            (apconvert-expr-value eval))))
+                               (,pred (expr-value->value eval)))
+                      :enable apconvert-expr-value)))))
       (mv name event)))
 
   (define atc-exec-expr-asg-indir-rules-gen-loop ((types type-listp))
