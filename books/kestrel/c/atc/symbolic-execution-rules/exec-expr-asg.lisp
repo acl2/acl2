@@ -204,11 +204,11 @@
                  (not (zp limit))
                  (equal arr-val (read-var var compst))
                  (valuep arr-val)
-                 (equal ptr
-                        (if (value-case arr-val :array)
-                            (value-pointer (pointer-valid (objdesign-static var))
-                                           (value-array->elemtype arr-val))
-                          arr-val))
+                 (equal ex
+                        (apconvert-expr-value
+                         (expr-value arr-val (objdesign-of-var var compst))))
+                 (expr-valuep ex)
+                 (equal ptr (expr-value->value ex))
                  (value-case ptr :pointer)
                  (value-pointer-validp ptr)
                  (equal (value-pointer->reftype ptr)
@@ -240,7 +240,10 @@
                             ,atype-array-itype-index-okp
                             ,atype-array-write-itype
                             ,atype-array-write-alt-def
-                            ,elemtype-when-apred)
+                            ,elemtype-when-apred
+                            exec-expr-pure
+                            exec-ident
+                            read-object-of-objdesign-of-var-to-read-var)
                    :prep-lemmas
                    ((defrule lemma1
                       (implies (and (,atype-array-index-okp array index)

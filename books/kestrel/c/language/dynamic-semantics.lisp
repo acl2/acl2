@@ -1053,14 +1053,11 @@
          (b* ((arr (expr-arrsub->arr left))
               (sub (expr-arrsub->sub left)))
            (cond ((expr-case arr :ident)
-                  (b* ((var (expr-ident->get arr))
-                       (val (read-var var compst))
-                       ((when (errorp val)) val)
-                       (ptr (if (value-case val :array)
-                                (make-value-pointer
-                                 :core (pointer-valid (objdesign-static var))
-                                 :reftype (value-array->elemtype val))
-                              val))
+                  (b* ((eval (exec-expr-pure arr compst))
+                       ((when (errorp eval)) eval)
+                       (eval (apconvert-expr-value eval))
+                       ((when (errorp eval)) eval)
+                       (ptr (expr-value->value eval))
                        ((unless (value-case ptr :pointer))
                         (error (list :mistype-array
                                      :required :pointer
