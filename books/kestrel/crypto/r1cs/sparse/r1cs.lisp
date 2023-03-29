@@ -1,10 +1,11 @@
 ; R1CSes in sparse form
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -312,11 +313,7 @@
            prime))))
 
 (defthm fep-of-dot-product
-  (implies (and (sparse-vectorp vec)
-                (primep prime)
-                (r1cs-valuationp valuation prime)
-                (good-sparse-vectorp vec (strip-cars valuation)) ;drop?
-                )
+  (implies (posp prime)
            (fep (dot-product vec valuation prime) prime))
   :hints (("Goal" :expand (good-sparse-vectorp vec (strip-cars valuation))
            :in-theory (e/d (dot-product r1cs-valuationp sparse-vectorp valuation-bindsp)
