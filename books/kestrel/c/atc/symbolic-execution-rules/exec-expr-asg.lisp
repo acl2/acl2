@@ -79,6 +79,7 @@
          (pred (pack fixtype 'p))
          (constructor (pack 'type- fixtype))
          (type-of-value-when-pred (pack 'type-of-value-when- pred))
+         (not-pred-of-value-pointer (pack 'not- pred '-of-value-pointer))
          (name (pack 'exec-expr-asg-indir-when- pred))
          (formula
           `(implies
@@ -103,14 +104,23 @@
                  (equal eval1 (apconvert-expr-value eval))
                  (expr-valuep eval1)
                  (equal val (expr-value->value eval1))
-                 (,pred val))
+                 (,pred val)
+                 (valuep (read-object (value-pointer->designator ptr) compst)))
             (equal (exec-expr-asg e compst fenv limit)
                    (write-object (value-pointer->designator ptr)
                                  val
                                  compst))))
          (event `(defruled ,name
                    ,formula
-                   :enable (exec-expr-asg ,type-of-value-when-pred))))
+                   :enable (exec-expr-asg
+                            exec-expr-pure
+                            exec-unary
+                            exec-indir
+                            exec-ident
+                            apconvert-expr-value
+                            read-object-of-objdesign-of-var-to-read-var
+                            ,type-of-value-when-pred
+                            ,not-pred-of-value-pointer))))
       (mv name event)))
 
   (define atc-exec-expr-asg-indir-rules-gen-loop ((types type-listp))

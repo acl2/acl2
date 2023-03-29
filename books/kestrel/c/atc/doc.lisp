@@ -274,7 +274,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Representation of C Code in ACL2"
 
     (xdoc::p
@@ -1399,7 +1399,7 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Translated Terms"
 
      (xdoc::p
@@ -1532,7 +1532,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     xdoc::*evmac-section-appconds-title*
 
     (xdoc::p
@@ -1571,7 +1571,7 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Constant"
 
      (xdoc::p
@@ -1589,7 +1589,7 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Theorems"
 
      (xdoc::p
@@ -1633,7 +1633,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Generated C Code"
 
     (xdoc::p
@@ -1650,7 +1650,7 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Compiling and Running the C Code"
 
      (xdoc::p
@@ -1675,7 +1675,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Redundancy"
 
     (xdoc::p

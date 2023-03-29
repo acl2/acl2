@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -32,7 +32,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Motivation"
 
     (xdoc::p
@@ -52,7 +52,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Error-Value Tuples"
 
     (xdoc::p
@@ -102,12 +102,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Utilities for Error-Value Tuples"
 
 ;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Returning Errors"
 
      (xdoc::p
@@ -191,7 +191,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Returning Non-Errors"
 
      (xdoc::p
@@ -226,7 +226,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Propagating Errors"
 
      (xdoc::p
@@ -294,7 +294,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Catching Errors"
 
      (xdoc::p
@@ -321,12 +321,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Related Ideas"
 
 ;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Hard Errors"
 
      (xdoc::p
@@ -367,7 +367,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Soft Errors"
 
      (xdoc::p
@@ -426,7 +426,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Context-Message Pairs"
 
      (xdoc::p
@@ -479,7 +479,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Result Types"
 
      (xdoc::p

@@ -7213,6 +7213,17 @@
 (defproxy translate11-lambda-object-proxy
   (* * * * * * * * * *) => (mv * * *))
 
+(defun do-body-guard-wrapper (x)
+
+; This is just an identity function that allows us to identify guards on bodies
+; of lambdas generated for DO loop$ expressions.  There is no soundness issue
+; in case users call this function directly (rather than by our use of it in
+; make-do-body-lambda$); the only downside is only that they may get a
+; misleading guard violation message from do-body-guard-form.
+
+  (declare (xargs :guard t :mode :logic))
+  x)
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -8419,6 +8430,25 @@
                 'guard-msg-table)
          "")))
 
+(defun do-body-guard-form (fn args wrld)
+  (and (flambdap fn)
+       (consp args)
+       (null (cdr args))
+       (case-match fn
+         (('LAMBDA '(ALIST)
+                   ('DECLARE
+                    ('XARGS :GUARD ; see make-do-body-lambda$
+                            ('DO-BODY-GUARD-WRAPPER g)
+                            . &)
+                    . &)
+                   . &)
+          (list 'quote
+                (msg "The guard for a DO$ form,~|~x0,~| has been violated by the ~
+                      following alist:~|~x1.~|See :DOC do-loop$."
+                     (untranslate* g nil wrld)
+                     (car args))))
+         (& nil))))
+
 (defun ev-fncall-guard-er-msg (fn guard stobjs-in args w user-stobj-alist
                                   extra)
 
@@ -8433,8 +8463,9 @@
 
   (prog2$
    (save-ev-fncall-guard-er fn guard stobjs-in args w)
-   (let ((form (and (symbolp fn)
-                    (cdr (assoc-eq fn (table-alist 'guard-msg-table w))))))
+   (let ((form (if (symbolp fn)
+                   (cdr (assoc-eq fn (table-alist 'guard-msg-table w)))
+                 (do-body-guard-form fn args w))))
      (mv-let
       (erp msg)
       (cond (form (ev-w form
@@ -10707,6 +10738,8 @@
         (cons (cons var `(cdr (assoc-eq-safe ',var alist)))
               (var-to-cdr-assoc-var-substitution (cdr vars)))))))
 
+
+
 (defun make-do-body-lambda$ (type-preds guard sigma body-term)
 
 ; Type-preds is a list of translated type-predicates for the variables
@@ -10753,10 +10786,11 @@
     `(lambda$ (alist)
               (declare
                (xargs :guard
-                      ,(if (endp types-and-guard-lst)
-                           '(alistp alist)
-                           `(and (alistp alist)
-                                 ,@types-and-guard-lst))))
+                      (do-body-guard-wrapper
+                       ,(if (endp types-and-guard-lst)
+                            '(alistp alist)
+                          `(and (alistp alist)
+                                ,@types-and-guard-lst)))))
 
 ; The let below needs to bind each var to its value in 'alist'.  Sigma is
 ; almost the appropriate list, but it is a list of pairs and we need a list of

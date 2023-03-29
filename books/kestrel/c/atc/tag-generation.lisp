@@ -679,13 +679,43 @@
                    value-kind-when-slongp
                    value-kind-when-ullongp
                    value-kind-when-sllongp
-                   expr-value-fix-when-expr-valuep)
+                   expr-value-fix-when-expr-valuep
+                   exec-ident
+                   exec-member
+                   read-object-of-objdesign-of-var-to-read-var
+                   write-object-of-objdesign-of-var-to-write-var
+                   write-object
+                   value-struct-read
+                   acl2::mv-nth-of-cons
+                   expr-fix-when-exprp
+                   exprp-of-expr-binary->arg1
+                   exprp-of-expr-member->target
+                   expr-valuep-of-expr-value
+                   expr-value->value-of-expr-value
+                   expr-value->object-of-expr-value
+                   value-fix-when-valuep
+                   value-struct-read
+                   objdesign-option-fix
+                   objdesign-fix-when-objdesignp
+                   return-type-of-objdesign-member
+                   objdesign-of-var-when-valuep-of-read-var
+                   objdesignp-of-objdesign-of-var-when-valuep-of-read-var
+                   objdesign-member->name-of-objdesign-member
+                   objdesign-member->super-of-objdesign-member
+                   (:e zp)
+                   (:e ident)
+                   (:e ident-fix)
+                   (:t objdesign-member))
+                 :expand
+                 ((exec-expr-pure (expr-binary->arg1 e)
+                                  compst)
+                  (exec-expr-pure (expr-member->target (expr-binary->arg1 e))
+                                  compst))
                  :use
                  (:instance
                   ,writer-return-thm
-                  (val (b* ((left (expr-binary->arg1 e)))
-                         (expr-value->value
-                          (exec-expr-pure (expr-binary->arg2 e) compst))))
+                  (val (expr-value->value
+                        (exec-expr-pure (expr-binary->arg2 e) compst)))
                   (struct (b* ((left (expr-binary->arg1 e))
                                (target (expr-member->target left))
                                (var (expr-ident->get target))
