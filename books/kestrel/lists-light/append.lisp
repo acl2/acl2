@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function binary-append.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -157,12 +157,23 @@
   :hints (("Goal" :in-theory (enable equal-of-append))))
 
 ;; Improved to match std
+;; Not sure wheher this should be here or in last.lisp.
 (defthm last-of-append
   (equal (last (append x y))
          (if (consp y)
              (last y)
            (append (last x) y)))
   :hints (("Goal" :in-theory (enable last append))))
+
+;; (defthm last-of-append
+;;   (implies (and (true-listp x)
+;;                 (true-listp y)
+;;                 )
+;;            (equal (last (append x y))
+;;                   (if (consp y)
+;;                       (last y)
+;;                     (last x))))
+;;   :hints (("Goal" :in-theory (enable append))))
 
 ;now in std
 (defthm equal-of-append-and-append-same-arg2

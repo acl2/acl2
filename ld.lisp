@@ -2647,17 +2647,16 @@
 ; There is a long comment in axioms.lisp under the heading STATE which
 ; describes the many fields that a state has.
 
-; At the beginning of any interaction with the top-level ACL2 ld-fn,
-; there is a ``partial current state'', which may be partially
-; perceived, without side-effect, in Common Lisp, but outside of ACL2,
-; by invoking (what-is-the-global-state).  This partial current-state
-; includes (a) the names, types, and times of the open input and
-; output channels (but not the characters read or written to those
-; channels), (b) the symbols in the global table, (c) the t-stack, (d)
-; the 32-bit stack, and (e) the file clock.  We say that an object o
-; satisfying state-p is ``consistent with the current partial state''
-; provided that every fact revealed by (what-is-the-global-state) and
-; by examination of the bound globals is true about o.
+; At the beginning of any interaction with the top-level ACL2 ld-fn, there is a
+; ``partial current state'', which may be partially perceived, without
+; side-effect, in Common Lisp, but outside of ACL2, by invoking
+; (what-is-the-global-state).  This partial current-state includes the names,
+; types, and times of the open input and output channels (but not the
+; characters read or written to those channels), the symbols in the global
+; table, and the file clock.  We say that an object o satisfying state-p is
+; ``consistent with the current partial state'' provided that every fact
+; revealed by (what-is-the-global-state) and by examination of the bound
+; globals is true about o.
 
 ; In Lisp (as opposed to Prolog) the input form has no explicit free
 ; variable.  In ACL2, however, one free variable is permitted, and
@@ -2814,14 +2813,6 @@
                      (sweep-stack-entry-for-bad-symbol
                       name i (cdr obj) deceased-packages state)))))
 
-(defun sweep-t-stack (i deceased-packages state)
-  (cond ((> i (t-stack-length state))
-         (value nil))
-        (t (er-progn
-            (sweep-stack-entry-for-bad-symbol
-             "t-stack" i (aref-t-stack i state) deceased-packages state)
-            (sweep-t-stack (+ 1 i) deceased-packages state)))))
-
 (defun sweep-acl2-oracle (i deceased-packages state)
 
 ; A valid measure is (- (len (acl2-oracle state)) if we want to admit this
@@ -2843,10 +2834,10 @@
 ; *the-live-state* to verify that no symbol is contained in a package that we
 ; are about to delete.  This is sensible before we undo a defpkg, for example,
 ; which may ``orphan'' some objects held in, say, global variables in the
-; state.  We look in the global variables, the t-stack, and acl2-oracle.  If a
-; global variable, t-stack entry, or acl2-oracle entry contains such an object,
-; we cause an error.  This function is structurally similar to
-; what-is-the-global-state in axioms.lisp.
+; state.  We look in the global variables and acl2-oracle.  If a global
+; variable or acl2-oracle entry contains such an object, we cause an error.
+; This function is structurally similar to what-is-the-global-state in
+; axioms.lisp.
 
 ; The components of the state and their disposition are:
 
@@ -2863,15 +2854,9 @@
 
   (er-progn
    (sweep-global-lst (global-table-cars state) deceased-packages state)
-
-
-; t-stack - this stack may contain bad objects.
-
-   (sweep-t-stack 0 deceased-packages state)
    (sweep-acl2-oracle 0 deceased-packages state))
 
 ; The remaining fields contain no ``static'' objects.  The fields are:
-; 32-bit-integer-stack
 ; big-clock
 ; idates
 ; file-clock
@@ -2879,7 +2864,6 @@
 ; written-files
 ; read-files
 ; writeable-files
-; list-all-package-names-lst
 
   )
 

@@ -1020,3 +1020,49 @@
       ulong-fix-when-ulongp
       sllong-fix-when-sllongp
       ullong-fix-when-ullongp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-pointer-rules
+  :short "Rules about @(tsee value-pointer) not satisfying
+          the predicates for the integer types."
+
+  (defruled not-scharp-of-value-pointer
+    (not (scharp (value-pointer core reftype)))
+    :enable (scharp value-pointer))
+
+  (defruled not-ucharp-of-value-pointer
+    (not (ucharp (value-pointer core reftype)))
+    :enable (ucharp value-pointer))
+
+  (defruled not-sshortp-of-value-pointer
+    (not (sshortp (value-pointer core reftype)))
+    :enable (sshortp value-pointer))
+
+  (defruled not-ushortp-of-value-pointer
+    (not (ushortp (value-pointer core reftype)))
+    :enable (ushortp value-pointer))
+
+  (defruled not-sintp-of-value-pointer
+    (not (sintp (value-pointer core reftype)))
+    :enable (sintp value-pointer))
+
+  (defruled not-uintp-of-value-pointer
+    (not (uintp (value-pointer core reftype)))
+    :enable (uintp value-pointer))
+
+  (defruled not-slongp-of-value-pointer
+    (not (slongp (value-pointer core reftype)))
+    :enable (slongp value-pointer))
+
+  (defruled not-ulongp-of-value-pointer
+    (not (ulongp (value-pointer core reftype)))
+    :enable (ulongp value-pointer))
+
+  (defruled not-sllongp-of-value-pointer
+    (not (sllongp (value-pointer core reftype)))
+    :enable (sllongp value-pointer))
+
+  (defruled not-ullongp-of-value-pointer
+    (not (ullongp (value-pointer core reftype)))
+    :enable (ullongp value-pointer)))

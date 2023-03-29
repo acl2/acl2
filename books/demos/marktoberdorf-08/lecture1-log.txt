@@ -30,8 +30,9 @@ C
 ACL2 >>(UPDATE-NTH 2 'H '(A B C D E))
 (A B H D E)
 ACL2 >>(DEFUN APP (X Y)
-              (IF (ENDP X)
-                  Y (CONS (CAR X) (APP (CDR X) Y))))
+         (IF (ENDP X)
+             Y
+           (CONS (CAR X) (APP (CDR X) Y))))
 
 The admission of APP is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -46,8 +47,8 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 >>(APP '(1 2 3) '(4 5 6))
 (1 2 3 4 5 6)
 ACL2 >>(DEFTHM APP-IS-ASSOCIATIVE
-               (EQUAL (APP (APP A B) C)
-                      (APP A (APP B C))))
+         (EQUAL (APP (APP A B) C)
+                (APP A (APP B C))))
 
 Name the formula above *1.
 
@@ -119,11 +120,11 @@ Rules: ((:DEFINITION APP)
 ACL2 >>'(END OF DEMO 1)
 (END OF DEMO 1)
 ACL2 >>(DEFUN INSERT (E X)
-              (IF (ENDP X)
-                  (CONS E X)
-                  (IF (LEXORDER E (CAR X))
-                      (CONS E X)
-                      (CONS (CAR X) (INSERT E (CDR X))))))
+         (IF (ENDP X)
+             (CONS E X)
+           (IF (LEXORDER E (CAR X))
+               (CONS E X)
+             (CONS (CAR X) (INSERT E (CDR X))))))
 
 The admission of INSERT is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -139,8 +140,9 @@ ACL2 >>(INSERT 3 '(1 2 4 5))
 ACL2 >>(INSERT 'BRAVO '(ALPHA CHARLIE DOG))
 (ALPHA BRAVO CHARLIE DOG)
 ACL2 >>(DEFUN ISORT (X)
-              (IF (ENDP X)
-                  X (INSERT (CAR X) (ISORT (CDR X)))))
+         (IF (ENDP X)
+             X
+           (INSERT (CAR X) (ISORT (CDR X)))))
 
 The admission of ISORT is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -155,12 +157,12 @@ ACL2 >>(ISORT '(5 1 3 2 4))
 ACL2 >>(ISORT '(CHARLIE ALPHA DOG BRAVO))
 (ALPHA BRAVO CHARLIE DOG)
 ACL2 >>(DEFUN ORDEREDP (X)
-              (IF (ENDP X)
-                  T
-                  (IF (ENDP (CDR X))
-                      T
-                      (AND (LEXORDER (CAR X) (CAR (CDR X)))
-                           (ORDEREDP (CDR X))))))
+         (IF (ENDP X)
+             T
+           (IF (ENDP (CDR X))
+               T
+             (AND (LEXORDER (CAR X) (CAR (CDR X)))
+                  (ORDEREDP (CDR X))))))
 
 The admission of ORDEREDP is trivial, using the relation O< (which
 is known to be well-founded on the domain recognized by O-P) and the
@@ -175,7 +177,8 @@ ACL2 >>(ORDEREDP '(1 2 3 3 4 5))
 T
 ACL2 >>(ORDEREDP '(1 2 3 4 3 5))
 NIL
-ACL2 >>(DEFTHM ORDEREDP-ISORT (ORDEREDP (ISORT X)))
+ACL2 >>(DEFTHM ORDEREDP-ISORT
+         (ORDEREDP (ISORT X)))
 
 Name the formula above *1.
 
@@ -455,7 +458,7 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION ORDEREDP))
  ORDEREDP-ISORT
 ACL2 >>(DEFTHM ISORT-ISORT
-               (EQUAL (ISORT (ISORT X)) (ISORT X)))
+         (EQUAL (ISORT (ISORT X)) (ISORT X)))
 
 Name the formula above *1.
 
@@ -3026,10 +3029,11 @@ ACL2 Error [Failure] in ( DEFTHM ISORT-ISORT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 >>(PE 'ORDEREDP-ISORT)
-           7:x(DEFTHM ORDEREDP-ISORT (ORDEREDP (ISORT X)))
+           7:x(DEFTHM ORDEREDP-ISORT
+                (ORDEREDP (ISORT X)))
 ACL2 >>(DEFTHM KEY-LEMMA
-               (IMPLIES (ORDEREDP A)
-                        (EQUAL (ISORT A) A)))
+         (IMPLIES (ORDEREDP A)
+                  (EQUAL (ISORT A) A)))
 
 Name the formula above *1.
 
@@ -3177,7 +3181,7 @@ Rules: ((:DEFINITION ENDP)
         (:TYPE-PRESCRIPTION LEXORDER))
  KEY-LEMMA
 ACL2 >>(DEFTHM ISORT-ISORT
-               (EQUAL (ISORT (ISORT X)) (ISORT X)))
+         (EQUAL (ISORT (ISORT X)) (ISORT X)))
 
 But simplification reduces this to T, using primitive type reasoning
 and the :rewrite rules KEY-LEMMA and ORDEREDP-ISORT.
@@ -3204,10 +3208,10 @@ ACL2 >>(PE 'PERM)
               ]
               \
 >L             (DEFUN PERM (X Y)
-                      (IF (CONSP X)
-                          (AND (MEMBER (CAR X) Y)
-                               (PERM (CDR X) (RM (CAR X) Y)))
-                          (NOT (CONSP Y))))
+                 (IF (CONSP X)
+                     (AND (MEMBER (CAR X) Y)
+                          (PERM (CDR X) (RM (CAR X) Y)))
+                   (NOT (CONSP Y))))
 ACL2 >>(PERM '(1 2 3) '(3 1 2))
 T
 ACL2 >>(PERM '(1 2 3) '(1 3 4))
@@ -3464,8 +3468,8 @@ Warnings:  Double-rewrite
 ACL2 >>'(END OF DEMO 2)
 (END OF DEMO 2)
 ACL2 >>(DEFUN MEMBER! (E X)
-              (AND (MEMBER E X)
-                   (NOT (MEMBER E (CDR (MEMBER E X))))))
+         (AND (MEMBER E X)
+              (NOT (MEMBER E (CDR (MEMBER E X))))))
 
 Since MEMBER! is non-recursive, its admission is trivial.  We observe
 that the type of MEMBER! is described by the theorem 
@@ -3476,11 +3480,11 @@ Form:  ( DEFUN MEMBER! ...)
 Rules: NIL
  MEMBER!
 ACL2 >>(DEFUN RM* (E X)
-              (IF (CONSP X)
-                  (IF (EQUAL E (CAR X))
-                      (RM* E (CDR X))
-                      (CONS (CAR X) (RM* E (CDR X))))
-                  NIL))
+         (IF (CONSP X)
+             (IF (EQUAL E (CAR X))
+                 (RM* E (CDR X))
+               (CONS (CAR X) (RM* E (CDR X))))
+           NIL))
 
 The admission of RM* is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -3492,13 +3496,13 @@ Form:  ( DEFUN RM* ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  RM*
 ACL2 >>(DEFUN TWINS (X)
-              (DECLARE (XARGS :MEASURE (LEN X)))
-              (IF (CONSP X)
-                  (IF (MEMBER! (CAR X) (CDR X))
-                      (CONS (CAR X)
-                            (TWINS (RM* (CAR X) (CDR X))))
-                      (TWINS (RM* (CAR X) (CDR X))))
-                  NIL))
+         (DECLARE (XARGS :MEASURE (LEN X)))
+         (IF (CONSP X)
+             (IF (MEMBER! (CAR X) (CDR X))
+                 (CONS (CAR X)
+                       (TWINS (RM* (CAR X) (CDR X))))
+               (TWINS (RM* (CAR X) (CDR X))))
+           NIL))
 
 For the admission of TWINS we will use the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -3652,11 +3656,11 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION RM*))
  TWINS
 ACL2 >>(DEFUN HOW-MANY (E X)
-              (IF (CONSP X)
-                  (IF (EQUAL E (CAR X))
-                      (+ 1 (HOW-MANY E (CDR X)))
-                      (HOW-MANY E (CDR X)))
-                  0))
+         (IF (CONSP X)
+             (IF (EQUAL E (CAR X))
+                 (+ 1 (HOW-MANY E (CDR X)))
+               (HOW-MANY E (CDR X)))
+           0))
 
 The admission of HOW-MANY is trivial, using the relation O< (which
 is known to be well-founded on the domain recognized by O-P) and the
@@ -3669,8 +3673,8 @@ Form:  ( DEFUN HOW-MANY ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  HOW-MANY
 ACL2 >>(DEFTHM TWINS-CORRECT
-               (IFF (MEMBER E (TWINS X))
-                    (EQUAL (HOW-MANY E X) 2)))
+         (IFF (MEMBER E (TWINS X))
+              (EQUAL (HOW-MANY E X) 2)))
 
 By the simple :definitions MEMBER-EQL-EXEC$GUARD-CHECK and RETURN-LAST
 we reduce the conjecture to
@@ -6131,7 +6135,7 @@ ACL2 Error [Failure] in ( DEFTHM TWINS-CORRECT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 >>(DEFTHM MEMBER-HOW-MANY
-               (IFF (MEMBER E X) (< 0 (HOW-MANY E X))))
+         (IFF (MEMBER E X) (< 0 (HOW-MANY E X))))
 
 By the simple :definitions MEMBER-EQL-EXEC$GUARD-CHECK and RETURN-LAST
 we reduce the conjecture to
@@ -6286,8 +6290,8 @@ Rules: ((:DEFINITION HOW-MANY)
         (:TYPE-PRESCRIPTION MEMBER-EQUAL))
  MEMBER-HOW-MANY
 ACL2 >>(DEFTHM TWINS-CORRECT
-               (IFF (MEMBER E (TWINS X))
-                    (EQUAL (HOW-MANY E X) 2)))
+         (IFF (MEMBER E (TWINS X))
+              (EQUAL (HOW-MANY E X) 2)))
 
 ACL2 Warning [Subsume] in ( DEFTHM TWINS-CORRECT ...):  The previously
 added rule MEMBER-HOW-MANY subsumes a newly proposed :REWRITE rule
@@ -8998,8 +9002,8 @@ ACL2 Error [Failure] in ( DEFTHM TWINS-CORRECT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 >>(DEFTHM HOW-MANY-RM*
-               (EQUAL (HOW-MANY E (RM* D X))
-                      (IF (EQUAL E D) 0 (HOW-MANY E X))))
+         (EQUAL (HOW-MANY E (RM* D X))
+                (IF (EQUAL E D) 0 (HOW-MANY E X))))
 
 This simplifies, using trivial observations, to the following two conjectures.
 
@@ -9060,7 +9064,8 @@ Subgoal *1/2
               (NOT (EQUAL E (CAR X)))
               (EQUAL (HOW-MANY E (RM* D (CDR X)))
                      (IF (EQUAL E D)
-                         0 (HOW-MANY E (CDR X)))))
+                         0
+                       (HOW-MANY E (CDR X)))))
          (EQUAL (HOW-MANY E (RM* D X))
                 (IF (EQUAL E D) 0 (HOW-MANY E X)))).
 
@@ -9096,7 +9101,8 @@ Subgoal *1/1
               (EQUAL E (CAR X))
               (EQUAL (HOW-MANY E (RM* D (CDR X)))
                      (IF (EQUAL E D)
-                         0 (HOW-MANY E (CDR X)))))
+                         0
+                       (HOW-MANY E (CDR X)))))
          (EQUAL (HOW-MANY E (RM* D X))
                 (IF (EQUAL E D) 0 (HOW-MANY E X)))).
 
@@ -9133,8 +9139,8 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION RM*))
  HOW-MANY-RM*
 ACL2 >>(DEFTHM TWINS-CORRECT
-               (IFF (MEMBER E (TWINS X))
-                    (EQUAL (HOW-MANY E X) 2)))
+         (IFF (MEMBER E (TWINS X))
+              (EQUAL (HOW-MANY E X) 2)))
 
 ACL2 Warning [Subsume] in ( DEFTHM TWINS-CORRECT ...):  The previously
 added rule MEMBER-HOW-MANY subsumes a newly proposed :REWRITE rule
@@ -10153,9 +10159,9 @@ ACL2 Error [Failure] in ( DEFTHM TWINS-CORRECT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 >>(DEFTHM HOW-MANY-CDR-MEMBER
-               (IMPLIES (MEMBER E X)
-                        (EQUAL (HOW-MANY E (CDR (MEMBER E X)))
-                               (- (HOW-MANY E X) 1))))
+         (IMPLIES (MEMBER E X)
+                  (EQUAL (HOW-MANY E (CDR (MEMBER E X)))
+                         (- (HOW-MANY E X) 1))))
 
 By the simple :definitions MEMBER-EQL-EXEC$GUARD-CHECK and RETURN-LAST
 and the simple :rewrite rule MEMBER-HOW-MANY we reduce the conjecture
@@ -10315,8 +10321,8 @@ Rules: ((:DEFINITION ENDP)
         (:TYPE-PRESCRIPTION HOW-MANY))
  HOW-MANY-CDR-MEMBER
 ACL2 >>(DEFTHM TWINS-CORRECT
-               (IFF (MEMBER E (TWINS X))
-                    (EQUAL (HOW-MANY E X) 2)))
+         (IFF (MEMBER E (TWINS X))
+              (EQUAL (HOW-MANY E X) 2)))
 
 ACL2 Warning [Subsume] in ( DEFTHM TWINS-CORRECT ...):  The previously
 added rule MEMBER-HOW-MANY subsumes a newly proposed :REWRITE rule

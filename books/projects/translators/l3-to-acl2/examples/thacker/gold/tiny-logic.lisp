@@ -100,7 +100,7 @@
               (DECLARE (XARGS :STOBJS ST$))
               (MV-LET (V ST$)
                       (FUNCTION0 (TUPLE FUNC A B) ST$)
-                      (MV (SHIFTER (TUPLE SHIFT V)) ST$)))
+                (MV (SHIFTER (TUPLE SHIFT V)) ST$)))
 
 (DEFUN-STRUCT
    INCPC
@@ -111,21 +111,21 @@
    (CASE-MATCH+ SKIP
                 ('SKIPNEVER
                  (LET ((ST$ (UPDATE-PCTR (N+ 10 (PCTR ST$) 1) ST$)))
-                      (MV (UNIT-VALUE) ST$)))
+                   (MV (UNIT-VALUE) ST$)))
                 ('SKIPNEG
                  (LET ((ST$ (UPDATE-PCTR (N+ 10 (PCTR ST$)
                                              (IF (< ALU_VAR 0) 2 1))
                                          ST$)))
-                      (MV (UNIT-VALUE) ST$)))
+                   (MV (UNIT-VALUE) ST$)))
                 ('SKIPZERO
                  (LET ((ST$ (UPDATE-PCTR (N+ 10 (PCTR ST$)
                                              (IF (EQL ALU_VAR 0) 2 1))
                                          ST$)))
-                      (MV (UNIT-VALUE) ST$)))
+                   (MV (UNIT-VALUE) ST$)))
                 ('SKIPINRDY
                  (LET ((ST$ (UPDATE-PCTR (N+ 10 (PCTR ST$) (IF (INRDY ST$) 2 1))
                                          ST$)))
-                      (MV (UNIT-VALUE) ST$)))
+                   (MV (UNIT-VALUE) ST$)))
                 (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
 
 (DEFUN-STRUCT NORM
@@ -142,10 +142,10 @@
               (MV-LET (V ST$)
                       (ALU (TUPLE FUNC SHIFT (RI A ST$) (RI B ST$))
                            ST$)
-                      (LET* ((ST$ (IF WBACK (UPDATE-RI W V ST$) ST$))
-                             (ST$ (IF STROBE (UPDATE-OUTSTROBE V ST$)
-                                      ST$)))
-                            (INCPC (TUPLE SKIP V) ST$))))
+                (LET* ((ST$ (IF WBACK (UPDATE-RI W V ST$) ST$))
+                       (ST$ (IF STROBE (UPDATE-OUTSTROBE V ST$)
+                              ST$)))
+                  (INCPC (TUPLE SKIP V) ST$))))
 
 (DEFUN-STRUCT DFN-NORMAL
               (((FUNC (TYPE-FUNCT FUNC))
@@ -175,10 +175,10 @@
                                   (RI B ST$))
                             (RI A ST$)
                             ST$)))
-          (NORM (TUPLE FUNC SHIFT SKIP (TRUE)
-                       (FALSE)
-                       W A B)
-                ST$)))
+       (NORM (TUPLE FUNC SHIFT SKIP (TRUE)
+                    (FALSE)
+                    W A B)
+             ST$)))
 
 (DEFUN-STRUCT
      DFN-STOREIM
@@ -194,10 +194,10 @@
                                   (RI B ST$))
                             (RI A ST$)
                             ST$)))
-          (NORM (TUPLE FUNC SHIFT SKIP (TRUE)
-                       (FALSE)
-                       W A B)
-                ST$)))
+       (NORM (TUPLE FUNC SHIFT SKIP (TRUE)
+                    (FALSE)
+                    W A B)
+             ST$)))
 
 (DEFUN-STRUCT DFN-OUT
               (((FUNC (TYPE-FUNCT FUNC))
@@ -228,10 +228,10 @@
                                       (RI B ST$))
                                 ST$)
                            ST$)))
-          (NORM (TUPLE FUNC SHIFT SKIP (FALSE)
-                       (FALSE)
-                       W A B)
-                ST$)))
+       (NORM (TUPLE FUNC SHIFT SKIP (FALSE)
+                    (FALSE)
+                    W A B)
+             ST$)))
 
 (DEFUN-STRUCT DFN-IN
               (((FUNC (TYPE-FUNCT FUNC))
@@ -243,10 +243,10 @@
                ST$)
               (DECLARE (XARGS :STOBJS ST$))
               (LET ((ST$ (UPDATE-RI W (INDATA ST$) ST$)))
-                   (NORM (TUPLE FUNC SHIFT SKIP (FALSE)
-                                (FALSE)
-                                W A B)
-                         ST$)))
+                (NORM (TUPLE FUNC SHIFT SKIP (FALSE)
+                             (FALSE)
+                             W A B)
+                      ST$)))
 
 (DEFUN-STRUCT
      DFN-JUMP
@@ -261,15 +261,15 @@
                            (CAST ((UNSIGNED-BYTE 10) (UNSIGNED-BYTE 32))
                                  (N+ 10 (PCTR ST$) 1))
                            ST$)))
-          (MV-LET (V ST$)
-                  (MV-LET (V ST$)
-                          (ALU (TUPLE FUNC SHIFT (RI A ST$) (RI B ST$))
-                               ST$)
-                          (MV (CAST ((UNSIGNED-BYTE 32) (UNSIGNED-BYTE 10))
-                                    V)
-                              ST$))
-                  (LET ((ST$ (UPDATE-PCTR V ST$)))
-                       (MV (UNIT-VALUE) ST$)))))
+       (MV-LET (V ST$)
+               (MV-LET (V ST$)
+                       (ALU (TUPLE FUNC SHIFT (RI A ST$) (RI B ST$))
+                            ST$)
+                 (MV (CAST ((UNSIGNED-BYTE 32) (UNSIGNED-BYTE 10))
+                           V)
+                     ST$))
+         (LET ((ST$ (UPDATE-PCTR V ST$)))
+           (MV (UNIT-VALUE) ST$)))))
 
 (DEFUN-STRUCT
      DFN-LOADCONSTANT
@@ -282,7 +282,7 @@
                                   IMM)
                             ST$))
             (ST$ (UPDATE-PCTR (N+ 10 (PCTR ST$) 1) ST$)))
-           (MV (UNIT-VALUE) ST$)))
+       (MV (UNIT-VALUE) ST$)))
 
 (DEFUN-STRUCT DFN-RESERVEDINSTR (ST$)
               (DECLARE (XARGS :STOBJS ST$))
@@ -308,26 +308,23 @@
 (DEFUN-STRUCT
  DECODE ((OPC (UNSIGNED-BYTE-P 32 OPC)))
  (MV-LET-IGNORABLE
-  (B-31 B-30 B-29 B-28 B-27 B-26
-        B-25 B-24 B-23 B-22 B-21 B-20 B-19 B-18
-        B-17 B-16 B-15 B-14 B-13 B-12 B-11 B-10
-        B-9 B-8 B-7 B-6 B-5 B-4 B-3 B-2 B-1 B-0)
-  (BL 32 OPC)
-  (IF
-   B-24
-   (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT
-                     (TUPLE (BITS OPC 31 25)
-                            (BITS OPC 23 0)))
-   (LET*
-        ((RW (BITS OPC 31 25))
-         (RB (BITS OPC 16 10))
-         (RA (BITS OPC 23 17))
-         (FUNC (CAST ((UNSIGNED-BYTE 3) FUNCT)
-                     (BITS OPC 9 7)))
-         (SHIFT (CAST ((UNSIGNED-BYTE 2) SHIFTT)
-                      (BITS OPC 6 5)))
-         (SKIP (CAST ((UNSIGNED-BYTE 2) CONDITIONT)
-                     (BITS OPC 4 3))))
+    (B-31 B-30 B-29 B-28 B-27 B-26
+          B-25 B-24 B-23 B-22 B-21 B-20 B-19 B-18
+          B-17 B-16 B-15 B-14 B-13 B-12 B-11 B-10
+          B-9 B-8 B-7 B-6 B-5 B-4 B-3 B-2 B-1 B-0)
+    (BL 32 OPC)
+    (IF B-24 (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT
+                               (TUPLE (BITS OPC 31 25)
+                                      (BITS OPC 23 0)))
+      (LET* ((RW (BITS OPC 31 25))
+             (RB (BITS OPC 16 10))
+             (RA (BITS OPC 23 17))
+             (FUNC (CAST ((UNSIGNED-BYTE 3) FUNCT)
+                         (BITS OPC 9 7)))
+             (SHIFT (CAST ((UNSIGNED-BYTE 2) SHIFTT)
+                          (BITS OPC 6 5)))
+             (SKIP (CAST ((UNSIGNED-BYTE 2) CONDITIONT)
+                         (BITS OPC 4 3))))
         (CASE-MATCH+ (BITS OPC 2 0)
                      (0 (CALL-CONSTRUCTOR INSTRUCTION NORMAL
                                           (TUPLE FUNC SHIFT SKIP RW RA RB)))
@@ -349,9 +346,9 @@
 (DEFUN-STRUCT NEXT (ST$)
               (DECLARE (XARGS :STOBJS ST$))
               (LET ((V (DECODE (IMI (PCTR ST$) ST$))))
-                   (IF (NOT (EQ V 'RESERVEDINSTR))
-                       (RUN V ST$)
-                       (MV (UNIT-VALUE) ST$))))
+                (IF (NOT (EQ V 'RESERVEDINSTR))
+                    (RUN V ST$)
+                  (MV (UNIT-VALUE) ST$))))
 
 (DEFUN-STRUCT ENC
               (((ARGS (SLET (X0 X1 X2 X3 X4 X5)
@@ -400,7 +397,7 @@
               (CASE-MATCH+ I ('NIL (MV (UNIT-VALUE) ST$))
                            ((H . T_VAR)
                             (LET ((ST$ (UPDATE-IMI A (ENCODE H) ST$)))
-                                 (LOADIM (TUPLE (N+ 10 A 1) T_VAR) ST$)))
+                              (LOADIM (TUPLE (N+ 10 A 1) T_VAR) ST$)))
                            (& (IMPOSSIBLE (MV (ARB UTY) ST$)))))
 
 (DEFUN-STRUCT INITIALIZE
@@ -412,24 +409,24 @@
                                 (ST$ (UPDATE-INRDY (FALSE) ST$))
                                 (ST$ (UPDATE-INDATA 0 ST$))
                                 (ST$ (UPDATE-OUTSTROBE 0 ST$)))
-                               (MAP-UPDATE-IMI (ENCODE 'RESERVEDINSTR)
-                                               ST$))))
-                   (LOADIM (TUPLE 0 P) ST$)))
+                           (MAP-UPDATE-IMI (ENCODE 'RESERVEDINSTR)
+                                           ST$))))
+                (LOADIM (TUPLE 0 P) ST$)))
 
 (DEFCONST *TEST_PROG*
-          (LIST (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT (TUPLE 0 0))
-                (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT (TUPLE 1 1000))
-                (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT (TUPLE 2 1010))
-                (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT (TUPLE 3 4))
-                (CALL-CONSTRUCTOR INSTRUCTION STOREDM
-                                  (TUPLE 'FINC 'NOSHIFT 'SKIPNEVER 1 1 1))
-                (CALL-CONSTRUCTOR INSTRUCTION NORMAL
-                                  (TUPLE 'FXOR 'NOSHIFT 'SKIPZERO 4 1 2))
-                (CALL-CONSTRUCTOR INSTRUCTION
-                                  JUMP (TUPLE 'FADD 'NOSHIFT 4 3 0))
-                (CALL-CONSTRUCTOR INSTRUCTION OUT
-                                  (TUPLE 'FADD
-                                         'NOSHIFT
-                                         'SKIPNEVER
-                                         1 1 0))))
+  (LIST (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT (TUPLE 0 0))
+        (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT (TUPLE 1 1000))
+        (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT (TUPLE 2 1010))
+        (CALL-CONSTRUCTOR INSTRUCTION LOADCONSTANT (TUPLE 3 4))
+        (CALL-CONSTRUCTOR INSTRUCTION STOREDM
+                          (TUPLE 'FINC 'NOSHIFT 'SKIPNEVER 1 1 1))
+        (CALL-CONSTRUCTOR INSTRUCTION NORMAL
+                          (TUPLE 'FXOR 'NOSHIFT 'SKIPZERO 4 1 2))
+        (CALL-CONSTRUCTOR INSTRUCTION
+                          JUMP (TUPLE 'FADD 'NOSHIFT 4 3 0))
+        (CALL-CONSTRUCTOR INSTRUCTION OUT
+                          (TUPLE 'FADD
+                                 'NOSHIFT
+                                 'SKIPNEVER
+                                 1 1 0))))
 

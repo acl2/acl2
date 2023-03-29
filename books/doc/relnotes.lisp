@@ -395,13 +395,19 @@
    (xdoc::h4 "Tools Library")
 
    (xdoc::p
-    "The tool, @(see with-supporters), has been substantially enhanced.")
+    "The tool, @(tsee with-supporters), has been substantially enhanced.")
 
    (xdoc::p
-    "The tool, @(see prove$), now treats hard errors as ordinary failures by
+    "The tool, @(tsee prove$), now treats hard errors as ordinary failures by
      default, just as for soft errors.  It also now suppresses @(see
      time-limit) and @(see theory-invariant) error printing as it does for
      @(see step-limit) error printing.")
+
+   (xdoc::p
+    "The @(see time-tracker) capability is now turned off by the @(tsee
+     run-script) tool, to avoid output that differs from what is expected (say,
+     due to running on a slow machine, or with many threads when few are
+     available).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
