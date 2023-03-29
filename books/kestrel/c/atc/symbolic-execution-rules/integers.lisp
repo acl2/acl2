@@ -1066,3 +1066,49 @@
   (defruled not-ullongp-of-value-pointer
     (not (ullongp (value-pointer core reftype)))
     :enable (ullongp value-pointer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-integerp-rules
+  :short "Rules about @(tsee value-integerp) holding
+          when the predicates for the integer types hold."
+
+  (defruled value-integerp-when-scharp
+    (implies (scharp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-ucharp
+    (implies (ucharp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-sshortp
+    (implies (sshortp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-ushortp
+    (implies (ushortp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-sintp
+    (implies (sintp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-uintp
+    (implies (uintp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-slongp
+    (implies (slongp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-ulongp
+    (implies (ulongp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-sllongp
+    (implies (sllongp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-ullongp
+    (implies (ullongp x)
+             (value-integerp x))))
