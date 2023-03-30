@@ -5840,7 +5840,6 @@
     (READ-ACL2-ORACLE@PAR        (STATE)         (NIL NIL))
     (READ-RUN-TIME               (STATE)         (NIL STATE))
     (READ-IDATE                  (STATE)         (NIL STATE))
-    (LIST-ALL-PACKAGE-NAMES      (STATE)         (NIL STATE))
     (PRINC$                      (NIL NIL STATE) (STATE))
     (WRITE-BYTE$                 (NIL NIL STATE) (STATE))
     (PRINT-OBJECT$-FN            (NIL NIL NIL STATE) (STATE))
@@ -5849,16 +5848,6 @@
     (MAKUNBOUND-GLOBAL           (NIL STATE)     (STATE))
     (PUT-GLOBAL                  (NIL NIL STATE) (STATE))
     (GLOBAL-TABLE-CARS           (STATE)         (NIL))
-    (T-STACK-LENGTH              (STATE)         (NIL))
-    (EXTEND-T-STACK              (NIL NIL STATE) (STATE))
-    (SHRINK-T-STACK              (NIL STATE)     (STATE))
-    (AREF-T-STACK                (NIL STATE)     (NIL))
-    (ASET-T-STACK                (NIL NIL STATE) (STATE))
-    (32-BIT-INTEGER-STACK-LENGTH (STATE)         (NIL))
-    (EXTEND-32-BIT-INTEGER-STACK (NIL NIL STATE) (STATE))
-    (SHRINK-32-BIT-INTEGER-STACK (NIL STATE)     (STATE))
-    (AREF-32-BIT-INTEGER-STACK   (NIL STATE)     (NIL))
-    (ASET-32-BIT-INTEGER-STACK   (NIL NIL STATE) (STATE))
     (OPEN-INPUT-CHANNEL          (NIL NIL STATE) (NIL STATE))
     (OPEN-OUTPUT-CHANNEL         (NIL NIL STATE) (NIL STATE))
     (GET-OUTPUT-STREAM-STRING$-FN (NIL STATE)    (NIL NIL STATE))
@@ -5988,10 +5977,7 @@
 
   '((aset1 . t) ; could write past the end of the real array
     (aset2 . t) ; could write past the end of the real array
-    (aset-32-bit-integer-stack . t)
-    (extend-32-bit-integer-stack . t)
     (aset1-lst . t)
-    (old-check-sum-obj . nil)
     (check-sum-inc . nil)
     (update-iprint-ar-fal . nil)
 

@@ -139,6 +139,8 @@
      (make-event
       (defxdoc-fn ',name ',parents ,short ,long ,pkg ,no-override state))))
 
+(table acl2::pp-special-syms 'defxdoc 1)
+
 (defun defxdoc-raw-fn (name parents short long pkg)
   (declare (xargs :guard t)
            (ignore name parents short long pkg))

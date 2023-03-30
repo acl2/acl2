@@ -30,9 +30,11 @@
                   (not (zp limit))
                   (compustatep compst)
                   (equal eval (exec-expr-pure e compst))
-                  (expr-valuep eval))
+                  (expr-valuep eval)
+                  (equal eval1 (apconvert-expr-value eval))
+                  (expr-valuep eval1))
              (equal (exec-expr-call-or-pure e compst fenv limit)
-                    (mv (expr-value->value eval)
+                    (mv (expr-value->value eval1)
                         compst)))
     :enable exec-expr-call-or-pure)
 

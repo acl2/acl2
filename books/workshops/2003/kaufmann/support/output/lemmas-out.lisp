@@ -9,7 +9,7 @@
 (LOCAL (IN-THEORY (THEORY '%-REMOVAL-THEORY)))
 
 (DEFTHM LEMMA-1
-        (IMPLIES (TRUE-LISTP X)
-                 (EQUAL (G2 X Y) NIL))
-        :HINTS (("Goal" :USE %LEMMA-1)))
+  (IMPLIES (TRUE-LISTP X)
+           (EQUAL (G2 X Y) NIL))
+  :HINTS (("Goal" :USE %LEMMA-1)))
 

@@ -568,8 +568,7 @@ is the best option we have. See any definition produced by
     (mv sym ignorep)))
 
 (defun patbindfn (pattern assign-exprs nested-expr)
-  (declare (xargs :guard t
-                  :guard-debug t))
+  (declare (xargs :guard t))
   (cond ((eq pattern '-)
          ;; A dash means "run this for side effects."  In this case we allow
          ;; multiple terms; these form an implicit progn, in the common-lisp sense.
@@ -657,6 +656,7 @@ The B* binding of ~x0 to ~x1 isn't allowed." pattern assign-exprs))
   (declare (xargs :guard (debuggable-binders-p bindlist)))
   (b*-fn bindlist (cons expr exprs)))
 
+(table acl2::pp-special-syms 'b* 1)
 
 
 (defxdoc def-b*-binder

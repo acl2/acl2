@@ -2052,6 +2052,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro list (&rest args)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (list-macro args))
 
 (defun and-macro (lst)
@@ -2066,6 +2070,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro and (&rest args)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
  (and-macro args))
 
 (defun or-macro (lst)
@@ -2081,6 +2089,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro or (&rest args)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
    (or-macro args))
 
 #+acl2-loop-only
@@ -2298,6 +2310,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro cond (&rest clauses)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (declare (xargs :guard (cond-clausesp clauses)))
   (cond-macro clauses))
 
@@ -2399,6 +2415,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro cadr (x)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (list 'car (list 'cdr x)))
 
 #+acl2-loop-only
@@ -2407,6 +2427,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro cddr (x)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (list 'cdr (list 'cdr x)))
 
 #+acl2-loop-only
@@ -6369,6 +6393,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Keep in sync with value@par.
 
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   `(mv nil ,x state))
 
 (defun legal-constantp1 (name)
@@ -6386,22 +6413,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (eql (char s 0) #\*)
              (eql (char s (1- (length s))) #\*)))))
 
-#+acl2-loop-only
-(defmacro value-triple (form &key
-                             on-skip-proofs
-                             check
-                             (safe-mode ':same)
-                             (stobjs-out 'nil)
-                             (ctx ''value-triple))
-
-; Value-triple is used in mutual-recursion, which is called in axioms.lisp
-; before the definition of state-global-let*, which is used in value-triple-fn.
-; So we avoid calling value-triple-fn in some of the most common cases, which
-; also aids efficiency in those cases.
+(defun value-triple-macro-fn (form on-skip-proofs check safe-mode stobjs-out
+                                   ctx)
 
 ; Warning: The checks below should be at least as strong as those in
 ; chk-value-triple.
 
+  (declare (xargs :guard t))
   `(let ((form ',form)
          (on-skip-proofs ,on-skip-proofs)
          (check ,check)
@@ -6432,6 +6450,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (t (value-triple-fn form
                                on-skip-proofs check safe-mode
                                stobjs-out ,ctx state)))))
+
+#+acl2-loop-only
+(defmacro value-triple (form &key
+                             on-skip-proofs
+                             check
+                             (safe-mode ':same)
+                             (stobjs-out 'nil)
+                             (ctx ''value-triple))
+
+; Value-triple is used in mutual-recursion, which is called in axioms.lisp
+; before the definition of state-global-let*, which is used in value-triple-fn.
+; So we avoid calling value-triple-fn in some of the most common cases, which
+; also aids efficiency in those cases.
+
+  (value-triple-macro-fn form on-skip-proofs check safe-mode stobjs-out ctx))
 
 (defmacro assert-event (assertion &key
                                   event
@@ -6989,6 +7022,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro progn (&rest r)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
 
 ; Like defun, defmacro, and in-package, progn does not have quite the same
 ; semantics as the Common Lisp function.  This is useful only for sequences at
@@ -7838,7 +7874,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (cond (evisc-p `(with-evisc-tuple ,form ,@evisc))
             (t form))))))
 
-(defmacro with-output! (&rest args)
+(defun with-output!-fn (args)
+  (declare (xargs :guard (true-listp args)
+                  :mode :program))
   `(if (eq (ld-skip-proofsp state) 'include-book)
        ,(car (last args))
      ,(let ((val (with-output-fn 'with-output args
@@ -7853,13 +7891,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      "Macroexpansion of ~q0 failed."
                      (list (cons #\0 (cons 'with-output args))))))))
 
+(defmacro with-output! (&rest args)
+  (with-output!-fn args))
+
 #-acl2-loop-only
 (defmacro with-output (&rest args)
   (car (last args)))
 
 #+acl2-loop-only
 (defmacro with-output (&rest args)
-  `(with-output! ,@args))
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
+  (with-output!-fn args))
 
 (defun defun-nx-dcls (form dcls)
   (declare (xargs :guard (consp form)))
@@ -8162,6 +8207,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Now we define the weak notion of term that guards metafunctions.
 
+(defmacro len$ (x)
+
+; This variant of len is logically just len, but it executes as length in
+; guard-verified and program-mode code.  In such code it should thus be called
+; only when x is a true list, but it may be slightly faster than len because
+; the Lisp implementation may optimize the definition of length.  The following
+; experiment (performed on an Intel-based Mac) showed length to be faster than
+; len in CCL and perhaps about the same in SBCL.
+
+; :q ; go into raw Lisp
+; (defconstant *c* (loop for i from 1 to 1000 by 10
+;                        collect (make-list (* 1000 i))))
+; (defun f () (loop for x in *c* when (= (len x) 3) collect x))
+; (defun g () (loop for x in *c* when (= (length x) 3) collect x))
+; (time (f))
+; (time (g))
+
+; At first glance it may appear that x is being evaluated twice below from a
+; call of len$.  But in fact, only the :logic or the :exec code will be
+; evaluated from a call of len$.
+
+  `(mbe :logic (len ,x)
+        :exec (length ,x)))
+
 (mutual-recursion
 
 (defun pseudo-termp (x)
@@ -8181,12 +8250,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the checks below.
 
                (and (true-listp (car x))
-                    (equal (length (car x)) 3)
+                    (equal (len$ (car x)) 3)
                     (eq (car (car x)) 'lambda)
                     (symbol-listp (cadr (car x)))
                     (pseudo-termp (caddr (car x)))
-                    (equal (length (cadr (car x)))
-                           (length (cdr x))))))))
+                    (equal (len$ (cadr (car x)))
+                           (len$ (cdr x))))))))
 
 (defun pseudo-term-listp (lst)
   (declare (xargs :guard t))
@@ -9894,11 +9963,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     "Illegal severity, ~x0; macroexpansion of ER@PAR failed!"
                     (list (cons #\0 severity)))))))
 
-#+acl2-loop-only
-(defmacro defthmd (&whole event-form
-                          name term
-                          &rest rst)
-  (declare (xargs :guard t) (ignore term))
+(defun defthmd-fn (event-form name rst)
+  (declare (xargs :mode :program))
   (let ((tmp (member :rule-classes rst)))
     (cond
      ((and tmp
@@ -9932,6 +9998,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                     (list 'value-triple
                           (list 'quote (event-keyword-name 'defthmd name))
                           :on-skip-proofs t)))))))
+
+#+acl2-loop-only
+(defmacro defthmd (&whole event-form
+                          name term
+                          &rest rst)
+  (declare (xargs :guard t)
+           (ignore term))
+  (defthmd-fn event-form name rst))
 
 #+(and acl2-loop-only :non-standard-analysis)
 (defmacro defthm-std (&whole event-form
@@ -10116,6 +10190,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro table (&whole event-form name &rest args)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
@@ -11570,6 +11647,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq x 'rational) (list 'rationalp var))
         ((eq x 'real) (list 'real/rationalp var))
         ((eq x 'complex) (list 'complex/complex-rationalp var))
+        ((eq x 'number) (list 'acl2-numberp var))
         ((and (consp x)
               (eq (car x) 'rational)
               (true-listp x)
@@ -12366,6 +12444,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #+acl2-loop-only
 (defmacro f-get-global (x st)
+
+; Warning: If you change this definition, make the corresponding change in the
+; definition of macroexpand1-cmp!
+
   (list 'get-global x st))
 
 #-acl2-loop-only
@@ -13652,24 +13734,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (true-listp (nth j l)))))
   (update-nth j (update-nth key val (nth j l)) l))
 
-; The following defmacro forms may speed up 32-bit-integerp a little.
-
 (defmacro maximum-positive-32-bit-integer ()
   *maximum-positive-32-bit-integer*)
 
 (defmacro minimum-negative-32-bit-integer ()
   (+ (- *maximum-positive-32-bit-integer*) -1))
-
-(defun 32-bit-integerp (x)
-  (declare (xargs :guard t))
-  (and (integerp x)
-       (<= x (maximum-positive-32-bit-integer))
-       (>= x (minimum-negative-32-bit-integer))))
-
-(defthm 32-bit-integerp-forward-to-integerp
-  (implies (32-bit-integerp x)
-           (integerp x))
-  :rule-classes :forward-chaining)
 
 (defun acl2-number-listp (l)
   (declare (xargs :guard t))
@@ -13748,17 +13817,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (real-listp x))
   :rule-classes :forward-chaining)
 
-(defun 32-bit-integer-listp (l)
-  (declare (xargs :guard t))
-  (cond ((atom l) (equal l nil))
-        (t (and (32-bit-integerp (car l))
-                (32-bit-integer-listp (cdr l))))))
-
-(defthm 32-bit-integer-listp-forward-to-integer-listp
-  (implies (32-bit-integer-listp x)
-           (integer-listp x))
-  :rule-classes :forward-chaining)
-
 ; Observe that even though we are defining the primitive accessors and
 ; updaters for states, we do not use the formal parameter STATE as an
 ; argument.  This is discussed in STATE-STATE below.
@@ -13787,85 +13845,61 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (true-listp st)))
   (update-nth 2 x st))
 
-(defun t-stack (st)
+(defun big-clock-entry (st)
   (declare (xargs :guard (true-listp st)))
   (nth 3 st))
 
-(defun update-t-stack (x st)
+(defun update-big-clock-entry (x st)
   (declare (xargs :guard (true-listp st)))
   (update-nth 3 x st))
 
-(defun 32-bit-integer-stack (st)
+(defun idates (st)
   (declare (xargs :guard (true-listp st)))
   (nth 4 st))
 
-(defun update-32-bit-integer-stack (x st)
+(defun update-idates (x st)
   (declare (xargs :guard (true-listp st)))
   (update-nth 4 x st))
 
-(defun big-clock-entry (st)
+(defun acl2-oracle (st)
   (declare (xargs :guard (true-listp st)))
   (nth 5 st))
 
-(defun update-big-clock-entry (x st)
+(defun update-acl2-oracle (x st)
   (declare (xargs :guard (true-listp st)))
   (update-nth 5 x st))
 
-(defun idates (st)
+(defun file-clock (st)
   (declare (xargs :guard (true-listp st)))
   (nth 6 st))
 
-(defun update-idates (x st)
+(defun update-file-clock (x st)
   (declare (xargs :guard (true-listp st)))
   (update-nth 6 x st))
 
-(defun acl2-oracle (st)
+(defun readable-files (st)
   (declare (xargs :guard (true-listp st)))
   (nth 7 st))
 
-(defun update-acl2-oracle (x st)
-  (declare (xargs :guard (true-listp st)))
-  (update-nth 7 x st))
-
-(defun file-clock (st)
+(defun written-files (st)
   (declare (xargs :guard (true-listp st)))
   (nth 8 st))
 
-(defun update-file-clock (x st)
+(defun update-written-files (x st)
   (declare (xargs :guard (true-listp st)))
   (update-nth 8 x st))
 
-(defun readable-files (st)
+(defun read-files (st)
   (declare (xargs :guard (true-listp st)))
   (nth 9 st))
 
-(defun written-files (st)
-  (declare (xargs :guard (true-listp st)))
-  (nth 10 st))
-
-(defun update-written-files (x st)
-  (declare (xargs :guard (true-listp st)))
-  (update-nth 10 x st))
-
-(defun read-files (st)
-  (declare (xargs :guard (true-listp st)))
-  (nth 11 st))
-
 (defun update-read-files (x st)
   (declare (xargs :guard (true-listp st)))
-  (update-nth 11 x st))
+  (update-nth 9 x st))
 
 (defun writeable-files (st)
   (declare (xargs :guard (true-listp st)))
-  (nth 12 st))
-
-(defun list-all-package-names-lst (st)
-  (declare (xargs :guard (true-listp st)))
-  (nth 13 st))
-
-(defun update-list-all-package-names-lst (x st)
-  (declare (xargs :guard (true-listp st)))
-  (update-nth 13 x st))
+  (nth 10 st))
 
 ; We use the name ``user-stobj-alist1'' below so that we can reserve the
 ; name ``user-stobj-alist'' for the same function but which is known to
@@ -13873,11 +13907,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun user-stobj-alist1 (st)
   (declare (xargs :guard (true-listp st)))
-  (nth 14 st))
+  (nth 11 st))
 
 (defun update-user-stobj-alist1 (x st)
   (declare (xargs :guard (true-listp st)))
-  (update-nth 14 x st))
+  (update-nth 11 x st))
 
 (defconst *initial-checkpoint-processors*
 
@@ -14090,14 +14124,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     user-stobj-alist read-acl2-oracle read-acl2-oracle@par
     update-user-stobj-alist decrement-big-clock put-global close-input-channel
     makunbound-global open-input-channel open-input-channel-p1 boundp-global1
-    global-table-cars1 extend-t-stack list-all-package-names
-    close-output-channel write-byte$ shrink-t-stack aset-32-bit-integer-stack
-    get-global 32-bit-integer-stack-length1 extend-32-bit-integer-stack
-    aset-t-stack aref-t-stack read-char$ aref-32-bit-integer-stack
+    global-table-cars1 close-output-channel write-byte$ get-global read-char$
     open-output-channel open-output-channel-p1 princ$ read-object
-    big-clock-negative-p peek-char$ shrink-32-bit-integer-stack read-run-time
-    read-byte$ read-idate t-stack-length1 print-object$-fn
-    get-output-stream-string$-fn
+    big-clock-negative-p peek-char$ read-run-time read-byte$ read-idate
+    print-object$-fn get-output-stream-string$-fn
 
     mv-list return-last
 
@@ -14757,7 +14787,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (temp-touchable-vars . nil)
     (term-evisc-tuple . :default)
     (timer-alist . nil)
-    (tmp-dir . nil) ; set by lp; user-settable but not much advertised.
+    (tmp-dir . nil) ; initialized by initialize-state-globals
     (total-parallelism-work-limit ; for #+acl2-par
      . ,(default-total-parallelism-work-limit))
     (total-parallelism-work-limit-error . t) ; for #+acl2-par
@@ -15152,7 +15182,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((live-state-p x)
          (return-from state-p1 t)))
   (and (true-listp x)
-       (equal (length x) 15)
+       (equal (length x) 12)
        (open-channels-p (open-input-channels x))
        (open-channels-p (open-output-channels x))
        (ordered-symbol-alistp (global-table x))
@@ -15166,8 +15196,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (known-package-alistp
         (getpropc 'known-package-alist 'global-value nil
                   (cdr (assoc 'current-acl2-world (global-table x)))))
-       (true-listp (t-stack x))
-       (32-bit-integer-listp (32-bit-integer-stack x))
        (integerp (big-clock-entry x))
        (integer-listp (idates x))
        (true-listp (acl2-oracle x))
@@ -15176,14 +15204,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (written-files-p (written-files x))
        (read-files-p (read-files x))
        (writeable-files-p (writeable-files x))
-       (true-list-listp (list-all-package-names-lst x))
        (symbol-alistp (user-stobj-alist1 x))))
 
 (defthm state-p1-forward
   (implies (state-p1 x)
            (and
             (true-listp x)
-            (equal (length x) 15)
+            (equal (length x) 12)
             (open-channels-p (nth 0 x))
             (open-channels-p (nth 1 x))
             (ordered-symbol-alistp (nth 2 x))
@@ -15197,25 +15224,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (known-package-alistp
              (getpropc 'known-package-alist 'global-value nil
                        (cdr (assoc 'current-acl2-world (nth 2 x)))))
-            (true-listp (nth 3 x))
-            (32-bit-integer-listp (nth 4 x))
-            (integerp (nth 5 x))
-            (integer-listp (nth 6 x))
-            (true-listp (nth 7 x))
-            (file-clock-p (nth 8 x))
-            (readable-files-p (nth 9 x))
-            (written-files-p (nth 10 x))
-            (read-files-p (nth 11 x))
-            (writeable-files-p (nth 12 x))
-            (true-list-listp (nth 13 x))
-            (symbol-alistp (nth 14 x))))
+            (integerp (nth 3 x))
+            (integer-listp (nth 4 x))
+            (true-listp (nth 5 x))
+            (file-clock-p (nth 6 x))
+            (readable-files-p (nth 7 x))
+            (written-files-p (nth 8 x))
+            (read-files-p (nth 9 x))
+            (writeable-files-p (nth 10 x))
+            (symbol-alistp (nth 11 x))))
   :rule-classes :forward-chaining
   ;; The hints can speed us up from over 40 seconds to less than 2.
   :hints (("Goal" :in-theory
            (disable nth length open-channels-p ordered-symbol-alistp
                     all-boundp plist-worldp assoc timer-alistp
                     known-package-alistp true-listp
-                    32-bit-integer-listp integer-listp rational-listp
+                    integer-listp rational-listp
                     file-clock-p readable-files-p written-files-p
                     read-files-p writeable-files-p true-list-listp
                     symbol-alistp))))
@@ -15324,18 +15348,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;  via build-state something that fails to be a state.
 
 (defmacro build-state
-  (&key open-input-channels open-output-channels global-table t-stack
-        32-bit-integer-stack (big-clock '4000000) idates acl2-oracle
+  (&key open-input-channels open-output-channels global-table
+        (big-clock '4000000) idates acl2-oracle
         (file-clock '1) readable-files written-files
-        read-files writeable-files list-all-package-names-lst
-        user-stobj-alist)
+        read-files writeable-files user-stobj-alist)
   (list 'build-state1
         (list 'quote open-input-channels)
         (list 'quote open-output-channels)
         (list 'quote (or global-table
                          *initial-global-table*))
-        (list 'quote t-stack)
-        (list 'quote 32-bit-integer-stack)
         (list 'quote big-clock)
         (list 'quote idates)
         (list 'quote acl2-oracle)
@@ -15344,33 +15365,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote written-files)
         (list 'quote read-files)
         (list 'quote writeable-files)
-        (list 'quote list-all-package-names-lst)
         (list 'quote user-stobj-alist)))
 
 (defconst *default-state*
   (list nil nil
         *initial-global-table*
-        nil nil 4000000 nil nil 1 nil nil nil nil nil nil))
+        4000000 nil nil 1 nil nil nil nil nil))
 
 (defun build-state1 (open-input-channels
-   open-output-channels global-table t-stack 32-bit-integer-stack big-clock
+   open-output-channels global-table big-clock
    idates acl2-oracle file-clock readable-files written-files
-   read-files writeable-files list-all-package-names-lst user-stobj-alist)
+   read-files writeable-files user-stobj-alist)
   (declare (xargs :guard (state-p1 (list open-input-channels
-   open-output-channels global-table t-stack 32-bit-integer-stack big-clock
+   open-output-channels global-table big-clock
    idates acl2-oracle file-clock readable-files written-files
-   read-files writeable-files list-all-package-names-lst
-   user-stobj-alist))))
+   read-files writeable-files user-stobj-alist))))
 
 ; The purpose of this function is to provide a means for constructing
 ; a state other than the live state.
 
   (let ((s
          (list open-input-channels open-output-channels global-table
-               t-stack 32-bit-integer-stack big-clock idates acl2-oracle
+               big-clock idates acl2-oracle
                file-clock readable-files written-files
-               read-files writeable-files list-all-package-names-lst
-               user-stobj-alist)))
+               read-files writeable-files user-stobj-alist)))
     (cond ((state-p1 s)
            s)
           (t *default-state*))))
@@ -15870,7 +15888,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (cw "Waiting for all proof threads to finish~%"))
                  (sleep 0.1)))))
 
-(defmacro state-global-let* (bindings body)
+(defun state-global-let*-fn (bindings body)
 
 ; NOTE: In April 2010 we discussed the possibility that we could simplify the
 ; raw-Lisp code for state-global-let* to avoid acl2-unwind-protect, in favor of
@@ -15884,7 +15902,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (no-duplicatesp-equal (strip-cars bindings)))))
-
   (let ((cleanup `(pprogn
                    ,@(state-global-let*-cleanup bindings 0)
                    state)))
@@ -15906,6 +15923,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
          ,cleanup
          ,cleanup)))))
+
+(defmacro state-global-let* (bindings body)
+  (state-global-let*-fn bindings body))
 
 ; With state-global-let* defined, we are now able to use LOCAL.
 
@@ -18146,14 +18166,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defvar *read-file-into-string-alist*
 
 ; In this alist, each key is a filename (in the native OS, as discussed further
-; below) whose value is a triple (str fwd . fc): str is initially a character
-; stream str for that file but may be replaced by nil, fwd is the
-; file-write-date at the time the stream was created, and fc is the file-clock
-; of the state at the time the stream was opened.  If str is nil, then the
-; entry may be deleted (essentially, garbage collected) when the file-clock
-; advances (see increment-file-clock), since at that point there is no
-; restriction on using read-file-into-string on the given filename and no
+; below) whose value is a pair (str . pos), where: str is initially a character
+; stream str for that file but may be replaced by nil; and pos is the position
+; of the first character not read, except pos may be nil if the entire file was
+; read.  The entry will be deleted (essentially, garbage collected) when the
+; file-clock advances (see increment-file-clock), since at that point there is
+; no restriction on using read-file-into-string on the given filename and no
 ; stream to re-use.
+
+; NOTE: We do not define macros for the two fields, because we want to update
+; them destructively using setf (and defining suitable setf expanders seems
+; like overkill).  Instead we just use car and cdr for the str and pos
+; components that are discussed above.
 
 ; We use this variable to protect our logical story on filenames.  Recall that
 ; (open-input-channels state) is logically an alist that is extended by
@@ -18164,7 +18188,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; here stems from the use of open-input-channel in
 ; read-file-into-string2-logical.  Suppose (file-clock state) is fc.  Then by
 ; using open-input-channel, read-file-into-string2-logical reads
-; (open-input-channels state) at key (list file-name :character fc+1.  Two
+; (open-input-channels state) at key (list file-name :character fc+1).  Two
 ; successive calls of read-file-into-string2-logical on file-name with the same
 ; state (hence same file-clock) should give the same result, but that won't
 ; happen if the file has changed inbetween the calls.  Note that the
@@ -18174,14 +18198,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; and a subsequent ordinary call of open-input-channel; see the call of
 ; check-against-read-file-into-string-alist in open-input-channel.  (The other
 ; way around, namely open-input-channel followed by
-; read-file-into-string2-logical, isn't a concern, because open-input-channel
-; updates the file-clock.)  Note that a key in *read-file-into-string-alist* is
-; based on fc, not fc+1.
+; read-file-into-string2-logical, isn't a concern, because when
+; open-input-channel is called in read-file-into-string2-logical, that updates
+; the file-clock.)  Note that a key in *read-file-into-string-alist* is based
+; on fc, not fc+1.
 
 ; Recall that we key on the filename in the native OS.  It would also be fine
 ; to key on the Unix filename, but our code just developed this way.  It's fine
 ; though: if we encounter the same Unix filename twice, then of course we'd
-; encouter the same OS filename twice, which would catch the problem we're
+; encounter the same OS filename twice, which would catch the problem we're
 ; trying to catch.
 
   nil)
@@ -18190,40 +18215,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (declaim (inline increment-file-clock-raw))
 #-acl2-loop-only
 (defun increment-file-clock-raw ()
-  (incf *file-clock*)
-  (when (loop for pair in *read-file-into-string-alist*
-              thereis (null (car (cdr pair)))) ; empty stream
-    (setq *read-file-into-string-alist*
-          (loop for pair in *read-file-into-string-alist*
-                when (car (cdr pair))
-                collect pair))))
-
-#-acl2-loop-only
-(defun check-against-read-file-into-string-alist (os-filename)
-
-; See *read-file-into-string-alist* for relevant background.
-
-  (let ((pair (assoc-equal os-filename *read-file-into-string-alist*)))
-    (when pair
-      (let ((stream (car (cdr pair))))
-        (when stream
-          (setf (car (cdr pair)) nil)
-          (close stream)))
-      (let ((fwd (our-ignore-errors (file-write-date os-filename))))
-        (cond
-         ((null fwd)
-          (error "Unable to determine the file-write-date of file ~s.~%~
-                  This is necessary for checking compatibility with a~%~
-                  previous read of this file using read-file-into-string.~%~
-                  Execute ~s to avoid this error.~%"
-                 os-filename
-                 '(increment-file-clock state)))
-         ((< (cadr (cdr pair)) fwd)
-          (error "An attempt to read file ~s is illegal, because~%~
-                  that file has changed since a previous read by~%~
-                  read-file-into-string.  Execute ~s to avoid this error.~%"
-                 os-filename
-                 '(increment-file-clock state))))))))
+  (loop for pair in *read-file-into-string-alist*
+        when (car (cdr pair)) ; stream
+        do (close (car (cdr pair))))
+  (setq *read-file-into-string-alist* nil)
+  (incf *file-clock*))
 
 (skip-proofs
 (defun open-input-channel (file-name typ state-state)
@@ -18250,11 +18246,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; We do two different opens here because the default :element-type is
 ; different in CLTL and CLTL2.
 
-          (let ((os-file-name
-                 (pathname-unix-to-os file-name *the-live-state*)))
-            (when (eq typ :character)
-              (check-against-read-file-into-string-alist os-file-name))
-            (increment-file-clock-raw)
+          (let* ((os-file-name
+                  (pathname-unix-to-os file-name *the-live-state*))
+                 (pair (and (eq typ :character)
+                            (assoc-equal os-file-name
+                                         *read-file-into-string-alist*))))
+            (when pair
+              (let ((stream (car (cdr pair))))
+                (when stream
+                  (setf (car (cdr pair)) nil)
+                  (close stream)))
+              (error "An attempt to open an input channel to file ~s is ~
+                      illegal~%because of a call of ~s on that file.~%Execute ~
+                      ~s to avoid this error.~%See :DOC read-file-into-string."
+                     file-name
+                     'read-file-into-string.
+                     '(increment-file-clock state)))
 
 ; Protect against the sort of behavior Bob Boyer has pointed out for GCL, as
 ; the following kills all processes:
@@ -18271,6 +18278,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (case
                      typ
                      ((:character :object)
+
+; We allow the :element-type to default to character in the following call of
+; safe-open.  That may seem surprising when typ is :object.  But read-object
+; calls read, and the CL HyperSpec doesn't impose any requirements on the
+; stream when calling read.  So we prefer to leave :element-type as the
+; default.
+
                       (safe-open os-file-name :direction :input
                                  :if-does-not-exist nil))
                      (:byte (safe-open os-file-name :direction :input
@@ -18464,16 +18478,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       ((:character :object)
                        (cond ((eq file-name :string)
                               (make-string-output-stream))
-                             (t (safe-open os-file-name :direction :output
-                                           :if-exists :supersede
+                             (t
+
+; We allow the :element-type to default to character in the following call of
+; safe-open.  That may seem surprising when typ is :object.  But read-object
+; calls read, and the CL HyperSpec doesn't impose any requirements on the
+; stream when calling read.  So we prefer to leave :element-type as the
+; default.
+
+                              (safe-open os-file-name :direction :output
+                                         :if-exists :supersede
 
 ; In ACL2(p) using CCL, we have seen an error caused when standard-co was
 ; connected to a file.  Specifically, waterfall-print-clause-id@par was
 ; printing to standard-co -- i.e., to that file -- and CCL complained because
 ; the default is for a file stream to be private to the thread that created it.
 
-                                           #+(and acl2-par ccl) :sharing
-                                           #+(and acl2-par ccl) :lock))))
+                                         #+(and acl2-par ccl) :sharing
+                                         #+(and acl2-par ccl) :lock))))
                       (:byte
                        (cond ((eq file-name :string)
                               (make-string-output-stream
@@ -19801,37 +19823,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (f-get-global 'print-readably state))
        (may-need-slashes-fn x (print-base))))
 
-
-;                              T-STACK
-
-#-acl2-loop-only
-(progn
-
-(defparameter *t-stack* (make-array$ 5))
-
-(defparameter *t-stack-length* 0)
-
-)
-
-
-(defun t-stack-length1 (state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  (declare (xargs :guard (state-p1 state-state)))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (return-from t-stack-length1
-                      *t-stack-length*)))
-  (length (t-stack state-state)))
-
-(defun t-stack-length (state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  (declare (xargs :guard (state-p1 state-state)))
-  (t-stack-length1 state-state))
-
 (defun make-list-ac (n val ac)
   (declare (xargs :guard (and (integerp n)
                               (>= n 0))))
@@ -19841,41 +19832,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+acl2-loop-only
 (defmacro make-list (size &key initial-element)
   `(make-list-ac ,size ,initial-element nil))
-
-(defun extend-t-stack (n val state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  (declare (type (integer (0) *) n) (xargs :guard (state-p1 state-state)))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (cond (*wormholep*
-                (wormhole-er 'extend-t-stack (list n val))))
-         (let ((new-length (+ *t-stack-length* n)))
-           (cond ((> new-length (length (the simple-vector
-                                             *t-stack*)))
-                  (let ((new-length new-length))
-                    (declare (type fixnum new-length))
-                    (let ((new-array (make-array$ (* 2 new-length))))
-                      (declare (simple-vector new-array))
-                      (do ((i (1- *t-stack-length*) (1- i)))
-                          ((< i 0))
-                          (declare (type fixnum i))
-                          (setf (svref new-array i)
-                                (svref *t-stack* i)))
-                      (setq *t-stack* new-array)))))
-           (let ((new-length new-length))
-             (declare (type fixnum new-length))
-             (do ((i *t-stack-length* (1+ i)))
-                 ((= i new-length))
-                 (declare (type fixnum i))
-                 (setf (svref *t-stack* i) val))
-             (setq *t-stack-length* new-length)))
-         (return-from extend-t-stack state-state)))
-  (update-t-stack
-   (append (t-stack state-state)
-           (make-list-ac n val nil))
-   state-state))
 
 (encapsulate
  ()
@@ -20079,227 +20035,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  str0)))))
         (otherwise (os-er os 'pathname-unix-to-os))))))
 
-(defun shrink-t-stack (n state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  (declare (type (integer 0 *) n)
-           (xargs :guard (state-p1 state-state)))
-
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (cond (*wormholep*
-                (wormhole-er 'shrink-t-stack (list n))))
-         (let ((old *t-stack-length*)
-               (new (max 0 (- *t-stack-length* n))))
-           (declare (type fixnum old new))
-           (setq *t-stack-length* new)
-           (do ((i new (1+ i))) ((= i old))
-               (declare (type fixnum i))
-               (setf (svref *t-stack* i) nil)))
-         (return-from shrink-t-stack *the-live-state*)))
-  (update-t-stack
-   (first-n-ac (max 0 (- (length (t-stack state-state)) n))
-               (t-stack state-state)
-               nil)
-   state-state))
-
-(defun aref-t-stack (i state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  #-acl2-loop-only
-  (declare (type fixnum i))
-  (declare (xargs :guard (and (integerp i)
-                              (>= i 0)
-                              (state-p1 state-state)
-                              (< i (t-stack-length1 state-state)))))
-  (cond #-acl2-loop-only
-        ((live-state-p state-state)
-         (svref *t-stack* (the fixnum i)))
-        (t (nth i (t-stack state-state)))))
-
-(defun aset-t-stack (i val state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  #-acl2-loop-only
-  (declare (type fixnum i))
-  (declare (xargs :guard (and (integerp i)
-                              (>= i 0)
-                              (state-p1 state-state)
-                              (< i (t-stack-length1 state-state)))))
-  (cond #-acl2-loop-only
-        ((live-state-p state-state)
-         (cond (*wormholep*
-                (wormhole-er 'aset-t-stack (list i val))))
-         (setf (svref *t-stack* (the fixnum i))
-               val)
-         state-state)
-        (t (update-t-stack
-            (update-nth
-             i val
-             (t-stack state-state))
-            state-state))))
-
-; 32-bit-integer-stack
-
-#-acl2-loop-only
-(progn
-
-(defparameter *32-bit-integer-stack*
-  (make-array$ 5 :element-type '(signed-byte 32)))
-
-(defparameter *32-bit-integer-stack-length* 0)
-
-)
-
-(defun 32-bit-integer-stack-length1 (state-state)
-  (declare (xargs :guard (state-p1 state-state)))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (return-from 32-bit-integer-stack-length1
-                      *32-bit-integer-stack-length*)))
-  (length (32-bit-integer-stack state-state)))
-
-(defun 32-bit-integer-stack-length (state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  (declare (xargs :guard (state-p1 state-state)))
-  (32-bit-integer-stack-length1 state-state))
-
-(defun extend-32-bit-integer-stack (n val state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  (declare (xargs :guard (and (32-bit-integerp val)
-                              (integerp n)
-                              (> n 0)
-                              (state-p1 state-state))))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (cond (*wormholep*
-                (wormhole-er 'extend-32-bit-integer-stack (list n val))))
-         (let ((new-length (+ *32-bit-integer-stack-length* n)))
-           (cond ((> new-length (length (the (array (signed-byte 32) (*))
-                                         *32-bit-integer-stack*)))
-                  (let ((new-length new-length))
-                    (declare (type fixnum new-length))
-                    (let ((new-array (make-array$
-                                      (* 2 new-length)
-                                      :element-type
-                                      '(signed-byte 32))))
-                      (declare (type (array (signed-byte 32) (*)) new-array))
-                      (do ((i (1- *32-bit-integer-stack-length*) (1- i)))
-                          ((< i 0))
-                          (declare (type fixnum i))
-                          (setf (aref (the (array (signed-byte 32) (*))
-                                       new-array)
-                                      i)
-                                (aref (the (array (signed-byte 32) (*))
-                                       *32-bit-integer-stack*)
-                                      i)))
-                      (setq *32-bit-integer-stack* new-array)))))
-           (let ((new-length new-length))
-             (declare (type fixnum new-length))
-             (do ((i *32-bit-integer-stack-length* (1+ i)))
-                 ((= i new-length))
-                 (declare (type fixnum i))
-                 (setf (aref (the (array (signed-byte 32) (*))
-                              *32-bit-integer-stack*)
-                             i) val))
-             (setq *32-bit-integer-stack-length* new-length)))
-         (return-from extend-32-bit-integer-stack
-                      state-state)))
-  (update-32-bit-integer-stack
-   (append (32-bit-integer-stack state-state)
-           (make-list-ac n val nil))
-   state-state))
-
-(defun shrink-32-bit-integer-stack (n state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  (declare (type (integer 0 *) n)
-           (xargs :guard (state-p1 state-state)))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (cond (*wormholep*
-                (wormhole-er 'shrink-32-bit-integer-stack (list n))))
-         (let ((old *32-bit-integer-stack-length*)
-               (new (max 0 (- *32-bit-integer-stack-length* n))))
-           (declare (type fixnum old new))
-           (setq *32-bit-integer-stack-length* new)
-           (do ((i new (1+ i))) ((= i old))
-               (declare (type fixnum i))
-               (setf (aref (the (array (signed-byte 32) (*))
-                            *32-bit-integer-stack*)
-                           i)
-                     0)))
-         (return-from shrink-32-bit-integer-stack
-                      state-state)))
-  (update-32-bit-integer-stack
-   (first-n-ac
-    (max 0 (- (length (32-bit-integer-stack
-                       state-state))
-              n))
-    (32-bit-integer-stack state-state)
-    nil)
-   state-state))
-
-(defun aref-32-bit-integer-stack (i state-state)
-  #-acl2-loop-only
-  (declare (type fixnum i))
-  (declare (xargs :guard (and (integerp i)
-                              (>= i 0)
-                              (state-p1 state-state)
-                              (< i (32-bit-integer-stack-length1
-                                    state-state)))))
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  #-acl2-loop-only
-  (the (signed-byte 32)
-   (cond
-    ((live-state-p state-state)
-     (the (signed-byte 32)
-      (aref (the (array (signed-byte 32) (*))
-             *32-bit-integer-stack*)
-            (the fixnum i))))
-    (t (nth i (32-bit-integer-stack state-state)))))
-  #+acl2-loop-only
-  (nth i (32-bit-integer-stack state-state)))
-
-(defun aset-32-bit-integer-stack (i val state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-  #-acl2-loop-only
-  (declare (type fixnum i))
-  (declare (type (signed-byte 32) val))
-  (declare (xargs :guard (and (integerp i)
-                              (>= i 0)
-                              (state-p1 state-state)
-                              (< i (32-bit-integer-stack-length1 state-state))
-                              (32-bit-integerp val))))
-  (cond #-acl2-loop-only
-        ((live-state-p state-state)
-         (cond (*wormholep*
-                (wormhole-er 'aset-32-bit-integer-stack (list i val))))
-         (setf (aref (the (array (signed-byte 32) (*))
-                      *32-bit-integer-stack*)
-                     (the fixnum i))
-               (the (signed-byte 32)
-                val))
-         state-state)
-        (t
-         (update-32-bit-integer-stack
-          (update-nth
-           i val
-           (32-bit-integer-stack state-state))
-          state-state))))
-
 (defmacro f-big-clock-negative-p (st)
   #-acl2-loop-only
   (let ((s (gensym)))
@@ -20372,22 +20107,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (update-big-clock-entry
    (1- (big-clock-entry state-state))
    state-state))
-
-(defun list-all-package-names (state-state)
-  (declare (xargs :guard (state-p1 state-state)))
-
-;   Wart: We use state-state instead of state because of a bootstrap problem.
-
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (return-from list-all-package-names
-                      (mv (mapcar (function package-name)
-                                  (list-all-packages))
-                          state-state))))
-  (mv (car (list-all-package-names-lst state-state))
-      (update-list-all-package-names-lst
-       (cdr (list-all-package-names-lst state-state))
-       state-state)))
 
 (defun user-stobj-alist (state-state)
   (declare (xargs :guard (state-p1 state-state)))
@@ -21240,7 +20959,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 plist-worldp
                                 timer-alistp
                                 known-package-alistp
-                                32-bit-integer-listp
                                 file-clock-p
                                 readable-files-p
                                 written-files-p
@@ -21327,7 +21045,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 plist-worldp
                                 timer-alistp
                                 known-package-alistp
-                                32-bit-integer-listp
                                 file-clock-p
                                 readable-files-p
                                 written-files-p
@@ -21579,7 +21296,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               plist-worldp
               timer-alistp
               known-package-alistp
-              32-bit-integer-listp
               file-clock-p
               readable-files-p
               written-files-p
@@ -23590,18 +23306,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (sort ans (function (lambda (x y)
                                       (symbol< (car x) (car y)))))))
         (list :global-table (global-table-cars *the-live-state*))
-        (list :t-stack
-              (let (ans)
-                (do ((i (1- *t-stack-length*) (1- i)))
-                    ((< i 0))
-                    (push (aref-t-stack i *the-live-state*) ans))
-                ans))
-        (list :32-bit-integer-stack
-              (let (ans)
-                (do ((i (1- *32-bit-integer-stack-length*) (1- i)))
-                    ((< i 0))
-                    (push (aref-32-bit-integer-stack i *the-live-state*) ans))
-                ans))
         (list :big-clock '?)
         (list :idates '?)
         (list :acl2-oracle '?)
@@ -23609,8 +23313,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list :readable-files '?)
         (list :written-files '?)
         (list :read-files '?)
-        (list :writeable-files '?)
-        (list :list-all-package-names-lst '?)))
+        (list :writeable-files '?)))
 
 ; Here we implement the macro-aliases table.
 
@@ -24958,14 +24661,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (when (and *acl2-time-limit*
 
-; The following test isn't currently necessary, strictly speaking.  But it's a
-; cheap test so we include it for robustness, in case for example someone calls
-; rewrite not in the scope of catch-time-limit5.
+; The following test isn't currently necessary for the prover.  But it's a
+; cheap test so we include it, for example in case someone calls rewrite not in
+; the scope of catch-time-limit5.
 
              (member-eq 'time-limit5-tag *time-limit-tags*)
              (< *acl2-time-limit* (get-internal-time)))
     (setq *next-acl2-oracle-value*
           (if (eql *acl2-time-limit* 0)
+
+; As noted in comments above the definition of *acl2-time-limit*, that variable
+; is set to 0 to indicate that a proof has been interrupted (see our-abort).
+; We check for *interrupt-string* in waterfall-step to record whether the error
+; is due to an interrupt or to reaching a time-limit.
+
               *interrupt-string*
             msg))
     (throw 'time-limit5-tag
@@ -27310,8 +27019,7 @@ Lisp definition."
 ; file-clock is greater than fc1.  Thus, there will be no way to detect
 ; logically any effect of delete-file$ on the four state fields above, since
 ; nothing was known about fields for file-clock exceeding fc1 before running
-; delete-file$.  There is no problem with read-file-into-string since it checks
-; that the file-write-date hasn't changed before returning a value.
+; delete-file$.
 
   (declare (xargs :guard (stringp file)
                   :stobjs state))
@@ -29010,12 +28718,13 @@ Lisp definition."
   #-acl2-loop-only
   (progn (increment-file-clock-raw)
          state)
+  #+acl2-loop-only
+  (let ((state
 
-; For the logical definition, we use the rather goofy LET below so that ACL2
+; We use this rather goofy LET binding so that ACL2
 ; can establish the proper stobjs-out.
 
-  #+acl2-loop-only
-  (let ((state (non-exec (update-file-clock (1+ (file-clock state)) state))))
+         (non-exec (update-file-clock (1+ (file-clock state)) state))))
     state))
 
 (defun read-file-into-string2 (filename start bytes close state)
@@ -29026,11 +28735,7 @@ Lisp definition."
 ; noted below.  See acl2-set-character-encoding.
 
 ; We want the raw Lisp code below to be consistent with the logical call below
-; of read-file-into-string2-logical.  To that end, we don't pay attention to
-; the file-write-date until after attempting to open the stream: we return nil
-; if the open fails, regardless of the file-write-date, just as with the
-; logical code.  But in the raw code, if the open succeeds but the
-; file-write-date isn't suitable, we cause an error.
+; of read-file-into-string2-logical.
 
 ; In error cases we typically close the associated stream, if any.  But in
 ; these cases we first make updates to avoid having a closed stream in
@@ -29043,114 +28748,68 @@ Lisp definition."
   (declare (xargs :stobjs state :guard (and (stringp filename)
                                             (natp start)
                                             (or (null bytes)
-                                                (natp bytes)))))
+                                                (natp bytes))))
+           #+acl2-loop-only
+           (ignore close))
   #-acl2-loop-only
-  (let* ((os-filename (pathname-unix-to-os filename state))
-         (pair0 ; nil or (old-stream/nil old-file-write-date . old-file-clock)
-          (assoc-equal os-filename *read-file-into-string-alist*))
-         (pair pair0) ; to be reset below to a new pair if pair0 is nil
-         (old-stream-or-nil (car (cdr pair0)))
-         (stream (or old-stream-or-nil
-                     (open os-filename
-                           :element-type 'character ; the default
-                           :direction :input
-                           :if-does-not-exist nil)))
-         (old-fwd (cadr (cdr pair0)))
-         (old-fc (cddr (cdr pair0)))
-         (fwd (our-ignore-errors (file-write-date os-filename))))
-    (cond ((null stream)
+  (when (live-state-p state) ; perhaps always true because of signature check
+    (return-from
+     read-file-into-string2
+     (let* ((os-filename (pathname-unix-to-os filename state))
+            (pair ; nil or (old-stream/nil old-file-write-date . old-file-clock)
+             (assoc-equal os-filename *read-file-into-string-alist*))
+            (old-stream-or-nil (car (cdr pair)))
+            (stream (or old-stream-or-nil
+                        (open os-filename
+                              :element-type 'character ; the default
+                              :direction :input
+                              :if-does-not-exist nil))))
+       (cond ((null stream)
 
 ; The call of open failed.  We return nil just as we would in
 ; read-file-into-string2-logical.  But consider the converse: if
 ; read-file-into-string2-logical would return nil because its call of open
 ; would fail, then what happens here?  We still might have a stream to the file
-; even though it no longer can be opened.  Logically, we can imagine that the
-; file actually still exists in that case, so that logically it could be
-; opened.
+; (i.e., a non-nil value of old-stream-or-nil) even though it no longer can be
+; opened.  Logically, we can imagine that the file actually still exists in
+; that case, so that logically it could be opened.
 
-           (return-from read-file-into-string2 nil))
-          ((null fwd) ; e.g., if old stream exists but file has been deleted
-           (when old-stream-or-nil ; remove the closed stream from pair0
-             (setf (car (cdr pair0)) nil))
-           (close stream)
-           (error "Unable to determine the file-write-date of file ~
-                   ~s.~%Perhaps this file was read previously by ~s and then ~
-                   deleted."
-                  os-filename 'read-file-into-string))
-          ((null pair0) ; no prior read that could conflict with this one
+              (return-from read-file-into-string2 nil))
+             ((null pair) ; no prior read that could conflict with this one
 
 ; We reset pair to be the new pair that we push onto
 ; *read-file-into-string-alist*.
 
-           (push (setq pair (cons os-filename (list* stream fwd *file-clock*)))
-                 *read-file-into-string-alist*))
-          ((or (= old-fwd fwd)
-               (< old-fc *file-clock*))
-
-; The read is legal in both of these cases.  If fwd has changed (presumably
-; increased), though, we need to replace an existing stream with a new one.
-
-           (cond ((null old-stream-or-nil)
-                  (setf (car (cdr pair0)) stream))
-                 ((= old-fwd fwd)) ; nothing to do
-                 (t
-
-; We don't want a closed stream in *read-file-into-string-alist*, so we remove
-; that stream before closing it (in case there's an interrupt).
-
-                  (setf (car (cdr pair0)) nil)
-                  (close old-stream-or-nil)
-                  (setq stream
-                        (open os-filename
-                              :element-type 'character ; the default
-                              :direction :input
-                              :if-does-not-exist nil))
-                  (setf (car (cdr pair0)) stream) ; could be nil
-                  (when (null stream) ; failure to open; return nil as above
-                    (return-from read-file-into-string2 nil)))))
-          (t ; presumably original file clock but increased file-write-date
-           (when old-stream-or-nil ; remove the to-be-closed stream from pair0
-             (setf (car (cdr pair0)) nil))
-           (close stream)
-           (error "Illegal consecutive reads from file~%~s,~%which appears to ~
-                   have been written between the two reads.~%Execute ~s to ~
-                   avoid this error.~%See :DOC read-file-into-string."
-                  os-filename
-                  '(increment-file-clock state))))
-    (let* ((file-len (file-length stream))
-           (max-bytes (cond ((<= start file-len)
-                             (- file-len start))
-                            (t
-
-; Before causing an error, we do some cleaning up.
-
-                             (cond ((null pair0) ; then pop off the new pair
-                                    (pop *read-file-into-string-alist*)
-                                    (close stream))
-                                   (old-stream-or-nil
-
-; If an already-opened stream is in pair (i.e., in pair0), then we leave it
-; there since the user might want to try again with a suitable :start value.
-
-                                    nil)
-                                   (t ; Close the newly-opened stream.
-                                    (setf (car (cdr pair0)) nil)
-                                    (close stream)))
-                             (error "The :start value, ~s, specified for a ~
-                                     call~%of ~s, exceeds the length ~s of ~
-                                     file~%~s."
-                                    start 'read-file-into-string file-len
-                                    os-filename))))
-           (finish-p (if (eq close :default)
-                         (or (null bytes)
-                             (< max-bytes bytes))
-                       close))
-           (bytes (if bytes
-                      (min bytes max-bytes)
-                    max-bytes))
-           seq)
-      (declare (type (integer 0 *) file-len max-bytes bytes))
-      (when (<= bytes *read-file-into-string-bound*)
+              (push (setq pair (cons os-filename (cons stream 0)))
+                    *read-file-into-string-alist*))
+             ((and (not (eql bytes 0))
+                   (< start (cdr (cdr pair))))
+              (error "The :start value, ~s, specified for a call of ~s,~%~
+                      is less than the position ~s after a previous read of ~
+                      file~%~s at the same file-clock.~%See :DOC ~
+                      read-file-into-string."
+                     start 'read-file-into-string (cdr (cdr pair))
+                     os-filename)))
+       (let* ((file-len (file-length stream))
+              (max-bytes (cond ((<= start file-len)
+                                (- file-len start))
+                               (t
+                                (error "The :start value, ~s, specified for a ~
+                                        call~%of ~s, exceeds the length ~s of ~
+                                        file~%~s."
+                                       start 'read-file-into-string file-len
+                                       os-filename))))
+              (finish-p (if (eq close :default)
+                            (or (null bytes)
+                                (< max-bytes bytes))
+                          close))
+              (bytes (if bytes
+                         (min bytes max-bytes)
+                       max-bytes))
+              seq)
+         (declare (type (integer 0 *) file-len max-bytes bytes))
+         (when (<= bytes *read-file-into-string-bound*)
+           (setf (cdr (cdr pair)) (+ start bytes))
 
 ; The following #-acl2-loop-only code, minus the WHEN clause, is originally
 ; based on code found at
@@ -29161,42 +28820,25 @@ Lisp definition."
 
 ; The URL above says ``You can do anything you like with the code.''
 
-        (setq seq (make-string bytes))
-        (file-position stream start)
+           (setq seq (make-string bytes))
+           (file-position stream start)
 
 ; It's probably important for the following call that the character encoding is
 ; :iso-8859-1, so that stream is copied into seq one byte at a time.
 
-        (read-sequence (the string seq) stream)
-        (when (not (eql fwd
-                        (ignore-errors (file-write-date os-filename))))
-
-; The file-write-date has changed!  This is presumably a rare occurrence.  No
-; further reads will be allowed on the current stream.  We might as well close
-; it.
-
-          (cond ((null pair0) ; then pop off the new pair
-                 (pop *read-file-into-string-alist*))
-                (t (setf (car (cdr pair0)) nil)))
-          (close stream)
-          (error "Illegal attempt to call ~s concurrently~%with some change to ~
-                  that file!  See :DOC read-file-into-string."
-                 'read-file-into-string)))
-      (when finish-p
+           (read-sequence (the string seq) stream))
+         (when finish-p
 
 ; We close the stream, but we leave the entry in *read-file-into-string-alist*
 ; to prevent inappropriate reads after the file-write-date has changed but the
 ; *file-clock* has not.
 
-; Note that we use pair here, not pair0, because we want to close the stream
-; even if it's in a newly-created pair.
+; Note that we close the stream even if pair is a newly-added to
+; *read-file-into-string-alist*.
 
-        (setf (car (cdr pair)) nil)
-        (close stream))
-      seq))
-  #+acl2-loop-only
-  (declare (ignore close))
-  #+acl2-loop-only
+           (setf (car (cdr pair)) nil)
+           (close stream))
+         seq))))
   (read-file-into-string2-logical filename start bytes state))
 
 (defmacro read-file-into-string (filename &key

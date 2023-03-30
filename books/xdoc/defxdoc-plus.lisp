@@ -91,4 +91,6 @@
                   nil)
                  (t `((xdoc::order-subtopics ,name ,order-subtopics nil))))
          ,@(and default-parent
-                `((local (set-default-parents ,name))))))))
+                `((local (set-default-parents ,name)))))))
+
+  (table acl2::pp-special-syms 'defxdoc+ 1))

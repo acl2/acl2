@@ -1160,6 +1160,7 @@
        (if-stmt-formula `(and ,if-stmt-formula1 ,if-stmt-formula2))
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
+       (value-kind-when-test-type-pred (pack 'value-kind-when- test-type-pred))
        (if-stmt-hints
         (if (consp else-items)
             `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
@@ -1178,7 +1179,9 @@
                                    expr-valuep-of-expr-value
                                    expr-value->value-of-expr-value
                                    value-fix-when-valuep
-                                   ,valuep-when-test-type-pred)))
+                                   ,valuep-when-test-type-pred
+                                   apconvert-expr-value-when-not-value-array
+                                   ,value-kind-when-test-type-pred)))
           `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
                                  exec-stmt-when-ifelse-and-false
                                  (:e stmt-kind)
@@ -1193,7 +1196,9 @@
                                  expr-valuep-of-expr-value
                                  expr-value->value-of-expr-value
                                  value-fix-when-valuep
-                                 ,valuep-when-test-type-pred)))))
+                                 ,valuep-when-test-type-pred
+                                 apconvert-expr-value-when-not-value-array
+                                 ,value-kind-when-test-type-pred)))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize test-term
                                          gin.context nil nil nil nil nil wrld))

@@ -2,5 +2,4 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Modification for fast-cert mode, and in particular the change to
-support local event-tuples.
+Deleted three fields of state.  It seems safest to recertify everything.

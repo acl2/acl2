@@ -3098,6 +3098,8 @@
               ((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
               (test-eval (exec-expr-pure ',loop-test compst))
               ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
+              (test-eval (apconvert-expr-value test-eval))
+              ((when (errorp test-eval)) (mv test-eval (compustate-fix compst)))
               (test-val (expr-value->value test-eval))
               (continuep (test-value test-val))
               ((when (errorp continuep)) (mv continuep (compustate-fix compst)))
@@ -3407,9 +3409,12 @@
                    ,@hyps
                    ,(untranslate$ (uguard+ fn wrld) nil state)))
        (concl `(and (not (errorp (exec-expr-pure ',loop-test ,compst-var)))
+                    (not (errorp (apconvert-expr-value
+                                  (exec-expr-pure ',loop-test ,compst-var))))
                     (equal (test-value
                             (expr-value->value
-                             (exec-expr-pure ',loop-test ,compst-var)))
+                             (apconvert-expr-value
+                              (exec-expr-pure ',loop-test ,compst-var))))
                            ,test-term)))
        (formula `(b* (,@formals-bindings) (implies ,hyps ,concl)))
        (not-error-thms (atc-string-taginfo-alist-to-not-error-thms prec-tags))
@@ -3854,7 +3859,19 @@
                                      ,natp-of-measure-of-fn-thm
                                      ,@extobj-recognizers
                                      ,correct-test-thm
-                                     ,correct-body-thm))
+                                     ,correct-body-thm
+                                     apconvert-expr-value-when-not-value-array
+                                     value-kind-when-ucharp
+                                     value-kind-when-scharp
+                                     value-kind-when-ushortp
+                                     value-kind-when-sshortp
+                                     value-kind-when-uintp
+                                     value-kind-when-sintp
+                                     value-kind-when-ulongp
+                                     value-kind-when-slongp
+                                     value-kind-when-ullongp
+                                     value-kind-when-sllongp
+                                     expr-value-fix-when-expr-valuep))
                        :use ((:instance (:guard-theorem ,fn)
                                         :extra-bindings-ok ,@(alist-to-doublets
                                                               instantiation))
@@ -3913,7 +3930,19 @@
                                 ,natp-of-measure-of-fn-thm
                                 ,@extobj-recognizers
                                 ,correct-test-thm
-                                ,correct-body-thm))
+                                ,correct-body-thm
+                                apconvert-expr-value-when-not-value-array
+                                value-kind-when-ucharp
+                                value-kind-when-scharp
+                                value-kind-when-ushortp
+                                value-kind-when-sshortp
+                                value-kind-when-uintp
+                                value-kind-when-sintp
+                                value-kind-when-ulongp
+                                value-kind-when-slongp
+                                value-kind-when-ullongp
+                                value-kind-when-sllongp
+                                expr-value-fix-when-expr-valuep))
                              :expand (:lambdas
                                       (,fn ,@(fsublis-var-lst
                                               instantiation

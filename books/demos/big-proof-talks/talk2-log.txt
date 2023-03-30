@@ -14,8 +14,9 @@ ACL2 !>>(SET-GUARD-CHECKING :ALL)
 Leaving guard checking on, but changing value to :ALL.
 
 ACL2 !>>(DEFUN AP (X Y)
-               (IF (ENDP X)
-                   Y (CONS (CAR X) (AP (CDR X) Y))))
+          (IF (ENDP X)
+              Y
+            (CONS (CAR X) (AP (CDR X) Y))))
 
 The admission of AP is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -30,7 +31,7 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 !>>(AP '(1 2 3) '(4 5 6))
 (1 2 3 4 5 6)
 ACL2 !>>(DEFTHM AP-IS-ASSOCIATIVE
-                (EQUAL (AP (AP A B) C) (AP A (AP B C))))
+          (EQUAL (AP (AP A B) C) (AP A (AP B C))))
 
 Name the formula above *1.
 
@@ -99,10 +100,11 @@ Rules: ((:DEFINITION AP)
         (:REWRITE CDR-CONS))
  AP-IS-ASSOCIATIVE
 ACL2 !>>(DEFUN LTE (X Y)
-               (IF (ENDP X)
-                   T
-                   (IF (ENDP Y)
-                       NIL (LTE (CDR X) (CDR Y)))))
+          (IF (ENDP X)
+              T
+            (IF (ENDP Y)
+                NIL
+              (LTE (CDR X) (CDR Y)))))
 
 The admission of LTE is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -251,11 +253,11 @@ Rules: ((:DEFINITION ENDP)
 
 Proof succeeded.
 ACL2 !>>(DEFUN INSERT (E X)
-               (IF (ENDP X)
-                   (CONS E X)
-                   (IF (LEXORDER E (CAR X))
-                       (CONS E X)
-                       (CONS (CAR X) (INSERT E (CDR X))))))
+          (IF (ENDP X)
+              (CONS E X)
+            (IF (LEXORDER E (CAR X))
+                (CONS E X)
+              (CONS (CAR X) (INSERT E (CDR X))))))
 
 The admission of INSERT is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -269,8 +271,9 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 !>>(INSERT 'BOB '(ALICE CATHY))
 (ALICE BOB CATHY)
 ACL2 !>>(DEFUN ISORT (X)
-               (IF (ENDP X)
-                   X (INSERT (CAR X) (ISORT (CDR X)))))
+          (IF (ENDP X)
+              X
+            (INSERT (CAR X) (ISORT (CDR X)))))
 
 The admission of ISORT is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -283,10 +286,10 @@ Rules: NIL
 ACL2 !>>(ISORT '(BOB CATHY ALICE))
 (ALICE BOB CATHY)
 ACL2 !>>(DEFUN ORDERED (X)
-               (OR (ENDP X)
-                   (ENDP (CDR X))
-                   (AND (LEXORDER (CAR X) (CAR (CDR X)))
-                        (ORDERED (CDR X)))))
+          (OR (ENDP X)
+              (ENDP (CDR X))
+              (AND (LEXORDER (CAR X) (CAR (CDR X)))
+                   (ORDERED (CDR X)))))
 
 The admission of ORDERED is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -297,7 +300,8 @@ Summary
 Form:  ( DEFUN ORDERED ...)
 Rules: NIL
  ORDERED
-ACL2 !>>(DEFTHM ORDERED-ISORT (ORDERED (ISORT X)))
+ACL2 !>>(DEFTHM ORDERED-ISORT
+          (ORDERED (ISORT X)))
 
 Name the formula above *1.
 
@@ -577,8 +581,8 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION ORDERED))
  ORDERED-ISORT
 ACL2 !>>(DEFUN REMARKABLY-FAST-SORT (X)
-               (DECLARE (IGNORE X))
-               '(ALICE BOB CATHY))
+          (DECLARE (IGNORE X))
+          '(ALICE BOB CATHY))
 
 Since REMARKABLY-FAST-SORT is non-recursive, its admission is trivial.
 We observe that the type of REMARKABLY-FAST-SORT is described by the
@@ -592,7 +596,7 @@ Rules: NIL
 ACL2 !>>(REMARKABLY-FAST-SORT '(CATHY ALICE BOB))
 (ALICE BOB CATHY)
 ACL2 !>>(DEFTHM ORDERED-REMARKABLY-FAST-SORT
-                (ORDERED (REMARKABLY-FAST-SORT X)))
+          (ORDERED (REMARKABLY-FAST-SORT X)))
 
 ACL2 Warning [Non-rec] in ( DEFTHM ORDERED-REMARKABLY-FAST-SORT ...):
 A :REWRITE rule generated from ORDERED-REMARKABLY-FAST-SORT will be
@@ -639,10 +643,10 @@ ACL2 !>>(PE 'PERM)
               ]
               \
 >L             (DEFUN PERM (X Y)
-                      (IF (CONSP X)
-                          (AND (MEMB (CAR X) Y)
-                               (PERM (CDR X) (RM (CAR X) Y)))
-                          (NOT (CONSP Y))))
+                 (IF (CONSP X)
+                     (AND (MEMB (CAR X) Y)
+                          (PERM (CDR X) (RM (CAR X) Y)))
+                   (NOT (CONSP Y))))
 ACL2 !>>(DEFTHM PERM-ISORT (PERM (ISORT X) X))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM PERM-ISORT ...):  In a :REWRITE
@@ -888,7 +892,7 @@ Splitter rules (see :DOC splitter):
 Warnings:  Double-rewrite
  PERM-ISORT
 ACL2 !>>(DEFTHM PERM-REMARKABLY-FAST-SORT
-                (PERM (REMARKABLY-FAST-SORT X) X))
+          (PERM (REMARKABLY-FAST-SORT X) X))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM PERM-REMARKABLY-FAST-SORT
 ...):  In a :REWRITE rule generated from PERM-REMARKABLY-FAST-SORT,
@@ -971,7 +975,8 @@ ACL2 !>>'(END OF DEMO 1)
 (END OF DEMO 1)
 ACL2 !>>(SET-GAG-MODE :GOALS)
 <state>
-ACL2 !>>(DEFTHM PERM-AP (PERM (AP A B) (AP B A)))
+ACL2 !>>(DEFTHM PERM-AP
+          (PERM (AP A B) (AP B A)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1177,8 +1182,8 @@ ACL2 Error [Failure] in ( DEFTHM PERM-AP ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM MEMB-AP
-                (EQUAL (MEMB E (AP A B))
-                       (OR (MEMB E A) (MEMB E B))))
+          (EQUAL (MEMB E (AP A B))
+                 (OR (MEMB E A) (MEMB E B))))
 Subgoal 2
 Subgoal 2'
 
@@ -1248,7 +1253,8 @@ Rules: ((:DEFINITION AP)
         (:REWRITE CDR-CONS)
         (:TYPE-PRESCRIPTION MEMB))
  MEMB-AP
-ACL2 !>>(DEFTHM PERM-AP (PERM (AP A B) (AP B A)))
+ACL2 !>>(DEFTHM PERM-AP
+          (PERM (AP A B) (AP B A)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1378,7 +1384,7 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION PERM) (:DEFINITION RM))
  PERM-AP
 ACL2 !>>(DEFTHM ISORT-IDEMPOTENT
-                (EQUAL (ISORT (ISORT X)) (ISORT X)))
+          (EQUAL (ISORT (ISORT X)) (ISORT X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1815,8 +1821,8 @@ ACL2 Error [Failure] in ( DEFTHM ISORT-IDEMPOTENT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM ISORT-IDENTITY
-                (IMPLIES (ORDERED X)
-                         (EQUAL (ISORT X) X)))
+          (IMPLIES (ORDERED X)
+                   (EQUAL (ISORT X) X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1876,7 +1882,7 @@ Rules: ((:DEFINITION ENDP)
         (:TYPE-PRESCRIPTION LEXORDER))
  ISORT-IDENTITY
 ACL2 !>>(DEFTHM ISORT-IDEMPOTENT
-                (EQUAL (ISORT (ISORT X)) (ISORT X)))
+          (EQUAL (ISORT (ISORT X)) (ISORT X)))
 
 Q.E.D.
 
@@ -1887,9 +1893,9 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE ORDERED-ISORT))
  ISORT-IDEMPOTENT
 ACL2 !>>(DEFTHM MEMB-CONGRUENCE
-                (IMPLIES (PERM A B)
-                         (EQUAL (MEMB E A) (MEMB E B)))
-                :RULE-CLASSES :CONGRUENCE)
+          (IMPLIES (PERM A B)
+                   (EQUAL (MEMB E A) (MEMB E B)))
+          :RULE-CLASSES :CONGRUENCE)
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1973,7 +1979,7 @@ Rules: ((:DEFINITION MEMB)
 ACL2 !>>(PE 'PERM-ISORT)
           12  (DEFTHM PERM-ISORT (PERM (ISORT X) X))
 ACL2 !>>(DEFTHM THIS-IS-NOT-A-THEOREM
-                (MEMB E (ISORT A)))
+          (MEMB E (ISORT A)))
 Goal'
 
 ([ A key checkpoint:
@@ -2046,12 +2052,13 @@ failure.
 ACL2 !>>'(END OF DEMO 2)
 (END OF DEMO 2)
 ACL2 !>>(DEFUN FIB1 (N)
-               (DECLARE (XARGS :GUARD (NATP N)
-                               :VERIFY-GUARDS NIL))
-               (IF (ZP N)
-                   0
-                   (IF (EQUAL N 1)
-                       1 (+ (FIB1 (- N 1)) (FIB1 (- N 2))))))
+          (DECLARE (XARGS :GUARD (NATP N)
+                          :VERIFY-GUARDS NIL))
+          (IF (ZP N)
+              0
+            (IF (EQUAL N 1)
+                1
+              (+ (FIB1 (- N 1)) (FIB1 (- N 2))))))
 
 For the admission of FIB1 we will use the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -2148,11 +2155,12 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
 ACL2 !>>(TIME$ (FIB1 40))
 102334155
 ACL2 !>>(DEFUN FIB2 (N J K)
-               (DECLARE (XARGS :GUARD (AND (NATP N) (NATP J) (NATP K))))
-               (IF (ZP N)
-                   J
-                   (IF (EQUAL N 1)
-                       K (FIB2 (- N 1) K (+ J K)))))
+          (DECLARE (XARGS :GUARD (AND (NATP N) (NATP J) (NATP K))))
+          (IF (ZP N)
+              J
+            (IF (EQUAL N 1)
+                K
+              (FIB2 (- N 1) K (+ J K)))))
 
 The admission of FIB2 is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -2178,13 +2186,13 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
 ACL2 !>>(TIME$ (FIB2 40 0 1))
 102334155
 ACL2 !>>(DEFTHM FIB2-V-FIB1
-                (IMPLIES (AND (NATP I)
-                              (NATP J)
-                              (NATP K)
-                              (<= 1 I))
-                         (EQUAL (FIB2 I J K)
-                                (+ (* (FIB1 (- I 1)) J)
-                                   (* (FIB1 I) K)))))
+          (IMPLIES (AND (NATP I)
+                        (NATP J)
+                        (NATP K)
+                        (<= 1 I))
+                   (EQUAL (FIB2 I J K)
+                          (+ (* (FIB1 (- I 1)) J)
+                             (* (FIB1 I) K)))))
 Goal'
 Goal''
 
@@ -2290,9 +2298,9 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:REWRITE UNICITY-OF-1))
  FIB2-V-FIB1
 ACL2 !>>(DEFUN FIB (N)
-               (DECLARE (XARGS :GUARD (NATP N)))
-               (MBE :LOGIC (FIB1 N)
-                    :EXEC (FIB2 N 0 1)))
+          (DECLARE (XARGS :GUARD (NATP N)))
+          (MBE :LOGIC (FIB1 N)
+               :EXEC (FIB2 N 0 1)))
 
 Since FIB is non-recursive, its admission is trivial.  We observe that
 the type of FIB is described by the theorem 
@@ -2433,21 +2441,20 @@ ACL2 !>>(TIME$ (FIB1 40))
 ACL2 !>>(MEMOIZE 'FIB1)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FIB1
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE NIL)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'FIB1
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN T)
+                  (CONS :INLINE T)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS :DEFAULT)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE NIL)
+                  (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
@@ -2475,7 +2482,7 @@ Form:  ( INCLUDE-BOOK "centaur/gl/gl" ...)
 Rules: NIL
  (:SYSTEM . "centaur/gl/gl.lisp")
 ACL2 !>>(DEFUN 32* (X Y)
-               (LOGAND (* X Y) (- (EXPT 2 32) 1)))
+          (LOGAND (* X Y) (- (EXPT 2 32) 1)))
 
 Since 32* is non-recursive, its admission is trivial.  We observe that
 the type of 32* is described by the theorem (INTEGERP (32* X Y)). 
@@ -2486,12 +2493,12 @@ Form:  ( DEFUN 32* ...)
 Rules: ((:TYPE-PRESCRIPTION BINARY-LOGAND))
  32*
 ACL2 !>>(DEFUN FAST-LOGCOUNT-32 (V)
-               (LET* ((V (- V (LOGAND (ASH V -1) 1431655765)))
-                      (V (+ (LOGAND V 858993459)
-                            (LOGAND (ASH V -2) 858993459))))
-                     (ASH (32* (LOGAND (+ V (ASH V -4)) 252645135)
-                               16843009)
-                          -24)))
+          (LET* ((V (- V (LOGAND (ASH V -1) 1431655765)))
+                 (V (+ (LOGAND V 858993459)
+                       (LOGAND (ASH V -2) 858993459))))
+            (ASH (32* (LOGAND (+ V (ASH V -4)) 252645135)
+                      16843009)
+                 -24)))
 
 Since FAST-LOGCOUNT-32 is non-recursive, its admission is trivial.
 We observe that the type of FAST-LOGCOUNT-32 is described by the theorem
@@ -2622,10 +2629,10 @@ ACL2 !>>'(END OF DEMO 4)
 ACL2 !>>(UBT! 'ISORT-IDENTITY)
           14:x(DEFTHM PERM-AP ...)
 ACL2 !>>(DEFUN LEQUAL (X Y)
-               (COND ((ATOM X) (ATOM Y))
-                     ((ATOM Y) NIL)
-                     (T (AND (EQUAL (CAR X) (CAR Y))
-                             (LEQUAL (CDR X) (CDR Y))))))
+          (COND ((ATOM X) (ATOM Y))
+                ((ATOM Y) NIL)
+                (T (AND (EQUAL (CAR X) (CAR Y))
+                        (LEQUAL (CDR X) (CDR Y))))))
 
 The admission of LEQUAL is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -3107,7 +3114,7 @@ Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  PERM-IMPLIES-LEQUAL-ISORT-1
 ACL2 !>>(DEFTHM ISORT-IDEMPOTENT-LEQUAL
-                (LEQUAL (ISORT (ISORT X)) (ISORT X)))
+          (LEQUAL (ISORT (ISORT X)) (ISORT X)))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM ISORT-IDEMPOTENT-LEQUAL ...):
 In a :REWRITE rule generated from ISORT-IDEMPOTENT-LEQUAL, equivalence
@@ -3128,8 +3135,8 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-LEQUAL-ISORT-1)
 Warnings:  Double-rewrite
  ISORT-IDEMPOTENT-LEQUAL
 ACL2 !>>(DEFUN TERMINAL-MARKER (X)
-               (COND ((ATOM X) X)
-                     (T (TERMINAL-MARKER (CDR X)))))
+          (COND ((ATOM X) X)
+                (T (TERMINAL-MARKER (CDR X)))))
 
 The admission of TERMINAL-MARKER is trivial, using the relation O<
 (which is known to be well-founded on the domain recognized by O-P)
@@ -3141,8 +3148,8 @@ Form:  ( DEFUN TERMINAL-MARKER ...)
 Rules: NIL
  TERMINAL-MARKER
 ACL2 !>>(DEFTHM TERMINAL-MARKER-ISORT
-                (EQUAL (TERMINAL-MARKER (ISORT X))
-                       (TERMINAL-MARKER X)))
+          (EQUAL (TERMINAL-MARKER (ISORT X))
+                 (TERMINAL-MARKER X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -3220,11 +3227,11 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION INSERT))
  TERMINAL-MARKER-ISORT
 ACL2 !>>(DEFTHM LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL
-                (IMPLIES (AND (EQUAL (TERMINAL-MARKER A)
-                                     (TERMINAL-MARKER B))
-                              (LEQUAL A B))
-                         (EQUAL A B))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (EQUAL (TERMINAL-MARKER A)
+                               (TERMINAL-MARKER B))
+                        (LEQUAL A B))
+                   (EQUAL A B))
+          :RULE-CLASSES NIL)
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -3280,8 +3287,7 @@ Rules: ((:DEFINITION ATOM)
         (:INDUCTION LEQUAL)
         (:INDUCTION TERMINAL-MARKER))
  LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL
-ACL2 !>>(DEFTHM
-         ISORT-IDEMPOTENT
+ACL2 !>>(DEFTHM ISORT-IDEMPOTENT
          (EQUAL (ISORT (ISORT X)) (ISORT X))
          :HINTS
          (("Goal" :USE (:INSTANCE LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL

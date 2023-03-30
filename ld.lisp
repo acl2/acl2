@@ -259,10 +259,10 @@
 
 ; See the Essay on Fast-cert; but here is a summary of the current situation.
 ; In this case, the world was extended only to support the possibility that we
-; are constructing the certification world for the later use of fast-cert, by
-; extending the top-level-cltl-command-stack when encountering redundant events
-; within a progn or the second pass of an encapsulate.  But there were no
-; actual events added to the world, so there's no such information that is
+; are constructing the certification world for the later use of fast-cert mode,
+; by extending the top-level-cltl-command-stack when encountering redundant
+; events within a progn or the second pass of an encapsulate.  But there were
+; no actual events added to the world, so there's no such information that is
 ; appropriate to record.
 
            (pprogn (set-w! old-wrld state)
@@ -1022,36 +1022,35 @@
   (cond
    ((and (raw-mode-p state)
          (bad-lisp-objectp x))
-    (if (not (eq channel *standard-co*))
-        (error "Attempted to print LD results to other than *standard-co*!"))
     (format t "[Note:  Printing non-ACL2 result.]")
     (terpri)
-    (cond ((and (cdr stobjs-out)
-                (true-listp x)
-                (true-listp raw-x)
-                (let ((len (length stobjs-out)))
-                  (and (= (length x) len)
-                       (= (length raw-x) len))))
+    (let ((str (get-output-stream-from-channel channel)))
+      (cond ((and (cdr stobjs-out)
+                  (true-listp x)
+                  (true-listp raw-x)
+                  (let ((len (length stobjs-out)))
+                    (and (= (length x) len)
+                         (= (length raw-x) len))))
 
 ; We eviscerate each bad-lisp-objectp in x-raw that is not already eviscerated
 ; in the corresponding position of x.
 
-           (princ "(")
-           (loop with col+1 = (1+ col)
-                 for y in x
-                 as y-raw in raw-x
-                 as i from 1
-                 do
-                 (progn (when (not (= i 1))
-                          (fms "~t0" (list (cons #\0 col+1))
-                               channel state nil))
-                        (cond ((and (not (and (consp y)
-                                              (evisceratedp t y)))
-                                    (bad-lisp-objectp y-raw))
-                               (prin1 y-raw))
-                              (t (ppr y col channel state t)))))
-           (princ ")"))
-          (t (prin1 raw-x)))
+             (princ "(" str)
+             (loop with col+1 = (1+ col)
+                   for y in x
+                   as y-raw in raw-x
+                   as i from 1
+                   do
+                   (progn (when (not (= i 1))
+                            (fms "~t0" (list (cons #\0 col+1))
+                                 channel state nil))
+                          (cond ((and (not (and (consp y)
+                                                (evisceratedp t y)))
+                                      (bad-lisp-objectp y-raw))
+                                 (prin1 y-raw str))
+                                (t (ppr y col channel state t)))))
+             (princ ")" str))
+            (t (prin1 raw-x str))))
     state)
    (t
     (ppr x col channel state t))))
@@ -1482,41 +1481,49 @@
                         (mv :return :exit state))
                        (t (pprogn
                            (ld-print-results trans-ans state)
-                           (cond
-                            ((and (ld-error-triples state)
-                                  (not (eq (ld-error-action state) :continue))
-                                  (equal (car trans-ans) *error-triple-sig*)
-                                  (let ((val (cadr (cdr trans-ans))))
-                                    (and (consp val)
-                                         (eq (car val) :stop-ld))))
-                             (mv :return
-                                 (list* :stop-ld
-                                        (f-get-global 'ld-level state)
-                                        (cdr (cadr (cdr trans-ans))))
-                                 state))
-                            (t
+                           (let ((action (ld-error-action state)))
+                             (cond
+                              ((and (ld-error-triples state)
+                                    (not (eq action :continue))
+                                    (equal (car trans-ans) *error-triple-sig*)
+                                    (let ((val (cadr (cdr trans-ans))))
+                                      (and (consp val)
+                                           (eq (car val) :stop-ld))))
+                               (cond
+                                ((and (consp action)
+                                      (eq (car action) :exit))
+                                 (mv action (good-bye-fn (cadr action)) state))
+                                (t
+                                 (mv :return
+                                     (list* :stop-ld
+                                            (f-get-global 'ld-level state)
+                                            (cdr (cadr (cdr trans-ans))))
+                                     state))))
+                              (t
 
 ; We make the convention of checking the new-namep filter immediately after
 ; we have successfully eval'd a form (rather than waiting for the next form)
 ; so that if the user has set the filter up he gets a satisfyingly
 ; immediate response when he introduces the name.
 
-                             (let ((filter (ld-pre-eval-filter state)))
-                               (cond
-                                ((and (not (eq filter :all))
-                                      (not (eq filter :query))
-                                      (not (eq filter :illegal-state))
-                                      (not (new-namep filter
-                                                      (w state))))
-                                 (er-progn
+                               (let ((filter (ld-pre-eval-filter state)))
+                                 (cond
+                                  ((and (not (eq filter :all))
+                                        (not (eq filter :query))
+                                        (not (eq filter :illegal-state))
+                                        (not (new-namep filter
+                                                        (w state))))
+                                   (er-progn
 
 ; We reset the filter to :all even though we are about to exit this LD
 ; with :return.  This just makes things work if "this LD" is the top-level
 ; one and LP immediately reenters.
 
-                                  (set-ld-pre-eval-filter :all state)
-                                  (mv :return :filter state)))
-                                (t (mv :continue nil state)))))))))))))))))))))))
+                                    (set-ld-pre-eval-filter :all state)
+                                    (mv :return :filter state)))
+                                  (t (mv :continue
+                                         nil
+                                         state))))))))))))))))))))))))
 
 (defun ld-loop (state)
 
@@ -2175,16 +2182,20 @@
        :ld-user-stobjs-modified-warning :same))
 
 (defun wormhole-prompt (channel state)
-  (fmt1 "Wormhole ~s0~sr ~@1~*2"
-        (list (cons #\0 (f-get-global 'current-package state))
-              (cons #\1 (defun-mode-prompt-string state))
-              (cons #\r
-                    #+:non-standard-analysis "(r)"
-                    #-:non-standard-analysis "")
-              (cons #\2
-                    (list "" ">" ">" ">"
-                          (make-list-ac (- (f-get-global 'ld-level state) 1) nil nil))))
-        0 channel state nil))
+  (the2s
+   (signed-byte 30)
+   (fmt1 "Wormhole ~s0~sr ~@1~*2"
+         (list (cons #\0 (f-get-global 'current-package state))
+               (cons #\1 (defun-mode-prompt-string state))
+               (cons #\r
+                     #+:non-standard-analysis "(r)"
+                     #-:non-standard-analysis "")
+               (cons #\2
+                     (list "" ">" ">" ">"
+                           (make-list-ac (- (f-get-global 'ld-level state) 1)
+                                         nil
+                                         nil))))
+         0 channel state nil)))
 
 (defun reset-ld-specials-fn (reset-channels-flg state)
 
@@ -2636,17 +2647,16 @@
 ; There is a long comment in axioms.lisp under the heading STATE which
 ; describes the many fields that a state has.
 
-; At the beginning of any interaction with the top-level ACL2 ld-fn,
-; there is a ``partial current state'', which may be partially
-; perceived, without side-effect, in Common Lisp, but outside of ACL2,
-; by invoking (what-is-the-global-state).  This partial current-state
-; includes (a) the names, types, and times of the open input and
-; output channels (but not the characters read or written to those
-; channels), (b) the symbols in the global table, (c) the t-stack, (d)
-; the 32-bit stack, and (e) the file clock.  We say that an object o
-; satisfying state-p is ``consistent with the current partial state''
-; provided that every fact revealed by (what-is-the-global-state) and
-; by examination of the bound globals is true about o.
+; At the beginning of any interaction with the top-level ACL2 ld-fn, there is a
+; ``partial current state'', which may be partially perceived, without
+; side-effect, in Common Lisp, but outside of ACL2, by invoking
+; (what-is-the-global-state).  This partial current-state includes the names,
+; types, and times of the open input and output channels (but not the
+; characters read or written to those channels), the symbols in the global
+; table, and the file clock.  We say that an object o satisfying state-p is
+; ``consistent with the current partial state'' provided that every fact
+; revealed by (what-is-the-global-state) and by examination of the bound
+; globals is true about o.
 
 ; In Lisp (as opposed to Prolog) the input form has no explicit free
 ; variable.  In ACL2, however, one free variable is permitted, and
@@ -2803,14 +2813,6 @@
                      (sweep-stack-entry-for-bad-symbol
                       name i (cdr obj) deceased-packages state)))))
 
-(defun sweep-t-stack (i deceased-packages state)
-  (cond ((> i (t-stack-length state))
-         (value nil))
-        (t (er-progn
-            (sweep-stack-entry-for-bad-symbol
-             "t-stack" i (aref-t-stack i state) deceased-packages state)
-            (sweep-t-stack (+ 1 i) deceased-packages state)))))
-
 (defun sweep-acl2-oracle (i deceased-packages state)
 
 ; A valid measure is (- (len (acl2-oracle state)) if we want to admit this
@@ -2832,10 +2834,10 @@
 ; *the-live-state* to verify that no symbol is contained in a package that we
 ; are about to delete.  This is sensible before we undo a defpkg, for example,
 ; which may ``orphan'' some objects held in, say, global variables in the
-; state.  We look in the global variables, the t-stack, and acl2-oracle.  If a
-; global variable, t-stack entry, or acl2-oracle entry contains such an object,
-; we cause an error.  This function is structurally similar to
-; what-is-the-global-state in axioms.lisp.
+; state.  We look in the global variables and acl2-oracle.  If a global
+; variable or acl2-oracle entry contains such an object, we cause an error.
+; This function is structurally similar to what-is-the-global-state in
+; axioms.lisp.
 
 ; The components of the state and their disposition are:
 
@@ -2852,15 +2854,9 @@
 
   (er-progn
    (sweep-global-lst (global-table-cars state) deceased-packages state)
-
-
-; t-stack - this stack may contain bad objects.
-
-   (sweep-t-stack 0 deceased-packages state)
    (sweep-acl2-oracle 0 deceased-packages state))
 
 ; The remaining fields contain no ``static'' objects.  The fields are:
-; 32-bit-integer-stack
 ; big-clock
 ; idates
 ; file-clock
@@ -2868,7 +2864,6 @@
 ; written-files
 ; read-files
 ; writeable-files
-; list-all-package-names-lst
 
   )
 

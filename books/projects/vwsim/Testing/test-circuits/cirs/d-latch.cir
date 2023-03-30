@@ -1,0 +1,76 @@
+
+* A hand-written, SPICE description of an RSFQ D-latch.
+
+*** The model line provides some of the Josephson junction (JJ)
+*** parameters.
+.model jmitll jj(rtype=1, vg=2.8mV, cap=0.07pF, r0=160, rN=16, icrit=0.1mA)
+
+*** Overdamped JJ subcircuit
+
+.SUBCKT damp_jj pos neg
+BJi pos neg jmitll area=2.5
+RRi pos neg 3
+.ENDS damp_jj
+
+*** Bias current source subcircuit
+
+.SUBCKT bias out gnd
+RR1 NN out 17
+VrampSppl@0 NN gnd pwl (0 0 1p 0.0026V)
+.ENDS bias
+
+*** 4-stage JTL subcircuit
+
+.SUBCKT jtl4 in out gnd
+LL1 in net@1 2pH
+XJ1 net@1 gnd damp_jj
+Xbias1 net@1 gnd bias
+
+LL2 net@1 net@2 2pH
+
+XJ2 net@2 gnd damp_jj
+Xbias2 net@2 gnd bias
+LL3 net@2 net@3 2pH
+
+XJ3 net@3 gnd damp_jj
+Xbias3 net@3 gnd bias
+LL4 net@3 net@4 2pH
+
+XJ4 net@4 gnd damp_jj
+Xbias4 net@4 gnd bias
+LL5 net@4 out 2pH
+
+.ENDS jtl4
+
+*** D Latch circuit
+
+.SUBCKT D_latch D C out gnd
+XJ3 D net@1 damp_jj
+XJ1 net@1 gnd damp_jj
+Xbias1 net@1 gnd bias
+
+LL net@1 net@2 12pH
+
+XJ4 C net@2 damp_jj
+XJ2 net@2 gnd damp_jj
+LY net@2 out 2pH
+.ENDS D_latch
+
+*** TOP LEVEL CIRCUIT
+
+* Fluxon pulses at 20p, 70p, ...
+VD D gnd pulse (0 0.6893mV 20p 1p 1p 2p 50p)
+Xjtl4d D rD gnd jtl4
+
+* Fluxon pulses at 5p, 55p, ...
+VC C gnd pulse (0 0.6893mV 5p 1p 1p 2p 50p)
+Xjtl4c C rC gnd jtl4
+
+* Create instance of D latch subcircuit
+XD_latch rD rC out gnd D_latch
+
+* Output JTL
+Xjtl_latch out out2 gnd jtl4
+RR1 out2 gnd 5
+
+.END

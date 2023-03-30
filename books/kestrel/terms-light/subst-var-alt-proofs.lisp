@@ -145,27 +145,6 @@
                                trivial-formals
                                subst-var-alt-lst)))))
 
-(local
- (defthm symbol-listp-of-lambda-formals-of-car
-  (implies (and (pseudo-termp term)
-                ;; (consp (car term))
-                )
-           (symbol-listp (lambda-formals (car term))))))
-
-(local
- (defthm pseudo-termp-of-lambda-body-of-car
-   (implies (and (pseudo-termp term)
-                 ;; (consp (car term))
-                 )
-            (pseudo-termp (lambda-body (car term))))))
-
-(local
- (defthm len-of-lambda-formals-of-car
-   (implies (and (pseudo-termp term)
-                 (consp (car term)))
-            (equal (len (lambda-formals (car term)))
-                   (len (cdr term))))))
-
 (defthm all-lambdas-serialized-in-termsp-of-mv-nth-1-of-filter-formals-and-actuals
   (implies (all-lambdas-serialized-in-termsp actuals)
            (all-lambdas-serialized-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))

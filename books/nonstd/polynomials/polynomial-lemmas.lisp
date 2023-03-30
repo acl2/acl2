@@ -5,8 +5,8 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (defthmd eval-polynomial-expt-correct-lemma
-  (implies (and (real-polynomial-p poly)
-		(realp x)
+  (implies (and (real/rational-polynomial-p poly)
+		(real/rationalp x)
 		(integerp n)
 		(<= 0 n))
 	   (equal (eval-polynomial-expt-aux poly x n)
@@ -14,8 +14,8 @@
 		     (eval-polynomial poly x)))))
 
 (defthmd eval-polynomial-expt-correct
-  (implies (and (real-polynomial-p poly)
-		(realp x))
+  (implies (and (real/rational-polynomial-p poly)
+		(real/rationalp x))
 	   (equal (eval-polynomial-expt poly x)
 		  (eval-polynomial poly x)))
   :hints (("Goal"
@@ -23,20 +23,20 @@
 			    (n 0))))))
 
 (defthm real-polynomial-scale-polynomial
-  (implies (and (real-polynomial-p poly)
-		(realp c))
-	   (real-polynomial-p (scale-polynomial poly c))))
+  (implies (and (real/rational-polynomial-p poly)
+		(real/rationalp c))
+	   (real/rational-polynomial-p (scale-polynomial poly c))))
 
 (defthm eval-scale-polynomial
-  (implies (and (real-polynomial-p poly)
-		(realp c))
+  (implies (and (real/rational-polynomial-p poly)
+		(real/rationalp c))
 	   (equal (eval-polynomial (scale-polynomial poly c) x)
 		  (* c (eval-polynomial poly x)))))
 
 (defthm eval-scale-expt-polynomial
-  (implies (and (real-polynomial-p poly)
-		(realp c)
-		(realp x))
+  (implies (and (real/rational-polynomial-p poly)
+		(real/rationalp c)
+		(real/rationalp x))
 	   (equal (eval-polynomial-expt (scale-polynomial poly c) x)
 		  (* c (eval-polynomial-expt poly x))))
   :hints (("Goal" :do-not-induct t
@@ -50,22 +50,22 @@
 	 (consp poly)))
 
 (defthm real-polynomial-+
-  (implies (and (real-polynomial-p poly1)
-		(real-polynomial-p poly2))
-	   (real-polynomial-p (polynomial-+ poly1 poly2))))
+  (implies (and (real/rational-polynomial-p poly1)
+		(real/rational-polynomial-p poly2))
+	   (real/rational-polynomial-p (polynomial-+ poly1 poly2))))
 
 (defthm eval-polynomial-+
-  (implies (and (real-polynomial-p poly1)
-		(real-polynomial-p poly2)
-		(realp x))
+  (implies (and (real/rational-polynomial-p poly1)
+		(real/rational-polynomial-p poly2)
+		(real/rationalp x))
 	   (equal (eval-polynomial (polynomial-+ poly1 poly2) x)
 		  (+ (eval-polynomial poly1 x)
 		     (eval-polynomial poly2 x)))))
 
 (defthm eval-polynomial-expt-+
-  (implies (and (real-polynomial-p poly1)
-		(real-polynomial-p poly2)
-		(realp x))
+  (implies (and (real/rational-polynomial-p poly1)
+		(real/rational-polynomial-p poly2)
+		(real/rationalp x))
 	   (equal (eval-polynomial-expt (polynomial-+ poly1 poly2) x)
 		  (+ (eval-polynomial-expt poly1 x)
 		     (eval-polynomial-expt poly2 x))))
@@ -80,23 +80,23 @@
 	     (consp poly2))))
 
 (defthm real-polynomial-*
-  (implies (and (real-polynomial-p poly1)
-		(real-polynomial-p poly2))
-	   (real-polynomial-p (polynomial-* poly1 poly2))))
+  (implies (and (real/rational-polynomial-p poly1)
+		(real/rational-polynomial-p poly2))
+	   (real/rational-polynomial-p (polynomial-* poly1 poly2))))
 
 (defthm eval-polynomial-*
-  (implies (and (real-polynomial-p poly1)
-		(real-polynomial-p poly2)
-		(realp x))
+  (implies (and (real/rational-polynomial-p poly1)
+		(real/rational-polynomial-p poly2)
+		(real/rationalp x))
 	   (equal (eval-polynomial (polynomial-* poly1 poly2) x)
 		  (* (eval-polynomial poly1 x)
 		     (eval-polynomial poly2 x)))))
 
 
 (defthm eval-polynomial-expt-*
-  (implies (and (real-polynomial-p poly1)
-		(real-polynomial-p poly2)
-		(realp x))
+  (implies (and (real/rational-polynomial-p poly1)
+		(real/rational-polynomial-p poly2)
+		(real/rationalp x))
 	   (equal (eval-polynomial-expt (polynomial-* poly1 poly2) x)
 		  (* (eval-polynomial-expt poly1 x)
 		     (eval-polynomial-expt poly2 x))))
@@ -110,6 +110,6 @@
 	 (consp poly1)))
 
 (defthm numberp-car-poly
-  (implies (real-polynomial-p poly)
+  (implies (real/rational-polynomial-p poly)
 	   (equal (acl2-numberp (car poly))
 		  (consp poly))))

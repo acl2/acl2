@@ -1,7 +1,7 @@
 ; A functiont to get the last element of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,16 +37,16 @@
            (last-elem y)))
   :hints (("Goal" :in-theory (enable last-elem))))
 
-(defthm <-of-acl2-count-of-last-elem-when-consp
+(defthm <-of-acl2-count-of-last-elem-when-consp-linear
   (implies (consp x)
            (< (acl2-count (last-elem x))
               (acl2-count x)))
-  :rule-classes (:rewrite :linear))
+  :rule-classes :linear)
 
-(defthm <=-of-acl2-count-of-last-elem
+(defthm <=-of-acl2-count-of-last-elem-linear
   (<= (acl2-count (last-elem x))
       (acl2-count x))
-  :rule-classes (:rewrite :linear)
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable last-elem))))
 
 (defthmd last-elem-when-not-consp

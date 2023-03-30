@@ -1,6 +1,6 @@
 ; Utilities for processing defun/mutual-recursion forms
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,7 +36,7 @@
             (if (not (defun-formp defun))
                 (er hard? 'get-declares-from-event "Failed to find a defun for ~x0 in ~x1." fn event)
               (get-declares-from-event fn defun)))
-        (hard-error 'get-declares-from-event "Unknown type of event for ~x0." (acons #\0 fn nil))))))
+        (er hard? 'get-declares-from-event "Unknown type of event (~x0) for ~x1." event-type fn)))))
 
 (defthm all-declarep-of-get-declares-from-event
   (implies (defun-or-mutual-recursion-formp fn-event)
@@ -65,7 +65,7 @@
             (if (not (defun-formp defun))
                 (er hard? 'get-body-from-event "Failed to find a body for ~x0 in the event ~x1." fn event)
               (get-body-from-event fn defun)))
-        (er hard? 'get-body-from-event "Unknown type of event for ~x0." fn)))))
+        (er hard? 'get-body-from-event "Unknown type of event (~x0) for ~x1." event-type fn)))))
 
 ;; This assumes the verify-guard-eagerness is 1 (the usual value).
 (defun event-demands-guard-verificationp (event)

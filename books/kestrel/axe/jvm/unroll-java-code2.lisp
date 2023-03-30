@@ -119,7 +119,7 @@
             run-until-return-from-stack-height-base-axe
             run-until-return-from-stack-height-opener-axe ;introduces a call of step (this is not the fast version)
             run-until-return-from-stack-height-lemma-for-invoke
-            member-equal-of-nil
+            not-member-equal-of-nil
             )
           ;; Handle Ifs smartly (todo: make this an option?):
           (step-state-with-pc-and-call-stack-height-rules)
