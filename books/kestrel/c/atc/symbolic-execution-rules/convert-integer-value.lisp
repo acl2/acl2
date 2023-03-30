@@ -92,12 +92,12 @@
                               ulong-from-integer-mod
                               ullong-from-integer-mod
                               ;; bridge rules for constructors:
-                              value-sint-to-sint
-                              value-slong-to-slong
-                              value-sllong-to-sllong
-                              value-uint-to-uint
-                              value-ulong-to-ulong
-                              value-ullong-to-ullong
+                              value-sint-to-sint-from-integer
+                              value-slong-to-slong-from-integer
+                              value-sllong-to-sllong-from-integer
+                              value-uint-to-uint-from-integer
+                              value-ulong-to-ulong-from-integer
+                              value-ullong-to-ullong-from-integer
                               ;; built-ins:
                               ifix
                               ))))

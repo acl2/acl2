@@ -662,52 +662,52 @@
      they can be used to prove theorems that involve
      relations between deep and shallow embedding."))
 
-  (defruled value-schar-to-schar
+  (defruled value-schar-to-schar-from-integer
     (equal (value-schar x)
            (schar-from-integer x))
     :enable (value-schar schar-from-integer))
 
-  (defruled value-uchar-to-uchar
+  (defruled value-uchar-to-uchar-from-integer
     (equal (value-uchar x)
            (uchar-from-integer x))
     :enable (value-uchar uchar-from-integer))
 
-  (defruled value-sshort-to-sshort
+  (defruled value-sshort-to-sshort-from-integer
     (equal (value-sshort x)
            (sshort-from-integer x))
     :enable (value-sshort sshort-from-integer))
 
-  (defruled value-ushort-to-ushort
+  (defruled value-ushort-to-ushort-from-integer
     (equal (value-ushort x)
            (ushort-from-integer x))
     :enable (value-ushort ushort-from-integer))
 
-  (defruled value-sint-to-sint
+  (defruled value-sint-to-sint-from-integer
     (equal (value-sint x)
            (sint-from-integer x))
     :enable (value-sint sint-from-integer))
 
-  (defruled value-uint-to-uint
+  (defruled value-uint-to-uint-from-integer
     (equal (value-uint x)
            (uint-from-integer x))
     :enable (value-uint uint-from-integer))
 
-  (defruled value-slong-to-slong
+  (defruled value-slong-to-slong-from-integer
     (equal (value-slong x)
            (slong-from-integer x))
     :enable (value-slong slong-from-integer))
 
-  (defruled value-ulong-to-ulong
+  (defruled value-ulong-to-ulong-from-integer
     (equal (value-ulong x)
            (ulong-from-integer x))
     :enable (value-ulong ulong-from-integer))
 
-  (defruled value-sllong-to-sllong
+  (defruled value-sllong-to-sllong-from-integer
     (equal (value-sllong x)
            (sllong-from-integer x))
     :enable (value-sllong sllong-from-integer))
 
-  (defruled value-ullong-to-ullong
+  (defruled value-ullong-to-ullong-from-integer
     (equal (value-ullong x)
            (ullong-from-integer x))
     :enable (value-ullong ullong-from-integer))

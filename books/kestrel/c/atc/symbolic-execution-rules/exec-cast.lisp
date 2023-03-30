@@ -107,16 +107,16 @@
                    integer-type-rangep
                    integer-type-min
                    integer-type-max
-                   value-schar-to-schar
-                   value-uchar-to-uchar
-                   value-sshort-to-sshort
-                   value-ushort-to-ushort
-                   value-sint-to-sint
-                   value-uint-to-uint
-                   value-slong-to-slong
-                   value-ulong-to-ulong
-                   value-sllong-to-sllong
-                   value-ullong-to-ullong
+                   value-schar-to-schar-from-integer
+                   value-uchar-to-uchar-from-integer
+                   value-sshort-to-sshort-from-integer
+                   value-ushort-to-ushort-from-integer
+                   value-sint-to-sint-from-integer
+                   value-uint-to-uint-from-integer
+                   value-slong-to-slong-from-integer
+                   value-ulong-to-ulong-from-integer
+                   value-sllong-to-sllong-from-integer
+                   value-ullong-to-ullong-from-integer
                    uchar-from-integer-mod
                    ushort-from-integer-mod
                    uint-from-integer-mod
