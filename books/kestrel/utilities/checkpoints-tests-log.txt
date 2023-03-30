@@ -13,9 +13,7 @@ Summary
 Form:  ( INCLUDE-BOOK "checkpoints" ...)
 Rules: NIL
  (:SYSTEM . "kestrel/utilities/checkpoints.lisp")
-ACL2 !>>(DEFMACRO
-         PRINT-AND-RUN
-         (FORM &OPTIONAL (PRINT 'T))
+ACL2 !>>(DEFMACRO PRINT-AND-RUN (FORM &OPTIONAL (PRINT 'T))
          (CONS
           'LET
           (CONS
@@ -37,8 +35,7 @@ ACL2 !>>(DEFMACRO
                              'NIL))
                  '(CHAN STATE NIL))))
               (CONS
-               (IF
-                PRINT
+               (IF PRINT
                 (CONS
                   'FMS
                   (CONS '"~x0~|----------~|~%"
@@ -60,24 +57,24 @@ Form:  ( DEFMACRO PRINT-AND-RUN ...)
 Rules: NIL
  PRINT-AND-RUN
 ACL2 !>>(DEFMACRO CHECKPOINT-TESTS NIL
-                  '(PPROGN (PRINT-AND-RUN (CHECKPOINT-LIST T STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-LIST NIL STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY T STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY NIL STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-INFO-LIST T STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-INFO-LIST NIL STATE))
-                           (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST)
-                                          NIL)
-                           (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST T)
-                                          NIL)))
+          '(PPROGN (PRINT-AND-RUN (CHECKPOINT-LIST T STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-LIST NIL STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY T STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY NIL STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-INFO-LIST T STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-INFO-LIST NIL STATE))
+                   (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST)
+                                  NIL)
+                   (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST T)
+                                  NIL)))
 
 Summary
 Form:  ( DEFMACRO CHECKPOINT-TESTS ...)
 Rules: NIL
  CHECKPOINT-TESTS
 ACL2 !>>(DEFTHM FOO
-                (EQUAL (APPEND (APPEND (IF A X Z) Y) X)
-                       (APPEND X Y X)))
+          (EQUAL (APPEND (APPEND (IF A X Z) Y) X)
+                 (APPEND X Y X)))
 Subgoal 2
 Subgoal 2'
 
@@ -502,8 +499,8 @@ Form:  ( DEFUN H ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  (:DEFUND H)
 ACL2 !>>(DEFTHM NULL-CDDR-H
-                (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
-                         (EQUAL (CDDR (H X Y)) NIL)))
+          (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
+                   (EQUAL (CDDR (H X Y)) NIL)))
 Goal'
 Goal''
 
@@ -831,9 +828,9 @@ Subgoal *1/1'':
 
 <state>
 ACL2 !>>(DEFTHM NULL-CDDR-H
-                (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
-                         (EQUAL (CDDR (H X Y)) NIL))
-                :HINTS (("Goal" :IN-THEORY (ENABLE H))))
+          (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
+                   (EQUAL (CDDR (H X Y)) NIL))
+          :HINTS (("Goal" :IN-THEORY (ENABLE H))))
 
 Q.E.D.
 
@@ -1758,12 +1755,12 @@ ACL2 !>>(CHECKPOINT-TESTS)
 
 <state>
 ACL2 !>>(DEFUN CHECKPOINT-LIST-BOTH (STATE)
-               (DECLARE (XARGS :STOBJS STATE
-                               :GUARD (CHECKPOINT-LIST-GUARD :BOTH STATE)))
-               (LET ((LST (CHECKPOINT-LIST T STATE)))
-                    (IF (EQ LST :UNAVAILABLE)
-                        NIL
-                        (LIST LST (CHECKPOINT-LIST NIL STATE)))))
+          (DECLARE (XARGS :STOBJS STATE
+                          :GUARD (CHECKPOINT-LIST-GUARD :BOTH STATE)))
+          (LET ((LST (CHECKPOINT-LIST T STATE)))
+            (IF (EQ LST :UNAVAILABLE)
+                NIL
+              (LIST LST (CHECKPOINT-LIST NIL STATE)))))
 
 Since CHECKPOINT-LIST-BOTH is non-recursive, its admission is trivial.
 We observe that the type of CHECKPOINT-LIST-BOTH is described by the
@@ -1784,8 +1781,8 @@ Goal
      (IMPLIES (AND (CHECKPOINT-LIST-GUARD :BOTH STATE)
                    (STATE-P STATE))
               (LET ((LST (CHECKPOINT-LIST T STATE)))
-                   (OR (EQ LST :UNAVAILABLE)
-                       (CHECKPOINT-LIST-GUARD NIL STATE))))).
+                (OR (EQ LST :UNAVAILABLE)
+                    (CHECKPOINT-LIST-GUARD NIL STATE))))).
 Subgoal 2
 Subgoal 1
 
@@ -1823,13 +1820,13 @@ Rules: ((:DEFINITION BOUNDP-GLOBAL)
  CHECKPOINT-LIST-BOTH
 ACL2 !>>(DEFUN MY-SET-LD-HISTORY-ENTRY-USER-DATA
                (INPUT ERROR-FLG STOBJS-OUT/VALUE STATE)
-               (DECLARE (IGNORE INPUT ERROR-FLG STOBJS-OUT/VALUE)
-                        (XARGS :STOBJS STATE :GUARD T))
-               (IF (CHECKPOINT-LIST-GUARD :BOTH STATE)
-                   (CHECKPOINT-LIST-BOTH STATE)
-                   (ER HARD? 'MY-SET-LD-HISTORY-ENTRY-USER-DATA
-                       "Unexpected violation of ~x0."
-                       '(CHECKPOINT-LIST-GUARD :BOTH STATE))))
+          (DECLARE (IGNORE INPUT ERROR-FLG STOBJS-OUT/VALUE)
+                   (XARGS :STOBJS STATE :GUARD T))
+          (IF (CHECKPOINT-LIST-GUARD :BOTH STATE)
+              (CHECKPOINT-LIST-BOTH STATE)
+            (ER HARD? 'MY-SET-LD-HISTORY-ENTRY-USER-DATA
+                "Unexpected violation of ~x0."
+                '(CHECKPOINT-LIST-GUARD :BOTH STATE))))
 
 Since MY-SET-LD-HISTORY-ENTRY-USER-DATA is non-recursive, its admission
 is trivial.  We observe that the type of MY-SET-LD-HISTORY-ENTRY-USER-DATA

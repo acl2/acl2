@@ -408,13 +408,15 @@ $(info Excluding books that need STP: [$(CERT_PL_USES_STP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
-
 ifeq ($(ACL2_HAS_REALS), )
-
 $(info Excluding ACL2(r)-only books: [$(CERT_PL_USES_ACL2R)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_ACL2R), $(OK_CERTS))
-
 endif # ifeq ($(ACL2_HAS_REALS), )
+
+CERT_PL_ACL2R_AND_NON_ACL2R := $(filter $(CERT_PL_USES_ACL2R), $(CERT_PL_NON_ACL2R))
+ifneq ($(CERT_PL_ACL2R_AND_NON_ACL2R), )
+${info Books appear that both require ACL2(r) but that do not work with ACL2(r): $(CERT_PL_ACL2R_AND_NON_ACL2R)}
+endif
 
 
 ifneq ($(ACL2_HAS_REALS), )

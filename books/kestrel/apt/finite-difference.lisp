@@ -1,6 +1,6 @@
 ; A transformation to perform incrementalization
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,7 @@
 (include-book "utilities/defun-variant")
 (include-book "kestrel/utilities/world" :dir :system) ; for fn-definedp
 (include-book "kestrel/utilities/reconstruct-macros" :dir :system)
-(include-book "kestrel/utilities/declares" :dir :system) ; for fixup-ignores
+(include-book "kestrel/utilities/fixup-ignores" :dir :system)
 (include-book "kestrel/utilities/defining-forms" :dir :system)
 (include-book "kestrel/terms-light/add-param-to-calls-in-term" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
@@ -277,12 +277,12 @@ T(x), thus establishing the invariant.</li>
        (v (or new-param-name (fresh-symbol 'v formals))) ;TODO: also avoid any lambda-bound vars (if any)
        ;; build the body of the -pre function:
        (new-fn-pre-body (add-param-to-calls-in-term body fn formals term-to-replace))
-       (new-fn-pre-body (rename-fn fn new-fn-pre-name new-fn-pre-body))
+       (new-fn-pre-body (rename-fn fn new-fn-pre-name new-fn-pre-body)) ; translated
        ;; (measure-declares (if (not (fn-has-measurep fn state))
        ;;                       nil
        ;;                     `((xargs :measure ,(fn-measure fn state)))))
        (new-fn-pre-formals (append formals (list v)))
-       (new-fn-pre-declares (fixup-ignores declares new-fn-pre-formals new-fn-pre-body))
+       (new-fn-pre-declares (fixup-ignores-for-translated-body declares new-fn-pre-formals new-fn-pre-body))
        (new-fn-pre-declares (set-verify-guards-in-declares nil new-fn-pre-declares)) ; guard-verification may be done separately below
        (new-fn-pre-declares (replace-xarg-in-declares
                              :hints
@@ -399,7 +399,12 @@ T(x), thus establishing the invariant.</li>
        (declares (add-guard-conjunct guard declares)) ;;TODO: The guard hints should be exactly the RULES, plus the old guard hints?
 ;         (declares (if guard-verifiedp declares (add-verify-guards-nil declares)))  ;keeps the guard about v from triggering guard verification
        (wrapper-guard (fn-guard fn (w state))) ;TODO: what about other declares? ;; TODO: Get the untranslated guard (but what about declares, stobjs, etc.)?
-       (new-fn-declares (fixup-ignores declares (cons v formals) new-fn-body))
+       (new-formals (append formals (list v)))
+       (new-fn-declares (fixup-ignores-with-name-arity-alist declares
+                                                             new-formals
+                                                             new-fn-body
+                                                             (acons new-fn (len new-formals) nil)
+                                                             (w state)))
        (new-fn-declares (replace-xarg-in-declares
                          :hints
                          `(("Goal" :in-theory '()
@@ -408,7 +413,7 @@ T(x), thus establishing the invariant.</li>
                          new-fn-declares))
        (new-fn-declares (set-verify-guards-in-declares nil new-fn-declares)) ; may be done separately, below
        (defun-variant (defun-variant fn non-executable function-disabled state))
-       (new-fn-defun `(,defun-variant ,new-fn (,@formals ,v)
+       (new-fn-defun `(,defun-variant ,new-fn (,@new-formals)
                        ,@new-fn-declares
                        ,new-fn-body)))
     (mv

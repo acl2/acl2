@@ -148,7 +148,7 @@
      are in R1CS form if the ones in the body of the relation are."))
   (constraint-case
    constr
-   :equal t
+   :equal (r1cs-constraintp constr)
    :relation (expression-const/var-listp constr.args))
   :hooks (:fix))
 

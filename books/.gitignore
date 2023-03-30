@@ -45,6 +45,7 @@ Makefile-tmp.lsp
 *.sao
 .acl2rc
 *.log
+*.summ
 TMP*.*
 *.tem
 temp-emacs-file*

@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "../../language/dynamic-semantics")
+(include-book "exec-expr-pure")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
@@ -136,8 +137,8 @@
      (and (syntaxp (quotep mem))
           (identp mem))
      (equal
-      (exec-arrsub-of-member str mem sub)
-      (exec-arrsub-of-member str (ident (ident->name mem)) sub))))
+      (exec-arrsub-of-member str mem sub compst)
+      (exec-arrsub-of-member str (ident (ident->name mem)) sub compst))))
 
   (defruled exec-arrsub-of-memberp-of-const-identifier
     (implies

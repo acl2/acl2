@@ -7790,10 +7790,6 @@
                                       PRINT-OBJECT$-FN
                                       MAKUNBOUND-GLOBAL
                                       PUT-GLOBAL
-                                      EXTEND-T-STACK
-                                      SHRINK-T-STACK
-                                      ASET-T-STACK
-                                      SHRINK-32-BIT-INTEGER-STACK
                                       OPEN-INPUT-CHANNEL
                                       OPEN-OUTPUT-CHANNEL
                                       GET-OUTPUT-STREAM-STRING$-FN
@@ -9470,11 +9466,13 @@
                                      (not (equal s ""))
                                      (not (equal (string-upcase s)
                                                  "NIL")))))
-              (set-fast-cert-p
+              (fast-cert-mode-val
                (and (null (f-get-global 'fast-cert-status state))
                     (let ((x (getenv$-raw "ACL2_FAST_CERT")))
                       (and x
-                           (not (equal x ""))))))
+                           (cond ((equal x "") nil)
+                                 ((string-equal x "accept") :accept)
+                                 (t t))))))
               (book-hash-alistp-env
 
 ; A non-nil value of this variable indicates that we are to use the "book-hash"
@@ -9508,8 +9506,8 @@
               (system-dir0 (getenv$-raw "ACL2_SYSTEM_BOOKS")))
          (when save-expansion
            (f-put-global 'save-expansion-file t *the-live-state*))
-         (when set-fast-cert-p
-           (set-fast-cert t state))
+         (when fast-cert-mode-val
+           (set-fast-cert fast-cert-mode-val state))
          (when book-hash-alistp-env
            (f-put-global 'book-hash-alistp t *the-live-state*))
          (when user-home-dir

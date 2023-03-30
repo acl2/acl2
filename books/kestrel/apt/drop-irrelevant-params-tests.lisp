@@ -1,6 +1,6 @@
 ; Tests of the drop-irrelevant-params transformation
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -399,3 +399,31 @@
   (must-succeed
     ;; should print everything (error, info, result, and proof output)
     (drop-irrelevant-params foo z :print :all)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A test involving a macro that introduces a var mention
+
+(deftest
+  ;; introduces a mention of x
+  (defmacro listx () '(list x))
+
+  ;; body does have x as a free var, but that is not obvious
+  (defun foo (x y) (declare (ignore y)) (listx))
+
+  (drop-irrelevant-params foo y))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; todo: fails
+;; (deftest
+;;   ;;irrel is an irrelevant parameter:
+;;   ;;xignore is an ignored param
+;;   (defun foo (lst irrel xignore)
+;;     (declare (irrelevant irrel) (ignore xignore))
+;;     (if (endp lst)
+;;         0
+;;       (foo (rest lst) (+ 7 irrel) 9)))
+;;   (drop-irrelevant-params foo irrel :build-wrapper t)
+;; )

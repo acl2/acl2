@@ -1,6 +1,6 @@
 ; Partial spec of IEEE 754 floating point values and operations
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -8,11 +8,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2") ; todo: use an IEEE package?
+(in-package "ACL2") ; todo: use an IEEE or FLOAT package?
 
 ;; STATUS: In-PROGRESS
 
-;; TODO: Add comparisons, rounding, etc.
+;; TODO: Add comparisons (done?), rounding, etc.
 
 ;; Reference: IEEE Std 754-2019: IEEE Standard for Floating-Point Arithmetic
 
@@ -334,9 +334,9 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable decode-normal-number))))
 
-(defthm <-of-decode-normal-number-of-1
-  (implies (and (bitp sign)
-                (unsigned-byte-p (- p 1) trailing-significand))
+;; Flipping the sign bit changes the sign of the decoded value.
+(defthm decode-normal-number-of-1
+  (implies (unsigned-byte-p (- p 1) trailing-significand)
            (equal (decode-normal-number k p 1 biased-exponent trailing-significand)
                   (- (decode-normal-number k p 0 biased-exponent trailing-significand))))
   :hints (("Goal" :in-theory (enable decode-normal-number))))
@@ -442,9 +442,9 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable decode-subnormal-number))))
 
-(defthm <-of-decode-subnormal-number-of-1
-  (implies (and (bitp sign)
-                (unsigned-byte-p (- p 1) trailing-significand))
+;; Flipping the sign bit changes the sign of the decoded value.
+(defthm decode-subnormal-number-of-1
+  (implies (unsigned-byte-p (- p 1) trailing-significand)
            (equal (decode-subnormal-number k p 1 trailing-significand)
                   (- (decode-subnormal-number k p 0 trailing-significand))))
   :hints (("Goal" :in-theory (enable decode-subnormal-number))))

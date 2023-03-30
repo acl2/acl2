@@ -1020,3 +1020,95 @@
       ulong-fix-when-ulongp
       sllong-fix-when-sllongp
       ullong-fix-when-ullongp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-pointer-rules
+  :short "Rules about @(tsee value-pointer) not satisfying
+          the predicates for the integer types."
+
+  (defruled not-scharp-of-value-pointer
+    (not (scharp (value-pointer core reftype)))
+    :enable (scharp value-pointer))
+
+  (defruled not-ucharp-of-value-pointer
+    (not (ucharp (value-pointer core reftype)))
+    :enable (ucharp value-pointer))
+
+  (defruled not-sshortp-of-value-pointer
+    (not (sshortp (value-pointer core reftype)))
+    :enable (sshortp value-pointer))
+
+  (defruled not-ushortp-of-value-pointer
+    (not (ushortp (value-pointer core reftype)))
+    :enable (ushortp value-pointer))
+
+  (defruled not-sintp-of-value-pointer
+    (not (sintp (value-pointer core reftype)))
+    :enable (sintp value-pointer))
+
+  (defruled not-uintp-of-value-pointer
+    (not (uintp (value-pointer core reftype)))
+    :enable (uintp value-pointer))
+
+  (defruled not-slongp-of-value-pointer
+    (not (slongp (value-pointer core reftype)))
+    :enable (slongp value-pointer))
+
+  (defruled not-ulongp-of-value-pointer
+    (not (ulongp (value-pointer core reftype)))
+    :enable (ulongp value-pointer))
+
+  (defruled not-sllongp-of-value-pointer
+    (not (sllongp (value-pointer core reftype)))
+    :enable (sllongp value-pointer))
+
+  (defruled not-ullongp-of-value-pointer
+    (not (ullongp (value-pointer core reftype)))
+    :enable (ullongp value-pointer)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-integerp-rules
+  :short "Rules about @(tsee value-integerp) holding
+          when the predicates for the integer types hold."
+
+  (defruled value-integerp-when-scharp
+    (implies (scharp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-ucharp
+    (implies (ucharp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-sshortp
+    (implies (sshortp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-ushortp
+    (implies (ushortp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-sintp
+    (implies (sintp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-uintp
+    (implies (uintp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-slongp
+    (implies (slongp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-ulongp
+    (implies (ulongp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-sllongp
+    (implies (sllongp x)
+             (value-integerp x)))
+
+  (defruled value-integerp-when-ullongp
+    (implies (ullongp x)
+             (value-integerp x))))

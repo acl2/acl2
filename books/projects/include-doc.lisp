@@ -23,6 +23,7 @@
      (include-book "irv/top")
      (include-book "rp-rewriter/top")
      (include-book "rp-rewriter/lib/mult3/doc")
+     (include-book "vwsim/vwsim-doc")
 
      (include-book "smtlink/doc")
      (ifdef "OS_HAS_SMTLINK"

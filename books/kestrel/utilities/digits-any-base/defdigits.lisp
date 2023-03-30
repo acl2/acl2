@@ -61,7 +61,7 @@
    (xdoc::p
     "These specialized operations,
      in combination with the unary recognizers and fixers,
-     may be easier to use and reason about
+     are easier to use and reason about
      than the general operations,
      when the base is known.")
 
@@ -240,13 +240,18 @@
       after the names of the third and fourth function.
       These new functions are accompanied by several theorems
       corresponding to ones that accompany the original functions,
-      i.e. they are specialized versions of the general theorems.
+      i.e. they are specialized versions of the general theorems;
+      we also generate some theory invariants that prevent
+      some of the generated rewrite rules from being simultaneously enabled.
       These theorems, and the guards,
       use @('digit-pred'), @('digit-fix'), @('digits-pred'), and @('digits-fix')
       instead of @(tsee dab-digitp),
       @(tsee dab-digit-fix),
       @(tsee dab-digit-listp),
-      and @(tsee dab-digit-list-fix)."))
+      and @(tsee dab-digit-list-fix).
+      The generated theorems can be seen in the implementation,
+      which uses a readable backquote notation;
+      they can also be seen in the generated XDOC."))
 
    (xdoc::p
     "The generated events include XDOC documentation.
@@ -560,6 +565,16 @@
                                                      "-UPPER-BOUND"))
        (lendian-to-nat-upper-bound (add-suffix-to-fn lendian-to-nat
                                                      "-UPPER-BOUND"))
+       (lendian-to-nat-as-bendian-to-nat (packn-pos (list lendian-to-nat
+                                                          '-as-
+                                                          bendian-to-nat)
+                                                    name))
+       (bendian-to-nat-as-lendian-to-nat (packn-pos (list bendian-to-nat
+                                                          '-as-
+                                                          lendian-to-nat)
+                                                    name))
+       (lendian-to-nat-of-rev (add-suffix-to-fn lendian-to-nat "-OF-REV"))
+       (bendian-to-nat-of-rev (add-suffix-to-fn bendian-to-nat "-OF-REV"))
        ;; names of the variables used in the generated events:
        (x (packn-pos (list "X") name))
        (digits (packn-pos (list "DIGITS") name))
@@ -1209,6 +1224,50 @@
            :rule-classes ((:linear :trigger-terms ((,lendian-to-nat ,digits))))
            :enable ,lendian-to-nat
            :use (:instance lendian=>nat-upper-bound (base ,base))))
+       (lendian-to-nat-as-bendian-to-nat-event
+        `(defruled ,lendian-to-nat-as-bendian-to-nat
+           (equal (,lendian-to-nat ,digits)
+                  (,bendian-to-nat (rev ,digits)))
+           :enable (,lendian-to-nat
+                    ,bendian-to-nat
+                    lendian=>nat-as-bendian=>nat)))
+       (bendian-to-nat-as-lendian-to-nat-event
+        `(defruled ,bendian-to-nat-as-lendian-to-nat
+           (equal (,bendian-to-nat ,digits)
+                  (,lendian-to-nat (rev ,digits)))
+           :enable (,bendian-to-nat
+                    ,lendian-to-nat
+                    bendian=>nat)))
+       (lendian-to-nat-of-rev-event
+        `(defruled ,lendian-to-nat-of-rev
+           (equal (,lendian-to-nat (rev ,digits))
+                  (,bendian-to-nat ,digits))
+           :enable (,bendian-to-nat-as-lendian-to-nat)))
+       (bendian-to-nat-of-rev-event
+        `(defruled ,bendian-to-nat-of-rev
+           (equal (,bendian-to-nat (rev ,digits))
+                  (,lendian-to-nat ,digits))
+           :enable (,lendian-to-nat-as-bendian-to-nat)))
+       (invariant-event
+        `(progn
+           (theory-invariant
+            (incompatible (:rewrite lendian-to-nat-as-bendian-to-nat)
+                          (:rewrite bendian-to-nat-as-lendian-to-nat)))
+           (theory-invariant
+            (incompatible (:rewrite lendian-to-nat-as-bendian-to-nat)
+                          (:rewrite lendian-to-nat-of-rev)))
+           (theory-invariant
+            (incompatible (:rewrite lendian-to-nat-as-bendian-to-nat)
+                          (:rewrite bendian-to-nat-of-rev)))
+           (theory-invariant
+            (incompatible (:rewrite bendian-to-nat-as-lendian-to-nat)
+                          (:rewrite lendian-to-nat-of-rev)))
+           (theory-invariant
+            (incompatible (:rewrite bendian-to-nat-as-lendian-to-nat)
+                          (:rewrite bendian-to-nat-of-rev)))
+           (theory-invariant
+            (incompatible (:rewrite lendian-to-nat-of-rev)
+                          (:rewrite bendian-to-nat-of-rev)))))
        (name-event
         `(defxdoc ,name
            ,@(and parents (list :parents parents))
@@ -1288,6 +1347,11 @@
        ,lendian-to-nat-of-all-zeros-event
        ,bendian-to-nat-upper-bound-event
        ,lendian-to-nat-upper-bound-event
+       ,lendian-to-nat-as-bendian-to-nat-event
+       ,bendian-to-nat-as-lendian-to-nat-event
+       ,lendian-to-nat-of-rev-event
+       ,bendian-to-nat-of-rev-event
+       ,invariant-event
        ,name-event
        ,table-event)))
 

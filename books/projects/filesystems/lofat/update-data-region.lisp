@@ -459,7 +459,7 @@
   (("goal"
     :in-theory
     '((:compound-recognizer natp-compound-recognizer)
-      (:compound-recognizer true-listp-when-fat32-entry-list-p)
+      (:compound-recognizer true-listp-when-fat32-entry-list-p-compound-recognizer)
       (:definition bpb_bkbootsecp)
       (:definition bpb_bytspersecp)
       (:definition bpb_extflagsp)
@@ -592,7 +592,7 @@
     :do-not-induct t
     :in-theory
     '((:compound-recognizer natp-compound-recognizer)
-      (:compound-recognizer true-listp-when-fat32-entry-list-p)
+      (:compound-recognizer true-listp-when-fat32-entry-list-p-compound-recognizer)
       (:definition bpb_bkbootsecp)
       (:definition bpb_bytspersecp)
       (:definition bpb_extflagsp)

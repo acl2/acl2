@@ -1085,7 +1085,8 @@
 (defun incl-valid-proofp$-top (cnf-file clrat-file incomplete-okp chunk-size
                                         debug ctx state)
   (declare (xargs :guard t :stobjs state))
-  (let ((formula (ec-call (cnf-read-file cnf-file state))))
+  (let* ((formula (ec-call (cnf-read-file cnf-file state)))
+         (state (increment-file-clock state)))
     (cond
      ((not (stringp clrat-file))
       (er-soft-logic

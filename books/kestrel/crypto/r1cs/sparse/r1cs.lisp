@@ -1,10 +1,11 @@
 ; R1CSes in sparse form
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,6 +29,7 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
 
 ;; ;; A coefficient is an element of the field.  TODO: Consider, for readability,
 ;; ;; allowing large coefficients to be represented by negative numbers.
@@ -312,11 +314,7 @@
            prime))))
 
 (defthm fep-of-dot-product
-  (implies (and (sparse-vectorp vec)
-                (primep prime)
-                (r1cs-valuationp valuation prime)
-                (good-sparse-vectorp vec (strip-cars valuation)) ;drop?
-                )
+  (implies (posp prime)
            (fep (dot-product vec valuation prime) prime))
   :hints (("Goal" :expand (good-sparse-vectorp vec (strip-cars valuation))
            :in-theory (e/d (dot-product r1cs-valuationp sparse-vectorp valuation-bindsp)
@@ -325,6 +323,14 @@
 (verify-guards dot-product
   :hints (("Goal" :in-theory (e/d (valuation-bindsp)
                                   (strip-cars)))))
+
+(defthm dot-product-of-append
+  (implies (posp prime)
+           (equal (dot-product (append vec1 vec2) valuation prime)
+                  (add (dot-product vec1 valuation prime)
+                       (dot-product vec2 valuation prime)
+                       prime)))
+  :hints (("Goal" :in-theory (enable dot-product append))))
 
 ;; Check whether the VALUATION satisfies the CONSTRAINT.
 (defund r1cs-constraint-holdsp (constraint valuation prime)
