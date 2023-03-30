@@ -1063,8 +1063,13 @@
                 not-errorp-when-expr-valuep
                 expr-valuep-of-expr-value
                 expr-value->value-of-expr-value
+                expr-value->object-of-expr-value
                 read-object-of-objdesign-of-var-to-read-var
-                objdesign-of-var-when-valuep-of-read-var)
+                objdesign-of-var-when-valuep-of-read-var
+                objdesignp-of-objdesign-of-var-when-valuep-of-read-var
+                objdesign-option-fix
+                objdesign-fix-when-objdesignp
+                write-object-of-objdesign-of-var-to-write-var)
               :expand
               ((exec-expr-pure (expr-member->target
                                 (expr-arrsub->arr (expr-binary->arg1 e)))
