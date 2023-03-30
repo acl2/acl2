@@ -8,7 +8,7 @@
 (defund relatively-primep (a b)
   (declare (xargs :guard (and (natp a)
 			      (natp b))))
-  (equal (acl2::g-c-d a b) 1))
+  (equal (dm::g-c-d a b) 1))
 
 (defthm relatively-primes-have-no-common-factors
   (implies (and (natp a)
@@ -239,7 +239,7 @@
            (not (equal (mul a b p) 0)))
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance acl2::euclid
+           :use ((:instance dm::euclid
                             (acl2::p p)
                             (acl2::a a)
                             (acl2::b b))
@@ -458,17 +458,17 @@
 
 (defthm g-c-d-nat-x-1
   (implies (natp x)
-           (= (acl2::g-c-d-nat x 1) 1))
+           (= (dm::g-c-d-nat x 1) 1))
   :hints (("Goal"
            :induct (g-c-d-nat-x-1-induction-hint x)
-           :in-theory (enable acl2::g-c-d-nat)))
+           :in-theory (enable dm::g-c-d-nat)))
   )
 
 (defthm g-c-d-x-1
   (implies (integerp x)
-           (= (acl2::g-c-d x 1) 1))
+           (= (dm::g-c-d x 1) 1))
   :hints (("Goal"
-           :in-theory (enable acl2::g-c-d)))
+           :in-theory (enable dm::g-c-d)))
   )
 
 
@@ -488,12 +488,12 @@
      (implies (and (natp x)
                    (posp z)
                    (relatively-primep x z))
-              (= (+ (* (acl2::r-int x z) x)
-                    (* (acl2::s-int x z) z))
+              (= (+ (* (dm::r-int x z) x)
+                    (* (dm::s-int x z) z))
                  1))
      :rule-classes nil
      :hints (("Goal"
-              :use ((:instance acl2::g-c-d-linear-combination
+              :use ((:instance dm::g-c-d-linear-combination
                                (acl2::x x)
                                (acl2::y z)))
               :in-theory (enable relatively-primep)))))
@@ -504,15 +504,15 @@
                    (integerp z)
                    (< 1 z)
                    (relatively-primep x z))
-              (= (mod (* (acl2::r-int x z) x) z)
+              (= (mod (* (dm::r-int x z) x) z)
                  1))
      :rule-classes nil
      :hints (("Goal"
               :use ((:instance lemma-1)
                     (:instance acl2::mod-mult
-                               (acl2::m (* (acl2::r-int x z) x))
+                               (acl2::m (* (dm::r-int x z) x))
                                (acl2::n z)
-                               (acl2::a (acl2::s-int x z)))
+                               (acl2::a (dm::s-int x z)))
                     )
               ))))
 
@@ -524,12 +524,12 @@
                    (< 1 z)
                    (= (mod (* x y) z) 0)
                    (relatively-primep x z))
-              (= (mod (* (acl2::r-int x z) x y) z)
+              (= (mod (* (dm::r-int x z) x y) z)
                  0))
      :rule-classes nil
      :hints (("Goal"
               :use ((:instance mod-*
-                               (x (acl2::r-int x z))
+                               (x (dm::r-int x z))
                                (y (* x y))
                                (n z))
                     )
@@ -551,7 +551,7 @@
               :use ((:instance lemma-2)
                     (:instance lemma-3)
                     (:instance mod-*
-                               (x (* (acl2::r-int x z) x))
+                               (x (* (dm::r-int x z) x))
                                (y y)
                                (n z))
                     )
@@ -731,17 +731,17 @@
   (implies (and (dm::primep p)
                 (posp x)
                 )
-           (or (= (acl2::g-c-d p x) 1)
-               (= (acl2::g-c-d p x) p)))
+           (or (= (dm::g-c-d p x) 1)
+               (= (dm::g-c-d p x) p)))
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance acl2::g-c-d-divides
+           :use ((:instance dm::g-c-d-divides
                             (x p)
                             (y x))
                  (:instance dm::primep-no-divisor
                             (p p)
-                            (d (acl2::g-c-d p x)))
-                 (:instance acl2::g-c-d-pos
+                            (d (dm::g-c-d p x)))
+                 (:instance dm::g-c-d-pos
                             (x p)
                             (y x))
                  ))))
@@ -769,7 +769,7 @@
                 (posp x)
                 (natp n)
                 (dm::divides x (expt p n))
-                (= (acl2::g-c-d p x) 1))
+                (= (dm::g-c-d p x) 1))
            (equal x (expt p (number-of-powers x p))))
   :rule-classes nil
   :hints (("Goal"
@@ -816,13 +816,13 @@
                 (posp x)
                 (natp n)
                 (dm::divides x (expt p n))
-                (= (acl2::g-c-d p x) p))
+                (= (dm::g-c-d p x) p))
            (equal x (expt p (number-of-powers x p))))
   :rule-classes nil
   :hints (("Goal"
            :induct (factors-of-prime-powers-part2-induction-hint x p n))
           ("Subgoal *1/3"
-           :use ((:instance acl2::g-c-d-divides
+           :use ((:instance dm::g-c-d-divides
                             (x p)
                             (y x)))
            ;:in-theory (enable dm::divides)
@@ -832,7 +832,7 @@
                             (x p)
                             (y (/ x p))
                             (z (expt p (1- n))))
-                 (:instance acl2::g-c-d-divides
+                 (:instance dm::g-c-d-divides
                             (x p)
                             (y x))
                  (:instance must-be-1-if-divides-1)
@@ -848,11 +848,11 @@
            )
           ("Subgoal *1/1"
            :use ((:instance must-be-1-if-divides-1)
-                 (:instance acl2::g-c-d-divides
+                 (:instance dm::g-c-d-divides
                             (x p)
                             (y x))
                  (:instance dm::divides-leq
-                            (x (acl2::g-c-d p x))
+                            (x (dm::g-c-d p x))
                             (y x))
                  )
            )
@@ -1280,24 +1280,24 @@
                 (integerp n)
                 (< 1 k)
                 (<= k n))
-           (integerp (acl2::least-divisor k n))))
+           (integerp (dm::least-divisor k n))))
 
 (defthm expt-least-divisor-number-of-powers
   (implies (and (integerp k)
                 (< 1 k))
-           (< 1 (expt (acl2::least-divisor 2 k)
-                      (number-of-powers k (acl2::least-divisor 2 k)))))
+           (< 1 (expt (dm::least-divisor 2 k)
+                      (number-of-powers k (dm::least-divisor 2 k)))))
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance acl2::least-divisor-divides
+           :use ((:instance dm::least-divisor-divides
                             (k 2)
                             (n k))
                  (:instance divisor-num-powers
-                            (f (acl2::least-divisor 2 k))
+                            (f (dm::least-divisor 2 k))
                             (k k))
                  (:instance number-of-powers-not-zero-when-divides
                             (k k)
-                            (f (acl2::least-divisor 2 k)))
+                            (f (dm::least-divisor 2 k)))
                  ))))
 
 (defun primitive-root-aux (k p)
@@ -1305,15 +1305,15 @@
                            :do-not-induct t
                            :use ((:instance divisor-num-powers
                                             (k k)
-                                            (f (acl2::least-divisor 2 k)))
+                                            (f (dm::least-divisor 2 k)))
                                  (:instance divisor-decreases-count
                                             (k k)
-                                            (f (expt (acl2::least-divisor 2 k)
+                                            (f (expt (dm::least-divisor 2 k)
                                                      (number-of-powers k
-                                                                       (acl2::least-divisor
+                                                                       (dm::least-divisor
                                                                         2 k)))))))
                           ("Subgoal 5"
-                           :use ((:instance acl2::least-divisor-divides
+                           :use ((:instance dm::least-divisor-divides
                                             (k 2)
                                             (n k))))
                           ("Subgoal 4"
@@ -1322,25 +1322,25 @@
                            :use ((:instance expt-least-divisor-number-of-powers))
                            )
                           ("Subgoal 2"
-                           :use ((:instance acl2::least-divisor-divides
+                           :use ((:instance dm::least-divisor-divides
                                             (k 2)
                                             (n k))
                                  (:instance
                                   number-of-powers-not-zero-when-divides
                                   (k k)
-                                  (f (acl2::least-divisor 2 k)))))
+                                  (f (dm::least-divisor 2 k)))))
                           ("Subgoal 1"
-                           :use ((:instance acl2::least-divisor-divides
+                           :use ((:instance dm::least-divisor-divides
                                             (k 2)
                                             (n k))
                                  (:instance
                                   number-of-powers-not-zero-when-divides
                                   (k k)
-                                  (f (acl2::least-divisor 2 k)))))
+                                  (f (dm::least-divisor 2 k)))))
                           )))
   (if (or (zp k) (= 1 k))
       1
-    (let* ((q (acl2::least-divisor 2 k))
+    (let* ((q (dm::least-divisor 2 k))
            (n (number-of-powers k q))
            (k1 (/ k (expt q n))))
       (mul (witness-with-order-q^n q n p)
@@ -1372,23 +1372,23 @@
   (:USE (:INSTANCE DM::PRIMEP-LEAST-DIVISOR (N K)))
   :PROMOTE (:FORWARDCHAIN 1)
   (:USE (:INSTANCE DIVISOR-NUM-POWERS (K K)
-                   (F (ACL2::LEAST-DIVISOR 2 K))))
+                   (F (DM::LEAST-DIVISOR 2 K))))
   :PRO (:FORWARDCHAIN 1)
   (:USE (:INSTANCE DM::DIVIDES-TRANSITIVE
-                   (X (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                            (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))
+                   (X (EXPT (DM::LEAST-DIVISOR 2 K)
+                            (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))
                    (Y K)
                    (Z (1- P))))
   :PRO (:FORWARDCHAIN 1)
   (:USE (:INSTANCE ORDER-IS-PRIME-POWER (P P)
-                   (Q (ACL2::LEAST-DIVISOR 2 K))
-                   (N (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))))
+                   (Q (DM::LEAST-DIVISOR 2 K))
+                   (N (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))))
   :PRO (:FORWARDCHAIN 1)
   (:USE (:INSTANCE
              DM::DIVIDES-TRANSITIVE
              (X (* K
-                   (/ (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                            (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))
+                   (/ (EXPT (DM::LEAST-DIVISOR 2 K)
+                            (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))))
              (Y K)
              (Z (1- P))))
   :PRO (:IN-THEORY (ENABLE DM::DIVIDES))
@@ -1401,13 +1401,13 @@
   (:USE
    (:INSTANCE
      FEP-EUCLIDEAN
-     (A (WITNESS-WITH-ORDER-Q^N (ACL2::LEAST-DIVISOR 2 K)
-                                (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))
+     (A (WITNESS-WITH-ORDER-Q^N (DM::LEAST-DIVISOR 2 K)
+                                (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))
                                 P))
      (B (PRIMITIVE-ROOT-AUX
              (* K
-                (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                      (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))))
+                (EXPT (DM::LEAST-DIVISOR 2 K)
+                      (- (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))))
              P))))
   :PRO (:DEMOTE 1)
   (:DV 1)
@@ -1417,8 +1417,8 @@
       (:INSTANCE
            FEP-PRIMITIVE-ROOT-AUX (P P)
            (K (* K
-                 (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                       (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))))
+                 (EXPT (DM::LEAST-DIVISOR 2 K)
+                       (- (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))))))
   :PRO (:IN-THEORY (ENABLE DM::DIVIDES))
   (:DEMOTE 1)
   (:DV 1)
@@ -1427,8 +1427,8 @@
   (:USE (:INSTANCE
              DM::DIVIDES-LEQ
              (X (* K
-                   (/ (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                            (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))
+                   (/ (EXPT (DM::LEAST-DIVISOR 2 K)
+                            (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))))
              (Y (1- P))))
   :PROMOTE (:FORWARDCHAIN 1)
   (:DV 1)
@@ -1449,43 +1449,43 @@
   ;;          :in-theory (enable dm::divides)
   ;;          :use ((:instance order-is-prime-power
   ;;                           (p p)
-  ;;                           (q (acl2::least-divisor 2 k))
-  ;;                           (n (number-of-powers k (acl2::least-divisor 2 k))))
+  ;;                           (q (dm::least-divisor 2 k))
+  ;;                           (n (number-of-powers k (dm::least-divisor 2 k))))
   ;;                (:instance dm::primep-least-divisor (n k))
   ;;                (:instance divisor-num-powers
   ;;                           (k k)
-  ;;                           (f (acl2::least-divisor 2 k)))
+  ;;                           (f (dm::least-divisor 2 k)))
   ;;                ;; (:instance dm::divides-transitive
-  ;;                ;;            (x (expt (acl2::least-divisor 2 k)
-  ;;                ;;                     (number-of-powers k (acl2::least-divisor 2 k))))
+  ;;                ;;            (x (expt (dm::least-divisor 2 k)
+  ;;                ;;                     (number-of-powers k (dm::least-divisor 2 k))))
   ;;                ;;            (y k)
   ;;                ;;            (z (1- p)))
   ;;                (:instance dm::divides-transitive
   ;;                           (x (* K
-  ;;                                 (/ (EXPT (ACL2::LEAST-DIVISOR 2 K)
-  ;;                                          (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))
+  ;;                                 (/ (EXPT (DM::LEAST-DIVISOR 2 K)
+  ;;                                          (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))))
   ;;                           (y k)
   ;;                           (z (1- p)))
   ;;                (:instance fep-euclidean
-  ;;                           (a (witness-with-order-q^n (acl2::least-divisor 2 k)
-  ;;                                                      (number-of-powers k (acl2::least-divisor 2 k))
+  ;;                           (a (witness-with-order-q^n (dm::least-divisor 2 k)
+  ;;                                                      (number-of-powers k (dm::least-divisor 2 k))
   ;;                                                      p))
   ;;                           (b (primitive-root-aux
   ;;                               (* k
-  ;;                                  (expt (acl2::least-divisor 2 k)
-  ;;                                        (- (number-of-powers k (acl2::least-divisor 2 k)))))
+  ;;                                  (expt (dm::least-divisor 2 k)
+  ;;                                        (- (number-of-powers k (dm::least-divisor 2 k)))))
   ;;                               p)))
   ;;                (:instance fep-primitive-root-aux
   ;;                           (p p)
   ;;                           (k (* k
-  ;;                                 (expt (acl2::least-divisor 2 k)
+  ;;                                 (expt (dm::least-divisor 2 k)
   ;;                                       (- (number-of-powers k
-  ;;                                                            (acl2::least-divisor 2 k)))))))
+  ;;                                                            (dm::least-divisor 2 k)))))))
   ;;                (:instance dm::divides-leq
   ;;                           (x (* k
-  ;;                                 (/ (expt (acl2::least-divisor 2 k)
+  ;;                                 (/ (expt (dm::least-divisor 2 k)
   ;;                                          (number-of-powers k
-  ;;                                                            (acl2::least-divisor 2 k))))))
+  ;;                                                            (dm::least-divisor 2 k))))))
   ;;                           (y (1- p)))
   ;;                )
   ;;          )
@@ -1551,33 +1551,33 @@
                 (posp k)
                 (< 1 k)
                 )
-           (= (acl2::g-c-d (expt (acl2::least-divisor 2 k)
-                                (number-of-powers k (acl2::least-divisor 2 k)))
-                          (/ k (expt (acl2::least-divisor 2 k)
-                                     (number-of-powers k (acl2::least-divisor 2
+           (= (dm::g-c-d (expt (dm::least-divisor 2 k)
+                                (number-of-powers k (dm::least-divisor 2 k)))
+                          (/ k (expt (dm::least-divisor 2 k)
+                                     (number-of-powers k (dm::least-divisor 2
                                                                              k)))))
               1))
   :rule-classes nil
   :INSTRUCTIONS
   (:PROMOTE
    (:USE
-    (:INSTANCE ACL2::G-C-D-DIVIDES
-               (X (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                        (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))
+    (:INSTANCE DM::G-C-D-DIVIDES
+               (X (EXPT (DM::LEAST-DIVISOR 2 K)
+                        (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))
                (Y (/ K
-                     (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                           (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))))))
+                     (EXPT (DM::LEAST-DIVISOR 2 K)
+                           (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))))))
    :PROMOTE
    (:USE (:INSTANCE DM::PRIMEP-LEAST-DIVISOR (N K)))
    :PROMOTE (:FORWARDCHAIN 1)
    (:USE (:INSTANCE PRIME-DOES-NOT-DIVIDE-X/P^N
-                    (P (ACL2::LEAST-DIVISOR 2 K))
+                    (P (DM::LEAST-DIVISOR 2 K))
                     (K K)))
    :PROMOTE (:FORWARDCHAIN 1)
    (:USE (:INSTANCE DIVISOR-NUM-POWERS (K K)
-                    (F (ACL2::LEAST-DIVISOR 2 K))))
+                    (F (DM::LEAST-DIVISOR 2 K))))
    :PROMOTE
-   (:USE (:INSTANCE ACL2::LEAST-DIVISOR-DIVIDES (K 2)
+   (:USE (:INSTANCE DM::LEAST-DIVISOR-DIVIDES (K 2)
                     (N K)))
    :PROMOTE (:FORWARDCHAIN 1)
    (:FORWARDCHAIN 1)
@@ -1590,23 +1590,23 @@
    (:USE
     (:INSTANCE
      PRIME-DIVIDES-DIVISOR-OF-PRIME-POWERS
-     (P (ACL2::LEAST-DIVISOR 2 K))
-     (X (ACL2::G-C-D
-         (EXPT (ACL2::LEAST-DIVISOR 2 K)
-               (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))
+     (P (DM::LEAST-DIVISOR 2 K))
+     (X (DM::G-C-D
+         (EXPT (DM::LEAST-DIVISOR 2 K)
+               (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))
          (* K
-            (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                  (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))))))
-     (N (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))))
+            (EXPT (DM::LEAST-DIVISOR 2 K)
+                  (- (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))))))
+     (N (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))))
    :PROMOTE
    (:USE
     (:INSTANCE
-     ACL2::G-C-D-POS
-     (X (EXPT (ACL2::LEAST-DIVISOR 2 K)
-              (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))
+     DM::G-C-D-POS
+     (X (EXPT (DM::LEAST-DIVISOR 2 K)
+              (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))
      (Y (* K
-           (/ (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                    (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))))
+           (/ (EXPT (DM::LEAST-DIVISOR 2 K)
+                    (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))))))
    :PROMOTE (:DEMOTE 1)
    (:DV 1)
    (:DV 1)
@@ -1617,16 +1617,16 @@
    (:USE
     (:INSTANCE
      DM::DIVIDES-TRANSITIVE
-     (X (ACL2::LEAST-DIVISOR 2 K))
-     (Y (ACL2::G-C-D
-         (EXPT (ACL2::LEAST-DIVISOR 2 K)
-               (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))
+     (X (DM::LEAST-DIVISOR 2 K))
+     (Y (DM::G-C-D
+         (EXPT (DM::LEAST-DIVISOR 2 K)
+               (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))
          (* K
-            (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                  (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))))))
+            (EXPT (DM::LEAST-DIVISOR 2 K)
+                  (- (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))))))
      (Z (* K
-           (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                 (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))))
+           (EXPT (DM::LEAST-DIVISOR 2 K)
+                 (- (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))))))
    :BASH))
   ;; :hints (("Goal"
   ;;          :do-not-induct t
@@ -1635,62 +1635,62 @@
   ;;                           ))
   ;;          :use ((:instance dm::primep-least-divisor
   ;;                           (n k))
-  ;;                (:instance acl2::g-c-d-divides
-  ;;                           (x (expt (acl2::least-divisor 2 k)
-  ;;                                    (number-of-powers k (acl2::least-divisor 2
+  ;;                (:instance dm::g-c-d-divides
+  ;;                           (x (expt (dm::least-divisor 2 k)
+  ;;                                    (number-of-powers k (dm::least-divisor 2
   ;;                                                                            k))))
-  ;;                           (y (/ k (expt (acl2::least-divisor 2 k)
-  ;;                                         (number-of-powers k (acl2::least-divisor 2
+  ;;                           (y (/ k (expt (dm::least-divisor 2 k)
+  ;;                                         (number-of-powers k (dm::least-divisor 2
   ;;                                                                                 k))))))
   ;;                (:instance prime-does-not-divide-x/p^n
-  ;;                           (p (acl2::least-divisor 2 k))
+  ;;                           (p (dm::least-divisor 2 k))
   ;;                           (k k))
   ;;                (:instance prime-divides-non-trivial-divisor-of-prime-power
-  ;;                           (p (acl2::least-divisor 2 k))
-  ;;                           (x (acl2::g-c-d (expt (acl2::least-divisor 2 k)
-  ;;                                                (number-of-powers k (acl2::least-divisor 2 k)))
-  ;;                                          (/ k (expt (acl2::least-divisor 2 k)
+  ;;                           (p (dm::least-divisor 2 k))
+  ;;                           (x (dm::g-c-d (expt (dm::least-divisor 2 k)
+  ;;                                                (number-of-powers k (dm::least-divisor 2 k)))
+  ;;                                          (/ k (expt (dm::least-divisor 2 k)
   ;;                                                     (number-of-powers
   ;;                                                      k
-  ;;                                                      (acl2::least-divisor 2
+  ;;                                                      (dm::least-divisor 2
   ;;                                                                          k)))))))
-  ;;                (:instance acl2::least-divisor-divides
+  ;;                (:instance dm::least-divisor-divides
   ;;                           (k 2)
   ;;                           (n k))
   ;;                (:instance divisor-num-powers
   ;;                           (k k)
-  ;;                           (f (acl2::least-divisor 2 k)))
+  ;;                           (f (dm::least-divisor 2 k)))
   ;;                (:instance prime-divides-divisor-of-prime-powers
-  ;;                           (p (acl2::least-divisor 2 k))
-  ;;                           (x (acl2::g-c-d (expt (acl2::least-divisor 2 k)
-  ;;                                                (number-of-powers k (acl2::least-divisor 2 k)))
+  ;;                           (p (dm::least-divisor 2 k))
+  ;;                           (x (dm::g-c-d (expt (dm::least-divisor 2 k)
+  ;;                                                (number-of-powers k (dm::least-divisor 2 k)))
   ;;                                          (* k
-  ;;                                             (expt (acl2::least-divisor 2 k)
+  ;;                                             (expt (dm::least-divisor 2 k)
   ;;                                                   (- (number-of-powers k
-  ;;                                                                        (acl2::least-divisor 2 k)))))))
-  ;;                           (n (number-of-powers k (acl2::least-divisor 2 k))))
-  ;;                (:instance acl2::g-c-d-pos
+  ;;                                                                        (dm::least-divisor 2 k)))))))
+  ;;                           (n (number-of-powers k (dm::least-divisor 2 k))))
+  ;;                (:instance dm::g-c-d-pos
   ;;                           (x 1)
   ;;                           (y k))
-  ;;                (:instance acl2::g-c-d-pos
-  ;;                           (x (expt (acl2::least-divisor 2 k)
-  ;;                                    (number-of-powers k (acl2::least-divisor 2 k))))
+  ;;                (:instance dm::g-c-d-pos
+  ;;                           (x (expt (dm::least-divisor 2 k)
+  ;;                                    (number-of-powers k (dm::least-divisor 2 k))))
   ;;                           (y (* k
-  ;;                                 (/ (expt (acl2::least-divisor 2 k)
+  ;;                                 (/ (expt (dm::least-divisor 2 k)
   ;;                                          (number-of-powers k
-  ;;                                                            (acl2::least-divisor 2 k)))))))
+  ;;                                                            (dm::least-divisor 2 k)))))))
   ;;                (:instance dm::divides-transitive
-  ;;                           (x (acl2::least-divisor 2 k))
-  ;;                           (y (acl2::g-c-d
-  ;;                               (expt (acl2::least-divisor 2 k)
-  ;;                                     (number-of-powers k (acl2::least-divisor 2 k)))
+  ;;                           (x (dm::least-divisor 2 k))
+  ;;                           (y (dm::g-c-d
+  ;;                               (expt (dm::least-divisor 2 k)
+  ;;                                     (number-of-powers k (dm::least-divisor 2 k)))
   ;;                               (* k
-  ;;                                  (expt (acl2::least-divisor 2 k)
+  ;;                                  (expt (dm::least-divisor 2 k)
   ;;                                        (- (number-of-powers k
-  ;;                                                             (acl2::least-divisor 2 k)))))))
+  ;;                                                             (dm::least-divisor 2 k)))))))
   ;;                           (z (* k
-  ;;                                 (expt (acl2::least-divisor 2 k)
-  ;;                                       (- (number-of-powers k (acl2::least-divisor 2 k)))))))
+  ;;                                 (expt (dm::least-divisor 2 k)
+  ;;                                       (- (number-of-powers k (dm::least-divisor 2 k)))))))
   ;;                ))))
 
 
@@ -1701,16 +1701,16 @@
                 (< 1 k)
                 (dm::divides k (1- p))
                 )
-           (dm::divides (/ k (expt (acl2::least-divisor 2 k)
-                                    (number-of-powers k (acl2::least-divisor 2
+           (dm::divides (/ k (expt (dm::least-divisor 2 k)
+                                    (number-of-powers k (dm::least-divisor 2
                                                                             k))))
                          (1- p)))
   :rule-classes nil
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance dm::divides-transitive
-                            (x (/ k (expt (acl2::least-divisor 2 k)
-                                    (number-of-powers k (acl2::least-divisor 2
+                            (x (/ k (expt (dm::least-divisor 2 k)
+                                    (number-of-powers k (dm::least-divisor 2
                                                                             k)))))
                             (y k)
                             (z (1- p)))
@@ -1731,8 +1731,8 @@
   :BASH (:DV 1)
   :X :PROMOTE
   (:USE (:INSTANCE (:INSTANCE DIVISOR-NUM-POWERS (K K)
-                              (F (ACL2::LEAST-DIVISOR 2 K)))))
-  (:USE (:INSTANCE ACL2::LEAST-DIVISOR-DIVIDES (K 2)
+                              (F (DM::LEAST-DIVISOR 2 K)))))
+  (:USE (:INSTANCE DM::LEAST-DIVISOR-DIVIDES (K 2)
                    (N K)))
   :PRO (:FORWARDCHAIN 1)
   (:FORWARDCHAIN 1)
@@ -1745,15 +1745,15 @@
   (:DV 1)
   :X :TOP
   (:USE (:INSTANCE ORDER-IS-PRIME-POWER
-                   (Q (ACL2::LEAST-DIVISOR 2 K))
-                   (N (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))
+                   (Q (DM::LEAST-DIVISOR 2 K))
+                   (N (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))
                    (P P)))
   :PRO
   (:USE (:INSTANCE DM::PRIMEP-LEAST-DIVISOR (N K)))
   :PROMOTE (:FORWARDCHAIN 1)
   (:USE (:INSTANCE DM::DIVIDES-TRANSITIVE
-                   (X (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                            (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))
+                   (X (EXPT (DM::LEAST-DIVISOR 2 K)
+                            (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))
                    (Y K)
                    (Z (1- P))))
   :PROMOTE (:FORWARDCHAIN 1)
@@ -1761,21 +1761,21 @@
   (:USE
    (:INSTANCE
      CONSTRUCT-PRODUCT-ORDER (P P)
-     (A (WITNESS-WITH-ORDER-Q^N (ACL2::LEAST-DIVISOR 2 K)
-                                (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))
+     (A (WITNESS-WITH-ORDER-Q^N (DM::LEAST-DIVISOR 2 K)
+                                (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))
                                 P))
      (B (PRIMITIVE-ROOT-AUX
              (* K
-                (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                      (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K)))))
+                (EXPT (DM::LEAST-DIVISOR 2 K)
+                      (- (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))))
              P))))
   :PROMOTE
   (:USE
       (:INSTANCE
            FEP-PRIMITIVE-ROOT-AUX (P P)
            (K (* K
-                 (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                       (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))))
+                 (EXPT (DM::LEAST-DIVISOR 2 K)
+                       (- (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))))))
   :PROMOTE (:DEMOTE 1)
   (:DV 1)
   (:DV 1)
@@ -1783,8 +1783,8 @@
   (:USE (:INSTANCE
              DM::DIVIDES-LEQ
              (X (* K
-                   (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                         (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))
+                   (EXPT (DM::LEAST-DIVISOR 2 K)
+                         (- (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))))
              (Y (1- P))))
   :PROMOTE (:FORWARDCHAIN 1)
   (:IN-THEORY (ENABLE DM::DIVIDES))
@@ -1796,8 +1796,8 @@
       (:INSTANCE
            FEP-PRIMITE-ROOT-NON-ZERO (P P)
            (K (* K
-                 (EXPT (ACL2::LEAST-DIVISOR 2 K)
-                       (- (NUMBER-OF-POWERS K (ACL2::LEAST-DIVISOR 2 K))))))))
+                 (EXPT (DM::LEAST-DIVISOR 2 K)
+                       (- (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))))))
   :PROMOTE (:FORWARDCHAIN 1)
   (:USE (:INSTANCE GCD-AFTER-DIVIDING-BY-PRIME-POWER))
   :PROMOTE (:FORWARDCHAIN 1)
