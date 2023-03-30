@@ -1061,6 +1061,8 @@
                        (var (expr-ident->get str))
                        (eval (exec-expr-pure str compst))
                        ((when (errorp eval)) eval)
+                       (eval (apconvert-expr-value eval))
+                       ((when (errorp eval)) eval)
                        (struct (expr-value->value eval))
                        ((unless (value-case struct :struct))
                         (error (list :not-struct str (compustate-fix compst))))
