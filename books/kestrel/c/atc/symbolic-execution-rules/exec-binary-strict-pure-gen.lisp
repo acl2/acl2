@@ -22,6 +22,7 @@
 (include-book "value-integer-get")
 (include-book "apconvert")
 
+
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -235,10 +236,35 @@
                     ulong-from-integer-mod
                     ullong-from-integer-mod
                     value-unsigned-integerp-alt-def
+                    ,@(and (eq op-kind :add)
+                           '(value-arithmeticp-when-uintp
+                             value-arithmeticp-when-sintp
+                             value-arithmeticp-when-ulongp
+                             value-arithmeticp-when-slongp
+                             value-arithmeticp-when-ullongp
+                             value-arithmeticp-when-sllongp))
+                    ,@(and (eq op-kind :add)
+                           '(type-of-value-when-sintp
+                             type-of-value-when-uintp
+                             type-of-value-when-slongp
+                             type-of-value-when-ulongp
+                             type-of-value-when-sllongp
+                             type-of-value-when-ullongp))
+                    ,@(and (eq op-kind :add)
+                           '((:e uint-max)
+                             (:e ulong-max)
+                             (:e ullong-max)
+                             (:e sint-min)
+                             (:e sint-max)
+                             (:e slong-min)
+                             (:e slong-max)
+                             (:e sllong-min)
+                             (:e sllong-max)))
                     integer-type-rangep
-                    integer-type-min
-                    integer-type-max
-                    bit-width-value-choices))
+                    ,@(and (not (eq op-kind :add))
+                           '(integer-type-min
+                             integer-type-max
+                             bit-width-value-choices))))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
