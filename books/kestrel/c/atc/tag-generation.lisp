@@ -29,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-tah-generation
+(defxdoc+ atc-tag-generation
   :parents (atc-event-and-code-generation)
   :short "Generation of C tag declarations (currently just structures)."
   :order-subtopics t
@@ -1069,11 +1069,16 @@
                 objdesignp-of-objdesign-of-var-when-valuep-of-read-var
                 objdesign-option-fix
                 objdesign-fix-when-objdesignp
-                write-object-of-objdesign-of-var-to-write-var)
+                write-object-of-objdesign-of-var-to-write-var
+                objdesign-member->super-of-objdesign-member
+                objdesign-member->name-of-objdesign-member
+                return-type-of-objdesign-member
+                (:e ident-fix))
               :expand
               ((exec-expr-pure (expr-member->target
                                 (expr-arrsub->arr (expr-binary->arg1 e)))
-                               compst))
+                               compst)
+               (:free (x y z w) (write-object (objdesign-member x y) z w)))
               :use
               ((:instance
                 ,writer-return-thm
