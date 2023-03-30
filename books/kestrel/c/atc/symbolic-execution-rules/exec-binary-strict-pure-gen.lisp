@@ -236,21 +236,21 @@
                     ulong-from-integer-mod
                     ullong-from-integer-mod
                     value-unsigned-integerp-alt-def
-                    ,@(and (eq op-kind :add)
+                    ,@(and (member-eq op-kind '(:add :sub))
                            '(value-arithmeticp-when-uintp
                              value-arithmeticp-when-sintp
                              value-arithmeticp-when-ulongp
                              value-arithmeticp-when-slongp
                              value-arithmeticp-when-ullongp
                              value-arithmeticp-when-sllongp))
-                    ,@(and (eq op-kind :add)
+                    ,@(and (member-eq op-kind '(:add :sub))
                            '(type-of-value-when-sintp
                              type-of-value-when-uintp
                              type-of-value-when-slongp
                              type-of-value-when-ulongp
                              type-of-value-when-sllongp
                              type-of-value-when-ullongp))
-                    ,@(and (eq op-kind :add)
+                    ,@(and (member-eq op-kind '(:add :sub))
                            '((:e uint-max)
                              (:e ulong-max)
                              (:e ullong-max)
@@ -261,7 +261,7 @@
                              (:e sllong-min)
                              (:e sllong-max)))
                     integer-type-rangep
-                    ,@(and (not (eq op-kind :add))
+                    ,@(and (not (member-eq op-kind '(:add :sub)))
                            '(integer-type-min
                              integer-type-max
                              bit-width-value-choices))))
