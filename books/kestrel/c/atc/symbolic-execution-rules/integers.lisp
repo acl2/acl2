@@ -1112,3 +1112,49 @@
   (defruled value-integerp-when-ullongp
     (implies (ullongp x)
              (value-integerp x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-arithmeticp-rules
+  :short "Rules about @(tsee value-arithmeticp) holding
+          when the predicates for the integer types hold."
+
+  (defruled value-arithmeticp-when-scharp
+    (implies (scharp x)
+             (value-arithmeticp x)))
+
+  (defruled value-arithmeticp-when-ucharp
+    (implies (ucharp x)
+             (value-arithmeticp x)))
+
+  (defruled value-arithmeticp-when-sshortp
+    (implies (sshortp x)
+             (value-arithmeticp x)))
+
+  (defruled value-arithmeticp-when-ushortp
+    (implies (ushortp x)
+             (value-arithmeticp x)))
+
+  (defruled value-arithmeticp-when-sintp
+    (implies (sintp x)
+             (value-arithmeticp x)))
+
+  (defruled value-arithmeticp-when-uintp
+    (implies (uintp x)
+             (value-arithmeticp x)))
+
+  (defruled value-arithmeticp-when-slongp
+    (implies (slongp x)
+             (value-arithmeticp x)))
+
+  (defruled value-arithmeticp-when-ulongp
+    (implies (ulongp x)
+             (value-arithmeticp x)))
+
+  (defruled value-arithmeticp-when-sllongp
+    (implies (sllongp x)
+             (value-arithmeticp x)))
+
+  (defruled value-arithmeticp-when-ullongp
+    (implies (ullongp x)
+             (value-arithmeticp x))))
