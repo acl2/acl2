@@ -12,26 +12,25 @@
 
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "channels"))
+(local (include-book "print-object-dollar-fn"))
 
 (in-theory (disable print-object$))
+
+(local (in-theory (disable print-object$-fn
+                           open-output-channel-p1
+                           open-output-channel-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm open-output-channel-p-of-print-object$
   (implies (open-output-channel-p channel typ state)
            (open-output-channel-p channel typ (print-object$ x channel2 state)))
-  :hints (("Goal" :in-theory (enable open-output-channel-p
-                                     print-object$
-                                     open-output-channel-p1
-                                 ;    open-output-channels
-                                     open-output-channel-p))))
+  :hints (("Goal" :in-theory (enable print-object$))))
 
-(defthm open-output-channel-p1-of-print-object$-gen
+(defthm open-output-channel-p1-of-print-object$-gen ; rename?
   (implies (open-output-channel-p1 channel typ state)
            (open-output-channel-p1 channel typ (print-object$ object channel2 state)))
-  :hints (("Goal" :in-theory (enable open-output-channel-p
-                                     print-object$
-                                     open-output-channel-p1
-                                  ;   open-output-channels
-                                     open-output-channel-p))))
+  :hints (("Goal" :in-theory (enable print-object$))))
 
 ;; Avoids name clash with std
 (defthm state-p1-of-print-object$-alt

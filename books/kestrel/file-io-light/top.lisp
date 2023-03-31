@@ -23,9 +23,10 @@
 (include-book "read-char-dollar")
 (include-book "read-object")
 
-;; Built-in write functions (one for each kind of channel):
+;; Built-in write functions:
 (include-book "write-byte-dollar")
 (include-book "princ-dollar") ; can write any atom
+(include-book "print-object-dollar-fn")
 (include-book "print-object-dollar")
 
 (include-book "prin1-with-slashes1")
