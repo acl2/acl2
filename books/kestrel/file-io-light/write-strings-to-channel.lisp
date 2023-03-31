@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "princ-dollar")
-(local (include-book "kestrel/utilities/state" :dir :system))
 
 (local (in-theory (disable open-output-channel-p1 open-output-channel-p)))
 

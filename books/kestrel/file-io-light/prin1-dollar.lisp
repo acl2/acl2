@@ -13,7 +13,6 @@
 (local (include-book "princ-dollar"))
 (local (include-book "prin1-with-slashes"))
 (local (include-book "kestrel/utilities/channels" :dir :system))
-(local (include-book "kestrel/utilities/state" :dir :system))
 
 (in-theory (disable prin1$
                     ;; So the rules in this file will fire:

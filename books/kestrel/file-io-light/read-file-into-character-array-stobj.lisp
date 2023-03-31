@@ -1,6 +1,6 @@
 ; A lightweight function to read a file into a stobj array of characters
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,6 @@
 (local (include-book "file-length-dollar"))
 (local (include-book "open-input-channel"))
 (local (include-book "kestrel/utilities/channels" :dir :system))
-(local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "read-char-dollar"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 
