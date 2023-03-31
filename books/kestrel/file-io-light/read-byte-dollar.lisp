@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function read-byte$.
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,13 @@
                            open-input-channel-p
                            update-open-input-channels
                            member-equal)))
+
+;; ;move
+;; (defthm update-open-input-channels-of-open-input-channels
+;;   (implies (state-p state) ; or (consp state)
+;;            (equal (update-open-input-channels (open-input-channels state) state)
+;;                   state))
+;;   :hints (("Goal" :in-theory (enable open-input-channels update-open-input-channels))))
 
 (local
  (defthm cadr-of-cadr-of-assoc-equal-of-open-input-channels-when-open-input-channel-p1
@@ -87,6 +94,14 @@
            (open-input-channel-p1 channel typ (update-open-input-channels channels state))))
   :hints (("Goal" :in-theory (enable open-input-channel-p1 channel-header-type)))))
 
+;; Note that this doesn't assume state-p.
+(defthm open-input-channel-p1-of-update-open-input-channels-of-open-input-channels-same
+  (implies (open-input-channel-p1 channel typ state)
+           (open-input-channel-p1 channel typ
+                                  (update-open-input-channels (open-input-channels state) state) ; just state, if we know state-p
+                                  ))
+  :hints (("Goal" :in-theory (enable open-input-channel-p1))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm state-p1-of-mv-nth-1-of-read-byte$
@@ -105,18 +120,17 @@
 
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-byte$
   (implies (open-input-channel-p1 channel typ state)
-           (open-input-channel-p1 channel typ (mv-nth 1 (read-byte$ channel state))))
+           (open-input-channel-p1 channel typ (mv-nth 1 (read-byte$ channel2 state))))
   :hints (("Goal" :in-theory (enable read-byte$))))
 
 (defthm open-input-channel-p-of-mv-nth-1-of-read-byte$
   (implies (open-input-channel-p channel typ state)
-           (open-input-channel-p channel typ (mv-nth 1 (read-byte$ channel state))))
+           (open-input-channel-p channel typ (mv-nth 1 (read-byte$ channel2 state))))
   :hints (("Goal" :in-theory (enable open-input-channel-p))))
 
-;; Because it's an open :byte channel
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-byte$
-  (implies (open-input-channel-p1 channel :byte state)
-           (open-input-channel-any-p1 channel (mv-nth 1 (read-byte$ channel state))))
+  (implies (open-input-channel-any-p1 channel state)
+           (open-input-channel-any-p1 channel (mv-nth 1 (read-byte$ channel2 state))))
   :hints (("Goal" :in-theory (enable open-input-channel-any-p1))))
 
 (defthm open-input-channels-of-mv-nth-1-of-read-byte$

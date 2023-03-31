@@ -81,15 +81,20 @@
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
   (implies (and (symbolp channel)
                 (open-input-channel-p1 channel typ state)
-                (state-p1 state))
-           (open-input-channel-p1 channel typ (mv-nth 1 (read-file-into-character-array-stobj-aux channel next-index character-array-stobj state))))
+                (state-p1 state)
+                )
+           (open-input-channel-p1 channel typ (mv-nth 1 (read-file-into-character-array-stobj-aux
+                                                         channel ; gen to channel2?
+                                                         next-index character-array-stobj state))))
   :hints (("Goal" :in-theory (enable read-file-into-character-array-stobj-aux))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
   (implies (and (symbolp channel)
                 (open-input-channel-any-p1 channel state)
                 (state-p1 state))
-           (open-input-channel-any-p1 channel (mv-nth 1 (read-file-into-character-array-stobj-aux channel next-index character-array-stobj state))))
+           (open-input-channel-any-p1 channel (mv-nth 1 (read-file-into-character-array-stobj-aux
+                                                         channel ; gen to channel2?
+                                                         next-index character-array-stobj state))))
   :hints (("Goal" :in-theory (enable open-input-channel-any-p1))))
 
 ;; Returns (mv erp character-array-stobj state) where either ERP is non-nil (meaning an error

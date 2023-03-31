@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function read-object.
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,9 @@
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-object))
 
-(local (in-theory (e/d (consp-of-cdr) (open-input-channels member-equal))))
+(local (in-theory (e/d (consp-of-cdr) (open-input-channels
+                                       member-equal
+                                       open-input-channel-p1))))
 
 (local
  (defthmd assoc-equal-when-not-symbolp-and-open-channels-p
@@ -50,34 +52,36 @@
                             true-listp)))))
 
 (defthm state-p1-of-mv-nth-2-of-read-object
-  (implies (and ;; (symbolp channel)
-                (state-p1 state))
+  (implies (state-p1 state)
            (state-p1 (mv-nth 2 (read-object channel state))))
   :hints (("Goal" :in-theory (enable read-object
                                      symbolp-when-assoc-equal-of-open-input-channels-and-state-p1
                                      assoc-equal-when-not-symbolp-and-open-channels-p))))
 
 (defthm state-p-of-mv-nth-2-of-read-object
-  (implies (and ;; (symbolp channel)
-                (state-p1 state))
+  (implies (state-p state)
            (state-p (mv-nth 2 (read-object channel state))))
-  :hints (("Goal" :in-theory (enable read-object))))
+  :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm open-input-channel-p1-of-mv-nth-2-of-read-object
-  (implies (and ;; (symbolp channel)
-                (state-p1 state)
-                (open-input-channel-p1 channel :object state))
-           (open-input-channel-p1 channel :object (mv-nth 2 (read-object channel state))))
-  :hints (("Goal" :in-theory (enable read-object))))
+  (implies (open-input-channel-p1 channel typ state)
+           (open-input-channel-p1 channel typ (mv-nth 2 (read-object channel2 state))))
+  :hints (("Goal" :in-theory (enable read-object open-input-channel-p1))))
 
-;; Because it's an open :object channel
+(defthm open-input-channel-p-of-mv-nth-2-of-read-object
+  (implies (open-input-channel-p channel typ state)
+           (open-input-channel-p channel typ (mv-nth 2 (read-object channel2 state))))
+  :hints (("Goal" :in-theory (enable open-input-channel-p))))
+
 (defthm open-input-channel-any-p1-of-mv-nth-2-of-read-object
-  (implies (and ;; (symbolp channel)
-                (state-p1 state)
-                (open-input-channel-p1 channel :object state))
-           (open-input-channel-any-p1 channel (mv-nth 2 (read-object channel state))))
-  :hints (("Goal" :in-theory (e/d (open-input-channel-any-p1)
-                                  (open-input-channel-p1)))))
+  (implies (open-input-channel-any-p1 channel state)
+           (open-input-channel-any-p1 channel (mv-nth 2 (read-object channel2 state))))
+  :hints (("Goal" :in-theory (enable open-input-channel-any-p1))))
+
+(defthm open-input-channel-any-p-of-mv-nth-2-of-read-object
+  (implies (open-input-channel-any-p channel state)
+           (open-input-channel-any-p channel (mv-nth 2 (read-object channel2 state))))
+  :hints (("Goal" :in-theory (enable open-input-channel-any-p))))
 
 (defthm open-input-channels-of-mv-nth-2-of-read-object
   (implies (and ;; (symbolp channel)

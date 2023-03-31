@@ -92,9 +92,8 @@
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-file-into-byte-list-aux
   (implies (and (symbolp channel)
                 (open-input-channel-p channel typ state)
-                ;; (true-listp acc)
                 (state-p1 state))
-           (open-input-channel-p1 channel typ (mv-nth 1 (read-file-into-byte-list-aux channel acc state))))
+           (open-input-channel-p1 channel typ (mv-nth 1 (read-file-into-byte-list-aux channel2 acc state))))
   :hints (("Goal" :in-theory (enable read-file-into-byte-list-aux
                                      open-input-channel-p
                                      open-input-channel-p1))))
