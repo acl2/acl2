@@ -169,8 +169,7 @@
                 (equal (cadr (cadr (assoc-equal channel channels))) :character))
            (character-listp (cddr (assoc-equal channel channels))))
   :hints (("Goal" :in-theory (enable open-channel-listp
-                                     open-channel1
-                                     character-listp-when-typed-io-listp-of-character))))
+                                     open-channel1))))
 
 (defthm open-channel-listp-of-cons
   (equal (open-channel-listp (cons ch chs))

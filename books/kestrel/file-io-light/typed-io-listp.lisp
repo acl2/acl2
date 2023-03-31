@@ -13,27 +13,22 @@
 (include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
 
 (defthm typed-io-listp-of-revappend
-  (equal (typed-io-listp (revappend x y) typ)
-         (and (typed-io-listp (true-list-fix x) typ)
-              (typed-io-listp y typ)))
+  (equal (typed-io-listp (revappend l1 l2) typ)
+         (and (typed-io-listp (true-list-fix l1) typ)
+              (typed-io-listp l2 typ)))
   :hints (("Goal" :in-theory (enable typed-io-listp revappend true-list-fix))))
 
 (defthm typed-io-listp-of-character-becomes-character-listp
-  (equal (typed-io-listp x :character)
-         (character-listp x))
+  (equal (typed-io-listp l :character)
+         (character-listp l))
   :hints (("Goal" :in-theory (enable character-listp typed-io-listp))))
 
 (defthmd nat-listp-when-typed-io-listp-of-byte
-  (implies (typed-io-listp vals :byte)
-           (nat-listp vals))
+  (implies (typed-io-listp l :byte)
+           (nat-listp l))
   :hints (("Goal" :in-theory (enable typed-io-listp nat-listp))))
 
 (defthmd unsigned-byte-listp-when-typed-io-listp-of-byte
-  (implies (typed-io-listp vals :byte)
-           (unsigned-byte-listp 8 vals))
+  (implies (typed-io-listp l :byte)
+           (unsigned-byte-listp 8 l))
   :hints (("Goal" :in-theory (enable typed-io-listp unsigned-byte-listp))))
-
-(defthmd character-listp-when-typed-io-listp-of-character
-  (implies (typed-io-listp vals :character)
-           (character-listp vals))
-  :hints (("Goal" :in-theory (enable typed-io-listp character-listp))))
