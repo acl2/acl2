@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function print-object$
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,8 +16,8 @@
 (in-theory (disable print-object$))
 
 (defthm open-output-channel-p-of-print-object$
-  (implies (open-output-channel-p channel2 typ state)
-           (open-output-channel-p channel2 typ (print-object$ x channel state)))
+  (implies (open-output-channel-p channel typ state)
+           (open-output-channel-p channel typ (print-object$ x channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p
                                      print-object$
                                      open-output-channel-p1
@@ -25,8 +25,8 @@
                                      open-output-channel-p))))
 
 (defthm open-output-channel-p1-of-print-object$-gen
-  (implies (open-output-channel-p1 channel2 typ state)
-           (open-output-channel-p1 channel2 typ (print-object$ object channel state)))
+  (implies (open-output-channel-p1 channel typ state)
+           (open-output-channel-p1 channel typ (print-object$ object channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p
                                      print-object$
                                      open-output-channel-p1

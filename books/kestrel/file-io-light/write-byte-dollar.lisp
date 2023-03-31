@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function write-byte$
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,6 @@
   :hints (("Goal" :in-theory (enable write-byte$))))
 
 (defthm open-output-channel-p1-of-write-byte$-gen
-  (implies (open-output-channel-p1 channel2 typ state)
-           (open-output-channel-p1 channel2 typ (write-byte$ byte channel state)))
+  (implies (open-output-channel-p1 channel typ state)
+           (open-output-channel-p1 channel typ (write-byte$ byte channel2 state)))
   :hints (("Goal" :in-theory (enable write-byte$))))

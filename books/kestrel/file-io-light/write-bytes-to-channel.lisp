@@ -1,6 +1,6 @@
 ; A function to write a sequence of bytes to a channel
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -42,8 +42,8 @@
             (write-bytes-to-channel (cdr bytes) channel state))))
 
 (defthm open-output-channel-p1-of-write-bytes-to-channel
-  (implies (open-output-channel-p1 channel2 typ state)
-           (open-output-channel-p1 channel2 typ (write-bytes-to-channel bytes channel state)))
+  (implies (open-output-channel-p1 channel typ state)
+           (open-output-channel-p1 channel typ (write-bytes-to-channel bytes channel2 state)))
   :hints (("Goal" :in-theory (enable write-bytes-to-channel
                                      open-output-channel-p1 ; todo
                                      ))))

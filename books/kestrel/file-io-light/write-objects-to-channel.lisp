@@ -1,6 +1,6 @@
 ; A function to write a sequence of objects to a channel
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,8 +31,8 @@
             (write-objects-to-channel (cdr objects) channel state))))
 
 (defthm open-output-channel-p1-of-write-objects-to-channel
-  (implies (open-output-channel-p1 channel2 typ state)
-           (open-output-channel-p1 channel2 typ (write-objects-to-channel list channel state)))
+  (implies (open-output-channel-p1 channel typ state)
+           (open-output-channel-p1 channel typ (write-objects-to-channel list channel2 state)))
   :hints (("Goal" :in-theory (enable write-objects-to-channel))))
 
 (defthm state-p1-of-write-objects-to-channel
