@@ -13,6 +13,8 @@
 (local (include-book "channels"))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
+(in-theory (disable close-input-channel))
+
 ;todo: move to channels.lisp, but that depends on this so first separate out the basic stuff in this book
 (defthm state-p1-of-close-input-channel-when-open-input-channel-p1
   (implies (and (open-input-channel-p1 channel typ state) ;type is a free var

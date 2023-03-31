@@ -19,8 +19,7 @@
 (in-theory (disable open-channels-p
                     add-pair
                     open-channel-listp
-                    open-channel1
-                    close-input-channel))
+                    open-channel1))
 
 ;move?
 (local
