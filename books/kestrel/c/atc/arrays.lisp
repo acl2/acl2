@@ -36,7 +36,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "At this time, we represent arrays as
+    "We represent arrays as
      sequences of values that can be read and written.
      These array representations can be passed around, and manipulated by,
      ACL2 functions that represent C functions,
@@ -50,11 +50,11 @@
      each array fixtype includes the type of the element.
      This is redundant information,
      but it is needed so that arrays thus modeled
-     can be a subset of an upcoming extension of the model of all values.")
+     are a subset of the values in the C deep embedding.")
    (xdoc::p
     "This fairly simple model should suffice to generate C code
      that manipulates arrays in some interesting ways.
-     It should suffice to represent C functions
+     The model should suffice to represent C functions
      that receive arrays from external callers,
      and possibly update them.
      However, we may need to extend the model in the future;
@@ -66,7 +66,7 @@
     ". But C arrays differ from Java arrays:
      in particular, Java arrays are self-contained objects,
      whose length and other attributes can be programmatically queried;
-     in contrast, C arrays are more of a ``view'' of certain memory regions.
+     in contrast, C arrays are a ``view'' of certain memory regions.
      Nonetheless, at the level of ACL2 manipulations,
      the two kinds of arrays differ less (at least for certain mundane uses),
      because, even though C does not provide ``direct access'' to
@@ -77,7 +77,7 @@
    (xdoc::p
     "Similarly to the use of the Java array model in ATJ,
      the C arrays modeled here have to be treated in a stobj-like manner
-     by the ACL2 functions to be translated to C.
+     by the ACL2 functions to be translated to C by ATC.
      In general, each of these ACL2 functions
      takes zero or more arrays as inputs (possibly among other inputs),
      and must return, in an @(tsee mv),
@@ -86,10 +86,9 @@
      the arrays that are only read by the function do not have to be returned.
      Inside the function, the arrays must be updated (if at all)
      in a single-threaded way, analogously to stobjs.
-     Upcoming extensions of ATC will ensure that this discipline is followed,
-     analogously to what ATJ does.")
+     ATC ensures that this discipline is followed, analogously to ATJ.")
    (xdoc::p
-    "Our initial model of arrays assumes that different arrays do not overlap.
+    "Our model of arrays assumes that different arrays do not overlap.
      That is,
      either two arrays are the same array (when they have the same pointer),
      or they are completely disjoint.
