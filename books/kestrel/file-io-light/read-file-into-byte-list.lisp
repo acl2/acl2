@@ -24,7 +24,7 @@
                            open-input-channels)))
 
 ;; Returns (mv bytes state).
-(defund read-file-into-byte-list-aux (channel acc state)
+(defund read-bytes-from-channel (channel acc state)
   (declare (xargs :guard (and (symbolp channel)
                               (open-input-channel-p channel :byte state)
                               (true-listp acc))
@@ -41,60 +41,60 @@
       (read-byte$ channel state)
       (if (not maybe-byte)
           (mv (reverse acc) state)
-        (read-file-into-byte-list-aux channel (cons maybe-byte acc) state)))))
+        (read-bytes-from-channel channel (cons maybe-byte acc) state)))))
 
-(defthm state-p1-of-mv-nth-1-of-read-file-into-byte-list-aux
+(defthm state-p1-of-mv-nth-1-of-read-bytes-from-channel
   (implies (and (symbolp channel)
                 (open-input-channel-p channel :byte state)
                 ;; (true-listp acc)
                 (state-p1 state))
-           (state-p1 (mv-nth 1 (read-file-into-byte-list-aux channel acc state))))
-  :hints (("Goal" :in-theory (enable read-file-into-byte-list-aux
+           (state-p1 (mv-nth 1 (read-bytes-from-channel channel acc state))))
+  :hints (("Goal" :in-theory (enable read-bytes-from-channel
                                      open-input-channel-p
                                      open-input-channel-p1))))
 
-;; (defthm state-p-of-mv-nth-1-of-read-file-into-byte-list-aux
+;; (defthm state-p-of-mv-nth-1-of-read-bytes-from-channel
 ;;   (implies (and (symbolp channel)
 ;;                 (open-input-channel-p channel :byte state)
 ;;                 ;; (true-listp acc)
 ;;                 (state-p state))
-;;            (state-p (mv-nth 1 (read-file-into-byte-list-aux channel acc state))))
+;;            (state-p (mv-nth 1 (read-bytes-from-channel channel acc state))))
 ;;   :hints (("Goal" :in-theory (enable state-p))))
 
 ;todo
-;; (defthm open-input-channels-of-mv-nth-1-of-read-file-into-byte-list-aux
+;; (defthm open-input-channels-of-mv-nth-1-of-read-bytes-from-channel
 ;;   (implies (and (symbolp channel)
 ;;                 ;(open-input-channel-p channel typ state)
 ;;                 ;; (true-listp acc)
 ;;                 (state-p1 state))
-;;            (equal (open-input-channels (mv-nth 1 (read-file-into-byte-list-aux channel acc state)))
+;;            (equal (open-input-channels (mv-nth 1 (read-bytes-from-channel channel acc state)))
 ;;                   (open-input-channels state)))
-;;   :hints (("Goal" :in-theory (enable read-file-into-byte-list-aux
+;;   :hints (("Goal" :in-theory (enable read-bytes-from-channel
 ;;                                      open-input-channel-p
 ;;                                      open-input-channel-p1
 ;;                                      channel-contents))))
 
-(defthm true-listp-of-mv-nth-0-of-read-file-into-byte-list-aux
+(defthm true-listp-of-mv-nth-0-of-read-bytes-from-channel
   (implies (true-listp acc)
-           (true-listp (mv-nth 0 (read-file-into-byte-list-aux channel acc state))))
-  :hints (("Goal" :in-theory (enable read-file-into-byte-list-aux
+           (true-listp (mv-nth 0 (read-bytes-from-channel channel acc state))))
+  :hints (("Goal" :in-theory (enable read-bytes-from-channel
                                      open-input-channel-p
                                      open-input-channel-p1))))
 
-(defthm unsigned-byte-listp-of-mv-nth-0-of-read-file-into-byte-list-aux
+(defthm unsigned-byte-listp-of-mv-nth-0-of-read-bytes-from-channel
   (implies (unsigned-byte-listp 8 acc)
-           (unsigned-byte-listp 8 (mv-nth 0 (read-file-into-byte-list-aux channel acc state))))
-  :hints (("Goal" :in-theory (enable read-file-into-byte-list-aux
+           (unsigned-byte-listp 8 (mv-nth 0 (read-bytes-from-channel channel acc state))))
+  :hints (("Goal" :in-theory (enable read-bytes-from-channel
                                      open-input-channel-p
                                      open-input-channel-p1
                                      UNSIGNED-BYTE-LISTP))))
 
-(defthm open-input-channel-p1-of-mv-nth-1-of-read-file-into-byte-list-aux
+(defthm open-input-channel-p1-of-mv-nth-1-of-read-bytes-from-channel
   (implies (and (symbolp channel)
                 (open-input-channel-p channel typ state)
                 (state-p1 state))
-           (open-input-channel-p1 channel typ (mv-nth 1 (read-file-into-byte-list-aux channel2 acc state))))
-  :hints (("Goal" :in-theory (enable read-file-into-byte-list-aux
+           (open-input-channel-p1 channel typ (mv-nth 1 (read-bytes-from-channel channel2 acc state))))
+  :hints (("Goal" :in-theory (enable read-bytes-from-channel
                                      open-input-channel-p
                                      open-input-channel-p1))))
 
@@ -111,7 +111,7 @@
         ;; Error:
         (mv `(:could-not-open-channel ,filename) nil state)
       (mv-let (bytes state)
-        (read-file-into-byte-list-aux channel nil state)
+        (read-bytes-from-channel channel nil state)
         (let ((state (close-input-channel channel state)))
           (mv nil ; no error
               bytes
