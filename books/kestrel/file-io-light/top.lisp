@@ -1,6 +1,6 @@
 ; Top book of the file-io library
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,10 @@
 (include-book "write-byte-dollar") ; writing a byte
 (include-book "princ-dollar") ; writing an atom (e.g., a character)
 (include-book "print-object-dollar") ; writing an object
+
+(include-book "prin1-with-slashes1")
+(include-book "prin1-with-slashes")
+(include-book "prin1-dollar")
 
 ;; Functions defined in this library:
 
