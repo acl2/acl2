@@ -67,6 +67,20 @@
               (acl2-count x)))
   :rule-classes ((:linear :trigger-terms ((acl2-count (nthcdr n x))))))
 
+(defthm <=-of-len-of-nthcdr-linear
+  (<= (len (nthcdr n x))
+      (len x))
+  :rule-classes ((:linear :trigger-terms ((len (nthcdr n x)))))
+  :hints (("Goal" :in-theory (enable nthcdr))))
+
+(defthm <-of-len-of-nthcdr-linear
+  (implies (and (consp x)
+                (posp n))
+           (< (len (nthcdr n x))
+              (len x)))
+  :rule-classes ((:linear :trigger-terms ((len (nthcdr n x)))))
+  :hints (("Goal" :in-theory (enable nthcdr))))
+
 (defthm nthcdr-iff
   (iff (nthcdr n x)
        (if (< (nfix n) (len x))
