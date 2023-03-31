@@ -22,6 +22,7 @@
 
 ;; :byte channels:
 (include-book "read-byte-dollar") ; read-byte$ is built-in
+(include-book "read-bytes-from-channel")
 (include-book "write-byte-dollar") ; write-byte$ is built-in
 (include-book "write-bytes-to-channel")
 
