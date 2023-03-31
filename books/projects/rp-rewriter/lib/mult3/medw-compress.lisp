@@ -418,6 +418,7 @@ for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                   ((mv cur-c cur-c-is-signed)
                    (case-match cur-c
                      (('-- x) (mv (ex-from-rp x) t))
+                     ;;(('times '-1 x) (mv (ex-from-rp x) t))
                      (& (mv cur-c nil))))
                   ((mv s-arg-lst pp-arg-lst c-arg-lst valid)
                    (case-match cur-c
