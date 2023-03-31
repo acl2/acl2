@@ -255,3 +255,10 @@
   (implies (open-input-channel-p channel :byte state)
            (assoc-equal channel (open-input-channels state)))
   :hints (("Goal" :in-theory (enable open-input-channel-p open-input-channel-p1))))
+
+;; TODO: How should we handle the p vs p1 functions?
+(defthm open-output-channel-p-forward-to-open-output-channel-p1
+   (implies (open-output-channel-p channel typ state)
+            (open-output-channel-p1 channel typ state))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable open-output-channel-p))))
