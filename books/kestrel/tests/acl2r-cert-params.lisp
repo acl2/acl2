@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
-;; TODO: Should this be an error (detected by 'make'?), since these are contradictory?:
+;; If certparam here is replaced by cert_param, the build should break, since
+;; make should detect that this book requires acl2(r) and the absence of
+;; acl2(r):
 
-; cert_param: (uses-acl2r, non-acl2r)
+; certparam: (uses-acl2r, non-acl2r)

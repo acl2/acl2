@@ -3829,7 +3829,7 @@ to-be-coughed-c-lst))|#
   :returns (mv (s) (res-pp-lst) (c-lst) changed)
   :verify-guards nil
   (if (atom pp-lst)
-      (mv ''0 nil nil nil)
+      (mv ''nil nil nil nil)
     (b* ((cur-orig (car pp-lst))
          (rest (cdr pp-lst))
          ((mv s1 pp-lst1 c-lst1 changed1)
@@ -3848,7 +3848,8 @@ to-be-coughed-c-lst))|#
              (if (and (consp cur)
                       (or (equal (first cur) 's)
                           (equal (first cur) 'c)
-                          (equal (first cur) 's-c-res)))
+                          (equal (first cur) 's-c-res)
+                          (binary-fnc-p cur)))
                  (b* (((mv s pp-lst c-lst)
                        (new-sum-merge-aux (list cur) *large-number*)))
                    (mv s pp-lst c-lst t))
@@ -3928,9 +3929,10 @@ to-be-coughed-c-lst))|#
        ((mv s2 pp-lst2 c-lst2 changed2)
         (extract-from-equals-lst pp-lst))
 
-       ((unless changed2) ;; should not be logically necessary but mabe will
-        ;; have some runtime performance benfits
-        (mv s pp-lst c-lst))
+       ((unless changed2) 
+        (mv s
+            (if (pp-lst-orderedp pp-lst) pp-lst (pp-sum-sort-lst pp-lst))
+            c-lst))
        )
     (mv (s-sum-merge s s2)
         (if (pp-lst-orderedp pp-lst2) pp-lst2 (pp-sum-sort-lst pp-lst2))

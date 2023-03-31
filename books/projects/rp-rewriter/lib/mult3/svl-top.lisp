@@ -1977,3 +1977,19 @@ z)
   :hints (("Goal"
            :in-theory (e/d (s-c-spec) ()))))
 
+(def-rp-rule c-spec-of-corner-case-1
+  ;; I have seen this case in integrated-multiplier case. find-adders-in-svex
+  ;; returns a term that looks like below that it should have probably rewrite
+  ;; further. It's easy to catch the pattern as a rewrite rule though. So here
+  ;; we go:
+  (implies (and (bitp x)
+                (bitp y)
+                (bitp other1)
+                (bitp other2))
+           (equal (c-spec (list (binary-and (binary-xor x y) other1)
+                                (binary-and x y)
+                                other2))
+                  (c-spec (list (c-spec (list x y other1))
+                                other2))))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))

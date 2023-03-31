@@ -17,6 +17,8 @@
 
 (include-book "arrays")
 (include-book "value-integer-get")
+(include-book "apconvert")
+(include-book "integers")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -80,6 +82,7 @@
          (constructor (pack 'type- fixtype))
          (type-of-value-when-pred (pack 'type-of-value-when- pred))
          (not-pred-of-value-pointer (pack 'not- pred '-of-value-pointer))
+         (value-kind-when-pred (pack 'value-kind-when- pred))
          (name (pack 'exec-expr-asg-indir-when- pred))
          (formula
           `(implies
@@ -112,15 +115,28 @@
                                  compst))))
          (event `(defruled ,name
                    ,formula
+                   :expand ((exec-expr-pure (expr-binary->arg1 e) compst)
+                            (exec-expr-pure (expr-unary->arg
+                                             (expr-binary->arg1 e)) compst))
                    :enable (exec-expr-asg
-                            exec-expr-pure
                             exec-unary
                             exec-indir
                             exec-ident
-                            apconvert-expr-value
+                            apconvert-expr-value-when-not-value-array-alt
+                            value-kind-when-scharp
                             read-object-of-objdesign-of-var-to-read-var
                             ,type-of-value-when-pred
-                            ,not-pred-of-value-pointer))))
+                            ,not-pred-of-value-pointer
+                            ,value-kind-when-pred)
+                   :disable (equal-of-error
+                             equal-of-expr-value)
+                   :prep-lemmas
+                   ((defrule lemma
+                      (implies (and (expr-valuep (apconvert-expr-value eval))
+                                    (,pred (expr-value->value
+                                            (apconvert-expr-value eval))))
+                               (,pred (expr-value->value eval)))
+                      :enable apconvert-expr-value)))))
       (mv name event)))
 
   (define atc-exec-expr-asg-indir-rules-gen-loop ((types type-listp))
@@ -188,6 +204,8 @@
           (pack afixtype '-array-write-alt-def))
          (elemtype-when-apred
           (pack 'value-array->elemtype-when- apred))
+         (value-kind-when-epred (pack 'value-kind-when- epred))
+         (value-integerp-when-ipred (pack 'value-integerp-when- ipred))
          (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
          (formula
           `(implies
@@ -204,11 +222,11 @@
                  (not (zp limit))
                  (equal arr-val (read-var var compst))
                  (valuep arr-val)
-                 (equal ptr
-                        (if (value-case arr-val :array)
-                            (value-pointer (pointer-valid (objdesign-static var))
-                                           (value-array->elemtype arr-val))
-                          arr-val))
+                 (equal ex
+                        (apconvert-expr-value
+                         (expr-value arr-val (objdesign-of-var var compst))))
+                 (expr-valuep ex)
+                 (equal ptr (expr-value->value ex))
                  (value-case ptr :pointer)
                  (value-pointer-validp ptr)
                  (equal (value-pointer->reftype ptr)
@@ -235,12 +253,23 @@
                                  compst))))
          (event `(defruled ,name
                    ,formula
+                   :expand ((exec-expr-pure (expr-binary->arg1 e) compst)
+                            (exec-expr-pure (expr-arrsub->arr
+                                             (expr-binary->arg1 e)) compst))
                    :enable (exec-expr-asg
                             ,@*atc-value-integer->get-rules*
                             ,atype-array-itype-index-okp
                             ,atype-array-write-itype
                             ,atype-array-write-alt-def
-                            ,elemtype-when-apred)
+                            ,elemtype-when-apred
+                            exec-ident
+                            exec-arrsub
+                            read-object-of-objdesign-of-var-to-read-var
+                            apconvert-expr-value-when-not-value-array-alt
+                            write-object
+                            not-errorp-when-expr-valuep
+                            ,value-kind-when-epred
+                            ,value-integerp-when-ipred)
                    :prep-lemmas
                    ((defrule lemma1
                       (implies (and (,atype-array-index-okp array index)
@@ -257,7 +286,13 @@
                                (not (errorp
                                      (value-array-write index val array))))
                       :use (:instance ,atype-array-write-alt-def
-                            (elem val)))))))
+                                      (elem val)))
+                    (defrule lemma3
+                      (implies (and (expr-valuep (apconvert-expr-value eval))
+                                    (,epred (expr-value->value
+                                             (apconvert-expr-value eval))))
+                               (,epred (expr-value->value eval)))
+                      :enable apconvert-expr-value)))))
       (mv name event)))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)

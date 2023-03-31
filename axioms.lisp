@@ -15888,7 +15888,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (cw "Waiting for all proof threads to finish~%"))
                  (sleep 0.1)))))
 
-(defmacro state-global-let* (bindings body)
+(defun state-global-let*-fn (bindings body)
 
 ; NOTE: In April 2010 we discussed the possibility that we could simplify the
 ; raw-Lisp code for state-global-let* to avoid acl2-unwind-protect, in favor of
@@ -15902,7 +15902,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
                               (no-duplicatesp-equal (strip-cars bindings)))))
-
   (let ((cleanup `(pprogn
                    ,@(state-global-let*-cleanup bindings 0)
                    state)))
@@ -15924,6 +15923,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
          ,cleanup
          ,cleanup)))))
+
+(defmacro state-global-let* (bindings body)
+  (state-global-let*-fn bindings body))
 
 ; With state-global-let* defined, we are now able to use LOCAL.
 
