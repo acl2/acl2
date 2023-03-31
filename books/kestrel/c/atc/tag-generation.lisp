@@ -1072,13 +1072,19 @@
                 write-object-of-objdesign-of-var-to-write-var
                 objdesign-member->super-of-objdesign-member
                 objdesign-member->name-of-objdesign-member
+                objdesign-element->super-of-objdesign-element
+                objdesign-element->index-of-objdesign-element
                 return-type-of-objdesign-member
+                return-type-of-objdesign-element
+                read-object
+                nfix
                 (:e ident-fix))
               :expand
               ((exec-expr-pure (expr-member->target
                                 (expr-arrsub->arr (expr-binary->arg1 e)))
                                compst)
-               (:free (x y z w) (write-object (objdesign-member x y) z w)))
+               (:free (x y z w) (write-object (objdesign-member x y) z w))
+               (:free (x y z w) (write-object (objdesign-element x y) z w)))
               :use
               ((:instance
                 ,writer-return-thm

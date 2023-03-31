@@ -1092,9 +1092,10 @@
                        (eval (apconvert-expr-value eval))
                        ((when (errorp eval)) eval)
                        (val (expr-value->value eval))
-                       (new-array (value-array-write index val array))
-                       ((when (errorp new-array)) new-array))
-                    (write-object objdes-mem new-array compst)))
+                       (objdes-mem-elem
+                        (make-objdesign-element :super objdes-mem
+                                                :index index)))
+                    (write-object objdes-mem-elem val compst)))
                  ((expr-case arr :memberp)
                   (b* ((str (expr-memberp->target arr))
                        (mem (expr-memberp->name arr))
