@@ -13,16 +13,20 @@
 (include-book "typed-io-listp")
 (include-book "channels")
 
-;; Books about built-in functions:
+;; Built-in channel functions:
 (include-book "open-input-channel")
 (include-book "open-output-channel")
 (include-book "open-output-channel-bang")
-(include-book "read-byte-dollar") ; reading a byte
-(include-book "read-char-dollar") ; reading a character
-(include-book "read-object") ; reading an object
-(include-book "write-byte-dollar") ; writing a byte
-(include-book "princ-dollar") ; writing an atom (e.g., a character)
-(include-book "print-object-dollar") ; writing an object
+
+;; Built-in read functions (one for each kind of channel):
+(include-book "read-byte-dollar")
+(include-book "read-char-dollar")
+(include-book "read-object")
+
+;; Built-in write functions (one for each kind of channel):
+(include-book "write-byte-dollar")
+(include-book "princ-dollar") ; can write any atom
+(include-book "print-object-dollar")
 
 (include-book "prin1-with-slashes1")
 (include-book "prin1-with-slashes")
@@ -42,7 +46,7 @@
 (include-book "write-bytes-to-file")
 (include-book "write-bytes-to-file-bang")
 
-(include-book "write-strings-to-channel")
+(include-book "write-strings-to-channel") ; uses princ$
 (include-book "write-strings-to-file")
 (include-book "write-strings-to-file-bang")
 
