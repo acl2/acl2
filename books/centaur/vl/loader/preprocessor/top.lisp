@@ -2427,6 +2427,23 @@ non-arguments pieces.</p>"
     ;; Else, eat the opening paren and go do the actual parsing.
     (vl-parse-define-formal-arguments (cdr text) (vl-echar->loc (car text)) ppst)))
 
+(define vl-trim-for-preproc ((x stringp))
+  :short "Trim whitespace from a string, but preserving space that might be syntactically significant."
+  :long "<p>Generally whitespace is not supposed to be syntactically
+significant, but there is one case where it is: escaped identifiers that are
+written beginning with a backslash and ending with a space, tab, or newline. In
+the preprocessor we need to be careful to leave some such whitespace character
+after anything that might be an escaped identifier -- in this case we don't
+bother to check, but just leave a space at the end unless no whitespace was
+trimmed at all or the string was empty after trimming.</p>"
+  (b* ((trimmed (str::trim x))
+       (trimmed-len (length trimmed)))
+    (if (or (eql trimmed-len 0)
+            (eql trimmed-len (length x)))
+        trimmed
+      (str::cat trimmed " "))))
+       
+
 (define vl-process-define
   :short "Handler for @('define') directives."
   ((loc     vl-location-p)
@@ -2880,6 +2897,7 @@ there may well be mismatches left.</p>"
          :hints(("Goal"
                  :in-theory (enable vl-check-remaining-formals-all-have-defaults)))))
 
+
 (define vl-line-up-define-formals-and-actuals
   ((formals vl-define-formallist-p)
    (actuals string-listp)
@@ -2930,11 +2948,17 @@ there may well be mismatches left.</p>"
        ;; the argument default if one is specified, or by nothing if no default
        ;; is specified.
        ((vl-define-formal formal1) (car formals))
-       (actual1 (str::trim (car actuals)))
-       (value1  (if (and (equal actual1 "")
-                         formal1.default)
-                    (str::trim formal1.default)
-                  actual1)))
+
+       ;; We used to simply trim the actual and default here but it sometimes
+       ;; removed the necessary space after a backslash-escaped identifier. But
+       ;; we do want to remove newlines and detect whitespace-only actuals.  So
+       ;; we'll trim but then add a space at the end unless there was nothing
+       ;; trimmed off at all.
+       (actual1 (vl-trim-for-preproc (car actuals)))
+       (value1 (if (and (equal actual1 "")
+                        formal1.default)
+                   (vl-trim-for-preproc formal1.default)
+                 actual1)))
     (mv t
         (cons (cons formal1.name value1) rest-subst)
         ppst)))

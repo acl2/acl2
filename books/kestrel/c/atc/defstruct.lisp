@@ -1427,7 +1427,8 @@
        (fixtype-arrayp-of-fixtype-array-of
         (pack fixtype '-arrayp-of- fixtype '-array-of))
        (valuep-when-fixtype-arrayp (pack 'valuep-when- fixtype '-arrayp))
-       (true-listp-when-fixtype-listp (pack 'true-listp-when- elem-type-listp '-compound-recognizer))
+       (true-listp-when-fixtype-listp
+        (pack 'true-listp-when- elem-type-listp '-compound-recognizer))
        (fixtype-array-of-of-fixtype-list-fix-elements
         (pack fixtype '-array-of-of- fixtype '-list-fix-elements))
        (struct-tag-equiv-implies-equal-struct-tag-fix-1

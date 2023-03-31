@@ -11,15 +11,12 @@
 (in-package "HELP")
 
 ;; TODO
-;; - better way to test guesses, instead of prove$
 ;; - limit number of hypotheses suggested
 ;; - how to subsume hypotheses found
 ;; - make sure an expression isn't NIL or not-NIL before trying to split on it
 ;; - tie into ACL2 type-prescriptions, use only boolean predicates for splitting?
 ;; - use history, e.g., some test patterns that were recently useful
 
-
-(include-book "tools/prove-dollar" :dir :system)
 (include-book "acl2s/cgen/top" :dir :system :ttags :all)
 
 (local (include-book "arithmetic-5/top" :dir :system))
@@ -134,9 +131,10 @@
            :stobjs state))
   (if (endp witnesses)
       (mv t state)
-      (mv-let (erp provedp state)
-          (acl2::prove$ `(let ,(car witnesses) ,term))
-        (if (or erp (not provedp))
+      (mv-let (erp stobjs-value state)
+          (with-output! :off (acl2::warning acl2::error)
+            (trans-eval `(let ,(car witnesses) ,term) 'drla-ctx state nil))
+        (if (or erp (not (cdr stobjs-value)))
             (mv nil state)
             (all-true term (cdr witnesses) state)))))
 
@@ -145,9 +143,10 @@
            :stobjs state))
   (if (endp counterexamples)
       (mv t state)
-      (mv-let (erp provedp state)
-          (acl2::prove$ `(let ,(car counterexamples) ,term))
-        (if (or erp provedp)
+      (mv-let (erp stobjs-value state)
+          (with-output! :off (acl2::warning acl2::error)
+            (trans-eval `(let ,(car counterexamples) ,term) 'drla-ctx state nil))
+        (if (or erp (cdr stobjs-value))
             (mv nil state)
             (all-false term (cdr counterexamples) state)))))
 
@@ -195,8 +194,8 @@
         (mv-let (term args)
             (fill-template template args nil)
             (declare (ignorable args))
-          (mv-let (goodp state)
-              (separates term witnesses counterexamples state)
+            (mv-let (goodp state)
+                (separates term witnesses counterexamples state)
             (if goodp
                 (get-terms-separating-template-aux template base-terms
                                                    nterms nslots (1- n)
@@ -331,9 +330,12 @@
 (defun get-arities (fnnames world)
   (if (endp fnnames)
       nil
-      (cons (cons (car fnnames)
-                  (acl2::arity (car fnnames) world))
-            (get-arities (cdr fnnames) world))))
+      (let ((nargs (acl2::arity (car fnnames) world)))
+        (if (not (null nargs))
+            (cons (cons (car fnnames)
+                        (acl2::arity (car fnnames) world))
+                  (get-arities (cdr fnnames) world))
+            (get-arities (cdr fnnames) world)))))
 
 (defun get-term-templates (term defn-depth term-depth world)
   (declare (xargs :mode :program))
@@ -423,6 +425,16 @@
         (mv t form res state))))
 
 
+(defun strip-constants (lst)
+  (if (endp lst)
+      nil
+      (if (or (acl2-numberp (car lst)) (equal (car lst) t) (equal (car lst) nil))
+          (strip-constants (cdr lst))
+          (cons (car lst) (strip-constants (cdr lst))))))
+
+(defun real-all-vars (form)
+  (strip-constants (all-vars form)))
+
 (defun derive-missing-hypothesis-fn (form boolean-depth
                                      generate-comparisons
                                      predicate-depth
@@ -446,9 +458,9 @@
                                                 predicate-depth))
              (cons nil (get-term-templates form defn-depth term-depth (w state)))
              (if generate-comparisons
-                 (append (all-vars form)
+                 (append (real-all-vars form)
                          *DRLA-BUILTIN-CONSTANTS*)
-                 (all-vars form))
+                 (real-all-vars form))
              wts
              cts
              nil
@@ -460,10 +472,19 @@
                                             (predicate-depth '1)
                                             (defn-depth '1)
                                             (term-depth '1))
-`(derive-missing-hypothesis-fn ',form ,boolean-depth ,generate-comparisons
-                               ,predicate-depth
-                               ,defn-depth ,term-depth
-                               state))
+  `(let* ((gc (f-get-global 'acl2::guard-checking-on state))
+          (state (f-put-global 'acl2::guard-checking-on :none state)))
+     (mv-let (erp val state)
+         (derive-missing-hypothesis-fn ',form ,boolean-depth ,generate-comparisons
+          ,predicate-depth
+          ,defn-depth ,term-depth
+          state)
+       (let ((state (f-put-global 'acl2::guard-checking-on gc state)))
+         (mv erp val state)))))
 
 
-;;; (derive-missing-hypothesis (equal (reverse (reverse x)) x))
+
+#|
+(derive-missing-hypothesis (equal (reverse (reverse x)) x))
+(derive-missing-hypothesis (equal (+ 0 x) x))
+|#

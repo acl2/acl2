@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,13 +22,13 @@
 
 (defxdoc+ grammar-new
   :parents (concrete-syntax)
-  :short "ABNF new grammar of Yul."
+  :short "New ABNF grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use our "
     (xdoc::seetopic "abnf::grammar-parser" "verified ABNF grammar parser")
-    " to parse the ABNF grammar of Yul into a representation in ACL2.")
+    " to parse the new ABNF grammar of Yul into a representation in ACL2.")
    (xdoc::p
     "This is the new grammar of Yul; see @(see concrete-syntax)."))
   :order-subtopics t
@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (abnf::defgrammar *grammar-new*
-  :short "The parsed ABNF grammar of Yul."
+  :short "The parsed new ABNF grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -66,10 +66,7 @@
              abnf::char-val-in-termset-p
              abnf::char-insensitive-in-termset-p
              abnf::char-sensitive-in-termset-p)
-    :disable ((:e acl2::integers-from-to))
-    :prep-books
-    ((local
-      (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+    :disable ((:e acl2::integers-from-to))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

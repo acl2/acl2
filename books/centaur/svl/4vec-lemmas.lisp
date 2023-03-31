@@ -7507,6 +7507,44 @@ lognot)
 
 (add-svex-simplify-rule 3vec-p-of-4vec-concat$)
 
+(def-rp-rule :disabled t
+  3vec-fix-of-4vec-concat
+  (implies (and (integerp size))
+           (and (equal (sv::3vec-fix (4vec-concat size x y))
+                       (4vec-concat size
+                                    (sv::3vec-fix x)
+                                    (sv::3vec-fix y)))
+                (equal (sv::3vec-fix (4vec-concat$ size x y))
+                       (4vec-concat$ size
+                                    (sv::3vec-fix x)
+                                    (sv::3vec-fix y)))))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-concat
+                            SV::3VEC-FIX
+                            LOGIOR-OF-LOGAPP
+                            4VEC-FIX
+                            4vec-concat$
+                            sv::3vec-p)
+                           ()))))
+(def-rp-rule :disabled t
+  3vec-fix-of-4vec-concat-reverse
+  (implies (and (integerp size))
+           (and (equal (4vec-concat size
+                                    (sv::3vec-fix x)
+                                    (sv::3vec-fix y))
+                       (sv::3vec-fix (4vec-concat size x y))
+                       )
+                (equal (4vec-concat$ size
+                                    (sv::3vec-fix x)
+                                    (sv::3vec-fix y))
+                       (sv::3vec-fix (4vec-concat$ size x y))
+                       )))
+  :hints (("Goal"
+           :in-theory (e/d (3vec-fix-of-4vec-concat)
+                           ()))))
+
+
+
 (defthm 3vec-p-of-4vec-fix
   (IMPLIES (AND (SV::3VEC-P Y))
            (SV::3VEC-P (4VEC-FIX Y)))
@@ -8797,3 +8835,41 @@ lognot)
                             sv::3vec-bitand
                             sv::4vec-part-select)
                            ()))))
+
+(defthmd 4vec-rsh-of-3vec-fix
+  (implies (natp size)
+           (equal (4vec-rsh size (sv::3vec-fix x))
+                  (sv::3vec-fix (4vec-rsh size x))))
+  :hints (("Goal"
+           :in-theory (e/d (IFIX
+                            4VEC-RSH
+                            4VEC
+                            SV::3VEC-FIX
+                            SV::4VEC->LOWER
+                            SV::4VEC->UPPER
+                            4VEC-SHIFT-CORE)
+                           ()))
+          (and stable-under-simplificationp
+               '(:in-theory (e/d  (LOGIOR-OF-LOGTAIL
+                                   LOGand-OF-LOGTAIL)
+                                  (BITOPS::LOGTAIL-OF-LOGAND
+                                   BITOPS::LOGTAIL-OF-LOGior)
+                                 )))))
+
+(defthm 3vec-p-of-4vec-rsh
+  (implies (and (natp size)
+                (sv::3vec-p val))
+           (sv::3vec-p (sv::4vec-rsh size val)))
+  :hints (("goal"
+           :in-theory (e/d (sv::3vec-p
+                            sv::4vec-rsh
+                            4vec-shift-core)
+                           ()))
+          (and stable-under-simplificationp
+               '(:in-theory (e/d  (lognot-of-logtail
+                                   logior-of-logtail
+                                   logand-of-logtail)
+                                  (bitops::logtail-of-lognot
+                                   bitops::logtail-of-logand
+                                   bitops::logtail-of-logior)
+                                 )))))
