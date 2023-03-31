@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See also the function write-list in books/misc/file-io.lisp.
+
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "print-object-dollar"))
 
