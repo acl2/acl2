@@ -1,6 +1,6 @@
 ; A tool to try proof advice on some or all defthms in a book
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,7 @@
 ;; (replay-book-with-advice "../lists-light/append.lisp")
 
 ;; Determine whether to try advice for EVENT, given the list of THEOREMS-TO-TRY.
+;; TODO: Add support for trying advice on local defthms.
 (defun advice-eventp (event theorems-to-try)
   (declare (xargs :guard (or (eq :all theorems-to-try)
                              (symbol-listp theorems-to-try))))

@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function princ$.
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,12 +33,21 @@
            (open-output-channel-p channel2 typ (princ$ x channel state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
 
+(defthm state-p1-of-princ$
+  (implies (and (state-p1 state)
+                (symbolp channel)
+                ;; Not sure if this should be open-output-channel-p1 or open-output-channel-p,
+                ;; but the rule in STD has open-output-channel-p1, so we match that here:
+                (open-output-channel-p1 channel :character state))
+           (state-p1 (princ$ x channel state)))
+  :hints (("Goal" :in-theory (enable princ$ open-output-channel-p1))))
+
 (defthm state-p-of-princ$
   (implies (and (state-p state)
                 (symbolp channel)
                 (open-output-channel-p channel :character state))
            (state-p (princ$ x channel state)))
-  :hints (("Goal" :in-theory (enable princ$ open-output-channel-p1))))
+  :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm w-of-princ$
   (equal (w (princ$ x channel state))
