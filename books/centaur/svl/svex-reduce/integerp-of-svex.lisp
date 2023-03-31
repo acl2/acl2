@@ -1148,9 +1148,10 @@
 (svex-eval-lemma-tmpl
  (defret-mutual svex-eval-of-integerp-of-svex-is-correct-env=nil
    (defret svex-eval-of-<fn>-is-correct-env=nil
-     (implies (and (sv::svex-p x)
+     (implies (and (equal env nil)
+                   (sv::svex-p x)
                    res
-                   (equal env nil)
+                   
                    (:@ :dollar-eval
                        (integerp-of-svex-extn-correct<$>-lst
                         (svex-reduce-config->integerp-extns config)))
@@ -1160,9 +1161,9 @@
               (integerp (sv::svex-eval x svex-env)))
      :fn integerp-of-svex)
    (defret svexlist-eval-of-<fn>-is-correct-env=nil
-     (implies (and (sv::svexlist-p lst)
+     (implies (and (equal env nil)
+                   (sv::svexlist-p lst)
                    res
-                   (equal env nil)
                    (:@ :dollar-eval
                        (integerp-of-svex-extn-correct<$>-lst
                         (svex-reduce-config->integerp-extns config)))

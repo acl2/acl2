@@ -112,6 +112,7 @@
             acl2::SYMBOL-LIST-LISTP
             acl2::unprettify
 
+	    rp::config
 	    rp::rp
 	    rp::falist
 	    rp::show-rules-used
