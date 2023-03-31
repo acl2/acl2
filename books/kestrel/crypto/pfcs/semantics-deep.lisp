@@ -21,9 +21,14 @@
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
 
 (local (in-theory (disable primep)))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -125,7 +130,8 @@
   :elt-type assignment
   :true-listp t
   :elementp-of-nil t
-  :pred assignment-listp)
+  :pred assignment-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -202,7 +208,9 @@
                   (fe-listp vals p)
                   (equal (len keys) (len vals)))
              (assignment-wfp (omap::from-lists keys vals) p))
-    :enable (omap::from-lists
+    :induct t
+    :enable (len
+             omap::from-lists
              nat-listp-when-fe-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -239,6 +247,7 @@
              ((ok val2) (eval-expr expr.arg2 asg p)))
           (mul val1 val2 p)))
   :measure (expression-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix)
   :verify-guards nil ; done below
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
@@ -284,7 +293,8 @@
   (defret len-of-eval-expr-list
     (implies (nat-listp nats)
              (equal (len nats)
-                    (len exprs)))))
+                    (len exprs)))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -317,7 +327,8 @@
   :elt-type assertion
   :true-listp t
   :elementp-of-nil nil
-  :pred assertion-listp)
+  :pred assertion-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -347,6 +358,7 @@
         ((endp constrs) (acl2::impossible))
         (t (cons (assertion (car asgs) (car constrs))
                  (assertion-list-from (cdr asgs) (cdr constrs)))))
+  :guard-hints (("Goal" :in-theory (enable len)))
   :hooks (:fix)
   ///
 
@@ -355,14 +367,16 @@
              (equal (assertion-list->asg-list
                      (assertion-list-from asgs constrs))
                     (assignment-list-fix asgs)))
-    :enable assertion-list->asg-list)
+    :induct t
+    :enable (assertion-list->asg-list len))
 
   (defrule assertion-list->constr-list-of-assertion-list-from
     (implies (equal (len asgs) (len constrs))
              (equal (assertion-list->constr-list
                      (assertion-list-from asgs constrs))
                     (constraint-list-fix constrs)))
-    :enable assertion-list->constr-list)
+    :induct t
+    :enable (assertion-list->constr-list len))
 
   (defrule assertion-list-from-of-assertion-list->asg/constr-list
     (implies (assertion-listp assertions)
@@ -375,7 +389,9 @@
 
   (defrule len-of-assertion-list-from
     (equal (len (assertion-list-from asgs constrs))
-           (min (len asgs) (len constrs)))))
+           (min (len asgs) (len constrs)))
+    :induct t
+    :enable (len min)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -439,7 +455,9 @@
     :elt-type proof-tree
     :true-listp t
     :elementp-of-nil nil
-    :pred proof-tree-listp))
+    :pred proof-tree-listp)
+
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -521,6 +539,9 @@
      with the assignment @('asgext') that is the component of the proof tree,
      the assignment @('asg0') that assigns
      the values of the argument expressions to the relation's formal parameters.
+     We require @('asgext') to have as keys
+     exactly the free variables of the relation;
+     this implies that the keys are disjoint from @('asg0').
      We ensure that the constraints are the ones that
      form the body of the named relation.
      In other words, the subtrees must prove that
@@ -565,8 +586,8 @@
           (asg-para-vals (omap::from-lists def.para vals))
           ((unless (assignment-wfp ptree.asgext p))
            (proof-outcome-error))
-          ((when (set::intersectp (omap::keys asg-para-vals)
-                                  (omap::keys ptree.asgext)))
+          ((unless (equal (omap::keys ptree.asgext)
+                          (definition-free-vars def)))
            (proof-outcome-fail))
           (asg-sub (omap::update* ptree.asgext asg-para-vals))
           (outcome (exec-proof-tree-list ptree.sub defs p)))
@@ -611,7 +632,10 @@
     (defret len-of-exec-proof-tree-list
       (implies (proof-list-outcome-case outcome :assertions)
                (equal (len (proof-list-outcome-assertions->get outcome))
-                      (len ptrees)))))
+                      (len ptrees)))
+      :hints (("Goal" :in-theory (enable len)))))
+
+  :hints (("Goal" :in-theory (enable o< o-finp)))
 
   :verify-guards nil ; done below
   ///

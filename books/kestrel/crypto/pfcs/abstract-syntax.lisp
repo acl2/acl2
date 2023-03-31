@@ -14,6 +14,10 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax
@@ -64,7 +68,8 @@
   (:var ((name symbol)))
   (:add ((arg1 expression) (arg2 expression)))
   (:mul ((arg1 expression) (arg2 expression)))
-  :pred expressionp)
+  :pred expressionp
+  :prepwork ((local (in-theory (enable ifix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,7 +78,8 @@
   :elt-type expression
   :true-listp t
   :elementp-of-nil nil
-  :pred expression-listp)
+  :pred expression-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,7 +107,8 @@
   :elt-type constraint
   :true-listp t
   :elementp-of-nil nil
-  :pred constraint-listp)
+  :pred constraint-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,6 +148,7 @@
   :true-listp t
   :elementp-of-nil nil
   :pred definition-listp
+  :prepwork ((local (in-theory (enable nfix))))
   ///
 
   (defruled rev-of-definition-list-fix

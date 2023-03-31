@@ -22,6 +22,7 @@
 (include-book "value-integer-get")
 (include-book "apconvert")
 
+
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -219,12 +220,12 @@
                              type-of-value-when-ullongp))
                     apconvert-expr-value-when-not-value-array
                     value-integer
-                    value-sint-to-sint
-                    value-uint-to-uint
-                    value-slong-to-slong
-                    value-ulong-to-ulong
-                    value-sllong-to-sllong
-                    value-ullong-to-ullong
+                    value-sint-to-sint-from-integer
+                    value-uint-to-uint-from-integer
+                    value-slong-to-slong-from-integer
+                    value-ulong-to-ulong-from-integer
+                    value-sllong-to-sllong-from-integer
+                    value-ullong-to-ullong-from-integer
                     sint-integerp-alt-def
                     uint-integerp-alt-def
                     slong-integerp-alt-def
@@ -235,10 +236,35 @@
                     ulong-from-integer-mod
                     ullong-from-integer-mod
                     value-unsigned-integerp-alt-def
+                    ,@(and (member-eq op-kind '(:add :sub :mul :div :rem))
+                           '(value-arithmeticp-when-uintp
+                             value-arithmeticp-when-sintp
+                             value-arithmeticp-when-ulongp
+                             value-arithmeticp-when-slongp
+                             value-arithmeticp-when-ullongp
+                             value-arithmeticp-when-sllongp))
+                    ,@(and (member-eq op-kind '(:add :sub :mul :div :rem))
+                           '(type-of-value-when-sintp
+                             type-of-value-when-uintp
+                             type-of-value-when-slongp
+                             type-of-value-when-ulongp
+                             type-of-value-when-sllongp
+                             type-of-value-when-ullongp))
+                    ,@(and (member-eq op-kind '(:add :sub :mul :div :rem))
+                           '((:e uint-max)
+                             (:e ulong-max)
+                             (:e ullong-max)
+                             (:e sint-min)
+                             (:e sint-max)
+                             (:e slong-min)
+                             (:e slong-max)
+                             (:e sllong-min)
+                             (:e sllong-max)))
                     integer-type-rangep
-                    integer-type-min
-                    integer-type-max
-                    bit-width-value-choices))
+                    ,@(and (not (member-eq op-kind '(:add :sub :mul :div :rem)))
+                           '(integer-type-min
+                             integer-type-max
+                             bit-width-value-choices))))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
