@@ -159,28 +159,28 @@
                     <args>
                     (:@ :no-lemmas <hints-hints>)
                     (:@ (not :no-lemmas)
-                     :hints (("goal" 
-                              :in-theory '((BINARY-APPEND)
-                                           (CONS)
-                                           (INTEGERP)
-                                           (MEMBER-EQUAL)
-                                           (SVAR-FIX$INLINE)
-                                           (TRUE-LIST-FIX)
-                                           (:REWRITE ACL2::APPEND-OF-CONS)
-                                           (:REWRITE ACL2::APPEND-OF-NIL)
-                                           (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
-                                           (:REWRITE ACL2::LIST-FIX-OF-CONS)
-                                           (:REWRITE SVEX-ENV-LOOKUP-IN-SVTV-RUN-WITH-INCLUDE)
-                                           (:REWRITE SVEX-ENV-LOOKUP-WHEN-INTEGERP-AND-<<=)
-                                           (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
-                                           (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)
-                                           <enable>))
-                             (and stable-under-simplificationp
-                                  '(:use ((:instance <name>-<<=-lemma)
-                                          (:instance <name>-override-lemma
-                                                     <override-var-instantiation>
-                                                     <input-var-instantiation>))))
-                             . <hints>))
+                        :hints (("goal"
+                                 :use ((:instance <name>-<<=-lemma)
+                                       (:instance <name>-override-lemma
+                                                  <override-var-instantiation>
+                                                  <input-var-instantiation>))
+                                 :in-theory '((BINARY-APPEND)
+                                              (CONS)
+                                              (INTEGERP)
+                                              (MEMBER-EQUAL)
+                                              (SVAR-FIX$INLINE)
+                                              (TRUE-LIST-FIX)
+                                              (:REWRITE ACL2::APPEND-OF-CONS)
+                                              (:REWRITE ACL2::APPEND-OF-NIL)
+                                              (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
+                                              (:REWRITE ACL2::LIST-FIX-OF-CONS)
+                                              (:REWRITE SVEX-ENV-LOOKUP-IN-SVTV-RUN-WITH-INCLUDE)
+                                              (:REWRITE SVEX-ENV-LOOKUP-WHEN-INTEGERP-AND-<<=)
+                                              (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
+                                              (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)
+                                              <enable>))
+                             
+                                . <hints>))
                     <rule-classes>)))
     (acl2::template-subst
      template
