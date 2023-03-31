@@ -18,6 +18,7 @@
                            open-output-channels ; not done by a library?
                            )))
 
+;; todo: use something else?
 (defun all-bytep (lst)
   (declare (xargs :guard t))
   (if (consp lst)
@@ -44,9 +45,7 @@
 (defthm open-output-channel-p1-of-write-bytes-to-channel
   (implies (open-output-channel-p1 channel typ state)
            (open-output-channel-p1 channel typ (write-bytes-to-channel bytes channel2 state)))
-  :hints (("Goal" :in-theory (enable write-bytes-to-channel
-                                     open-output-channel-p1 ; todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable write-bytes-to-channel))))
 
 (defthm state-p1-of-write-bytes-to-channel
   (implies (and (open-output-channel-p1 channel :byte state)
