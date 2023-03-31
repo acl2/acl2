@@ -1,6 +1,6 @@
 ; A lightweight function to read a file's contents into a list of bytes
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,8 +14,8 @@
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 ;; (include-book "kestrel/utilities/channel-contents" :dir :system)
 (local (include-book "open-input-channel"))
+(local (include-book "close-input-channel"))
 (local (include-book "kestrel/utilities/channels" :dir :system))
-(local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "read-byte-dollar"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 

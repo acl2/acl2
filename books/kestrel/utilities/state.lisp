@@ -1,6 +1,6 @@
 ; Rules about the ACL2 state
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,6 @@
 
 ;; See also books/system/update-state.lisp.
 
-(local (include-book "channels"))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 (deftheory state-field-accessors
@@ -574,31 +573,6 @@
   (implies (file-clock-p file-clock)
            (integerp file-clock))
   :hints (("Goal" :in-theory (enable file-clock-p))))
-
-;todo: move to channels.lisp, but that depends on this so first separate out the basic stuff in this book
-(defthm state-p1-of-close-input-channel-when-open-input-channel-p1
-  (implies (and (open-input-channel-p1 channel typ state) ;type is a free var
-                (member-equal typ '(:byte :character :object))
-                (state-p1 state))
-           (state-p1 (close-input-channel channel state)))
-  :hints (("Goal" :in-theory (enable close-input-channel
-                                     stringp-of-caddr-when-channel-headerp
-                                     integerp-of-cadddr-when-channel-headerp
-                                     integerp-when-file-clock-p))))
-
-;avoids free var
-(defthm state-p1-of-close-input-channel
-  (implies (and (open-input-channel-any-p1 channel state)
-                (state-p1 state))
-           (state-p1 (close-input-channel channel state)))
-  :hints (("Goal" :in-theory (e/d (open-input-channel-any-p1)
-                                  (open-input-channel-p1)))))
-
-(defthm state-p-of-close-input-channel
-  (implies (and (open-input-channel-any-p1 channel state)
-                (state-p state))
-           (state-p (close-input-channel channel state)))
-  :hints (("Goal" :in-theory (enable state-p))))
 
 (local
  (defthm assoc-equal-when-all-boundp
