@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 ;todo: move to channels.lisp, but that depends on this so first separate out the basic stuff in this book

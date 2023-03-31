@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "write-byte-dollar"))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 (local (in-theory (disable state-p state-p1

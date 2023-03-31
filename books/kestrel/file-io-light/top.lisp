@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "typed-io-listp")
+(include-book "channels")
 
 ;; Books about built-in functions:
 (include-book "open-input-channel")

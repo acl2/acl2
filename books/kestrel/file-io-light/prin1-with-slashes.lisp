@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "prin1-with-slashes1"))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 
 (in-theory (disable prin1-with-slashes
                     ;; So the rules in this file will fire:

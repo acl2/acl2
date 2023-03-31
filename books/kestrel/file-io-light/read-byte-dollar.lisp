@@ -12,7 +12,7 @@
 
 (include-book "kestrel/utilities/channel-contents" :dir :system)
 (local (include-book "kestrel/utilities/state" :dir :system))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 

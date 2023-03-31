@@ -15,7 +15,7 @@
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
 (local (include-book "kestrel/utilities/explode-nonnegative-integer" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))

@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (local (include-book "kestrel/utilities/state" :dir :system))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 
 (defthm state-p1-of-write-byte$-alt
   (implies (and (state-p state)

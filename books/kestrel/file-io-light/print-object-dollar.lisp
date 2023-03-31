@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "kestrel/utilities/state" :dir :system))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 
 (in-theory (disable print-object$))
 
