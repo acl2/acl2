@@ -637,14 +637,15 @@
       nil
     (cons (b* ((x1 (car x)))
             (make-svar-override-triple
-             :refvar x1
+             :refvar (svar-change-override x1 nil)
              :valvar (svar-change-override x1 :val)
              :testvar (svar-change-override x1 :test)))
           (svarlist-to-override-triples (cdr x))))
   ///
   (defret svar-override-triplelist->refvars-of-<fn>
     (equal (svar-override-triplelist->refvars triples)
-           (svarlist-fix x)))
+           (svarlist-change-override x nil))
+    :hints(("Goal" :in-theory (enable svarlist-change-override))))
 
 
   (local (defret member-non-override-val-valvars-of-<fn>
@@ -754,3 +755,24 @@
     (equal (svar-override-triplelist->testvars triples)
            (svarlist-change-override x :test))
     :hints(("Goal" :in-theory (enable svarlist-change-override)))))
+
+
+
+(define svarlist-to-override-alist ((x svarlist-p))
+  :returns (alist svex-alist-p)
+  (if (atom x)
+      nil
+    (cons (b* ((x1 (car x))
+               (nonovr (svar-change-override x1 nil)))
+            (cons nonovr
+                  (svex-call 'bit?!
+                             (list (svex-var (svar-change-override x1 :test))
+                                   (svex-var (svar-change-override x1 :val))
+                                   (svex-var nonovr)))))
+          (svarlist-to-override-alist (cdr x))))
+  ///
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys alist)
+           (svarlist-change-override x nil))
+    :hints(("Goal" :in-theory (enable svex-alist-keys
+                                      svarlist-change-override)))))

@@ -42,22 +42,6 @@
 
 (local (std::add-default-post-define-hook :fix))
 
-(define svarlist-to-override-alist ((x svarlist-p))
-  :returns (alist svex-alist-p)
-  (if (atom x)
-      nil
-    (cons (b* ((x1 (car x)))
-            (cons (svar-fix x1)
-                  (svcall bit?!
-                          (svex-var (svar-change-override x1 :test))
-                          (svex-var (svar-change-override x1 :val))
-                          (svex-var x1))))
-          (svarlist-to-override-alist (cdr x))))
-  ///
-  (defret svex-alist-keys-of-<fn>
-    (equal (svex-alist-keys alist)
-           (svarlist-fix x))
-    :hints(("Goal" :in-theory (enable svex-alist-keys)))))
 
 (define svtv-wires->lhses! ((x string-listp)
                             (modidx natp)

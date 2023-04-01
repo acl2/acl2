@@ -1540,7 +1540,10 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
 
 
+
+
 (defun svtv-idthm-final-thm (x)
+  (declare (xargs :mode :program))
   (b* (((svtv-generalized-thm x))
        (template
          '(<defthm> <name>
@@ -1623,10 +1626,11 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                                                               x.triple-val-alist x.triples-name))
        (<override-inst-svassocs> . ,(svtv-genthm-override-svassocs x.override-vars
                                                               x.triple-val-alist x.triples-name))
-       (<spec-override-svassocs> . ,(svtv-genthm-override-svassocs (append x.spec-override-vars (alist-keys x.spec-override-var-bindings))
-                                                                   x.triple-val-alist x.triples-name))
-       (<spec-override-inst-svassocs> . ,(svtv-genthm-override-svassocs x.spec-override-vars
-                                                                        x.triple-val-alist x.triples-name))
+       (<spec-override-svassocs> . ,(append x.spec-override-vars (alist-keys x.spec-override-var-bindings)))
+       (<spec-override-inst-svassocs> . ,x.spec-override-vars
+                                      ;; (svtv-genthm-override-svassocs x.spec-override-vars
+                                      ;;                                   x.triple-val-alist x.triples-name)
+                                      )
        (<input-binding-hyp> .  ,(svtv-genthm-input-binding-hyp-termlist x.input-var-bindings))
        (<override-binding-hyp> .  ,(svtv-genthm-input-binding-hyp-termlist (append x.spec-override-var-bindings
                                                                                    x.override-var-bindings)))

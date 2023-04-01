@@ -33,6 +33,7 @@
 (include-book "lists")
 (include-book "svex-lattice")
 (include-book "std/util/defprojection" :dir :system)
+(include-book "override-transparency")
 (local (include-book "std/alists/hons-remove-assoc" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -511,6 +512,7 @@
                 (equal (4vec-bit?! testval valval exprval)
                        exprval)))))
 
+  
   (std::defret-mutual remove-override-vars-when-check-overridetriples
     (defret remove-override-vars-when-<fn>
       (b* ((vars  (svex-override-triplelist-vars triples))
@@ -1040,6 +1042,154 @@
   
   
   (fty::deffixequiv-mutual svex-check-overridetriples))
+
+
+(defsection overridekey-transparent-p-when-check-overridetriples
+  
+
+  (local (defthm open-nth
+           (implies (syntaxp (quotep n))
+                    (equal (nth n x)
+                           (if (zp n)
+                               (car x)
+                             (nth (1- n) (cdr x)))))))
+  
+  (local (defthm svex-override-triplelist-lookup-of-svar->svex
+           (equal (svex-override-triplelist-lookup test (svar->svex-override-triplelist (svarlist-to-override-triples overridekeys) values))
+                  (and (svar-override-p test :test)
+                       (svarlist-member-nonoverride test overridekeys)
+                       (make-svex-override-triple :testvar test
+                                                  :valvar (svar-change-override test :val)
+                                                  :valexpr (or (svex-lookup (svar-change-override test nil) values) (svex-x)))))
+           :hints(("Goal" :in-theory (enable svex-override-triplelist-lookup
+                                             svar->svex-override-triplelist
+                                             svarlist-to-override-triples
+                                             svarlist-member-nonoverride
+                                             svarlist-change-override
+                                             equal-of-svar-change-override
+                                             )))))
+
+  (local (defthm svex-override-triplelist-lookup-valvar-of-svar->svex
+           (equal (svex-override-triplelist-lookup-valvar val (svar->svex-override-triplelist (svarlist-to-override-triples overridekeys) values))
+                  (and (svar-override-p val :val)
+                       (svarlist-member-nonoverride val overridekeys)
+                       (make-svex-override-triple :testvar (svar-change-override val :test)
+                                                  :valvar val
+                                                  :valexpr (or (svex-lookup (svar-change-override val nil) values) (svex-x)))))
+           :hints(("Goal" :in-theory (enable svex-override-triplelist-lookup-valvar
+                                             svar->svex-override-triplelist
+                                             svarlist-to-override-triples
+                                             svarlist-member-nonoverride
+                                             svarlist-change-override
+                                             equal-of-svar-change-override
+                                             )))))
+
+  (local (defthm svex-eval-when-var
+           (implies (svex-case x :var)
+                    (equal (svex-eval x env)
+                           (svex-env-lookup (svex-var->name x) env)))
+           :hints(("Goal" :in-theory (enable svex-eval)))))
+
+  
+  (local (defthm overridekeys-transparent-p-when-svex-override-triple-check
+           (implies (and (svex-overridekey-transparent-p else overridekeys values)
+                         (equal (svex-override-triple-check
+                                 test then else
+                                 (svar->svex-override-triplelist
+                                  (svarlist-to-override-triples overridekeys)
+                                  values))
+                                t))
+                    (svex-overridekey-transparent-p (svex-call 'bit?! (list test then else)) overridekeys values))
+           :hints (("goal" :expand ((svex-overridekey-transparent-p (svex-call 'bit?! (list test then else)) overridekeys values))
+                    :in-theory (enable svex-apply 4veclist-nth-safe
+                                       svex-override-triple-check
+                                       svex-vars
+                                       4vec-bit?!-agree-when-overridekeys-envs-agree)
+                    :use ((:instance svex-overridekey-transparent-p-necc
+                           (x else) (subst values)
+                           (impl-env (mv-nth 0 (svex-overridekey-transparent-p-witness (svex-call 'bit?! (list test then else)) overridekeys values)))
+                           (spec-env (mv-nth 1 (svex-overridekey-transparent-p-witness (svex-call 'bit?! (list test then else)) overridekeys values)))))
+                    ))
+           :otf-flg t))
+
+  (local (defthm sfix-of-singleton
+           (equal (sfix (list x)) (list x))
+           :hints(("Goal" :in-theory (enable sfix empty setp)))))
+  
+  (local (defthm overridekeys-transparent-p-when-svex-override-triple-check-special
+           ;; ugh
+           (implies (and (svex-case x :call)
+                         (equal (svex-call->fn x) 'bit?!)
+                         (equal (len (svex-call->args x)) 3)
+                         (svex-overridekey-transparent-p (caddr (svex-call->args x)) overridekeys values)
+                         (equal (svex-override-triple-check
+                                 (car (svex-call->args x))
+                                 (cadr (svex-call->args x))
+                                 (caddr (svex-call->args x))
+                                 (svar->svex-override-triplelist
+                                  (svarlist-to-override-triples overridekeys)
+                                  values))
+                                t))
+                    (svex-overridekey-transparent-p x overridekeys values))
+           :hints (("goal" :expand ((svex-overridekey-transparent-p x overridekeys values)
+                                    (svexlist-vars (svex-call->args x))
+                                    (svexlist-vars (cdr (svex-call->args x)))
+                                    (svexlist-vars (cddr (svex-call->args x))))
+                    :in-theory (enable svex-apply 4veclist-nth-safe
+                                       svex-override-triple-check
+                                       svex-vars
+                                       4vec-bit?!-agree-when-overridekeys-envs-agree)
+                    :use ((:instance svex-overridekey-transparent-p-necc
+                           (x (caddr (svex-call->args x))) (subst values)
+                           (impl-env (mv-nth 0 (svex-overridekey-transparent-p-witness x overridekeys values)))
+                           (spec-env (mv-nth 1 (svex-overridekey-transparent-p-witness x overridekeys values)))))
+                    ))
+           :otf-flg t))
+
+  
+  (std::defret-mutual overridekeys-transparent-p-when-check-overridetriples
+    (defret overridekeys-transparent-p-when-<fn>
+      :pre-bind ((svar-triples (svarlist-to-override-triples overridekeys))
+                 (triples (svar->svex-override-triplelist svar-triples values)))
+      (implies (not bad)
+               (svex-overridekey-transparent-p x overridekeys values))
+      :hints ('(:expand ((:free (triples) <call>)))
+              (and stable-under-simplificationp
+                   '(:expand ((:free (env) (svex-eval x env)))
+                     :in-theory (enable svex-overridekey-transparent-p-when-non-override-var
+                                        svex-overridekey-transparent-p-when-const))))
+      :fn svex-check-overridetriples)
+    (defret overridekeys-transparent-p-when-<fn>
+      :pre-bind ((svar-triples (svarlist-to-override-triples overridekeys))
+                 (triples (svar->svex-override-triplelist svar-triples values)))
+      (implies (not bad)
+               (svex-overridekey-transparent-p x overridekeys values))
+      :hints ('(:expand ((:free (triples) <call>)))
+              (and stable-under-simplificationp
+                   '(:expand ((:free (env) (svex-eval x env)))
+                     :in-theory (enable svexlist-vars 
+                                        svex-overridekey-transparent-p-when-args-transparent
+                                        ;; svex-override-triple-check
+                                        ))))
+      :fn svex-check-overridetriples-call)
+    (defret overridekeys-transparent-p-when-<fn>
+      :pre-bind ((svar-triples (svarlist-to-override-triples overridekeys))
+                 (triples (svar->svex-override-triplelist svar-triples values)))
+      (implies (not bad)
+               (svexlist-overridekey-transparent-p x overridekeys values))
+      :hints ('(:expand ((:free (triples) <call>)
+                         (svexlist-overridekey-transparent-p x overridekeys values)) :do-not-induct t))
+      :fn svexlist-check-overridetriples)
+    (defret overridekeys-transparent-p-when-<fn>
+      :pre-bind ((svar-triples (svarlist-to-override-triples overridekeys))
+                 (triples (svar->svex-override-triplelist svar-triples values)))
+      (implies (not bad)
+               (svexlist-overridekey-transparent-p x overridekeys values))
+      :hints ('(:expand ((:free (triples) <call>)
+                         (svexlist-overridekey-transparent-p x overridekeys values))))
+      :fn svex-args-check-overridetriples)
+    :hints (("goal" :induct (SVEX-CHECK-OVERRIDETRIPLES-FLAG FLAG N X
+                                                             (svar->svex-override-triplelist (svarlist-to-override-triples overridekeys) values))))))
 
 
 
