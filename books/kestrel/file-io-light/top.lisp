@@ -17,6 +17,8 @@
 (include-book "open-input-channel")
 (include-book "open-output-channel")
 (include-book "open-output-channel-bang")
+(include-book "close-input-channel")
+(include-book "close-output-channel")
 
 ;; TODO: Consider using "print" instead of "write" for the channel operations:
 
