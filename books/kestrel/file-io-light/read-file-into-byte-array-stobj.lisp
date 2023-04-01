@@ -18,7 +18,7 @@
 (local (include-book "file-length-dollar"))
 (local (include-book "open-input-channel"))
 (local (include-book "read-byte-dollar"))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 

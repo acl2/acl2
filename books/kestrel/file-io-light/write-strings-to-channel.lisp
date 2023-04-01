@@ -1,6 +1,6 @@
 ; A function to write a sequence of strings to a channel
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "princ-dollar")
-(local (include-book "kestrel/utilities/state" :dir :system))
 
 (local (in-theory (disable open-output-channel-p1 open-output-channel-p)))
 
@@ -42,8 +41,8 @@
   :hints (("Goal" :in-theory (enable write-strings-to-channel OPEN-OUTPUT-CHANNEL-P))))
 
 (defthm open-output-channel-p1-of-write-strings-to-channel
-  (implies (open-output-channel-p1 channel2 typ state)
-           (open-output-channel-p1 channel2 typ (write-strings-to-channel strings channel state)))
+  (implies (open-output-channel-p1 channel typ state)
+           (open-output-channel-p1 channel typ (write-strings-to-channel strings channel2 state)))
   :hints (("Goal" :in-theory (enable write-strings-to-channel))))
 
 (defthm w-of-write-strings-to-channel

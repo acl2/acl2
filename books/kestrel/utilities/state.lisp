@@ -1,6 +1,6 @@
 ; Rules about the ACL2 state
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,8 +16,14 @@
 
 ;; See also books/system/update-state.lisp.
 
-(local (include-book "channels"))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+
+;move?
+(defthm written-files-p-of-cons
+   (equal (written-files-p (cons file files))
+          (and (written-file file)
+               (written-files-p files)))
+   :hints (("Goal" :in-theory (enable written-files-p))))
 
 (deftheory state-field-accessors
   '(open-input-channels
@@ -101,6 +107,12 @@
            (true-listp (update-read-files x st)))
   :hints (("Goal" :in-theory (enable update-read-files))))
 
+;; since the state is a true-list
+(defthm true-listp-of-update-written-files
+  (implies (true-listp st)
+           (true-listp (update-written-files x st)))
+  :hints (("Goal" :in-theory (enable update-written-files))))
+
 (defthm len-of-update-open-input-channels
   (implies (state-p1 state)
            (equal (len (update-open-input-channels x state))
@@ -131,11 +143,22 @@
                   (len state)))
   :hints (("Goal" :in-theory (enable update-read-files state-p1))))
 
+(defthm len-of-update-written-files
+  (implies (state-p1 state)
+           (equal (len (update-written-files x state))
+                  (len state)))
+  :hints (("Goal" :in-theory (enable update-written-files state-p1))))
+
 ;; Conjuncts of state-p
 
 (defthm read-files-p-of-read-files
   (implies (state-p1 state)
            (read-files-p (read-files state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+(defthm written-files-p-of-written-files
+  (implies (state-p1 state)
+           (written-files-p (written-files state)))
   :hints (("Goal" :in-theory (enable state-p1))))
 
 (defthm readable-files-p-of-readable-files
@@ -173,6 +196,7 @@
 
 ;; Read-over-write theorems for states (different fields)
 
+;; TODO: Organize these, and get the complete set
 (encapsulate ()
   (local (in-theory (enable state-field-accessors state-field-updaters)))
 
@@ -320,6 +344,10 @@
     (equal (read-files (update-global-table x st))
            (read-files st)))
 
+  (defthm read-files-of-update-written-files
+    (equal (read-files (update-written-files x st))
+           (read-files st)))
+
   (defthm open-output-channels-of-update-open-input-channels
     (equal (open-output-channels (update-open-input-channels x st))
            (open-output-channels st)))
@@ -353,6 +381,10 @@
     (equal (global-table (update-read-files x st))
            (global-table st)))
 
+  (defthm global-table-of-update-written-files
+    (equal (global-table (update-written-files x st))
+           (global-table st)))
+
   (defthm global-table-of-update-open-output-channels
     (equal (global-table (update-open-output-channels x st))
            (global-table st)))
@@ -377,12 +409,32 @@
     (equal (written-files (update-read-files x st))
            (written-files st)))
 
+  (defthm readable-files-of-update-written-files
+    (equal (readable-files (update-written-files x st))
+           (readable-files st)))
+
+  (defthm big-clock-entry-of-update-written-files
+    (equal (big-clock-entry (update-written-files x st))
+           (big-clock-entry st)))
+
+  (defthm writeable-files-of-update-written-files
+    (equal (writeable-files (update-written-files x st))
+           (writeable-files st)))
+
+  (defthm file-clock-of-update-written-files
+    (equal (file-clock (update-written-files x st))
+           (file-clock st)))
+
   (defthm written-files-of-update-global-table
     (equal (written-files (update-global-table x st))
            (written-files st)))
 
   (defthm idates-of-update-read-files
     (equal (idates (update-read-files x st))
+           (idates st)))
+
+  (defthm idates-of-update-written-files
+    (equal (idates (update-written-files x st))
            (idates st)))
 
   (defthm idates-of-update-global-table
@@ -403,6 +455,22 @@
 
   (defthm open-input-channels-of-update-read-files
     (equal (open-input-channels (update-read-files x st))
+           (open-input-channels st)))
+
+  (defthm user-stobj-alist1-of-update-written-files
+    (equal (user-stobj-alist1 (update-written-files x st))
+           (user-stobj-alist1 st)))
+
+  (defthm acl2-oracle-of-update-written-files
+    (equal (acl2-oracle (update-written-files x st))
+           (acl2-oracle st)))
+
+  (defthm open-output-channels-of-update-written-files
+    (equal (open-output-channels (update-written-files x st))
+           (open-output-channels st)))
+
+  (defthm open-input-channels-of-update-written-files
+    (equal (open-input-channels (update-written-files x st))
            (open-input-channels st)))
 
 
@@ -433,6 +501,11 @@
     (equal (read-files (update-read-files x state))
            x)
     :hints (("Goal" :in-theory (enable read-files update-read-files))))
+
+  (defthm written-files-of-update-written-files
+      (equal (written-files (update-written-files x state))
+           x)
+    :hints (("Goal" :in-theory (enable written-files update-written-files))))
   )
 
 (defthm file-clock-p-of-+-of-1
@@ -512,6 +585,13 @@
   :hints (("Goal" :in-theory (e/d (state-p1)
                                   (true-listp)))))
 
+(defthm state-p1-of-update-written-files
+  (implies (state-p1 state)
+           (equal (state-p1 (update-written-files x state))
+                  (written-files-p x)))
+  :hints (("Goal" :in-theory (e/d (state-p1)
+                                  (true-listp)))))
+
 ;state-p could call this
 (defund global-table-p (x)
   (declare (xargs :guard t))
@@ -574,31 +654,6 @@
   (implies (file-clock-p file-clock)
            (integerp file-clock))
   :hints (("Goal" :in-theory (enable file-clock-p))))
-
-;todo: move to channels.lisp, but that depends on this so first separate out the basic stuff in this book
-(defthm state-p1-of-close-input-channel-when-open-input-channel-p1
-  (implies (and (open-input-channel-p1 channel typ state) ;type is a free var
-                (member-equal typ '(:byte :character :object))
-                (state-p1 state))
-           (state-p1 (close-input-channel channel state)))
-  :hints (("Goal" :in-theory (enable close-input-channel
-                                     stringp-of-caddr-when-channel-headerp
-                                     integerp-of-cadddr-when-channel-headerp
-                                     integerp-when-file-clock-p))))
-
-;avoids free var
-(defthm state-p1-of-close-input-channel
-  (implies (and (open-input-channel-any-p1 channel state)
-                (state-p1 state))
-           (state-p1 (close-input-channel channel state)))
-  :hints (("Goal" :in-theory (e/d (open-input-channel-any-p1)
-                                  (open-input-channel-p1)))))
-
-(defthm state-p-of-close-input-channel
-  (implies (and (open-input-channel-any-p1 channel state)
-                (state-p state))
-           (state-p (close-input-channel channel state)))
-  :hints (("Goal" :in-theory (enable state-p))))
 
 (local
  (defthm assoc-equal-when-all-boundp

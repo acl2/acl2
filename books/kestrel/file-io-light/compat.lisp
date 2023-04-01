@@ -12,5 +12,4 @@
 
 ;; Any name clash with std would cause an error:
 (include-book "std/io/top" :dir :system)
-(include-book "../utilities/channels")
 (include-book "top")

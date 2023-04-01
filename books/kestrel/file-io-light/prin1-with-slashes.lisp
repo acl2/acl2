@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "prin1-with-slashes1"))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 
 (in-theory (disable prin1-with-slashes
                     ;; So the rules in this file will fire:
@@ -34,12 +34,12 @@
 
 (defthm open-output-channel-p1-of-prin1-with-slashes
   (implies (and (symbolp channel)
-                (open-output-channel-p1 channel :character state))
-           (open-output-channel-p1 channel :character (prin1-with-slashes s slash-char channel state)))
+                (open-output-channel-p1 channel typ state))
+           (open-output-channel-p1 channel typ (prin1-with-slashes s slash-char channel2 state)))
   :hints (("Goal" :in-theory (enable prin1-with-slashes))))
 
 (defthm open-output-channel-p-of-prin1-with-slashes
   (implies (and (symbolp channel)
-                (open-output-channel-p channel :character state))
-           (open-output-channel-p channel :character (prin1-with-slashes s slash-char channel state)))
+                (open-output-channel-p channel typ state))
+           (open-output-channel-p channel typ (prin1-with-slashes s slash-char channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))

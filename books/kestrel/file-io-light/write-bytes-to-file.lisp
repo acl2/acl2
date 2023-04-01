@@ -12,7 +12,7 @@
 
 (include-book "write-bytes-to-channel")
 (local (include-book "open-output-channel"))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 
 (local (in-theory (disable state-p)))
 

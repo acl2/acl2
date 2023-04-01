@@ -1,6 +1,6 @@
 ; A lightweight function to read the ACL2 objects in a file.
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,8 +11,9 @@
 (in-package "ACL2")
 
 (local (include-book "open-input-channel"))
+(local (include-book "close-input-channel"))
 (local (include-book "read-object"))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 (local (in-theory (disable update-open-input-channels
