@@ -14,14 +14,23 @@
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "channels"))
 
+;; Avoids name clash with std
 (defthm state-p1-of-write-byte$-alt
-  (implies (and (state-p state)
+  (implies (and (state-p1 state)
                 (symbolp channel)
                 (open-output-channel-p channel :byte state)
                 (unsigned-byte-p 8 byte) ;this is what's different
                 )
            (state-p1 (write-byte$ byte channel state)))
   :hints (("Goal" :in-theory (enable write-byte$))))
+
+(defthm state-p-of-write-byte$
+  (implies (and (state-p state)
+                (symbolp channel)
+                (open-output-channel-p channel :byte state)
+                (unsigned-byte-p 8 byte))
+           (state-p (write-byte$ byte channel state)))
+  :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm open-output-channel-p1-of-write-byte$-gen
   (implies (open-output-channel-p1 channel typ state)
