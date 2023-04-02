@@ -16,6 +16,7 @@
 (include-book "let-helpers")
 (include-book "mv-let-helpers")
 (include-book "cond-helpers")
+(include-book "case-helpers")
 (include-book "case-match-helpers")
 (include-book "bstar-helpers")
 
