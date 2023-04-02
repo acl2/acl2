@@ -222,6 +222,7 @@
                                           (spec-env svex-env-p)
                                           (spec-outs svex-env-p))
   :returns (agree)
+  :hooks ((:fix :hints nil))
   (not (svarlist-overridekeys-envs-agree-badguy x overridekeys impl-env spec-env spec-outs))
   ///
   (defretd <fn>-implies
@@ -1067,3 +1068,4 @@
   :hints(("Goal" :induct (pairlis$ keys vals)
           :expand ((:free (a b) (svex-alist-overridekey-transparent-p (cons a b) overridekeys subst))
                    (svexlist-overridekey-transparent-p vals overridekeys subst)))))
+

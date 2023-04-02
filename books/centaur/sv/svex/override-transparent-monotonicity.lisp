@@ -222,8 +222,21 @@
                                       normalize-svar-change-override-when-equal-1
                                       svar-equiv-when-equal-svar-change-override))))
 
+  (defret member-of-<fn>-no-fix
+    (iff (member-equal x env-keys)
+         (svar-p x)))
+
   (defret member-of-<fn>
-    (member-equal (svar-fix x) env-keys)))
+    (member-equal (svar-fix x) env-keys))
+
+  
+
+  (defret member-of-<fn>-when-nonoverride
+    (implies (or (svar-override-p v nil)
+                 (and (not (svar-override-p v :test))
+                      (not (svar-override-p v :val)))
+                 (not (svarlist-member-nonoverride v overridekeys)))
+             (iff (member-equal v env-keys) (equal v (svar-fix x))))))
 
 (define svar-overridekeys-envs-ok-intermediate-env ((x svar-p)
                                                     (params svarlist-p)
@@ -318,7 +331,42 @@
     (equal (alist-keys intermed-env)
            (svar-overridekeys-env-keys x overridekeys))
     :hints(("Goal" :in-theory (enable svar-overridekeys-env-keys
-                                      alist-keys)))))
+                                      alist-keys))))
+
+  (defretd lookup-param-of-<fn>
+    (implies (and (or (svar-override-p v nil)
+                      (and (not (svar-override-p v :test))
+                           (not (svar-override-p v :val)))
+                      (not (svarlist-member-nonoverride v overridekeys)))
+                  (member-equal (svar-fix v) (svarlist-fix params)))
+             (equal (svex-env-lookup v intermed-env)
+                    (if (equal (svar-fix v) (svar-fix x))
+                        (svex-env-lookup v impl-env)
+                      (4vec-x))))
+    :hints(("Goal" :in-theory (enable svar-overridekeys-env-keys
+                                      equal-of-svar-change-override
+                                      svar-override-p-when-other
+                                      normalize-svar-change-override-when-equal-2
+                                      normalize-svar-change-override-when-equal-1
+                                      svar-equiv-when-equal-svar-change-override
+                                      svex-env-lookup-of-cons-split))))
+
+  (defretd lookup-test-of-<fn>
+    (implies (and (svar-override-p v :test)
+                  (svarlist-member-nonoverride v overridekeys))
+             (equal (svex-env-lookup v intermed-env)
+                    (if (member-equal (svar-fix v) (svar-overridekeys-env-keys x overridekeys))
+                        (svex-env-lookup v impl-env)
+                      (4vec-x))))
+    :hints(("Goal" :in-theory (enable svar-overridekeys-env-keys
+                                      equal-of-svar-change-override
+                                      svar-override-p-when-other
+                                      normalize-svar-change-override-when-equal-2
+                                      normalize-svar-change-override-when-equal-1
+                                      svar-equiv-when-equal-svar-change-override
+                                      svex-env-lookup-of-cons-split)))))
+
+                  
 
 
 
@@ -609,7 +657,8 @@
                                       svar-overridekeys-envs-agree-when-member-<fn>))))
 
   (defret subsetp-of-<fn>
-    (subsetp-equal (svarlist-fix x) env-keys))
+    (subsetp-equal (svarlist-fix x) env-keys)
+    :hints(("Goal" :in-theory (enable svarlist-fix))))
 
   (defthm svarlist-overridekeys-env-keys-of-append
     (equal (svarlist-overridekeys-env-keys (append x y) overridekeys)
@@ -660,7 +709,15 @@
                                       equal-of-svar-change-override
                                       normalize-svar-change-override-when-equal-2
                                       normalize-svar-change-override-when-equal-1
-                                      svar-equiv-when-equal-svar-change-override)))))
+                                      svar-equiv-when-equal-svar-change-override))))
+
+  (defret member-of-<fn>-when-nonoverride
+    (implies (or (svar-override-p v nil)
+                 (and (not (svar-override-p v :test))
+                      (not (svar-override-p v :val)))
+                 (not (svarlist-member-nonoverride v overridekeys)))
+             (iff (member-equal v env-keys) (member-equal v (svarlist-fix x))))
+    :hints(("Goal" :in-theory (enable svarlist-fix)))))
 
 (define svarlist-overridekeys-envs-ok-intermediate-env ((x svarlist-p)
                                                         (params svarlist-p)
@@ -701,7 +758,57 @@
     (equal (alist-keys intermed-env)
            (append (svarlist-overridekeys-env-keys x overridekeys)
                    (alist-keys (svex-env-fix impl-env))))
-    :hints(("Goal" :in-theory (enable svarlist-overridekeys-env-keys)))))
+    :hints(("Goal" :in-theory (enable svarlist-overridekeys-env-keys))))
+
+  
+
+  (defretd lookup-param-of-<fn>
+    (implies (and (or (svar-override-p v nil)
+                      (and (not (svar-override-p v :test))
+                           (not (svar-override-p v :val)))
+                      (not (svarlist-member-nonoverride v overridekeys)))
+                  (member-equal (svar-fix v) (svarlist-fix params)))
+             (equal (svex-env-lookup v intermed-env)
+                    (svex-env-lookup v impl-env)))
+    :hints(("Goal" :in-theory (enable lookup-param-of-svar-overridekeys-envs-ok-intermediate-env
+                                      svex-env-boundp-iff-member-alist-keys
+                                      svarlist-fix))))
+
+  (defretd lookup-test-of-<fn>
+    (implies (and (svar-override-p v :test)
+                  (svarlist-member-nonoverride v overridekeys))
+             (equal (svex-env-lookup v intermed-env)
+                    (svex-env-lookup v impl-env)))
+    :hints(("Goal" :in-theory (enable lookup-test-of-svar-overridekeys-envs-ok-intermediate-env
+                                      svex-env-boundp-iff-member-alist-keys
+                                      svarlist-fix))))
+
+  (local (defthm member-change-override-change-override-when-val
+           (implies (svar-override-p v :val)
+                    (iff (member-equal (svar-change-override v nil)
+                                       (svarlist-change-override x nil))
+                         (member-equal (svar-fix v) (svarlist-change-override x :val))))
+           :hints(("Goal" :in-theory (enable svarlist-change-override
+                                             equal-of-svar-change-override
+                                             normalize-svar-change-override-when-equal-1
+                                             normalize-svar-change-override-when-equal-2
+                                             svar-equiv-when-equal-svar-change-override)))))
+  
+  (defret extract-params-of-<fn>
+    (implies (and (not (intersectp-equal (svarlist-fix params)
+                                         (svarlist-change-override overridekeys :val)))
+                  (subsetp-equal (svarlist-fix pars) (svarlist-fix params)))
+             (equal (svex-env-extract pars intermed-env)
+                    (svex-env-extract pars impl-env)))
+    :hints(("Goal" :in-theory (e/d (svarlist-fix
+                                    svex-env-extract) (<fn>))
+            :induct (len pars))
+           (and stable-under-simplificationp
+                '(:use ((:instance lookup-param-of-<fn>
+                         (v (car pars)))
+                        (:instance lookup-test-of-<fn>
+                         (v (car pars))))
+                  :do-not-induct t)))))
 
 
 
@@ -873,9 +980,9 @@
                                (ALIST-KEYS (SVEX-ENV-FIX SPEC-ENV)))
                        OVERRIDEKEYS)
                       (SVARLIST-OVERRIDEKEYS-ENV-KEYS
-                                (APPEND (ALIST-KEYS (SVEX-ENV-FIX IMPL-ENV))
-                                        (ALIST-KEYS (SVEX-ENV-FIX SPEC-ENV)))
-                                OVERRIDEKEYS))))
+                       (APPEND (ALIST-KEYS (SVEX-ENV-FIX IMPL-ENV))
+                               (ALIST-KEYS (SVEX-ENV-FIX SPEC-ENV)))
+                       OVERRIDEKEYS))))
   
   (defret <fn>-overridekeys-envs-agree
     (implies (overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs)
@@ -898,6 +1005,90 @@
     (implies (overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs)
              (svex-env-<<= impl-env intermed-env))
     :hints(("Goal" :in-theory (e/d (overridekeys-envs-ok)
-                                   (svarlist-overridekeys-envs-ok-of-append))))))
+                                   (svarlist-overridekeys-envs-ok-of-append)))))
+
+  (defret extract-params-of-<fn>
+    (implies (and (not (intersectp-equal (svarlist-fix params)
+                                         (svarlist-change-override overridekeys :val)))
+                  (subsetp-equal (svarlist-fix pars) (svarlist-fix params)))
+             (equal (svex-env-extract pars intermed-env)
+                    (svex-env-extract pars impl-env)))))
 
 
+(defthm svex-eval-when-overridekeys-envs-ok/transparent/partial-monotonic
+  (implies (and (overridekeys-envs-ok params overridekeys impl-env spec-env
+                                      (svex-alist-eval subst spec-env))
+                (svex-overridekey-transparent-p x overridekeys subst)
+                (svex-partial-monotonic params x)
+                (not (intersectp-equal (svarlist-fix params)
+                                       (svarlist-change-override overridekeys :val))))
+           (4vec-<<= (svex-eval x impl-env)
+                     (svex-eval x spec-env)))
+  :hints (("goal" :use ((:instance svex-overridekey-transparent-p-necc
+                         (impl-env (overridekeys-envs-ok-intermediate-env
+                                    params overridekeys impl-env spec-env
+                                    (svex-alist-eval subst spec-env)))
+                         (spec-env spec-env))
+                        (:instance overridekeys-envs-ok-intermediate-env-svex-env-<<=
+                         (spec-outs (svex-alist-eval subst spec-env)))
+                        (:instance eval-when-svex-partial-monotonic
+                         (param-keys params)
+                         (env1 impl-env)
+                         (env2 (overridekeys-envs-ok-intermediate-env
+                                params overridekeys impl-env spec-env
+                                (svex-alist-eval subst spec-env)))))
+           :in-theory (disable overridekeys-envs-ok-intermediate-env-svex-env-<<=
+                               eval-when-svex-partial-monotonic))))
+
+
+
+(defthm svexlist-eval-when-overridekeys-envs-ok/transparent/partial-monotonic
+  (implies (and (overridekeys-envs-ok params overridekeys impl-env spec-env
+                                      (svex-alist-eval subst spec-env))
+                (svexlist-overridekey-transparent-p x overridekeys subst)
+                (svexlist-partial-monotonic params x)
+                (not (intersectp-equal (svarlist-fix params)
+                                       (svarlist-change-override overridekeys :val))))
+           (4veclist-<<= (svexlist-eval x impl-env)
+                         (svexlist-eval x spec-env)))
+  :hints (("goal" :use ((:instance svexlist-overridekey-transparent-p-necc
+                         (impl-env (overridekeys-envs-ok-intermediate-env
+                                    params overridekeys impl-env spec-env
+                                    (svex-alist-eval subst spec-env)))
+                         (spec-env spec-env))
+                        (:instance overridekeys-envs-ok-intermediate-env-svex-env-<<=
+                         (spec-outs (svex-alist-eval subst spec-env)))
+                        (:instance eval-when-svexlist-partial-monotonic
+                         (param-keys params)
+                         (env1 impl-env)
+                         (env2 (overridekeys-envs-ok-intermediate-env
+                                    params overridekeys impl-env spec-env
+                                    (svex-alist-eval subst spec-env)))))
+           :in-theory (disable overridekeys-envs-ok-intermediate-env-svex-env-<<=
+                               eval-when-svexlist-partial-monotonic))))
+
+
+(defthm svex-alist-eval-when-overridekeys-envs-ok/transparent/partial-monotonic
+  (implies (and (overridekeys-envs-ok params overridekeys impl-env spec-env
+                                      (svex-alist-eval subst spec-env))
+                (svex-alist-overridekey-transparent-p x overridekeys subst)
+                (svex-alist-partial-monotonic params x)
+                (not (intersectp-equal (svarlist-fix params)
+                                       (svarlist-change-override overridekeys :val))))
+           (svex-env-<<= (svex-alist-eval x impl-env)
+                         (svex-alist-eval x spec-env)))
+  :hints (("goal" :use ((:instance svex-alist-overridekey-transparent-p-necc
+                         (impl-env (overridekeys-envs-ok-intermediate-env
+                                    params overridekeys impl-env spec-env
+                                    (svex-alist-eval subst spec-env)))
+                         (spec-env spec-env))
+                        (:instance overridekeys-envs-ok-intermediate-env-svex-env-<<=
+                         (spec-outs (svex-alist-eval subst spec-env)))
+                        (:instance eval-when-svex-alist-partial-monotonic
+                         (param-keys params)
+                         (env1 impl-env)
+                         (env2 (overridekeys-envs-ok-intermediate-env
+                                    params overridekeys impl-env spec-env
+                                    (svex-alist-eval subst spec-env)))))
+           :in-theory (disable overridekeys-envs-ok-intermediate-env-svex-env-<<=
+                               eval-when-svex-alist-partial-monotonic))))
