@@ -215,7 +215,7 @@
               (case fn
                 ((let let*) ; (let/let* <bindings> ...declares... <body>)
                  (and (<= 2 (len (fargs x))) ; must have bindings and body
-                      (var-untranslated-term-pairsp (let-bindings x))
+                      (var-untranslated-term-pairsp (let-bindings x)) ; todo, if let, check for no duplicate bindings?
                       ;;declares can intervene - todo: check their form
                       (untranslated-termp (let-body x))))
                 (b* ;;(b* <bindings> <result-form>+)
@@ -253,24 +253,23 @@
  ;; This occurs in a let/let*
  ;; rename?
  ;; TODO: deprecate?
- (defun var-untranslated-TERM-pairsp (pairs)
-   (DECLARE (XARGS :GUARD T :measure (acl2-count pairs)))
+ (defun var-untranslated-term-pairsp (pairs)
+   (declare (xargs :guard t :measure (acl2-count pairs)))
    (if (atom pairs)
        (eq nil pairs)
      (let ((pair (first pairs)))
-       (and (consp pair)
-            (true-listp pair)
+       (and (true-listp pair)
             (eql 2 (len pair))
             (untranslated-variablep (first pair))
-            (untranslated-TERMp (second pair))
-            (var-untranslated-TERM-pairsp (rest pairs))))))
+            (untranslated-termp (second pair))
+            (var-untranslated-term-pairsp (rest pairs))))))
 
- (defun untranslated-term-listp (lst)
-   (declare (xargs :guard t :measure (acl2-count lst)))
-   (if (not (consp lst))
-       (null lst)
-     (and (untranslated-termp (car lst))
-          (untranslated-term-listp (cdr lst))))))
+ (defun untranslated-term-listp (terms)
+   (declare (xargs :guard t :measure (acl2-count terms)))
+   (if (not (consp terms))
+       (null terms)
+     (and (untranslated-termp (car terms))
+          (untranslated-term-listp (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -372,8 +371,8 @@
            (untranslated-termp (cadr terms))))
 
 (defthm untranslated-termp-of-car-of-last-gen
-  (implies (untranslated-term-listp lst)
-           (untranslated-termp (car (last lst))))
+  (implies (untranslated-term-listp terms)
+           (untranslated-termp (car (last terms))))
   :hints (("Goal" :in-theory (enable last))))
 
 (defthm untranslated-term-listp-of-remove-equal
