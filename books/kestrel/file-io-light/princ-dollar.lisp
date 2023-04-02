@@ -23,11 +23,7 @@
 (defthm open-output-channel-p1-of-princ$-gen
   (implies (open-output-channel-p1 channel typ state)
            (open-output-channel-p1 channel typ (princ$ x channel2 state)))
-  :hints (("Goal" :in-theory (enable open-output-channel-p
-                                     princ$
-                                     open-output-channel-p1
-                                     ;open-output-channels
-                                     open-output-channel-p))))
+  :hints (("Goal" :in-theory (enable princ$ open-output-channel-p1))))
 
 (defthm open-output-channel-p-of-princ$
   (implies (open-output-channel-p channel typ state)
