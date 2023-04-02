@@ -14,6 +14,7 @@
 (include-book "bstar-helpers")
 (include-book "case-match-helpers")
 (include-book "helpers")
+(include-book "let-helpers")
 
 (include-book "free-vars")
 
