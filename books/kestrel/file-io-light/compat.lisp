@@ -1,6 +1,6 @@
 ; Check compatibility with std
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;

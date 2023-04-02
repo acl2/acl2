@@ -28,14 +28,12 @@
 
 (defthm state-p-of-write-strings-to-channel
   (implies (and (state-p state)
-                (symbolp channel)
                 (open-output-channel-p channel :character state))
            (state-p (write-strings-to-channel strings channel state)))
   :hints (("Goal" :in-theory (enable write-strings-to-channel OPEN-OUTPUT-CHANNEL-P))))
 
 (defthm state-p1-of-write-strings-to-channel
   (implies (and (state-p state)
-                (symbolp channel)
                 (open-output-channel-p channel :character state))
            (state-p1 (write-strings-to-channel strings channel state)))
   :hints (("Goal" :in-theory (enable write-strings-to-channel OPEN-OUTPUT-CHANNEL-P))))

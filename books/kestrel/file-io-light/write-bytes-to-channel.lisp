@@ -12,6 +12,7 @@
 
 (local (include-book "write-byte-dollar"))
 (local (include-book "channels"))
+(local (include-book "open-output-channel-p"))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 (local (in-theory (disable state-p state-p1
@@ -49,7 +50,6 @@
 
 (defthm state-p1-of-write-bytes-to-channel
   (implies (and (open-output-channel-p1 channel :byte state)
-                (symbolp channel)
                 (state-p1 state)
                 (all-bytep list))
            (state-p1 (write-bytes-to-channel list channel state)))

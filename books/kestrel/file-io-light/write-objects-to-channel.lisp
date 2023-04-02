@@ -15,6 +15,7 @@
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "print-object-dollar-fn"))
 (local (include-book "print-object-dollar"))
+(local (include-book "open-output-channel-p"))
 
 (local (in-theory (disable open-output-channel-p open-output-channel-p1
                            print-object$-fn)))
@@ -46,7 +47,6 @@
 
 (defthm state-p1-of-write-objects-to-channel-aux
   (implies (and (open-output-channel-p1 channel :object state)
-                (symbolp channel)
                 (state-p1 state))
            (state-p1 (write-objects-to-channel-aux list channel state)))
   :hints (("Goal" :in-theory (enable write-objects-to-channel-aux
@@ -76,7 +76,6 @@
 
 (defthm state-p1-of-write-objects-to-channel
   (implies (and (open-output-channel-p1 channel :object state)
-                (symbolp channel)
                 (state-p1 state))
            (state-p1 (write-objects-to-channel list channel state)))
   :hints (("Goal" :in-theory (enable write-objects-to-channel

@@ -1,6 +1,6 @@
 ; A lightweight function to read a file's bytes into a stobj array of bytes
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 ;; (include-book "kestrel/utilities/channel-contents" :dir :system)
 (local (include-book "file-length-dollar"))
 (local (include-book "open-input-channel"))
+(local (include-book "open-input-channel-p"))
 (local (include-book "read-byte-dollar"))
 (local (include-book "channels"))
 (local (include-book "kestrel/utilities/state" :dir :system))
@@ -63,24 +64,21 @@
 
 (local
  (defthm state-p1-of-mv-nth-1-of-read-file-into-byte-array-stobj-aux
-   (implies (and (symbolp channel)
-                 (open-input-channel-p channel :byte state)
+   (implies (and (open-input-channel-p channel :byte state)
                  (state-p1 state))
             (state-p1 (mv-nth 1 (read-file-into-byte-array-stobj-aux next-index len channel byte-array-stobj state))))
-   :hints (("Goal" :in-theory (enable read-file-into-byte-array-stobj-aux)))))
+   :hints (("Goal" :in-theory (enable read-file-into-byte-array-stobj-aux open-input-channel-p)))))
 
 (local
  (defthm open-input-channel-p1-of-mv-nth-1-of-read-file-into-byte-array-stobj-aux
-   (implies (and (symbolp channel)
-                 (open-input-channel-p1 channel typ state)
+   (implies (and (open-input-channel-p1 channel typ state)
                  (state-p1 state))
             (open-input-channel-p1 channel typ (mv-nth 1 (read-file-into-byte-array-stobj-aux next-index len channel byte-array-stobj state))))
    :hints (("Goal" :in-theory (enable read-file-into-byte-array-stobj-aux)))))
 
 (local
  (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-file-into-byte-array-stobj-aux
-   (implies (and (symbolp channel)
-                 (open-input-channel-any-p1 channel state)
+   (implies (and (open-input-channel-any-p1 channel state)
                  (state-p1 state))
             (open-input-channel-any-p1 channel (mv-nth 1 (read-file-into-byte-array-stobj-aux next-index len channel byte-array-stobj state))))
    :hints (("Goal" :in-theory (enable open-input-channel-any-p1)))))

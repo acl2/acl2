@@ -12,6 +12,7 @@
 
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "channels"))
+(local (include-book "open-output-channel-p"))
 
 (in-theory (disable print-object$-fn))
 
@@ -38,8 +39,7 @@
 (defthm state-p1-of-print-object$-fn
   (implies (and (state-p1 state)
                 (open-output-channel-p channel :object state))
-           (equal (state-p1 (print-object$-fn x control channel state))
-                  (symbolp channel)))
+           (state-p1 (print-object$-fn x control channel state)))
   :hints (("Goal" :in-theory (enable print-object$-fn
                                      open-output-channel-p
                                      open-output-channel-p1))))
@@ -47,8 +47,7 @@
 (defthm state-p-of-print-object$-fn
   (implies (and (state-p state)
                 (open-output-channel-p channel :object state))
-           (equal (state-p (print-object$-fn x control channel state))
-                  (symbolp channel)))
+           (state-p (print-object$-fn x control channel state)))
   :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm global-table-of-print-object$-fn

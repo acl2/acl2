@@ -20,26 +20,22 @@
 
 (defthm state-p1-of-prin1-with-slashes
   (implies (and (state-p1 state)
-                (symbolp channel)
                 (open-output-channel-p channel :character state))
            (state-p1 (prin1-with-slashes s slash-char channel state)))
   :hints (("Goal" :in-theory (enable prin1-with-slashes))))
 
 (defthm state-p-of-prin1-with-slashes
   (implies (and (state-p state)
-                (symbolp channel)
                 (open-output-channel-p channel :character state))
            (state-p (prin1-with-slashes s slash-char channel state)))
   :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm open-output-channel-p1-of-prin1-with-slashes
-  (implies (and (symbolp channel)
-                (open-output-channel-p1 channel typ state))
+  (implies (open-output-channel-p1 channel typ state)
            (open-output-channel-p1 channel typ (prin1-with-slashes s slash-char channel2 state)))
   :hints (("Goal" :in-theory (enable prin1-with-slashes))))
 
 (defthm open-output-channel-p-of-prin1-with-slashes
-  (implies (and (symbolp channel)
-                (open-output-channel-p channel typ state))
+  (implies (open-output-channel-p channel typ state)
            (open-output-channel-p channel typ (prin1-with-slashes s slash-char channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
