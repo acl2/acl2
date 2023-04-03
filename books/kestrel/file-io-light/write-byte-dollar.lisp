@@ -35,3 +35,18 @@
   (implies (open-output-channel-p1 channel typ state)
            (open-output-channel-p1 channel typ (write-byte$ byte channel2 state)))
   :hints (("Goal" :in-theory (enable write-byte$))))
+
+(defthm open-output-channel-p-of-write-byte$-gen
+  (implies (open-output-channel-p channel typ state)
+           (open-output-channel-p channel typ (write-byte$ byte channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(defthm open-output-channel-any-p1-of-write-byte$-gen
+  (implies (open-output-channel-any-p1 channel state)
+           (open-output-channel-any-p1 channel (write-byte$ byte channel2 state)))
+  :hints (("Goal" :in-theory (enable write-byte$))))
+
+(defthm open-output-channel-any-p-of-write-byte$-gen
+  (implies (open-output-channel-any-p channel state)
+           (open-output-channel-any-p channel (write-byte$ byte channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-p))))
