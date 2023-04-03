@@ -147,8 +147,8 @@
               (let* ((bindings (let-bindings term))
                      (declares (let-declares term))
                      (body (let-body term))
-                     (binding-vars (strip-cars bindings))
-                     (binding-terms (strip-cadrs bindings)))
+                     (binding-vars (let-binding-vars bindings))
+                     (binding-terms (let-binding-terms bindings)))
                 `(,fn ,(make-doublets binding-vars (replace-calls-in-untranslated-terms-aux binding-terms alist permissivep (+ -1 count) wrld state))
                       ,@declares ;; These can only be IGNORE, IGNORABLE, and TYPE.  TODO: What about (type (satisfies PRED) x) ?
                       ,(replace-calls-in-untranslated-term-aux body alist permissivep (+ -1 count) wrld state))))
