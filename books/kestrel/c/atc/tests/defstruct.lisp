@@ -6,6 +6,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Supporting author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,3 +47,18 @@
   (|fixed| (c::uchar 5))
   (|filler| c::uint)
   (|last| (c::uchar)))
+
+(encapsulate ()
+  (local (in-theory ()))
+  (c::defstruct |big_struct|
+    (|a| c::uint)
+    (|b| (c::uint 5))
+    (|c| (c::sllong 200))
+    (|d| c::slong)
+    (|e| c::ulong)
+    (|f| c::schar)
+    (|g| c::ushort)
+    (|h| c::sshort)
+    (|i| c::uint)
+    (|j| c::sint)
+    (|k| (c::uchar))))
