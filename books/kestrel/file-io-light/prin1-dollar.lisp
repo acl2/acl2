@@ -42,3 +42,13 @@
   (implies (open-output-channel-p channel typ state)
            (open-output-channel-p channel typ (prin1$ x channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(defthm open-output-channel-any-p1-of-prin1$
+  (implies (open-output-channel-any-p1 channel state)
+           (open-output-channel-any-p1 channel (prin1$ x channel2 state)))
+  :hints (("Goal" :in-theory (enable prin1$))))
+
+(defthm open-output-channel-any-p-of-prin1$
+  (implies (open-output-channel-any-p channel state)
+           (open-output-channel-any-p channel (prin1$ x channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-p))))

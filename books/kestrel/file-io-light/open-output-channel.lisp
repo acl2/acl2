@@ -57,6 +57,21 @@
                                   (mv-nth 1 (open-output-channel fname typ state))))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
 
+(defthm open-output-channel-any-p1-after-open-output-channel
+  (implies (and (mv-nth 0 (open-output-channel fname typ state)) ;no error
+                (member-equal typ *file-types*))
+           (open-output-channel-any-p1 (mv-nth 0 (open-output-channel fname typ state))
+                                       (mv-nth 1 (open-output-channel fname typ state))))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
+
+(defthm open-output-channel-any-p-after-open-output-channel
+  (implies (and (mv-nth 0 (open-output-channel fname typ state)) ;no error
+                (member-equal typ *file-types*))
+           (open-output-channel-any-p (mv-nth 0 (open-output-channel fname typ state))
+                                      (mv-nth 1 (open-output-channel fname typ state))))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
+
+
 ;; See the guard of close-output-channel
 ;; todo: slow
 (defthm not-equal-of-mv-nth-0-of-open-output-channel-and-standard-co

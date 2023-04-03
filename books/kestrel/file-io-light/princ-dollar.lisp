@@ -36,6 +36,17 @@
            (open-output-channel-p channel typ (princ$ x channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
 
+(defthm open-output-channel-any-p1-of-princ$-gen
+  (implies (open-output-channel-any-p1 channel state)
+           (open-output-channel-any-p1 channel (princ$ x channel2 state)))
+  :hints (("Goal" :in-theory (enable princ$ open-output-channel-p1))))
+
+(defthm open-output-channel-any-p-of-princ$
+  (implies (open-output-channel-any-p channel state)
+           (open-output-channel-any-p channel (princ$ x channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+
 (defthm state-p1-of-princ$-gen ; avoid name clash with std
   (implies (and (state-p1 state)
                 ;; Not sure if this should be open-output-channel-p1 or open-output-channel-p,
