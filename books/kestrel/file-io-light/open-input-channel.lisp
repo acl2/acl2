@@ -48,7 +48,7 @@
            (open-input-channel-p (mv-nth 0 (open-input-channel file-name typ state))
                                  typ
                                  (mv-nth 1 (open-input-channel file-name typ state))))
-  :hints (("Goal" :in-theory (enable open-input-channel-p open-input-channel-p1 open-input-channel))))
+  :hints (("Goal" :in-theory (enable open-input-channel-p))))
 
 (defthm open-input-channel-any-p1-after-open-input-channel
   (implies (and (mv-nth 0 (open-input-channel file-name typ state)) ;no error
@@ -56,6 +56,13 @@
            (open-input-channel-any-p1 (mv-nth 0 (open-input-channel file-name typ state))
                                       (mv-nth 1 (open-input-channel file-name typ state))))
   :hints (("Goal" :in-theory (enable open-input-channel-any-p1 member-equal))))
+
+(defthm open-input-channel-any-p-after-open-input-channel
+  (implies (and (mv-nth 0 (open-input-channel file-name typ state)) ;no error
+                (member-equal typ *file-types*))
+           (open-input-channel-any-p (mv-nth 0 (open-input-channel file-name typ state))
+                                     (mv-nth 1 (open-input-channel file-name typ state))))
+  :hints (("Goal" :in-theory (e/d (open-input-channel-any-p) (open-input-channel-any-p1)))))
 
 (defthm state-p1-of-mv-nth-1-of-open-input-channel
   (implies (and ;; (mv-nth 0 (open-input-channel file-name typ state)) ;no error
