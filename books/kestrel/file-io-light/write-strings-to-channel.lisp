@@ -26,17 +26,17 @@
     (pprogn (princ$ (car strings) channel state) ;todo: call something faster? (e.g., something that only works for strings)?
             (write-strings-to-channel (cdr strings) channel state))))
 
+(defthm state-p1-of-write-strings-to-channel
+  (implies (and (state-p1 state)
+                (open-output-channel-p channel :character state))
+           (state-p1 (write-strings-to-channel strings channel state)))
+  :hints (("Goal" :in-theory (enable write-strings-to-channel OPEN-OUTPUT-CHANNEL-P))))
+
 (defthm state-p-of-write-strings-to-channel
   (implies (and (state-p state)
                 (open-output-channel-p channel :character state))
            (state-p (write-strings-to-channel strings channel state)))
-  :hints (("Goal" :in-theory (enable write-strings-to-channel OPEN-OUTPUT-CHANNEL-P))))
-
-(defthm state-p1-of-write-strings-to-channel
-  (implies (and (state-p state)
-                (open-output-channel-p channel :character state))
-           (state-p1 (write-strings-to-channel strings channel state)))
-  :hints (("Goal" :in-theory (enable write-strings-to-channel OPEN-OUTPUT-CHANNEL-P))))
+  :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm open-output-channel-p1-of-write-strings-to-channel
   (implies (open-output-channel-p1 channel typ state)
