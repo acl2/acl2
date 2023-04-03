@@ -1553,6 +1553,8 @@ examples.</p>")
        (make-event
         (define-fn ',name ',args (w state))))))
 
+(table acl2::pp-special-syms 'define 2)
+
 #!ACL2
 (progn
   ;; Returns (mv successp arglist).

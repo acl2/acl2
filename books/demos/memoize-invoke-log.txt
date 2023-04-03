@@ -44,21 +44,20 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 !>>(MEMOIZE 'F1 :INVOKE 'G1)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'F1
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN NIL)
-                     (CONS :INLINE NIL)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS NIL)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE 'G1)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'F1
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN NIL)
+                  (CONS :INLINE NIL)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS NIL)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE 'G1)
+                  (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 
 ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to set memoize-
@@ -85,8 +84,9 @@ ACL2 Error [Failure] in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See
 :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(DEFTHM |F1-is-G1| (EQUAL (F1 X) (G1 X))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM |F1-is-G1|
+          (EQUAL (F1 X) (G1 X))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -101,21 +101,20 @@ Rules: ((:DEFINITION F1)
 ACL2 !>>(MEMOIZE 'F1 :INVOKE 'G1)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'F1
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN NIL)
-                     (CONS :INLINE NIL)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS NIL)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE 'G1)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'F1
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN NIL)
+                  (CONS :INLINE NIL)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS NIL)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE 'G1)
+                  (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
@@ -138,11 +137,12 @@ ACL2 !>>(F1 3)
 <1 (G1 (3))
 (3)
 ACL2 !>>(DEFUN FIB (N)
-               (DECLARE (XARGS :GUARD (NATP N)))
-               (IF (ZP N)
-                   0
-                   (IF (EQL N 1)
-                       1 (+ (FIB (- N 1)) (FIB (- N 2))))))
+          (DECLARE (XARGS :GUARD (NATP N)))
+          (IF (ZP N)
+              0
+            (IF (EQL N 1)
+                1
+              (+ (FIB (- N 1)) (FIB (- N 2))))))
 
 For the admission of FIB we will use the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -221,8 +221,8 @@ ACL2 !>>>(COMP 'FIB)
 ACL2 !>>>(VALUE-TRIPLE T)
  T
 ACL2 !>>(DEFUN FIB2 (N)
-               (DECLARE (XARGS :GUARD (NATP N)))
-               (IF (= N 40) 102334155 (FIB N)))
+          (DECLARE (XARGS :GUARD (NATP N)))
+          (IF (= N 40) 102334155 (FIB N)))
 
 Since FIB2 is non-recursive, its admission is trivial.  We observe
 that the type of FIB2 is described by the theorem 
@@ -243,21 +243,20 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
 ACL2 !>>(MEMOIZE 'FIB :INVOKE 'FIB2)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FIB
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN NIL)
-                     (CONS :INLINE NIL)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS NIL)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE 'FIB2)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'FIB
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN NIL)
+                  (CONS :INLINE NIL)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS NIL)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE 'FIB2)
+                  (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 
 ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to set memoize-
@@ -284,8 +283,9 @@ ACL2 Error [Failure] in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See
 :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(DEFTHM |FIB-is-FIB2| (EQUAL (FIB N) (FIB2 N))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM |FIB-is-FIB2|
+          (EQUAL (FIB N) (FIB2 N))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -298,21 +298,20 @@ Rules: ((:DEFINITION FIB2)
 ACL2 !>>(MEMOIZE 'FIB :INVOKE 'FIB2)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FIB
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN NIL)
-                     (CONS :INLINE NIL)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS NIL)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE 'FIB2)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'FIB
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN NIL)
+                  (CONS :INLINE NIL)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS NIL)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE 'FIB2)
+                  (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
@@ -333,8 +332,8 @@ ACL2 !>>(FIB 40)
 ACL2 !>>(FIB 41)
 165580141
 ACL2 !>>(DEFUN F2 (X)
-               (DECLARE (XARGS :GUARD (CONSP X)))
-               (CAR X))
+          (DECLARE (XARGS :GUARD (CONSP X)))
+          (CAR X))
 
 Since F2 is non-recursive, its admission is trivial.  We could deduce
 no constraints on the type of F2.
@@ -359,8 +358,8 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>(DEFUN G2 (X)
-               (DECLARE (XARGS :GUARD (LISTP X)))
-               (CAR X))
+          (DECLARE (XARGS :GUARD (LISTP X)))
+          (CAR X))
 
 Since G2 is non-recursive, its admission is trivial.  We could deduce
 no constraints on the type of G2.
@@ -374,8 +373,9 @@ Summary
 Form:  ( DEFUN G2 ...)
 Rules: NIL
  G2
-ACL2 !>>(DEFTHM |F-is-G| (EQUAL (F2 X) (G2 X))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM |F-is-G|
+          (EQUAL (F2 X) (G2 X))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -386,21 +386,20 @@ Rules: ((:DEFINITION F2) (:DEFINITION G2))
 ACL2 !>>(MEMOIZE 'F2 :INVOKE 'G2)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'F2
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN NIL)
-                     (CONS :INLINE NIL)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS NIL)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE 'G2)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'F2
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN NIL)
+                  (CONS :INLINE NIL)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS NIL)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE 'G2)
+                  (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 
 ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to set memoize-
@@ -442,21 +441,20 @@ Rules: NIL
 ACL2 !>>(MEMOIZE 'F2 :INVOKE 'G2)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'F2
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN NIL)
-                     (CONS :INLINE NIL)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS NIL)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE 'G2)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'F2
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN NIL)
+                  (CONS :INLINE NIL)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS NIL)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE 'G2)
+                  (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
@@ -522,8 +520,9 @@ Summary
 Form:  ( DEFUN G3 ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  G3
-ACL2 !>>(DEFTHM |F3-is-G3| (EQUAL (F3 X Y) (G3 X Y))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM |F3-is-G3|
+          (EQUAL (F3 X Y) (G3 X Y))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 

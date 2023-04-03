@@ -20,80 +20,78 @@ Summary
 Form:  ( INCLUDE-BOOK "projects/apply/loop" ...)
 Rules: NIL
  (:SYSTEM . "projects/apply/loop.lisp")
-ACL2 !>>(DEFCONST
-             *TESTS*
-             '((TRACE$ HELLO)
-               (APPLY$ 'HELLO '(JOHN))
-               (EV$ '(HELLO E) '((E . JOHN)))
-               (APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
-               (APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
-                       '(JOHN))
-               (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
-               (LOOP$ FOR E IN '(JOHN MARY)
-                      COLLECT (HELLO E))
-               (LOOP$ FOR E IN '("John" "Mary")
-                      COLLECT (HELLO E))
-               (SET-GUARD-CHECKING NIL)
-               (LOOP$ FOR E IN '("John" "Mary")
-                      COLLECT (HELLO E))
-               (SET-GUARD-CHECKING T)
-               (DEFUN CALLER1 (E)
-                      (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                      (APPLY$ 'HELLO (LIST E)))
-               (VERIFY-GUARDS CALLER1)
-               (TRACE$ CALLER1)
-               (CALLER1 'JOHN)
-               (CALLER1 "Mary and Tom")
-               (SET-GUARD-CHECKING NIL)
-               (CALLER1 "Mary and Tom")
-               (SET-GUARD-CHECKING T)
-               (DEFUN CALLER2 (E)
-                      (DECLARE (XARGS :GUARD (SYMBOLP E)
-                                      :VERIFY-GUARDS NIL))
-                      (APPLY$ (LAMBDA$ (D)
-                                       (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                       (HELLO D))
-                              (LIST E)))
-               (VERIFY-GUARDS CALLER2)
-               (TRACE$ CALLER2)
-               (CALLER2 'JOHN)
-               (CALLER2 "Mary and Tom")
-               (SET-GUARD-CHECKING NIL)
-               (CALLER2 "Mary and Tom")
-               (SET-GUARD-CHECKING T)
-               (THM (EQUAL (APPLY$ 'HELLO '(JOHN))
-                           '(HI JOHN)))
-               (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
-                           '(HI JOHN)))
-               (THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (HELLO 'JOHN)))
-                                   NIL)
-                           '(HI JOHN)))
-               (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
-                           '(HI JOHN))
-                    :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
-               (THM (IMPLIES (WARRANT HELLO)
-                             (EQUAL (APPLY$ 'HELLO '(JOHN))
-                                    '(HI JOHN))))
-               (THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
-               (THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
-               (DEFUN CALLER3 (E)
-                      (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                      (APPLY$ (CAR (CONS 'HELLO NIL))
-                              (LIST E)))
-               (VERIFY-GUARDS CALLER3)
-               (CALLER3 'JOHN)
-               (CALLER3 "Mary and Tom")
-               (SET-GUARD-CHECKING NIL)
-               (CALLER3 "Mary and Tom")
-               (SET-GUARD-CHECKING T)
-               (THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))))
+ACL2 !>>(DEFCONST *TESTS*
+          '((TRACE$ HELLO)
+            (APPLY$ 'HELLO '(JOHN))
+            (EV$ '(HELLO E) '((E . JOHN)))
+            (APPLY$ (LAMBDA$ (E) (HELLO E)) '(JOHN))
+            (APPLY$ (CONS 'LAMBDA '((E) (HELLO E)))
+                    '(JOHN))
+            (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+            (LOOP$ FOR E IN '(JOHN MARY)
+                   COLLECT (HELLO E))
+            (LOOP$ FOR E IN '("John" "Mary")
+                   COLLECT (HELLO E))
+            (SET-GUARD-CHECKING NIL)
+            (LOOP$ FOR E IN '("John" "Mary")
+                   COLLECT (HELLO E))
+            (SET-GUARD-CHECKING T)
+            (DEFUN CALLER1 (E)
+              (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+              (APPLY$ 'HELLO (LIST E)))
+            (VERIFY-GUARDS CALLER1)
+            (TRACE$ CALLER1)
+            (CALLER1 'JOHN)
+            (CALLER1 "Mary and Tom")
+            (SET-GUARD-CHECKING NIL)
+            (CALLER1 "Mary and Tom")
+            (SET-GUARD-CHECKING T)
+            (DEFUN CALLER2 (E)
+              (DECLARE (XARGS :GUARD (SYMBOLP E)
+                              :VERIFY-GUARDS NIL))
+              (APPLY$ (LAMBDA$ (D)
+                        (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                        (HELLO D))
+                      (LIST E)))
+            (VERIFY-GUARDS CALLER2)
+            (TRACE$ CALLER2)
+            (CALLER2 'JOHN)
+            (CALLER2 "Mary and Tom")
+            (SET-GUARD-CHECKING NIL)
+            (CALLER2 "Mary and Tom")
+            (SET-GUARD-CHECKING T)
+            (THM (EQUAL (APPLY$ 'HELLO '(JOHN))
+                        '(HI JOHN)))
+            (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                        '(HI JOHN)))
+            (THM (EQUAL (APPLY$ (CONS 'LAMBDA '(NIL (HELLO 'JOHN)))
+                                NIL)
+                        '(HI JOHN)))
+            (THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
+                        '(HI JOHN))
+                 :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+            (THM (IMPLIES (WARRANT HELLO)
+                          (EQUAL (APPLY$ 'HELLO '(JOHN))
+                                 '(HI JOHN))))
+            (THM (EQUAL (CALLER1 'JOHN) '(HI JOHN)))
+            (THM (EQUAL (CALLER2 'JOHN) '(HI JOHN)))
+            (DEFUN CALLER3 (E)
+              (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+              (APPLY$ (CAR (CONS 'HELLO NIL))
+                      (LIST E)))
+            (VERIFY-GUARDS CALLER3)
+            (CALLER3 'JOHN)
+            (CALLER3 "Mary and Tom")
+            (SET-GUARD-CHECKING NIL)
+            (CALLER3 "Mary and Tom")
+            (SET-GUARD-CHECKING T)
+            (THM (EQUAL (CALLER3 'JOHN) '(HI JOHN)))))
 
 Summary
 Form:  ( DEFCONST *TESTS* ...)
 Rules: NIL
  *TESTS*
-ACL2 !>>(DEFCONST
-         *SECTIONS*
+ACL2 !>>(DEFCONST *SECTIONS*
          '((0 "HELLO is an undefined symbol")
            (1 "HELLO is an unbadged :program mode function")
            (2 "HELLO is a badged :program mode function")
@@ -106,8 +104,7 @@ Summary
 Form:  ( DEFCONST *SECTIONS* ...)
 Rules: NIL
  *SECTIONS*
-ACL2 !>>(DEFMACRO
-         SECTION (N)
+ACL2 !>>(DEFMACRO SECTION (N)
          (CONS
           'PPROGN
           (CONS
@@ -239,8 +236,8 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER1 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ 'HELLO (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ 'HELLO (LIST E)))
 
 
 ACL2 Error in ( DEFUN CALLER1 ...):  The body for CALLER1 uses the
@@ -314,12 +311,12 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER2 (E)
-                (DECLARE (XARGS :GUARD (SYMBOLP E)
-                                :VERIFY-GUARDS NIL))
-                (APPLY$ (LAMBDA$ (D)
-                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                 (HELLO D))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD (SYMBOLP E)
+                           :VERIFY-GUARDS NIL))
+           (APPLY$ (LAMBDA$ (D)
+                     (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                     (HELLO D))
+                   (LIST E)))
 
 
 ACL2 Error [Translate] in ( DEFUN CALLER2 ...):  The symbol HELLO (in
@@ -543,9 +540,9 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ (CAR (CONS 'HELLO NIL))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ (CAR (CONS 'HELLO NIL))
+                   (LIST E)))
 
 Since CALLER3 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER3.
@@ -647,10 +644,10 @@ ACL2 !>>(SECTION 1)
 -----------------------------------------------------------------
 1. HELLO is an unbadged :program mode function
 ACL2 !>>(DEFUN HELLO (X)
-               (DECLARE (XARGS :MODE :PROGRAM
-                               :GUARD (SYMBOLP X)
-                               :VERIFY-GUARDS NIL))
-               (LIST 'HI X))
+          (DECLARE (XARGS :MODE :PROGRAM
+                          :GUARD (SYMBOLP X)
+                          :VERIFY-GUARDS NIL))
+          (LIST 'HI X))
 
 Summary
 Form:  ( DEFUN HELLO ...)
@@ -732,9 +729,9 @@ If you are defining a function that calls itself recursively from within
 a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ (LOOP$-IVAR)
-         (LET ((E LOOP$-IVAR))
-              (DECLARE (IGNORABLE E))
-              (HELLO E))).
+  (LET ((E LOOP$-IVAR))
+    (DECLARE (IGNORABLE E))
+    (HELLO E))).
 
 
 ACL2 !>>>(LOOP$ FOR E IN '("John" "Mary")
@@ -753,9 +750,9 @@ If you are defining a function that calls itself recursively from within
 a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ (LOOP$-IVAR)
-         (LET ((E LOOP$-IVAR))
-              (DECLARE (IGNORABLE E))
-              (HELLO E))).
+  (LET ((E LOOP$-IVAR))
+    (DECLARE (IGNORABLE E))
+    (HELLO E))).
 
 
 ACL2 !>>>(SET-GUARD-CHECKING NIL)
@@ -780,9 +777,9 @@ If you are defining a function that calls itself recursively from within
 a loop$ you must include the xargs :LOOP$-RECURSION T and an explicit
 :MEASURE.  Note:  this error occurred in the context 
 (LAMBDA$ (LOOP$-IVAR)
-         (LET ((E LOOP$-IVAR))
-              (DECLARE (IGNORABLE E))
-              (HELLO E))).
+  (LET ((E LOOP$-IVAR))
+    (DECLARE (IGNORABLE E))
+    (HELLO E))).
 
 
 ACL2 >>>(SET-GUARD-CHECKING T)
@@ -790,8 +787,8 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER1 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ 'HELLO (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ 'HELLO (LIST E)))
 
 
 ACL2 Error in ( DEFUN CALLER1 ...):  The body for CALLER1 uses the
@@ -865,12 +862,12 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER2 (E)
-                (DECLARE (XARGS :GUARD (SYMBOLP E)
-                                :VERIFY-GUARDS NIL))
-                (APPLY$ (LAMBDA$ (D)
-                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                 (HELLO D))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD (SYMBOLP E)
+                           :VERIFY-GUARDS NIL))
+           (APPLY$ (LAMBDA$ (D)
+                     (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                     (HELLO D))
+                   (LIST E)))
 
 
 ACL2 Error [Translate] in ( DEFUN CALLER2 ...):  The body of a LAMBDA
@@ -1116,9 +1113,9 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ (CAR (CONS 'HELLO NIL))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ (CAR (CONS 'HELLO NIL))
+                   (LIST E)))
 
 Since CALLER3 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER3.
@@ -1290,8 +1287,8 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER1 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ 'HELLO (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ 'HELLO (LIST E)))
 
 ACL2 Warning [Problematic-quoted-fns] in ( DEFUN CALLER1 ...):  The
 definition of CALLER1 is in :LOGIC mode but mentions the :PROGRAM mode
@@ -1360,12 +1357,12 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER2 (E)
-                (DECLARE (XARGS :GUARD (SYMBOLP E)
-                                :VERIFY-GUARDS NIL))
-                (APPLY$ (LAMBDA$ (D)
-                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                 (HELLO D))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD (SYMBOLP E)
+                           :VERIFY-GUARDS NIL))
+           (APPLY$ (LAMBDA$ (D)
+                     (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                     (HELLO D))
+                   (LIST E)))
 
 ACL2 Warning [Problematic-quoted-fns] in ( DEFUN CALLER2 ...):  The
 definition of CALLER2 is in :LOGIC mode but mentions the :PROGRAM mode
@@ -1631,14 +1628,13 @@ Goal''
 ([ A key checkpoint:
 
 Goal''
-(EQUAL
-     (HIDE (EV$ '(RETURN-LAST 'PROGN
-                              '(LAMBDA$ (D)
-                                        (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                        (HELLO D))
-                              (HELLO D))
-                '((D . JOHN))))
-     '(HI JOHN))
+(EQUAL (HIDE (EV$ '(RETURN-LAST 'PROGN
+                                '(LAMBDA$ (D)
+                                   (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                   (HELLO D))
+                                (HELLO D))
+                  '((D . JOHN))))
+       '(HI JOHN))
 
 *1 (Goal'') is pushed for proof by induction.
 
@@ -1663,22 +1659,21 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 *** Key checkpoint at the top level: ***
 
 Goal''
-(EQUAL
-     (HIDE (EV$ '(RETURN-LAST 'PROGN
-                              '(LAMBDA$ (D)
-                                        (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                        (HELLO D))
-                              (HELLO D))
-                '((D . JOHN))))
-     '(HI JOHN))
+(EQUAL (HIDE (EV$ '(RETURN-LAST 'PROGN
+                                '(LAMBDA$ (D)
+                                   (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                   (HELLO D))
+                                (HELLO D))
+                  '((D . JOHN))))
+       '(HI JOHN))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ (CAR (CONS 'HELLO NIL))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ (CAR (CONS 'HELLO NIL))
+                   (LIST E)))
 
 Since CALLER3 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER3.
@@ -1871,8 +1866,8 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER1 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ 'HELLO (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ 'HELLO (LIST E)))
 
 ACL2 Warning [Problematic-quoted-fns] in ( DEFUN CALLER1 ...):  The
 definition of CALLER1 is in :LOGIC mode but mentions the unwarranted
@@ -1938,12 +1933,12 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER2 (E)
-                (DECLARE (XARGS :GUARD (SYMBOLP E)
-                                :VERIFY-GUARDS NIL))
-                (APPLY$ (LAMBDA$ (D)
-                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                 (HELLO D))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD (SYMBOLP E)
+                           :VERIFY-GUARDS NIL))
+           (APPLY$ (LAMBDA$ (D)
+                     (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                     (HELLO D))
+                   (LIST E)))
 
 ACL2 Warning [Problematic-quoted-fns] in ( DEFUN CALLER2 ...):  The
 definition of CALLER2 is in :LOGIC mode but mentions the unwarranted
@@ -2211,14 +2206,13 @@ Goal''
 ([ A key checkpoint:
 
 Goal''
-(EQUAL
-     (HIDE (EV$ '(RETURN-LAST 'PROGN
-                              '(LAMBDA$ (D)
-                                        (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                        (HELLO D))
-                              (HELLO D))
-                '((D . JOHN))))
-     '(HI JOHN))
+(EQUAL (HIDE (EV$ '(RETURN-LAST 'PROGN
+                                '(LAMBDA$ (D)
+                                   (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                   (HELLO D))
+                                (HELLO D))
+                  '((D . JOHN))))
+       '(HI JOHN))
 
 *1 (Goal'') is pushed for proof by induction.
 
@@ -2243,22 +2237,21 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 *** Key checkpoint at the top level: ***
 
 Goal''
-(EQUAL
-     (HIDE (EV$ '(RETURN-LAST 'PROGN
-                              '(LAMBDA$ (D)
-                                        (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                        (HELLO D))
-                              (HELLO D))
-                '((D . JOHN))))
-     '(HI JOHN))
+(EQUAL (HIDE (EV$ '(RETURN-LAST 'PROGN
+                                '(LAMBDA$ (D)
+                                   (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                   (HELLO D))
+                                (HELLO D))
+                  '((D . JOHN))))
+       '(HI JOHN))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ (CAR (CONS 'HELLO NIL))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ (CAR (CONS 'HELLO NIL))
+                   (LIST E)))
 
 Since CALLER3 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER3.
@@ -2435,8 +2428,8 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER1 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ 'HELLO (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ 'HELLO (LIST E)))
 
 Since CALLER1 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER1.
@@ -2497,12 +2490,12 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER2 (E)
-                (DECLARE (XARGS :GUARD (SYMBOLP E)
-                                :VERIFY-GUARDS NIL))
-                (APPLY$ (LAMBDA$ (D)
-                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                 (HELLO D))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD (SYMBOLP E)
+                           :VERIFY-GUARDS NIL))
+           (APPLY$ (LAMBDA$ (D)
+                     (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                     (HELLO D))
+                   (LIST E)))
 
 Since CALLER2 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER2.
@@ -2897,9 +2890,9 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ (CAR (CONS 'HELLO NIL))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ (CAR (CONS 'HELLO NIL))
+                   (LIST E)))
 
 Since CALLER3 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER3.
@@ -3112,8 +3105,8 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER1 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ 'HELLO (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ 'HELLO (LIST E)))
 
 Since CALLER1 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER1.
@@ -3186,12 +3179,12 @@ ACL2 >>>(SET-GUARD-CHECKING T)
 Turning guard checking on, value T.
 
 ACL2 !>>>(DEFUN CALLER2 (E)
-                (DECLARE (XARGS :GUARD (SYMBOLP E)
-                                :VERIFY-GUARDS NIL))
-                (APPLY$ (LAMBDA$ (D)
-                                 (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                 (HELLO D))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD (SYMBOLP E)
+                           :VERIFY-GUARDS NIL))
+           (APPLY$ (LAMBDA$ (D)
+                     (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                     (HELLO D))
+                   (LIST E)))
 
 Since CALLER2 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER2.
@@ -3208,18 +3201,17 @@ The non-trivial part of the guard conjecture for CALLER2 is
 
 Goal
 (IMPLIES
-    (SYMBOLP E)
-    (APPLY$-GUARD
-         '(LAMBDA (D)
-                  (DECLARE (XARGS :GUARD (SYMBOLP D)
-                                  :SPLIT-TYPES T)
-                           (IGNORABLE D))
-                  (RETURN-LAST 'PROGN
-                               '(LAMBDA$ (D)
-                                         (DECLARE (XARGS :GUARD (SYMBOLP D)))
-                                         (HELLO D))
-                               (HELLO D)))
-         (LIST E))).
+     (SYMBOLP E)
+     (APPLY$-GUARD '(LAMBDA (D)
+                      (DECLARE (XARGS :GUARD (SYMBOLP D)
+                                      :SPLIT-TYPES T)
+                               (IGNORABLE D))
+                      (RETURN-LAST 'PROGN
+                                   '(LAMBDA$ (D)
+                                      (DECLARE (XARGS :GUARD (SYMBOLP D)))
+                                      (HELLO D))
+                                   (HELLO D)))
+                   (LIST E))).
 Goal'
 
 Q.E.D.
@@ -3632,9 +3624,9 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>>(DEFUN CALLER3 (E)
-                (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
-                (APPLY$ (CAR (CONS 'HELLO NIL))
-                        (LIST E)))
+           (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+           (APPLY$ (CAR (CONS 'HELLO NIL))
+                   (LIST E)))
 
 Since CALLER3 is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of CALLER3.
@@ -3852,14 +3844,15 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN PROGRAM-MODE-WITH-NO-BADGE (X)
-               (DECLARE (XARGS :MODE :PROGRAM))
-               (LIST 'HI X))
+          (DECLARE (XARGS :MODE :PROGRAM))
+          (LIST 'HI X))
 
 Summary
 Form:  ( DEFUN PROGRAM-MODE-WITH-NO-BADGE ...)
 Rules: NIL
  PROGRAM-MODE-WITH-NO-BADGE
-ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
+ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL
+                              (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
                             NIL)
                     '(HI JOHN)))
 
@@ -3937,7 +3930,8 @@ Goal'
 ([ A key checkpoint:
 
 Goal'
-(EQUAL (APPLY$ '(LAMBDA NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
+(EQUAL (APPLY$ '(LAMBDA NIL
+                  (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
                NIL)
        '(HI JOHN))
 
@@ -3961,17 +3955,17 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 *** Key checkpoint at the top level: ***
 
 Goal'
-(EQUAL (APPLY$ '(LAMBDA NIL (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
+(EQUAL (APPLY$ '(LAMBDA NIL
+                  (PROGRAM-MODE-WITH-NO-BADGE 'JOHN))
                NIL)
        '(HI JOHN))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(DEFUN PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT
-               (X)
-               (DECLARE (XARGS :MODE :PROGRAM))
-               (LIST 'HI X))
+ACL2 !>>(DEFUN PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT (X)
+          (DECLARE (XARGS :MODE :PROGRAM))
+          (LIST 'HI X))
 
 Summary
 Form:  ( DEFUN PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT ...)
@@ -3979,12 +3973,10 @@ Rules: NIL
  PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT
 ACL2 !>>(DEFBADGE PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT)
  T
-ACL2 !>>(THM
-         (EQUAL
-             (APPLY$ (LAMBDA$ NIL
+ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL
                               (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                     NIL)
-             '(HI JOHN)))
+                            NIL)
+                    '(HI JOHN)))
 Goal'
 Goal''
 
@@ -3992,14 +3984,12 @@ Goal''
 
 Goal''
 (EQUAL
- (HIDE
-  (EV$
-      '(RETURN-LAST 'PROGN
-                    '(LAMBDA$ NIL
+  (HIDE (EV$ '(RETURN-LAST 'PROGN
+                           '(LAMBDA$ NIL
                               (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-      NIL))
- '(HI JOHN))
+                           (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+             NIL))
+  '(HI JOHN))
 
 *1 (Goal'') is pushed for proof by induction.
 
@@ -4023,26 +4013,23 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 
 Goal''
 (EQUAL
- (HIDE
-  (EV$
-      '(RETURN-LAST 'PROGN
-                    '(LAMBDA$ NIL
+  (HIDE (EV$ '(RETURN-LAST 'PROGN
+                           '(LAMBDA$ NIL
                               (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-      NIL))
- '(HI JOHN))
+                           (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+             NIL))
+  '(HI JOHN))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
-         (EQUAL
-             (APPLY$ (LAMBDA$ NIL
-                              (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                     NIL)
-             '(HI JOHN))
-         :HINTS
-         (("Goal" :IN-THEORY (ENABLE EV$ (:EXECUTABLE-COUNTERPART EV$)))))
+            (EQUAL (APPLY$ (LAMBDA$ NIL
+                             (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                           NIL)
+                   '(HI JOHN))
+            :HINTS
+            (("Goal" :IN-THEORY (ENABLE EV$ (:EXECUTABLE-COUNTERPART EV$)))))
 Goal'
 
 Splitter note (see :DOC splitter) for Goal' (11 subgoals).
@@ -4060,14 +4047,13 @@ Subgoal 11
 Subgoal 11
 (IMPLIES
  (NOT (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
- (EQUAL
-  (UNTAME-EV$
-      '(RETURN-LAST 'PROGN
-                    '(LAMBDA$ NIL
+ (EQUAL (UNTAME-EV$
+             '(RETURN-LAST 'PROGN
+                           '(LAMBDA$ NIL
                               (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-      NIL)
-  '(HI JOHN)))
+                           (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+             NIL)
+        '(HI JOHN)))
 
 *1 (Subgoal 11) is pushed for proof by induction.
 
@@ -4085,13 +4071,11 @@ Subgoal 10'
       (EQUAL (CDDDR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
              T))
  (EQUAL
-  (CADR
-   (HIDE
-        (EV$-LIST '('(LAMBDA$ NIL
+   (CADR (HIDE (EV$-LIST '('(LAMBDA$ NIL
                               (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                  NIL)))
-  '(HI JOHN)))
+                           (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                         NIL)))
+   '(HI JOHN)))
 
 Normally we would attempt to prove Subgoal 10' by induction.  However,
 we prefer in this instance to focus on the original input conjecture
@@ -4155,14 +4139,13 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 Subgoal 11
 (IMPLIES
  (NOT (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
- (EQUAL
-  (UNTAME-EV$
-      '(RETURN-LAST 'PROGN
-                    '(LAMBDA$ NIL
+ (EQUAL (UNTAME-EV$
+             '(RETURN-LAST 'PROGN
+                           '(LAMBDA$ NIL
                               (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-      NIL)
-  '(HI JOHN)))
+                           (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+             NIL)
+        '(HI JOHN)))
 
 Subgoal 10'
 (IMPLIES
@@ -4172,24 +4155,20 @@ Subgoal 10'
       (EQUAL (CDDDR (BADGE 'PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT))
              T))
  (EQUAL
-  (CADR
-   (HIDE
-        (EV$-LIST '('(LAMBDA$ NIL
+   (CADR (HIDE (EV$-LIST '('(LAMBDA$ NIL
                               (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                    (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                  NIL)))
-  '(HI JOHN)))
+                           (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                         NIL)))
+   '(HI JOHN)))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(THM
-         (EQUAL
-             (APPLY$ (LAMBDA$ NIL
+ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL
                               (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                     NIL)
-             '(HI JOHN))
-         :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+                            NIL)
+                    '(HI JOHN))
+             :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -4210,7 +4189,7 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 
 Goal
 (EQUAL (APPLY$ (LAMBDA$ NIL
-                        (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                 (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
                NIL)
        '(HI JOHN))
 
@@ -4218,10 +4197,10 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT (X)
-               (DECLARE (XARGS :MODE :LOGIC
-                               :GUARD (SYMBOLP X)
-                               :VERIFY-GUARDS NIL))
-               (LIST 'HI X))
+          (DECLARE (XARGS :MODE :LOGIC
+                          :GUARD (SYMBOLP X)
+                          :VERIFY-GUARDS NIL))
+          (LIST 'HI X))
 
 Since LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT is non-recursive, its admission
 is trivial.  We observe that the type of LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
@@ -4236,13 +4215,11 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT
 ACL2 !>>(DEFBADGE LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT)
  T
-ACL2 !>>(THM
-          (EQUAL
-               (APPLY$ (LAMBDA$ NIL
-                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                       NIL)
-               '(HI JOHN))
-          :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
+ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL
+                              (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                            NIL)
+                    '(HI JOHN))
+             :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -4263,19 +4240,17 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 
 Goal
 (EQUAL (APPLY$ (LAMBDA$ NIL
-                        (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
                NIL)
        '(HI JOHN))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
-ACL2 !>>(THM
-          (EQUAL
-               (APPLY$ (LAMBDA$ NIL
-                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                       NIL)
-               '(HI JOHN)))
+ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL
+                              (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                            NIL)
+                    '(HI JOHN)))
 Goal'
 Goal''
 
@@ -4283,13 +4258,12 @@ Goal''
 
 Goal''
 (EQUAL
- (HIDE
-   (EV$ '(RETURN-LAST 'PROGN
-                      '(LAMBDA$ NIL
+    (HIDE (EV$ '(RETURN-LAST 'PROGN
+                             '(LAMBDA$ NIL
                                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-        NIL))
- '(HI JOHN))
+                             (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+               NIL))
+    '(HI JOHN))
 
 *1 (Goal'') is pushed for proof by induction.
 
@@ -4313,25 +4287,23 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 
 Goal''
 (EQUAL
- (HIDE
-   (EV$ '(RETURN-LAST 'PROGN
-                      '(LAMBDA$ NIL
+    (HIDE (EV$ '(RETURN-LAST 'PROGN
+                             '(LAMBDA$ NIL
                                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-        NIL))
- '(HI JOHN))
+                             (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+               NIL))
+    '(HI JOHN))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
-          (EQUAL
-               (APPLY$ (LAMBDA$ NIL
-                                (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                       NIL)
-               '(HI JOHN))
-          :HINTS
-          (("Goal" :IN-THEORY (ENABLE EV$ (:EXECUTABLE-COUNTERPART EV$)))))
+            (EQUAL (APPLY$ (LAMBDA$ NIL
+                             (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                           NIL)
+                   '(HI JOHN))
+            :HINTS
+            (("Goal" :IN-THEORY (ENABLE EV$ (:EXECUTABLE-COUNTERPART EV$)))))
 Goal'
 
 Splitter note (see :DOC splitter) for Goal' (11 subgoals).
@@ -4350,12 +4322,11 @@ Subgoal 11
 (IMPLIES
  (NOT (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
  (EQUAL
-   (UNTAME-EV$
-        '(RETURN-LAST 'PROGN
-                      '(LAMBDA$ NIL
+   (UNTAME-EV$ '(RETURN-LAST 'PROGN
+                             '(LAMBDA$ NIL
                                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-        NIL)
+                             (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+               NIL)
    '(HI JOHN)))
 
 *1 (Subgoal 11) is pushed for proof by induction.
@@ -4374,12 +4345,11 @@ Subgoal 10'
       (EQUAL (CDDDR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
              T))
  (EQUAL
-  (CADR
-    (HIDE (EV$-LIST '('(LAMBDA$ NIL
+     (CADR (HIDE (EV$-LIST '('(LAMBDA$ NIL
                                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                    NIL)))
-  '(HI JOHN)))
+                             (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                           NIL)))
+     '(HI JOHN)))
 
 Normally we would attempt to prove Subgoal 10' by induction.  However,
 we prefer in this instance to focus on the original input conjecture
@@ -4444,12 +4414,11 @@ Subgoal 11
 (IMPLIES
  (NOT (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
  (EQUAL
-   (UNTAME-EV$
-        '(RETURN-LAST 'PROGN
-                      '(LAMBDA$ NIL
+   (UNTAME-EV$ '(RETURN-LAST 'PROGN
+                             '(LAMBDA$ NIL
                                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-        NIL)
+                             (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+               NIL)
    '(HI JOHN)))
 
 Subgoal 10'
@@ -4460,12 +4429,11 @@ Subgoal 10'
       (EQUAL (CDDDR (BADGE 'LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT))
              T))
  (EQUAL
-  (CADR
-    (HIDE (EV$-LIST '('(LAMBDA$ NIL
+     (CADR (HIDE (EV$-LIST '('(LAMBDA$ NIL
                                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
-                    NIL)))
-  '(HI JOHN)))
+                             (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT 'JOHN))
+                           NIL)))
+     '(HI JOHN)))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
@@ -4478,10 +4446,10 @@ Defwarrant expects a defined, :logic mode function symbol as its argument
 and PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT is not one.
 
 ACL2 !>>(DEFUN LOGIC-MODE-WITH-BADGE-AND-WARRANT (X)
-               (DECLARE (XARGS :MODE :LOGIC
-                               :GUARD (SYMBOLP X)
-                               :VERIFY-GUARDS NIL))
-               (LIST 'HI X))
+          (DECLARE (XARGS :MODE :LOGIC
+                          :GUARD (SYMBOLP X)
+                          :VERIFY-GUARDS NIL))
+          (LIST 'HI X))
 
 Since LOGIC-MODE-WITH-BADGE-AND-WARRANT is non-recursive, its admission
 is trivial.  We observe that the type of LOGIC-MODE-WITH-BADGE-AND-WARRANT
@@ -4504,11 +4472,10 @@ APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT, with badge
 (APPLY$-BADGE 1 1 . T).
 
  T
-ACL2 !>>(THM
-           (EQUAL (APPLY$ (LAMBDA$ NIL
-                                   (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
-                          NIL)
-                  '(HI JOHN)))
+ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL
+                              (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                            NIL)
+                    '(HI JOHN)))
 Goal'
 
 Forcing Round 1 is pending (caused first by Goal').
@@ -4561,12 +4528,11 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
-         (IMPLIES
-           (WARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT)
-           (EQUAL (APPLY$ (LAMBDA$ NIL
+         (IMPLIES (WARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT)
+                  (EQUAL (APPLY$ (LAMBDA$ NIL
                                    (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
-                          NIL)
-                  '(HI JOHN))))
+                                 NIL)
+                         '(HI JOHN))))
 Goal'
 
 Q.E.D.
@@ -4582,12 +4548,11 @@ Rules: ((:DEFINITION FORCE)
 
 Proof succeeded.
 ACL2 !>>(THM
-         (IMPLIES
-           (NOT (WARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT))
-           (EQUAL (APPLY$ (LAMBDA$ NIL
+         (IMPLIES (NOT (WARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT))
+                  (EQUAL (APPLY$ (LAMBDA$ NIL
                                    (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
-                          NIL)
-                  '(HI JOHN))))
+                                 NIL)
+                         '(HI JOHN))))
 Goal'
 Goal''
 
@@ -4602,7 +4567,7 @@ Goal''
     "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
     (EV$ '(RETURN-LAST 'PROGN
                        '(LAMBDA$ NIL
-                                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                          (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
                        (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
          NIL)))
   '(HI JOHN)))
@@ -4638,7 +4603,7 @@ Goal''
     "Call failed because the warrant for LOGIC-MODE-WITH-BADGE-AND-WARRANT is not known to be true"
     (EV$ '(RETURN-LAST 'PROGN
                        '(LAMBDA$ NIL
-                                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                          (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
                        (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
          NIL)))
   '(HI JOHN)))
@@ -4647,12 +4612,11 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(THM
-         (IMPLIES
-           (NOT (WARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT))
-           (EQUAL (APPLY$ (LAMBDA$ NIL
+         (IMPLIES (NOT (WARRANT LOGIC-MODE-WITH-BADGE-AND-WARRANT))
+                  (EQUAL (APPLY$ (LAMBDA$ NIL
                                    (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
-                          NIL)
-                  '(HI JOHN)))
+                                 NIL)
+                         '(HI JOHN)))
          :HINTS (("Goal" :IN-THEORY (DISABLE BETA-REDUCTION))))
 Goal'
 
@@ -4661,7 +4625,7 @@ Goal'
 Goal'
 (IMPLIES (NOT (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT))
          (EQUAL (APPLY$ (LAMBDA$ NIL
-                                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                          (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
                         NIL)
                 '(HI JOHN)))
 
@@ -4687,7 +4651,7 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 Goal'
 (IMPLIES (NOT (APPLY$-WARRANT-LOGIC-MODE-WITH-BADGE-AND-WARRANT))
          (EQUAL (APPLY$ (LAMBDA$ NIL
-                                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
+                          (LOGIC-MODE-WITH-BADGE-AND-WARRANT 'JOHN))
                         NIL)
                 '(HI JOHN)))
 
@@ -4695,10 +4659,10 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RUN-THIS-VERSION-1 (X)
-               (DECLARE (XARGS :MODE :LOGIC :GUARD (SYMBOLP X)))
-               (LOOP$ FOR E IN (LIST X)
-                      COLLECT :GUARD (SYMBOLP E)
-                      (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
+          (DECLARE (XARGS :MODE :LOGIC :GUARD (SYMBOLP X)))
+          (LOOP$ FOR E IN (LIST X)
+                 COLLECT :GUARD (SYMBOLP E)
+                 (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
 
 
 ACL2 Error in ( DEFUN RUN-THIS-VERSION-1 ...):  The body for 
@@ -4715,12 +4679,12 @@ failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RUN-THIS-VERSION-1 (X)
-               (DECLARE (XARGS :MODE :LOGIC
-                               :GUARD (SYMBOLP X)
-                               :VERIFY-GUARDS NIL))
-               (LOOP$ FOR E IN (LIST X)
-                      COLLECT :GUARD (SYMBOLP E)
-                      (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
+          (DECLARE (XARGS :MODE :LOGIC
+                          :GUARD (SYMBOLP X)
+                          :VERIFY-GUARDS NIL))
+          (LOOP$ FOR E IN (LIST X)
+                 COLLECT :GUARD (SYMBOLP E)
+                 (PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
 
 ACL2 Warning [Problematic-quoted-fns] in ( DEFUN RUN-THIS-VERSION-1
 ...):  The definition of RUN-THIS-VERSION-1 is in :LOGIC mode but mentions
@@ -4757,12 +4721,12 @@ PROGRAM-MODE-WITH-BADGE-BUT-NO-WARRANT):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RUN-THIS-VERSION-2 (X)
-               (DECLARE (XARGS :MODE :LOGIC
-                               :GUARD (SYMBOLP X)
-                               :VERIFY-GUARDS NIL))
-               (LOOP$ FOR E IN (LIST X)
-                      COLLECT :GUARD (SYMBOLP E)
-                      (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
+          (DECLARE (XARGS :MODE :LOGIC
+                          :GUARD (SYMBOLP X)
+                          :VERIFY-GUARDS NIL))
+          (LOOP$ FOR E IN (LIST X)
+                 COLLECT :GUARD (SYMBOLP E)
+                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
 
 ACL2 Warning [Problematic-quoted-fns] in ( DEFUN RUN-THIS-VERSION-2
 ...):  The definition of RUN-THIS-VERSION-2 is in :LOGIC mode but mentions
@@ -4821,21 +4785,20 @@ Goal''
 
 Goal''
 (EQUAL
- (HIDE
-     (EV$ '(RETURN-LAST
-                'PROGN
-                '(LAMBDA$ (LOOP$-IVAR)
-                          (DECLARE (XARGS :GUARD (LET ((E LOOP$-IVAR))
-                                                      (DECLARE (IGNORABLE E))
-                                                      (SYMBOLP E))))
-                          (LET ((E LOOP$-IVAR))
-                               (DECLARE (IGNORABLE E))
-                               (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
-                ((LAMBDA (E)
-                         (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E))
-                 LOOP$-IVAR))
-          '((LOOP$-IVAR . JOHN))))
- '(HI JOHN))
+     (HIDE (EV$ '(RETURN-LAST 'PROGN
+                              '(LAMBDA$ (LOOP$-IVAR)
+                                 (DECLARE (XARGS :GUARD
+                                                 (LET ((E LOOP$-IVAR))
+                                                   (DECLARE (IGNORABLE E))
+                                                   (SYMBOLP E))))
+                                 (LET ((E LOOP$-IVAR))
+                                   (DECLARE (IGNORABLE E))
+                                   (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
+                              ((LAMBDA (E)
+                                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E))
+                               LOOP$-IVAR))
+                '((LOOP$-IVAR . JOHN))))
+     '(HI JOHN))
 
 *1 (Goal'') is pushed for proof by induction.
 
@@ -4863,32 +4826,31 @@ See :DOC failure and see :DOC set-checkpoint-summary-limit.
 
 Goal''
 (EQUAL
- (HIDE
-     (EV$ '(RETURN-LAST
-                'PROGN
-                '(LAMBDA$ (LOOP$-IVAR)
-                          (DECLARE (XARGS :GUARD (LET ((E LOOP$-IVAR))
-                                                      (DECLARE (IGNORABLE E))
-                                                      (SYMBOLP E))))
-                          (LET ((E LOOP$-IVAR))
-                               (DECLARE (IGNORABLE E))
-                               (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
-                ((LAMBDA (E)
-                         (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E))
-                 LOOP$-IVAR))
-          '((LOOP$-IVAR . JOHN))))
- '(HI JOHN))
+     (HIDE (EV$ '(RETURN-LAST 'PROGN
+                              '(LAMBDA$ (LOOP$-IVAR)
+                                 (DECLARE (XARGS :GUARD
+                                                 (LET ((E LOOP$-IVAR))
+                                                   (DECLARE (IGNORABLE E))
+                                                   (SYMBOLP E))))
+                                 (LET ((E LOOP$-IVAR))
+                                   (DECLARE (IGNORABLE E))
+                                   (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E)))
+                              ((LAMBDA (E)
+                                 (LOGIC-MODE-WITH-BADGE-BUT-NO-WARRANT E))
+                               LOOP$-IVAR))
+                '((LOOP$-IVAR . JOHN))))
+     '(HI JOHN))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RUN-THIS-VERSION-3 (X)
-               (DECLARE (XARGS :MODE :LOGIC
-                               :GUARD (SYMBOLP X)
-                               :VERIFY-GUARDS NIL))
-               (LOOP$ FOR E IN (LIST X)
-                      COLLECT :GUARD (SYMBOLP E)
-                      (LOGIC-MODE-WITH-BADGE-AND-WARRANT E)))
+          (DECLARE (XARGS :MODE :LOGIC
+                          :GUARD (SYMBOLP X)
+                          :VERIFY-GUARDS NIL))
+          (LOOP$ FOR E IN (LIST X)
+                 COLLECT :GUARD (SYMBOLP E)
+                 (LOGIC-MODE-WITH-BADGE-AND-WARRANT E)))
 
 Since RUN-THIS-VERSION-3 is non-recursive, its admission is trivial.
 We observe that the type of RUN-THIS-VERSION-3 is described by the

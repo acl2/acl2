@@ -833,6 +833,16 @@
   :tag :fun-declon
   :pred fun-declonp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist fun-declon-list
+  :short "Fixtype of lists of function declarations."
+  :elt-type fun-declon
+  :true-listp t
+  :elementp-of-nil nil
+  :pred fun-declon-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum initer

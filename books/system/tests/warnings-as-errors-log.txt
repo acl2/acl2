@@ -378,21 +378,20 @@ Rules: NIL
 ACL2 !>>(MEMOIZE 'FN)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FN
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE NIL)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'FN
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN T)
+                  (CONS :INLINE T)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS :DEFAULT)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE NIL)
+                  (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 
 
 ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to set memoize-
@@ -422,21 +421,20 @@ ACL2 Error [Failure] in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See
 ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FN
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE NIL)
-                     (AND (NOT (EQ ':WARN :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':WARN)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'FN
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN T)
+                  (CONS :INLINE T)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS :DEFAULT)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE NIL)
+                  (AND (NOT (EQ ':WARN :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':WARN)))))
 
 ACL2 Warning [Memoize] in MEMOIZE-TABLE-CHK:  The function FN to be
 memoized is in :logic mode but has not had its guards verified.  Memoization
@@ -466,21 +464,20 @@ ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
 ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FN
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE NIL)
-                     (AND (NOT (EQ ':WARN :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':WARN)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'FN
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN T)
+                  (CONS :INLINE T)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS :DEFAULT)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE NIL)
+                  (AND (NOT (EQ ':WARN :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':WARN)))))
 
 
 HARD ACL2 ERROR [Memoize] in MEMOIZE-TABLE-CHK:  The function FN to
@@ -530,21 +527,20 @@ ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(WARNING))
 ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FN
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE NIL)
-                     (AND (NOT (EQ ':WARN :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':WARN)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'FN
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN T)
+                  (CONS :INLINE T)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS :DEFAULT)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE NIL)
+                  (AND (NOT (EQ ':WARN :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':WARN)))))
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
@@ -568,21 +564,20 @@ ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS '("memoize")
 ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
 
 
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FN
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE NIL)
-                     (AND (NOT (EQ ':WARN :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':WARN)))))
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'FN
+                             (MACRO-ALIASES WORLD))
+           (LIST* (CONS :CONDITION-FN T)
+                  (CONS :INLINE T)
+                  (CONS :COMMUTATIVE NIL)
+                  (CONS :FORGET NIL)
+                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                  (CONS :AOKP 'NIL)
+                  (CONS :STATS :DEFAULT)
+                  (CONS :TOTAL NIL)
+                  (CONS :INVOKE NIL)
+                  (AND (NOT (EQ ':WARN :DEFAULT))
+                       (LIST (CONS :IDEAL-OKP ':WARN)))))
 
 
 HARD ACL2 ERROR [Memoize] in MEMOIZE-TABLE-CHK:  The function FN to
@@ -632,9 +627,10 @@ ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
 ACL2 !>>(SET-WARNINGS-AS-ERRORS T '("use")
                                 STATE)
 <state>
-ACL2 !>>(DEFTHM FOO T
-                :HINTS (("Goal" :USE CAR-CONS))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
 
 
 HARD ACL2 ERROR [Use] in ( DEFTHM FOO ...):  It is unusual to :USE
@@ -656,9 +652,10 @@ Here is the current pstack [see :DOC pstack]:
 *** Note: No checkpoints to print. ***
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(WARNING PROOF-TREE))
  (WARNING PROOF-TREE)
-ACL2 !>>(DEFTHM FOO T
-                :HINTS (("Goal" :USE CAR-CONS))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -672,9 +669,10 @@ ACL2 !>>(U)
 ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS '("use")
                                 STATE)
 <state>
-ACL2 !>>(DEFTHM FOO T
-                :HINTS (("Goal" :USE CAR-CONS))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
 
 
 HARD ACL2 ERROR [Use] in ( DEFTHM FOO ...):  It is unusual to :USE
@@ -696,9 +694,10 @@ Here is the current pstack [see :DOC pstack]:
 *** Note: No checkpoints to print. ***
 ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
 <state>
-ACL2 !>>(DEFTHM FOO T
-                :HINTS (("Goal" :USE CAR-CONS))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -712,9 +711,10 @@ ACL2 !>>(U)
 ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL '("xyz")
                                 STATE)
 <state>
-ACL2 !>>(DEFTHM FOO T
-                :HINTS (("Goal" :USE CAR-CONS))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -727,9 +727,10 @@ ACL2 !>>(U)
  L         9:x(DEFUN FN (X) ...)
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
-ACL2 !>>(DEFTHM FOO T
-                :HINTS (("Goal" :USE CAR-CONS))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
 
 
 HARD ACL2 ERROR [Use] in ( DEFTHM FOO ...):  It is unusual to :USE
@@ -752,9 +753,10 @@ Here is the current pstack [see :DOC pstack]:
 ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL '("USE")
                                 STATE)
 <state>
-ACL2 !>>(DEFTHM FOO T
-                :HINTS (("Goal" :USE CAR-CONS))
-                :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
 
 ACL2 Warning [Use] in ( DEFTHM FOO ...):  It is unusual to :USE the
 formula of an enabled :REWRITE or :DEFINITION rule, so you may want

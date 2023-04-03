@@ -93,11 +93,6 @@
            (open-channel1 (cdr (assoc-equal channel channels))))
   :hints (("Goal" :in-theory (enable open-channels-p open-channel-listp))))
 
-(local ; also in state.lisp
- (defthm t-stack-of-update-open-input-channels
-   (equal (t-stack (update-open-input-channels x st))
-          (t-stack st))))
-
 (defthm ordered-symbol-alistp-of-add-pair
   (implies (ordered-symbol-alistp x)
            (equal (ordered-symbol-alistp (add-pair key val x))

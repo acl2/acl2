@@ -23,8 +23,6 @@
   '(open-input-channels
     open-output-channels
     global-table
-    t-stack
-    32-bit-integer-stack
     big-clock-entry
     idates
     acl2-oracle
@@ -33,7 +31,6 @@
     written-files
     read-files
     writeable-files
-    list-all-package-names-lst
     user-stobj-alist1)
   :redundant-okp t)
 
@@ -41,8 +38,6 @@
   '(update-open-input-channels
     update-open-output-channels
     update-global-table
-    update-t-stack
-    update-32-bit-integer-stack
     update-big-clock-entry
     update-idates
     update-acl2-oracle
@@ -51,7 +46,6 @@
     update-written-files
     update-read-files
     ;; update-writeable-files
-    update-list-all-package-names-lst
     update-user-stobj-alist1)
   :redundant-okp t)
 
@@ -59,7 +53,6 @@
 (in-theory (disable open-channels-p
                     ordered-symbol-alistp
                     all-boundp
-                    32-bit-integer-listp
                     file-clock-p
                     read-files-p
                     readable-files-p
@@ -279,38 +272,6 @@
     (equal (idates (update-file-clock x st))
            (idates st)))
 
-  (defthm t-stack-of-update-open-input-channels
-    (equal (t-stack (update-open-input-channels x st))
-           (t-stack st)))
-
-  (defthm t-stack-of-update-open-output-channels
-    (equal (t-stack (update-open-output-channels x st))
-           (t-stack st)))
-
-  (defthm t-stack-of-update-file-clock
-    (equal (t-stack (update-file-clock x st))
-           (t-stack st)))
-
-  (defthm t-stack-of-update-global-table
-    (equal (t-stack (update-global-table x st))
-           (t-stack st)))
-
-  (defthm 32-bit-integer-stack-of-update-open-input-channels
-    (equal (32-bit-integer-stack (update-open-input-channels x st))
-           (32-bit-integer-stack st)))
-
-  (defthm 32-bit-integer-stack-of-update-open-output-channels
-    (equal (32-bit-integer-stack (update-open-output-channels x st))
-           (32-bit-integer-stack st)))
-
-  (defthm 32-bit-integer-stack-of-update-file-clock
-    (equal (32-bit-integer-stack (update-file-clock x st))
-           (32-bit-integer-stack st)))
-
-  (defthm 32-bit-integer-stack-of-update-global-table
-    (equal (32-bit-integer-stack (update-global-table x st))
-           (32-bit-integer-stack st)))
-
   (defthm user-stobj-alist1-of-update-open-input-channels
     (equal (user-stobj-alist1 (update-open-input-channels x st))
            (user-stobj-alist1 st)))
@@ -388,26 +349,6 @@
     (equal (open-input-channels (update-open-output-channels x st))
            (open-input-channels st)))
 
-  (defthm list-all-package-names-lst-of-update-open-input-channels
-    (equal (list-all-package-names-lst (update-open-input-channels x st))
-           (list-all-package-names-lst st)))
-
-  (defthm list-all-package-names-lst-of-update-open-output-channels
-    (equal (list-all-package-names-lst (update-open-output-channels x st))
-           (list-all-package-names-lst st)))
-
-  (defthm list-all-package-names-lst-of-update-file-clock
-    (equal (list-all-package-names-lst (update-file-clock x st))
-           (list-all-package-names-lst st)))
-
-  (defthm list-all-package-names-lst-of-update-global-table
-    (equal (list-all-package-names-lst (update-global-table x st))
-           (list-all-package-names-lst st)))
-
-  (defthm list-all-package-names-lst-of-update-read-files
-    (equal (list-all-package-names-lst (update-read-files x st))
-           (list-all-package-names-lst st)))
-
   (defthm global-table-of-update-read-files
     (equal (global-table (update-read-files x st))
            (global-table st)))
@@ -447,14 +388,6 @@
   (defthm idates-of-update-global-table
     (equal (idates (update-global-table x st))
            (idates st)))
-
-  (defthm t-stack-of-update-read-files
-    (equal (t-stack (update-read-files x st))
-           (t-stack st)))
-
-  (defthm 32-bit-integer-stack-of-update-read-files
-    (equal (32-bit-integer-stack (update-read-files x st))
-           (32-bit-integer-stack st)))
 
   (defthm user-stobj-alist1-of-update-read-files
     (equal (user-stobj-alist1 (update-read-files x st))

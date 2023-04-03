@@ -1814,6 +1814,7 @@
           (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
+    :rule-classes ((:rewrite :loop-stopper nil))
     :enable (update-object
              object-disjointp
              objdesign->base-address))
@@ -1831,6 +1832,7 @@
           (object-disjointp objdes objdes2))
      (equal (update-object objdes obj (update-object objdes2 obj2 compst))
             (update-object objdes2 obj2 (update-object objdes obj compst))))
+    :rule-classes ((:rewrite :loop-stopper nil))
     :enable (update-object
              object-disjointp
              objdesign->base-address))

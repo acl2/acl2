@@ -14,6 +14,8 @@
 (include-book "pfield-lib-ext")
 
 (include-book "kestrel/fty/defomap" :dir :system)
+(include-book "kestrel/fty/nat-result" :dir :system)
+(include-book "kestrel/fty/nat-list-result" :dir :system)
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
@@ -207,7 +209,7 @@
 
 (define eval-expr ((expr expressionp) (asg assignmentp) (p primep))
   :guard (assignment-wfp asg p)
-  :returns (nat? maybe-natp :hyp (primep p))
+  :returns (nat nat-resultp :hyp (primep p))
   :short "Evaluate an expression, given an assignment and a prime field."
   :long
   (xdoc::topstring
@@ -229,16 +231,12 @@
    :var (b* ((pair (omap::in expr.name (assignment-fix asg))))
           (if (consp pair)
               (nfix (cdr pair))
-            nil))
-   :add (b* ((val1 (eval-expr expr.arg1 asg p))
-             ((unless val1) nil)
-             (val2 (eval-expr expr.arg2 asg p))
-             ((unless val2) nil))
+            (reserr nil)))
+   :add (b* (((ok val1) (eval-expr expr.arg1 asg p))
+             ((ok val2) (eval-expr expr.arg2 asg p)))
           (add val1 val2 p))
-   :mul (b* ((val1 (eval-expr expr.arg1 asg p))
-             ((unless val1) nil)
-             (val2 (eval-expr expr.arg2 asg p))
-             ((unless val2) nil))
+   :mul (b* (((ok val1) (eval-expr expr.arg1 asg p))
+             ((ok val2) (eval-expr expr.arg2 asg p)))
           (mul val1 val2 p)))
   :measure (expression-count expr)
   :hooks (:fix)
@@ -246,17 +244,11 @@
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
   ///
 
-  (defrule natp-of-eval-expr
-    (implies (and (primep p)
-                  (assignmentp asg)
-                  (eval-expr expr asg p))
-             (natp (eval-expr expr asg p))))
-
   (defrule fep-of-eval-expr
     (implies (and (primep p)
                   (assignmentp asg)
                   (assignment-wfp asg p)
-                  (eval-expr expr asg p))
+                  (not (reserrp (eval-expr expr asg p))))
              (fep (eval-expr expr asg p) p))
     :enable fep-of-cdr-of-in-when-assignment-wfp)
 
@@ -268,37 +260,29 @@
                         (asg assignmentp)
                         (p primep))
   :guard (assignment-wfp asg p)
-  :returns (mv (okp booleanp)
-               (nats nat-listp
-                     :hyp (and (primep p)
-                               (assignmentp asg))))
+  :returns (nats nat-list-resultp :hyp (primep p))
   :short "Lift @(tsee eval-expr) to lists."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The first result is @('nil') if any expression yields an error,
-     in which case the second result is also @('nil').
-     Otherwise, the first result is @('t')
-     and the second result is the list of natural numbers that
-     the expressions evaluate to."))
-  (b* (((when (endp exprs)) (mv t nil))
-       (val (eval-expr (car exprs) asg p))
-       ((unless val) (mv nil nil))
-       ((mv okp vals) (eval-expr-list (cdr exprs) asg p))
-       ((unless okp) (mv nil nil)))
-    (mv t (cons val vals)))
+  (b* (((when (endp exprs)) nil)
+       ((ok val) (eval-expr (car exprs) asg p))
+       ((ok vals) (eval-expr-list (cdr exprs) asg p)))
+    (cons val vals))
   :hooks (:fix)
+  :prepwork
+  ((local
+    (in-theory
+     (enable acl2::natp-when-nat-resultp-and-not-reserrp
+             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
   ///
 
   (defrule fe-listp-of-eval-expr-list
     (implies (and (primep p)
                   (assignmentp asg)
                   (assignment-wfp asg p)
-                  (mv-nth 0 (eval-expr-list exprs asg p)))
-             (fe-listp (mv-nth 1 (eval-expr-list exprs asg p)) p)))
+                  (not (reserrp (eval-expr-list exprs asg p))))
+             (fe-listp (eval-expr-list exprs asg p) p)))
 
   (defret len-of-eval-expr-list
-    (implies okp
+    (implies (nat-listp nats)
              (equal (len nats)
                     (len exprs)))))
 
@@ -422,11 +406,24 @@
         These include subtrees that must prove the satisfaction of
         the constraints in the body that defines the relation,
         for some assignment that extends the one that assigns
-        the values of the expressions to the formal parameters;
-        the assignment must be the same for all the subtrees,
-        and we make this assignment an explicit component of the proof tree
-        for greater convenience in manipulating proof trees.
-        This is formalized later; the description above is only a sketch.")))
+        the values of the expressions to the formal parameters.
+        Let @('asg0') be the assignment that assigns
+        the values of the expressions to the formal parameters,
+        and let @('asgsub') the assignment that extends @('asg0')
+        and that must satisfy all the constraints that define the relation.
+        Note that @('asg0') and @('asgsub') are different from
+        the assignment @('asg') that is
+        the homonymous component in the proof tree,
+        i.e. the one that must satisfy the relation.
+        The assignment @('asgsub') is specified indirectly in the proof tree,
+        via the @('asgext') component, which is the difference
+        between @('asgsub') and @('asg0'):
+        the domain of @('asgext') must be
+        disjoint from the parameters of the relation,
+        and must provide mappings from the non-parameter variables
+        used in the constraints of the relation.
+        All of this is formalized later;
+        the description just given is only a sketch.")))
     (:equal ((asg assignment)
              (left expression)
              (right expression)))
@@ -520,8 +517,9 @@
      Then we execute the proof subtrees, propagating errors and failures.
      If the proof subtrees all succeed, they yield a list of assertions.
      We ensure that they all have the same assignment,
-     specifically the one that is part of the proof tree;
-     we ensure that such an assignment extends the one that assigns
+     specifically the one that is obtained by extending,
+     with the assignment @('asgext') that is the component of the proof tree,
+     the assignment @('asg0') that assigns
      the values of the argument expressions to the relation's formal parameters.
      We ensure that the constraints are the ones that
      form the body of the named relation.
@@ -533,9 +531,9 @@
      in some suitable sense.
      We allow relations with an empty body (i.e. no constraints)
      to be proved by an empty list of subtrees;
-     note that in this case there is no use of the extended assignment
-     that is part of the proof tree,
-     because the subtrees do not prove any assertions in fact."))
+     note that in this case there is no use of @('asgext')
+     (which may just be @('nil')),
+     because the subtrees do not prove any assertions in this case."))
 
   (define exec-proof-tree ((ptree proof-treep)
                            (defs definition-listp)
@@ -546,9 +544,9 @@
      :equal
      (b* (((unless (assignment-wfp ptree.asg p)) (proof-outcome-error))
           (left (eval-expr ptree.left ptree.asg p))
-          ((unless left) (proof-outcome-error))
+          ((unless (natp left)) (proof-outcome-error))
           (right (eval-expr ptree.right ptree.asg p))
-          ((unless right) (proof-outcome-error)))
+          ((unless (natp right)) (proof-outcome-error)))
        (if (equal left right)
            (proof-outcome-assertion
             (make-assertion :asg ptree.asg
@@ -558,15 +556,19 @@
      :relation
      (b* (((unless (assignment-wfp ptree.asg p))
            (proof-outcome-error))
-          ((unless (assignment-wfp ptree.asgext p))
-           (proof-outcome-error))
-          ((mv okp vals) (eval-expr-list ptree.args ptree.asg p))
-          ((unless okp) (proof-outcome-error))
+          (vals (eval-expr-list ptree.args ptree.asg p))
+          ((unless (nat-listp vals)) (proof-outcome-error))
           (def (lookup-definition ptree.name defs))
           ((unless def) (proof-outcome-error))
           ((definition def) def)
           ((unless (= (len def.para) (len vals))) (proof-outcome-error))
           (asg-para-vals (omap::from-lists def.para vals))
+          ((unless (assignment-wfp ptree.asgext p))
+           (proof-outcome-error))
+          ((when (set::intersectp (omap::keys asg-para-vals)
+                                  (omap::keys ptree.asgext)))
+           (proof-outcome-fail))
+          (asg-sub (omap::update* ptree.asgext asg-para-vals))
           (outcome (exec-proof-tree-list ptree.sub defs p)))
        (proof-list-outcome-case
         outcome
@@ -576,8 +578,7 @@
         (b* ((asgs (assertion-list->asg-list outcome.get))
              (constrs (assertion-list->constr-list outcome.get))
              ((unless (equal constrs def.body)) (proof-outcome-fail))
-             ((unless (and (equal asgs (repeat (len asgs) ptree.asgext))
-                           (omap::submap asg-para-vals ptree.asgext)))
+             ((unless (equal asgs (repeat (len asgs) asg-sub)))
               (proof-outcome-fail)))
           (proof-outcome-assertion
            (make-assertion

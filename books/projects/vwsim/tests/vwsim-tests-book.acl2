@@ -1,0 +1,13 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "vwsim-tests")
+(ubu 1)
+
+; Help dependency scanner.
+#||
+(depends-on "vwsim-tests-input.lsp")
+(depends-on "vwsim-tests-log.txt")
+; Add include-books from your -input.lsp file:
+(include-book "../top")
+||#
+
+; cert-flags: ? t :ttags all :skip-proofs-okp t

@@ -96,6 +96,7 @@
 (verify-termination translate-abbrev-rune) ; and guards
 (verify-termination logical-namep) ; and guards
 (verify-termination er-cmp-fn) ; and guards
+(verify-termination macro-args-er-cmp) ; and guards
 (verify-termination string-prefixp-1) ; and guards
 (verify-termination string-prefixp) ; and guards
 (verify-termination project-dir-prefix-entry) ; and guards

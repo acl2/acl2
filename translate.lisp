@@ -7213,6 +7213,17 @@
 (defproxy translate11-lambda-object-proxy
   (* * * * * * * * * *) => (mv * * *))
 
+(defun do-body-guard-wrapper (x)
+
+; This is just an identity function that allows us to identify guards on bodies
+; of lambdas generated for DO loop$ expressions.  There is no soundness issue
+; in case users call this function directly (rather than by our use of it in
+; make-do-body-lambda$); the only downside is only that they may get a
+; misleading guard violation message from do-body-guard-form.
+
+  (declare (xargs :guard t :mode :logic))
+  x)
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -8388,8 +8399,8 @@
 
 ; Warning: Before removing this error, consider that in general guard-checking
 ; may be defeated by :set-guard-checking :none, so we may be relying on this
-; error for built-in functions like aset-t-stack that rely on guard-checking to
-; validate their arguments.
+; error for built-in functions that rely on guard-checking to validate their
+; arguments.
 
               (msg "~|This error is being reported even though guard-checking ~
                     has been turned off, because a stobj argument of ~x0 is ~
@@ -8419,6 +8430,25 @@
                 'guard-msg-table)
          "")))
 
+(defun do-body-guard-form (fn args wrld)
+  (and (flambdap fn)
+       (consp args)
+       (null (cdr args))
+       (case-match fn
+         (('LAMBDA '(ALIST)
+                   ('DECLARE
+                    ('XARGS :GUARD ; see make-do-body-lambda$
+                            ('DO-BODY-GUARD-WRAPPER g)
+                            . &)
+                    . &)
+                   . &)
+          (list 'quote
+                (msg "The guard for a DO$ form,~|~x0,~| has been violated by the ~
+                      following alist:~|~x1.~|See :DOC do-loop$."
+                     (untranslate* g nil wrld)
+                     (car args))))
+         (& nil))))
+
 (defun ev-fncall-guard-er-msg (fn guard stobjs-in args w user-stobj-alist
                                   extra)
 
@@ -8433,8 +8463,9 @@
 
   (prog2$
    (save-ev-fncall-guard-er fn guard stobjs-in args w)
-   (let ((form (and (symbolp fn)
-                    (cdr (assoc-eq fn (table-alist 'guard-msg-table w))))))
+   (let ((form (if (symbolp fn)
+                   (cdr (assoc-eq fn (table-alist 'guard-msg-table w)))
+                 (do-body-guard-form fn args w))))
      (mv-let
       (erp msg)
       (cond (form (ev-w form
@@ -10382,10 +10413,10 @@
                 (t (er-let*-cmp ((val
                                   (cmp-do-body-1 (lambda-body (ffn-symb x))
                                                  twvts aterm vars wrld)))
-                     (value-cmp (make-lambda-term
+                     (value-cmp (make-lambda-application
                                  (lambda-formals (ffn-symb x))
-                                 (fargs x)
-                                 val)))))))
+                                 val
+                                 (fargs x))))))))
             (t (value-cmp (prog2$-call x
                                        (cmp-do-body-exit nil *nil* aterm)))))))
    (t (case (ffn-symb x)
@@ -10707,6 +10738,8 @@
         (cons (cons var `(cdr (assoc-eq-safe ',var alist)))
               (var-to-cdr-assoc-var-substitution (cdr vars)))))))
 
+
+
 (defun make-do-body-lambda$ (type-preds guard sigma body-term)
 
 ; Type-preds is a list of translated type-predicates for the variables
@@ -10753,10 +10786,11 @@
     `(lambda$ (alist)
               (declare
                (xargs :guard
-                      ,(if (endp types-and-guard-lst)
-                           '(alistp alist)
-                           `(and (alistp alist)
-                                 ,@types-and-guard-lst))))
+                      (do-body-guard-wrapper
+                       ,(if (endp types-and-guard-lst)
+                            '(alistp alist)
+                          `(and (alistp alist)
+                                ,@types-and-guard-lst)))))
 
 ; The let below needs to bind each var to its value in 'alist'.  Sigma is
 ; almost the appropriate list, but it is a list of pairs and we need a list of
@@ -10965,9 +10999,7 @@
             (kwote summary)
           summary)
         str+
-        (make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
-                             #\5 #\6 #\7 #\8 #\9)
-                           fmt-args)
+        (make-fmt-bindings *base-10-chars* fmt-args)
         'wrld
         'state-vars))
 
@@ -11380,6 +11412,12 @@
                     alist)
               form wrld state-vars)))))
 
+(defun macro-args-er-cmp (form)
+  (declare (xargs :guard t))
+  (er-cmp *macro-expansion-ctx*
+          "Wrong number of args in macro expansion of ~x0."
+          form))
+
 (defun bind-macro-args1 (args actuals alist form wrld state-vars)
   (declare (xargs :guard (and (true-listp args)
                               (macro-arglist1p args)
@@ -11398,9 +11436,7 @@
   (cond ((endp args)
          (cond ((null actuals)
                 (value-cmp alist))
-               (t (er-cmp *macro-expansion-ctx*
-                      "Wrong number of args in macro expansion of ~x0."
-                      form))))
+               (t (macro-args-er-cmp form))))
         ((member-eq (car args) '(&rest &body))
          (bind-macro-args-after-rest
           (cddr args) actuals
@@ -11412,9 +11448,7 @@
         ((eq (car args) '&key)
          (bind-macro-args-keys (cdr args) actuals alist form wrld state-vars))
         ((null actuals)
-         (er-cmp *macro-expansion-ctx*
-             "Wrong number of args in macro expansion of ~x0."
-             form))
+         (macro-args-er-cmp form))
         (t (bind-macro-args1 (cdr args) (cdr actuals)
                              (cons (cons (car args) (car actuals))
                                    alist)
@@ -11487,17 +11521,55 @@
 ; cases listed in the definition of macroexpand1*-cmp.  (But the two will be
 ; logically equivalent if both complete without error.)
 
-  (let ((gc-off (gc-off1 (access state-vars state-vars :guard-checking-on))))
-    (er-let*-cmp
-     ((alist (bind-macro-args
-              (macro-args (car x) wrld)
-              x wrld state-vars)))
-     (mv-let (erp guard-val)
-             (ev-w (guard (car x) nil wrld) alist wrld
-                   nil ; user-stobj-alist
-                   t
-                   gc-off
-                   nil
+  (case (car x)
+    (and (value-cmp (and-macro (cdr x))))
+    (or (value-cmp (or-macro (cdr x))))
+    (with-output (value-cmp (with-output!-fn (cdr x))))
+; Note: We haven't seen enough use of with-output! to justify adding an entry
+; for it like the one for with-output.
+    (value (if (and (consp (cdr x)) (null (cddr x)))
+               (value-cmp `(mv nil ,(cadr x) state))
+             (macro-args-er-cmp x)))
+    (f-get-global (if (and (consp (cdr x)) (consp (cddr x)) (null (cdddr x)))
+                      (value-cmp (list 'get-global (cadr x) (caddr x)))
+                    (macro-args-er-cmp x)))
+    (cond (if (cond-clausesp (cdr x))
+              (value-cmp (cond-macro (cdr x)))
+            (macro-guard-er-msg x ctx wrld)))
+    (table (if (consp (cdr x))
+               (value-cmp (list 'table-fn
+                                (list 'quote (cadr x))
+                                (list 'quote (cddr x))
+                                'state
+                                (list 'quote x)))
+             (macro-args-er-cmp x)))
+    (progn (value-cmp (list 'progn-fn
+                            (list 'quote (cdr x))
+                            'state)))
+    (cadr (if (and (consp (cdr x)) (null (cddr x)))
+              (value-cmp (list 'car (list 'cdr (cadr x))))
+            (macro-args-er-cmp x)))
+    (cddr (if (and (consp (cdr x)) (null (cddr x)))
+              (value-cmp (list 'cdr (list 'cdr (cadr x))))
+            (macro-args-er-cmp x)))
+    (list (value-cmp (list-macro (cdr x))))
+    (otherwise
+     (let ((gc-off (gc-off1 (access state-vars state-vars :guard-checking-on))))
+       (er-let*-cmp
+           ((alist (bind-macro-args
+                    (macro-args (car x) wrld)
+                    x wrld state-vars)))
+         (mv-let (erp guard-val)
+           (let ((guard (guard (car x) nil wrld)))
+             (cond
+              ((equal guard *t*)
+               (mv nil t))
+              (t
+               (ev-w (guard (car x) nil wrld) alist wrld
+                     nil ; user-stobj-alist
+                     t
+                     gc-off
+                     nil
 
 ; It is probably critical to use nil for the aok argument of this call.
 ; Otherwise, one can imagine a book with sequence of events
@@ -11508,43 +11580,42 @@
 ; different event to be exported from the book, for EVENT0, than the local one
 ; originally admitted.
 
-                   nil)
-             (cond
-              (erp (er-cmp ctx
-                           "In the attempt to macroexpand the form ~x0 ~
-                            evaluation of the guard for ~x2 caused the ~
-                            error below.~|~%~@1"
-                           x
-                           guard-val
-                           (car x)))
-              ((null guard-val)
-               (macro-guard-er-msg x ctx wrld))
-              (t (mv-let (erp expansion)
-                         (ev-w
-                          (getpropc (car x) 'macro-body
-                                    '(:error "Apparently macroexpand1 was ~
-                                              called where there was no ~
-                                              macro-body.")
-                                    wrld)
-                          alist wrld
-                          nil ; user-stobj-alist
-                          (not (access state-vars state-vars
+                     nil))))
+           (cond
+            (erp (er-cmp ctx
+                         "In the attempt to macroexpand the form ~x0 ~
+                          evaluation of the guard for ~x2 caused the error ~
+                          below.~|~%~@1"
+                         x
+                         guard-val
+                         (car x)))
+            ((null guard-val)
+             (macro-guard-er-msg x ctx wrld))
+            (t (mv-let (erp expansion)
+                 (ev-w
+                  (getpropc (car x) 'macro-body
+                            '(:error "Apparently macroexpand1 was called ~
+                                      where there was no macro-body.")
+                            wrld)
+                  alist wrld
+                  nil ; user-stobj-alist
+                  (not (access state-vars state-vars
 
 ; Note that if state-vars comes from (default-state-vars nil), then this flag
 ; is nil so safe-mode is t, which is acceptable, merely being needlessly
 ; conservative when the actual state global 'boot-strap-flg is t and hence
 ; safe-mode could have been nil here.
 
-                                       :boot-strap-flg)) ; safe-mode
-                          gc-off nil nil)
-                         (cond (erp
-                                (er-cmp ctx
-                                        "In the attempt to macroexpand the ~
+                               :boot-strap-flg)) ; safe-mode
+                  gc-off nil nil)
+                 (cond (erp
+                        (er-cmp ctx
+                                "In the attempt to macroexpand the ~
                                          form ~x0, evaluation of the macro ~
                                          body caused the error below.~|~%~@1"
-                                        x
-                                        expansion))
-                               (t (value-cmp expansion))))))))))
+                                x
+                                expansion))
+                       (t (value-cmp expansion))))))))))))
 
 (defun macroexpand1 (x ctx state)
 
@@ -15623,7 +15694,13 @@
   (eq (congruent-stobj-rep st1 wrld)
       (congruent-stobj-rep st2 wrld)))
 
-(defun stobjs-in-out1 (stobjs-in args wrld alist new-stobjs-in-rev)
+(defun some-congruent-p (s lst wrld)
+  (cond ((endp lst) nil)
+        ((congruent-stobjsp s (car lst) wrld)
+         t)
+        (t (some-congruent-p s (cdr lst) wrld))))
+
+(defun stobjs-in-out1 (stobjs-in args stobjs-out wrld alist new-stobjs-in-rev)
 
 ; See stobjs-in-out for additional background.
 
@@ -15668,7 +15745,7 @@
   (cond ((endp stobjs-in)
          (mv nil alist (reverse new-stobjs-in-rev)))
         ((null (car stobjs-in))
-         (stobjs-in-out1 (cdr stobjs-in) (cdr args) wrld alist
+         (stobjs-in-out1 (cdr stobjs-in) (cdr args) stobjs-out wrld alist
                          (cons nil new-stobjs-in-rev)))
         (t
          (let ((s ; Since (car stobjs-in) is a stobj, s is also a stobj.
@@ -15685,10 +15762,15 @@
                     (car args)
                   (car stobjs-in))))
            (cond
-            ((member-eq s new-stobjs-in-rev)
+            ((and (member-eq s new-stobjs-in-rev)
+
+; See the comment about duplicate values in stobjs-in-out.
+
+                  (or (symbolp stobjs-out)
+                      (some-congruent-p s stobjs-out wrld)))
              (mv s nil nil))
             (t
-             (stobjs-in-out1 (cdr stobjs-in) (cdr args) wrld
+             (stobjs-in-out1 (cdr stobjs-in) (cdr args) stobjs-out wrld
                              (if (eq (car stobjs-in) s)
                                  alist
                                (acons (car stobjs-in) s alist))
@@ -15714,8 +15796,8 @@
 ; stobjs-out using congruence of stobjs, then we return the stobjs-in and
 ; stobjs-out unmodified.
 
-; We return an alist that represents a one-to-one map from the stobjs-in of fn,
-; which is computed from fn if fn is a lambda.  This alist associates each
+; We return an alist that represents a map whose domain is the the stobjs-in of
+; fn, which is computed from fn if fn is a lambda.  This alist associates each
 ; stobj st in its domain with a corresponding congruent stobj, possibly equal
 ; to st (as equal stobjs are congruent).  We return (mv alist new-stobjs-in
 ; new-stobjs-out), where new-stobjs-in and new-stobjs-out result from stobjs-in
@@ -15724,6 +15806,23 @@
 ; of a symbol, translate11 is trying to determine a stobjs-out for that
 ; symbol.)  Note that we do not put equal pairs (s . s) into alist; hence,
 ; alist represents the identity function if and only if it is nil.
+
+; If stobjs-out is a symbol, then the returned alist is a one-to-one mapping.
+; Otherwise that alist may contain duplicate values (i.e., cdrs) that are not
+; among the stobjs-out even up to congruence.  This allows an example like the
+; following, provided by Sol Swords, where the a stobj occurs more than once
+; among the actual parameters provided that stobj is not modified by the call.
+
+;   (defstobj st fld)
+;   (defstobj st1 fld1 :congruent-to st)
+;   (defun add-sts (st st1)
+;     (declare (xargs :stobjs (st st1)))
+;     (+ (ifix (fld st)) (ifix (fld st1))))
+;   ; The following succeeds only by allowing duplicate values in the alist
+;   ; returned by stobjs-in-out.
+;   (defun add-st (st)
+;     (declare (xargs :stobjs st))
+;     (add-sts st st))
 
   (let ((stobjs-in (cond ((consp fn)
                           (compute-stobj-flags (lambda-formals fn)
@@ -15736,7 +15835,7 @@
      (t
       (mv-let
         (failp alist new-stobjs-in)
-        (stobjs-in-out1 stobjs-in args wrld nil nil)
+        (stobjs-in-out1 stobjs-in args stobjs-out wrld nil nil)
         (cond
          (failp (mv nil stobjs-in stobjs-out))
          (t (mv alist
@@ -18465,7 +18564,7 @@
 ; In particular, that stobj could be a stobj-table -- giving us, in effect, a
 ; global stobj-table.  Preliminary macros for manipulating such a table may be
 ; found as read-gtbl and write-gtbl in community book file
-; /Users/kaufmann/acl2/acl2/books/system/tests//with-global-stobj-input.lsp.
+; books/system/tests/with-global-stobj-input.lsp.
 
 ; The first section below presents the basic syntax, followed below by
 ; restrictions to prevent aliasing problems.
@@ -18637,10 +18736,10 @@
 ; in the body or guard of any function symbol ancestral in f.
 
 ; We track uses of with-global-stobj with the 'global-stobjs property on
-; function symbols.  The 'global-stobj property's value for a function symbol f
-; is nil if there is no call of with-global-stobj in the body or guard of f or
-; in any function symbol ancestral in f.  (We treat mutual-recursion nests as
-; though every function symbol defined in the nest calls every other.)
+; function symbols.  The 'global-stobjs property's value for a function symbol
+; f is nil if there is no call of with-global-stobj in the body or guard of f
+; or in any function symbol ancestral in f.  (We treat mutual-recursion nests
+; as though every function symbol defined in the nest calls every other.)
 ; Otherwise its value is a cons (r . w), where r and w are disjoint lists whose
 ; union include all stobjs bound by such calls: r includes those stobjs bound
 ; only by read-only with-global-stobj calls, and w includes the rest, i.e.,
@@ -21515,7 +21614,7 @@
                       nil)))))
        (t
 
-; In this case, stobjs-out-call and (equivalently) stobjs-out-call are symbols,
+; In this case, stobjs-out-call and (equivalently) stobjs-out-fn are symbols,
 ; while stobjs-out-x is a cons.
 
 ; The following example illustrates the call of translate-bind below.  Suppose
@@ -21530,6 +21629,10 @@
         (let ((bindings
                (translate-bind stobjs-out-fn
                                (if (consp alist-in-out) ; optimizationa
+
+; Since stobjs-out-fn is a symbol, there alist-in-out represents a one-to-one
+; mapping; see stobjs-in-out.  So inverting alist-in-out makes sense.
+
                                    (apply-inverse-symbol-alist alist-in-out
                                                                stobjs-out-x
                                                                nil)

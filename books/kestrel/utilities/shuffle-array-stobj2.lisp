@@ -1,6 +1,6 @@
 ; Randomizing the order of the elements in an array
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,7 +24,6 @@
                               (< i (elems-length array-stobj))
                               (<= (elems-length array-stobj) *m31*)
                               (minstd-rand0p rand))
-                  :guard-debug t
                   :measure (nfix (+ 1 i))
                   :stobjs array-stobj))
   (if (or (not (mbt (integerp i)))
