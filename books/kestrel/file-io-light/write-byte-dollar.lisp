@@ -15,6 +15,11 @@
 (local (include-book "channels"))
 (local (include-book "open-output-channel-p"))
 
+(in-theory (disable write-byte$))
+
+(local (in-theory (disable open-output-channel-p
+                           open-output-channel-p1)))
+
 ;; Avoids name clash with std
 (defthm state-p1-of-write-byte$-alt
   (implies (and (state-p1 state)
@@ -22,7 +27,9 @@
                 (unsigned-byte-p 8 byte) ;this is what's different
                 )
            (state-p1 (write-byte$ byte channel state)))
-  :hints (("Goal" :in-theory (enable write-byte$))))
+  :hints (("Goal" :in-theory (enable write-byte$
+                                     open-output-channel-p
+                                     open-output-channel-p1))))
 
 (defthm state-p-of-write-byte$
   (implies (and (state-p state)
@@ -34,7 +41,7 @@
 (defthm open-output-channel-p1-of-write-byte$-gen
   (implies (open-output-channel-p1 channel typ state)
            (open-output-channel-p1 channel typ (write-byte$ byte channel2 state)))
-  :hints (("Goal" :in-theory (enable write-byte$))))
+  :hints (("Goal" :in-theory (enable write-byte$ open-output-channel-p1))))
 
 (defthm open-output-channel-p-of-write-byte$-gen
   (implies (open-output-channel-p channel typ state)
@@ -44,7 +51,7 @@
 (defthm open-output-channel-any-p1-of-write-byte$-gen
   (implies (open-output-channel-any-p1 channel state)
            (open-output-channel-any-p1 channel (write-byte$ byte channel2 state)))
-  :hints (("Goal" :in-theory (enable write-byte$))))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
 
 (defthm open-output-channel-any-p-of-write-byte$-gen
   (implies (open-output-channel-any-p channel state)
