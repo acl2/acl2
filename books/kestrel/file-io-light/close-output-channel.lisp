@@ -35,7 +35,7 @@
                                   (open-output-channel-p1)))))
 
 (defthm state-p-of-close-output-channel
-  (implies (and (open-output-channel-any-p1 channel state)
+  (implies (and (open-output-channel-any-p channel state)
                 (state-p state))
            (state-p (close-output-channel channel state)))
   :hints (("Goal" :in-theory (enable state-p))))
