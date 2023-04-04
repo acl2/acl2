@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -35,7 +35,8 @@
      and then parses according to the syntactic grammar rules.
      See @(see grammar-new).")
    (xdoc::p
-    "The primary API for parsing Yul is @(see parse-yul) and @(see parse-yul-bytes)."))
+    "The primary API for parsing Yul is
+     @(see parse-yul) and @(see parse-yul-bytes)."))
   :order-subtopics t
   :default-parent t)
 
