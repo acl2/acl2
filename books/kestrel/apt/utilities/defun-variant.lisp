@@ -1,6 +1,6 @@
 ; Choosing which variant of defun to use
 ;
-; Copyright (C) 2016-2021 Kestrel Institute
+; Copyright (C) 2016-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,10 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/enumerations" :dir :system)
-(include-book "kestrel/utilities/system/world-queries" :dir :system)
+(include-book "kestrel/std/system/fundef-disabledp" :dir :system)
+(include-book "kestrel/std/system/non-executablep" :dir :system)
+(include-book "kestrel/std/system/function-namep" :dir :system)
+(include-book "kestrel/std/system/definedp" :dir :system)
 
 ;; Determine the appropriate variant of defun to use for the new function (defun, defund, defun-nx, or defund-nx).
 ;; See also isodata-new-pred/fun-macro.
@@ -28,7 +31,8 @@
                               (t/nil/auto-p new-fn-non-executable)
                               (t/nil/auto-p new-fn-disabled))
                   :stobjs state
-                  :verify-guards nil))
+                  :verify-guards nil ; todo: because of fundef-disabledp
+                  ))
   (let* ((old-fn-disabled (fundef-disabledp old-fn state))
          (old-fn-non-executable (non-executablep old-fn (w state)))
          (disabled (if (eq new-fn-disabled :auto)
