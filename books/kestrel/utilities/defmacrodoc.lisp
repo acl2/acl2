@@ -1,6 +1,6 @@
 ; Utilities for generating xdoc documentation
 ;
-; Copyright (C) 2017-2021 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -264,6 +264,7 @@
 (defun xdoc-for-macro-general-form (name macro-args package)
   (declare (xargs :mode :program
                   :guard (and (symbolp name)
+                              (macro-arg-listp macro-args)
                               (stringp package))))
   (let* ((name-string (string-downcase-gen (symbol-name name)))
          (name-len (length name-string))
@@ -288,7 +289,7 @@
       (and (true-listp item)
            (<= 2 (len item)) ; must have an arg name and at least one description
            (symbolp (first item))
-           (true-listp (cdr item))
+           (true-listp (cdr item)) ; we don't really check the cdr, since the string-valued forms are untranslated terms
            (macro-arg-descriptionsp (rest arg-descriptions))))))
 
 (defthm macro-arg-descriptionsp-forward-to-symbol-alistp
@@ -397,7 +398,7 @@
 ;; Returns a defxdoc form.
 ;; TODO: Think about all the & things that can occur in the macro-args
 (defund defxdoc-for-macro-fn (name    ; the name of the macro being documented
-                              macro-args ; the formals of the macro
+                              macro-args ; the formals of the macro, possibly with initial values, and suppliedp variables
                               parents
                               short ; a form that evaluates to a string or to nil
                               arg-descriptions
@@ -448,8 +449,9 @@
                      (cons *xdoc-description-header-with-spacing*
                            (xdoc-make-paragraphs description-forms))))))) ; todo: what if we don't want to put all the forms in paragraphs?
 
+;; Generates a defxdoc form for the given macro.
 (defmacro defxdoc-for-macro (name ; the name of the macro being documented
-                             macro-args ; the formals of the macro, todo: allow extracting these from the world?
+                             macro-args ; the arguments of the macro, including initial values, suppliedp variables, etc.
                              parents
                              short ; a form that evaluates to a string or to nil
                              arg-descriptions
@@ -457,7 +459,7 @@
                              )
   (defxdoc-for-macro-fn name macro-args parents short arg-descriptions description))
 
-;; Returns a progn including the original defmacro and a defxdoc form
+;; Returns a progn including the defmacro form and a defxdoc form.
 (defun defmacrodoc-fn (name macro-args
                             rest ; has the declares, the body, and xdoc stuff
                             )
