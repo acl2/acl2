@@ -518,9 +518,9 @@
                              (run-1 (svtv-run (<svtv-1>)
                                               <env-1>
                                               #|(append <input-bindings-1>
-                                                      <input-vars-1>
-                                                      <override-tests-1>
-                                                      <override-vals-1>)|#
+                                              <input-vars-1> ; ;
+                                              <override-tests-1> ; ;
+                                              <override-vals-1>)|#
                                               ;; :include '<outputs-list-1>
                                               ))
                              ((svassocs <outputs-1>) run-1))
@@ -532,9 +532,9 @@
                              (run-2 (svtv-run (<svtv-2>)
                                               <env-2>
                                               #|(append <input-bindings-2>
-                                                      <input-vars-2>
-                                                      <override-tests-2>
-                                                      <override-vals-2>)|#
+                                              <input-vars-2> ; ;
+                                              <override-tests-2> ; ;
+                                              <override-vals-2>)|#
                                               ;; :include '<outputs-list-2>
                                               ))
                              ((svassocs <outputs-2>) run-2)))
@@ -549,15 +549,7 @@
                                <concl>))
                     :hints (:@ :no-lemmas <hints>)
                     (:@ (not :no-lemmas)
-                        (("goal" :use ((:@ :free-env-var-1 <name>-<<=-lemma-1)
-                                       (:@ :free-env-var-2 <name>-<<=-lemma-2)
-                                       (:instance <name>-equiv-lemma
-                                                  (:@ :free-env-var-1
-                                                      <override-var-instantiation-1>
-                                                      <input-var-instantiation-1>)
-                                                  (:@ :free-env-var-2
-                                                      <override-var-instantiation-2>
-                                                      <input-var-instantiation-2>)))
+                        (("goal" 
                           :in-theory '((BINARY-APPEND)
                                        (CONS)
                                        (INTEGERP)
@@ -572,7 +564,19 @@
                                        (:REWRITE SVEX-ENV-LOOKUP-WHEN-INTEGERP-AND-<<=)
                                        (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
                                        (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)
-                                       <enable>)))))))
+                                       <enable>))
+                         (and stable-under-simplificationp
+                              '(:use
+                                ((:@ :free-env-var-1 <name>-<<=-lemma-1)
+                                 (:@ :free-env-var-2 <name>-<<=-lemma-2)
+                                 (:instance <name>-equiv-lemma
+                                            (:@ :free-env-var-1
+                                                <override-var-instantiation-1>
+                                                <input-var-instantiation-1>)
+                                            (:@ :free-env-var-2
+                                                <override-var-instantiation-2>
+                                                <input-var-instantiation-2>)))))
+                         )))))
     (acl2::template-subst
      template
      :atom-alist
