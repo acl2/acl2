@@ -70,8 +70,7 @@
                                                       state)))))))
 
 (defthm state-p1-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
-  (implies (and (symbolp channel)
-                ;; (open-input-channel-p channel :character state)
+  (implies (and ;; (open-input-channel-p channel :character state)
                 (state-p1 state))
            (state-p1 (mv-nth 1 (read-file-into-character-array-stobj-aux channel next-index character-array-stobj state))))
   :hints (("Goal" :in-theory (enable read-file-into-character-array-stobj-aux
@@ -79,8 +78,7 @@
                                      open-input-channel-p1))))
 
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
-  (implies (and (symbolp channel)
-                (open-input-channel-p1 channel typ state)
+  (implies (and (open-input-channel-p1 channel typ state)
                 (state-p1 state)
                 )
            (open-input-channel-p1 channel typ (mv-nth 1 (read-file-into-character-array-stobj-aux
@@ -89,8 +87,7 @@
   :hints (("Goal" :in-theory (enable read-file-into-character-array-stobj-aux))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
-  (implies (and (symbolp channel)
-                (open-input-channel-any-p1 channel state)
+  (implies (and (open-input-channel-any-p1 channel state)
                 (state-p1 state))
            (open-input-channel-any-p1 channel (mv-nth 1 (read-file-into-character-array-stobj-aux
                                                          channel ; gen to channel2?

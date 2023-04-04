@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function open-output-channel
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -56,6 +56,21 @@
                                   typ
                                   (mv-nth 1 (open-output-channel fname typ state))))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(defthm open-output-channel-any-p1-after-open-output-channel
+  (implies (and (mv-nth 0 (open-output-channel fname typ state)) ;no error
+                (member-equal typ *file-types*))
+           (open-output-channel-any-p1 (mv-nth 0 (open-output-channel fname typ state))
+                                       (mv-nth 1 (open-output-channel fname typ state))))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
+
+(defthm open-output-channel-any-p-after-open-output-channel
+  (implies (and (mv-nth 0 (open-output-channel fname typ state)) ;no error
+                (member-equal typ *file-types*))
+           (open-output-channel-any-p (mv-nth 0 (open-output-channel fname typ state))
+                                      (mv-nth 1 (open-output-channel fname typ state))))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
+
 
 ;; See the guard of close-output-channel
 ;; todo: slow

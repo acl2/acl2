@@ -64,6 +64,11 @@
          (make-doublets (cdr x) (cdr y)))
   :hints (("Goal" :in-theory (enable make-doublets))))
 
+(defthm len-of-make-doublets
+  (equal (len (make-doublets xs ys))
+         (len xs))
+  :hints (("Goal" :in-theory (enable make-doublets))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a doublet containing two symbols

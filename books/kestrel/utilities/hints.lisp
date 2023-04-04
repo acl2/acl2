@@ -85,7 +85,9 @@
                 (subst (cddr val)))
            `(,instance-type
              ,(apply-renaming-to-use-hint-instance lemma-ref renaming-alist)
-             ,@(rename-fns-in-var-untranslated-term-pairs subst renaming-alist))))))
+             ,@(make-doublets (strip-cars subst)
+                              (rename-fns-in-untranslated-term-list (strip-cadrs subst)
+                                                                    renaming-alist)))))))
 
 (defun apply-renaming-to-use-hint-instances (vals renaming-alist)
   (declare (xargs :guard (and (use-hint-instance-listp vals)

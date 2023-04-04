@@ -23,13 +23,13 @@
  ;; Returns a list of conjuncts (uterms) whose conjunction is boolean-equivalent to UTERM.
  (defund conjuncts-of-uterm2 (uterm)
    (declare (xargs :guard t))
-   (if (not (consp uterm)) ; term is a variable
+   (if (not (consp uterm))
        (list uterm)
      (let ((fn (ffn-symb uterm)))
        (case fn
          (and (conjuncts-of-uterms2 (fargs uterm)))
          (if (if (not (= 3 (len (fargs uterm)))) ; for guards
-                 (er hard? 'conjuncts-of-uterm2 "Bad arity: ~x0." uterm)
+                 (er hard? 'conjuncts-of-uterm2 "Bad arity for IF term: ~x0." uterm)
                (if (or (equal nil (farg3 uterm))
                        (equal *nil* (farg3 uterm)))
                    ;;  (if <x> <y> nil) is (and <x> <y>):
@@ -42,7 +42,7 @@
                                       (conjuncts-of-uterm2 (farg3 uterm)))
                    (list uterm)))))
          (not (if (not (= 1 (len (fargs uterm)))) ; for guards
-                  (er hard? 'conjuncts-of-uterm2 "Bad arity: ~x0." uterm)
+                  (er hard? 'conjuncts-of-uterm2 "Bad arity for NOT term: ~x0." uterm)
                 ;; (not (or <x> <y> ...)) is (and (not <x>) (not <y>) ..):
                 (negate-terms (disjuncts-of-uterm2 (farg1 uterm)))))
          (otherwise ;; no special handling:
@@ -62,13 +62,13 @@
    (declare (xargs :guard t
                    :verify-guards nil ; done below
                    ))
-   (if (not (consp uterm)) ; term is a variable
+   (if (not (consp uterm))
        (list uterm)
      (let ((fn (ffn-symb uterm)))
        (case fn
          (or (disjuncts-of-uterms2 (fargs uterm)))
          (if (if (not (= 3 (len (fargs uterm)))) ; for guards
-                 (er hard? 'disjuncts-of-uterm2 "Bad arity: ~x0." uterm)
+                 (er hard? 'disjuncts-of-uterm2 "Bad arity for IF term: ~x0." uterm)
                (if (equal (farg1 uterm) (farg2 uterm))
                    ;; (if <x> <x> <y>) is (or <x> <y>):
                    (union-equal-alt (disjuncts-of-uterm2 (farg1 uterm))
@@ -85,7 +85,7 @@
                                         (disjuncts-of-uterm2 (farg2 uterm)))
                      (list uterm))))))
          (not (if (not (= 1 (len (fargs uterm)))) ; for guards
-                  (er hard? 'disjuncts-of-uterm2 "Bad arity: ~x0." uterm)
+                  (er hard? 'disjuncts-of-uterm2 "Bad arity for NOT term: ~x0." uterm)
                 ;; (not (and <x> <y> ...)) is (or (not <x>) (not <y>) ..):
                 (negate-terms (conjuncts-of-uterm2 (farg1 uterm)))))
          (otherwise ;; no special handling:

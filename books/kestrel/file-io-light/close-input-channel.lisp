@@ -18,7 +18,7 @@
 ;todo: move to channels.lisp, but that depends on this so first separate out the basic stuff in this book
 (defthm state-p1-of-close-input-channel-when-open-input-channel-p1
   (implies (and (open-input-channel-p1 channel typ state) ;typ is a free var
-                (member-equal typ '(:byte :character :object))
+                (member-equal typ *file-types*)
                 (state-p1 state))
            (state-p1 (close-input-channel channel state)))
   :hints (("Goal" :in-theory (enable close-input-channel
