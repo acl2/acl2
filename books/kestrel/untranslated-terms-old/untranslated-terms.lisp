@@ -36,12 +36,13 @@
 (include-book "kestrel/untranslated-terms/untranslated-variablep" :dir :system)
 (include-book "kestrel/untranslated-terms/cond-helpers" :dir :system)
 (include-book "kestrel/untranslated-terms/bstar-helpers" :dir :system)
+(include-book "kestrel/untranslated-terms/case-helpers" :dir :system)
 (include-book "kestrel/untranslated-terms/case-match-helpers" :dir :system)
+(include-book "kestrel/untranslated-terms/let-helpers" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
-(include-book "kestrel/utilities/lets" :dir :system)
 (include-book "kestrel/utilities/lambdas" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
@@ -58,30 +59,14 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
 (local (in-theory (disable butlast
-                           legal-case-clausesp ; todo
                            legal-variablep
                            symbol-alistp
                            mv-nth)))
 
 ;;=== stuff to move to libraries:
-
-;move
-(local
- ;; Justifies calling strip-cadrs on the clauses
- (defthm legal-case-clausesp-forward-to-all->=-len
-   (implies (legal-case-clausesp clauses)
-            (all->=-len clauses 2))
-   :rule-classes :forward-chaining
-   :hints (("Goal" :in-theory (enable all->=-len legal-case-clausesp)))))
-
-(local
- (defthm legal-case-clausesp-forward-to-alistp
-   (implies (legal-case-clausesp clauses)
-            (alistp clauses))
-   :rule-classes :forward-chaining
-   :hints (("Goal" :in-theory (enable alistp legal-case-clausesp)))))
 
 (defthm legal-case-clausesp-of-make-doublets
   (implies (legal-case-clausesp clauses)
@@ -231,9 +216,12 @@
               (case fn
                 ((let let*) ; (let/let* <bindings> ...declares... <body>)
                  (and (<= 2 (len (fargs x))) ; must have bindings and body
-                      (var-untranslated-term-pairsp (let-bindings x))
-                      ;;declares can intervene - todo: check their form
-                      (untranslated-termp (let-body x))))
+                      (let ((bindings (let-bindings x)) ; todo, if let, check for no duplicate bindings?
+                            (body (let-body x)))
+                        (and (legal-let-bindingsp bindings)
+                             (untranslated-term-listp (let-binding-terms bindings))
+                             ;;declares can intervene - todo: check their form
+                             (untranslated-termp body)))))
                 (b* ;;(b* <bindings> <result-form>+)
                     (let ((bindings (farg1 x))
                           (result-forms (rest (fargs x))))
@@ -266,27 +254,12 @@
                                (equal (len (ulambda-formals fn))
                                       (len (fargs x))))))))))))
 
- ;; This occurs in a let/let*
- ;; rename?
- ;; TODO: deprecate?
- (defun var-untranslated-TERM-pairsp (pairs)
-   (DECLARE (XARGS :GUARD T :measure (acl2-count pairs)))
-   (if (atom pairs)
-       (eq nil pairs)
-     (let ((pair (first pairs)))
-       (and (consp pair)
-            (true-listp pair)
-            (eql 2 (len pair))
-            (untranslated-variablep (first pair))
-            (untranslated-TERMp (second pair))
-            (var-untranslated-TERM-pairsp (rest pairs))))))
-
- (defun untranslated-term-listp (lst)
-   (declare (xargs :guard t :measure (acl2-count lst)))
-   (if (not (consp lst))
-       (null lst)
-     (and (untranslated-termp (car lst))
-          (untranslated-term-listp (cdr lst))))))
+ (defun untranslated-term-listp (terms)
+   (declare (xargs :guard t :measure (acl2-count terms)))
+   (if (not (consp terms))
+       (null terms)
+     (and (untranslated-termp (car terms))
+          (untranslated-term-listp (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,10 +274,13 @@
                        (equal 1 (len y)))
                 (if (member-eq x '(let let*))
                     (and (true-listp y)
-                         (<= 2 (len y))
-                         (var-untranslated-term-pairsp (first y))
-                         ;;declares can intervene - todo: check their form
-                         (untranslated-termp (car (last y))))
+                         (<= 2 (len y)) ; must have bindings and body
+                         (let ((bindings (let-bindings (cons x y))) ; todo, if let, check for no duplicate bindings?
+                               (body (let-body (cons x y))))
+                           (and (legal-let-bindingsp bindings)
+                                (untranslated-term-listp (let-binding-terms bindings))
+                                ;;declares can intervene - todo: check their form
+                                (untranslated-termp body))))
                   (if (eq 'b* x)
                       (and (true-listp y)
                            (let ((bindings (first y))
@@ -388,8 +364,8 @@
            (untranslated-termp (cadr terms))))
 
 (defthm untranslated-termp-of-car-of-last-gen
-  (implies (untranslated-term-listp lst)
-           (untranslated-termp (car (last lst))))
+  (implies (untranslated-term-listp terms)
+           (untranslated-termp (car (last terms))))
   :hints (("Goal" :in-theory (enable last))))
 
 (defthm untranslated-term-listp-of-remove-equal
@@ -546,7 +522,7 @@
              (let ((bindings (let-bindings term))
                    (declares (let-declares term))
                    (body (let-body term)))
-               `(,fn ,(rename-fns-in-var-untranslated-term-pairs bindings alist)
+               `(,fn ,(make-let-bindings (let-binding-vars bindings) (rename-fns-in-untranslated-term-list (let-binding-terms bindings) alist))
                      ,@declares ;; I think these can only be IGNORE declares, so nothing to do here.
                      ,(rename-fns-in-untranslated-term body alist)))
            (if (eq fn 'b*) ;; (b* <bindings> ...result-forms...)
@@ -595,19 +571,6 @@
                                   fn))))
                      (cons fn args)))))))))))
 
- ;; For the bindings of let and let*
- ;; TODO: deprecate?
- (defun rename-fns-in-var-untranslated-term-pairs (pairs alist)
-   (declare (xargs :guard (and (var-untranslated-term-pairsp pairs)
-                               (symbol-alistp alist))))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (var (first pair))
-            (term (second pair)))
-       (cons (list var (rename-fns-in-untranslated-term term alist))
-             (rename-fns-in-var-untranslated-term-pairs (rest pairs) alist)))))
-
  ;;rename all functions calls in TERMS according to ALIST
  (defun rename-fns-in-untranslated-term-list (terms alist)
    (declare (xargs :guard (and (untranslated-term-listp terms)
@@ -619,6 +582,11 @@
 
 (defthm true-listp-of-rename-fns-in-untranslated-term-list
   (true-listp (rename-fns-in-untranslated-term-list terms alist)))
+
+(defthm len-of-rename-fns-in-untranslated-term-list
+  (equal (len (rename-fns-in-untranslated-term-list terms alist))
+         (len terms))
+  :hints (("Goal" :in-theory (enable rename-fns-in-untranslated-term-list (:i len)))))
 
 ;; (defthm untranslated-term-pairsp-of-cdr
 ;;   (implies (and (untranslated-termp term)
@@ -738,7 +706,7 @@
   :hints (("Goal" :expand (untranslated-termp term))))
 
 (verify-guards rename-fns-in-untranslated-term
-  :hints (("Goal" ;:expand ((UNTRANSLATED-TERMP TERM))
+  :hints (("Goal" :expand ((UNTRANSLATED-TERMP TERM))
            :in-theory (e/d ( ;untranslated-lambda-exprp ;UNTRANSLATED-TERMP
                             )
                            (UNTRANSLATED-TERM-LISTP
@@ -760,8 +728,10 @@
        ;;function call or lambda
        (let* ((fn (ffn-symb term)))
          (if (member-eq fn '(let let*)) ;;(let <bindings> ...declares... <body>)
-             (union-eq (get-called-fns-in-var-untranslated-term-pairs (farg1 term))
-                       (get-called-fns-in-untranslated-term (car (last (fargs term)))))
+             (let ((bindings (let-bindings term))
+                   (body (let-body term)))
+               (union-eq (get-called-fns-in-untranslated-term-list (let-binding-terms bindings))
+                         (get-called-fns-in-untranslated-term body)))
            (if (eq fn 'b*)
                (let ((bindings (farg1 term))
                      (result-forms (rest (fargs term))))
@@ -792,17 +762,6 @@
                                    (list fn))))
                      (union-eq fn-res (get-called-fns-in-untranslated-term-list (fargs term)))))))))))))
 
- ;; TODO: deprecate?
- (defun get-called-fns-in-var-untranslated-term-pairs (pairs)
-   (declare (xargs :guard (var-untranslated-term-pairsp pairs)))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            ;;(var (first pair))
-            (term (second pair)))
-       (union-eq (get-called-fns-in-untranslated-term term)
-                 (get-called-fns-in-var-untranslated-term-pairs (rest pairs))))))
-
  (defun get-called-fns-in-untranslated-term-list (terms)
    (declare (xargs :guard (untranslated-term-listp terms)))
    (if (endp terms)
@@ -817,10 +776,7 @@
     (implies (untranslated-termp term)
              (symbol-listp (get-called-fns-in-untranslated-term term)))
     :flag get-called-fns-in-untranslated-term)
-  (defthm true-listp-of-get-called-fns-in-var-untranslated-term-pairs
-    (implies (var-untranslated-term-pairsp pairs)
-             (symbol-listp (get-called-fns-in-var-untranslated-term-pairs pairs)))
-    :flag get-called-fns-in-var-untranslated-term-pairs)
+
   ;; (defthm true-listp-of-get-called-fns-in-cadrs-of-untranslated-term-pairs
   ;;   (implies (untranslated-term-pairsp pairs)
   ;;            (symbol-listp (get-called-fns-in-cadrs-of-untranslated-term-pairs pairs)))
@@ -865,7 +821,7 @@
          (term-list-processor-fn (pack$ base-name '-in-untranslated-term-list))
 ;         (term-pairs-processor-fn (pack$ base-name '-in-untranslated-term-pairs))
 ;         (pat-term-pairs-processor-fn (pack$ base-name '-in-pat-untranslated-term-pairs))
-         (var-term-pairs-processor-fn (pack$ base-name '-in-var-untranslated-term-pairs))
+;         (var-term-pairs-processor-fn (pack$ base-name '-in-var-untranslated-term-pairs))
          (theorems `((make-flag ,term-processor-fn)
 
                      (defthm ,(pack$ 'len-of- term-list-processor-fn)
@@ -884,11 +840,11 @@
                                       ,@extra-guards)
                                  (untranslated-termp (,term-processor-fn term ,@extra-args)))
                         :flag ,term-processor-fn)
-                      (defthm ,(pack$ 'var-untranslated-term-pairsp-of- var-term-pairs-processor-fn)
-                        (implies (and (var-untranslated-term-pairsp pairs)
-                                      ,@extra-guards)
-                                 (var-untranslated-term-pairsp (,var-term-pairs-processor-fn pairs ,@extra-args)))
-                        :flag ,var-term-pairs-processor-fn)
+                      ;; (defthm ,(pack$ 'var-untranslated-term-pairsp-of- var-term-pairs-processor-fn)
+                      ;;   (implies (and (var-untranslated-term-pairsp pairs)
+                      ;;                 ,@extra-guards)
+                      ;;            (var-untranslated-term-pairsp (,var-term-pairs-processor-fn pairs ,@extra-args)))
+                      ;;   :flag ,var-term-pairs-processor-fn)
                       ;; (defthm ,(pack$ 'untranslated-term-pairsp-of- term-pairs-processor-fn)
                       ;;   (implies (and (untranslated-term-pairsp pairs)
                       ;;                 ,@extra-guards)
@@ -938,9 +894,13 @@
               ;;function call or lambda
               (let* ((fn (ffn-symb term)))
                 (if (member-eq fn '(let let*)) ;;(let <bindings> <body>)
-                    `(,fn ,(,var-term-pairs-processor-fn (farg1 term) ,@extra-args)
-                          ,@(butlast (rest (fargs term)) 1) ;the declares
-                          ,(,term-processor-fn (car (last (fargs term))) ,@extra-args))
+                    (let ((bindings (let-bindings term))
+                          (declares (let-declares term))
+                          (body (let-body term)))
+                      `(,fn ,(make-let-bindings (let-binding-vars bindings)
+                                                (,term-list-processor-fn (let-binding-terms bindings) ,@extra-args))
+                            ,@declares
+                            ,(,term-processor-fn body ,@extra-args)))
                   (if (eq fn 'b*)
                       (let* ((bindings (farg1 term))
                              (result-forms (rest (fargs term)))
@@ -981,18 +941,18 @@
                             ;; TODO: Support referring to the args and the arg-results?
                             ,(rename-fns-in-untranslated-term operation-on-term (acons :recur term-processor-fn nil))))))))))))
 
-        ;; TODO: Deprecate?
-        (defun ,var-term-pairs-processor-fn (pairs ,@extra-args)
-          (declare (xargs :guard (and (var-untranslated-term-pairsp pairs)
-                                      ,@extra-guards)
-                          ,@(and stobjs `(:stobjs ,stobjs))))
-          (if (endp pairs)
-              nil
-            (let* ((pair (first pairs))
-                   (var (first pair))
-                   (term (second pair)))
-              (cons (list var (,term-processor-fn term ,@extra-args))
-                    (,var-term-pairs-processor-fn (rest pairs) ,@extra-args)))))
+        ;; ;; TODO: Deprecate?
+        ;; (defun ,var-term-pairs-processor-fn (pairs ,@extra-args)
+        ;;   (declare (xargs :guard (and (var-untranslated-term-pairsp pairs)
+        ;;                               ,@extra-guards)
+        ;;                   ,@(and stobjs `(:stobjs ,stobjs))))
+        ;;   (if (endp pairs)
+        ;;       nil
+        ;;     (let* ((pair (first pairs))
+        ;;            (var (first pair))
+        ;;            (term (second pair)))
+        ;;       (cons (list var (,term-processor-fn term ,@extra-args))
+        ;;             (,var-term-pairs-processor-fn (rest pairs) ,@extra-args)))))
 
         (defun ,term-list-processor-fn (terms ,@extra-args)
           (declare (xargs :guard (and (untranslated-term-listp terms)
@@ -1056,12 +1016,15 @@
                    `(,fn ,@args))))
            ;;The original fn is a symbol:
            (if (member-eq fn '(let let*))
-               `(,fn
-                 ;; the substitution:
-                 ,(rename-fns-and-expand-lambdas-in-var-untranslated-term-pairs (farg1 term) alist)
-                 ,@(butlast (rest (fargs term)) 1) ;the declares
-                 ;; the body:
-                 ,(rename-fns-and-expand-lambdas-in-untranslated-term (car (last (fargs term))) alist))
+               (let ((bindings (let-bindings term))
+                     (declares (let-declares term))
+                     (body (let-body term)))
+                 `(,fn
+                   ,(make-let-bindings (let-binding-vars bindings)
+                                       (rename-fns-and-expand-lambdas-in-untranslated-term-lst (let-binding-terms bindings) alist))
+                   ,@declares
+                   ;; the body:
+                   ,(rename-fns-and-expand-lambdas-in-untranslated-term body alist)))
              (if (eq fn 'b*)
                  (let* ((bindings (farg1 term))
                         (result-forms (rest (fargs term)))
@@ -1115,21 +1078,27 @@
      (cons (rename-fns-and-expand-lambdas-in-untranslated-term (car terms) alist)
            (rename-fns-and-expand-lambdas-in-untranslated-term-lst (cdr terms) alist))))
 
- ;; these are non-dotted pairs
- (defun rename-fns-and-expand-lambdas-in-var-untranslated-term-pairs (pairs alist)
-   (declare (xargs :guard (and (var-untranslated-term-pairsp pairs)
-                               (symbol-alistp alist)
-                               (all-symbol-or-untranslated-lambda-exprp (strip-cdrs alist)))))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (var (first pair))
-            (term (second pair)))
-       (cons (list var (rename-fns-and-expand-lambdas-in-untranslated-term term alist))
-             (rename-fns-and-expand-lambdas-in-var-untranslated-term-pairs (rest pairs) alist))))))
+ ;; ;; these are non-dotted pairs
+ ;; (defun rename-fns-and-expand-lambdas-in-var-untranslated-term-pairs (pairs alist)
+ ;;   (declare (xargs :guard (and (var-untranslated-term-pairsp pairs)
+ ;;                               (symbol-alistp alist)
+ ;;                               (all-symbol-or-untranslated-lambda-exprp (strip-cdrs alist)))))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (var (first pair))
+ ;;            (term (second pair)))
+ ;;       (cons (list var (rename-fns-and-expand-lambdas-in-untranslated-term term alist))
+ ;;             (rename-fns-and-expand-lambdas-in-var-untranslated-term-pairs (rest pairs) alist)))))
+ )
 
 (defthm true-listp-of-rename-fns-and-expand-lambdas-in-untranslated-term-lst
   (true-listp (rename-fns-and-expand-lambdas-in-untranslated-term-lst terms alist)))
+
+(defthm len-of-rename-fns-and-expand-lambdas-in-untranslated-term-lst
+  (equal (len (rename-fns-and-expand-lambdas-in-untranslated-term-lst terms alist))
+         (len terms))
+  :hints (("Goal" :in-theory (enable rename-fns-in-untranslated-term-list (:i len)))))
 
 (verify-guards rename-fns-and-expand-lambdas-in-untranslated-term
   :hints  (("Goal" :in-theory (enable untranslated-lambda-exprp)
@@ -1153,10 +1122,14 @@
          term
        ;;function call or lambda
        (let* ((fn (ffn-symb term)))
-         (if (member-eq fn '(let let*)) ;;(let <bindings> <body>) ;TODO: what about declares?!
-             `(,fn ,(clean-up-0ary-lambdas-in-var-untranslated-term-pairs (farg1 term))
-                   ,@(butlast (rest (fargs term)) 1) ;the declares
-                   ,(clean-up-0ary-lambdas-in-untranslated-term (car (last (fargs term)))))
+         (if (member-eq fn '(let let*)) ;;(let <bindings> ...declares... <body>)
+             (let ((bindings (let-bindings term))
+                   (declares (let-declares term))
+                   (body (let-body term)))
+               `(,fn ,(make-let-bindings (let-binding-vars bindings)
+                                         (clean-up-0ary-lambdas-in-untranslated-term-list (let-binding-terms bindings)))
+                     ,@declares
+                     ,(clean-up-0ary-lambdas-in-untranslated-term body)))
            (if (eq fn 'b*)
                (let* ((bindings (farg1 term))
                       (result-forms (rest (fargs term)))
@@ -1200,16 +1173,16 @@
                      ;;regular function:
                      (cons fn (clean-up-0ary-lambdas-in-untranslated-term-list (fargs term)))))))))))))
 
- ;;TODO: Deprecate?
- (defun clean-up-0ary-lambdas-in-var-untranslated-term-pairs (pairs)
-   (declare (xargs :guard (var-untranslated-term-pairsp pairs)))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (var (first pair))
-            (term (second pair)))
-       (cons (list var (clean-up-0ary-lambdas-in-untranslated-term term))
-             (clean-up-0ary-lambdas-in-var-untranslated-term-pairs (rest pairs))))))
+ ;; ;;TODO: Deprecate?
+ ;; (defun clean-up-0ary-lambdas-in-var-untranslated-term-pairs (pairs)
+ ;;   (declare (xargs :guard (var-untranslated-term-pairsp pairs)))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (var (first pair))
+ ;;            (term (second pair)))
+ ;;       (cons (list var (clean-up-0ary-lambdas-in-untranslated-term term))
+ ;;             (clean-up-0ary-lambdas-in-var-untranslated-term-pairs (rest pairs))))))
 
  (defun clean-up-0ary-lambdas-in-untranslated-term-list (terms)
    (declare (xargs :guard (untranslated-term-listp terms)))
@@ -1220,6 +1193,11 @@
 
 (defthm true-listp-of-clean-up-0ary-lambdas-in-untranslated-term-list
   (true-listp (clean-up-0ary-lambdas-in-untranslated-term-list terms)))
+
+(defthm len-of-clean-up-0ary-lambdas-in-untranslated-term-list
+  (equal (len (clean-up-0ary-lambdas-in-untranslated-term-list terms))
+         (len terms))
+  :hints (("Goal" :in-theory (enable rename-fns-in-untranslated-term-list (:i len)))))
 
 (verify-guards clean-up-0ary-lambdas-in-untranslated-term-list
   :hints (("Goal" :in-theory (enable untranslated-termp untranslated-termp)
@@ -1246,9 +1224,13 @@
        ;;function call or lambda
        (let* ((fn (ffn-symb term)))
          (if (member-eq fn '(let let*)) ;;(let <bindings> <body>) ;TODO: what about declares?!
-             `(,fn ,(clean-up-implies-of-t-in-var-untranslated-term-pairs (farg1 term))
-                   ,@(butlast (rest (fargs term)) 1) ;the declares
-                   ,(clean-up-implies-of-t-in-untranslated-term (car (last (fargs term)))))
+             (let ((bindings (let-bindings term))
+                   (declares (let-declares term))
+                   (body (let-body term)))
+               `(,fn ,(make-let-bindings (let-binding-vars bindings)
+                                         (clean-up-implies-of-t-in-untranslated-term-list (let-binding-terms bindings)))
+                     ,@declares
+                     ,(clean-up-implies-of-t-in-untranslated-term body)))
            (if (eq fn 'b*)
                (let* ((bindings (farg1 term))
                       (result-forms (rest (fargs term)))
@@ -1294,15 +1276,15 @@
                        ;;regular function:
                        (cons fn (clean-up-implies-of-t-in-untranslated-term-list (fargs term))))))))))))))
 
- (defun clean-up-implies-of-t-in-var-untranslated-term-pairs (pairs)
-   (declare (xargs :guard (var-untranslated-term-pairsp pairs)))
-   (if (endp pairs)
-       nil
-     (let* ((pair (first pairs))
-            (var (first pair))
-            (term (second pair)))
-       (cons (list var (clean-up-implies-of-t-in-untranslated-term term))
-             (clean-up-implies-of-t-in-var-untranslated-term-pairs (rest pairs))))))
+ ;; (defun clean-up-implies-of-t-in-var-untranslated-term-pairs (pairs)
+ ;;   (declare (xargs :guard (var-untranslated-term-pairsp pairs)))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;     (let* ((pair (first pairs))
+ ;;            (var (first pair))
+ ;;            (term (second pair)))
+ ;;       (cons (list var (clean-up-implies-of-t-in-untranslated-term term))
+ ;;             (clean-up-implies-of-t-in-var-untranslated-term-pairs (rest pairs))))))
 
  (defun clean-up-implies-of-t-in-untranslated-term-list (terms)
    (declare (xargs :guard (untranslated-term-listp terms)))
@@ -1313,6 +1295,11 @@
 
 (defthm true-listp-of-clean-up-implies-of-t-in-untranslated-term-list
   (true-listp (clean-up-implies-of-t-in-untranslated-term-list terms)))
+
+(defthm len-of-clean-up-implies-of-t-in-untranslated-term-list
+  (equal (len (clean-up-implies-of-t-in-untranslated-term-list terms))
+         (len terms))
+  :hints (("Goal" :in-theory (enable rename-fns-in-untranslated-term-list (:i len)))))
 
 (verify-guards clean-up-implies-of-t-in-untranslated-term-list
   :hints (("Goal" :in-theory (enable untranslated-termp untranslated-termp)
@@ -1874,13 +1861,13 @@
          (let* ((fn (ffn-symb term)))
            ;; todo: think about this:
            (if (member-eq fn '(let let*))
-               (cons fn
-                     (cons (replace-in-var-untranslated-term-pairs (farg1 term)
-                                                                   alist)
-                           (append (butlast (rest (fargs term)) 1)
-                                   (cons (replace-in-untranslated-term (car (last (fargs term)))
-                                                                       alist)
-                                         'nil))))
+               (let ((bindings (let-bindings term))
+                     (declares (let-declares term))
+                     (body (let-body term)))
+                 `(,fn ,(make-let-bindings (let-binding-vars bindings)
+                                           (replace-in-untranslated-term-list (let-binding-terms bindings) alist))
+                       ,@declares
+                       ,(replace-in-untranslated-term body alist)))
              ;; todo: think about this:
              (if (eq fn 'b*)
                  (let* ((bindings (farg1 term))
@@ -1920,19 +1907,19 @@
                        (let* ((term (cons fn args)))
                          term))))))))))))
 
- (defun replace-in-var-untranslated-term-pairs
-   (pairs alist)
-   (declare (xargs :guard (and (var-untranslated-term-pairsp pairs)
-                               (alistp alist)
-                               (untranslated-term-listp (strip-cdrs alist)))))
-   (if (endp pairs)
-       nil
-       (let* ((pair (first pairs))
-              (var (first pair))
-              (term (second pair)))
-             (cons (list var (replace-in-untranslated-term term alist))
-                   (replace-in-var-untranslated-term-pairs (rest pairs)
-                                                           alist)))))
+ ;; (defun replace-in-var-untranslated-term-pairs
+ ;;   (pairs alist)
+ ;;   (declare (xargs :guard (and (var-untranslated-term-pairsp pairs)
+ ;;                               (alistp alist)
+ ;;                               (untranslated-term-listp (strip-cdrs alist)))))
+ ;;   (if (endp pairs)
+ ;;       nil
+ ;;       (let* ((pair (first pairs))
+ ;;              (var (first pair))
+ ;;              (term (second pair)))
+ ;;             (cons (list var (replace-in-untranslated-term term alist))
+ ;;                   (replace-in-var-untranslated-term-pairs (rest pairs)
+ ;;                                                           alist)))))
  (defun replace-in-untranslated-term-list
    (terms alist)
    (declare (xargs :guard (and (untranslated-term-listp terms)
@@ -1965,12 +1952,12 @@
                   (untranslated-term-listp (strip-cdrs alist)))
              (untranslated-termp (replace-in-untranslated-term term alist)))
     :flag replace-in-untranslated-term)
-  (defthm var-untranslated-term-pairsp-of-replace-in-var-untranslated-term-pairs
-    (implies (and (var-untranslated-term-pairsp pairs)
-                  (alistp alist)
-                  (untranslated-term-listp (strip-cdrs alist)))
-             (var-untranslated-term-pairsp (replace-in-var-untranslated-term-pairs pairs alist)))
-    :flag replace-in-var-untranslated-term-pairs)
+  ;; (defthm var-untranslated-term-pairsp-of-replace-in-var-untranslated-term-pairs
+  ;;   (implies (and (var-untranslated-term-pairsp pairs)
+  ;;                 (alistp alist)
+  ;;                 (untranslated-term-listp (strip-cdrs alist)))
+  ;;            (var-untranslated-term-pairsp (replace-in-var-untranslated-term-pairs pairs alist)))
+  ;;   :flag replace-in-var-untranslated-term-pairs)
   (defthm untranslated-term-listp-ofreplace-in-untranslated-term-list
     (implies (and (untranslated-term-listp terms)
                   (alistp alist)
@@ -2034,16 +2021,17 @@
 (defthm symbol-listp-of-var-refs-in-case-match-patterns
   (symbol-listp (var-refs-in-case-match-patterns pats)))
 
-;; todo: eventually drop.  also, use a named accessor instead of strip-cadrs
-(defthm untranslated-term-listp-of-strip-cadrs-when-var-untranslated-term-pairsp
-  (implies (var-untranslated-term-pairsp pairs)
-           (untranslated-term-listp (strip-cadrs pairs))))
+;; ;; todo: eventually drop.  also, use a named accessor instead of strip-cadrs
+;; (defthm untranslated-term-listp-of-strip-cadrs-when-var-untranslated-term-pairsp
+;;   (implies (var-untranslated-term-pairsp pairs)
+;;            (untranslated-term-listp (strip-cadrs pairs))))
 
-(defthm all->=-len-when-var-untranslated-term-pairsp-cheap
-  (implies (var-untranslated-term-pairsp pairs)
-           (all->=-len pairs 2))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+;; (defthm all->=-len-when-var-untranslated-term-pairsp-cheap
+;;   (implies (var-untranslated-term-pairsp pairs)
+;;            (all->=-len pairs 2))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
+;move up
 (defthm all->=-len-of-let-bindings
   (implies (and (untranslated-termp term)
                 (call-of 'let term))
@@ -2051,11 +2039,12 @@
   :hints (("Goal" :expand (untranslated-termp term)
            :in-theory (enable let-bindings))))
 
-(defthm alistp-when-var-untranslated-term-pairsp-cheap
-  (implies (var-untranslated-term-pairsp pairs)
-           (alistp pairs))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+;; (defthm alistp-when-var-untranslated-term-pairsp-cheap
+;;   (implies (var-untranslated-term-pairsp pairs)
+;;            (alistp pairs))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
+;move up
 (defthm alistp-of-let-bindings
   (implies (and (untranslated-termp term)
                 (call-of 'let term))
@@ -2063,7 +2052,40 @@
   :hints (("Goal" :expand (untranslated-termp term)
            :in-theory (enable let-bindings))))
 
-;; TODO: Deprecate this.  To do this right, we need the world so we can
+(defun var-untranslated-term-pairsp (pairs)
+  (declare (xargs :guard t :measure (acl2-count pairs)))
+  (if (atom pairs)
+      (eq nil pairs)
+    (let ((pair (first pairs)))
+      (and (true-listp pair)
+           (eql 2 (len pair))
+           (untranslated-variablep (first pair))
+           (untranslated-termp (second pair))
+           (var-untranslated-term-pairsp (rest pairs))))))
+
+;todo: nicer way? drop?
+(defthm var-untranslated-term-pairsp-when-LEGAL-LET-BINDINGSP-AUX
+  (implies (and (LEGAL-LET-BINDINGSP-AUX bindings)
+                (UNTRANSLATED-TERM-LISTP (LET-BINDING-TERMS bindings)))
+           (var-untranslated-term-pairsp bindings ;(let-bindings term)
+                                         ))
+  :hints (("Goal" :in-theory (enable var-untranslated-term-pairsp LEGAL-LET-BINDINGSP-aux LET-BINDING-TERMS))))
+
+;todo: nicer way? drop?
+(defthm var-untranslated-term-pairsp-of-cadr
+  (implies (and (UNTRANSLATED-TERMP TERM)
+                (member-EQUAL (CAR TERM) '(let LET*)))
+           (var-untranslated-term-pairsp (cadr term) ;(let-bindings term)
+                                         ))
+  :hints (("Goal" :expand (untranslated-termp term)
+           :in-theory (enable UNTRANSLATED-TERMP LET-BINDING-TERMS LEGAL-LET-BINDINGSP))))
+
+(defthm untranslated-term-listp-of-let-binding-terms
+  (implies (var-untranslated-term-pairsp bindings)
+           (untranslated-term-listp (let-binding-terms bindings)))
+  :hints (("Goal" :in-theory (enable let-binding-terms))))
+
+;; todo: deprecate this.  to do this right, we need the world so we can
 ;; translate calls of user macros.
 (mutual-recursion
  ;;Return a list of all variables in TERM.
@@ -2084,8 +2106,8 @@
              (let* ((bindings (let-bindings term))
                     ;; (declares (let-declares term))
                     (body (let-body term))
-                    (binding-vars (strip-cars bindings))
-                    (binding-terms (strip-cadrs bindings)))
+                    (binding-vars (let-binding-vars bindings))
+                    (binding-terms (let-binding-terms bindings)))
                (union-eq (free-vars-in-untranslated-term-list binding-terms)
                          (set-difference-eq (free-vars-in-untranslated-term body)
                                             binding-vars)))
@@ -2375,37 +2397,37 @@
 ;;; sublis-var-untranslated-term
 ;;;
 
-(defund ulet-body (term)
-  (declare (xargs :guard (and (untranslated-termp term)
-                              (call-of 'let term))))
-  ;; skip over the bindings and all the declares
-  (car (last (rest (fargs term)))))
+;; (defund ulet-body (term)
+;;   (declare (xargs :guard (and (untranslated-termp term)
+;;                               (call-of 'let term))))
+;;   ;; skip over the bindings and all the declares
+;;   (car (last (rest (fargs term)))))
 
-(defund ulet-bindings (term)
-  (declare (xargs :guard (and (untranslated-termp term)
-                              (call-of 'let term))))
-  ;; skip over the bindings and all the declares
-  (farg1 term))
+;; (defund ulet-bindings (term)
+;;   (declare (xargs :guard (and (untranslated-termp term)
+;;                               (call-of 'let term))))
+;;   ;; skip over the bindings and all the declares
+;;   (farg1 term))
 
-(defund ulet-declares (term)
-  (declare (xargs :guard (and (untranslated-termp term)
-                              (call-of 'let term))))
-  ;; skip over the bindings get everything but the body
-  (butlast (rest (fargs term)) 1))
+;; (defund ulet-declares (term)
+;;   (declare (xargs :guard (and (untranslated-termp term)
+;;                               (call-of 'let term))))
+;;   ;; skip over the bindings get everything but the body
+;;   (butlast (rest (fargs term)) 1))
 
-(defthm <-of-acl2-count-of-ulet-body
-  (implies (consp term)
-           (< (acl2-count (ulet-body term))
-              (acl2-count term)))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable ulet-body))))
+;; (defthm <-of-acl2-count-of-ulet-body
+;;   (implies (consp term)
+;;            (< (acl2-count (ulet-body term))
+;;               (acl2-count term)))
+;;   :rule-classes :linear
+;;   :hints (("Goal" :in-theory (enable ulet-body))))
 
-(defthm <-of-acl2-count-of-ulet-bindings
-  (implies (consp term)
-           (< (acl2-count (ulet-bindings term))
-              (acl2-count term)))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable ulet-bindings))))
+;; (defthm <-of-acl2-count-of-ulet-bindings
+;;   (implies (consp term)
+;;            (< (acl2-count (ulet-bindings term))
+;;               (acl2-count term)))
+;;   :rule-classes :linear
+;;   :hints (("Goal" :in-theory (enable ulet-bindings))))
 
 (defund all-untranslated-variablep (vars)
 ;  (declare (xargs :guard t))
@@ -2414,12 +2436,12 @@
     (and (untranslated-variablep (first vars))
          (all-untranslated-variablep (rest vars)))))
 
-(defthm untranslated-termp-of-ulet-body
-  (implies (and (untranslated-termp term)
-                (call-of 'let term))
-           (untranslated-termp (ulet-body term)))
-  :hints (("Goal" :expand (untranslated-termp term)
-           :in-theory (enable ulet-body))))
+;; (defthm untranslated-termp-of-ulet-body
+;;   (implies (and (untranslated-termp term)
+;;                 (call-of 'let term))
+;;            (untranslated-termp (ulet-body term)))
+;;   :hints (("Goal" :expand (untranslated-termp term)
+;;            :in-theory (enable ulet-body))))
 
 (defthm var-untranslated-term-pairsp-of-make-doublets
   (implies (and (all-untranslated-variablep vars)
@@ -2433,12 +2455,12 @@
            (untranslated-term-listp (strip-cadrs pairs)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthm untranslated-term-listp-of-strip-cadrs-of-ulet-bindings
-  (implies (and (untranslated-termp term)
-                (call-of 'let term))
-           (untranslated-term-listp (strip-cadrs (ulet-bindings term))))
-  :hints (("Goal" :expand (untranslated-termp term)
-           :in-theory (enable ulet-bindings))))
+;; (defthm untranslated-term-listp-of-strip-cadrs-of-ulet-bindings
+;;   (implies (and (untranslated-termp term)
+;;                 (call-of 'let term))
+;;            (untranslated-term-listp (strip-cadrs (ulet-bindings term))))
+;;   :hints (("Goal" :expand (untranslated-termp term)
+;;            :in-theory (enable ulet-bindings))))
 
 (defthm all-untranslated-variablep-of-strip-cars-cheap
   (implies (var-untranslated-term-pairsp pairs)
@@ -2446,12 +2468,12 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable ALL-UNTRANSLATED-VARIABLEP))))
 
-(defthm all-untranslated-variablep-of-strip-cars-of-ulet-bindings
-  (implies (and (untranslated-termp term)
-                (call-of 'let term))
-           (all-untranslated-variablep (strip-cars (ulet-bindings term))))
-  :hints (("Goal" :expand (untranslated-termp term)
-           :in-theory (enable ulet-bindings))))
+;; (defthm all-untranslated-variablep-of-strip-cars-of-ulet-bindings
+;;   (implies (and (untranslated-termp term)
+;;                 (call-of 'let term))
+;;            (all-untranslated-variablep (strip-cars (ulet-bindings term))))
+;;   :hints (("Goal" :expand (untranslated-termp term)
+;;            :in-theory (enable ulet-bindings))))
 
 (defthm symbol-alistp-when-var-untranslated-term-pairsp-cheap
   (implies (var-untranslated-term-pairsp pairs)
@@ -2459,26 +2481,26 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable symbol-alistp))))
 
-(defthm all->=-len-of-ulet-bindings
-  (implies (and (untranslated-termp term)
-                (call-of 'let term))
-           (all->=-len (ulet-bindings term) 2))
-  :hints (("Goal" :expand (untranslated-termp term)
-           :in-theory (enable ulet-bindings))))
+;; (defthm all->=-len-of-ulet-bindings
+;;   (implies (and (untranslated-termp term)
+;;                 (call-of 'let term))
+;;            (all->=-len (ulet-bindings term) 2))
+;;   :hints (("Goal" :expand (untranslated-termp term)
+;;            :in-theory (enable ulet-bindings))))
 
-(defthm alistp-of-ulet-bindings
-  (implies (and (untranslated-termp term)
-                (call-of 'let term))
-           (alistp (ulet-bindings term)))
-  :hints (("Goal" :expand (untranslated-termp term)
-           :in-theory (enable ulet-bindings))))
+;; (defthm alistp-of-ulet-bindings
+;;   (implies (and (untranslated-termp term)
+;;                 (call-of 'let term))
+;;            (alistp (ulet-bindings term)))
+;;   :hints (("Goal" :expand (untranslated-termp term)
+;;            :in-theory (enable ulet-bindings))))
 
-(defthm symbol-alistp-of-ulet-bindings
-  (implies (and (untranslated-termp term)
-                (call-of 'let term))
-           (symbol-alistp (ulet-bindings term)))
-  :hints (("Goal" :expand (untranslated-termp term)
-           :in-theory (enable ulet-bindings))))
+;; (defthm symbol-alistp-of-ulet-bindings
+;;   (implies (and (untranslated-termp term)
+;;                 (call-of 'let term))
+;;            (symbol-alistp (ulet-bindings term)))
+;;   :hints (("Goal" :expand (untranslated-termp term)
+;;            :in-theory (enable ulet-bindings))))
 
 (defthm untranslated-term-listp-of-strip-cdrs-of-remove-assocs-equal
   (implies (untranslated-term-listp (strip-cdrs alist))
@@ -2510,11 +2532,11 @@
            term
          (let* ((fn (ffn-symb term)))
            (if (eq fn 'let)
-               (let* ((bindings (ulet-bindings term))
-                      (declares (ulet-declares term))
-                      (body (ulet-body term))
-                      (vars (strip-cars bindings))
-                      (terms (strip-cadrs bindings))
+               (let* ((bindings (let-bindings term))
+                      (declares (let-declares term))
+                      (body (let-body term))
+                      (vars (let-binding-vars bindings))
+                      (terms (let-binding-terms bindings))
                       ;; Apply the replacement to the terms to which the vars
                       ;; are bound (okay because all bindings happen
                       ;; simultaneously):
@@ -2522,15 +2544,14 @@
                       ;; Remove any bindings whose vars are shadowed by the let:
                       (alist-for-body (remove-assocs vars alist))
                       (new-body (sublis-var-untranslated-term alist-for-body body)))
-                 `(let ,(make-doublets vars new-terms) ,@declares ,new-body))
+                 `(let ,(make-let-bindings vars new-terms) ,@declares ,new-body))
              (if (eq fn 'let*) ;fffixme
-                 (cons fn
-                       (cons (sublis-var-in-let*-bindings alist
-                                                                     (farg1 term))
-                             (append (butlast (rest (fargs term)) 1)
-                                     (cons (sublis-var-untranslated-term alist
-                                                                         (car (last (fargs term))))
-                                           'nil))))
+               (let* ((bindings (let-bindings term))
+                      (declares (let-declares term))
+                      (body (let-body term)))
+                 `(let* ,(sublis-var-in-let*-bindings alist bindings)
+                    ,@declares
+                    ,(sublis-var-untranslated-term alist body)))
                (if (eq fn 'b*) ;fffixme
                    (let* ((bindings (farg1 term))
                           (result-forms (rest (fargs term)))
@@ -2657,7 +2678,8 @@
     (implies (and (var-untranslated-term-pairsp pairs)
                   (alistp alist)
                   (untranslated-term-listp (strip-cdrs alist)))
-             (var-untranslated-term-pairsp (sublis-var-in-let*-bindings alist pairs)))
+             (and (LEGAL-LET-BINDINGSP (sublis-var-in-let*-bindings alist pairs))
+                  (var-untranslated-term-pairsp (sublis-var-in-let*-bindings alist pairs))))
     :flag sublis-var-in-let*-bindings)
   ;; (defthm untranslated-term-pairsp-of-sublis-var-untranslated-term-pairs
   ;;   (implies (and (untranslated-term-pairsp pairs)

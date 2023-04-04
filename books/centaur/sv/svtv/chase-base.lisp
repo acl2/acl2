@@ -97,8 +97,6 @@
 ;; variable is declared as x[10:2] and we have a rightshift of 3 and mask
 ;; #b101, we'll show the range as x[7:5].
 
-
-
 (define svtv-chase-eval ((var svar-p)
                          (phase integerp)
                          &key
@@ -285,7 +283,8 @@
          (assigns :type (satisfies svex-alist-p))
          (modidx :type (integer 0 *) :initially 0)
          (probes :type (satisfies svtv-probealist-p))
-         (namemap :type (satisfies svtv-name-lhs-map-p))))
+         (namemap :type (satisfies svtv-name-lhs-map-p))
+         (print-with-mask-mode :type symbol :initially :default)))
       (field-names (strip-cars fields))
       (renaming (svtv-chase-data-renaming field-names))
       ;; (fns (append '(debugdatap create-debugdata)
@@ -462,6 +461,7 @@
                                  (mask 4vmask-p)
                                  (val 4vec-p "Value for the whole variable.")
                                  (modidx natp)
+                                 (print-with-mask-mode)
                                  &key
                                  ((moddb moddb-ok) 'moddb))
   :guard (and ;; (svar-addr-p var)
@@ -469,53 +469,65 @@
   :prepwork ((local (in-theory (e/d (svar-addr-p)
                                     (str::hexify max)))))
   (b* ((name/range (svtv-chase-var-name/range var rsh mask modidx))
-       (mask (sparseint-val mask))
-       (masked-val (4vec-bitand (4vec-shift-core (- (lnfix rsh)) val)
-                                (2vec mask)))
        (delay (svar->delay var))
        (delay-msg (if (eql delay 0)
                       ""
-                    (msg " (delay ~x0)" delay))))
-  (if (2vec-p masked-val)
-      (b* ((val (str::hexify (2vec->val masked-val)))
-           (mask (str::hexify mask))
-           (vl (length val))
-           (ml (length mask))
-           (maxl (max vl ml))
-           (pad-v (- maxl vl))
-           (pad-m (- maxl ml)))
+                    (msg " (delay ~x0)" delay)))
+       (shifted-val  (4vec-shift-core (- (lnfix rsh)) val))
+       (mask (sparseint-val mask))
+       (masked-val (4vec-bitand shifted-val (2vec mask)))
+       (print-with-masked-val (case print-with-mask-mode
+                                ((t) t)
+                                ((nil) nil)
+                                (t (and (not (2vec-p shifted-val))
+                                        (2vec-p masked-val)))))
+       (printed-val (if print-with-masked-val
+                        masked-val
+                      shifted-val)))
+    (if (2vec-p printed-val)
+        (b* ((val (str::hexify (2vec->val printed-val)))
+             (mask (str::hexify mask))
+             (vl (length val))
+             (ml (length mask))
+             (maxl (max vl ml))
+             (pad-v (- maxl vl))
+             (pad-m (- maxl ml)))
         
-        (cw! "~@0 ~@1~@2: ~t3~_4~s5~%"
+          (cw! "~@0 ~@1~@2: ~t3~_4~s5~%"
+               (if index (msg "~x0." index) "")
+               name/range
+               delay-msg
+               30
+               pad-v
+               val)
+          (and print-with-masked-val
+               (if (eq print-with-mask-mode t)
+                   (cw "(value masked due to MASK-ALWAYS setting -- ? for help)~%")
+                 (cw "(value masked to make it 2valued -- ? for help)~%")))
+          (cw! " caremask:~t0~_1~s2~%"
+               30
+               pad-m
+               mask))
+      (b* (((4vec val) printed-val)
+           (upper (str::hexify val.upper))
+           (lower (str::hexify val.lower))
+           (xmask (str::hexify (logxor val.upper val.lower)))
+           (mask  (str::hexify mask))
+           ;; padding for right-aligning the three values
+           (ul (length upper)) (ll (length lower)) (xl (length xmask)) (ml (length mask))
+           (maxl (max ml (max xl (max ul ll))))
+           (pad-u (- maxl ul))
+           (pad-l (- maxl ll))
+           (pad-x (- maxl xl))
+           (pad-m (- maxl ml)))
+        (cw! "~@0 ~@1~@2: ~t3(  ~_4~s5~%"
              (if index (msg "~x0." index) "")
              name/range
              delay-msg
-             30
-             pad-v
-             val)
-        (cw! " caremask:~t0~_1~s2~%"
-             30
-             pad-m
-             mask))
-    (b* (((4vec val) masked-val)
-         (upper (str::hexify val.upper))
-         (lower (str::hexify val.lower))
-         (xmask (str::hexify (logxor val.upper val.lower)))
-         (mask  (str::hexify mask))
-         ;; padding for right-aligning the three values
-         (ul (length upper)) (ll (length lower)) (xl (length xmask)) (ml (length mask))
-         (maxl (max ml (max xl (max ul ll))))
-         (pad-u (- maxl ul))
-         (pad-l (- maxl ll))
-         (pad-x (- maxl xl))
-         (pad-m (- maxl ml)))
-      (cw! "~@0 ~@1~@2: ~t3(  ~_4~s5~%"
-           (if index (msg "~x0." index) "")
-           name/range
-           delay-msg
-           30 pad-u upper)
-      (cw! "~t0 . ~_1~s2 )~%" 30 pad-l lower)
-      (cw! " non-Boolean portion: ~t0   ~_1~s2~%" 30 pad-x xmask)
-      (cw! " caremask:            ~t0   ~_1~s2~%" 30 pad-m mask)))))
+             30 pad-u upper)
+        (cw! "~t0 . ~_1~s2 )~%" 30 pad-l lower)
+        (cw! " non-Boolean portion: ~t0   ~_1~s2~%" 30 pad-x xmask)
+        (cw! " caremask:            ~t0   ~_1~s2~%" 30 pad-m mask)))))
 
 (local (defthm len-equal-0
          (equal (equal (len x) 0)
@@ -525,6 +537,7 @@
                                   (vars 4vmask-alist-p)
                                   (vals 4veclist-p)
                                   (modidx natp)
+                                  (print-with-mask-mode)
                                   &key
                                   ((moddb moddb-ok) 'moddb))
   :guard (and (eql (len vars) (len vals))
@@ -538,9 +551,10 @@
                                          (caar vars)
                                          0 (cdar vars)
                                          (car vals)
-                                         modidx)
-                (svtv-chase-print-signals (1+ (lnfix index)) (cdr vars) (cdr vals) modidx))
-      (svtv-chase-print-signals (1+ (lnfix index)) (cdr vars) (cdr vals) modidx))))
+                                         modidx
+                                         print-with-mask-mode)
+                (svtv-chase-print-signals (1+ (lnfix index)) (cdr vars) (cdr vals) modidx print-with-mask-mode))
+      (svtv-chase-print-signals (1+ (lnfix index)) (cdr vars) (cdr vals) modidx print-with-mask-mode))))
 
       
                      
@@ -651,7 +665,7 @@
        (updates svtv-chase-data.updates)
        (evaldata svtv-chase-data.evaldata)
        ((4vec val) (svtv-chase-eval var phase))
-       (- (svtv-chase-print-signal nil var rsh mask val modidx)
+       (- (svtv-chase-print-signal nil var rsh mask val modidx svtv-chase-data.print-with-mask-mode)
           (cw! "(Phase ~@0.)~%"
                (b* ((pair (svtv-chase-phase-labelpair phase svtv-chase-data.phaselabels)))
                  (if (equal pair phase)
@@ -668,9 +682,9 @@
          (vals (svtv-chase-evallist (alist-keys vars) phase))
          ((when (eq type :prevst))
           (cw! "Previous state var.~%")
-          (svtv-chase-print-signals 0 vars vals modidx)))
+          (svtv-chase-print-signals 0 vars vals modidx svtv-chase-data.print-with-mask-mode)))
       (cw! "Internal signal; dependencies:~%")
-      (svtv-chase-print-signals 0 vars vals modidx))
+      (svtv-chase-print-signals 0 vars vals modidx svtv-chase-data.print-with-mask-mode))
     (mv type vars expr))
   ///
   ;; (defret svarlist-addr-p-of-<fn>
@@ -1030,6 +1044,14 @@ What you can enter at the SVTV-CHASE prompt:
                     to do this, which you can do by running
                     (sv::setup-ev-for-chase) in the ACL2 loop.  You can undo this
                     with (sv::unsetup-ev-for-chase).
+
+ MASK-ALWAYS
+ MASK-NEVER
+ MASK-DEFAULT       Affects whether signal values are ANDed with the caremask before
+                    printing.  The default is to only AND the value with the mask if
+                    the unmasked value is not 2valued and the masked value is 2valued.
+                    The -always and -never settings change this to always/never 
+                    (respectively) the value with the mask.
 ")
 
 (defmacro setup-ev-for-chase ()
@@ -1180,7 +1202,17 @@ What you can enter at the SVTV-CHASE prompt:
                    (svtv-chase-data (set-svtv-chase-data->smartp new-smartp svtv-chase-data)))
                 (cw! "Turned data-aware dependency reduction ~s0.~%"
                      (if new-smartp "on" "off"))
-                (svtv-chase-print!))))
+                (svtv-chase-print!)))
+
+             ((when (equal objname "MASK-ALWAYS"))
+              (b* ((svtv-chase-data (set-svtv-chase-data->print-with-mask-mode t svtv-chase-data)))
+                (mv nil svtv-chase-data state)))
+             ((when (equal objname "MASK-NEVER"))
+              (b* ((svtv-chase-data (set-svtv-chase-data->print-with-mask-mode nil svtv-chase-data)))
+                (mv nil svtv-chase-data state)))
+             ((when (equal objname "MASK-DEFAULT"))
+              (b* ((svtv-chase-data (set-svtv-chase-data->print-with-mask-mode :default svtv-chase-data)))
+                (mv nil svtv-chase-data state))))
           (cw! "Error -- unrecognized directive: ~x0~%Type ? for allowed commands.~%" obj)
           (mv nil svtv-chase-data state)))
        ((when (and (consp obj)
@@ -1284,7 +1316,8 @@ What you can enter at the SVTV-CHASE prompt:
                                                *svtv-chase-data->stack*
                                                *svtv-chase-data->sigtype*
                                                *svtv-chase-data->vars*
-                                               *svtv-chase-data->expr*)))
+                                               *svtv-chase-data->expr*
+                                               *svtv-chase-data->print-with-mask-mode*)))
              (equal (nth n new-svtv-chase-data)
                     (nth n svtv-chase-data)))
     :hints(("Goal" :in-theory (enable member-equal)))))
@@ -1325,7 +1358,9 @@ What you can enter at the SVTV-CHASE prompt:
                                                *svtv-chase-data->stack*
                                                *svtv-chase-data->sigtype*
                                                *svtv-chase-data->vars*
-                                               *svtv-chase-data->expr*)))
+                                               *svtv-chase-data->expr*
+                                               *svtv-chase-data->print-with-mask-mode*)))
              (equal (nth n new-svtv-chase-data)
                     (nth n svtv-chase-data)))))
+
 

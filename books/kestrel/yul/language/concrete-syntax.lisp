@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -25,10 +25,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The concrete syntax is defined by an ABNF grammar based on the grammar in [Yul].
+    "The concrete syntax is defined by
+     an ABNF grammar based on the grammar in [Yul].
      We parse the ABNF grammar into an ACL2 representation.")
    (xdoc::p
-    "The primary API for parsing Yul is @(see parse-yul) and @(see parse-yul-bytes).")
+    "The primary API for parsing Yul is
+     @(see parse-yul) and @(see parse-yul-bytes).")
    (xdoc::p
     "There are currently two published grammars of Yul:
      one is in [Yul: Specification of Yul];

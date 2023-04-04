@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,13 +21,13 @@
 
 (defxdoc+ grammar-old
   :parents (concrete-syntax)
-  :short "ABNF old grammar of Yul."
+  :short "Old ABNF grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use our "
     (xdoc::seetopic "abnf::grammar-parser" "verified ABNF grammar parser")
-    " to parse the ABNF grammar of Yul into a representation in ACL2.")
+    " to parse the old ABNF grammar of Yul into a representation in ACL2.")
    (xdoc::p
     "This is the old grammar of Yul; see @(see concrete-syntax)."))
   :order-subtopics t
@@ -36,7 +36,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (abnf::defgrammar *grammar-old*
-  :short "The parsed ABNF grammar of Yul."
+  :short "The parsed old ABNF grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p

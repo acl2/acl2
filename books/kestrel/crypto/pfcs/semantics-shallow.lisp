@@ -17,6 +17,11 @@
 (include-book "kestrel/std/util/defund-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semantics-shallowly-embedded
@@ -73,7 +78,8 @@
    :mul `(mul ,(sesem-expression expr.arg1 prime)
               ,(sesem-expression expr.arg2 prime)
               ,prime))
-  :measure (expression-count expr))
+  :measure (expression-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
