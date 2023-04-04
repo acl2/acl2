@@ -1646,7 +1646,7 @@
 ;        after doing so the eye tends to miss little atoms (like b above)
 ;        hiding in their shadows.
 
-; See :DOC pp-special-syms for a discussion of the special-term-num feature.
+; See :DOC ppr-special-syms for a discussion of the special-term-num feature.
 
 ; To play with ppr we recommend executing this form:
 
@@ -1756,9 +1756,9 @@
 ;                      length of the longest line we will print is n.
 
 ; Supporting the extension by Stephen Westfold described in :DOC
-; pp-special-syms:
+; ppr-special-syms:
 ; (SPECIAL-TERM n t1 (i-ind i1 ...) r-ind r1 ...)
-;                    - Here, t1 is a FLAT tuple of width j. 
+;                    - Here, t1 is a FLAT tuple of width j.
 ;                      o-nm is NIL or a FLAT tuple that fits on the same
 ;                        line as t1.
 ;                      i-ind is NIL or a natural number.
@@ -2029,7 +2029,7 @@
 (defmacro ppr-flat-right-margin ()
   '(f-get-global 'ppr-flat-right-margin state))
 
-(defconst *pp-special-syms*
+(defconst *ppr-special-syms*
 
 ; The values in the following alist must all satisfy natp.  We keep this alist
 ; sorted by key (for readability only).
@@ -2038,7 +2038,7 @@
     (case-match . 1)
     (defabsstobj . 1)
     (defaxiom . 1)
-    (defchoose . 3) 
+    (defchoose . 3)
     (defcong . 2)
     (defconst . 1)
     (defmacro . 2)
@@ -2059,16 +2059,16 @@
     (mv-let . 2)
     (table . 1)))
 
-(table pp-special-syms nil nil
+(table ppr-special-syms nil nil
        :guard (and (symbolp key)
                    (natp val)))
 
-(table pp-special-syms nil *pp-special-syms* :clear)
+(table ppr-special-syms nil *ppr-special-syms* :clear)
 
 (defun special-term-num (sym state)
-  (let ((pair (assoc-eq sym (table-alist 'pp-special-syms (w state)))))
+  (let ((pair (assoc-eq sym (table-alist 'ppr-special-syms (w state)))))
 
-; Because of the table guard on pp-special-syms, we know that all values in the
+; Because of the table guard on ppr-special-syms, we know that all values in the
 ; table satisfy natp.  So this function is guaranteed to return either nil or a
 ; natp.
 

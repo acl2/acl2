@@ -141,8 +141,8 @@
           '(defthmr . ,name)
           state)))))
 
-(table pp-special-syms 'defthmr 1)
-(table pp-special-syms 'defthmdr 1)
+(table ppr-special-syms 'defthmr 1)
+(table ppr-special-syms 'defthmdr 1)
 
 ; Here is another approach.  But it's heavy-handed somehow, and presents
 ; difficult challenges in controlling the output.

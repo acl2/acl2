@@ -190,7 +190,7 @@
     maybe-merge-flat
     cons-ppr1
 
-    *pp-special-syms*
+    *ppr-special-syms*
     special-term-num
 
     ppr1
