@@ -23,7 +23,6 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
 (in-theory (disable open-output-channel
-                    open-output-channel-p ;so that a rule below fires
                     open-output-channel-p1
                     mv-nth ;so that the rules below fire
                     ))
@@ -42,6 +41,19 @@
 (defthm symbolp-of-mv-nth-0-of-open-output-channel
   (symbolp (mv-nth 0 (open-output-channel file-name typ state)))
   :hints (("Goal" :in-theory (enable open-output-channel))))
+
+(defthm state-p1-of-mv-nth-1-of-open-output-channel
+  (implies (state-p1 state)
+           (state-p1 (mv-nth 1 (open-output-channel file-name type state))))
+  :hints (("Goal" :in-theory (enable open-output-channel
+                                     not-member-equal-when-not-writable-file-listp1))))
+
+(defthm state-p-of-mv-nth-1-of-open-output-channel
+  (implies (state-p state)
+           (state-p (mv-nth 1 (open-output-channel file-name type state))))
+  :hints (("Goal" :in-theory (enable state-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm open-output-channel-p1-after-open-output-channel
   (implies (mv-nth 0 (open-output-channel fname typ state)) ;no error
@@ -71,6 +83,7 @@
                                       (mv-nth 1 (open-output-channel fname typ state))))
   :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; See the guard of close-output-channel
 ;; todo: slow
@@ -87,14 +100,3 @@
   (equal (w (mv-nth 1 (open-output-channel file-name type state)))
          (w state))
   :hints (("Goal" :in-theory (enable open-output-channel))))
-
-(defthm state-p1-of-mv-nth-1-of-open-output-channel
-  (implies (state-p1 state)
-           (state-p1 (mv-nth 1 (open-output-channel file-name type state))))
-  :hints (("Goal" :in-theory (enable open-output-channel
-                                     not-member-equal-when-not-writable-file-listp1))))
-
-(defthm state-p-of-mv-nth-1-of-open-output-channel
-  (implies (state-p state)
-           (state-p (mv-nth 1 (open-output-channel file-name type state))))
-  :hints (("Goal" :in-theory (enable state-p))))
