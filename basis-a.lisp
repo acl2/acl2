@@ -5876,6 +5876,38 @@
                            ,(make-record-recognizer-body field-layout)))))))))
 
 (defun record-macros (name field-layout cheap recog-name)
+
+; We considered avoiding the use of defabbrev, which introduces a LET, in
+; make-record-accessors when cheap is nil.  But the following experiment
+; convinced us that this wasn't worth messing with.  This experiment is based
+; on the accessor introduced for the rune field by the defrec event for
+; def-body.
+
+;   (value :q)
+;   (defabbrev foo-abbrev (rune)
+;     (car (cdr (cdr (cdr (cdr rune))))))
+;   (defmacro foo-mac (rune)
+;     (list 'car
+;           (list 'cdr
+;                 (list 'cdr
+;                       (list 'cdr (list 'cdr rune))))))
+;   (defun f-abbrev (x)
+;     (declare (xargs :guard (true-listp x)))
+;     (foo-abbrev x))
+;   (defun f-mac (x)
+;     (declare (xargs :guard (true-listp x)))
+;     (foo-mac x))
+;   (defconstant *lstlst*
+;     (loop for i from 1 to 10000000 collect (make-list 10)))
+;   (defun test-abbrev ()
+;     (loop for lst in *lstlst* always (eq (f-abbrev lst) nil)))
+;   (defun test-mac ()
+;     (loop for lst in *lstlst* always (eq (f-mac lst) nil)))
+;   ; There was no observable time difference upon evaluating the following two
+;   ; forms.
+;   (time$ (test-abbrev))
+;   (time$ (test-mac))
+
   (declare (xargs :guard (or recog-name (symbolp name))))
   (let ((recog-name (or recog-name
                         (record-maker-recognizer-name name))))
@@ -5886,9 +5918,10 @@
                                   (make-record-car-cdrs field-layout
                                                         (if cheap nil '(cdr)))
                                   cheap)
-           (list (make-record-changer name field-layout cheap)
-                 (make-record-maker name field-layout cheap)
-                 (make-record-recognizer name field-layout cheap recog-name))))))
+           (list
+            (make-record-changer name field-layout cheap)
+            (make-record-maker name field-layout cheap)
+            (make-record-recognizer name field-layout cheap recog-name))))))
 
 ; WARNING: If you change the layout of records, you must change
 ; certain functions that build them in.  Generally, these functions
@@ -6355,6 +6388,17 @@
    (io? error nil state (alist str ctx)
         (error-fms nil ctx nil str alist state))
    (mv nil nil state)))
+
+(defun set-inhibited-summary-types-fn (lst state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (let ((msg (chk-inhibited-summary-types 'set-inhibited-summary-types lst)))
+    (cond (msg (er soft 'set-inhibited-summary-types "~@0" msg))
+          (t (pprogn (f-put-global 'inhibited-summary-types lst state)
+                     (value lst))))))
+
+(defmacro set-inhibited-summary-types (lst)
+  `(set-inhibited-summary-types-fn ,lst state))
 
 (defconst *uninhibited-warning-summaries*
   '("Uncertified"

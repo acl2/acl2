@@ -7828,6 +7828,28 @@
    nil
    (w state)))
 
+(defun state-global-let*-untouchable-alist ()
+
+; We test against *initial-untouchable-fns* because if the point is to avoid
+; directly setting untouchable vars, it makes sense not to do so by calling
+; untouchalbe fns.
+
+  (let (fn
+        (wrld (w *the-live-state*))
+        (n-s '(nil state)))
+    (loop for x in (sort (copy-list *initial-untouchable-vars*) #'symbol<)
+          when
+          (or
+           (and (equal (stobjs-in (setq fn (packn (list 'set- x '-state))) wrld)
+                       n-s)
+                (equal (stobjs-out fn wrld) '(state))
+                (not (member-eq fn *initial-untouchable-fns*)))
+           (and (equal (stobjs-in (setq fn (packn (list 'set- x))) wrld)
+                       n-s)
+                (equal (stobjs-out fn wrld) '(state))
+                (not (member-eq fn *initial-untouchable-fns*))))
+          collect (cons x fn))))
+
 (defun check-built-in-constants (&aux (state *the-live-state*))
 
 ; Certain defconsts are problematic because they build in values that one
@@ -7973,6 +7995,14 @@
                     '*tau-booleanp-pair*
                     *tau-booleanp-pair*
                     (getpropc 'booleanp 'tau-pair))))
+    (cond
+     ((not
+       (equal *state-global-let*-untouchable-alist*
+              (state-global-let*-untouchable-alist)))
+      (interface-er str
+                    '*state-global-let*-untouchable-alist*
+                    *state-global-let*-untouchable-alist*
+                    (state-global-let*-untouchable-alist))))
     (cond
      ((not
        (and (equal

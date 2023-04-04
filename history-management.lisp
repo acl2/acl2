@@ -4046,6 +4046,9 @@
   (fcons-term* 'cons erp
                (fcons-term* 'cons val *nil*)))
 
+(defun-for-state set-standard-co (val state))
+(defun-for-state set-proofs-co (val state))
+
 (defun@par translate-simple-or-error-triple (uform ctx wrld state)
 
 ; First suppose either #-acl2-par or else #+acl2-par with waterfall-parallelism

@@ -2,7 +2,7 @@
 
 (set-ld-pre-eval-print :never state)
 
-(assign inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation)))
+(set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation)))
 
 (include-book "cbf")
 
