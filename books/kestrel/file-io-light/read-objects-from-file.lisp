@@ -51,8 +51,7 @@
   :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-objects-from-channel-aux
-  (implies (and ;; (symbolp channel)
-                (state-p1 state)
+  (implies (and (state-p1 state)
                 (open-input-channel-p1 channel :object state))
            (open-input-channel-any-p1 channel (mv-nth 1 (read-objects-from-channel-aux channel acc state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel-aux
@@ -77,8 +76,7 @@
   :hints (("Goal" :in-theory (enable read-objects-from-channel))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-objects-from-channel
-  (implies (and ;; (symbolp channel)
-                (state-p1 state)
+  (implies (and (state-p1 state)
                 (open-input-channel-p1 channel :object state))
            (open-input-channel-any-p1 channel (mv-nth 1 (read-objects-from-channel channel state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel))))

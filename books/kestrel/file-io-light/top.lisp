@@ -14,6 +14,9 @@
 (include-book "channels")
 
 ;; Built-in channel functions:
+(include-book "open-channels-p")
+(include-book "open-input-channel-p")
+(include-book "open-output-channel-p")
 (include-book "open-input-channel")
 (include-book "open-output-channel")
 (include-book "open-output-channel-bang")

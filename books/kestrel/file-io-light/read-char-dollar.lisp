@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/channel-contents" :dir :system)
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "channels"))
+(local (include-book "open-input-channel-p"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 
@@ -25,15 +26,14 @@
                            member-equal)))
 
 (defthm state-p1-of-mv-nth-1-of-read-char$
-  (implies (and (symbolp channel)
-                (state-p1 state)
-                (assoc-equal channel (open-input-channels state)))
+  (implies (and (state-p1 state)
+                (assoc-equal channel (open-input-channels state)) ;todo: instead say it's an open input channel?x
+                )
            (state-p1 (mv-nth 1 (read-char$ channel state))))
   :hints (("Goal" :in-theory (enable read-char$))))
 
 (defthm state-p-of-mv-nth-1-of-read-char$
-  (implies (and (symbolp channel)
-                (state-p1 state)
+  (implies (and (state-p1 state)
                 (assoc-equal channel (open-input-channels state)))
            (state-p (mv-nth 1 (read-char$ channel state))))
   :hints (("Goal" :in-theory (enable state-p))))
@@ -54,8 +54,7 @@
   :hints (("Goal" :in-theory (enable open-input-channel-any-p1))))
 
 (defthm open-input-channels-of-mv-nth-1-of-read-char$
-  (implies (and (symbolp channel)
-                (state-p1 state)
+  (implies (and (state-p1 state)
                 (open-input-channel-p1 channel :character state))
            (equal (open-input-channels (mv-nth 1 (read-char$ channel state)))
                   (if (cddr (assoc-equal channel (open-input-channels state)))

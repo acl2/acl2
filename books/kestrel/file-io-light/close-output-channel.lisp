@@ -18,7 +18,7 @@
 ;todo: move to channels.lisp, but that depends on this so first separate out the basic stuff in this book
 (defthm state-p1-of-close-output-channel-when-open-output-channel-p1
   (implies (and (open-output-channel-p1 channel typ state) ;typ is a free var
-                (member-equal typ '(:byte :character :object))
+                (member-equal typ *file-types*)
                 (state-p1 state))
            (state-p1 (close-output-channel channel state)))
   :hints (("Goal" :in-theory (enable close-output-channel
@@ -35,7 +35,7 @@
                                   (open-output-channel-p1)))))
 
 (defthm state-p-of-close-output-channel
-  (implies (and (open-output-channel-any-p1 channel state)
+  (implies (and (open-output-channel-any-p channel state)
                 (state-p state))
            (state-p (close-output-channel channel state)))
   :hints (("Goal" :in-theory (enable state-p))))

@@ -39,8 +39,7 @@
         (read-bytes-from-channel channel (cons maybe-byte acc) state)))))
 
 (defthm state-p1-of-mv-nth-1-of-read-bytes-from-channel
-  (implies (and (symbolp channel)
-                (open-input-channel-p channel :byte state)
+  (implies (and (open-input-channel-p channel :byte state)
                 ;; (true-listp acc)
                 (state-p1 state))
            (state-p1 (mv-nth 1 (read-bytes-from-channel channel acc state))))
@@ -49,7 +48,7 @@
                                      open-input-channel-p1))))
 
 ;; (defthm state-p-of-mv-nth-1-of-read-bytes-from-channel
-;;   (implies (and (symbolp channel)
+;;   (implies (and
 ;;                 (open-input-channel-p channel :byte state)
 ;;                 ;; (true-listp acc)
 ;;                 (state-p state))
@@ -58,7 +57,7 @@
 
 ;todo
 ;; (defthm open-input-channels-of-mv-nth-1-of-read-bytes-from-channel
-;;   (implies (and (symbolp channel)
+;;   (implies (and
 ;;                 ;(open-input-channel-p channel typ state)
 ;;                 ;; (true-listp acc)
 ;;                 (state-p1 state))
@@ -85,8 +84,7 @@
                                      UNSIGNED-BYTE-LISTP))))
 
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-bytes-from-channel
-  (implies (and (symbolp channel)
-                (open-input-channel-p channel typ state)
+  (implies (and (open-input-channel-p channel typ state)
                 (state-p1 state))
            (open-input-channel-p1 channel typ (mv-nth 1 (read-bytes-from-channel channel2 acc state))))
   :hints (("Goal" :in-theory (enable read-bytes-from-channel

@@ -84,8 +84,7 @@
   :hints (("Goal" :in-theory (enable open-input-channel-any-p))))
 
 (defthm open-input-channels-of-mv-nth-2-of-read-object
-  (implies (and ;; (symbolp channel)
-                (state-p1 state)
+  (implies (and (state-p1 state)
                 (open-input-channel-p1 channel :object state))
            (equal (open-input-channels (mv-nth 2 (read-object channel state)))
                   (if (cddr (assoc-equal channel (open-input-channels state)))

@@ -1,6 +1,6 @@
-; Check compatibility with std
+; A lightweight book about the built-in function >=-len.
 ;
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
-;; Any name clash with std would cause an error:
-(include-book "std/io/top" :dir :system)
-(include-book "top")
+(defthm >=-len-rewrite
+  (implies (natp n)
+           (equal (>=-len x n)
+                  (>= (len x) n))))
