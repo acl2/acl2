@@ -1572,9 +1572,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defconstant *sharp-reader-max-array-size*
 
-; We keep this a fixnum in all reasonable Lisps, to guarantee in particular
-; that the expression (1+ *sharp-reader-max-index*) in with-reckless-read will
-; always evaluate to a fixnum.
+; Warning: Look at how this constant is used before increasing it.
 
   (1- (expt 2 29)))
 
@@ -1583,11 +1581,11 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; We hold the maximum index assigned to *sharp-reader-array* in this variable.
 ; (It is also OK if this variable exceeds that index; initially, its value is 0
 ; even though no index has been assigned.)  We use this value to wipe clean the
-; *sharp-reader-array* after its use (see with-reckless-read), so that it
-; doesn't defeat potential garbage collection of its elements.  We were tempted
-; to use a one-element array so that Lisps like GCL can avoid boxing, but a
-; little experimentation seems to suggest that GC for even 1,000,000 fixnums is
-; very fast compared to what we might expect from reading that many objects.
+; *sharp-reader-array* after its use, so that it doesn't defeat potential
+; garbage collection of its elements.  We were tempted to use a one-element
+; array so that Lisps like GCL can avoid boxing, but a little experimentation
+; seems to suggest that GC for even 1,000,000 fixnums is very fast compared to
+; what we might expect from reading that many objects.
 
   0)
 
