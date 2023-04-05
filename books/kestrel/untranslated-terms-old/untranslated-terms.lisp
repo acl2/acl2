@@ -49,7 +49,7 @@
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
-(include-book "std/alists/remove-assocs" :dir :system) ; todo: use clear-keys, or deprecate that?
+(include-book "std/alists/remove-assocs" :dir :system) ; todo: use clear-keys
 (include-book "std/util/bstar" :dir :system) ; redundant but included because this book "knows" about this b*
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
@@ -1988,15 +1988,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun vars-bound-in-case-match-pattern (pat)
-  (declare (xargs :guard t))
-  (mv-let (tests bindings)
-      (match-tests-and-bindings :ignore pat nil nil)
-    (declare (ignore tests))
-    (and (alistp bindings)              ; so we don't have to prover property of match-tests-and-bindings
-         (strip-cars bindings))))
-
-;; Only have to worry about the !v case
+;; Only have to worry about the !v case.
 (defun var-refs-in-case-match-pattern (pat)
   (declare (xargs :guard t))
   (if (symbolp pat)
@@ -2514,6 +2506,7 @@
   :hints (("Goal" :in-theory (enable remove-assocs-equal symbol-alistp))))
 
 ;; It is simpler to replace a variable than a larger term because lambdas are easier to handle.
+;todo: deprecate this:
 (mutual-recursion
  (defun sublis-var-untranslated-term (alist term)
    (declare (xargs :guard (and (untranslated-termp term)
@@ -2533,18 +2526,20 @@
            term
          (let* ((fn (ffn-symb term)))
            (if (eq fn 'let)
+               ;; (let <bindings> ...declares... <body>)
                (b* ((bindings (let-bindings term))
                     (declares (let-declares term))
                     (body (let-body term))
                     (vars (let-binding-vars bindings))
                     (terms (let-binding-terms bindings))
-                    ;; FIXME, if there is overlap between 1) vars in the replacement for free vars in the body, and 2) the bound vars, then signal an error (for now)
                     ;; Apply the replacement to the terms to which the vars
                     ;; are bound (okay because all bindings happen
                     ;; simultaneously):
                     (new-terms (sublis-var-untranslated-term-list alist terms))
                     ;; Remove any bindings whose vars are shadowed by the let:
                     (alist-for-body (remove-assocs vars alist))
+                    ;; (body-vars (free-vars-in-untranslated-term$ body wrld)) ; todo: requires the world
+                    ;; FIXME, if there is overlap between 1) vars in the replacements for free vars in the body, and 2) the bound vars, then signal an error (for now)
                     (new-body (sublis-var-untranslated-term alist-for-body body)))
                  `(let ,(make-let-bindings vars new-terms) ,@declares ,new-body))
              (if (eq fn 'let*) ;fffixme
