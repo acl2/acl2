@@ -89,7 +89,7 @@
                                  :do-not-induct t
                                  :in-theory
                                  (enable c::uchar-array-sint-index-okp
-                                         c::uchar-array-index-okp
+                                         c::uchar-array-integer-index-okp
                                          c::boolean-from-sint
                                          c::lt-sint-sint
                                          c::add-sint-sint

@@ -1446,9 +1446,9 @@
        (arr-typep (pack fixtype '-arrayp))
        (arr-length (pack fixtype '-array-length))
        (arr-length-alt-def (pack arr-length '-alt-def))
-       (arr-index-okp (pack fixtype '-array-index-okp))
-       (arr-read (pack fixtype '-array-read))
-       (arr-write (pack fixtype '-array-write))
+       (arr-index-okp (pack fixtype '-array-integer-index-okp))
+       (arr-read (pack fixtype '-array-integer-read))
+       (arr-write (pack fixtype '-array-integer-write))
        (elem-typep (pack fixtype 'p))
        (elem-type-listp (pack fixtype '-listp))
        (elem-type-list-fix (pack fixtype '-list-fix))
@@ -1593,7 +1593,7 @@
                         (:e equal)
                         (:e ident)
                         (:e identp)
-                        (:t uchar-array-read)))
+                        (:t uchar-array-integer-read)))
        (writer-lemma-theory `(,struct-tag-p
                               value-struct-write
                               ,(packn-pos (list 'not-flexible-array-member-p-when-
@@ -1619,7 +1619,8 @@
                               consp-when-sintp
                               consp-when-slongp
                               consp-when-sllongp
-                              ,(packn-pos (list 'consp-when- arr-typep) 'consp-when-)
+                              ,(packn-pos (list 'consp-when- arr-typep)
+                                          'consp-when-)
                               ,(packn (list struct-tag-fix '-when- struct-tag-p))
                               (:e acl2::bool-fix)
                               (:e equal)
@@ -1644,7 +1645,8 @@
                               value-struct->flexiblep-of-value-struct
                               value-struct->members-of-value-struct
                               value-struct->tag-of-value-struct
-                              ,(packn-pos (list 'valuep-when- arr-typep) 'valuep-when-)
+                              ,(packn-pos (list 'valuep-when- arr-typep)
+                                          'valuep-when-)
                               valuep-when-value-optionp
                               (:t ,struct-tag-p)
                               (:t value-struct)
@@ -1683,7 +1685,7 @@
                         (:e ident)
                         (:e identp)
                         ,(packn (list struct-tag-fix '-when- struct-tag-p))
-                        ,(pack arr-typep '-of- fixtype '-array-write)
+                        ,(pack arr-typep '-of- fixtype '-array-integer-write)
                         value-optionp-when-valuep
                         ,(pack 'valuep-when- arr-typep)
                         valuep-when-value-optionp
