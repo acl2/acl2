@@ -2432,8 +2432,14 @@
                    (mv 'sv::bitxor (subsetp-equal '(ha-c-chain) fns) nil))
                   ((eq adder-type 'ha-c) ;; ha-c will also be searched carefully like sum outputs.
                    (mv 'sv::bitand (or (subsetp-equal '(ha-s-chain) fns)
-                                       (subsetp-equal '(ha-c-chain) fns))
-                       (subsetp-equal '(ha-c-chain) fns)))
+                                       ;;(subsetp-equal  '(ha-c-chain) fns)  ;;
+                                       ;;ha-c-chain should not  be included otherwise
+                                       ;;it'll add all  the bitand combinations
+                                       ;;too  and prevent  careful search  from
+                                       ;;diving in....
+                                       )
+                       (subsetp-equal '(ha-c-chain) fns) ;; if there is a full pattern, then don't explode..
+                       ))
                   ((eq adder-type 'ha+1) ;; probably not fully implemented.
                    (mv 'sv::bitxor (subsetp-equal '(ha+1-c-chain) fns) nil))
                   (t (mv 'sv::bitxor (subsetp-equal '(fa-c-chain) fns) nil))))
@@ -2497,6 +2503,10 @@
                      (not (equal adder-type 'ha-c)))
                 (exploded-args-and-args-alist-inv collected-res env :bit-fn 'sv::bitxor)))
       :hints (("Goal"
+               :do-not-induct t
+               :expand ((PROCESS-FA/HA-C-CHAIN-PATTERN-ARGS PATTERN-ALIST COLLECTED
+                                                            :ADDER-TYPE 'HA))
+               :induct (process-fa/ha-c-chain-pattern-args pattern-alist collected) 
                :in-theory (e/d (exploded-args-and-args
                                 exploded-args-and-args->exploded-args
                                 exploded-args-and-args->args
@@ -2651,7 +2661,11 @@
            ;; 3 means all exploded-args exist, and they are dispersed to the two branches.
            ((when (equal exist-branch 3))
             (mv args exploded-ags)))
-        ;; if exist-branch is not 3, then keep searching for other matches.
+        ;; TODO:  Consider adding  a  check  here that  when  ha/ha-c is  being
+        ;; searched, it didn't just match the svex itself. That would be stupid
+        ;; because it'd defy the purpose of careful search.
+
+        ;;if exist-branch is not 3, then keep searching for other matches.
         (find-s-from-found-c-in-svex-aux-explore-list svex (cdr exploded-args-and-args-list))))
     ///
     (defret <fn>-is-correct
@@ -3135,7 +3149,10 @@
 (defines find-s-from-found-c-in-svex-aux
   :verify-guards nil
 
-  :prepwork ((define find-s-from-found-c-in-svex-aux-counter ()
+  :prepwork ((Local
+              (in-theory (enable SV::SVEX-CALL->FN)))
+             
+             (define find-s-from-found-c-in-svex-aux-counter ()
                nil
                ///
                (profile 'find-s-from-found-c-in-svex-aux-counter))
@@ -3245,7 +3262,8 @@
          :call
          (cond ((if (eq adder-type 'ha-c) (ha-c-chain-pattern-p svex) (ha-s-chain-pattern-p svex))
                 ;; possible fa-s-chain/ha-s-chain here.
-                (b* ((bit-fn (if (eq adder-type 'ha-c) 'sv::bitand 'sv::bitxor))
+                (b* ((bit-fn svex.fn)
+
                      ;; first see if anything in the xor chain appears as an argument to an orphan fa-c
                      ;; explore1-res will be list of all 3 args. or 2 args if working for ha-c
                      ((mv args exploded-args)
@@ -3256,7 +3274,7 @@
                                      (find-s-from-found-c-in-svexlist-aux svex.args
                                                                           exploded-args-and-args-alist)))
 
-                     ((mv rest-bitxor remaining-exploded-args)
+                     ((mv rest-bitxor/and remaining-exploded-args)
                       (find-s-from-found-c-in-svex-aux-remove svex exploded-args))
 
                      ((unless (and (implies (equal adder-type 'ha-c) ;; do not allow borrowing elements for ha-c..
@@ -3271,18 +3289,18 @@
                                      (find-s-from-found-c-in-svexlist-aux svex.args
                                                                           exploded-args-and-args-alist)))
 
-                     (rest-bitxor (if remaining-exploded-args
-                                      (sv::Svex-call bit-fn
-                                                     ;; 1 comes from the only allowed value of remaining-exploded-args.
-                                                     ;; possibly, this can be extended to anything..
-                                                     (hons-list (lst-to-bitxor/and-chain remaining-exploded-args)
-                                                                rest-bitxor))
-                                    rest-bitxor))
+                     (rest-bitxor/and (if remaining-exploded-args
+                                          (sv::Svex-call svex.fn
+                                                         ;; 1 comes from the only allowed value of remaining-exploded-args.
+                                                         ;; possibly, this can be extended to anything..
+                                                         (hons-list (lst-to-bitxor/and-chain remaining-exploded-args)
+                                                                    rest-bitxor/and))
+                                        rest-bitxor/and))
 
                      (- (find-s-from-found-c-in-svex-aux-counter))
                      (result
                       (svex-apply$-for-bitxor/and-meta2
-                       (find-s-from-found-c-in-svex-aux rest-bitxor exploded-args-and-args-alist)
+                       (find-s-from-found-c-in-svex-aux rest-bitxor/and exploded-args-and-args-alist)
                        (find-s-from-found-c-bitxor/and-args
                         (find-s-from-found-c-in-svexlist-aux args exploded-args-and-args-alist)))))
                   result))
@@ -4323,7 +4341,7 @@
                   (sv::svex-call x.fn lst2)))
 
                (('ha+1-s-chain & & &)
-                ;; first arg of ha+1-s-chain should be method, therefore, a constant at all times. 
+                ;; first arg of ha+1-s-chain should be method, therefore, a constant at all times.
                 (b* ((lst1 (fix-order-of-fa/ha-chain-args-lst (cdr x.args)))
                      (lst2 (acl2::merge-sort-lexorder lst1)))
                   (sv::svex-call x.fn (cons (car x.args) lst2))))
@@ -6023,21 +6041,21 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        (pattern-alist (fast-alist-clean pattern-alist))
        (replaced-pattern-cnt (pattern-alist-has-complete-full-adder-patterns-p pattern-alist))
        (- (cw "- Quick search found and replaced ~p0 ~s1 patterns. ~%" replaced-pattern-cnt adder-str))
-;;;(- (fast-alist-free pattern-alist))
+       ;; ;(- (fast-alist-free pattern-alist))
 
        ((unless (equal svex-alist new-svex-alist))
         (progn$ ;;(cw "-> Structed changed. Let's make another pass. ~%")
          (fast-alist-free pattern-alist)
          (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
 
-;;;(- (cw "- First another quick search.. ~%"))
+       ;; ;(- (cw "- First another quick search.. ~%"))
 
        ;; TODO: to prevent  consing, can do some preliminary check  here for if
        ;; there exists xor chains OR maybe fa-* functions under or gates.
 
        ;; not sure if fix-order-of-fa/ha-s-args-alist should be called
        ;; somewhere else.
-;;;(svex-alist (fix-order-of-fa/ha-chain-args-alist svex-alist))
+       ;; ;(svex-alist (fix-order-of-fa/ha-chain-args-alist svex-alist))
 
        ;; search again after replacements so args can match when looking for fa-s/ha-s patterns.
        #|((mv pattern-alist &)
@@ -6060,7 +6078,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
  missed any ~s0-s pattern that  has a found counterpart ~s0-c pattern...~%"
               adder-str))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;; Carefully looking for fa/ha-s patterns:
        (exploded-args-and-args-alist (process-fa/ha-c-chain-pattern-args pattern-alist nil))
        (new-svex-alist
@@ -6080,7 +6098,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                 (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
        (- (cw "-> Careful search did not reveal any new ~s0-s. ~%" adder-str))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;; Carefully looking for ha-c patterns:
        (careful-look-for-ha-c (equal adder-type 'ha))
        (- (and careful-look-for-ha-c
@@ -6113,7 +6131,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        (- (and careful-look-for-ha-c
                (cw "-> Careful search did not reveal any new ~s0-c. ~%" adder-str)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;; Vector adder simplification
        (- (cw "- Looking and rewriting for vector adder patterns... ~%"))
        (new-svex-alist (ppx-simplify-alist svex-alist))
@@ -6124,11 +6142,11 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                 (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
        (- (cw "-> No change from vector adder simplification. ~%"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;; Do not move forward unless fa
        ((unless (equal adder-type 'fa)) svex-alist)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;; Local simplification to reveal fa-c patterns
        (- (cw "- Let's see if local bitxor/or/and simplification can reveal more fa-c patterns... ~%"))
        (config (svl::change-svex-reduce-config ;; make sure config is set correctly.
@@ -6182,7 +6200,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        ;;          (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
        ;; (- (cw "-> No change from known pattern rw. ~%"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;; Clean out IDs that possible came from wrapping PP with IDs stage.
        ((unless (or (not (aggressive-find-adders-in-svex))
                     this.state.pp-id-cleaned))
@@ -6192,7 +6210,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
               (svex-alist (extract-svex-from-id-alist svex-alist)))
           (find-f/h-adders-in-svex-alist svex-alist (1- limit))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;; Global simplification unless disabled.
        ((unless (find-adders-global-bitand/or/xor-simplification-enabled))
         (progn$ (cw "- Skipping global simplification because it is disabled at this stage with (enable-find-adders-global-bitand/or/xor-simplification nil). Ending the search.~%")
@@ -6545,7 +6563,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
              (collect-ha-args-under-gates-list svex.args
                                                (and (or underadder adder-p)
                                                     ;; carry on underadder only
-                                                    ;; through these gates. (why??? I don't remember)
+                                                    ;; through these gates. (why???: I don't remember)
                                                     (or (equal svex.fn 'sv::bitand)
                                                         (equal svex.fn 'sv::unfloat)
                                                         (equal svex.fn 'sv::id)
@@ -7213,7 +7231,7 @@ was ~st seconds."))
           (svex-alist (find-f/h-adders-in-svex-alist svex-alist
                                                      *find-f/h-adders-in-svex-alist-limit*
                                                      :adder-type 'ha))
-
+          
           (- (time-tracker :rewrite-adders-in-svex :stop))
           (- (time-tracker :rewrite-adders-in-svex :print?
                            :min-time 0
