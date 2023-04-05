@@ -280,6 +280,7 @@
 ;; Example:
 ;; ((arg1 "string")
 ;;  (arg2 "stringa" (concatenate 'string "stringb" "stringc")))
+;; TODO: Ensure no arg has more than 1 entry.
 (defun macro-arg-descriptionsp (arg-descriptions)
   (declare (xargs :guard t
                   :measure (len arg-descriptions)))
@@ -398,18 +399,27 @@
 ;; Returns a defxdoc form.
 ;; TODO: Think about all the & things that can occur in the macro-args
 (defund defxdoc-for-macro-fn (name    ; the name of the macro being documented
-                              macro-args ; the formals of the macro, possibly with initial values, and suppliedp variables
+                              macro-args ; the formals of the macro, possibly with initial values, and suppliedp variable; also includs &whole, &key, etc.
                               parents
                               short ; a form that evaluates to a string or to nil
                               arg-descriptions
                               description ; either nil, or a form that evaluates to a string, or a list of such forms
+                              state
                               )
   (declare (xargs :guard (and (symbolp name)
                               (macro-arg-listp macro-args)
                               (symbol-listp parents)
                               (macro-arg-descriptionsp arg-descriptions))
-                  :mode :program))
-  (b* ((macro-arg-names (macro-arg-names macro-args))
+                  :mode :program ; why?
+                  :stobjs state))
+  (b* (;; If the macro does exist, make sure the supplied macro-args are correct (todo: support just getting them?)
+       (expected-macro-args (getprop name 'macro-args :none 'current-acl2-world (w state)))
+       ((when (and (not (eq :none expected-macro-args))
+                   (not (equal macro-args expected-macro-args))))
+        (er hard? 'defxdoc-for-macro-fn "Mismatch between supplied macro args (not counting &whole), ~X01, and existing args, ~X23."
+            macro-args nil expected-macro-args nil))
+
+       (macro-arg-names (macro-arg-names macro-args))
        (described-arg-names (strip-cars arg-descriptions))
        ((when (not (subsetp-eq described-arg-names macro-arg-names)))
         (er hard? 'defxdoc-for-macro-fn "Descriptions given for arguments, ~x0, that are not among the macro args, ~x1."
@@ -457,15 +467,16 @@
                              arg-descriptions
                              description ; a form that evaluates to a string or to nil
                              )
-  (defxdoc-for-macro-fn name macro-args parents short arg-descriptions description))
+  `(make-event (defxdoc-for-macro-fn ',name ',macro-args ',parents ',short ',arg-descriptions ',description state)))
 
 ;; Returns a progn including the defmacro form and a defxdoc form.
 (defun defmacrodoc-fn (name macro-args
                             rest ; has the declares, the body, and xdoc stuff
-                            )
+                            state)
   (declare (xargs :mode :program
                   :guard (and (symbolp name)
-                              (macro-arg-listp macro-args))))
+                              (macro-arg-listp macro-args))
+                  :stobjs state))
   (b* (((mv declares rest) ;first come optional declares (no legacy doc strings)
         (get-declares rest))
        (body (first rest))      ;then the body
@@ -485,7 +496,7 @@
                    (not arg-descriptions)))
         (er hard 'defmacrodoc "No :args supplied for ~x0 (should contain descriptions of the macro args)" name)))
     `(progn (defmacro ,name ,macro-args ,@declares ,body)
-            ,(defxdoc-for-macro-fn name macro-args parents short arg-descriptions description))))
+            ,(defxdoc-for-macro-fn name macro-args parents short arg-descriptions description state))))
 
 ;; This is like defmacro, except it allows (after the macro's body), the
 ;; inclusion of :short and :parents (for generating xdoc) as well as the
@@ -494,6 +505,6 @@
 ;; does and is included in the :long xdoc section.
 (defmacro defmacrodoc (name macro-args &rest rest)
   ;; This previously used make-event to avoid a problem with calling FLPR in safe mode via fmt1-to-string.
-  (defmacrodoc-fn name macro-args rest))
+  `(make-event (defmacrodoc-fn ',name ',macro-args ',rest state)))
 
 ;; See tests in doc-tests.lisp.
