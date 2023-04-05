@@ -4303,9 +4303,9 @@
 
 (defmacro get-warrantp (fn wrld)
 
-; Warning: This macro expects fn to be a userfn.  It fais for apply$ primitives
-; and boot functions!  To determine whether a given symbol has or needs a
-; warrant, use find-warrant-function-name.
+; Warning: This macro expects fn to be a userfn.  It fails for apply$
+; primitives and boot functions!  To determine whether a given symbol has or
+; needs a warrant, use find-warrant-function-name.
 
   `(access-badge-userfn-structure-tuple-warrantp
     (assoc-eq ,fn

@@ -1394,19 +1394,29 @@
                                     "Failed attempt (when building a term) to ~
                                      call "
                                   "Failed attempt to call "))
-                          (str1 (if (eq fn 'non-exec)
-                                    ""
-                                  (if non-executablep
-                                      "non-executable function "
-                                    "constrained function "))))
+                          (str1 (cond
+                                 ((eq fn 'non-exec) "")
+                                 (non-executablep "non-executable function ")
+                                 (t "constrained function ")))
+                          (str2 (cond
+                                 ((or (eq fn 'non-exec)
+                                      (null (attachment-pair fn wrld)))
+                                  "")
+                                 ((warrant-function-namep fn wrld)
+                                  ":
+warrant functions are not executable during proofs")
+                                 (t
+                                  ":
+its attachment is ignored during proofs"))))
                      (if skip-pkg-prefix
-                         (concatenate 'string str0 str1 (symbol-name fn))
+                         (concatenate 'string str0 str1 (symbol-name fn) str2)
                        (concatenate 'string
                                     str0
                                     str1
                                     (symbol-package-name fn)
                                     "::"
-                                    (symbol-name fn))))))))
+                                    (symbol-name fn)
+                                    str2)))))))
       (case-match reason
         ((:non-executable . erp)
          (let ((reason-string (reason-string erp nil wrld state)))

@@ -7854,11 +7854,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (f-get-global 'inhibit-output-lst-stack state))))
                ,@
                (and summary-on-off-p
-                    `((inhibited-summary-types ,(with-output-on-off-binding-val
-                                                 summary-on
-                                                 summary-off
-                                                 t)))))
+                    '((inhibited-summary-types
+                       (f-get-global 'inhibited-summary-types state)))))
               (er-progn
+               ,@(and summary-on-off-p
+                      `((set-inhibited-summary-types
+                         ,(with-output-on-off-binding-val summary-on
+                                                          summary-off
+                                                          t))))
                ,@(and stack
                       `((pprogn ,(if (eq stack :pop)
                                      '(pop-inhibit-output-lst-stack state)
@@ -15683,6 +15686,45 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  nil))
             (state-global-let*-get-globals (cdr bindings))))))
 
+(defconst *state-global-let*-untouchable-alist*
+
+; Each entry in this alist is of the form (var . fn), where var is a state
+; global and the approved way to set it, given a value x, is with (fn x state).
+; Although the resulting value is generally x, that need not be exactly the
+; case; in particularly, set-iprint calls compress1.
+
+; This constant supports the use of state-global-let* to bind certain built-in
+; untouchables variables without a translate error.  It was computed by
+; evaluating the form (state-global-let*-untouchable-alist) in raw Lisp and
+; checking manually that the functions are indeed appropriate.  We check in
+; check-built-in-constants that this value is still equal to
+; (state-global-let*-untouchable-alist).  We considered including macros as
+; well, but that only added checkpoint-summary-limit and a few macros for
+; controlling ACL2(p), so we avoid the (minor) extra complication of handling
+; macros here.
+
+  '((ABBREV-EVISC-TUPLE . SET-ABBREV-EVISC-TUPLE-STATE)
+    (COMPILER-ENABLED . SET-COMPILER-ENABLED)
+    (CURRENT-PACKAGE . SET-CURRENT-PACKAGE-STATE)
+    (FMT-HARD-RIGHT-MARGIN . SET-FMT-HARD-RIGHT-MARGIN)
+    (FMT-SOFT-RIGHT-MARGIN . SET-FMT-SOFT-RIGHT-MARGIN)
+    (GAG-MODE-EVISC-TUPLE . SET-GAG-MODE-EVISC-TUPLE-STATE)
+    (INHIBIT-OUTPUT-LST . SET-INHIBIT-OUTPUT-LST-STATE)
+    (INHIBITED-SUMMARY-TYPES . SET-INHIBITED-SUMMARY-TYPES-STATE)
+    (LD-EVISC-TUPLE . SET-LD-EVISC-TUPLE-STATE)
+    (PPR-FLAT-RIGHT-MARGIN . SET-PPR-FLAT-RIGHT-MARGIN)
+    (PRINT-BASE . SET-PRINT-BASE) (PRINT-CASE . SET-PRINT-CASE)
+    (PRINT-LENGTH . SET-PRINT-LENGTH) (PRINT-LEVEL . SET-PRINT-LEVEL)
+    (PRINT-LINES . SET-PRINT-LINES)
+    (PRINT-RIGHT-MARGIN . SET-PRINT-RIGHT-MARGIN)
+    (PROOFS-CO . SET-PROOFS-CO-STATE)
+    (SERIALIZE-CHARACTER . SET-SERIALIZE-CHARACTER)
+    (SERIALIZE-CHARACTER-SYSTEM . SET-SERIALIZE-CHARACTER-SYSTEM)
+    (STANDARD-CO . SET-STANDARD-CO-STATE)
+    (TEMP-TOUCHABLE-FNS . SET-TEMP-TOUCHABLE-FNS)
+    (TEMP-TOUCHABLE-VARS . SET-TEMP-TOUCHABLE-VARS)
+    (TERM-EVISC-TUPLE . SET-TERM-EVISC-TUPLE-STATE)))
+
 (defun state-global-let*-put-globals (bindings)
 
 ; This function is used to generate code for the macroexpansion of
@@ -15694,27 +15736,71 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; restoration values.
 
   (declare (xargs :guard (state-global-let*-bindings-p bindings)))
-  (cond ((endp bindings) nil)
-        (t (cons (let ((val-form `(check-vars-not-free
-                                   (state-global-let*-cleanup-lst)
-                                   ,(cadar bindings))))
-                   (cond ((cddr (car bindings))
-                          `(if (f-boundp-global ',(caar bindings) state)
-                               (,(caddr (car bindings)) ; setter
-                                ,val-form
-                                state)
-                             (prog2$
-                              (er hard 'state-global-let*
-                                  "It is illegal to bind an unbound variable ~
-                                   in state-global-let*, in this case, ~x0, ~
-                                   when a setter function is supplied."
-                                  ',(caar bindings))
-                              state)))
-                         (t
-                          `(f-put-global ',(caar bindings)
-                                         ,val-form
-                                         state))))
-                 (state-global-let*-put-globals (cdr bindings))))))
+  (cond
+   ((endp bindings) nil)
+   ((let ((binding (car bindings)))
+
+; Case-match isn't defined yet; otherwise we'd write the following code.
+
+;    (case-match binding
+;      ((var ('f-get-global ('quote var) 'state))
+;       (and (symbolp var)
+;            (or (assoc-eq var *initial-global-table*)
+;                (assoc-eq var *initial-ld-special-bindings*))))
+;      (& nil))
+
+; That expression is easily proved equal to the one below by first evaluating
+; events
+;   (include-book "arithmetic/top" :dir :system)
+; and
+;   (defthm len-0 (equal (equal 0 (len x)) (atom x)))
+; and then replacing the (or (assoc-eq ...) ...) expressions with a fresh
+; variable, say, foo.
+
+      (and (true-listp binding)
+           (= (length binding) 2)
+           (let ((var (car binding))
+                 (expr (cadr binding)))
+             (and (symbolp var)
+                  (true-listp expr)
+                  (= (length expr) 3)
+                  (eq (car expr) 'f-get-global)
+                  (eq (caddr expr) 'state)
+                  (let ((qvar (cadr expr)))
+                    (and (true-listp qvar)
+                         (= (length qvar) 2)
+                         (eq (car qvar) 'quote)
+                         (eq (cadr qvar) var)))
+                  (or (assoc-eq var *initial-global-table*)
+                      (assoc-eq var *initial-ld-special-bindings*))))))
+    (state-global-let*-put-globals (cdr bindings)))
+   (t
+    (cons (let ((val-form `(check-vars-not-free
+                            (state-global-let*-cleanup-lst)
+                            ,(cadar bindings))))
+            (cond
+             ((cddr (car bindings))
+              `(if (f-boundp-global ',(caar bindings) state)
+                   (,(caddr (car bindings)) ; setter
+                    ,val-form
+                    state)
+                 (prog2$
+                  (er hard 'state-global-let*
+                      "It is illegal to bind an unbound variable in ~
+                       state-global-let*, in this case, ~x0, when a setter ~
+                       function is supplied."
+                      ',(caar bindings))
+                  state)))
+             (t
+              (let ((x (assoc-eq (caar bindings)
+                                 *state-global-let*-untouchable-alist*)))
+                 (cond
+                  (x ; e.g., (PRINT-CASE . SET-PRINT-CASE)
+                   `(,(cdr x) ,val-form state))
+                  (t `(f-put-global ',(caar bindings)
+                                    ,val-form
+                                    state)))))))
+          (state-global-let*-put-globals (cdr bindings))))))
 
 (defun state-global-let*-cleanup (bindings index)
 
@@ -15753,16 +15839,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      `(,(caddr (car bindings))
                        (car (nth ,index ,cdr-expr))
                        state))
-                    ((always-boundp-global (caar bindings))
-                     `(f-put-global ',(caar bindings)
-                                    (car (nth ,index ,cdr-expr))
-                                    state))
                     (t
-                     `(if (nth ,index ,cdr-expr)
-                          (f-put-global ',(caar bindings)
+                     (let ((x (assoc-eq
+                               (car (car bindings))
+                               *state-global-let*-untouchable-alist*)))
+                       (cond
+                        (x ; e.g., (PRINT-CASE .  SET-PRINT-CASE)
+                         `(,(cdr x)
+                           (car (nth ,index ,cdr-expr))
+                           state))
+                        ((always-boundp-global (caar bindings))
+                         `(f-put-global ',(caar bindings)
                                         (car (nth ,index ,cdr-expr))
-                                        state)
-                        (makunbound-global ',(caar bindings) state))))
+                                        state))
+                        (t
+                         `(if (nth ,index ,cdr-expr)
+                              (f-put-global ',(caar bindings)
+                                            (car (nth ,index ,cdr-expr))
+                                            state)
+                            (makunbound-global ',(caar bindings) state)))))))
                    (state-global-let*-cleanup (cdr bindings)
                                               (1+ index)))))))
 
@@ -21453,15 +21548,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     fmt-soft-right-margin
     fmt-hard-right-margin
 
-; We would like to make the following three untouchable, to avoid
-; getting a raw Lisp error in this sort of situation:
-;   (f-put-global 'inhibit-output-lst '(a . b) state)
-;   (defun foo (x) x)
-; But this will take some work so we wait....
-
-;   inhibit-output-lst
-;   inhibit-output-lst-stack
-;   inhibited-summary-types
+    inhibit-output-lst
+;   inhibit-output-lst-stack ; see pop-inhibit-output-lst-stack
+    inhibited-summary-types
 
     in-verify-flg
 
@@ -21512,6 +21601,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ld-error-action
     ld-query-control-alist
     ld-verbose
+    ld-level
 
     ld-history
 
@@ -22480,38 +22570,36 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro toggle-inhibit-er (str)
   `(local (toggle-inhibit-er! ,str)))
 
-(defmacro set-inhibit-output-lst (lst)
+(defun chk-inhibited-summary-types (caller lst)
+  (declare (xargs :guard t))
+  (cond ((not (true-listp lst))
+         (msg
+          "The argument to ~x0 must evaluate to a true-listp, unlike ~x1."
+          caller lst))
+        ((not (subsetp-eq lst *summary-types*))
+         (msg
+          "The argument to ~x0 must evaluate to a subset of the list ~X12, ~
+           but ~x3 contains ~&4."
+          caller
+          *summary-types*
+          nil
+          lst
+          (set-difference-eq lst *summary-types*)))
+        (t nil)))
 
-; In spite of the documentation for this macro, 'warning and 'warning! are
-; handled completely independently by the ACL2 warning mechanism, which looks
-; for 'warning or 'warning! in the value of state global 'inhibit-output-lst.
-; Set-inhibit-output-lst adds 'warning to this state global whenever it adds
-; 'warning.  If the user sets inhibit-output-lst directly using f-put-global or
-; assign, then including 'warning! will not automatically include 'warning.
+(defun set-inhibited-summary-types-state (lst state)
 
-  `(let ((ctx 'set-inhibit-output-lst))
-     (er-let* ((lst (chk-inhibit-output-lst ,lst ctx state)))
-              (pprogn (f-put-global 'inhibit-output-lst lst state)
-                      (value lst)))))
+; We could consider using defun-for-state to define this function, but then it
+; couldn't be in :logic mode because of the call (er soft ...) in
+; set-inhibited-summary-types.  Perhaps though it isn't important for this
+; function symbol to be in :logic mode.
 
-(defmacro set-inhibited-summary-types (lst)
-  `(let ((lst ,lst)
-         (ctx 'set-inhibited-summary-types))
-     (cond ((not (true-listp lst))
-            (er soft ctx
-                "The argument to set-inhibited-summary-types must evaluate ~
-                  to a true-listp, unlike ~x0."
-                lst))
-           ((not (subsetp-eq lst *summary-types*))
-            (er soft ctx
-                "The argument to set-inhibited-summary-types must evaluate ~
-                  to a subset of the list ~X01, but ~x2 contains ~&3."
-                *summary-types*
-                nil
-                lst
-                (set-difference-eq lst *summary-types*)))
-           (t (pprogn (f-put-global 'inhibited-summary-types lst state)
-                      (value lst))))))
+  (declare (xargs :stobjs state))
+  (let ((msg
+         (chk-inhibited-summary-types 'set-inhibited-summary-types-state lst)))
+    (cond (msg (prog2$ (er hard? 'set-inhibited-summary-types "~@0" msg)
+                       state))
+          (t (f-put-global 'inhibited-summary-types lst state)))))
 
 #+acl2-loop-only
 (defmacro set-state-ok (x)
@@ -24164,6 +24252,32 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (equal (imagpart (+ x y))
          (+ (imagpart x) (imagpart y)))
   :hints (("Goal" :use add-def-complex)))
+
+(defun chk-inhibit-output-lst-msg (lst)
+  (declare (xargs :guard t))
+  (cond ((not (true-listp lst))
+         (msg "The argument to set-inhibit-output-lst must evaluate to a ~
+               true-listp, unlike ~x0."
+              lst))
+        ((not (subsetp-eq lst *valid-output-names*))
+         (msg "The argument to set-inhibit-output-lst must evaluate to a ~
+               subset of the list ~X01, but ~x2 contains ~&3."
+              *valid-output-names*
+              nil
+              lst
+              (set-difference-eq lst *valid-output-names*)))
+        (t nil)))
+
+(defun set-inhibit-output-lst-state (lst state)
+  (declare (xargs :guard t))
+  (let ((msg (chk-inhibit-output-lst-msg lst)))
+    (cond (msg (prog2$ (er hard 'set-inhibit-output-lst "~@0" msg)
+                       state))
+          (t (f-put-global 'inhibit-output-lst
+                           (if (member-eq 'warning! lst)
+                               (add-to-set-eq 'warning lst)
+                             lst)
+                           state)))))
 
 (encapsulate
   ()

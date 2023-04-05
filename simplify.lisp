@@ -5441,7 +5441,7 @@
       *trivial-non-nil-ttree*))
 
 (defun try-type-set-and-clause (atm ans ttree ttree0 current-clause wrld ens
-                                    knownp)
+                                    knownp knownp-ttree)
 
 ; We are finishing off a call to rewrite-atm on atm that is about to return ans
 ; with associated ttree, which is assumed to extend ttree0.  Ans is *t* or
@@ -5452,8 +5452,8 @@
 ; ttree0.
 
   (mv-let (ts ttree1)
-          (type-set atm nil nil nil ens wrld nil nil nil)
-          (cond ((ts= ts *ts-nil*)
+    (type-set atm nil nil nil ens wrld nil nil nil)
+    (cond ((ts= ts *ts-nil*)
 
 ; Type-set was able to reduce atm to nil, by examining atm in isolation.  This
 ; would happen, for instance to an atm such as (not (acl2-numberp (+ x y))) or
@@ -5461,13 +5461,15 @@
 ; from the clause to reduce clutter.  We certainly do not lose anything by
 ; allowing such removals.
 
-                 (mv *nil* (cons-tag-trees ttree1 ttree0) nil))
-                ((ts-subsetp ts *ts-non-nil*)
-                 (mv *t* (cons-tag-trees ttree1 ttree0) nil))
-                ((try-clause atm current-clause wrld)
-                 (mv ans ttree nil))
-                (t
-                 (mv atm ttree0 (and knownp (make-non-nil-ttree ttree)))))))
+           (mv *nil* (cons-tag-trees ttree1 ttree0) nil))
+          ((ts-subsetp ts *ts-non-nil*)
+           (mv *t* (cons-tag-trees ttree1 ttree0) nil))
+          ((try-clause atm current-clause wrld)
+           (mv ans ttree nil))
+          (t
+           (mv atm ttree0 (and knownp
+                               (or knownp-ttree
+                                   (make-non-nil-ttree ttree))))))))
 
 (mutual-recursion
 
@@ -5531,7 +5533,7 @@
 ; just above fails to be such an example if we switch the order of arguments to
 ; OR.
 
-  (mv-let (knownp nilp ttree)
+  (mv-let (knownp nilp knownp-ttree)
           (known-whether-nil atm type-alist
                              (access rewrite-constant rcnst
                                      :current-enabled-structure)
@@ -5561,11 +5563,11 @@
                              ttree0)
           (cond
 
-; Before Version  2.6 we had
+; Before Version  2.6 we had (essentially)
 
 ;           (knownp
-;            (cond (nilp (mv *nil* ttree))
-;                  (t (mv *t* ttree))))
+;            (cond (nilp (mv *nil* knownp-ttree))
+;                  (t (mv *t* knownp-ttree))))
 
 ; but this allowed type-set to remove ``facts'' from a theorem which
 ; may be needed later.  The following transcript illustrates the previous
@@ -5655,9 +5657,9 @@
 ; clause and so we have reduced the literal to t, proving the clause.
 ; So we report this reduction.
 
-            (mv step-limit *nil* ttree nil))
+            (mv step-limit *nil* knownp-ttree nil))
            ((and knownp (not not-flg) (not nilp))
-            (mv step-limit *t* ttree nil))
+            (mv step-limit *t* knownp-ttree nil))
            (t
             (let ((lemmas0 (tagged-objects 'lemma ttree0))
                   (ttree00 (remove-tag-from-tag-tree 'lemma ttree0)))
@@ -5762,7 +5764,7 @@
 ; We have, presumably, not removed any facts, so we allow this rewrite.
 
                                (mv step-limit ans1 ttree
-                                   (and knownp *trivial-non-nil-ttree*)))
+                                   (and knownp knownp-ttree)))
                               ((and (nvariablep atm)
                                     (not (fquotep atm))
                                     (equivalence-relationp (ffn-symb atm)
@@ -5828,7 +5830,7 @@
                                         ans1 ttree ttree0 current-clause wrld
                                         (access rewrite-constant rcnst
                                                 :current-enabled-structure)
-                                        knownp)))
+                                        knownp knownp-ttree)))
                                      (t
 
 ; We make one last effort to allow removal of certain ``trivial'' facts from
@@ -5841,7 +5843,7 @@
                                         ans1 ttree ttree0 current-clause wrld
                                         (access rewrite-constant rcnst
                                                 :current-enabled-structure)
-                                        knownp)))))
+                                        knownp knownp-ttree)))))
                               (t
                                (mv step-limit ans1 ttree nil))))))))))
 

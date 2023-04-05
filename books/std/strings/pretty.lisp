@@ -1282,7 +1282,7 @@ gives these instructions their semantics.</p>"
                         (acc (print-instruction x.first col1 config eviscp acc))
                         ((the unsigned-byte width) (pinst->width x.first))
                         ((the unsigned-byte coli)
-                         (+ col1 (the unsigned-byte (the unsigned-byte width)))) 
+                         (+ col1 (the unsigned-byte (the unsigned-byte width))))
                         (acc (if (posp x.init-args-indent)
                                  (print-column x.init-args 0
                                                (the unsigned-byte (+ col x.init-args-indent))
@@ -1591,8 +1591,8 @@ without using up too many characters, then we should extend the first row.</p>
                 (cdr rows)))))
     (cons x rows)))
 
-(defconst *pp-special-syms*
-  ;; Value of (table acl2::pp-special-syms). Additions are possible as long as they don't break pretty-tests
+(defconst *ppr-special-syms*
+  ;; Value of (table acl2::ppr-special-syms). Additions are possible as long as they don't break pretty-tests
   '((acl2::defxdoc+ . 1)
     (acl2::defruledl . 1)
     (acl2::defrulel . 1)
@@ -1632,7 +1632,7 @@ without using up too many characters, then we should extend the first row.</p>
 (define special-term-num ((sym symbolp))
   :returns (i (or (null i)
                   (natp i)))
-  (let ((special-term-num (cdr (assoc sym *pp-special-syms*))))
+  (let ((special-term-num (cdr (assoc sym *ppr-special-syms*))))
     (if (null special-term-num)
         nil
       (if (natp special-term-num)
@@ -1698,7 +1698,7 @@ without using up too many characters, then we should extend the first row.</p>
          (special-term-num (and special-term-num
                                 (>= (len (cdr x)) special-term-num)
                                 special-term-num))
-         
+
          (rest (ppr1-lst (if special-term-num (nthcdr special-term-num (cdr x))
                            (cdr x))
                          (+ 1 rpc) width-1 special-term-num config eviscp))
@@ -1712,7 +1712,7 @@ without using up too many characters, then we should extend the first row.</p>
                                :width  (+ 1 maximum)
                                :first  first
                                :rest   rest)))
-         
+
          ;; Otherwise the CAR is an atom and we can print in the usual way.
          ;; Get the max width of any single argument, not counting the function
          ;; symbol.
