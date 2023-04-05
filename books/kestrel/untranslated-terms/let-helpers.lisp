@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/doublets2" :dir :system)
+(include-book "kestrel/utilities/make-doublets" :dir :system)
 (include-book "kestrel/utilities/legal-variable-listp" :dir :system)
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
