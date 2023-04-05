@@ -267,7 +267,7 @@
                       total
                       invoke
                       (ideal-okp ':default)
-                      (verbose 't))
+                      (verbose 'nil))
 
 ; WARNING: If you add a new argument here, consider making corresponding
 ; modifications to memoize-form, table-cltl-cmd, maybe-push-undo-stack, and
