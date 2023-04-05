@@ -343,7 +343,7 @@
    (internals true-list-listp)
    (design design-p)
    (design-const symbolp)
-   labels
+   (labels symbol-listp)
    (phase-config phase-fsm-config-p
                  :default (make-phase-fsm-config
                            :override-config (make-svtv-assigns-override-config-omit)))
@@ -427,6 +427,7 @@
                :expanded-ins expanded-ins
                :expanded-overrides expanded-overrides
                :nphases nphases
+               :labels x.labels
                :form x.form)))
 
 (local (defthm string-listp-of-remove-duplicates
@@ -598,7 +599,7 @@
         (raise "Failed to generate svtv: ~@0" err)
         (mv err nil state svtv-data))
        ((defsvtv-args x))
-       (events (defsvtv-events svtv x.design-const x.labels x.define-macros x.define-mod x.parents x.short x.long)))
+       (events (defsvtv-events svtv x.design-const x.define-macros x.define-mod x.parents x.short x.long)))
     (mv nil events state svtv-data)))
 
 
