@@ -22,7 +22,7 @@
 
 ;; TODO: Add support for flet and macrolet.
 
-;; See also books/kestrel/untranslated-terms/, which reflects a newer approach.
+;; See also the other files in this dir, which reflect a newer approach.
 
 ;; TODO: Add support for expanding away any macros for which we do not have
 ;; special handling (e.g., calls of b* with b* binders that we do not yet
@@ -32,13 +32,13 @@
 
 ;; TODO: Replace more of the hand-written functions with calls to def-untranslated-term-fold
 
-(include-book "kestrel/untranslated-terms/untranslated-constantp" :dir :system)
-(include-book "kestrel/untranslated-terms/untranslated-variablep" :dir :system)
-(include-book "kestrel/untranslated-terms/cond-helpers" :dir :system)
-(include-book "kestrel/untranslated-terms/bstar-helpers" :dir :system)
-(include-book "kestrel/untranslated-terms/case-helpers" :dir :system)
-(include-book "kestrel/untranslated-terms/case-match-helpers" :dir :system)
-(include-book "kestrel/untranslated-terms/let-helpers" :dir :system)
+(include-book "untranslated-constantp")
+(include-book "untranslated-variablep")
+(include-book "cond-helpers")
+(include-book "bstar-helpers")
+(include-book "case-helpers")
+(include-book "case-match-helpers")
+(include-book "let-helpers")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
