@@ -102,6 +102,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; tests exploring th treatment of special symbols
+
 (defun foo9 (x)
   (case-match x
     (('foo nil) "foo-of-nil")
@@ -141,3 +143,41 @@
 (assert-equal (foo9d '(foo *three*)) "something-else")
 ;; Also does not match:
 (assert-equal (foo9d '(foo '*three*)) "something-else")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; tests exploring quote
+
+(defun foo10 (x)
+  (case-match x
+    (('foo (quote 3)) "yes")
+    (& "no")))
+
+(assert-equal (foo10 '(foo 3)) "yes")
+(assert-equal (foo10 '(foo '3)) "no")
+
+(defun foo10alt (x)
+  (case-match x
+    (('foo '3) "yes")
+    (& "no")))
+
+(assert-equal (foo10alt '(foo 3)) "yes")
+(assert-equal (foo10alt '(foo '3)) "no")
+
+(defun foo10b (x)
+  (case-match x
+    ;; not a proper call of quote:
+    (('foo (quote . 3)) (list "yes" quote))
+    (& "no")))
+
+(assert-equal (foo10b '(foo 3)) "no")
+(assert-equal (foo10b '(foo '3)) "no")
+
+(defun foo10c (x)
+  (case-match x
+    ;; not a proper call of quote:
+    (('foo (quote . x)) (list "yes" quote x))
+    (& "no")))
+
+(assert-equal (foo10c '(foo 3)) "no")
+(assert-equal (foo10c '(foo '3)) '("yes" quote (3)))
