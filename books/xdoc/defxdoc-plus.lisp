@@ -93,4 +93,4 @@
          ,@(and default-parent
                 `((local (set-default-parents ,name)))))))
 
-  (table acl2::pp-special-syms 'defxdoc+ 1))
+  (table acl2::ppr-special-syms 'defxdoc+ 1))

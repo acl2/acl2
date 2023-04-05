@@ -14,8 +14,10 @@
 (include-book "kestrel/lists-light/union-equal-alt" :dir :system)
 (include-book "tools/flag" :dir :system)
 
+;; See also conjuncts-and-disjuncts.lisp.
+
 (mutual-recursion
- ;; TODO: Consider treating a negated disjunction as a conjunction
+ ;; The result is only boolean-equivalent to UTERM
  (defun conjuncts-of-uterm (uterm ;; untranslated
                             )
    (declare (xargs :guard t

@@ -5122,10 +5122,6 @@
                flg)))
     `(f-put-global 'raw-warning-format ,flg state)))
 
-(defun-for-state set-standard-co (val state))
-
-(defun-for-state set-proofs-co (val state))
-
 (defmacro with-standard-co-and-proofs-co-to-file (filename form)
   `(mv-let
     (wof-chan state)

@@ -5401,7 +5401,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                              :fmt-control-alist
                              (list (cons 'print-base base)
                                    (cons 'current-package
-                                         (access model-api api :package-witness))))
+                                         (symbol-package-name
+                                          (access model-api api
+                                                  :package-witness)))))
              (declare (ignore col))
              str)
      (access model-api api :package-witness))))
@@ -7813,7 +7815,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                             0
                             :fmt-control-alist
                             (list (cons 'current-package
-                                        (access model-api api :package-witness))))
+                                        (symbol-package-name
+                                         (access model-api api
+                                                 :package-witness)))))
             (declare (ignore col))
             (ensure-uniqueness-of-variable-name
              root-str

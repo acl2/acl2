@@ -10,16 +10,23 @@
 
 (in-package "ACL2")
 
-(include-book "cond-helpers")
-(include-book "bstar-helpers")
-(include-book "case-match-helpers")
 (include-book "helpers")
 
-(include-book "free-vars")
+;; Helpers for let and common macros:
+(include-book "let-helpers")
+(include-book "mv-let-helpers")
+(include-book "cond-helpers")
+(include-book "case-helpers")
+(include-book "case-match-helpers")
+(include-book "bstar-helpers")
 
-(include-book "replace-calls")
-(include-book "rename-functions")
-(include-book "add-conjunct-to-uterm")
+;; Exracting information from untranslated terms:
+(include-book "free-vars")
 (include-book "conjuncts-of-uterm")
 (include-book "disjuncts-of-uterm")
 (include-book "conjuncts-and-disjuncts")
+
+;; Transformations on untranslated terms:
+(include-book "add-conjunct-to-uterm")
+(include-book "replace-calls")
+(include-book "rename-functions")
