@@ -99,3 +99,45 @@
     (& "something-else")))
 
 (assert-equal (foo8) "seven")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun foo9 (x)
+  (case-match x
+    (('foo nil) "foo-of-nil")
+    (& "something-else")))
+
+(assert-equal (foo9 '(foo nil)) "foo-of-nil")
+;; Does not match because the nil is quoted:
+(assert-equal (foo9 '(foo 'nil)) "something-else")
+
+(defun foo9b (x)
+  (case-match x
+    (('foo t) "foo-of-t")
+    (& "something-else")))
+
+(assert-equal (foo9b '(foo t)) "foo-of-t")
+;; Does not match because the t is quoted:
+(assert-equal (foo9b '(foo 't)) "something-else")
+
+(defun foo9c (x)
+  (case-match x
+    (('foo :kwd) "foo-of-kwd")
+    (& "something-else")))
+
+(assert-equal (foo9c '(foo :kwd)) "foo-of-kwd")
+;; Does not match because the :kwd is quoted:
+(assert-equal (foo9c '(foo ':kwd)) "something-else")
+
+(defconst *three* 3)
+(defun foo9d (x)
+  (case-match x
+    (('foo *three*) "foo-of-three")
+    (& "something-else")))
+
+;; Matches:
+(assert-equal (foo9d '(foo 3)) "foo-of-three")
+;; Does not match because *three* is not 3:
+(assert-equal (foo9d '(foo *three*)) "something-else")
+;; Also does not match:
+(assert-equal (foo9d '(foo '*three*)) "something-else")
