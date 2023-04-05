@@ -47,10 +47,8 @@
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
-;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
-;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
 (include-book "std/alists/remove-assocs" :dir :system) ; todo: use clear-keys
-(include-book "std/util/bstar" :dir :system) ; redundant but included because this book "knows" about this b*
+(include-book "std/util/bstar" :dir :system) ; redundant but included because this book "knows" about b*
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -90,12 +88,6 @@
 ;;            (alistp x))
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
 ;;   :hints (("Goal" :in-theory (enable pair-listp))))
-
-;drop?
-(defthmd >=-LEN-rewrite
-  (implies (natp n)
-           (equal (>=-LEN x n)
-                  (>= (len x) n))))
 
 ;; (defthmd all->=-len-when-pair-listp
 ;;   (implies (pair-listp x)
@@ -442,15 +434,12 @@
   (or (symbolp item)
       (untranslated-lambda-exprp item)))
 
-;(defforall-simple symbol-or-untranslated-lambda-exprp)
-;(verify-guards all-symbol-or-untranslated-lambda-exprp)
-(DEFUN ALL-SYMBOL-OR-UNTRANSLATED-LAMBDA-EXPRP
-  (X)
-  (DECLARE (XARGS :guard t))
-  (IF (ATOM X)
-      T
-      (AND (SYMBOL-OR-UNTRANSLATED-LAMBDA-EXPRP (FIRST X))
-           (ALL-SYMBOL-OR-UNTRANSLATED-LAMBDA-EXPRP (REST X)))))
+(defun all-symbol-or-untranslated-lambda-exprp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      t
+    (and (symbol-or-untranslated-lambda-exprp (first x))
+         (all-symbol-or-untranslated-lambda-exprp (rest x)))))
 
 ;(in-theory (disable untranslated-lambda-exprp))
 
