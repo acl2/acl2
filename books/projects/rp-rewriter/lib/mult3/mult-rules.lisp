@@ -305,13 +305,15 @@
   (implies (and (bitp side1)
                 (bitp side2)
                 (syntaxp (and :rewriting-main-term
-                              (or (not (binary-fnc-p (ex-from-rp-loose side2)))
-                                  (and (not (equal side1 1))
-                                       (not (equal side1 ''1)))) ;; if a
+                              (implies (or (binary-fnc-p (ex-from-rp-loose side2))
+                                            (logbit-p (ex-from-rp-loose side2)))
+                                       (and (not (equal side1 1))
+                                            (not (equal side1 ''1)))) ;; if a
                               ;; binary-fnc equalized-to 1, don't get in here. 
-                              (or (not (binary-fnc-p (ex-from-rp-loose side1)))
-                                  (and (not (equal side2 1))
-                                       (not (equal side2 ''1))))
+                              (implies (or (binary-fnc-p (ex-from-rp-loose side1))
+                                           (logbit-p (ex-from-rp-loose side1)))
+                                       (and (not (equal side2 1))
+                                            (not (equal side2 ''1))))
                               
                               (or (and (not (equal side1 0))
                                        (not (equal side1 ''0)))
@@ -328,13 +330,18 @@
                                (single-c-p (ex-from-rp-loose side1))
                                (binary-fnc-p (ex-from-rp-loose side1))
                                (binary-sum-p (ex-from-rp-loose side1))
+                               (logbit-p (ex-from-rp-loose side1)) ;; this
+                               ;;may mess up with hyps
+                               (is-equals (ex-from-rp-loose side1))
                                
                                (single-s-p (ex-from-rp-loose side2))
                                (s-c-res-p (ex-from-rp-loose side2))
                                (single-c-p (ex-from-rp-loose side2))
                                (binary-fnc-p (ex-from-rp-loose side2))
                                (binary-sum-p (ex-from-rp-loose side2))
-                                  ;;(logbit-p (ex-from-rp-loose side1))
+                               (logbit-p (ex-from-rp-loose side2))
+
+                               (is-equals (ex-from-rp-loose side2))
                                )
                               #|(or (pp-has-bitp-rp side2)
                                   (single-s-p (ex-from-rp-loose side2))
@@ -471,3 +478,16 @@
        (Implies (and (natp num1) (natp num2))
                 (equal (and* num1 (and* num2 x))
                        (and* (+ num1 num2) x)))))
+
+(def-rp-rule equal-of-0-and-binary-xor
+  (and (equal (equal 0 (binary-xor x y))
+              (equal (s-spec (list (bit-fix x)
+                                   (bit-fix y)))
+                     0))
+       (equal (equal (binary-xor x y) 0)
+              (equal (s-spec (list (bit-fix x)
+                                   (bit-fix y)))
+                     0)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp binary-xor bit-fix)
+                           ()))))
