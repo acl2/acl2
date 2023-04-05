@@ -52,7 +52,7 @@
 (include-book "kestrel/apt/utilities/verify-guards-for-defun" :dir :system)
 (include-book "kestrel/terms-light/wrap-pattern-around-term" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
-(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
 
 ;; todo: compare to untranslated-lambda-exprp
 (defun untranslated-lambdap (x)

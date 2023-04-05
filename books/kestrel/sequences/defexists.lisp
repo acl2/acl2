@@ -1,6 +1,6 @@
 ; Generate a function to search a list for an item that satisfies a predicate
 ;
-; Copyright (C) 2014-2020 Kestrel Institute
+; Copyright (C) 2014-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,7 +21,7 @@
 (include-book "kestrel/lists-light/subrange-def" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system)
-(include-book "kestrel/utilities/doublets2" :dir :system)
+(include-book "kestrel/utilities/make-doublets" :dir :system)
 ;(include-book "../utilities/alists")
 (include-book "../utilities/fresh-names")
 (include-book "kestrel/utilities/make-or" :dir :system)

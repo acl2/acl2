@@ -51,6 +51,7 @@
 (include-book "kestrel/x86/tools/write-over-write-rules" :dir :system)
 (include-book "kestrel/axe/rewriter" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
+(include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
 ;(include-book "kestrel/axe/rules2" :dir :system) ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "axe/basic-rules" :dir :kestrel-acl2)
