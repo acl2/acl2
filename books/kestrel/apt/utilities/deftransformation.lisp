@@ -110,10 +110,12 @@
              (not suppress-xdoc)
              (list `(defxdoc-for-macro
                       ,name
-                      ,(append required-args
+                      ,(append '(&whole whole-form) ;todo: name this list of args
+                               required-args
                                '(&key)
+                               keyword-args-and-defaults
                                '((show-only 'nil) (print ':result)) ; keyword args that are always present
-                               keyword-args-and-defaults)
+                               )
                       ,parents
                       ,short
                       ,(append arg-descriptions
