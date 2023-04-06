@@ -238,6 +238,11 @@
 
 
 (define svtv-cyclephaselist-keys ((x svtv-cyclephaselist-p))
+  :returns (keys svarlist-p)
+  :prepwork ((local (defthm svarlist-p-alist-keys
+                      (implies (svex-env-p x)
+                               (svarlist-p (alist-keys x)))
+                      :hints (("goal" :in-theory (enable alist-keys))))))
   (if (atom x)
       nil
     (append (alist-keys (svtv-cyclephase->constants (car x)))

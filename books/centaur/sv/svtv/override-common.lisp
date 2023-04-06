@@ -883,7 +883,7 @@ signal is the key and time is the current phase."
 
 
 
-
+;; bozo same as svex-alistlist-key-lists (def in fsm.lisp)
 (define svex-alist-keys-list ((x svex-alistlist-p))
   :returns (keys svarlist-list-p)
   (if (atom x)
