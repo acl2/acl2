@@ -197,11 +197,11 @@
          (atype-array-itype-index-okp
           (pack afixtype '-array- ifixtype '-index-okp))
          (atype-array-index-okp
-          (pack afixtype '-array-index-okp))
+          (pack afixtype '-array-integer-index-okp))
          (atype-array-write-itype
           (pack afixtype '-array-write- ifixtype))
          (atype-array-write-alt-def
-          (pack afixtype '-array-write-alt-def))
+          (pack afixtype '-array-integer-write-alt-def))
          (elemtype-when-apred
           (pack 'value-array->elemtype-when- apred))
          (value-kind-when-epred (pack 'value-kind-when- epred))

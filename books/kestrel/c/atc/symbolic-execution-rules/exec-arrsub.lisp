@@ -47,16 +47,16 @@
          (ipred (pack ifixtype 'p))
          (atype-array-itype-index-okp
           (pack afixtype '-array- ifixtype '-index-okp))
-         (atype-array-index-okp
-          (pack afixtype '-array-index-okp))
+         (atype-array-integer-index-okp
+          (pack afixtype '-array-integer-index-okp))
          (atype-array-read-itype
           (pack afixtype '-array-read- ifixtype))
-         (atype-array-read
-          (pack afixtype '-array-read))
+         (atype-array-integer-read
+          (pack afixtype '-array-integer-read))
          (atype-array-length
           (pack afixtype '-array-length))
-         (atype-array-read-alt-def
-          (pack atype-array-read '-alt-def))
+         (atype-array-integer-read-alt-def
+          (pack atype-array-integer-read '-alt-def))
          (atype-array-length-alt-def
           (pack atype-array-length '-alt-def))
          (elemtype-when-apred
@@ -93,9 +93,9 @@
                             ,@*atc-value-integer->get-rules*
                             ,atype-array-itype-index-okp
                             ,atype-array-read-itype
-                            ,atype-array-read-alt-def
+                            ,atype-array-integer-read-alt-def
                             ,elemtype-when-apred
-                            ,atype-array-index-okp
+                            ,atype-array-integer-index-okp
                             ,atype-array-length-alt-def
                             value-array-read
                             integer-range-p
@@ -107,10 +107,10 @@
                             ,value-kind-when-itype)
                    :prep-lemmas
                    ((defrule lemma
-                      (implies (and (,atype-array-index-okp array index)
+                      (implies (and (,atype-array-integer-index-okp array index)
                                     (integerp index))
                                (not (< index 0)))
-                      :enable (,atype-array-index-okp
+                      :enable (,atype-array-integer-index-okp
                                integer-range-p
                                ifix))))))
       (mv name event)))
