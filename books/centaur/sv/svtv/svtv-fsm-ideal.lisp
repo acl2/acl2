@@ -281,9 +281,9 @@
                                            (spec-outs svex-env-p))
   (if (atom vars)
       t
-    (and (b* ((refvar   (car vars))
-              (testvar  (svar-change-override refvar :test))
-              (valvar   (svar-change-override refvar :val)))
+    (and (b* ((refvar   (svar-change-override (car vars) nil))
+              (testvar  (svar-change-override (car vars) :test))
+              (valvar   (svar-change-override (car vars) :val)))
            (4vec-override-mux-agrees (svex-env-lookup testvar impl-env)
                                      (svex-env-lookup valvar impl-env)
                                      (svex-env-lookup testvar spec-env)
@@ -707,13 +707,12 @@
 
 
 (defthm svex-alist-width-of-svex-alist-compose-svarlist-to-override-alist
-  (implies (and (svarlist-override-p (svex-alist-vars x) nil)
-                (svarlist-override-p vars nil))
+  (implies (svarlist-override-p (svex-alist-vars x) nil)
            (equal (svex-alist-width (svex-alist-compose x
-                                                        (svarlist-to-override-alist vars)))
+                                                        (svarlist-to-override-alist overridekeys)))
                   (svex-alist-width x)))
   :hints (("goal" :use((:instance svex-alist-width-of-svex-alist-compose-override-alist
-                        (triples (svarlist-to-override-triples vars))))
+                        (triples (svarlist-to-override-triples overridekeys))))
            :in-theory (e/d (svarlist-to-override-alist-in-terms-of-svarlist-to-override-triples)
                            (svex-alist-width-of-svex-alist-compose-override-alist)))))
 

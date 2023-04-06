@@ -58,7 +58,8 @@
                            svex-env-reduce-<<=-same
                            svtv-override-triplemaplist-envs-ok-of-same-envs
                            4vec-override-mux-<<=-of-same-test/val
-                           4vec-override-mux-ok-of-same-test/val))
+                           ;; 4vec-override-mux-ok-of-same-test/val
+                           ))
 
 
 (defthmd delays-of-design->flatnorm-of-svtv-data-obj
@@ -1243,7 +1244,8 @@
        (spec-val  (svex-eval x.val spec-override-consts))
        (spec-val-expr (if (2vec-p spec-val) (svex-quote spec-val) x.val))
 
-       (mux-<<=-ok (or (and (svex-case impl-test :quote)
+       (mux-<<=-ok (or (and x.refvar
+                            (svex-case impl-test :quote)
                             (equal (4vec-1mask (svex-quote->val impl-test)) 0))
                        (equal impl-val (svex-x))))
        (muxtest-ok (svex-case impl-test

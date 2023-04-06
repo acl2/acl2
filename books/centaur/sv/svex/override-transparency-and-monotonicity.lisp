@@ -939,6 +939,68 @@
                                    (SVARLIST-OVERRIDEKEYS-ENVS-OK-BADGUY-OF-APPEND
                                     SVARLIST-OVERRIDEKEYS-ENVS-OK-OF-APPEND))))))
 
+(defsection overridekeys-envs-ok-more
+  ;; :extension overridekeys-envs-ok
+  (local (std::set-define-current-function overridekeys-envs-ok))
+
+  (defthmd overridekeys-envs-ok-by-witness
+    (equal (overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs)
+           (svar-overridekeys-envs-ok
+            (overridekeys-envs-ok-badguy params overridekeys impl-env spec-env spec-outs) params overridekeys impl-env spec-env spec-outs))
+    :hints(("Goal" :in-theory (e/d (badguy-not-ok-when-not-overridekeys-envs-ok
+                                    overridekeys-envs-ok-implies)
+                                   (overridekeys-envs-ok-badguy))
+            :cases ((overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs))))
+    :rule-classes :definition)
+
+  (local (in-theory (disable overridekeys-envs-ok-implies)))
+  
+  (defcong svex-envs-similar equal (overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs) 3
+    :hints (("goal" :cases ((overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs)))
+            (and stable-under-simplificationp
+                 (b* ((lit (assoc 'overridekeys-envs-ok clause))
+                      (other-arg (if (eq (nth 3 lit) 'impl-env) 'impl-env-equiv 'impl-env)))
+                   `(:expand (,lit)
+                     :use ((:instance overridekeys-envs-ok-implies
+                            (impl-env ,other-arg)
+                            (v (overridekeys-envs-ok-badguy . ,(cdr lit))))))))))
+  (defcong svex-envs-similar equal (overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs) 4
+    :hints (("goal" :cases ((overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs)))
+            (and stable-under-simplificationp
+                 (b* ((lit (assoc 'overridekeys-envs-ok clause))
+                      (other-arg (if (eq (nth 4 lit) 'spec-env) 'spec-env-equiv 'spec-env)))
+                   `(:expand (,lit)
+                     :use ((:instance overridekeys-envs-ok-implies
+                            (spec-env ,other-arg)
+                            (v (overridekeys-envs-ok-badguy . ,(cdr lit))))))))))
+  (defcong svex-envs-similar equal (overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs) 5
+    :hints (("goal" :cases ((overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs)))
+            (and stable-under-simplificationp
+                 (b* ((lit (assoc 'overridekeys-envs-ok clause))
+                      (other-arg (if (eq (nth 5 lit) 'spec-outs) 'spec-outs-equiv 'spec-outs)))
+                   `(:expand (,lit)
+                     :use ((:instance overridekeys-envs-ok-implies
+                            (spec-outs ,other-arg)
+                            (v (overridekeys-envs-ok-badguy . ,(cdr lit))))))))))
+  (defcong set-equiv equal (overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs) 1
+    :hints (("goal" :cases ((overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs)))
+            (and stable-under-simplificationp
+                 (b* ((lit (assoc 'overridekeys-envs-ok clause))
+                      (other-arg (if (eq (nth 1 lit) 'params) 'params-equiv 'params)))
+                   `(:expand (,lit)
+                     :use ((:instance overridekeys-envs-ok-implies
+                            (params ,other-arg)
+                            (v (overridekeys-envs-ok-badguy . ,(cdr lit))))))))))
+  (defcong set-equiv equal (overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs) 2
+    :hints (("goal" :cases ((overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs)))
+            (and stable-under-simplificationp
+                 (b* ((lit (assoc 'overridekeys-envs-ok clause))
+                      (other-arg (if (eq (nth 2 lit) 'overridekeys) 'overridekeys-equiv 'overridekeys)))
+                   `(:expand (,lit)
+                     :use ((:instance overridekeys-envs-ok-implies
+                            (overridekeys ,other-arg)
+                            (v (overridekeys-envs-ok-badguy . ,(cdr lit)))))))))))
+
 (define overridekeys-envs-ok-intermediate-env ((params svarlist-p)
                                                (overridekeys svarlist-p)
                                                (impl-env svex-env-p)
