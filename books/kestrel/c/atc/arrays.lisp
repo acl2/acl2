@@ -595,6 +595,9 @@
                                          <etype> '-array- <itype> '-index-okp))
        (<etype>-array-read-<itype> (pack <etype> '-array-read- <itype>))
        (<etype>-array-write-<itype> (pack <etype> '-array-write- <itype>))
+       (<etype>-array-index-okp (pack <etype> '-array-index-okp))
+       (<etype>-array-read (pack <etype> '-array-read))
+       (<etype>-array-write (pack <etype> '-array-write))
        (len-of-<etype>-array->elements-of-<etype>-array-write-<itype>
         (pack
          'len-of- <etype>-array->elements '-of- <etype>-array-write-<itype>))
@@ -620,7 +623,18 @@
                            etype-string
                            ".")
          (,<etype>-array-integer-index-okp array (,integer-from-<itype> index))
-         :hooks (:fix))
+         :hooks (:fix)
+         ///
+
+         (defrule ,(pack <etype>-array-<itype>-index-okp '-alt-def)
+           (implies (,<itype>p index)
+                    (equal (,<etype>-array-<itype>-index-okp array index)
+                           (,<etype>-array-index-okp array index)))
+           :enable (,<etype>-array-<itype>-index-okp
+                    ,<etype>-array-integer-index-okp
+                    ,<etype>-array-index-okp
+                    integer-from-cinteger-alt-def
+                    ifix)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -636,7 +650,17 @@
          (,<etype>-array-integer-read array (,integer-from-<itype> index))
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
-         :hooks (:fix))
+         :hooks (:fix)
+         ///
+
+         (defruled ,(pack <etype>-array-read-<itype> '-alt-def)
+           (implies (,<itype>p index)
+                    (equal (,<etype>-array-read-<itype> array index)
+                           (,<etype>-array-read array index)))
+           :enable (,<etype>-array-read-<itype>
+                    ,<etype>-array-integer-read
+                    ,<etype>-array-read
+                    integer-from-cinteger-alt-def)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -668,7 +692,19 @@
          (defrule ,<etype>-array-length-of-<etype>-array-write-<itype>
            (equal (,<etype>-array-length
                    (,<etype>-array-write-<itype> array index element))
-                  (,<etype>-array-length array))))
+                  (,<etype>-array-length array)))
+
+         (defruled ,(pack <etype>-array-write-<itype> '-alt-def)
+           (implies (,<itype>p index)
+                    (equal (,<etype>-array-write-<itype> array index element)
+                           (,<etype>-array-write array index element)))
+           :enable (,<etype>-array-write-<itype>
+                    ,<etype>-array-integer-write
+                    ,<etype>-array-write
+                    integer-from-cinteger-alt-def
+                    ,<etype>-array-index-okp
+                    ,<etype>-array-integer-index-okp
+                    ifix)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -711,14 +747,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- (b* ((types (list (type-schar)
-                   (type-uchar)
-                   (type-sshort)
-                   (type-ushort)
-                   (type-sint)
-                   (type-uint)
-                   (type-slong)
-                   (type-ulong)
-                   (type-sllong)
-                   (type-ullong))))
-   `(progn ,@(atc-def-integer-arrays-loop-outer types types))))
+ `(progn ,@(atc-def-integer-arrays-loop-outer *nonchar-integer-types*
+                                              *nonchar-integer-types*)))
