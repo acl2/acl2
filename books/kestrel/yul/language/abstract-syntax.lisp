@@ -314,7 +314,7 @@
   (:u ((get hex-quad)))
   :pred escapep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult escape-result
   :short "Fixtype of errors and escapes."
