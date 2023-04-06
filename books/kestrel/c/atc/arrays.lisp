@@ -36,7 +36,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "At this time, we represent arrays as
+    "We represent arrays as
      sequences of values that can be read and written.
      These array representations can be passed around, and manipulated by,
      ACL2 functions that represent C functions,
@@ -50,11 +50,11 @@
      each array fixtype includes the type of the element.
      This is redundant information,
      but it is needed so that arrays thus modeled
-     can be a subset of an upcoming extension of the model of all values.")
+     are a subset of the values in the C deep embedding.")
    (xdoc::p
     "This fairly simple model should suffice to generate C code
      that manipulates arrays in some interesting ways.
-     It should suffice to represent C functions
+     The model should suffice to represent C functions
      that receive arrays from external callers,
      and possibly update them.
      However, we may need to extend the model in the future;
@@ -66,7 +66,7 @@
     ". But C arrays differ from Java arrays:
      in particular, Java arrays are self-contained objects,
      whose length and other attributes can be programmatically queried;
-     in contrast, C arrays are more of a ``view'' of certain memory regions.
+     in contrast, C arrays are a ``view'' of certain memory regions.
      Nonetheless, at the level of ACL2 manipulations,
      the two kinds of arrays differ less (at least for certain mundane uses),
      because, even though C does not provide ``direct access'' to
@@ -77,7 +77,7 @@
    (xdoc::p
     "Similarly to the use of the Java array model in ATJ,
      the C arrays modeled here have to be treated in a stobj-like manner
-     by the ACL2 functions to be translated to C.
+     by the ACL2 functions to be translated to C by ATC.
      In general, each of these ACL2 functions
      takes zero or more arrays as inputs (possibly among other inputs),
      and must return, in an @(tsee mv),
@@ -86,10 +86,9 @@
      the arrays that are only read by the function do not have to be returned.
      Inside the function, the arrays must be updated (if at all)
      in a single-threaded way, analogously to stobjs.
-     Upcoming extensions of ATC will ensure that this discipline is followed,
-     analogously to what ATJ does.")
+     ATC ensures that this discipline is followed, analogously to ATJ.")
    (xdoc::p
-    "Our initial model of arrays assumes that different arrays do not overlap.
+    "Our model of arrays assumes that different arrays do not overlap.
      That is,
      either two arrays are the same array (when they have the same pointer),
      or they are completely disjoint.
@@ -185,17 +184,19 @@
        (<type>-array->elements-alt-def (pack <type>-array->elements '-alt-def))
        (<type>-array-length (pack <type>-array '-length))
        (<type>-array-length-alt-def (pack <type>-array-length '-alt-def))
-       (<type>-array-index-okp (pack <type> '-array-index-okp))
-       (<type>-array-read (pack <type>-array '-read))
-       (<type>-array-read-alt-def (pack <type>-array-read '-alt-def))
-       (<type>-array-write (pack <type>-array '-write))
-       (<type>-array-write-alt-def (pack <type>-array-write '-alt-def))
+       (<type>-array-integer-index-okp (pack <type> '-array-integer-index-okp))
+       (<type>-array-integer-read (pack <type>-array '-integer-read))
+       (<type>-array-integer-read-alt-def (pack <type>-array-integer-read
+                                                '-alt-def))
+       (<type>-array-integer-write (pack <type>-array '-integer-write))
+       (<type>-array-integer-write-alt-def (pack <type>-array-integer-write
+                                                 '-alt-def))
        (<type>-array-of-of-<type>-array->elements
         (pack <type>-array-of '-of- <type>-array->elements))
-       (len-of-<type>-array->elements-of-<type>-array-write
-        (pack 'len-of- <type>-array->elements '-of- <type>-array-write))
-       (<type>-array-length-of-<type>-array-write
-        (pack <type> '-array-length-of- <type>-array-write))
+       (len-of-<type>-array->elements-of-<type>-array-integer-write
+        (pack 'len-of- <type>-array->elements '-of- <type>-array-integer-write))
+       (<type>-array-length-of-<type>-array-integer-write
+        (pack <type> '-array-length-of- <type>-array-integer-write))
        (type-of-value-when-<type>p (pack 'type-of-value-when- <type>p)))
 
     `(progn
@@ -303,7 +304,8 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,<type>-array-index-okp ((array ,<type>-arrayp) (index integerp))
+       (define ,<type>-array-integer-index-okp ((array ,<type>-arrayp)
+                                                (index integerp))
          :returns (yes/no booleanp)
          :short ,(str::cat "Check if an integer is
                             a valid index (i.e. in range)
@@ -315,33 +317,35 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,<type>-array-read ((array ,<type>-arrayp) (index integerp))
-         :guard (,<type>-array-index-okp array index)
+       (define ,<type>-array-integer-read ((array ,<type>-arrayp)
+                                           (index integerp))
+         :guard (,<type>-array-integer-index-okp array index)
          :returns (element ,<type>p)
          :short ,(str::cat "Read an element from an array of "
                            type-string
                            ", using an integer index.")
          (,<type>-fix (nth index (,<type>-array->elements array)))
-         :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
-                                                  ,<type>-array-length
-                                                  nfix
-                                                  ifix
-                                                  integer-range-p)))
+         :guard-hints (("Goal" :in-theory (enable
+                                           ,<type>-array-integer-index-okp
+                                           ,<type>-array-length
+                                           nfix
+                                           ifix
+                                           integer-range-p)))
          ///
 
-         (fty::deffixequiv ,<type>-array-read
+         (fty::deffixequiv ,<type>-array-integer-read
            :hints (("Goal" :in-theory (enable ifix nth))))
 
-         (defruled ,<type>-array-read-alt-def
+         (defruled ,<type>-array-integer-read-alt-def
            (implies (and (,<type>-arrayp array)
                          (integerp index)
-                         (,<type>-array-index-okp array index))
-                    (equal (,<type>-array-read array index)
+                         (,<type>-array-integer-index-okp array index))
+                    (equal (,<type>-array-integer-read array index)
                            (value-array-read index array)))
-           :enable (,<type>-array-read
+           :enable (,<type>-array-integer-read
                     value-array-read
                     ,<type>-array->elements-alt-def
-                    ,<type>-array-index-okp
+                    ,<type>-array-integer-index-okp
                     ,<type>-array-length-alt-def
                     value-array->length
                     ,<type>-arrayp-alt-def
@@ -351,10 +355,10 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       (define ,<type>-array-write ((array ,<type>-arrayp)
-                                    (index integerp)
-                                    (element ,<type>p))
-         :guard (,<type>-array-index-okp array index)
+       (define ,<type>-array-integer-write ((array ,<type>-arrayp)
+                                            (index integerp)
+                                            (element ,<type>p))
+         :guard (,<type>-array-integer-index-okp array index)
          :returns (new-array ,<type>-arrayp)
          :short ,(str::cat "Write an element to an array of "
                            type-string
@@ -362,24 +366,25 @@
          (b* ((array (,<type>-array-fix array))
               (index (ifix index))
               (element (,<type>-fix element)))
-           (if (mbt (,<type>-array-index-okp array index))
+           (if (mbt (,<type>-array-integer-index-okp array index))
                (,<type>-array-of (update-nth index
                                              element
                                              (,<type>-array->elements array)))
              array))
-         :guard-hints (("Goal" :in-theory (enable ,<type>-array-index-okp
-                                                  ,<type>-array-length
-                                                  nfix
-                                                  integer-range-p)))
+         :guard-hints (("Goal" :in-theory (enable
+                                           ,<type>-array-integer-index-okp
+                                           ,<type>-array-length
+                                           nfix
+                                           integer-range-p)))
          :hooks (:fix)
 
          ///
 
-         (defrule ,len-of-<type>-array->elements-of-<type>-array-write
+         (defrule ,len-of-<type>-array->elements-of-<type>-array-integer-write
            (equal (len (,<type>-array->elements
-                        (,<type>-array-write array index element)))
+                        (,<type>-array-integer-write array index element)))
                   (len (,<type>-array->elements array)))
-           :enable (,<type>-array-index-okp
+           :enable (,<type>-array-integer-index-okp
                     ,<type>-array-length
                     ,<type>-array-of
                     nfix
@@ -387,11 +392,11 @@
                     integer-range-p
                     max))
 
-         (defrule ,<type>-array-length-of-<type>-array-write
+         (defrule ,<type>-array-length-of-<type>-array-integer-write
            (equal (,<type>-array-length
-                   (,<type>-array-write array index element))
+                   (,<type>-array-integer-write array index element))
                   (,<type>-array-length array))
-           :enable (,<type>-array-index-okp
+           :enable (,<type>-array-integer-index-okp
                     ,<type>-array-length
                     ,<type>-array-of
                     nfix
@@ -399,20 +404,20 @@
                     integer-range-p
                     max))
 
-         (defruled ,<type>-array-write-alt-def
+         (defruled ,<type>-array-integer-write-alt-def
            (implies (and (,<type>-arrayp array)
                          (integerp index)
                          (,<type>p elem)
-                         (,<type>-array-index-okp array index))
-                    (equal (,<type>-array-write array index elem)
+                         (,<type>-array-integer-index-okp array index))
+                    (equal (,<type>-array-integer-write array index elem)
                            (value-array-write index elem array)))
-           :enable (,<type>-array-write
+           :enable (,<type>-array-integer-write
                     value-array-write
                     ,<type>-arrayp-alt-def
                     ,<type>-array-of-alt-def
                     ,<type>-array-length-alt-def
                     ,<type>-array->elements-alt-def
-                    ,<type>-array-index-okp
+                    ,<type>-array-integer-index-okp
                     value-array->length
                     ,type-of-value-when-<type>p
                     remove-flexible-array-member
@@ -423,7 +428,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       )))
+     )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -449,9 +454,10 @@
        (<etype>-arrayp (pack <etype>-array 'p))
        (<etype>-array->elements (pack <etype>-array '->elements))
        (<etype>-array-length (pack <etype>-array '-length))
-       (<etype>-array-index-okp (pack <etype> '-array-index-okp))
-       (<etype>-array-read (pack <etype>-array '-read))
-       (<etype>-array-write (pack <etype>-array '-write))
+       (<etype>-array-integer-index-okp (pack <etype>
+                                              '-array-integer-index-okp))
+       (<etype>-array-integer-read (pack <etype>-array '-integer-read))
+       (<etype>-array-integer-write (pack <etype>-array '-integer-write))
        (integer-from-<itype> (pack 'integer-from- <itype>))
        (<etype>-array-<itype>-index-okp (pack
                                          <etype> '-array- <itype> '-index-okp))
@@ -481,7 +487,7 @@
                            " is valid for an array of type "
                            etype-string
                            ".")
-         (,<etype>-array-index-okp array (,integer-from-<itype> index))
+         (,<etype>-array-integer-index-okp array (,integer-from-<itype> index))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -495,7 +501,7 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-read array (,integer-from-<itype> index))
+         (,<etype>-array-integer-read array (,integer-from-<itype> index))
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix))
@@ -512,7 +518,9 @@
                            ", using an index of "
                            itype-string
                            ".")
-         (,<etype>-array-write array (,integer-from-<itype> index) element)
+         (,<etype>-array-integer-write array
+                                       (,integer-from-<itype> index)
+                                       element)
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
          :hooks (:fix)
@@ -532,7 +540,7 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-       )))
+     )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

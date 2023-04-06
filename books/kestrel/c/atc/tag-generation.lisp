@@ -237,8 +237,8 @@
           (indexfixtype (integer-type-to-fixtype indextype))
           (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
-          (array-reader (pack elemfixtype '-array-read-alt-def))
-          (array-checker (pack elemfixtype '-array-index-okp))
+          (array-reader (pack elemfixtype '-array-integer-read-alt-def))
+          (array-checker (pack elemfixtype '-array-integer-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextype (pack 'valuep-when- indextypep))
@@ -887,8 +887,8 @@
           (indextypep (pack indexfixtype 'p))
           (elemtypep (pack elemfixtype 'p))
           (integer-from-indextype (pack 'integer-from- indexfixtype))
-          (array-writer (pack elemfixtype '-array-write-alt-def))
-          (array-checker (pack elemfixtype '-array-index-okp))
+          (array-writer (pack elemfixtype '-array-integer-write-alt-def))
+          (array-checker (pack elemfixtype '-array-integer-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextypep (pack 'valuep-when- indextypep))
@@ -919,7 +919,7 @@
                                               names-to-avoid
                                               wrld))
           (arrayp-of-arrary-write
-           (pack elemfixtype '-arrayp-of- elemfixtype '-array-write))
+           (pack elemfixtype '-arrayp-of- elemfixtype '-array-integer-write))
           (check-hyp (if length
                          `(,checker idx struct)
                        `(,checker idx)))
