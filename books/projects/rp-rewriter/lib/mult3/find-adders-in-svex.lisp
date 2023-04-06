@@ -2506,7 +2506,7 @@
                :do-not-induct t
                :expand ((PROCESS-FA/HA-C-CHAIN-PATTERN-ARGS PATTERN-ALIST COLLECTED
                                                             :ADDER-TYPE 'HA))
-               :induct (process-fa/ha-c-chain-pattern-args pattern-alist collected) 
+               :induct (process-fa/ha-c-chain-pattern-args pattern-alist collected)
                :in-theory (e/d (exploded-args-and-args
                                 exploded-args-and-args->exploded-args
                                 exploded-args-and-args->args
@@ -3151,7 +3151,7 @@
 
   :prepwork ((Local
               (in-theory (enable SV::SVEX-CALL->FN)))
-             
+
              (define find-s-from-found-c-in-svex-aux-counter ()
                nil
                ///
@@ -4106,7 +4106,10 @@
                       (svl::bitp-of-svex arg2)
                       (svl::bitp-of-svex arg3)))
            (ex-adder-fnc-from-unfloat
-            (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor arg2 arg3))))
+            (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor arg2 arg3)))
+          ((when (equal arg1 0))
+           (ex-adder-fnc-from-unfloat
+            (svl::bitand/or/xor-simple-constant-simplify 'sv::bitand arg2 arg3))))
        (sv::svex-call 'fa-c-chain (hons-list 0 arg1 arg2 arg3))))
     (& svex))
   ///
@@ -4128,11 +4131,28 @@
               :in-theory (e/d (FA-C-CHAIN c-spec) ())))))
 
   (local
+   (defthm |(FA-C-CHAIN 0 0 x y)|
+     (equal (FA-C-CHAIN 0 0 x y)
+            (sv::4vec-bitand x y))
+     :hints (("Goal"
+              :in-theory (e/d (FA-C-CHAIN c-spec) ())))))
+
+  (local
    (defthm c-spec-of-two-zeros
      (implies (bitp x)
               (and (equal (c-spec (list 0 x 0)) 0)
                    (equal (c-spec (list x 0 0)) 0)
                    (equal (c-spec (list 0 0 x)) 0)))
+     :hints (("Goal"
+              :in-theory (e/d (bitp) ())))))
+
+  (local
+   (defthm c-spec-of-one-zeros
+     (implies (and (bitp x)
+                   (bitp y))
+              (and (equal (c-spec (list 0 x y)) (sv::4vec-bitand x y))
+                   (equal (c-spec (list x y 0)) (sv::4vec-bitand x y))
+                   (equal (c-spec (list y 0 x)) (sv::4vec-bitand x y))))
      :hints (("Goal"
               :in-theory (e/d (bitp) ())))))
 
@@ -4146,6 +4166,22 @@
                           (sv::4vec-bitor x y))
                    (equal (c-spec (list x y 1))
                           (sv::4vec-bitor x y))))
+     :hints (("Goal"
+              :in-theory (e/d (bitp) ())))))
+
+  (local
+   (defthm 3vec-fix-of-bitp
+     (implies (bitp x)
+              (equal (sv::3vec-fix x)
+                     x))
+     :hints (("Goal"
+              :in-theory (e/d (bitp) ())))))
+
+  (local
+   (defthm SV::4VEC-PART-SELECt-of-bitp
+     (implies (bitp x)
+              (equal (sv::4vec-part-select 0 1 x)
+                     x))
      :hints (("Goal"
               :in-theory (e/d (bitp) ())))))
 
@@ -6630,8 +6666,13 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                             SV::SVEX-CALL->FN
                             SV::SVEX-CALL->args)
                            ())))
+
+  
+    
+  
   (define remove-unpaired-ha ((svex sv::Svex-p)
                               &key
+                              ((wrap-with-id booleanp) 'wrap-with-id)
                               ((collected alistp) 'collected))
     :measure (sv::svex-count svex)
     :Returns (res-svex sv::svex-p :hyp (sv::svex-p svex))
@@ -6651,8 +6692,10 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                             (hons-get svex.args collected))))
           ((unless to-remove)
            (sv::Svex-call svex.fn
-                          (remove-unpaired-ha-lst svex.args))))
-       (cond ((ha-c-chain-self-pattern-p svex)
+                          (remove-unpaired-ha-lst svex.args)))
+          (res
+           (cond
+            ((ha-c-chain-self-pattern-p svex)
               (ha-c-chain-self-pattern-body
                svex
                (sv::Svex-call
@@ -6697,9 +6740,13 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                                     (remove-unpaired-ha y)))))
              (t (sv::Svex-call svex.fn
                                (remove-unpaired-ha-lst svex.args)) ;; should never come here..
-                )))))
+                )))
+          (res (if wrap-with-id (sv::svex-call 'sv::id (hons-list res)) res)))
+       res)))
+  
   (define remove-unpaired-ha-lst ((lst sv::svexlist-p)
                                   &key
+                                  ((wrap-with-id booleanp) 'wrap-with-id)
                                   ((collected alistp) 'collected))
     :measure (sv::svexlist-count lst)
     :Returns (res-lst sv::svexlist-p :hyp (sv::svexlist-p lst))
@@ -6742,6 +6789,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
 
   (define remove-unpaired-ha-alist ((lst sv::svex-alist-p)
                                     &key
+                                    ((wrap-with-id booleanp) 'wrap-with-id)
                                     ((collected alistp) 'collected))
     :Returns (res sv::svex-alist-p :hyp (sv::svex-alist-p lst))
     (if (atom lst)
@@ -6758,7 +6806,9 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                :expand ((sv::svex-alist-eval nil env))
                :in-theory (e/d (sv::svex-alist-eval$) ()))))))
 
-(define remove-ha-pairs-under-gates-alist ((svex-alist sv::svex-alist-p))
+(define remove-ha-pairs-under-gates-alist ((svex-alist sv::svex-alist-p)
+                                           &key
+                                           ((wrap-with-id booleanp) 'nil))
   :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p svex-alist))
   (b* ((- (cw "--- Now removing misidentified half-adders.~%"))
 
@@ -7231,7 +7281,7 @@ was ~st seconds."))
           (svex-alist (find-f/h-adders-in-svex-alist svex-alist
                                                      *find-f/h-adders-in-svex-alist-limit*
                                                      :adder-type 'ha))
-          
+
           (- (time-tracker :rewrite-adders-in-svex :stop))
           (- (time-tracker :rewrite-adders-in-svex :print?
                            :min-time 0
@@ -7294,9 +7344,9 @@ was ~st seconds."))
           (svex-alist (if disable-search svex-alist
                         (svl::svex-alist-simplify-bitand/or/xor svex-alist))) ;; prob unnecessary
           (svex-alist (if disable-search svex-alist
-                        (remove-ha-pairs-under-gates-alist svex-alist)))
-          (svex-alist (if disable-search svex-alist
-                        (svl::svex-alist-simplify-bitand/or/xor svex-alist))) ;; prob unnecessary
+                        (remove-ha-pairs-under-gates-alist svex-alist :wrap-with-id t)))
+          ;; (svex-alist (if disable-search svex-alist
+          ;;               (svl::svex-alist-simplify-bitand/or/xor svex-alist))) ;; prob unnecessary
 
           ;; to be enabled manually to make s-c-spec-meta work faster. but left
           ;; disabled by default because debugging becomes difficult with this.
