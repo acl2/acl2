@@ -17,7 +17,7 @@
 ;; STATUS: Working but needs to be generalized to support more kinds of hints.
 
 (include-book "theory-hints")
-(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
 ;(include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
 
 ;; Leaves SYM unchanged if it has no entry in RENAMING-ALIST.

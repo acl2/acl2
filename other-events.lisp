@@ -24666,12 +24666,7 @@
                 (ld '((deflabel ,label)
                       (with-output :stack :pop
                                    ,form)
-                      (state-global-let*
-                       ((inhibit-output-lst ; eliminate output from :ubt!
-                         (add-to-set-eq 'temporary
-                                        (f-get-global 'inhibit-output-lst
-                                                      state))))
-                       (ubt! ',label)))
+                      (ubt! ',label))
                     :ld-verbose nil
                     :ld-prompt nil
                     :ld-pre-eval-print nil

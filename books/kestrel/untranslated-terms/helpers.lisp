@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "../utilities/acl2-defaults-table")
-(include-book "kestrel/utilities/forms" :dir :system) ; for farg1, etc.
 
 ;; Sets the ignore-ok property in WRLD to t.
 ;; Returns a new world.

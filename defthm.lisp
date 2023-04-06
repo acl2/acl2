@@ -10180,15 +10180,36 @@
 
 (defun redundant-theoremp (name term classes event-form wrld)
 
-; We know name is a symbol, but it may or may not be new.  We return t if name
-; is already defined as the name of the theorem term with the given
-; rule-classes, or if event-form -- which is a defthm or defaxiom event -- is
-; an existing event in the world.  We do the first test first since perhaps it
-; is more efficient.
+; Name is a symbol naming a proposed defthm or defaxiom event with the given
+; name, term, (rule) classes, and event form.  We know name is a symbol, but it
+; may or may not be new.  We return t if the input name is defined as the name
+; of an existing defaxiom in the world, or of an existing defthm provided the
+; proposed event is also a defthm (not a defaxiom), when either of the
+; following two criteria hold of the inputs.  The first is that the existing
+; term and rule-classes are respectively the input term and the
+; truncate-classes of the input classes.  The second is when the input
+; event-form is the existing event for name.  We do the first test first since
+; perhaps it is more efficient.
 
-; Through Version_6.5 we had only the first test of this disjunction.  But
-; Jared Davis and Sol Swords sent us small examples including the following,
-; which failed because the translated rule-classes had changed.
+; As noted above, a defaxiom is never redundant with a defthm.  That
+; restriction guarantees that if a defaxiom occurs in a book, then that book's
+; certification requires certify-book to be called with :skip-proofs-okp t.
+; Here is an example of a book that could be certified in ACL2 Version_8.5
+; without :skip-proofs-okp t, when a defaxiom could still be redundant with a
+; defthm; also, this book could then be included without any warnings and
+; without supplying @(tsee include-book) with @(':skip-proofs-okp t.').
+
+;   (in-package "ACL2")
+;   (local (defthm foo (equal (car (cons x x)) x)))
+;   (defaxiom foo (equal (car (cons x x)) x))
+
+; Note that local defaxiom events are disallowed in books.  So if a defaxiom is
+; redundant in a book, then it is redundant with a non-local defaxiom and hence
+; a defaxiom will be observed during certification.
+
+; Through Version_6.5 we didn't do the fallback check that the two events are
+; identical.  But Jared Davis and Sol Swords sent us small examples including
+; the following, which failed because the translated rule-classes had changed.
 
 ;   (defund foop (x) (consp x))
 ;
@@ -10220,12 +10241,16 @@
 ; when a :corollary is implicit, then translate-rule-class generates the
 ; :corollary to be exactly the original theorem.
 
-  (or (and (equal term (getpropc name 'theorem 0 wrld))
-           (equal (truncate-classes classes term)
-                  (getpropc name 'classes 0 wrld)))
-      (assert$ event-form
-               (equal event-form
-                      (get-event name wrld)))))
+  (assert$ event-form
+           (let ((tmp (and (equal term (getpropc name 'theorem 0 wrld))
+                           (equal (truncate-classes classes term)
+                                  (getpropc name 'classes 0 wrld)))))
+             (or (and tmp
+                      (eq (car event-form) 'defthm))
+                 (let ((old-event-form (get-event name wrld)))
+                   (or (and tmp ; so presumably (eq (car event-form) 'defaxiom)
+                            (eq (car old-event-form) 'defaxiom))
+                       (equal event-form old-event-form)))))))
 
 ; The next part develops the functions for proving that each alleged
 ; corollary in a rule class follows from the theorem proved.

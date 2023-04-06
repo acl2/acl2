@@ -20,7 +20,7 @@
 (include-book "types")
 (include-book "expressions")
 (include-book "kestrel/utilities/doublets" :dir :system)
-(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
 ;(include-book "kestrel/lists-light/len" :dir :system) ; Causes circularity!!
 (include-book "std/strings/suffixp" :dir :system)
 (include-book "std/strings/strpos" :dir :system)
@@ -219,7 +219,7 @@
              (cons tm rec-calls)
            rec-calls)))
       (&  ; crude but should be safe
-       (append (get-calls-to-fns fns (car tm)) 
+       (append (get-calls-to-fns fns (car tm))
                (get-calls-to-fns fns (cdr tm)))))))
 
 ;; Not used currently
@@ -447,7 +447,7 @@
 ;; * For now, we require that OUTPUTS be a list with a single pair in it.
 ;;   Later we may allow more than one output and wrap the output in mv
 ;;   We will never have zero outputs.
-;; 
+;;
 (defmacro s-fun (namestring &key inputs outputs ;; ensures
                             body assumes ensures measure
                             guard-debug) ; For debugging
@@ -457,9 +457,9 @@
        ((mv erp returns-list ?output-fixer output-types ensures)
         (process-s-fun-outputs outputs ensures))
        ((when erp) (er hard? 'top-level "Bad :outputs to s-fun")))
-    
+
     ;; This complicated structure is in order to use acl2::guess-measure-alist, but with unfixed inputs
-    ;; and then substituting fixing in the resulting measure. 
+    ;; and then substituting fixing in the resulting measure.
     ;; Woud be unnecessary if acl2::guess-measure-alist handled fixing of arguments itself
     `(progn (make-event (s-fun-pre ',input-types ',output-types))
             ;; Above event be in world before evaluating s-fun-main

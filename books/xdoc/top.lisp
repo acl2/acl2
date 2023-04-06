@@ -477,8 +477,8 @@
 (defmacro defsection-progn (name &rest args)
   (defsection-fn '(progn) name args))
 
-(table acl2::pp-special-syms 'defsection 1)
-(table acl2::pp-special-syms 'defsection-progn 1)
+(table acl2::ppr-special-syms 'defsection 1)
+(table acl2::ppr-special-syms 'defsection-progn 1)
 
 
 ;; Moved from cutil/deflist for greater availability
