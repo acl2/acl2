@@ -13,8 +13,6 @@
 
 (include-book "../language/array-operations")
 
-(include-book "../representation/integer-operations")
-
 (include-book "types")
 
 (include-book "symbolic-execution-rules/integers")
