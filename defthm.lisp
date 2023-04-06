@@ -10246,9 +10246,9 @@
                            (equal (truncate-classes classes term)
                                   (getpropc name 'classes 0 wrld)))))
              (or (and tmp
-                      (eq (car event-form) 'defthm))
+                      (not (eq (car event-form) 'defaxiom)))
                  (let ((old-event-form (get-event name wrld)))
-                   (or (and tmp ; so presumably (eq (car event-form) 'defaxiom)
+                   (or (and tmp ; so (eq (car event-form) 'defaxiom)
                             (eq (car old-event-form) 'defaxiom))
                        (equal event-form old-event-form)))))))
 
