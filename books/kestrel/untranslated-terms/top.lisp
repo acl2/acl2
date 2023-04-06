@@ -12,6 +12,8 @@
 
 (include-book "helpers")
 
+(include-book "untranslated-terms-old")
+
 ;; Helpers for let and common macros:
 (include-book "let-helpers")
 (include-book "mv-let-helpers")

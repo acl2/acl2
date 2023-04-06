@@ -57,7 +57,7 @@
 ;(include-book "kestrel/bv/arith" :dir :system) ;todo?
 (include-book "jvm-rules-axe2") ;for smart if handling
 (include-book "../math-rules") ; todo: why?
-(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/utilities/auto-termination" :dir :system)
