@@ -397,3 +397,68 @@
 
 (make-event
  `(progn ,@(def-integer-values-loop *nonchar-integer-types*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defflatsum cinteger
+  :short "Fixtype of all the supported C integer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the union of
+     the C integer types listed in @(tsee *nonchar-integer-fixtypes*)."))
+  (:schar schar)
+  (:uchar uchar)
+  (:sshort sshort)
+  (:ushort ushort)
+  (:sint sint)
+  (:uint uint)
+  (:slong slong)
+  (:ulong ulong)
+  (:sllong sllong)
+  (:ullong ullong)
+  :pred cintegerp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-from-cinteger ((cint cintegerp))
+  :returns (int integerp)
+  :short "ACL2 integer corresponding to the C integer."
+  (cinteger-case cint
+                 :schar (integer-from-schar cint.get)
+                 :uchar (integer-from-uchar cint.get)
+                 :sshort (integer-from-sshort cint.get)
+                 :ushort (integer-from-ushort cint.get)
+                 :sint (integer-from-sint cint.get)
+                 :uint (integer-from-uint cint.get)
+                 :slong (integer-from-slong cint.get)
+                 :ulong (integer-from-ulong cint.get)
+                 :sllong (integer-from-sllong cint.get)
+                 :ullong (integer-from-ullong cint.get))
+  :hooks (:fix)
+  ///
+
+  (defruled integer-from-cinteger-alt-def
+    (equal (integer-from-cinteger x)
+           (cond ((scharp x) (integer-from-schar x))
+                 ((ucharp x) (integer-from-uchar x))
+                 ((sshortp x) (integer-from-sshort x))
+                 ((ushortp x) (integer-from-ushort x))
+                 ((sintp x) (integer-from-sint x))
+                 ((uintp x) (integer-from-uint x))
+                 ((slongp x) (integer-from-slong x))
+                 ((ulongp x) (integer-from-ulong x))
+                 ((sllongp x) (integer-from-sllong x))
+                 (t (integer-from-ullong x))))
+    :enable (integer-from-cinteger
+             cinteger-kind
+             cinteger-schar->get
+             cinteger-uchar->get
+             cinteger-sshort->get
+             cinteger-ushort->get
+             cinteger-sint->get
+             cinteger-uint->get
+             cinteger-slong->get
+             cinteger-ulong->get
+             cinteger-sllong->get
+             cinteger-ullong->get)))
