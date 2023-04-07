@@ -566,70 +566,160 @@
                   (integerp index)
                   (c::uchar-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::uchar-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::uchar-array-integer-read-alt-def
+                    (index index) (array array)))
 
   (defruled not-errorp-of-value-array-read-when-schar-array-and-in-range
     (implies (and (c::schar-arrayp array)
                   (integerp index)
                   (c::schar-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::schar-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::schar-array-integer-read-alt-def
+                    (index index) (array array)))
 
   (defruled not-errorp-of-value-array-read-when-ushort-array-and-in-range
     (implies (and (c::ushort-arrayp array)
                   (integerp index)
                   (c::ushort-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::ushort-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::ushort-array-integer-read-alt-def
+                    (index index) (array array)))
 
   (defruled not-errorp-of-value-array-read-when-sshort-array-and-in-range
     (implies (and (c::sshort-arrayp array)
                   (integerp index)
                   (c::sshort-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::sshort-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::sshort-array-integer-read-alt-def
+                    (index index) (array array)))
 
   (defruled not-errorp-of-value-array-read-when-uint-array-and-in-range
     (implies (and (c::uint-arrayp array)
                   (integerp index)
                   (c::uint-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::uint-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::uint-array-integer-read-alt-def
+                    (index index) (array array)))
 
   (defruled not-errorp-of-value-array-read-when-sint-array-and-in-range
     (implies (and (c::sint-arrayp array)
                   (integerp index)
                   (c::sint-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::sint-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::sint-array-integer-read-alt-def
+                    (index index) (array array)))
 
   (defruled not-errorp-of-value-array-read-when-ulong-array-and-in-range
     (implies (and (c::ulong-arrayp array)
                   (integerp index)
                   (c::ulong-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::ulong-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::ulong-array-integer-read-alt-def
+                    (index index) (array array)))
 
   (defruled not-errorp-of-value-array-read-when-slong-array-and-in-range
     (implies (and (c::slong-arrayp array)
                   (integerp index)
                   (c::slong-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::slong-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::slong-array-integer-read-alt-def
+                    (index index) (array array)))
 
   (defruled not-errorp-of-value-array-read-when-ullong-array-and-in-range
     (implies (and (c::ullong-arrayp array)
                   (integerp index)
                   (c::ullong-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::ullong-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::ullong-array-integer-read-alt-def
+                    (index index) (array array)))
 
   (defruled not-errorp-of-value-array-read-when-sllong-array-and-in-range
     (implies (and (c::sllong-arrayp array)
                   (integerp index)
                   (c::sllong-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
-    :use (:instance c::sllong-array-integer-read-alt-def (index index) (array array)))
+    :use (:instance c::sllong-array-integer-read-alt-def
+                    (index index) (array array)))
+
+  (defruled value-array-read-when-uchar-arrayp
+    (implies (and (uchar-arrayp x)
+                  (cintegerp i)
+                  (uchar-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (uchar-array-read x i)))
+    :enable uchar-array-read-alt-def)
+
+  (defruled value-array-read-when-schar-arrayp
+    (implies (and (schar-arrayp x)
+                  (cintegerp i)
+                  (schar-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (schar-array-read x i)))
+    :enable schar-array-read-alt-def)
+
+  (defruled value-array-read-when-ushort-arrayp
+    (implies (and (ushort-arrayp x)
+                  (cintegerp i)
+                  (ushort-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (ushort-array-read x i)))
+    :enable ushort-array-read-alt-def)
+
+  (defruled value-array-read-when-sshort-arrayp
+    (implies (and (sshort-arrayp x)
+                  (cintegerp i)
+                  (sshort-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (sshort-array-read x i)))
+    :enable sshort-array-read-alt-def)
+
+  (defruled value-array-read-when-uint-arrayp
+    (implies (and (uint-arrayp x)
+                  (cintegerp i)
+                  (uint-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (uint-array-read x i)))
+    :enable uint-array-read-alt-def)
+
+  (defruled value-array-read-when-sint-arrayp
+    (implies (and (sint-arrayp x)
+                  (cintegerp i)
+                  (sint-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (sint-array-read x i)))
+    :enable sint-array-read-alt-def)
+
+  (defruled value-array-read-when-ulong-arrayp
+    (implies (and (ulong-arrayp x)
+                  (cintegerp i)
+                  (ulong-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (ulong-array-read x i)))
+    :enable ulong-array-read-alt-def)
+
+  (defruled value-array-read-when-slong-arrayp
+    (implies (and (slong-arrayp x)
+                  (cintegerp i)
+                  (slong-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (slong-array-read x i)))
+    :enable slong-array-read-alt-def)
+
+  (defruled value-array-read-when-ullong-arrayp
+    (implies (and (ullong-arrayp x)
+                  (cintegerp i)
+                  (ullong-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (ullong-array-read x i)))
+    :enable ullong-array-read-alt-def)
+
+  (defruled value-array-read-when-sllong-arrayp
+    (implies (and (sllong-arrayp x)
+                  (cintegerp i)
+                  (sllong-array-index-okp x i))
+             (equal (value-array-read (integer-from-cinteger i) x)
+                    (sllong-array-read x i)))
+    :enable sllong-array-read-alt-def)
 
   (defval *atc-array-read-rules*
     '(not-errorp-of-value-array-read-when-uchar-array-and-in-range

@@ -260,7 +260,12 @@
     (implies (ullongp x)
              (equal (value-kind x)
                     :ullong))
-    :enable (ullongp value-kind)))
+    :enable (ullongp value-kind))
+
+  (defruled value-kind-not-array-when-cintegerp
+    (implies (cintegerp x)
+             (not (equal (value-kind x) :array)))
+    :enable cintegerp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1111,7 +1116,12 @@
 
   (defruled value-integerp-when-ullongp
     (implies (ullongp x)
-             (value-integerp x))))
+             (value-integerp x)))
+
+  (defruled value-integerp-when-cintegerp
+    (implies (cintegerp x)
+             (value-integerp x))
+    :enable cintegerp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
