@@ -13,13 +13,12 @@
 
 (include-book "../language/array-operations")
 
-(include-book "../representation/integer-operations")
-
 (include-book "types")
 
 (include-book "symbolic-execution-rules/integers")
 
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -103,10 +102,20 @@
      addition between the pointer @('a') and the integer @('i'),
      and [C:6.5.6/2] allows the integer to have any integer type.
      This means that, for each possible array type,
-     there are versions of the read and write operations (which use indices)
-     for all the integer types supported in ATC's model of C.
+     any integer type is allowed as index.
+     We define operations that take indices of type @(tsee cinteger),
+     one operation per element array type;
+     note that the type of the index does not affect the result,
+     so having operations that take indices of all C integer types
+     does not require a weakening or complication of the return types.
+     We also have operations that take specific integer types as indices;
+     these will be removed, using instead the aforementioned ones
+     that take indices of any C integer types.
+     We also have operations that take ACL2 integers as indices,
+     in terms of which the ones that take specific integer types are defined;
+     the ones that take ACL2 integers will be also removed.
      Since all these functions follow a common pattern,
-     we generate arary types and functions programmatically,
+     we generate array types and functions programmatically,
      as done for the "
     (xdoc::seetopic "representation-of-integers" "integers")
     ".")
@@ -153,8 +162,8 @@
   (xdoc::topstring
    (xdoc::p
     "Here we generate the fixtype,
-     and the internally used functions
-     that use ACL2 integers as indices.
+     the operations that take ACL2 integer indices,
+     and the operatiosn that take indices of any C integer types.
      Note that indices are 0-indexed.
      We also generate the function that returns the length of an array,
      as an ACL2 integer.")
@@ -191,12 +200,21 @@
        (<type>-array-integer-write (pack <type>-array '-integer-write))
        (<type>-array-integer-write-alt-def (pack <type>-array-integer-write
                                                  '-alt-def))
+       (<type>-array-index-okp (pack <type> '-array-index-okp))
+       (<type>-array-read (pack <type>-array '-read))
+       (<type>-array-read-alt-def (pack <type>-array '-read-alt-def))
+       (<type>-array-write (pack <type>-array '-write))
+       (<type>-array-write-alt-def (pack <type>-array '-write-alt-def))
        (<type>-array-of-of-<type>-array->elements
         (pack <type>-array-of '-of- <type>-array->elements))
        (len-of-<type>-array->elements-of-<type>-array-integer-write
         (pack 'len-of- <type>-array->elements '-of- <type>-array-integer-write))
+       (len-of-<type>-array->elements-of-<type>-array-write
+        (pack 'len-of- <type>-array->elements '-of- <type>-array-write))
        (<type>-array-length-of-<type>-array-integer-write
         (pack <type> '-array-length-of- <type>-array-integer-write))
+       (<type>-array-length-of-<type>-array-write
+        (pack <type> '-array-length-of- <type>-array-write))
        (type-of-value-when-<type>p (pack 'type-of-value-when- <type>p)))
 
     `(progn
@@ -307,12 +325,27 @@
        (define ,<type>-array-integer-index-okp ((array ,<type>-arrayp)
                                                 (index integerp))
          :returns (yes/no booleanp)
-         :short ,(str::cat "Check if an integer is
+         :short ,(str::cat "Check if an ACL2 integer is
                             a valid index (i.e. in range)
                             for an array of "
                            type-string
                            ".")
          (integer-range-p 0 (,<type>-array-length array) (ifix index))
+         :hooks (:fix))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+       (define ,<type>-array-index-okp ((array ,<type>-arrayp)
+                                        (index cintegerp))
+         :returns (yes/no booleanp)
+         :short ,(str::cat "Check if a C integer is
+                            a valid index (i.e. in range)
+                            for an array of "
+                           type-string
+                           ".")
+         (integer-range-p 0
+                          (,<type>-array-length array)
+                          (integer-from-cinteger index))
          :hooks (:fix))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -323,7 +356,7 @@
          :returns (element ,<type>p)
          :short ,(str::cat "Read an element from an array of "
                            type-string
-                           ", using an integer index.")
+                           ", using an ACL2 integer index.")
          (,<type>-fix (nth index (,<type>-array->elements array)))
          :guard-hints (("Goal" :in-theory (enable
                                            ,<type>-array-integer-index-okp
@@ -355,6 +388,40 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+       (define ,<type>-array-read ((array ,<type>-arrayp)
+                                   (index cintegerp))
+         :guard (,<type>-array-index-okp array index)
+         :returns (element ,<type>p)
+         :short ,(str::cat "Read an element from an array of "
+                           type-string
+                           ", using a C integer index.")
+         (,<type>-fix (nth (integer-from-cinteger index)
+                           (,<type>-array->elements array)))
+         :guard-hints (("Goal" :in-theory (enable
+                                           ,<type>-array-index-okp
+                                           ,<type>-array-length
+                                           integer-range-p)))
+         :hooks (:fix)
+         ///
+
+         (defruled ,<type>-array-read-alt-def
+           (implies (and (,<type>-arrayp array)
+                         (cintegerp index)
+                         (,<type>-array-index-okp array index))
+                    (equal (,<type>-array-read array index)
+                           (value-array-read (integer-from-cinteger index)
+                                             array)))
+           :enable (,<type>-array-read
+                    value-array-read
+                    ,<type>-array->elements-alt-def
+                    ,<type>-array-index-okp
+                    ,<type>-array-length-alt-def
+                    value-array->length
+                    ,<type>-arrayp-alt-def
+                    integer-range-p)))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
        (define ,<type>-array-integer-write ((array ,<type>-arrayp)
                                             (index integerp)
                                             (element ,<type>p))
@@ -362,7 +429,7 @@
          :returns (new-array ,<type>-arrayp)
          :short ,(str::cat "Write an element to an array of "
                            type-string
-                           ", using an integer index.")
+                           ", using an ACL2 integer index.")
          (b* ((array (,<type>-array-fix array))
               (index (ifix index))
               (element (,<type>-fix element)))
@@ -428,6 +495,71 @@
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+       (define ,<type>-array-write ((array ,<type>-arrayp)
+                                    (index cintegerp)
+                                    (element ,<type>p))
+         :guard (,<type>-array-index-okp array index)
+         :returns (new-array ,<type>-arrayp)
+         :short ,(str::cat "Write an element to an array of "
+                           type-string
+                           ", using a c integer index.")
+         (if (mbt (,<type>-array-index-okp array index))
+             (,<type>-array-of (update-nth (integer-from-cinteger index)
+                                           (,<type>-fix element)
+                                           (,<type>-array->elements array)))
+           (,<type>-array-fix array))
+         :guard-hints (("Goal" :in-theory (enable
+                                           ,<type>-array-index-okp
+                                           ,<type>-array-length
+                                           integer-range-p)))
+         :hooks (:fix)
+
+         ///
+
+         (defrule ,len-of-<type>-array->elements-of-<type>-array-write
+           (equal (len (,<type>-array->elements
+                        (,<type>-array-write array index element)))
+                  (len (,<type>-array->elements array)))
+           :enable (,<type>-array-index-okp
+                    ,<type>-array-length
+                    ,<type>-array-of
+                    integer-range-p
+                    max))
+
+         (defrule ,<type>-array-length-of-<type>-array-write
+           (equal (,<type>-array-length
+                   (,<type>-array-write array index element))
+                  (,<type>-array-length array))
+           :enable (,<type>-array-index-okp
+                    ,<type>-array-length
+                    ,<type>-array-of
+                    integer-range-p
+                    max))
+
+         (defruled ,<type>-array-write-alt-def
+           (implies (and (,<type>-arrayp array)
+                         (cintegerp index)
+                         (,<type>p elem)
+                         (,<type>-array-index-okp array index))
+                    (equal (,<type>-array-write array index elem)
+                           (value-array-write (integer-from-cinteger index)
+                                              elem
+                                              array)))
+           :enable (,<type>-array-write
+                    value-array-write
+                    ,<type>-arrayp-alt-def
+                    ,<type>-array-of-alt-def
+                    ,<type>-array-length-alt-def
+                    ,<type>-array->elements-alt-def
+                    ,<type>-array-index-okp
+                    value-array->length
+                    ,type-of-value-when-<type>p
+                    remove-flexible-array-member
+                    flexible-array-member-p
+                    integer-range-p)))
+
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -463,6 +595,9 @@
                                          <etype> '-array- <itype> '-index-okp))
        (<etype>-array-read-<itype> (pack <etype> '-array-read- <itype>))
        (<etype>-array-write-<itype> (pack <etype> '-array-write- <itype>))
+       (<etype>-array-index-okp (pack <etype> '-array-index-okp))
+       (<etype>-array-read (pack <etype> '-array-read))
+       (<etype>-array-write (pack <etype> '-array-write))
        (len-of-<etype>-array->elements-of-<etype>-array-write-<itype>
         (pack
          'len-of- <etype>-array->elements '-of- <etype>-array-write-<itype>))
@@ -488,7 +623,18 @@
                            etype-string
                            ".")
          (,<etype>-array-integer-index-okp array (,integer-from-<itype> index))
-         :hooks (:fix))
+         :hooks (:fix)
+         ///
+
+         (defruled ,(pack <etype>-array-<itype>-index-okp '-alt-def)
+           (implies (,<itype>p index)
+                    (equal (,<etype>-array-<itype>-index-okp array index)
+                           (,<etype>-array-index-okp array index)))
+           :enable (,<etype>-array-<itype>-index-okp
+                    ,<etype>-array-integer-index-okp
+                    ,<etype>-array-index-okp
+                    integer-from-cinteger-alt-def
+                    ifix)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -504,7 +650,17 @@
          (,<etype>-array-integer-read array (,integer-from-<itype> index))
          :guard-hints (("Goal"
                         :in-theory (enable ,<etype>-array-<itype>-index-okp)))
-         :hooks (:fix))
+         :hooks (:fix)
+         ///
+
+         (defruled ,(pack <etype>-array-read-<itype> '-alt-def)
+           (implies (,<itype>p index)
+                    (equal (,<etype>-array-read-<itype> array index)
+                           (,<etype>-array-read array index)))
+           :enable (,<etype>-array-read-<itype>
+                    ,<etype>-array-integer-read
+                    ,<etype>-array-read
+                    integer-from-cinteger-alt-def)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -536,7 +692,19 @@
          (defrule ,<etype>-array-length-of-<etype>-array-write-<itype>
            (equal (,<etype>-array-length
                    (,<etype>-array-write-<itype> array index element))
-                  (,<etype>-array-length array))))
+                  (,<etype>-array-length array)))
+
+         (defruled ,(pack <etype>-array-write-<itype> '-alt-def)
+           (implies (,<itype>p index)
+                    (equal (,<etype>-array-write-<itype> array index element)
+                           (,<etype>-array-write array index element)))
+           :enable (,<etype>-array-write-<itype>
+                    ,<etype>-array-integer-write
+                    ,<etype>-array-write
+                    integer-from-cinteger-alt-def
+                    ,<etype>-array-index-okp
+                    ,<etype>-array-integer-index-okp
+                    ifix)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -579,14 +747,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- (b* ((types (list (type-schar)
-                   (type-uchar)
-                   (type-sshort)
-                   (type-ushort)
-                   (type-sint)
-                   (type-uint)
-                   (type-slong)
-                   (type-ulong)
-                   (type-sllong)
-                   (type-ullong))))
-   `(progn ,@(atc-def-integer-arrays-loop-outer types types))))
+ `(progn ,@(atc-def-integer-arrays-loop-outer *nonchar-integer-types*
+                                              *nonchar-integer-types*)))
