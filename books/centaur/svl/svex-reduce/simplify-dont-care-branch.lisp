@@ -28,6 +28,8 @@
 
 (include-book "integerp-of-svex")
 (include-book "svex-reduce-apply")
+(local
+ (include-book "../4vec-lemmas"))
 
 (local
  (rp::fetch-new-events
@@ -79,7 +81,7 @@
   (defines collect-part-sels-from-tests-aux
     :prepwork
     ((defconst *collect-part-sels-from-tests-aux-limit*
-       20))
+       100))
     (define collect-part-sels-from-tests-aux ((x sv::Svex-p)
                                               (limit natp))
       :verify-guards nil
@@ -119,6 +121,116 @@
 
     (verify-guards collect-part-sels-from-tests-aux))
 
+  ;; No need to verify anything about this...
+  (define collect-part-sels-from-tests-merge-aux ((start natp)
+                                                  (size natp)
+                                                  var
+                                                  collected)
+
+    :prepwork ((Local
+                (defthm 4vec-p-of-natp
+                  (implies (natp x) (sv::4vec-p x)))))
+    :returns (mv (new-collected sv::svexlist-p
+                                :hyp (and (sv::svexlist-p collected)
+                                          (natp size)
+                                          (natp start))
+                                :hints (("Goal"
+                                         :in-theory (e/d (sv::svex-p) ()))))
+                 (merged))
+    (if (atom collected)
+        (mv nil nil)
+      (b* ((other (car collected))
+           ((mv ovar ostart osize valid)
+            (case-match other
+              (('sv::partsel ostart osize ovar)
+               (mv ovar ostart osize (and (natp ostart)
+                                          (natp osize))))
+              (& (mv 0 0 0 nil))))
+           ((unless valid)
+            ;; should never happen!!
+            (progn$
+             (cw "Something unexpected happened in ~p0~%" acl2::__function__)
+             (mv collected nil)))
+           ((unless (equal var ovar))
+            (b* (((mv rest merged)
+                  (collect-part-sels-from-tests-merge-aux
+                   start size var (cdr collected))))
+              (if merged
+                  (mv (cons (car collected) rest) t)
+                (mv collected nil))))
+           (end (+ start size ))
+           (oend (+ ostart osize ))
+           ;; case1 osize merges on the lower end.
+           ((when (and (<= ostart start)
+                       (>= oend start)
+                       (<= oend end)))
+            (mv (cons (hons-list 'sv::partsel ostart (+ end (- ostart)) var)
+                      (cdr collected))
+                t))
+           ;; case2 osize merges on the upper end.
+           ((when (and (<= start ostart)
+                       (>= end ostart)
+                       (<= end oend)))
+            (mv (cons (hons-list 'sv::partsel start (+ oend (- start)) var)
+                      (cdr collected))
+                t))
+           ;; case3 osize falls within
+           ((when (and (<= start ostart)
+                       (>= end oend)))
+            (mv (cons (hons-list 'sv::partsel start size var)
+                      (cdr collected))
+                t))
+           ;; case4 size falls within
+           ((when (and (<= ostart start)
+                       (>= oend end)))
+            (mv (cons (hons-list 'sv::partsel ostart osize var)
+                      (cdr collected))
+                t))
+           ((mv rest merged)
+            (collect-part-sels-from-tests-merge-aux
+             start size var (cdr collected))))
+        (if merged
+            (mv (cons (car collected) rest) t)
+          (mv collected nil))))
+    ///
+    (defret len-of-<fn>
+      (<= (len new-collected)
+          (len collected))
+      :hints (("Goal"
+               :in-theory (e/d (cons-count) ())))))
+
+  (define collect-part-sels-from-tests-merge (collected)
+    :measure (len collected)
+    :returns (new-collected sv::svexlist-p
+                            :hyp (sv::svexlist-p collected))
+    :hints (("Goal"
+             :in-theory (e/d () (len))))
+    :prepwork ((local
+                (defthm len-measure-lemma
+                  (implies
+                   (and (consp collected)
+                        (<= (len x) (len (cdr collected))))
+                   (< (len x) (len collected))))))
+    (if (atom collected)
+        nil
+      (b* ((cur (car collected))
+           ((mv var start size valid)
+            (case-match cur
+              (('sv::partsel start size var)
+               (mv var start size (and (natp start)
+                                       (natp size))))
+              (& (mv 0 0 0 nil))))
+           ((Unless valid) ;; should never come here!!!!
+            (progn$ (cw "Something unexpected happened in ~p0~%" acl2::__function__)
+                    collected))
+           ((mv new-collected merged)
+            (collect-part-sels-from-tests-merge-aux start size var (cdr collected)))
+           ((when merged)
+            (collect-part-sels-from-tests-merge new-collected)))
+        (cons-with-hint cur
+                        (collect-part-sels-from-tests-merge (cdr collected))
+                        collected))))
+
   (define collect-part-sels-from-tests ((x sv::Svex-p))
     :returns (mv (collected sv::svexlist-p
                             :hyp (sv::svex-p x)
@@ -134,8 +246,10 @@
             ((unless v1) (mv nil nil))
             ((mv c2 v2)
              (collect-part-sels-from-tests else ))
-            ((unless v2) (mv nil nil)))
-         (mv (union-equal c1 c2) t)))
+            ((unless v2) (mv nil nil))
+            (res (union-equal c1 c2))
+            (res (collect-part-sels-from-tests-merge res)))
+         (mv res t)))
       (('sv::? test & else)
        (b* (((mv c1 v1)
              (collect-part-sels-from-tests-aux test
@@ -143,8 +257,10 @@
             ((unless v1) (mv nil nil))
             ((mv c2 v2)
              (collect-part-sels-from-tests else ))
-            ((unless v2) (mv nil nil)))
-         (mv (union-equal c1 c2) t)))
+            ((unless v2) (mv nil nil))
+            (res (union-equal c1 c2))
+            (res (collect-part-sels-from-tests-merge res)))
+         (mv res t)))
       (& (mv nil t)))
     ///
     (verify-guards collect-part-sels-from-tests
@@ -197,29 +313,151 @@
                              svex-kind)
                             ())))))
 
+(define simplify-dont-care-branch-apply-aux (svex
+                                             partsel-term
+                                             (new-val natp))
+  :returns (mv (res-val sv::svex-p :hyp (natp new-val))
+               changed)
+  :prepwork ((local
+              (defthm svex-p-of-4vec-p
+                (implies (sv::4vec-p x)
+                         (sv::svex-p x))
+                :hints (("Goal"
+                         :in-theory (e/d (sv::svex-p 4vec-p svex-kind)
+                                         ())))))
+             (Local
+              (defthm 4vec-p-of-natp
+                (implies (natp x) (sv::4vec-p x)))))
+  (case-match svex
+    (('partsel start size var)
+     (b* (((unless (and (natp start)
+                        (natp size)))
+           (mv 0 nil))
+          ((mv start2 size2 var2 valid)
+           (case-match partsel-term
+             (('partsel start size var)
+              (mv start size var (and (natp start)
+                                      (natp size))))
+             (&
+              (mv 0 0 0 nil))))
+          ((unless (and (equal var var2)
+                        valid))
+           (mv 0 nil))
+          (end (+ start size))
+          (end2 (+ start2 size2))
+          ;; svex should fall within partsel-term
+          ((unless (and (<= start2 start)
+                        (<= end end2)))
+           (mv 0 nil))
+          (new-start (- start start2)))
+       (mv (sv::4vec-part-select new-start size new-val)
+           t)))
+    (&
+     (mv 0 nil)))
+  ///
+
+  (local
+   (use-ihs-extensions t))
+
+  (local
+   (use-ihs-logops-lemmas t))
+
+  (local
+   (use-arithmetic-5 t))
+
+  (local
+   (defthm dummy-cancel-lemma
+     (implies (and (EQUAL (+ x y)
+                          (+ a b))
+                   (acl2-numberp y))
+              (equal (+ a (- x) b)
+                     y))))
+
+  (local
+   (in-theory (disable SV::SVEX-APPLY$-IS-SVEX-APPLY)))
+
+  (local
+   (svex-eval-lemma-tmpl
+    (defthm svex-eval-of-4vec-p
+      (implies (4vec-p x)
+               (equal (sv::svex-eval x env)
+                      x))
+      :hints (("Goal"
+               :in-theory (e/d (sv::svex-eval
+                                svex-kind
+                                4vec-p
+                                sv::svex-quote->val)
+                               ()))))))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-is-correct
+     (implies (and (equal (svex-eval partsel-term env)
+                          new-val)
+                   changed
+                   (natp new-val))
+              (and (equal res-val
+                          (svex-eval svex env))
+                   (equal ;; to prevent free-vars
+                    (svex-eval res-val env)
+                    (svex-eval svex env))
+                   ))
+     :hints (("Goal"
+              :do-not-induct t
+              :expand ((SVEX-EVAL PARTSEL-TERM ENV)
+                       (NTH 2 (CDR SVEX))
+                       (NTH 1 (CDR SVEX))
+                       (NTH 1 (CDDR SVEX))
+                       (NTH 0 (CDR SVEX))
+                       (NTH 2 (CDR PARTSEL-TERM))
+                       (NTH 1 (CDR PARTSEL-TERM))
+                       (NTH 0 (CDddR PARTSEL-TERM)))
+              :in-theory (e/d* (SVEX-CALL->FN
+                                SVEX-APPLY
+                                SVEXLIST-EVAL
+                                4VEC
+                                4VECLIST-NTH-SAFE
+                                SVEX-CALL->ARGS
+                                SV::SVEX-QUOTE->VAL
+                                SVEX-KIND
+                                ;;bitops::ihsext-inductions
+                                ;;bitops::ihsext-recursive-redefs
+                                4VEC-ZERO-EXT
+                                4VEC-SHIFT-CORE
+                                4VEC-RSH
+                                ACL2::DEFAULT-MINUS
+                                SV::4VEC->UPPER
+                                SV::4VEC->lower
+                                ;;4VEC-PART-SELECT
+                                ACL2::|(- (- x))|)
+                               (;;4VEC-PART-SELECT-OF-4VEC-PART-SELECT-2
+                                )))))))
+
 (defines simplify-dont-care-branch-apply
   (define simplify-dont-care-branch-apply ((x svex-p)
                                            partsel-term
-                                           new-val)
+                                           (new-val natp))
     :measure (sv::svex-count x)
     :returns (res svex-p :hyp (and (svex-p x)
-                                   (svex-p new-val)))
+                                   (natp new-val)))
     (sv::svex-case
      x
      :var x
      :quote x
      :call
-     (if (equal x partsel-term)
-         new-val
-       (b* ((args (simplify-dont-care-branch-apply-lst x.args partsel-term new-val))
-            ;;((unless (sv::4veclist-p args)) x)
-            )
-         (svex-reduce-w/-env-apply x.fn args)))))
+     ;; TODO:  Maybe try  to apply  partsel  terms only  for test  cases if  it
+     ;; becomes too slow..
+     (b* (((mv val changed)
+           (simplify-dont-care-branch-apply-aux x partsel-term new-val))
+          ((when changed)
+           val)
+          (args (simplify-dont-care-branch-apply-lst x.args partsel-term new-val)))
+       (svex-reduce-w/-env-apply x.fn args))))
   (define simplify-dont-care-branch-apply-lst ((lst svexlist-p)
-                                               partsel-term new-val)
+                                               partsel-term
+                                               (new-val natp))
     :measure (sv::svexlist-count lst)
     :returns (res svexlist-p :hyp (and (svexlist-p lst)
-                                       (svex-p new-val)))
+                                       (natp new-val)))
     (if (atom lst)
         nil
       ;; no need to hons
@@ -232,15 +470,17 @@
    (defret-mutual correctness
      (defret svex-eval-of-<fn>-is-correct
        (implies (and (svex-p x)
+                     (natp new-val)
                      (equal (svex-eval partsel-term env)
-                            (svex-eval new-val env)))
+                            new-val))
                 (equal (svex-eval res env)
                        (svex-eval x env)))
        :fn simplify-dont-care-branch-apply)
      (defret svex-eval-of-<fn>-is-correct
        (implies (and (svexlist-p lst)
+                     (natp new-val)
                      (equal (svex-eval partsel-term env)
-                            (svex-eval new-val env)))
+                            new-val))
                 (equal (svexlist-eval res env)
                        (svexlist-eval lst env)))
        :fn simplify-dont-care-branch-apply-lst))))
@@ -367,7 +607,10 @@
                              4VEC-ZERO-EXT
                              4VEC-SHIFT-CORE
                              4VEC)
-                            ())))))
+                            (4VEC-ZERO-EXT-IS-4VEC-CONCAT))))))
+
+;; maybe memoize this...
+(profile 'collect-part-sels-from-tests)
 
 (define simplify-dont-care-branch ((x svex-p)
                                    &key
@@ -511,7 +754,6 @@
                                         rp::valid-sc
                                         rp::valid-sc-subterms)))))))
 
-
 ;; (simplify-dont-care-branch
 ;;  '(SV::?*
 ;;    (SV::==?? (SV::CONCAT 1 0 (SV::PARTSEL 0 2 A))
@@ -529,7 +771,6 @@
 ;;                     1 (1 . 0)))))
 ;;  :env (make-fast-alist `((a . a)))
 ;;  :context '((Integerp a)))
-
 
 ;; (svl::simplify-dont-care-branch
 ;;  '(SV::?*

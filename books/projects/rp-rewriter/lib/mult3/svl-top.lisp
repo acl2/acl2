@@ -460,7 +460,7 @@
   (def-rp-rule 4vec-==-with-logbit
     (implies t
              #|(and (integerp x)
-                  (natp start))|#
+             (natp start))|#
              (and (equal (sv::4vec-== (logbit start x) 0)
                          (-- (svl::4vec-bitnot$ 1 (logbit start x))))
                   (equal (sv::4vec-== (logbit start x) 1)
@@ -749,7 +749,6 @@
     :hints (("Goal"
              :in-theory (e/d (binary-not binary-xor) ()))))
 
-  
   )
 
 (progn
@@ -920,7 +919,6 @@
                     (binary-not (bits-to-logbit (svl::bits x start 1)))))
     :hints (("Goal"
              :in-theory (e/d (bitp) ())))))
-
 
 ;; --------------------------------------------------------------------------------
 ;; SVL/4vec functions and their trivial interactions with this book's functions
@@ -1183,7 +1181,7 @@
                     (svl::4vec-bitnot$ 1 x)))
     :hints (("goal"
              :in-theory (e/d (bitp) (bitp-of-logbit
-                                     
+
                                      )))))
 
   (def-rp-rule :disabled t
@@ -1399,8 +1397,6 @@
                                        (svl::bits (-- x) 0 (1- size))))))
   :hints (("Goal"
            :in-theory (e/d (-- svl::bits) (+-is-sum)))))
-
-
 
 ;; -------------------------------------------------------------------------------
 ;; -------------------------------------------------------------------------------
@@ -1894,8 +1890,45 @@ z)
                             SV::4VEC->LOWER
                             sv::4vec-times) ()))))
 
+(def-rp-rule 4VEC-?*-of-negated-test-when-bitp
+  (implies (and (bitp x)
+                (bitp y)
+                (bitp z))
+           (equal (sv::4vec-?* (- x) y z)
+                  (binary-? x y z)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
+(def-rp-rule 4vec-bitor-of-negated
+  (implies (and (bitp x)
+                (bitp y))
+           (equal (sv::4vec-bitor (- x)
+                                  (- y))
+                  (- (binary-or x y))))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
+(encapsulate
+  nil
+  (local
+   (use-ihs-extensions t))
+
+  (def-rp-rule SV::4VEC-==-when-params-integer
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (equal (svl::bits (sv::4vec-== x y) 0 1) 1)
+                    (equal x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec->lower
+                              sv::4vec->upper
+                              sv::4vec-==
+                              sv::3vec-==
+                              sv::4vec
+                              sv::3vec-bitnot
+                              sv::3vec-reduction-and
+                              sv::bool->vec
+                              sv::3vec-bitxor)
+                             (+-is-sum))))))
 
 (bump-all-meta-rules)
 
@@ -1943,7 +1976,6 @@ z)
 (:meta s-c-spec-meta . s-c-spec)
 (:meta s-c-spec-meta . c-s-spec)
 (:meta unpack-booth-meta . unpack-booth))|#
-
 
 ;; (def-rp-rule s-spec-of-binary-xor
 ;;   (implies (and (force (bitp x))
