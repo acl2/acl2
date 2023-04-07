@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,7 +24,8 @@
     "This is a simple tokenizer for Yul code.  The tokenizer simply lexes and
      then discards comments and whitespace.")
    (xdoc::p
-    "The primary API for tokenizing is @(see tokenize-yul) and @(see tokenize-yul-bytes)."))
+    "The primary API for tokenizing is
+     @(see tokenize-yul) and @(see tokenize-yul-bytes)."))
   :order-subtopics t
   :default-parent t)
 
