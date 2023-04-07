@@ -44,3 +44,11 @@
             (open-input-channel-p1 channel typ state))
    :rule-classes :forward-chaining
    :hints (("Goal" :in-theory (enable open-input-channel-p))))
+
+(defthmd open-input-channel-p1-becomes-open-input-channel-p
+  (equal (open-input-channel-p1 channel typ state)
+         (open-input-channel-p channel typ state))
+  :hints (("Goal" :in-theory (enable open-input-channel-p))))
+
+(theory-invariant (incompatible (:rewrite open-input-channel-p1-becomes-open-input-channel-p)
+                                (:definition open-input-channel-p)))

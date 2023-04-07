@@ -43,3 +43,11 @@
             (open-output-channel-p1 channel typ state))
    :rule-classes :forward-chaining
    :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(defthmd open-output-channel-p1-becomes-open-output-channel-p
+  (equal (open-output-channel-p1 channel typ state)
+         (open-output-channel-p channel typ state))
+  :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(theory-invariant (incompatible (:rewrite open-output-channel-p1-becomes-open-output-channel-p)
+                                (:definition open-output-channel-p)))
