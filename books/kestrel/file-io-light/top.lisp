@@ -10,7 +10,13 @@
 
 (in-package "ACL2")
 
+;; Users of file-io-light should generally not include this book, as it brings
+;; in more than most users need.
+
+;; Note that some of the books included below require trust tags.
+
 (include-book "typed-io-listp")
+
 (include-book "channels")
 
 ;; Built-in channel functions:
