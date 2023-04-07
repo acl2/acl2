@@ -64,7 +64,40 @@
      by reducing them modulo one plus the maximum value of the type.
      These functions are used
      to define certain C integer conversions and operations,
-     which are modular for unsigned integer types."))
+     which are modular for unsigned integer types.")
+   (xdoc::p
+    "This representation of C integers in ACL2 should be treated like
+     abstract data types whose definition is opaque.
+     Consider the representation of @('unsigned char'), for instance.
+     The exact definition of @(tsee ucharp) does not matter.
+     What matters is that the set of ACL2 values that satisfy that predicate
+     is isomorphic to the set of ACL2 integers
+     that satisfy @(tsee uchar-integerp);
+     the isomorphisms between the two sets are
+     @(tsee integer-from-uchar) and @(tsee uchar-from-integer).
+     The fixer @(tsee uchar-fix) should be treated opaquely too.
+     There should be sufficient theorems
+     that capture the isomorphism property
+     and that support reasoning about these C integers in ACL2
+     independently from their representation.
+     On the other hand, @(tsee uchar-integerp) is not opaque:
+     it is a known set of ACL2 integers, and that matters for reasoning.
+     As a practical issue, @(tsee uchar-integerp-alt-def),
+     which as the name suggests is like an alternative definition,
+     is generally more convenient than the actual definition,
+     because the latter involves powers of two and bit sizes,
+     while the alternate definition involves minima and maxima.
+     As another practical issue, it is generally unnecessary
+     to enable the fixer @(tsee uchar-integer-fix),
+     which exposes @(tsee uchar-integerp),
+     which therefore needs to be enabled anyways;
+     there is a theorem that simplifies away @(tsee uchar-integer-fix)
+     when @(tsee uchar-integerp) holds,
+     so enabling @(tsee uchar-integerp-alt-def) should normally suffice.
+     Even with the aforementioned isomorphisms disabled,
+     their executable counterparts are enabled (per ACL2's defaults),
+     exposing the internal representation in some constant cases;
+     we may consider keeping those executable counterparts disabled too."))
   :order-subtopics t
   :default-parent t)
 
