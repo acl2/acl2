@@ -183,7 +183,97 @@
   :short "Code to generate the rules for executing
           assignments to array subscripting expressions."
 
-  (define atc-exec-expr-asg-arrsub-rules-gen ((atype typep) (itype typep))
+  (define atc-exec-expr-asg-arrsub-rules-gen-1 ((atype typep))
+    :guard (type-nonchar-integerp atype)
+    :returns (mv (name symbolp)
+                 (event pseudo-event-formp))
+    :parents nil
+    (b* ((afixtype (integer-type-to-fixtype atype))
+         (apred (pack afixtype '-arrayp))
+         (epred (pack afixtype 'p))
+         (atype-array-index-okp (pack afixtype '-array-index-okp))
+         (atype-array-write (pack afixtype '-array-write))
+         (value-array->elemtype-when-apred (pack 'value-array->elemtype-when-
+                                                 apred))
+         (value-array-read-when-apred (pack 'value-array-read-when- apred))
+         (value-array-write-when-apred (pack 'value-array-write-when- apred))
+         (name (pack 'exec-expr-asg-arrsub-when- apred))
+         (formula
+          `(implies
+            (and (equal (expr-kind e) :binary)
+                 (equal (binop-kind (expr-binary->op e)) :asg)
+                 (equal left (expr-binary->arg1 e))
+                 (equal right (expr-binary->arg2 e))
+                 (equal (expr-kind left) :arrsub)
+                 (equal arr (expr-arrsub->arr left))
+                 (equal sub (expr-arrsub->sub left))
+                 (equal (expr-kind arr) :ident)
+                 (equal var (expr-ident->get arr))
+                 (not (zp limit))
+                 (equal arr-val (read-var var compst))
+                 (valuep arr-val)
+                 (equal eptr
+                        (apconvert-expr-value
+                         (expr-value arr-val (objdesign-of-var var compst))))
+                 (expr-valuep eptr)
+                 (equal ptr (expr-value->value eptr))
+                 (value-case ptr :pointer)
+                 (value-pointer-validp ptr)
+                 (equal (value-pointer->reftype ptr)
+                        ,(type-to-maker atype))
+                 (equal array
+                        (read-object (value-pointer->designator ptr) compst))
+                 (,apred array)
+                 (equal eindex (exec-expr-pure sub compst))
+                 (expr-valuep eindex)
+                 (equal eindex1 (apconvert-expr-value eindex))
+                 (expr-valuep eindex1)
+                 (equal index (expr-value->value eindex1))
+                 (cintegerp index)
+                 (,atype-array-index-okp array index)
+                 (equal eval (exec-expr-pure right compst))
+                 (expr-valuep eval)
+                 (equal eval1 (apconvert-expr-value eval))
+                 (expr-valuep eval1)
+                 (equal val (expr-value->value eval1))
+                 (,epred val))
+            (equal (exec-expr-asg e compst fenv limit)
+                   (write-object (value-pointer->designator ptr)
+                                 (,atype-array-write array index val)
+                                 compst))))
+         (event `(defruled ,name
+                   ,formula
+                   :expand ((exec-expr-pure (expr-binary->arg1 e) compst)
+                            (exec-expr-pure (expr-arrsub->arr
+                                             (expr-binary->arg1 e)) compst))
+                   :enable (exec-expr-asg
+                            exec-ident
+                            exec-arrsub
+                            apconvert-expr-value-when-not-value-array-alt
+                            value-kind-not-array-when-cintegerp
+                            read-object-of-objdesign-of-var-to-read-var
+                            ,value-array->elemtype-when-apred
+                            value-integer->get-when-cintegerp
+                            ,atype-array-index-okp
+                            integer-range-p
+                            ,value-array-read-when-apred
+                            ,value-array-write-when-apred
+                            write-object)
+                   :disable (equal-of-error
+                             equal-of-expr-value
+                             equal-of-objdesign-element)
+                   :prep-lemmas
+                   ((defrule lemma
+                      (implies (and (expr-valuep (apconvert-expr-value eval))
+                                    (,epred (expr-value->value
+                                             (apconvert-expr-value eval))))
+                               (,epred (expr-value->value eval)))
+                      :enable apconvert-expr-value)))))
+      (mv name event)))
+
+  (define atc-exec-expr-asg-arrsub-rules-gen-2 ((atype typep)
+                                                (itype typep)
+                                                (genthm symbolp))
     :guard (and (type-nonchar-integerp atype)
                 (type-nonchar-integerp itype))
     :returns (mv (name symbolp)
@@ -194,18 +284,9 @@
          (apred (pack afixtype '-arrayp))
          (epred (pack afixtype 'p))
          (ipred (pack ifixtype 'p))
-         (atype-array-itype-index-okp
-          (pack afixtype '-array- ifixtype '-index-okp))
-         (atype-array-index-okp
-          (pack afixtype '-array-integer-index-okp))
-         (atype-array-write-itype
-          (pack afixtype '-array-write- ifixtype))
-         (atype-array-write-alt-def
-          (pack afixtype '-array-integer-write-alt-def))
-         (elemtype-when-apred
-          (pack 'value-array->elemtype-when- apred))
-         (value-kind-when-epred (pack 'value-kind-when- epred))
-         (value-integerp-when-ipred (pack 'value-integerp-when- ipred))
+         (atype-array-itype-index-okp (pack afixtype '-array-
+                                            ifixtype '-index-okp))
+         (atype-array-write-itype (pack afixtype '-array-write- ifixtype))
          (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
          (formula
           `(implies
@@ -253,60 +334,27 @@
                                  compst))))
          (event `(defruled ,name
                    ,formula
-                   :expand ((exec-expr-pure (expr-binary->arg1 e) compst)
-                            (exec-expr-pure (expr-arrsub->arr
-                                             (expr-binary->arg1 e)) compst))
-                   :enable (exec-expr-asg
-                            ,@*atc-value-integer->get-rules*
-                            ,atype-array-itype-index-okp
-                            ,atype-array-write-itype
-                            ,atype-array-write-alt-def
-                            ,elemtype-when-apred
-                            exec-ident
-                            exec-arrsub
-                            read-object-of-objdesign-of-var-to-read-var
-                            apconvert-expr-value-when-not-value-array-alt
-                            write-object
-                            not-errorp-when-expr-valuep
-                            ,value-kind-when-epred
-                            ,value-integerp-when-ipred)
-                   :prep-lemmas
-                   ((defrule lemma1
-                      (implies (and (,atype-array-index-okp array index)
-                                    (integerp index))
-                               (not (< index 0)))
-                      :enable (,atype-array-index-okp
-                               integer-range-p
-                               ifix))
-                    (defrule lemma2
-                      (implies (and (,apred array)
-                                    (integerp index)
-                                    (,atype-array-index-okp array index)
-                                    (,epred val))
-                               (not (errorp
-                                     (value-array-write index val array))))
-                      :use (:instance ,atype-array-write-alt-def
-                                      (elem val)))
-                    (defrule lemma3
-                      (implies (and (expr-valuep (apconvert-expr-value eval))
-                                    (,epred (expr-value->value
-                                             (apconvert-expr-value eval))))
-                               (,epred (expr-value->value eval)))
-                      :enable apconvert-expr-value)))))
+                   :enable (,genthm
+                            ,(pack atype-array-itype-index-okp '-alt-def)
+                            ,(pack atype-array-write-itype '-alt-def)))))
       (mv name event)))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)
-                                                          (itypes type-listp))
+                                                          (itypes type-listp)
+                                                          (genthm symbolp))
     :guard (and (type-nonchar-integerp atype)
                 (type-nonchar-integer-listp itypes))
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
     (b* (((when (endp itypes)) (mv nil nil))
-         ((mv name event) (atc-exec-expr-asg-arrsub-rules-gen atype
-                                                              (car itypes)))
+         ((mv name event) (atc-exec-expr-asg-arrsub-rules-gen-2 atype
+                                                                (car itypes)
+                                                                genthm))
          ((mv names events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes atype (cdr itypes))))
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes atype
+                                                          (cdr itypes)
+                                                          genthm)))
       (mv (cons name names) (cons event events))))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-loop-atypes ((atypes type-listp)
@@ -317,11 +365,14 @@
                  (events pseudo-event-form-listp))
     :parents nil
     (b* (((when (endp atypes)) (mv nil nil))
+         ((mv name event) (atc-exec-expr-asg-arrsub-rules-gen-1 (car atypes)))
          ((mv names events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes (car atypes) itypes))
+          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes (car atypes)
+                                                          itypes
+                                                          name))
          ((mv more-names more-events)
           (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
-      (mv (append names more-names) (append events more-events))))
+      (mv (append names more-names) (append (list event) events more-events))))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-all ()
     :returns (event pseudo-event-formp)
