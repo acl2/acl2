@@ -103,24 +103,24 @@
        (short (if (eq :auto short)
                   "A transformation in the APT toolkit."
                 short))
+       (macro-args `(&whole whole-form
+                            ,@required-args
+                            &key
+                            ,@keyword-args-and-defaults
+                            (show-only 'nil)
+                            (print ':result) ;;This argument doesn't get evaluated?
+                            ))
        ;; TODO: maybe also a :preamble that comes before the general form.
        ;; TODO: maybe also have it generate xdoc for the programmatic variant, the show macro, etc.
        (xdoc-forms
         (and some-xdoc-arg-given
              (not suppress-xdoc)
-             (list `(defxdoc-for-macro
-                      ,name
-                      ,(append '(&whole whole-form) ;todo: name this list of args
-                               required-args
-                               '(&key)
-                               keyword-args-and-defaults
-                               '((show-only 'nil) (print ':result)) ; keyword args that are always present
-                               )
+             (list `(defxdoc-for-macro ,name ,macro-args
                       ,parents
                       ,short
                       ,(append arg-descriptions
-                               '((show-only "Whether to simply show the result, not create it.")
-                                 (print "How much detail to print.")))
+                               '((show-only "Whether to simply show the result, without actually creating it.")
+                                 (print "How much detail to print, an @(tsee apt::print-specifier).")))
                       ,description)))))
 
     `(progn
@@ -228,13 +228,7 @@
                  state))))
 
        ;; This is the main macro for the transformation called NAME:
-       (defmacroq ,name (&whole whole-form
-                                ,@required-args
-                                &key
-                                ,@keyword-args-and-defaults
-                                (show-only 'nil)
-                                (print ':result) ;;This argument doesn't get evaluated?
-                                )
+       (defmacroq ,name ,macro-args
          (let ((form (cons ',(add-suffix name "-FN")
                            ,(make-cons-nest (append required-args
                                                     (strip-cars keyword-args-and-defaults)

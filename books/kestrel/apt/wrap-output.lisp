@@ -404,8 +404,10 @@
        (options (acons :function-disabled function-disabled options))
        (wrapper (if (symbolp wrapper) `(lambda (x) (,wrapper x)) wrapper)) ;convert a symbol into a unary lambda
        (lambda-formals (lambda-formals wrapper))
+       ;; (lambda-formal (first lambda-formals)) ; must be exactly one
        (wrapper-body (lambda-body wrapper))
        (wrapper-body-vars (all-vars (translate-term wrapper-body 'wrap-output wrld)))
+       ;; (wrapper-free-vars (remove-eq lambda-formal wrapper-body-vars))
        (extra-wrapper-vars (set-difference-eq wrapper-body-vars lambda-formals))
        ;; ((when extra-wrapper-vars)
        ;;  (mv t
@@ -413,6 +415,10 @@
        ;;      state))
        ;; TODO: Check that any formals among the wrapper vars are passed through unchanged to all recursive calls
        (formals (fn-formals fn wrld))
+       ;; this occurs in at least one derivation (where the param mentioned is just passed through):
+       ;; ((when (intersection-eq formals extra-wrapper-vars))
+       ;;  (er hard? 'wrap-output-event "Overlap between wrapper vars, ~x0, and existing formals, ~x1." extra-wrapper-vars formals)
+       ;;  (mv :clash nil state))
        (new-formals (set-difference-eq extra-wrapper-vars formals))
        ;; (- (cw "Adding formals: ~x0.~%" new-formals)) ;;todo: optionally print this
        (recursivep (fn-recursivep fn state))
@@ -580,7 +586,7 @@ options support :map syntax (see the Special Note in the documentation for
 
   :arg-descriptions
   ((fn "The function to transform.")
-   (wrapper "A unary function or unary lambda, where free variables are added as arguments.")
+   (wrapper "A unary function or a unary lambda (in which case any free variables in the lambda body become arguments of the new function).")
    (new-name "New name to use for the function (if :auto, the transformation generates a name)")       ;TODO: Document :map
    (guard "Guard for the generated function")       ;TODO: Document :map
    (guard-hints "Hints for the guard proof")
