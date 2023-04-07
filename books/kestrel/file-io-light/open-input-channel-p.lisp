@@ -12,6 +12,11 @@
 
 (local (include-book "open-channels-p"))
 
+(in-theory (disable open-input-channel-p
+                    open-input-channel-p1))
+
+(local (in-theory (disable state-p1 state-p)))
+
 ;move
 (defthm assoc-equal-of-open-input-channels-forward-to-symbolp
   (implies (and (assoc-equal channel (open-input-channels state))
@@ -24,14 +29,14 @@
                 (state-p1 state))
            (symbolp channel))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable state-p1))))
+  :hints (("Goal" :in-theory (enable state-p1 open-input-channel-p1))))
 
 (defthm open-input-channel-p-forward-to-symbolp
   (implies (and (open-input-channel-p channel typ state)
                 (state-p state))
            (symbolp channel))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable state-p1))))
+  :hints (("Goal" :in-theory (enable state-p open-input-channel-p))))
 
 ;; TODO: How should we handle the p vs p1 functions?
 (defthm open-input-channel-p-forward-to-open-input-channel-p1
