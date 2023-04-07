@@ -626,7 +626,7 @@
          :hooks (:fix)
          ///
 
-         (defrule ,(pack <etype>-array-<itype>-index-okp '-alt-def)
+         (defruled ,(pack <etype>-array-<itype>-index-okp '-alt-def)
            (implies (,<itype>p index)
                     (equal (,<etype>-array-<itype>-index-okp array index)
                            (,<etype>-array-index-okp array index)))
