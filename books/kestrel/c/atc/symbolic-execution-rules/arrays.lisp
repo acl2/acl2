@@ -558,8 +558,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-array-read-rules
-  :short "Rules about array reads
-          not retuning errors under suitable conditions."
+  :short "Rules about array reads."
 
   (defruled not-errorp-of-value-array-read-when-uchar-array-and-in-range
     (implies (and (c::uchar-arrayp array)
