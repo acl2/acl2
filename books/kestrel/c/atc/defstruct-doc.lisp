@@ -334,7 +334,7 @@
        and calls the checker @('struct-<tag>-<member>-integer-index-okp') above."))
 
     (xdoc::desc
-     "@('struct-<tag>-read-<member>')"
+     "@('struct-<tag>-read-<member>-integer')"
      (xdoc::p
       "Reader for an array member of the structure type,
        using an ACL2 integer as index.")
@@ -345,8 +345,8 @@
      (xdoc::p
       "The reader has the form")
      (xdoc::codeblock
-      "(define struct-<tag>-read-<member> ((index integerp)"
-      "                                    (struct struct-<tag>-p))"
+      "(define struct-<tag>-read-<member>-integer ((index integerp)"
+      "                                            (struct struct-<tag>-p))"
       "  :guard (struct-<tag>-<member>-integer-index-okp index ...)"
       "  :returns (value <elemtype>p)"
       "  ...)")
@@ -392,7 +392,7 @@
        not the whole array member.")
      (xdoc::p
       "This reader converts the C integer index to an ACL2 integer index
-       and calls the reader @('struct-<tag>-read-<member>') above."))
+       and calls the reader @('struct-<tag>-read-<member>-integer') above."))
 
     (xdoc::desc
      "@('struct-<tag>-write-<member>')"
