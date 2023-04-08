@@ -1468,18 +1468,19 @@
                                            (ident->name name)
                                            '-integer-index-okp)
                                      struct-tag))
-       (reader (packn-pos (list struct-tag
-                                '-read-
-                                (ident->name name))
-                          struct-tag))
+       (integer-reader (packn-pos (list struct-tag
+                                        '-read-
+                                        (ident->name name)
+                                        '-integer)
+                                  struct-tag))
        (writer (packn-pos (list struct-tag
                                 '-write-
                                 (ident->name name))
                           struct-tag))
-       (reader-return-thm (packn-pos (list elem-typep
-                                           '-of-
-                                           reader)
-                                     reader))
+       (integer-reader-return-thm (packn-pos (list elem-typep
+                                                   '-of-
+                                                   integer-reader)
+                                             integer-reader))
        (writer-return-thm (packn-pos (list struct-tag-p
                                            '-of-
                                            writer)
@@ -1566,35 +1567,35 @@
                         (:t value-struct->flexiblep)))
        (integer-index-okp-returns-theory
         `(booleanp-compound-recognizer (:t ,integer-index-okp)))
-       (reader-theory `(,integer-index-okp
-                        ,arr-index-okp
-                        ,struct-tag-p
-                        ,@(and (not size?) (list length))
-                        value-struct-read
-                        consp-when-ucharp
-                        consp-when-ushortp
-                        consp-when-uintp
-                        consp-when-ulongp
-                        consp-when-ullongp
-                        consp-when-scharp
-                        consp-when-sshortp
-                        consp-when-sintp
-                        consp-when-slongp
-                        consp-when-sllongp
-                        ,(pack 'consp-when- arr-typep)
-                        consp-when-valuep
-                        eq
-                        ifix
-                        integer-range-p
-                        not
-                        ,(packn (list struct-tag-fix '-when- struct-tag-p))
-                        value-struct-read
-                        value-optionp-when-valuep
-                        valuep-when-value-optionp
-                        (:e equal)
-                        (:e ident)
-                        (:e identp)
-                        (:t uchar-array-integer-read)))
+       (integer-reader-theory `(,integer-index-okp
+                                ,arr-index-okp
+                                ,struct-tag-p
+                                ,@(and (not size?) (list length))
+                                value-struct-read
+                                consp-when-ucharp
+                                consp-when-ushortp
+                                consp-when-uintp
+                                consp-when-ulongp
+                                consp-when-ullongp
+                                consp-when-scharp
+                                consp-when-sshortp
+                                consp-when-sintp
+                                consp-when-slongp
+                                consp-when-sllongp
+                                ,(pack 'consp-when- arr-typep)
+                                consp-when-valuep
+                                eq
+                                ifix
+                                integer-range-p
+                                not
+                                ,(packn (list struct-tag-fix '-when- struct-tag-p))
+                                value-struct-read
+                                value-optionp-when-valuep
+                                valuep-when-value-optionp
+                                (:e equal)
+                                (:e ident)
+                                (:e identp)
+                                (:t uchar-array-integer-read)))
        (writer-lemma-theory `(,struct-tag-p
                               value-struct-write
                               ,(packn-pos (list 'not-flexible-array-member-p-when-
@@ -1865,7 +1866,7 @@
                 (integer-range-p 0 (,length struct) (ifix index))
                 :guard-hints (("Goal" :in-theory '((:t integer-range-p))))
                 :hooks (:fix)))
-          (define ,reader ((index integerp) (struct ,struct-tag-p))
+          (define ,integer-reader ((index integerp) (struct ,struct-tag-p))
             :guard ,(if size?
                         `(,integer-index-okp index)
                       `(,integer-index-okp index struct))
@@ -1873,7 +1874,7 @@
             (b* ((array (value-struct-read (ident ,(ident->name name))
                                            (,struct-tag-fix struct))))
               (,arr-read array index))
-            :guard-hints (("Goal" :in-theory ',reader-theory))
+            :guard-hints (("Goal" :in-theory ',integer-reader-theory))
             :hooks (:fix))
           (defruledl writer-lemma
             (implies (and (,struct-tag-p struct)
@@ -2010,14 +2011,14 @@
             more-writer-return-thms)
         (defstruct-gen-array-member-ops-aux *nonchar-integer-types*
           struct-tag struct-tag-p name elem-typep
-          integer-index-okp reader writer size?))
+          integer-index-okp integer-reader writer size?))
        (event `(encapsulate () ,@events ,@more-events)))
     (mv event
         (and (not size?) length)
         (cons integer-index-okp more-checkers)
-        (cons reader more-readers)
+        (cons integer-reader more-readers)
         (cons writer more-writers)
-        (cons reader-return-thm more-reader-return-thms)
+        (cons integer-reader-return-thm more-reader-return-thms)
         (cons writer-return-thm more-writer-return-thms)))
 
   :prepwork
@@ -2027,7 +2028,7 @@
                                                (name identp)
                                                (elem-typep symbolp)
                                                (integer-index-okp symbolp)
-                                               (reader symbolp)
+                                               (integer-reader symbolp)
                                                (writer symbolp)
                                                (size? pos-optionp))
      :guard (type-nonchar-integer-listp index-types)
@@ -2050,7 +2051,9 @@
                                                 index-fixtype
                                                 '-index-okp)
                                           struct-tag))
-          (reader-for-index (packn-pos (list reader
+          (reader-for-index (packn-pos (list struct-tag
+                                             '-read-
+                                             (ident->name name)
                                              '-
                                              index-fixtype)
                                        struct-tag))
@@ -2083,7 +2086,7 @@
                            `(,index-okp-for-index index)
                          `(,index-okp-for-index index struct))
                :returns (val ,elem-typep)
-               (,reader (,index-getter index) struct)
+               (,integer-reader (,index-getter index) struct)
                :guard-hints (("Goal" :in-theory (enable ,index-okp-for-index)))
                :hooks (:fix))
              (define ,writer-for-index ((index ,index-typep)
@@ -2104,7 +2107,7 @@
                more-writer-return-thms)
            (defstruct-gen-array-member-ops-aux (cdr index-types)
              struct-tag struct-tag-p name elem-typep
-             integer-index-okp reader writer size?)))
+             integer-index-okp integer-reader writer size?)))
        (mv (append events more-events)
            (cons reader-for-index more-readers)
            (cons writer-for-index more-writers)
