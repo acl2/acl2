@@ -1463,11 +1463,11 @@
                                 (ident->name name)
                                 '-length)
                           struct-tag))
-       (index-okp (packn-pos (list struct-tag
-                                   '-
-                                   (ident->name name)
-                                   '-index-okp)
-                             struct-tag))
+       (integer-index-okp (packn-pos (list struct-tag
+                                           '-
+                                           (ident->name name)
+                                           '-integer-index-okp)
+                                     struct-tag))
        (reader (packn-pos (list struct-tag
                                 '-read-
                                 (ident->name name))
@@ -1564,8 +1564,9 @@
                         ,(packn (list struct-tag-fix '-when- struct-tag-p))
                         (:t ,(pack 'posp-of- fixtype '-array-length))
                         (:t value-struct->flexiblep)))
-       (index-okp-returns-theory `(booleanp-compound-recognizer (:t ,index-okp)))
-       (reader-theory `(,index-okp
+       (integer-index-okp-returns-theory
+        `(booleanp-compound-recognizer (:t ,integer-index-okp)))
+       (reader-theory `(,integer-index-okp
                         ,arr-index-okp
                         ,struct-tag-p
                         ,@(and (not size?) (list length))
@@ -1651,7 +1652,7 @@
                               (:t ,struct-tag-p)
                               (:t value-struct)
                               (:t value-struct-write-aux)))
-       (writer-theory `(,index-okp
+       (writer-theory `(,integer-index-okp
                         ,arr-index-okp
                         ,struct-tag-p
                         ,@(and (not size?) (list length))
@@ -1846,24 +1847,28 @@
                  :guard-hints (("Goal" :in-theory ',length-theory))
                  :hooks (:fix))))
           ,(if size?
-               `(define ,index-okp ((index integerp))
+               `(define ,integer-index-okp ((index integerp))
                   :returns (yes/no
                             booleanp
-                            :hints (("Goal" :in-theory ',index-okp-returns-theory)))
+                            :hints
+                            (("Goal"
+                              :in-theory ',integer-index-okp-returns-theory)))
                   (integer-range-p 0 ,size? (ifix index))
                   :guard-hints (("Goal" :in-theory '((:t integer-range-p))))
                   :hooks (:fix))
-             `(define ,index-okp ((index integerp) (struct ,struct-tag-p))
+             `(define ,integer-index-okp ((index integerp) (struct ,struct-tag-p))
                 :returns (yes/no
                           booleanp
-                          :hints (("Goal" :in-theory ',index-okp-returns-theory)))
+                          :hints
+                          (("Goal"
+                            :in-theory ',integer-index-okp-returns-theory)))
                 (integer-range-p 0 (,length struct) (ifix index))
                 :guard-hints (("Goal" :in-theory '((:t integer-range-p))))
                 :hooks (:fix)))
           (define ,reader ((index integerp) (struct ,struct-tag-p))
             :guard ,(if size?
-                        `(,index-okp index)
-                      `(,index-okp index struct))
+                        `(,integer-index-okp index)
+                      `(,integer-index-okp index struct))
             :returns (val ,elem-typep)
             (b* ((array (value-struct-read (ident ,(ident->name name))
                                            (,struct-tag-fix struct))))
@@ -1882,8 +1887,8 @@
                            (val ,elem-typep)
                            (struct ,struct-tag-p))
             :guard ,(if size?
-                        `(,index-okp index)
-                      `(,index-okp index struct))
+                        `(,integer-index-okp index)
+                      `(,integer-index-okp index struct))
             :returns new-struct
             (b* ((array (value-struct-read (ident ,(ident->name name))
                                            (,struct-tag-fix struct)))
@@ -2005,11 +2010,11 @@
             more-writer-return-thms)
         (defstruct-gen-array-member-ops-aux *nonchar-integer-types*
           struct-tag struct-tag-p name elem-typep
-          index-okp reader writer size?))
+          integer-index-okp reader writer size?))
        (event `(encapsulate () ,@events ,@more-events)))
     (mv event
         (and (not size?) length)
-        (cons index-okp more-checkers)
+        (cons integer-index-okp more-checkers)
         (cons reader more-readers)
         (cons writer more-writers)
         (cons reader-return-thm more-reader-return-thms)
@@ -2021,7 +2026,7 @@
                                                (struct-tag-p symbolp)
                                                (name identp)
                                                (elem-typep symbolp)
-                                               (index-okp symbolp)
+                                               (integer-index-okp symbolp)
                                                (reader symbolp)
                                                (writer symbolp)
                                                (size? pos-optionp))
@@ -2065,12 +2070,12 @@
            `(,(if size?
                   `(define ,index-okp-for-index ((index ,index-typep))
                      :returns (yes/no booleanp)
-                     (,index-okp (,index-getter index))
+                     (,integer-index-okp (,index-getter index))
                      :hooks (:fix))
                 `(define ,index-okp-for-index ((index ,index-typep)
                                                (struct ,struct-tag-p))
                    :returns (yes/no booleanp)
-                   (,index-okp (,index-getter index) struct)
+                   (,integer-index-okp (,index-getter index) struct)
                    :hooks (:fix)))
              (define ,reader-for-index ((index ,index-typep)
                                         (struct ,struct-tag-p))
@@ -2099,7 +2104,7 @@
                more-writer-return-thms)
            (defstruct-gen-array-member-ops-aux (cdr index-types)
              struct-tag struct-tag-p name elem-typep
-             index-okp reader writer size?)))
+             integer-index-okp reader writer size?)))
        (mv (append events more-events)
            (cons reader-for-index more-readers)
            (cons writer-for-index more-writers)
