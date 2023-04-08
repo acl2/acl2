@@ -558,8 +558,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atc-array-read-rules
-  :short "Rules about array reads
-          not retuning errors under suitable conditions."
+  :short "Rules about array reads."
 
   (defruled not-errorp-of-value-array-read-when-uchar-array-and-in-range
     (implies (and (c::uchar-arrayp array)
@@ -732,3 +731,98 @@
       not-errorp-of-value-array-read-when-slong-array-and-in-range
       not-errorp-of-value-array-read-when-ullong-array-and-in-range
       not-errorp-of-value-array-read-when-sllong-array-and-in-range)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-array-write-rules
+  :short "Rules about array writes."
+
+  (defruled value-array-write-when-uchar-arrayp
+    (implies (and (uchar-arrayp x)
+                  (cintegerp i)
+                  (uchar-array-index-okp x i)
+                  (ucharp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (uchar-array-write x i e)))
+    :enable uchar-array-write-alt-def)
+
+  (defruled value-array-write-when-schar-arrayp
+    (implies (and (schar-arrayp x)
+                  (cintegerp i)
+                  (schar-array-index-okp x i)
+                  (scharp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (schar-array-write x i e)))
+    :enable schar-array-write-alt-def)
+
+  (defruled value-array-write-when-ushort-arrayp
+    (implies (and (ushort-arrayp x)
+                  (cintegerp i)
+                  (ushort-array-index-okp x i)
+                  (ushortp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (ushort-array-write x i e)))
+    :enable ushort-array-write-alt-def)
+
+  (defruled value-array-write-when-sshort-arrayp
+    (implies (and (sshort-arrayp x)
+                  (cintegerp i)
+                  (sshort-array-index-okp x i)
+                  (sshortp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (sshort-array-write x i e)))
+    :enable sshort-array-write-alt-def)
+
+  (defruled value-array-write-when-uint-arrayp
+    (implies (and (uint-arrayp x)
+                  (cintegerp i)
+                  (uint-array-index-okp x i)
+                  (uintp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (uint-array-write x i e)))
+    :enable uint-array-write-alt-def)
+
+  (defruled value-array-write-when-sint-arrayp
+    (implies (and (sint-arrayp x)
+                  (cintegerp i)
+                  (sint-array-index-okp x i)
+                  (sintp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (sint-array-write x i e)))
+    :enable sint-array-write-alt-def)
+
+  (defruled value-array-write-when-ulong-arrayp
+    (implies (and (ulong-arrayp x)
+                  (cintegerp i)
+                  (ulong-array-index-okp x i)
+                  (ulongp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (ulong-array-write x i e)))
+    :enable ulong-array-write-alt-def)
+
+  (defruled value-array-write-when-slong-arrayp
+    (implies (and (slong-arrayp x)
+                  (cintegerp i)
+                  (slong-array-index-okp x i)
+                  (slongp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (slong-array-write x i e)))
+    :enable slong-array-write-alt-def)
+
+  (defruled value-array-write-when-ullong-arrayp
+    (implies (and (ullong-arrayp x)
+                  (cintegerp i)
+                  (ullong-array-index-okp x i)
+                  (ullongp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (ullong-array-write x i e)))
+    :enable ullong-array-write-alt-def)
+
+  (defruled value-array-write-when-sllong-arrayp
+    (implies (and (sllong-arrayp x)
+                  (cintegerp i)
+                  (sllong-array-index-okp x i)
+                  (sllongp e))
+             (equal (value-array-write (integer-from-cinteger i) e x)
+                    (sllong-array-write x i e)))
+    :enable sllong-array-write-alt-def))

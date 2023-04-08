@@ -252,7 +252,7 @@
       "  ...)"))
 
     (xdoc::desc
-     "@('struct-<tag>-<member>-index-okp')"
+     "@('struct-<tag>-<member>-integer-index-okp')"
      (xdoc::p
       "ACL2 integer index checker for an array member of the structure type.")
      (xdoc::p
@@ -263,7 +263,7 @@
       "If the array type of the member has a specified size,
        the checker has the form")
      (xdoc::codeblock
-      "(define struct-<tag>-<member>-index-okp ((index integerp))"
+      "(define struct-<tag>-<member>-integer-index-okp ((index integerp))"
       "  :returns (yes/no booleanp)"
       "  ...)")
      (xdoc::p
@@ -272,8 +272,8 @@
        if it is a flexible array member),
        the checker has the form")
      (xdoc::codeblock
-      "(define struct-<tag>-<member>-index-okp ((index integerp)"
-      "                                         (struct struct-<tag>-p))"
+      "(define struct-<tag>-<member>-integer-index-okp ((index integerp)"
+      "                                                 (struct struct-<tag>-p))"
       "  :returns (yes/no booleanp)"
       "  ...)")
      (xdoc::p
@@ -314,8 +314,8 @@
        if it is a flexible array member),
        the checker has the form")
      (xdoc::codeblock
-      "(define struct-<tag>-<member>-index-okp ((index <type>p)"
-      "                                         (struct struct-<tag>-p))"
+      "(define struct-<tag>-<member>-<type>-index-okp ((index <type>p)"
+      "                                                (struct struct-<tag>-p))"
       "  :returns (yes/no booleanp)"
       "  ...)")
      (xdoc::p
@@ -331,7 +331,7 @@
        and used to check the index against it.")
      (xdoc::p
       "This checker converts the C integer index to an ACL2 integer index
-       and calls the checker @('struct-<tag>-<member>-index-okp') above."))
+       and calls the checker @('struct-<tag>-<member>-integer-index-okp') above."))
 
     (xdoc::desc
      "@('struct-<tag>-read-<member>')"
@@ -347,7 +347,7 @@
      (xdoc::codeblock
       "(define struct-<tag>-read-<member> ((index integerp)"
       "                                    (struct struct-<tag>-p))"
-      "  :guard (struct-<tag>-<member>-index-okp index ...)"
+      "  :guard (struct-<tag>-<member>-integer-index-okp index ...)"
       "  :returns (value <elemtype>p)"
       "  ...)")
      (xdoc::p
@@ -409,7 +409,7 @@
       "(define struct-<tag>-write-<member> ((index integerp)"
       "                                     (value <elemtype>p)"
       "                                     (struct struct-<tag>-p))"
-      "  :guard (struct-<tag>-<member>-index-okp index ...)"
+      "  :guard (struct-<tag>-<member>-integer-index-okp index ...)"
       "  :returns (new-struct struct-<tag>-p)"
       "  ...)")
      (xdoc::p
