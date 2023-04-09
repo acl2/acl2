@@ -2322,10 +2322,11 @@
     (if (atom leaves)
         rest-keys
       (b* ((l (car leaves))
-           ((when (or (integerp l)
-                      (case-match l
-                        (('sv::partsel & & x)
-                         (atom x)))))
+           ((when (and (or (integerp l)
+                           (case-match l
+                             (('sv::partsel & & x)
+                              (atom x))))
+                       (consp (cdr leaves))))
             (cons-with-best-first-key (cdr leaves) rest-keys)))
         (cons l rest-keys))))
 
@@ -5327,6 +5328,8 @@
      (ppx-mergeable-precheck--collect-fa-c-args x))
     (('fa-c-chain & x y z)
      (list (list svex x y z)))
+    (('ha-c-chain x y)
+     (list (list svex x y 0)))
     (('sv::bitand x y)
      (list (list svex x y 0))))
   ///
@@ -5359,7 +5362,7 @@
                                         &key
                                         ((config svl::svex-reduce-config-p)
                                          'config))
-  ;; Given a collected-fa-c-argsm finds and extracts a matching m2 term from a given bitand list.
+  ;; Given a collected-fa-c-args, finds and extracts a matching m2 term from a given bitand list.
   :returns (mv (foundp booleanp)
                (remaining-bitand sv::svex-p :hyp (sv::Svex-p svex))
                (m2-term sv::Svex-p :hyp (sv::Svex-p svex))
@@ -5456,7 +5459,8 @@
     ((fn & &)
      (b* (((unless (or (equal fn 'sv::bitxor)
                        (equal fn 'sv::bitand)
-                       (equal fn 'ha-s-chain)))
+                       (equal fn 'ha-s-chain)
+                       (equal fn 'ha-c-chain)))
            (mv nil svex 0 0 0))
           ((mv foundp remaining-bitand m2-term fa-c-term)
            (ppx-mergeable-find-matching-m2 svex collected-fa-c-args)))
@@ -5481,7 +5485,7 @@
              :in-theory (e/d (sv::svex-call->fn
                               sv::svex-apply$
                               sv::svex-apply
-                              ha-s-chain
+                              ha-s-chain ha-c-chain
                               sv::svex-call->args)
                              ())))))
 
@@ -5514,6 +5518,7 @@
           (('fa-c-chain m x y z) (mv (valid-fa-c-chain-args-p m x)
                                      x y z))
           (('sv::bitand x y) (mv t x y 0))
+          (('ha-c-chain x y) (mv t x y 0))
           (& (mv nil 0 0 0))))
        ((unless success)
         (mv nil nil 0 0 0))
@@ -5628,7 +5633,14 @@
            (collected-fa-c-args (ppx-mergeable-precheck--collect-fa-c-args svex))
            ((mv found remaining-bitor remaining-bitand m2-term fa-c-term)
             (ppx-mergeable-extract-matching-m2 svex collected-fa-c-args))
-           ((unless found) svex)
+           ((unless found)
+            (b* (((mv common-terms pulled-svex)
+                  (svl::bitor-of-and-pull-commons-aux svex :leave-depth 5))
+                 ((unless common-terms) svex)
+                 (new-svex (ppx-simplify-mergeable-node pulled-svex))
+                 ((when (equal new-svex pulled-svex)) svex))
+              (svl::bitand/or/xor-simple-constant-simplify
+               'sv::bitand common-terms new-svex)))
            ((mv remove-success remaining-bitor)
             (svl::bitor-remove-node remaining-bitor fa-c-term))
            ((unless remove-success) svex)
@@ -5737,7 +5749,8 @@
     :hints (("Goal"
              :do-not-induct t
              :induct (ppx-simplify-mergeable-node svex)
-             :expand ((:free (args) (sv::svex-apply 'sv::bitor args)))
+             :expand ((:free (args) (sv::svex-apply 'sv::bitor args))
+                      (:free (args) (sv::svex-apply 'sv::bitand args)))
              :in-theory (e/d (;;ppx-mergeable-node-pull-common-args
                               or*
                               sv::svex-call->fn
@@ -6554,6 +6567,49 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
 ;;              :in-theory (e/d ()
 ;;                              ())))))
 
+
+#|(defines svex-pattern-context 
+  
+  (define svex-pattern-context ((svex sv::svex-p)
+			        pattern
+                                (depth natp))
+    :verify-guards nil
+    :measure (sv::Svex-count svex)
+    :Returns (x natp :rule-classes (:rewrite :type-prescription))
+    (if (equal svex pattern)
+        (progn$ (cw "here")
+                (lnfix depth))
+      (sv::Svex-case
+       svex
+       :quote 0
+       :var 0
+       :call (b* ((args (svexlist-pattern-context svex.args pattern depth))
+                  (- (and (equal args 1)
+                          (cwe "svex found in context: ~p0 ~%"
+                               (acl2::subst '*** pattern svex)))))
+               (nfix (1- args))))))
+  (define svexlist-pattern-context ((lst sv::svexlist-p)
+                                    pattern
+                                    (depth natp))
+    :measure (sv::Svexlist-count lst)
+    :Returns (x natp :rule-classes (:rewrite :type-prescription))
+    (if (atom lst)
+        0
+      (max (svex-pattern-context (car lst) pattern depth)
+           (svexlist-pattern-context (cdr lst) pattern depth))))
+  ///
+  (verify-guards svex-pattern-context)
+  (memoize 'svex-pattern-context)
+  
+  (define svexalist-pattern-context ((x sv::Svex-alist-p)
+                                     pattern
+                                     (depth natp))
+    (if (atom x)
+        0
+      (progn$ (svex-pattern-context (cdar x) pattern depth)
+              (svexalist-pattern-context (cdr x) pattern depth)))))|#
+                                    
+
 (defines collect-ha-args-under-gates
   ;; collects to a fast-alist. Keys are args in any order.
   :verify-guards nil
@@ -6587,6 +6643,8 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                     (equal svex.fn 'ha+1-c-chain)
                                     (equal svex.fn 'ha+1-s-chain))))
 
+                
+
                 (collected (if ha-undergate?
                                ;; arguments should be ordered beforehand so not
                                ;; putting the args only one way.
@@ -6599,7 +6657,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
              (collect-ha-args-under-gates-list svex.args
                                                (and (or underadder adder-p)
                                                     ;; carry on underadder only
-                                                    ;; through these gates. (why???: I don't remember)
+                                                    ;; through these gates.
                                                     (or (equal svex.fn 'sv::bitand)
                                                         (equal svex.fn 'sv::unfloat)
                                                         (equal svex.fn 'sv::id)
@@ -6667,9 +6725,6 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                             SV::SVEX-CALL->args)
                            ())))
 
-  
-    
-  
   (define remove-unpaired-ha ((svex sv::Svex-p)
                               &key
                               ((wrap-with-id booleanp) 'wrap-with-id)
@@ -6696,54 +6751,54 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
           (res
            (cond
             ((ha-c-chain-self-pattern-p svex)
-              (ha-c-chain-self-pattern-body
-               svex
-               (sv::Svex-call
-                'sv::bitand
-                (hons-list (remove-unpaired-ha x)
-                           (remove-unpaired-ha y)))))
-             ((ha-s-chain-self-pattern-p svex)
-              (ha-s-chain-self-pattern-body
-               svex
-               (sv::Svex-call 'sv::bitxor (hons-list (remove-unpaired-ha x)
-                                                     (remove-unpaired-ha y)))))
-             ((ha+1-s-chain-self-pattern-p svex)
-              (ha+1-s-chain-self-pattern-body
-               svex
-               (cond
-                ((equal m 0)
-                 (sv::Svex-call
-                  'sv::bitnot
-                  (hons-list
-                   (sv::svex-call 'sv::bitxor
-                                  (hons-list (remove-unpaired-ha x)
-                                             (remove-unpaired-ha y))))))
-                ((equal m 1)
-                 (sv::Svex-call
-                  'sv::bitxor
-                  (hons-list
-                   1
-                   (sv::svex-call 'sv::bitxor
-                                  (hons-list (remove-unpaired-ha x)
-                                             (remove-unpaired-ha y))))))
-                ((equal m 10)
-                 (sv::svex-call 'sv::bitxor
-                                (hons-list (remove-unpaired-ha x)
-                                           (remove-unpaired-ha y))))
-                (t
-                 (sv::Svex-call svex.fn
-                                (remove-unpaired-ha-lst svex.args))))))
-             ((ha+1-c-chain-self-pattern-p svex)
-              (ha+1-c-chain-self-pattern-body
-               svex
-               (sv::Svex-call 'sv::bitor (hons-list (remove-unpaired-ha x)
+             (ha-c-chain-self-pattern-body
+              svex
+              (sv::Svex-call
+               'sv::bitand
+               (hons-list (remove-unpaired-ha x)
+                          (remove-unpaired-ha y)))))
+            ((ha-s-chain-self-pattern-p svex)
+             (ha-s-chain-self-pattern-body
+              svex
+              (sv::Svex-call 'sv::bitxor (hons-list (remove-unpaired-ha x)
                                                     (remove-unpaired-ha y)))))
-             (t (sv::Svex-call svex.fn
-                               (remove-unpaired-ha-lst svex.args)) ;; should never come here..
-                )))
+            ((ha+1-s-chain-self-pattern-p svex)
+             (ha+1-s-chain-self-pattern-body
+              svex
+              (cond
+               ((equal m 0)
+                (sv::Svex-call
+                 'sv::bitnot
+                 (hons-list
+                  (sv::svex-call 'sv::bitxor
+                                 (hons-list (remove-unpaired-ha x)
+                                            (remove-unpaired-ha y))))))
+               ((equal m 1)
+                (sv::Svex-call
+                 'sv::bitxor
+                 (hons-list
+                  1
+                  (sv::svex-call 'sv::bitxor
+                                 (hons-list (remove-unpaired-ha x)
+                                            (remove-unpaired-ha y))))))
+               ((equal m 10)
+                (sv::svex-call 'sv::bitxor
+                               (hons-list (remove-unpaired-ha x)
+                                          (remove-unpaired-ha y))))
+               (t
+                (sv::Svex-call svex.fn
+                               (remove-unpaired-ha-lst svex.args))))))
+            ((ha+1-c-chain-self-pattern-p svex)
+             (ha+1-c-chain-self-pattern-body
+              svex
+              (sv::Svex-call 'sv::bitor (hons-list (remove-unpaired-ha x)
+                                                   (remove-unpaired-ha y)))))
+            (t (sv::Svex-call svex.fn
+                              (remove-unpaired-ha-lst svex.args)) ;; should never come here..
+               )))
           (res (if wrap-with-id (sv::svex-call 'sv::id (hons-list res)) res)))
        res)))
-  
+
   (define remove-unpaired-ha-lst ((lst sv::svexlist-p)
                                   &key
                                   ((wrap-with-id booleanp) 'wrap-with-id)
@@ -6811,23 +6866,16 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                            ((wrap-with-id booleanp) 'nil))
   :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p svex-alist))
   (b* ((- (cw "--- Now removing misidentified half-adders.~%"))
-
        ((mv collected &)
         (collect-ha-args-under-gates-alist svex-alist))
-
        (found-num (len collected))
        ((when (equal found-num 0))
         (progn$ (cw "- Could not find any misidentified half-adder.~%")
                 (fast-alist-free collected)
                 svex-alist))
-
        (- (cw "- Removing ~p0 half-adders that are suspected to be misidentified.~%" found-num))
-
        (svex-alist (remove-unpaired-ha-alist svex-alist))
-
-       (- (fast-alist-free collected))
-
-       )
+       (- (fast-alist-free collected)))
     svex-alist)
   ///
   (defret <fn>-is-correct
@@ -7263,8 +7311,8 @@ was ~st seconds."))
                                                      *find-f/h-adders-in-svex-alist-limit*
                                                      :adder-type 'fa))
 
-          #|(- (cwe "resulting svexl-alist after full-adders ~p0 ~%"
-          (svl::svex-alist-to-svexl-alist svex-alist)))|#
+          (- (cwe "resulting svexl-alist after full-adders ~p0 ~%"
+                  (svl::svex-alist-to-svexl-alist svex-alist)))
 
           (- (time-tracker :rewrite-adders-in-svex :stop))
           (- (time-tracker :rewrite-adders-in-svex :print?
