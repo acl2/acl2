@@ -395,7 +395,7 @@
        and calls the reader @('struct-<tag>-read-<member>-integer') above."))
 
     (xdoc::desc
-     "@('struct-<tag>-write-<member>')"
+     "@('struct-<tag>-write-<member>-integer')"
      (xdoc::p
       "Writer for an array member of the structure type,
        using an ACL2 integer as index.")
@@ -406,9 +406,9 @@
      (xdoc::p
       "The writer has the form")
      (xdoc::codeblock
-      "(define struct-<tag>-write-<member> ((index integerp)"
-      "                                     (value <elemtype>p)"
-      "                                     (struct struct-<tag>-p))"
+      "(define struct-<tag>-write-<member>-integer ((index integerp)"
+      "                                             (value <elemtype>p)"
+      "                                             (struct struct-<tag>-p))"
       "  :guard (struct-<tag>-<member>-integer-index-okp index ...)"
       "  :returns (new-struct struct-<tag>-p)"
       "  ...)")
@@ -455,7 +455,7 @@
        not the whole array member.")
      (xdoc::p
       "This writer converts the C integer index to an ACL2 integer index
-       and calls the writer @('struct-<tag>-write-<member>') above."))
+       and calls the writer @('struct-<tag>-write-<member>-integer') above."))
 
     (xdoc::desc
      "@('struct-<tag>-read-<member>-all')"

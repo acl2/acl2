@@ -1473,18 +1473,19 @@
                                         (ident->name name)
                                         '-integer)
                                   struct-tag))
-       (writer (packn-pos (list struct-tag
-                                '-write-
-                                (ident->name name))
-                          struct-tag))
+       (integer-writer (packn-pos (list struct-tag
+                                        '-write-
+                                        (ident->name name)
+                                        '-integer)
+                                  struct-tag))
        (integer-reader-return-thm (packn-pos (list elem-typep
                                                    '-of-
                                                    integer-reader)
                                              integer-reader))
-       (writer-return-thm (packn-pos (list struct-tag-p
-                                           '-of-
-                                           writer)
-                                     writer))
+       (integer-writer-return-thm (packn-pos (list struct-tag-p
+                                                   '-of-
+                                                   integer-writer)
+                                             integer-writer))
        (reader-all (packn-pos (list struct-tag
                                     '-read-
                                     (ident->name name)
@@ -1596,103 +1597,105 @@
                                 (:e ident)
                                 (:e identp)
                                 (:t uchar-array-integer-read)))
-       (writer-lemma-theory `(,struct-tag-p
-                              value-struct-write
-                              ,(packn-pos (list 'not-flexible-array-member-p-when-
-                                                arr-typep)
-                                          'not-flexible-array-member-p)
-                              member-value-listp-of-value-struct-write-aux
-                              member-value-list-fix-when-member-value-listp
-                              member-value-list->name-list-of-struct-write-aux
-                              value-struct-read-aux-of-value-struct-write-aux
-                              ,arr-length-alt-def
-                              not-errorp-when-member-value-listp
-                              ,type-of-value-when-arr-typep
-                              ,@(and (not size?)
-                                     (list length
-                                           'value-struct-read))
-                              consp-when-ucharp
-                              consp-when-ushortp
-                              consp-when-uintp
-                              consp-when-ulongp
-                              consp-when-ullongp
-                              consp-when-scharp
-                              consp-when-sshortp
-                              consp-when-sintp
-                              consp-when-slongp
-                              consp-when-sllongp
-                              ,(packn-pos (list 'consp-when- arr-typep)
-                                          'consp-when-)
-                              ,(packn (list struct-tag-fix '-when- struct-tag-p))
-                              (:e acl2::bool-fix)
-                              (:e equal)
-                              (:e ident)
-                              (:e ident-equiv)
-                              (:e ident-fix)
-                              (:e type-array)
-                              (:e type-uchar)
-                              (:e type-ushort)
-                              (:e type-uint)
-                              (:e type-ulong)
-                              (:e type-ullong)
-                              (:e type-schar)
-                              (:e type-sshort)
-                              (:e type-sint)
-                              (:e type-slong)
-                              (:e type-sllong)
-                              remove-flexible-array-member-when-absent
-                              return-type-of-value-struct
-                              value-fix-when-valuep
-                              value-optionp-when-valuep
-                              value-struct->flexiblep-of-value-struct
-                              value-struct->members-of-value-struct
-                              value-struct->tag-of-value-struct
-                              ,(packn-pos (list 'valuep-when- arr-typep)
-                                          'valuep-when-)
-                              valuep-when-value-optionp
-                              (:t ,struct-tag-p)
-                              (:t value-struct)
-                              (:t value-struct-write-aux)))
-       (writer-theory `(,integer-index-okp
-                        ,arr-index-okp
-                        ,struct-tag-p
-                        ,@(and (not size?) (list length))
-                        value-struct-read
-                        consp-when-ucharp
-                        consp-when-ushortp
-                        consp-when-uintp
-                        consp-when-ulongp
-                        consp-when-ullongp
-                        consp-when-scharp
-                        consp-when-sshortp
-                        consp-when-sintp
-                        consp-when-slongp
-                        consp-when-sllongp
-                        consp-when-valuep
-                        consp-when-uchar-arrayp
-                        consp-when-ushort-arrayp
-                        consp-when-uint-arrayp
-                        consp-when-ulong-arrayp
-                        consp-when-ullong-arrayp
-                        consp-when-schar-arrayp
-                        consp-when-sshort-arrayp
-                        consp-when-sint-arrayp
-                        consp-when-slong-arrayp
-                        consp-when-sllong-arrayp
-                        eq
-                        ifix
-                        integer-range-p
-                        not
-                        (:e equal)
-                        (:e ident)
-                        (:e identp)
-                        ,(packn (list struct-tag-fix '-when- struct-tag-p))
-                        ,(pack arr-typep '-of- fixtype '-array-integer-write)
-                        value-optionp-when-valuep
-                        ,(pack 'valuep-when- arr-typep)
-                        valuep-when-value-optionp
-                        (:t value-struct->flexiblep)
-                        (:t value-struct-write)))
+       (integer-writer-lemma-theory
+        `(,struct-tag-p
+          value-struct-write
+          ,(packn-pos (list 'not-flexible-array-member-p-when-
+                            arr-typep)
+                      'not-flexible-array-member-p)
+          member-value-listp-of-value-struct-write-aux
+          member-value-list-fix-when-member-value-listp
+          member-value-list->name-list-of-struct-write-aux
+          value-struct-read-aux-of-value-struct-write-aux
+          ,arr-length-alt-def
+          not-errorp-when-member-value-listp
+          ,type-of-value-when-arr-typep
+          ,@(and (not size?)
+                 (list length
+                       'value-struct-read))
+          consp-when-ucharp
+          consp-when-ushortp
+          consp-when-uintp
+          consp-when-ulongp
+          consp-when-ullongp
+          consp-when-scharp
+          consp-when-sshortp
+          consp-when-sintp
+          consp-when-slongp
+          consp-when-sllongp
+          ,(packn-pos (list 'consp-when- arr-typep)
+                      'consp-when-)
+          ,(packn (list struct-tag-fix '-when- struct-tag-p))
+          (:e acl2::bool-fix)
+          (:e equal)
+          (:e ident)
+          (:e ident-equiv)
+          (:e ident-fix)
+          (:e type-array)
+          (:e type-uchar)
+          (:e type-ushort)
+          (:e type-uint)
+          (:e type-ulong)
+          (:e type-ullong)
+          (:e type-schar)
+          (:e type-sshort)
+          (:e type-sint)
+          (:e type-slong)
+          (:e type-sllong)
+          remove-flexible-array-member-when-absent
+          return-type-of-value-struct
+          value-fix-when-valuep
+          value-optionp-when-valuep
+          value-struct->flexiblep-of-value-struct
+          value-struct->members-of-value-struct
+          value-struct->tag-of-value-struct
+          ,(packn-pos (list 'valuep-when- arr-typep)
+                      'valuep-when-)
+          valuep-when-value-optionp
+          (:t ,struct-tag-p)
+          (:t value-struct)
+          (:t value-struct-write-aux)))
+       (integer-writer-theory
+        `(,integer-index-okp
+          ,arr-index-okp
+          ,struct-tag-p
+          ,@(and (not size?) (list length))
+          value-struct-read
+          consp-when-ucharp
+          consp-when-ushortp
+          consp-when-uintp
+          consp-when-ulongp
+          consp-when-ullongp
+          consp-when-scharp
+          consp-when-sshortp
+          consp-when-sintp
+          consp-when-slongp
+          consp-when-sllongp
+          consp-when-valuep
+          consp-when-uchar-arrayp
+          consp-when-ushort-arrayp
+          consp-when-uint-arrayp
+          consp-when-ulong-arrayp
+          consp-when-ullong-arrayp
+          consp-when-schar-arrayp
+          consp-when-sshort-arrayp
+          consp-when-sint-arrayp
+          consp-when-slong-arrayp
+          consp-when-sllong-arrayp
+          eq
+          ifix
+          integer-range-p
+          not
+          (:e equal)
+          (:e ident)
+          (:e identp)
+          ,(packn (list struct-tag-fix '-when- struct-tag-p))
+          ,(pack arr-typep '-of- fixtype '-array-integer-write)
+          value-optionp-when-valuep
+          ,(pack 'valuep-when- arr-typep)
+          valuep-when-value-optionp
+          (:t value-struct->flexiblep)
+          (:t value-struct-write)))
        (len-of-reader-all-theory `(,struct-tag-p
                                    ,struct-tag-fix
                                    ,reader-all
@@ -1876,17 +1879,17 @@
               (,arr-read array index))
             :guard-hints (("Goal" :in-theory ',integer-reader-theory))
             :hooks (:fix))
-          (defruledl writer-lemma
+          (defruledl integer-writer-lemma
             (implies (and (,struct-tag-p struct)
                           (,arr-typep array)
                           (equal (,arr-length array)
                                  ,(or size?
                                       `(,length struct))))
                      (,struct-tag-p (value-struct-write ',name array struct)))
-            :in-theory ',writer-lemma-theory)
-          (define ,writer ((index integerp)
-                           (val ,elem-typep)
-                           (struct ,struct-tag-p))
+            :in-theory ',integer-writer-lemma-theory)
+          (define ,integer-writer ((index integerp)
+                                   (val ,elem-typep)
+                                   (struct ,struct-tag-p))
             :guard ,(if size?
                         `(,integer-index-okp index)
                       `(,integer-index-okp index struct))
@@ -1897,14 +1900,14 @@
               (value-struct-write (ident ,(ident->name name))
                                   new-array
                                   (,struct-tag-fix struct)))
-            :guard-hints (("Goal" :in-theory ',writer-theory))
+            :guard-hints (("Goal" :in-theory ',integer-writer-theory))
             :hooks (:fix)
             ///
             (defruledl return-lemma
               (implies (,struct-tag-p struct)
-                       (,struct-tag-p (,writer index val struct)))
-              :enable (,writer
-                       writer-lemma)
+                       (,struct-tag-p (,integer-writer index val struct)))
+              :enable (,integer-writer
+                       integer-writer-lemma)
               :prep-lemmas
               ((defrule lemma
                  (implies (,struct-tag-p struct)
@@ -2011,15 +2014,15 @@
             more-writer-return-thms)
         (defstruct-gen-array-member-ops-aux *nonchar-integer-types*
           struct-tag struct-tag-p name elem-typep
-          integer-index-okp integer-reader writer size?))
+          integer-index-okp integer-reader integer-writer size?))
        (event `(encapsulate () ,@events ,@more-events)))
     (mv event
         (and (not size?) length)
         (cons integer-index-okp more-checkers)
         (cons integer-reader more-readers)
-        (cons writer more-writers)
+        (cons integer-writer more-writers)
         (cons integer-reader-return-thm more-reader-return-thms)
-        (cons writer-return-thm more-writer-return-thms)))
+        (cons integer-writer-return-thm more-writer-return-thms)))
 
   :prepwork
   ((define defstruct-gen-array-member-ops-aux ((index-types type-listp)
@@ -2029,7 +2032,7 @@
                                                (elem-typep symbolp)
                                                (integer-index-okp symbolp)
                                                (integer-reader symbolp)
-                                               (writer symbolp)
+                                               (integer-writer symbolp)
                                                (size? pos-optionp))
      :guard (type-nonchar-integer-listp index-types)
      :returns (mv (more-events pseudo-event-form-listp)
@@ -2057,7 +2060,9 @@
                                              '-
                                              index-fixtype)
                                        struct-tag))
-          (writer-for-index (packn-pos (list writer
+          (writer-for-index (packn-pos (list struct-tag
+                                             '-write-
+                                             (ident->name name)
                                              '-
                                              index-fixtype)
                                        struct-tag))
@@ -2096,7 +2101,7 @@
                            `(,index-okp-for-index index)
                          `(,index-okp-for-index index struct))
                :returns (new-struct ,struct-tag-p)
-               (,writer (,index-getter index) val struct)
+               (,integer-writer (,index-getter index) val struct)
                :guard-hints (("Goal" :in-theory (enable ,index-okp-for-index)))
                :hooks (:fix))))
           ((mv more-events
@@ -2107,7 +2112,7 @@
                more-writer-return-thms)
            (defstruct-gen-array-member-ops-aux (cdr index-types)
              struct-tag struct-tag-p name elem-typep
-             integer-index-okp integer-reader writer size?)))
+             integer-index-okp integer-reader integer-writer size?)))
        (mv (append events more-events)
            (cons reader-for-index more-readers)
            (cons writer-for-index more-writers)
