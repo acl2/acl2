@@ -157,7 +157,7 @@
                def.para def.name prime)
         '(_))
        (free (definition-free-vars def))
-       ((when (member-eq prime free))
+       ((when (set::in prime free))
         (raise "The free variables ~x0 of ~x1 ~
                 include the prime variable ~x2."
                free def.name prime)
