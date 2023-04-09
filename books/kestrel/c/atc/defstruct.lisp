@@ -930,12 +930,12 @@
         `(encapsulate ()
            (local (in-theory ',event-theory))
            (std::deffixer ,struct-tag-fix
-                          :pred ,struct-tag-p
-                          :param x
-                          :body-fix (make-value-struct
-                                     :tag (ident ,(symbol-name tag))
-                                     :members (list ,@(defstruct-gen-fixer-aux memtypes))
-                                     :flexiblep ,flexiblep))))
+             :pred ,struct-tag-p
+             :param x
+             :body-fix (make-value-struct
+                        :tag (ident ,(symbol-name tag))
+                        :members (list ,@(defstruct-gen-fixer-aux memtypes))
+                        :flexiblep ,flexiblep))))
        (thm (packn-pos (list struct-tag-fix '-when- struct-tag-p)
                        struct-tag-fix)))
     (mv event thm))
@@ -997,175 +997,175 @@
   (b* (((mv parameters len-conjuncts consp-conjuncts make-members)
         (defstruct-gen-constructor-aux struct-tag members))
        (guard-theory `(defstruct-consp-len-lemma
-                       (:e posp)
-                       (:e member-value-listp)
-                       (:e len)
-                       true-listp-when-uchar-listp-compound-recognizer
-                       member-value-listp-of-cons
-                       member-valuep-of-member-value
-                       schar-fix-when-scharp
-                       uchar-fix-when-ucharp
-                       sshort-fix-when-sshortp
-                       ushort-fix-when-ushortp
-                       sint-fix-when-sintp
-                       uint-fix-when-uintp
-                       slong-fix-when-slongp
-                       ulong-fix-when-ulongp
-                       sllong-fix-when-sllongp
-                       ullong-fix-when-ullongp
-                       valuep-when-scharp
-                       valuep-when-ucharp
-                       valuep-when-sshortp
-                       valuep-when-ushortp
-                       valuep-when-sintp
-                       valuep-when-uintp
-                       valuep-when-slongp
-                       valuep-when-ulongp
-                       valuep-when-sllongp
-                       valuep-when-ullongp
-                       valuep-when-schar-arrayp
-                       valuep-when-uchar-arrayp
-                       valuep-when-sshort-arrayp
-                       valuep-when-ushort-arrayp
-                       valuep-when-sint-arrayp
-                       valuep-when-uint-arrayp
-                       valuep-when-slong-arrayp
-                       valuep-when-ulong-arrayp
-                       valuep-when-sllong-arrayp
-                       valuep-when-ullong-arrayp
-                       schar-arrayp-of-schar-array-of
-                       uchar-arrayp-of-uchar-array-of
-                       sshort-arrayp-of-sshort-array-of
-                       ushort-arrayp-of-ushort-array-of
-                       sint-arrayp-of-sint-array-of
-                       uint-arrayp-of-uint-array-of
-                       slong-arrayp-of-slong-array-of
-                       ulong-arrayp-of-ulong-array-of
-                       sllong-arrayp-of-sllong-array-of
-                       ullong-arrayp-of-ullong-array-of))
+                        (:e posp)
+                        (:e member-value-listp)
+                        (:e len)
+                        true-listp-when-uchar-listp-compound-recognizer
+                        member-value-listp-of-cons
+                        member-valuep-of-member-value
+                        schar-fix-when-scharp
+                        uchar-fix-when-ucharp
+                        sshort-fix-when-sshortp
+                        ushort-fix-when-ushortp
+                        sint-fix-when-sintp
+                        uint-fix-when-uintp
+                        slong-fix-when-slongp
+                        ulong-fix-when-ulongp
+                        sllong-fix-when-sllongp
+                        ullong-fix-when-ullongp
+                        valuep-when-scharp
+                        valuep-when-ucharp
+                        valuep-when-sshortp
+                        valuep-when-ushortp
+                        valuep-when-sintp
+                        valuep-when-uintp
+                        valuep-when-slongp
+                        valuep-when-ulongp
+                        valuep-when-sllongp
+                        valuep-when-ullongp
+                        valuep-when-schar-arrayp
+                        valuep-when-uchar-arrayp
+                        valuep-when-sshort-arrayp
+                        valuep-when-ushort-arrayp
+                        valuep-when-sint-arrayp
+                        valuep-when-uint-arrayp
+                        valuep-when-slong-arrayp
+                        valuep-when-ulong-arrayp
+                        valuep-when-sllong-arrayp
+                        valuep-when-ullong-arrayp
+                        schar-arrayp-of-schar-array-of
+                        uchar-arrayp-of-uchar-array-of
+                        sshort-arrayp-of-sshort-array-of
+                        ushort-arrayp-of-ushort-array-of
+                        sint-arrayp-of-sint-array-of
+                        uint-arrayp-of-uint-array-of
+                        slong-arrayp-of-slong-array-of
+                        ulong-arrayp-of-ulong-array-of
+                        sllong-arrayp-of-sllong-array-of
+                        ullong-arrayp-of-ullong-array-of))
        (returns-theory `(defstruct-consp-len-lemma
-                         (:e posp)
-                         (:e acl2::bool-fix)
-                         (:e ident)
-                         (:e ident-fix)
-                         (:e member-value-list->name-list)
-                         (:e member-value-list-fix)
-                         ,struct-tag
-                         ,struct-tag-p
-                         scharp-of-schar-fix
-                         ucharp-of-uchar-fix
-                         sshortp-of-sshort-fix
-                         ushortp-of-ushort-fix
-                         sintp-of-sint-fix
-                         uintp-of-uint-fix
-                         slongp-of-slong-fix
-                         ulongp-of-ulong-fix
-                         sllongp-of-sllong-fix
-                         ullongp-of-ullong-fix
-                         schar-fix-when-scharp
-                         uchar-fix-when-ucharp
-                         sshort-fix-when-sshortp
-                         ushort-fix-when-ushortp
-                         sint-fix-when-sintp
-                         uint-fix-when-uintp
-                         slong-fix-when-slongp
-                         ulong-fix-when-ulongp
-                         sllong-fix-when-sllongp
-                         ullong-fix-when-ullongp
-                         valuep-when-scharp
-                         valuep-when-ucharp
-                         valuep-when-sshortp
-                         valuep-when-ushortp
-                         valuep-when-sintp
-                         valuep-when-uintp
-                         valuep-when-slongp
-                         valuep-when-ulongp
-                         valuep-when-sllongp
-                         valuep-when-ullongp
-                         valuep-when-schar-arrayp
-                         valuep-when-uchar-arrayp
-                         valuep-when-sshort-arrayp
-                         valuep-when-ushort-arrayp
-                         valuep-when-sint-arrayp
-                         valuep-when-uint-arrayp
-                         valuep-when-slong-arrayp
-                         valuep-when-ulong-arrayp
-                         valuep-when-sllong-arrayp
-                         valuep-when-ullong-arrayp
-                         schar-array-length
-                         uchar-array-length
-                         sshort-array-length
-                         ushort-array-length
-                         sint-array-length
-                         uint-array-length
-                         slong-array-length
-                         ulong-array-length
-                         sllong-array-length
-                         ullong-array-length
-                         schar-array-of
-                         uchar-array-of
-                         sshort-array-of
-                         ushort-array-of
-                         sint-array-of
-                         uint-array-of
-                         slong-array-of
-                         ulong-array-of
-                         sllong-array-of
-                         ullong-array-of
-                         schar-arrayp-of-schar-array
-                         uchar-arrayp-of-uchar-array
-                         sshort-arrayp-of-sshort-array
-                         ushort-arrayp-of-ushort-array
-                         sint-arrayp-of-sint-array
-                         uint-arrayp-of-uint-array
-                         slong-arrayp-of-slong-array
-                         ulong-arrayp-of-ulong-array
-                         sllong-arrayp-of-sllong-array
-                         ullong-arrayp-of-ullong-array
-                         consp-of-schar-list-fix
-                         consp-of-uchar-list-fix
-                         consp-of-sshort-list-fix
-                         consp-of-ushort-list-fix
-                         consp-of-sint-list-fix
-                         consp-of-uint-list-fix
-                         consp-of-slong-list-fix
-                         consp-of-ulong-list-fix
-                         consp-of-sllong-list-fix
-                         consp-of-ullong-list-fix
-                         len-of-schar-list-fix
-                         len-of-uchar-list-fix
-                         len-of-sshort-list-fix
-                         len-of-ushort-list-fix
-                         len-of-sint-list-fix
-                         len-of-uint-list-fix
-                         len-of-slong-list-fix
-                         len-of-ulong-list-fix
-                         len-of-sllong-list-fix
-                         len-of-ullong-list-fix
-                         schar-array->elements-of-schar-array
-                         uchar-array->elements-of-uchar-array
-                         sshort-array->elements-of-sshort-array
-                         ushort-array->elements-of-ushort-array
-                         sint-array->elements-of-sint-array
-                         uint-array->elements-of-uint-array
-                         slong-array->elements-of-slong-array
-                         ulong-array->elements-of-ulong-array
-                         sllong-array->elements-of-sllong-array
-                         ullong-array->elements-of-ullong-array
-                         car-cons
-                         cdr-cons
-                         value-struct-read-aux
-                         value-fix-when-valuep
-                         member-value->name-of-member-value
-                         member-value->value-of-member-value
-                         value-struct->members-of-value-struct
-                         value-struct->tag-of-value-struct
-                         value-struct->flexiblep-of-value-struct
-                         return-type-of-value-struct
-                         member-value-fix-when-member-valuep
-                         member-value-list->name-list-of-cons
-                         member-value-list-fix-of-cons
-                         member-valuep-of-member-value))
+                          (:e posp)
+                          (:e acl2::bool-fix)
+                          (:e ident)
+                          (:e ident-fix)
+                          (:e member-value-list->name-list)
+                          (:e member-value-list-fix)
+                          ,struct-tag
+                          ,struct-tag-p
+                          scharp-of-schar-fix
+                          ucharp-of-uchar-fix
+                          sshortp-of-sshort-fix
+                          ushortp-of-ushort-fix
+                          sintp-of-sint-fix
+                          uintp-of-uint-fix
+                          slongp-of-slong-fix
+                          ulongp-of-ulong-fix
+                          sllongp-of-sllong-fix
+                          ullongp-of-ullong-fix
+                          schar-fix-when-scharp
+                          uchar-fix-when-ucharp
+                          sshort-fix-when-sshortp
+                          ushort-fix-when-ushortp
+                          sint-fix-when-sintp
+                          uint-fix-when-uintp
+                          slong-fix-when-slongp
+                          ulong-fix-when-ulongp
+                          sllong-fix-when-sllongp
+                          ullong-fix-when-ullongp
+                          valuep-when-scharp
+                          valuep-when-ucharp
+                          valuep-when-sshortp
+                          valuep-when-ushortp
+                          valuep-when-sintp
+                          valuep-when-uintp
+                          valuep-when-slongp
+                          valuep-when-ulongp
+                          valuep-when-sllongp
+                          valuep-when-ullongp
+                          valuep-when-schar-arrayp
+                          valuep-when-uchar-arrayp
+                          valuep-when-sshort-arrayp
+                          valuep-when-ushort-arrayp
+                          valuep-when-sint-arrayp
+                          valuep-when-uint-arrayp
+                          valuep-when-slong-arrayp
+                          valuep-when-ulong-arrayp
+                          valuep-when-sllong-arrayp
+                          valuep-when-ullong-arrayp
+                          schar-array-length
+                          uchar-array-length
+                          sshort-array-length
+                          ushort-array-length
+                          sint-array-length
+                          uint-array-length
+                          slong-array-length
+                          ulong-array-length
+                          sllong-array-length
+                          ullong-array-length
+                          schar-array-of
+                          uchar-array-of
+                          sshort-array-of
+                          ushort-array-of
+                          sint-array-of
+                          uint-array-of
+                          slong-array-of
+                          ulong-array-of
+                          sllong-array-of
+                          ullong-array-of
+                          schar-arrayp-of-schar-array
+                          uchar-arrayp-of-uchar-array
+                          sshort-arrayp-of-sshort-array
+                          ushort-arrayp-of-ushort-array
+                          sint-arrayp-of-sint-array
+                          uint-arrayp-of-uint-array
+                          slong-arrayp-of-slong-array
+                          ulong-arrayp-of-ulong-array
+                          sllong-arrayp-of-sllong-array
+                          ullong-arrayp-of-ullong-array
+                          consp-of-schar-list-fix
+                          consp-of-uchar-list-fix
+                          consp-of-sshort-list-fix
+                          consp-of-ushort-list-fix
+                          consp-of-sint-list-fix
+                          consp-of-uint-list-fix
+                          consp-of-slong-list-fix
+                          consp-of-ulong-list-fix
+                          consp-of-sllong-list-fix
+                          consp-of-ullong-list-fix
+                          len-of-schar-list-fix
+                          len-of-uchar-list-fix
+                          len-of-sshort-list-fix
+                          len-of-ushort-list-fix
+                          len-of-sint-list-fix
+                          len-of-uint-list-fix
+                          len-of-slong-list-fix
+                          len-of-ulong-list-fix
+                          len-of-sllong-list-fix
+                          len-of-ullong-list-fix
+                          schar-array->elements-of-schar-array
+                          uchar-array->elements-of-uchar-array
+                          sshort-array->elements-of-sshort-array
+                          ushort-array->elements-of-ushort-array
+                          sint-array->elements-of-sint-array
+                          uint-array->elements-of-uint-array
+                          slong-array->elements-of-slong-array
+                          ulong-array->elements-of-ulong-array
+                          sllong-array->elements-of-sllong-array
+                          ullong-array->elements-of-ullong-array
+                          car-cons
+                          cdr-cons
+                          value-struct-read-aux
+                          value-fix-when-valuep
+                          member-value->name-of-member-value
+                          member-value->value-of-member-value
+                          value-struct->members-of-value-struct
+                          value-struct->tag-of-value-struct
+                          value-struct->flexiblep-of-value-struct
+                          return-type-of-value-struct
+                          member-value-fix-when-member-valuep
+                          member-value-list->name-list-of-cons
+                          member-value-list-fix-of-cons
+                          member-valuep-of-member-value))
        (guard-conjuncts (append len-conjuncts consp-conjuncts)))
     `(define ,struct-tag ,parameters
        ,@(and guard-conjuncts
@@ -1486,23 +1486,23 @@
                                                    '-of-
                                                    integer-writer)
                                              integer-writer))
-       (reader-all (packn-pos (list struct-tag
-                                    '-read-
-                                    (ident->name name)
-                                    '-all)
-                              struct-tag))
-       (writer-all (packn-pos (list struct-tag
-                                    '-write-
-                                    (ident->name name)
-                                    '-all)
-                              struct-tag))
-       (len-of-reader-all (packn-pos (list 'len-of- reader-all) reader-all))
-       (consp-of-reader-all (packn-pos (list 'consp-of- reader-all) reader-all))
-       (writer-all-extra-guard (if size?
-                                   `(equal (len values)
-                                           ,size?)
-                                 `(equal (len values)
-                                         (len (,reader-all struct)))))
+       (reader-list (packn-pos (list struct-tag
+                                     '-read-
+                                     (ident->name name)
+                                     '-list)
+                               struct-tag))
+       (writer-list (packn-pos (list struct-tag
+                                     '-write-
+                                     (ident->name name)
+                                     '-list)
+                               struct-tag))
+       (len-of-reader-list (packn-pos (list 'len-of- reader-list) reader-list))
+       (consp-of-reader-list (packn-pos (list 'consp-of- reader-list) reader-list))
+       (writer-list-extra-guard (if size?
+                                    `(equal (len values)
+                                            ,size?)
+                                  `(equal (len values)
+                                          (len (,reader-list struct)))))
        (fixtype-array-length (pack fixtype '-array-length))
        (fixtype-array-of (pack fixtype '-array-of))
        (array-length-when-fixtype-array-length
@@ -1696,150 +1696,150 @@
           valuep-when-value-optionp
           (:t value-struct->flexiblep)
           (:t value-struct-write)))
-       (len-of-reader-all-theory `(,struct-tag-p
-                                   ,struct-tag-fix
-                                   ,reader-all
-                                   ,arr-length
+       (len-of-reader-list-theory `(,struct-tag-p
+                                    ,struct-tag-fix
+                                    ,reader-list
+                                    ,arr-length
+                                    value-struct-read
+                                    value-struct-read-aux
+                                    (:e cons)
+                                    (:e ident)
+                                    (:e len)
+                                    (:e member-value)
+                                    (:e repeat)
+                                    (:e type-schar)
+                                    (:e type-uchar)
+                                    (:e type-sshort)
+                                    (:e type-ushort)
+                                    (:e type-sint)
+                                    (:e type-uint)
+                                    (:e type-slong)
+                                    (:e type-ulong)
+                                    (:e type-sllong)
+                                    (:e type-ullong)
+                                    (:e schar-from-integer)
+                                    (:e uchar-from-integer)
+                                    (:e sshort-from-integer)
+                                    (:e ushort-from-integer)
+                                    (:e sint-from-integer)
+                                    (:e uint-from-integer)
+                                    (:e slong-from-integer)
+                                    (:e ulong-from-integer)
+                                    (:e sllong-from-integer)
+                                    (:e ullong-from-integer)
+                                    (:e schar-array->elements)
+                                    (:e uchar-array->elements)
+                                    (:e sshort-array->elements)
+                                    (:e ushort-array->elements)
+                                    (:e sint-array->elements)
+                                    (:e uint-array->elements)
+                                    (:e slong-array->elements)
+                                    (:e ulong-array->elements)
+                                    (:e sllong-array->elements)
+                                    (:e ullong-array->elements)
+                                    (:e value-array)
+                                    (:e value-struct)
+                                    (:e value-struct->members)
+                                    (:e value-struct-read-aux)))
+       (writer-list-theory `(,struct-tag-p
+                             ,struct-tag-fix
+                             ,writer-list
+                             value-struct-write
+                             ,fixtype-array-length
+                             ,fixtype-array-of
+                             ,array-length-when-fixtype-array-length
+                             ,consp-of-elem-type-list-fix
+                             ,len-of-elem-type-list-fix
+                             member-value-list->name-list-of-struct-write-aux
+                             member-value-list-fix-when-member-value-listp
+                             member-value-listp-of-value-struct-write-aux
+                             not-errorp-when-member-value-listp
+                             ,not-flexible-array-member-p-when-fixtype-arrayp
+                             remove-flexible-array-member-when-absent
+                             return-type-of-value-struct
+                             ,type-of-value-when-arr-typep
+                             ,fixtype-array->elements-of-fixtype-array
+                             ,fixtype-arrayp-of-fixtype-array
+                             value-fix-when-valuep
+                             value-struct->flexiblep-of-value-struct
+                             value-struct->members-of-value-struct
+                             value-struct->tag-of-value-struct
+                             value-struct-read-aux-of-value-struct-write-aux
+                             ,valuep-when-fixtype-arrayp
+                             (:e acl2::bool-fix)
+                             (:e ident)
+                             (:e ident-fix)
+                             (:e ident-equiv)
+                             (:e member-value)
+                             (:e member-value-list->name-list)
+                             (:e repeat)
+                             (:e type-array)
+                             (:e value-struct)
+                             (:e value-struct->tag)
+                             (:e value-struct->members)
+                             (:e value-struct->flexiblep)
+                             (:e value-array)
+                             (:e value-struct-read-aux)
+                             (:e type-schar)
+                             (:e type-uchar)
+                             (:e type-sshort)
+                             (:e type-ushort)
+                             (:e type-sint)
+                             (:e type-uint)
+                             (:e type-slong)
+                             (:e type-ulong)
+                             (:e type-sllong)
+                             (:e type-ullong)
+                             (:e schar-from-integer)
+                             (:e uchar-from-integer)
+                             (:e sshort-from-integer)
+                             (:e ushort-from-integer)
+                             (:e sint-from-integer)
+                             (:e uint-from-integer)
+                             (:e slong-from-integer)
+                             (:e ulong-from-integer)
+                             (:e sllong-from-integer)
+                             (:e ullong-from-integer)
+                             (:e scharp)
+                             (:e ucharp)
+                             (:e sshortp)
+                             (:e ushortp)
+                             (:e sintp)
+                             (:e uintp)
+                             (:e slongp)
+                             (:e ulongp)
+                             (:e sllongp)
+                             (:e ullongp)
+                             (:e schar-arrayp)
+                             (:e uchar-arrayp)
+                             (:e sshort-arrayp)
+                             (:e ushort-arrayp)
+                             (:e sint-arrayp)
+                             (:e uint-arrayp)
+                             (:e slong-arrayp)
+                             (:e ulong-arrayp)
+                             (:e sllong-arrayp)
+                             (:e ullong-arrayp)
+                             (:e schar-array-length)
+                             (:e uchar-array-length)
+                             (:e sshort-array-length)
+                             (:e ushort-array-length)
+                             (:e sint-array-length)
+                             (:e uint-array-length)
+                             (:e slong-array-length)
+                             (:e ulong-array-length)
+                             (:e sllong-array-length)
+                             (:e ullong-array-length)
+                             (:t value-struct-write-aux)
+                             ,@(if size?
+                                   '(acl2::posp-compound-recognizer
+                                     (:e type-of-value)
+                                     defstruct-consp-len-lemma)
+                                 `(,reader-list
                                    value-struct-read
-                                   value-struct-read-aux
-                                   (:e cons)
-                                   (:e ident)
+                                   (:e ,fixtype-array->elements)
                                    (:e len)
-                                   (:e member-value)
-                                   (:e repeat)
-                                   (:e type-schar)
-                                   (:e type-uchar)
-                                   (:e type-sshort)
-                                   (:e type-ushort)
-                                   (:e type-sint)
-                                   (:e type-uint)
-                                   (:e type-slong)
-                                   (:e type-ulong)
-                                   (:e type-sllong)
-                                   (:e type-ullong)
-                                   (:e schar-from-integer)
-                                   (:e uchar-from-integer)
-                                   (:e sshort-from-integer)
-                                   (:e ushort-from-integer)
-                                   (:e sint-from-integer)
-                                   (:e uint-from-integer)
-                                   (:e slong-from-integer)
-                                   (:e ulong-from-integer)
-                                   (:e sllong-from-integer)
-                                   (:e ullong-from-integer)
-                                   (:e schar-array->elements)
-                                   (:e uchar-array->elements)
-                                   (:e sshort-array->elements)
-                                   (:e ushort-array->elements)
-                                   (:e sint-array->elements)
-                                   (:e uint-array->elements)
-                                   (:e slong-array->elements)
-                                   (:e ulong-array->elements)
-                                   (:e sllong-array->elements)
-                                   (:e ullong-array->elements)
-                                   (:e value-array)
-                                   (:e value-struct)
-                                   (:e value-struct->members)
-                                   (:e value-struct-read-aux)))
-       (writer-all-theory `(,struct-tag-p
-                            ,struct-tag-fix
-                            ,writer-all
-                            value-struct-write
-                            ,fixtype-array-length
-                            ,fixtype-array-of
-                            ,array-length-when-fixtype-array-length
-                            ,consp-of-elem-type-list-fix
-                            ,len-of-elem-type-list-fix
-                            member-value-list->name-list-of-struct-write-aux
-                            member-value-list-fix-when-member-value-listp
-                            member-value-listp-of-value-struct-write-aux
-                            not-errorp-when-member-value-listp
-                            ,not-flexible-array-member-p-when-fixtype-arrayp
-                            remove-flexible-array-member-when-absent
-                            return-type-of-value-struct
-                            ,type-of-value-when-arr-typep
-                            ,fixtype-array->elements-of-fixtype-array
-                            ,fixtype-arrayp-of-fixtype-array
-                            value-fix-when-valuep
-                            value-struct->flexiblep-of-value-struct
-                            value-struct->members-of-value-struct
-                            value-struct->tag-of-value-struct
-                            value-struct-read-aux-of-value-struct-write-aux
-                            ,valuep-when-fixtype-arrayp
-                            (:e acl2::bool-fix)
-                            (:e ident)
-                            (:e ident-fix)
-                            (:e ident-equiv)
-                            (:e member-value)
-                            (:e member-value-list->name-list)
-                            (:e repeat)
-                            (:e type-array)
-                            (:e value-struct)
-                            (:e value-struct->tag)
-                            (:e value-struct->members)
-                            (:e value-struct->flexiblep)
-                            (:e value-array)
-                            (:e value-struct-read-aux)
-                            (:e type-schar)
-                            (:e type-uchar)
-                            (:e type-sshort)
-                            (:e type-ushort)
-                            (:e type-sint)
-                            (:e type-uint)
-                            (:e type-slong)
-                            (:e type-ulong)
-                            (:e type-sllong)
-                            (:e type-ullong)
-                            (:e schar-from-integer)
-                            (:e uchar-from-integer)
-                            (:e sshort-from-integer)
-                            (:e ushort-from-integer)
-                            (:e sint-from-integer)
-                            (:e uint-from-integer)
-                            (:e slong-from-integer)
-                            (:e ulong-from-integer)
-                            (:e sllong-from-integer)
-                            (:e ullong-from-integer)
-                            (:e scharp)
-                            (:e ucharp)
-                            (:e sshortp)
-                            (:e ushortp)
-                            (:e sintp)
-                            (:e uintp)
-                            (:e slongp)
-                            (:e ulongp)
-                            (:e sllongp)
-                            (:e ullongp)
-                            (:e schar-arrayp)
-                            (:e uchar-arrayp)
-                            (:e sshort-arrayp)
-                            (:e ushort-arrayp)
-                            (:e sint-arrayp)
-                            (:e uint-arrayp)
-                            (:e slong-arrayp)
-                            (:e ulong-arrayp)
-                            (:e sllong-arrayp)
-                            (:e ullong-arrayp)
-                            (:e schar-array-length)
-                            (:e uchar-array-length)
-                            (:e sshort-array-length)
-                            (:e ushort-array-length)
-                            (:e sint-array-length)
-                            (:e uint-array-length)
-                            (:e slong-array-length)
-                            (:e ulong-array-length)
-                            (:e sllong-array-length)
-                            (:e ullong-array-length)
-                            (:t value-struct-write-aux)
-                            ,@(if size?
-                                  '(acl2::posp-compound-recognizer
-                                    (:e type-of-value)
-                                    defstruct-consp-len-lemma)
-                                `(,reader-all
-                                  value-struct-read
-                                  (:e ,fixtype-array->elements)
-                                  (:e len)
-                                  returns-lemma))))
+                                   returns-lemma))))
        (events
         `(,@(and
              (not size?)
@@ -1926,13 +1926,13 @@
                            :use (:instance
                                  return-lemma
                                  (struct (,struct-tag-fix struct))))))))
-          (define ,reader-all ((struct ,struct-tag-p))
+          (define ,reader-list ((struct ,struct-tag-p))
             :returns (values
                       ,elem-type-listp
                       :hints
                       (("Goal"
                         :in-theory
-                        '(,reader-all
+                        '(,reader-list
                           ,elem-type-listp-of-fixtype-array->elements))))
             (,fixtype-array->elements
              (value-struct-read (ident ,(ident->name name))
@@ -1943,22 +1943,22 @@
                                   value-struct-read)))
             ///
             ,(if size?
-                 `(defret ,len-of-reader-all
+                 `(defret ,len-of-reader-list
                     (equal (len values) ,size?)
-                    :hints (("Goal" :in-theory ',len-of-reader-all-theory)))
-               `(defret ,consp-of-reader-all
+                    :hints (("Goal" :in-theory ',len-of-reader-list-theory)))
+               `(defret ,consp-of-reader-list
                   (consp values)
                   :rule-classes :type-prescription
                   :hints
                   (("Goal"
                     :in-theory
-                    '(,reader-all
+                    '(,reader-list
                       (:t ,fixtype-array->elements))))))
-            (fty::deffixequiv ,reader-all
+            (fty::deffixequiv ,reader-list
               :hints
               (("Goal"
                 :in-theory
-                '(,reader-all
+                '(,reader-list
                   ,(packn-pos (list struct-tag-fix
                                     '-under-
                                     struct-tag
@@ -1969,12 +1969,12 @@
                                     struct-tag-fix
                                     '-1)
                               struct-tag))))))
-          (define ,writer-all ((values ,elem-type-listp) (struct ,struct-tag-p))
-            :guard ,writer-all-extra-guard
+          (define ,writer-list ((values ,elem-type-listp) (struct ,struct-tag-p))
+            :guard ,writer-list-extra-guard
             :returns (new-struct
                       ,struct-tag-p
-                      :hyp ,writer-all-extra-guard
-                      :hints (("Goal" :in-theory ',writer-all-theory)))
+                      :hyp ,writer-list-extra-guard
+                      :hints (("Goal" :in-theory ',writer-list-theory)))
             (value-struct-write (ident ,(ident->name name))
                                 (,fixtype-array-of values)
                                 (,struct-tag-fix struct))
@@ -1989,7 +1989,7 @@
                                           (:e posp))
                                       `((:e len)
                                         defstruct-len-consp-lemma
-                                        (:t ,reader-all))))))
+                                        (:t ,reader-list))))))
             :prepwork
             ((defrulel returns-lemma
                (implies (equal (len values)
@@ -1999,10 +1999,10 @@
                             defstruct-len-consp-lemma
                             (:t ,fixtype-array->elements))))
             ///
-            (fty::deffixequiv ,writer-all
+            (fty::deffixequiv ,writer-list
               :hints
               (("Goal"
-                :in-theory '(,writer-all
+                :in-theory '(,writer-list
                              ,fixtype-array-of-of-fixtype-list-fix-elements
                              ,struct-tag-equiv-implies-equal-struct-tag-fix-1
                              ,struct-tag-fix-under-struct-tag-equiv)))))))
