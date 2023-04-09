@@ -395,7 +395,7 @@
        and calls the reader @('struct-<tag>-read-<member>-integer') above."))
 
     (xdoc::desc
-     "@('struct-<tag>-write-<member>')"
+     "@('struct-<tag>-write-<member>-integer')"
      (xdoc::p
       "Writer for an array member of the structure type,
        using an ACL2 integer as index.")
@@ -406,9 +406,9 @@
      (xdoc::p
       "The writer has the form")
      (xdoc::codeblock
-      "(define struct-<tag>-write-<member> ((index integerp)"
-      "                                     (value <elemtype>p)"
-      "                                     (struct struct-<tag>-p))"
+      "(define struct-<tag>-write-<member>-integer ((index integerp)"
+      "                                             (value <elemtype>p)"
+      "                                             (struct struct-<tag>-p))"
       "  :guard (struct-<tag>-<member>-integer-index-okp index ...)"
       "  :returns (new-struct struct-<tag>-p)"
       "  ...)")
@@ -455,12 +455,13 @@
        not the whole array member.")
      (xdoc::p
       "This writer converts the C integer index to an ACL2 integer index
-       and calls the writer @('struct-<tag>-write-<member>') above."))
+       and calls the writer @('struct-<tag>-write-<member>-integer') above."))
 
     (xdoc::desc
-     "@('struct-<tag>-read-<member>-all')"
+     "@('struct-<tag>-read-<member>-list')"
      (xdoc::p
-      "Reader for all the elements of an array member of the structure type.")
+      "Reader for all the elements of an array member of the structure type,
+       where the elements are returned as a list (not an array).")
      (xdoc::p
       "There is one such reader for every member
        whose name is @('<member>')
@@ -468,7 +469,7 @@
      (xdoc::p
       "The reader has the form")
      (xdoc::codeblock
-      "(define struct-<tag>-read-<member>-all ((struct struct-<tag>-p))"
+      "(define struct-<tag>-read-<member>-list ((struct struct-<tag>-p))"
       "  :returns (values <elemtype>-listp)"
       "  ...)")
      (xdoc::p
@@ -477,9 +478,10 @@
        the @('typei') that specifies the type of the member."))
 
     (xdoc::desc
-     "@('struct-<tag>-write-<member>-all')"
+     "@('struct-<tag>-write-<member>-list')"
      (xdoc::p
-      "Writer for all the elements of an array member of the structure type.")
+      "Writer for all the elements of an array member of the structure type,
+       where the elements are passed as a list (not an array).")
      (xdoc::p
       "There is one such writer for every member
        whose name is @('<member>')
@@ -487,7 +489,7 @@
      (xdoc::p
       "The writer has the form")
      (xdoc::codeblock
-      "(define struct-<tag>-write-<member>-all ((value <elemtype>-listp)"
+      "(define struct-<tag>-write-<member>-list ((value <elemtype>-listp)"
       "                                         (struct struct-<tag>-p))"
       "  :guard (equal (len values) ...)"
       "  :returns (new-struct struct-<tag>-p)"
@@ -499,5 +501,5 @@
        and the @('...') in the @(':guard') is
        either the positive integer size of the array
        if the array member has a known size,
-       or the term @('(len (struct-<tag>-read-<member>-all struct))')
+       or the term @('(len (struct-<tag>-read-<member>-list struct))')
        if the array member is a flexible one.")))))
