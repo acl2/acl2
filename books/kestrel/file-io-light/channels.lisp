@@ -12,6 +12,8 @@
 
 ;; See also ../utilities/channel-contents.lisp
 
+;; TODO: Should this include all the other books about channels?
+
 (include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
 (local (include-book "typed-io-listp"))
 
@@ -122,7 +124,7 @@
                 (open-channel-listp channels))
            (typed-io-listp (cdddr (assoc-equal channel channels))
                            (cadr (cadr (assoc-equal channel channels)))))
-  :hints (("Goal" :in-theory (enable open-channel-listp channel-headerp))))
+  :hints (("Goal" :in-theory (enable open-channel-listp channel-headerp typed-io-listp))))
 
 ;; different hyp
 (defthm typed-io-listp-of-cdddr-of-assoc-equal-and-cadr-of-cadr-of-assoc-equal-2
