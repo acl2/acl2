@@ -47,3 +47,9 @@
          (and (byte-listp (true-list-fix x))
               (byte-listp y)))
   :hints (("Goal" :in-theory (enable byte-listp append))))
+
+(defthm byte-listp-of-revappend
+  (equal (byte-listp (revappend x y))
+         (and (byte-listp (true-list-fix x))
+              (byte-listp y)))
+  :hints (("Goal" :in-theory (enable byte-listp revappend))))
