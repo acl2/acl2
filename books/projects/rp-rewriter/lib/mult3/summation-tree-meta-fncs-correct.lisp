@@ -7138,6 +7138,19 @@ rp-evlt-of-ex-from-rp-reverse-only-atom-and-car)
                             eval-and-all
                             pp-termp-is-bitp))))) 
 
+(defthmd binary-not-to-binary-xor-1
+  (equal (not$ x)
+         (binary-xor 1 x))
+  :hints (("Goal"
+           :in-theory (e/d (not$ binary-xor) ()))))
+
+(defthmd ex-from-rp-when-car-is-binary-not
+  (implies (EQUAL (CAR TERM) 'BINARY-NOT)
+           (equal (ex-from-rp term) term))
+  :rule-classes :forward-chaining
+  :hints (("Goal"
+           :in-theory (e/d (ex-from-rp is-rp) ()))))
+
 (defret <fn>-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -7148,9 +7161,16 @@ rp-evlt-of-ex-from-rp-reverse-only-atom-and-car)
                 (equal (m2 (sum other (rp-evlt res a)))
                        (m2 (sum other (rp-evlt term a))))))
   :fn extract-binary-xor-for-s-spec-aux
+  :otf-flg t
   :hints (("Goal"
-           :expand ((EXTRACT-BINARY-XOR-FOR-S-SPEC-AUX TERM))
+           :expand ((EXTRACT-BINARY-XOR-FOR-S-SPEC-AUX TERM)
+                    (PP-TERM-P TERM :STRICT NIL))
+           :induct (extract-binary-xor-for-s-spec-aux term)
+           :do-not-induct t
            :in-theory (e/d* (or*
+                             M2-OF-SUM-1-OTHER
+                             ex-from-rp-when-car-is-binary-not
+                             binary-not-to-binary-xor-1
                              valid-sc-single-step
                              extract-binary-xor-for-s-spec-aux
                              regular-rp-evl-of_s_when_mult-formula-checks

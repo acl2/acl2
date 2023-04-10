@@ -1824,6 +1824,7 @@ x
 
 (define bitor-of-and-pull-commons-aux ((x sv::svex-p)
                                        &key
+                                       ((collect-from-arg1) 't)
                                        ((leave-depth integerp)
                                         'leave-depth)
                                        ((config svl::svex-reduce-config-p)
@@ -1838,11 +1839,13 @@ x
                  ('sv::bitand & &))
      (b* (((when (zp limit)) (mv nil x))
           (term1 (first (cdr x)))
-          (leaves1
-           (bitand/or/xor-collect-leaves term1 'sv::bitand))
           (term2 (second (cdr x)))
+          (leaves (bitand/or/xor-collect-leaves
+                   (if collect-from-arg1 term1 term2)
+                   'sv::bitand))
           (common-term (bitand/or/xor-has-a-leave
-                        term2 'sv::bitand leaves1))
+                        (if collect-from-arg1 term2 term1)
+                        'sv::bitand leaves))
           ((unless common-term)
            (mv nil x))
           ((mv success1 term1)
@@ -1894,7 +1897,9 @@ x
                            (svex-eval x env)))))
      :hints (("Goal"
               :do-not-induct t
-              :induct (bitor-of-and-pull-commons-aux x :limit limit)
+              :induct (bitor-of-and-pull-commons-aux x
+                                                     :collect-from-arg1 collect-from-arg1
+                                                     :limit limit)
               :in-theory (e/d (INSERT-4VEC-BITAND-INTO-4VEC-BITOR
                                SVEX-P)
                               ())))))

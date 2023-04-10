@@ -49,6 +49,59 @@
   use-arithmetic-5
   :disabled t))
 
+
+;; (acl2::defines
+;;    equal-cwe
+;;    :parents (rp-equal)
+;;    :short "Same as @(see rp::rp-equal) but prints a mismatch."
+;;    (define equal-cwe (term1 term2)
+;;      :enabled t
+;;      (declare (xargs :mode :logic
+;;                      :guard t #|(and (rp-termp term1)
+;;                      (rp-termp term2))||#))
+;;      "Check syntactic equivalance of two terms by ignoring all the rp terms"
+;;      (let* ((term1 (ex-from-rp term1))
+;;             (term2 (ex-from-rp term2)))
+;;        (cond
+;;         ((or (atom term1)
+;;              (atom term2)
+;;              (acl2::fquotep term1)
+;;              (acl2::fquotep term2))
+;;          (or (equal term1 term2)
+;;              (cw "Mismatch: term1=~p0, term2=~p1 ~%" term1 term2)))
+;;         (t (and (or (equal (car term1) (car term2))
+;;                     (cwe "Mismatch: term1=~p0, term2=~p1 ~%" term1 term2))
+;;                 (equal-cwe-subterms (cdr term1) (cdr term2)))))))
+
+;;    (define equal-cwe-subterms (subterm1 subterm2)
+;;      :enabled t
+;;      (declare (xargs :mode :logic
+;;                      :guard t #|(and (rp-term-listp subterm1)
+;;                      (rp-term-listp subterm2))||#))
+;;      (if (or (atom subterm1)
+;;              (atom subterm2))
+;;          (or (equal subterm1 subterm2)
+;;              (cw "Mismatch: subterm1=~p0, sunterm2=~p1 ~%" subterm1 subterm2))
+;;        (and (equal-cwe (car subterm1) (car subterm2))
+;;             (equal-cwe-subterms (cdr subterm1) (cdr subterm2))))))
+
+;; (define design_res-broken (x message)
+;;   (b* (((sv::assocs design_res design_is_correct)
+;;         x)
+;;        (res2 (case-match design_is_correct
+;;                (('SV::?
+;;                 ('SV::PARTSEL 0 1 ('SV::== & x))
+;;                 1 0)
+;;                 x)
+;;                (& (raise "Bad design_is_correct pattern: ~p0"
+;;                          design_is_correct))))
+;;        ((unless (equal design_res res2))
+;;         (progn$ (equal-cwe res2 design_res)
+;;                 (raise "Here: ~p0" message))))
+;;     nil))
+    
+
+
 (progn
   (encapsulate
     (((aggressive-find-adders-in-svex) => *))
@@ -3798,7 +3851,7 @@
 
   (define simplify-to-find-fa-c-patterns-alist ((alist sv::Svex-alist-p)
                                                 &key
-                                                ((strength integerp) '1)
+                                                ((strength integerp) 'strength)
                                                 ((env) 'env)
                                                 ((context rp-term-listp) 'context)
                                                 ((config svl::svex-reduce-config-p) 'config))
@@ -3807,7 +3860,7 @@
     (if (atom alist)
         nil
       (acons (caar alist)
-             (simplify-to-find-fa-c-patterns (cdar alist))
+             (simplify-to-find-fa-c-patterns (hons-copy (cdar alist)))
              (simplify-to-find-fa-c-patterns-alist (cdr alist))))
     ///
     (defret <fn>-is-correct
@@ -5618,8 +5671,10 @@
       svex
     (let ((limit (1- limit)))
       (b* (((unless (and (consp svex)
-                         (equal (car svex) 'sv::bitor)))
+                         (equal (car svex) 'sv::bitor)
+                         (svl::equal-len (cdr svex) 2)))
             svex)
+
 
            (pattern-fn-call-list (look-for-fa-c-chain-pattern svex))
            ((when (consp pattern-fn-call-list))
@@ -5634,8 +5689,33 @@
            ((mv found remaining-bitor remaining-bitand m2-term fa-c-term)
             (ppx-mergeable-extract-matching-m2 svex collected-fa-c-args))
            ((unless found)
-            (b* (((mv common-terms pulled-svex)
-                  (svl::bitor-of-and-pull-commons-aux svex :leave-depth 5))
+            (b* (;; ;; if not found try simplifing first
+                 ;; ((mv new-svex &) ;; NOTE: THIS MAY NEVER BE USEFUL.
+                 ;;  (simplify-to-find-fa-c-patterns-aux
+                 ;;   x 5 :strength 2
+                 ;;   :inside-out t))
+                 ;; #|(new-svex (svl::bitand/or/xor-cancel-repeated
+                 ;;            'sv::bitor (first (cdr svex)) (second (cdr svex))
+                 ;;            :leave-depth 5))|#
+                 ;; (simp-changed (not (equal new-svex svex)))
+                 ;; (new-new-svex (if simp-changed
+                 ;;                   (ppx-simplify-mergeable-node new-svex)
+                 ;;                 new-svex))
+                 ;; ((when (not (equal new-new-svex new-svex)))
+                 ;;  new-new-svex)
+                 ;; ;; if here, it means svl::bitand/or/xor-cancel-repeated didn't
+                 ;; ;; help.
+                 ((mv common-terms pulled-svex)
+                  (svl::bitor-of-and-pull-commons-aux svex
+                                                      :leave-depth 5
+                                                      :collect-from-arg1 nil))
+                 ((mv common-terms pulled-svex)
+                  (if common-terms
+                      (mv common-terms pulled-svex)
+                    ;; try again but collect from the first arg this time.
+                    (svl::bitor-of-and-pull-commons-aux svex
+                                                        :leave-depth 5
+                                                        :collect-from-arg1 t)))
                  ((unless common-terms) svex)
                  (new-svex (ppx-simplify-mergeable-node pulled-svex))
                  ((when (equal new-svex pulled-svex)) svex))
@@ -5673,6 +5753,11 @@
                                                                           remaining-bitand)))
            (new-inner-bitor (ppx-simplify-mergeable-node new-inner-bitor))
            (new-fa-c-chain (create-fa-c-chain-instance shared-arg1 shared-arg2 new-inner-bitor))
+
+           ;; MAYBE I SHOULD TRY CLEARING  THE ARGS OF NEW-FA-C-CHAIN HERE WITH
+           ;; REPEATED    CHECK    (svl::bitand/or/xor-cancel-repeated)    FROM
+           ;; REMAINING-BITOR TO HELP THE CONSTANT 1 PROPAGATION CASE......
+           
            (new-bitor (ex-adder-fnc-from-unfloat
                        (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor
                                                                     remaining-bitor
@@ -5784,9 +5869,18 @@
      :quote svex
      :call (b* ((args (ppx-simplify-lst svex.args))
                 (new-svex (sv::svex-call svex.fn args))
-                (new-svex (csel-simplify-main new-svex)))
-             (if (equal svex.fn 'sv::bitor)
-                 (ppx-simplify-mergeable-node new-svex :limit 100)
+                (new-svex (csel-simplify-main new-svex))
+                (bitor-p (case-match new-svex (('sv::bitor & &) t)))
+                ;; WARNING: TODO: DANGEROUS TO DO THIS HERE!!!!!!!!
+                ;; But this may help with the case where a constant 1 is propagated
+                ;; in the ppx adders...
+                (new-svex (if bitor-p
+                              (svl::bitand/or/xor-cancel-repeated
+                               'sv::bitor (first (cdr new-svex)) (second (cdr new-svex))
+                               :leave-depth 3)
+                            new-svex)))
+             (if bitor-p
+                 (ppx-simplify-mergeable-node new-svex :limit 10000)
                new-svex))))
   (define ppx-simplify-lst ((lst sv::svexlist-p)
                             &key
@@ -5838,8 +5932,16 @@
              :do-not-induct t
              :expand ((ppx-simplify-lst nil)
                       (ppx-simplify svex)
-                      (ppx-simplify-lst lst))
-             :in-theory (e/d () ()))))
+                      (ppx-simplify-lst lst)
+                      (:free (args) (SV::SVEX-APPLY 'SV::BITOR args)))
+             :in-theory (e/d (SV::SVEX-CALL->ARGS
+                              SV::SVEX-CALL->fn)
+                             (csel-simplify-main-is-correct)))
+            (and stable-under-simplificationp
+                 '(:use (:instance csel-simplify-main-is-correct
+                                   (svex
+                                    (sv::svex-call (car svex)
+                                                   (ppx-simplify-lst (cdr svex)))))))))
 
   )
 
@@ -6057,7 +6159,7 @@ y))
 
   :prepwork
   ((defconst *find-f/h-adders-in-svex-alist-limit*
-     20)
+     25)
    (local
     (in-theory (disable fast-alist-clean))))
   :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p svex-alist))
@@ -6076,6 +6178,8 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        (svex-alist (if (> pass-num 1)
                        (fix-order-of-fa/ha-chain-args-alist svex-alist)
                      svex-alist))
+
+       ;;(- (design_res-broken svex-alist "beginning of find-f/h-adders-in-svex-alist"))
 
        (- (and (equal pass-num 1)
                (cw "--- Searching for ~s0 patterns now. ~%" adder-str)))
@@ -6200,7 +6304,13 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        (- (cw "- Let's see if local bitxor/or/and simplification can reveal more fa-c patterns... ~%"))
        (config (svl::change-svex-reduce-config ;; make sure config is set correctly.
                 config :skip-bitor/and/xor-repeated nil))
+
+       ;;(- (design_res-broken svex-alist "before simplify-to-find-fa-c-patterns-alist"))
+       
        (new-svex-alist (simplify-to-find-fa-c-patterns-alist svex-alist :strength 0))
+
+       ;;(- (design_res-broken new-svex-alist "after simplify-to-find-fa-c-patterns-alist"))
+       
        ((Unless (hons-equal new-svex-alist svex-alist))
         (progn$ (cw "-> Success! some fa-c patterns are revealed. Let's make another pass.~%")
                 (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
@@ -7311,6 +7421,8 @@ was ~st seconds."))
                                                      *find-f/h-adders-in-svex-alist-limit*
                                                      :adder-type 'fa))
 
+          ;;(- (design_res-broken svex-alist "after-fa"))
+
           (- (cwe "resulting svexl-alist after full-adders ~p0 ~%"
                   (svl::svex-alist-to-svexl-alist svex-alist)))
 
@@ -7329,6 +7441,8 @@ was ~st seconds."))
           (svex-alist (find-f/h-adders-in-svex-alist svex-alist
                                                      *find-f/h-adders-in-svex-alist-limit*
                                                      :adder-type 'ha))
+
+          ;;(- (design_res-broken svex-alist "after-ha"))
 
           (- (time-tracker :rewrite-adders-in-svex :stop))
           (- (time-tracker :rewrite-adders-in-svex :print?
@@ -7358,9 +7472,14 @@ was ~st seconds."))
           (svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist))
           (svex-alist (fix-order-of-fa/ha-chain-args-alist svex-alist))
 
+          ;;(- (design_res-broken svex-alist "before remove-ha-pairs-under-gates-alist"))
+          
           ;; remove half-adders under gates..
           (new-svex-alist (remove-ha-pairs-under-gates-alist svex-alist))
           ;; try maybe global simplification here to clear out more clutter. Maybe this is unnecessary
+
+
+          ;;(- (design_res-broken svex-alist "after remove-ha-pairs-under-gates-alist"))
 
           (disable-search (and (not (aggressive-find-adders-in-svex))
                                (equal new-svex-alist svex-alist)))
