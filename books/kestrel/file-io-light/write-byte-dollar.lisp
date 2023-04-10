@@ -23,7 +23,7 @@
 ;; Avoids name clash with std
 (defthm state-p1-of-write-byte$-alt
   (implies (and (state-p1 state)
-                (open-output-channel-p channel :byte state)
+                (open-output-channel-p1 channel :byte state) ; note the "p1"
                 (unsigned-byte-p 8 byte) ;this is what's different
                 )
            (state-p1 (write-byte$ byte channel state)))
