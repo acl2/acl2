@@ -27,31 +27,31 @@
 
 (defthmd euler-criterion-2a
     (implies (and (dm::primep p)
-		  (not (= p 2))
-		  (integerp m)
-		  (not (dm::divides p m))
+                  (not (= p 2))
+                  (integerp m)
+                  (not (dm::divides p m))
                   (dm::residue m p))
-	     (equal (mod (expt m (/ (1- p) 2)) p)
+             (equal (mod (expt m (/ (1- p) 2)) p)
                     1))
   :hints (("Goal" :in-theory (disable dm::p-1-even)
-		  :use ((:instance dm::euler-lemma (m m) (p p))
-			(:instance dm::p-1-even (p p))
-			(:instance dm::wilson (p p))
-			(:instance rtl::mod-times-mod
-				   (a (- (expt m (/ (1- p) 2)))) (b -1) (c -1) (n p))))))
+                  :use ((:instance dm::euler-lemma (m m) (p p))
+                        (:instance dm::p-1-even (p p))
+                        (:instance dm::wilson (p p))
+                        (:instance rtl::mod-times-mod
+                                   (a (- (expt m (/ (1- p) 2)))) (b -1) (c -1) (n p))))))
 
 
 (defthmd euler-criterion-2b
     (implies (and (dm::primep p)
-		  (not (= p 2))
-		  (integerp m)
-		  (not (dm::divides p m))
+                  (not (= p 2))
+                  (integerp m)
+                  (not (dm::divides p m))
                   (not (dm::residue m p)))
-	     (equal (mod (expt m (/ (1- p) 2)) p)
+             (equal (mod (expt m (/ (1- p) 2)) p)
                     (1- p)))
   :hints (("Goal" :in-theory (disable dm::p-1-even)
-		  :use ((:instance dm::euler-lemma (m m) (p p))
-			(:instance dm::p-1-even (p p))
-			(:instance dm::wilson (p p))
-			(:instance rtl::mod-times-mod
-				   (a (- (expt m (/ (1- p) 2)))) (b -1) (c -1) (n p))))))
+                  :use ((:instance dm::euler-lemma (m m) (p p))
+                        (:instance dm::p-1-even (p p))
+                        (:instance dm::wilson (p p))
+                        (:instance rtl::mod-times-mod
+                                   (a (- (expt m (/ (1- p) 2)))) (b -1) (c -1) (n p))))))

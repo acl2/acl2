@@ -211,17 +211,17 @@
 
  (defthm repeated-square-equiv
    (implies (and (posp x)
-		 (natp c)
-		 (natp p)
-		 (< 2 p))
-	    (equal (repeated-square c x p)
-		   (acl2::mod-expt-fast c (expt 2 x) p)))
+                 (natp c)
+                 (natp p)
+                 (< 2 p))
+            (equal (repeated-square c x p)
+                   (acl2::mod-expt-fast c (expt 2 x) p)))
    :hints (("Goal"
-	    :use ((:instance acl2::mod-of-expt-of-mod (i (expt 2 (+ -1 x)))
-			     (x (* c c))
-			     (y p)))
-	    :in-theory (enable acl2::mod-expt-fast repeated-square)
-	    ))))
+            :use ((:instance acl2::mod-of-expt-of-mod (i (expt 2 (+ -1 x)))
+                             (x (* c c))
+                             (y p)))
+            :in-theory (enable acl2::mod-expt-fast repeated-square)
+            ))))
 
 ;; ----------------
 ;; main t-s loop
@@ -359,9 +359,9 @@
       sqrt))
   :guard-hints (("Goal" :use ((:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z)))
                  :in-theory (e/d (tonelli-shanks-sqrt-aux
-				  extra-info
-				  acl2::mod-expt-fast natp
-				  dm::oddp-odd-prime)
+                                  extra-info
+                                  acl2::mod-expt-fast natp
+                                  dm::oddp-odd-prime)
                                  (has-square-root?)))))
 
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))

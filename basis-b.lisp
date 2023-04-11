@@ -871,26 +871,31 @@
 
 ; See eviscerate-stobjs.
 
-  (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
-    (mv-let (result iprint-alist iprint-fal-new)
-      (eviscerate-stobjs estobjs-out lst print-level print-length alist
-                         evisc-table hiding-cars
-                         (and (iprint-enabledp state)
-                              (iprint-last-index state))
-                         iprint-fal-old
-                         (iprint-eager-p iprint-fal-old))
-      (fast-alist-free-on-exit
-       iprint-fal-new
-       (let ((state
-              (cond
-               ((eq iprint-alist t)
-                (f-put-global 'evisc-hitp-without-iprint t state))
-               ((atom iprint-alist) state)
-               (t (update-iprint-ar-fal iprint-alist
-                                        iprint-fal-new
-                                        iprint-fal-old
-                                        state)))))
-         (mv result state))))))
+  (pprogn
+
+; First we ensure that any iprinting will reflect iprint updates made during brr.
+
+   (iprint-oracle-updates? state)
+   (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
+     (mv-let (result iprint-alist iprint-fal-new)
+       (eviscerate-stobjs estobjs-out lst print-level print-length alist
+                          evisc-table hiding-cars
+                          (and (iprint-enabledp state)
+                               (iprint-last-index state))
+                          iprint-fal-old
+                          (iprint-eager-p iprint-fal-old))
+       (fast-alist-free-on-exit
+        iprint-fal-new
+        (let ((state
+               (cond
+                ((eq iprint-alist t)
+                 (f-put-global 'evisc-hitp-without-iprint t state))
+                ((atom iprint-alist) state)
+                (t (update-iprint-ar-fal iprint-alist
+                                         iprint-fal-new
+                                         iprint-fal-old
+                                         state)))))
+          (mv result state)))))))
 
 ; Essay on Abbreviating Live Stobjs
 
@@ -1407,182 +1412,22 @@
 
   (check-sum1 0 *1-check-length-exclusive-maximum* channel state))
 
-; We now develop code for computing checksums of objects.  There are two
-; separate algorithms, culminating respectively in functions old-check-sum-obj
-; and fchecksum-obj.  The first development was used up through ACL2
-; Version_3.4, which uses an algorithm similar to that of our file-based
-; function, check-sum.  However, ACL2 (with hons) was being used on large cons
-; trees with significant subtree sharing.  These "galactic" trees could have
-; relatively few distinct cons cells but a huge naive node count.  It was thus
-; desirable to memoize the computation of checksums, which was impossible using
-; the existing algorithm because it modified state.
+; We now develop code for computing checksums of objects.  For many versions
+; through Version_8.5 there were two separate algorithms, culminating
+; respectively in functions named old-check-sum-obj, which has since been
+; removed from the sources, and fchecksum-obj.  The first development was used
+; up through ACL2 Version_3.4, which used an algorithm similar to that of our
+; file-based function, check-sum.  However, ACL2 (with hons) was being used on
+; large cons trees with significant subtree sharing.  These "galactic" trees
+; could have relatively few distinct cons cells but a huge naive node count.
+; It was thus desirable to memoize the computation of checksums, which was
+; impossible using the existing algorithm because it modified state.
 
 ; The second development was contributed by Jared Davis (and is now maintained
 ; by the ACL2 developers, who are responsible for any errors).  It is amenable
 ; to memoization and, indeed, fchecksum-obj is memoized.  We say more after
 ; developing the code for the first algorithm, culminating in function
 ; check-sum-obj1.
-
-; We turn now to the first development (which is no longer used in ACL2).
-
-(defun check-sum-inc (n state)
-  (declare (type (unsigned-byte 7) n))
-  (let ((top
-         (32-bit-integer-stack-length state)))
-    (declare (type (signed-byte 32) top))
-    (let ((sum-loc (the (signed-byte 32) (+ top -1)))
-          (len-loc (the (signed-byte 32) (+ top -2))))
-      (declare (type (signed-byte 32) sum-loc len-loc))
-      (let ((sum
-             (aref-32-bit-integer-stack sum-loc state)))
-        (declare (type (signed-byte 32) sum))
-        (let ((len
-               (aref-32-bit-integer-stack len-loc state)))
-          (declare (type (signed-byte 32) len))
-          (let ((len (cond ((= 0 len) *1-check-length-exclusive-maximum*)
-                           (t (the (signed-byte 32) (+ len -1))))))
-            (declare (type (signed-byte 32) len))
-            (let ((state
-                   (aset-32-bit-integer-stack len-loc len state)))
-              (let ((new-sum
-                     (the (signed-byte 32)
-                      (+ sum (the (signed-byte 32) (* n len))))))
-                (declare (type (signed-byte 32) new-sum))
-                (let ((new-sum
-                       (cond ((>= new-sum *check-sum-exclusive-maximum*)
-                              (the (signed-byte 32)
-                               (+ new-sum *-check-sum-exclusive-maximum*)))
-                             (t new-sum))))
-                  (declare (type (signed-byte 32) new-sum))
-                  (aset-32-bit-integer-stack sum-loc new-sum state))))))))))
-
-(defun check-sum-natural (n state)
-  (declare (type unsigned-byte n))
-  (cond ((<= n 127)
-         (check-sum-inc (the (unsigned-byte 7) n) state))
-        (t (pprogn (check-sum-inc (the (unsigned-byte 7) (rem n 127)) state)
-                   (check-sum-natural (truncate n 127) state)))))
-
-(defun check-sum-string1 (str i len state)
-  (declare (type string str))
-  (declare (type (signed-byte 32) i len))
-  (cond ((= i len) state)
-        (t (let ((chr (char str i)))
-             (declare (type character chr))
-             (let ((code (ascii-code! chr)))
-               (declare (type (unsigned-byte 7) code))
-               (cond ((> code 127)
-                      (f-put-global
-                       'check-sum-weirdness (cons str i) state))
-                     (t (pprogn (check-sum-inc code state)
-                                (check-sum-string1
-                                 str
-                                 (the (signed-byte 32) (1+ i))
-                                 len
-                                 state)))))))))
-
-(defun check-sum-string2 (str i len state)
-
-; This function serves the same purpose as check-sum-string1 except
-; that no assumption is made that i or len fit into 32 bits.  It
-; seems unlikely that this function will ever be called, since it
-; seems unlikely that any Lisp will support strings of length 2 billion
-; or more, but who knows.
-
-  (declare (type string str))
-  (cond ((= i len) state)
-        (t (let ((chr (char str i)))
-             (let ((code (ascii-code! chr)))
-               (cond ((> code 127)
-                      (f-put-global
-                       'check-sum-weirdness (cons str i) state))
-                     (t (pprogn (check-sum-inc code state)
-                                (check-sum-string2
-                                 str
-                                 (1+ i)
-                                 len
-                                 state)))))))))
-
-(defun check-sum-string (str state)
-  (let ((len (the integer (length (the string str)))))
-    (cond ((32-bit-integerp len)
-           (check-sum-string1 str 0 (the (signed-byte 32) len) state))
-          (t (check-sum-string2 str 0 len state)))))
-
-(defun check-sum-obj1 (obj state)
-  (cond ((symbolp obj)
-         (pprogn (check-sum-inc 1 state)
-                 (check-sum-string (symbol-name obj) state)))
-        ((stringp obj)
-         (pprogn (check-sum-inc 2 state)
-                 (check-sum-string obj state)))
-        ((rationalp obj)
-         (cond ((integerp obj)
-                (cond ((< obj 0)
-                       (pprogn (check-sum-inc 3 state)
-                               (check-sum-natural (- obj) state)))
-                      (t (pprogn (check-sum-inc 4 state)
-                                 (check-sum-natural obj state)))))
-               (t (let ((n (numerator obj)))
-                    (pprogn (check-sum-inc 5 state)
-                            (check-sum-natural (if (< n 0) (1- (- n)) n) state)
-                            (check-sum-natural (denominator obj) state))))))
-        ((consp obj)
-         (pprogn (check-sum-inc 6 state)
-                 (check-sum-obj1 (car obj) state)
-                 (cond ((atom (cdr obj))
-                        (cond ((cdr obj)
-                               (pprogn (check-sum-inc 7 state)
-                                       (check-sum-obj1 (cdr obj) state)))
-                              (t (check-sum-inc 8 state))))
-                       (t (check-sum-obj1 (cdr obj) state)))))
-        ((characterp obj)
-         (pprogn (check-sum-inc 9 state)
-                 (let ((n (ascii-code! obj)))
-                   (cond ((< n 128)
-                          (check-sum-inc (ascii-code! obj) state))
-                         (t (f-put-global
-                             'check-sum-weirdness obj state))))))
-        ((complex-rationalp obj)
-         (pprogn (check-sum-inc 14 state)
-                 (check-sum-obj1 (realpart obj) state)
-                 (check-sum-obj1 (imagpart obj) state)))
-        (t (f-put-global
-            'check-sum-weirdness obj state))))
-
-(defun old-check-sum-obj (obj state)
-
-; This function became obsolete after Version_3.4 but we include it in case
-; there are situations where it becomes useful again.  It is the culmination of
-; our first development of checksums for objects (as discussed above).
-
-; We return a checksum on obj, using an algorithm similar to that of
-; check-sum.  We return a non-integer as the first value if (and only if) the
-; obj is not composed entirely of conses, symbols, strings, rationals, complex
-; rationals, and characters. If the first value is not an integer, it is one of
-; the offending objects encountered.
-
-; We typically used this function to compute checksums for .cert files.
-
-  (pprogn
-   (extend-32-bit-integer-stack 2 0 state)
-   (let ((top
-          (32-bit-integer-stack-length state)))
-     (let ((sum-loc (+ top -1))
-           (len-loc (+ top -2)))
-       (pprogn
-        (aset-32-bit-integer-stack sum-loc 0 state)
-        (aset-32-bit-integer-stack len-loc *1-check-length-exclusive-maximum*
-                                   state)
-        (f-put-global 'check-sum-weirdness nil state)
-        (check-sum-obj1 obj state)
-        (let ((ans (aref-32-bit-integer-stack sum-loc state)))
-          (pprogn (shrink-32-bit-integer-stack 2 state)
-                  (let ((x (f-get-global 'check-sum-weirdness state)))
-                    (cond (x (pprogn (f-put-global
-                                      'check-sum-weirdness nil state)
-                                     (mv x state)))
-                          (t (mv ans state)))))))))))
 
 ; We now develop code for the second checksum algorithm, contributed by Jared
 ; Davis (now maintained by the ACL2 developers, who are responsible for any
@@ -2113,19 +1958,6 @@
   #-acl2-loop-only
   (setq *fchecksum-obj-stack-bound* *fchecksum-obj-stack-bound-init*)
   (fchecksum-obj obj))
-
-; ; To use old check-sum-obj code, but then add check-sum-obj to
-; ; *INITIAL-PROGRAM-FNS-WITH-RAW-CODE* if doing this for a build:
-; (defun check-sum-obj (obj)
-;   #-acl2-loop-only
-;   (return-from check-sum-obj
-;                (mv-let (val state)
-;                        (old-check-sum-obj obj *the-live-state*)
-;                        (declare (ignore state))
-;                        val))
-;   #+acl2-loop-only
-;   (declare (ignore obj))
-;   (er hard 'check-sum-obj "ran *1* code for check-sum-obj"))
 
 ; Here are some examples.  Warning: in raw Lisp, set
 ; *fchecksum-obj-stack-bound* to a very large value (say, 10000000) before
@@ -3470,6 +3302,7 @@
                          (equal (stobjs-in val wrld) '(nil state))
                          (equal (stobjs-out val wrld) '(nil state)))
                     (cond ((or (eq val 'brr-prompt)
+                               (eq val 'wormhole-prompt)
                                (ttag wrld))
                            (value nil))
                           (t (er soft ctx
@@ -3564,6 +3397,24 @@
    (chk-ld-missing-input-ok val 'set-ld-missing-input-ok state)
    (pprogn
     (f-put-global 'ld-missing-input-ok val state)
+    (value val))))
+
+(defun ld-always-skip-top-level-locals (state)
+  (f-get-global 'ld-always-skip-top-level-locals state))
+
+(defun chk-ld-always-skip-top-level-locals (val ctx state)
+  (cond
+   ((member-eq val '(t nil))
+    (value nil))
+   (t (er soft ctx *ld-special-error* 'ld-always-skip-top-level-locals val))))
+
+(defun set-ld-always-skip-top-level-locals (val state)
+  (er-progn
+   (chk-ld-always-skip-top-level-locals val
+                                        'set-ld-always-skip-top-level-locals
+                                        state)
+   (pprogn
+    (f-put-global 'ld-always-skip-top-level-locals val state)
     (value val))))
 
 (defun new-namep (name wrld)

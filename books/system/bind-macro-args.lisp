@@ -86,3 +86,4 @@
   :hints (("Goal" :expand ((macro-arglist1p args)))))
 
 (verify-guards bind-macro-args)
+

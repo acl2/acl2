@@ -44,6 +44,14 @@
 ;(include-book "centaur/memoize/old/profile" :dir :system)
 (value-triple (acl2::set-max-mem (* 4 (expt 2 30))))
 
+; The following table event was added by Matt K. 3/20/2023 to allow this book
+; to certify after introduction of the pp-special-syms printing incorporated
+; from Stephen Westfold.  Perhaps someone will modify pretty.lisp so that this
+; table event can be removed -- that would presumably involve modifying code in
+; that file, perhaps to use a constant that corresponds to an appropriate
+; modification of acl2::*pp-special-syms*.
+(table acl2::pp-special-syms nil nil :clear)
+
 ;(make-event (b* (((mv & & state) (acl2::plev-max)))
 ;              (acl2::value '(value-triple :plev-max))))
 

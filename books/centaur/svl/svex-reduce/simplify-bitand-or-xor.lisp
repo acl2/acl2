@@ -239,7 +239,7 @@ x
 (define bitand/or/xor-collect-leaves ((svex)
                                       (fn)
                                       &key
-                                      ((limit integerp) '*bitand/bitor-cancel-repeated-aux-limit*))
+                                      ((limit integerp) 'leave-depth))
   :Returns (leaves sv::Svexlist-p :hyp (and (sv::Svex-p svex)
                                             (not (equal fn ':var)))
                    :hints (("Goal"
@@ -254,11 +254,13 @@ x
      4))
   (case-match svex
     ((this-fn x y)
-     (if (and (>= limit 0)
+     (if (and (> limit 0)
               (equal this-fn fn))
          (cons svex (append (bitand/or/xor-collect-leaves x fn :limit (1- limit))
                             (bitand/or/xor-collect-leaves y fn :limit (1- limit))))
        (list svex)))
+    #|(('id x)
+    (list svex x))|#
     (& (list svex)))
   ///
   (defret true-listp-of-<fn>
@@ -321,9 +323,14 @@ x
          ((Unless width)
           (mv new-val t)))
       (mv (4vec-part-select 0 width new-val) t)))
-   #|((and* (member-hons-equal-of-negated svex leaves)
-          (equal (width-of-svex svex) 1)) 
-    (mv (4vec-part-select 0 1 (lognot new-val)) t))|#
+   ((mbe :exec (and (member-hons-equal-of-negated svex leaves)
+                    (equal (width-of-svex svex) 1)
+                    (integerp-of-svex svex))
+         ;; I should find a better way than this mbe stuff..
+         :logic (and* (member-hons-equal-of-negated svex leaves)
+                      (equal (width-of-svex svex) 1)
+                      (integerp-of-svex svex)))
+    (mv (4vec-part-select 0 1 (lognot new-val)) t))
    ((and (consp svex)
          (equal (car svex) 'sv::bitor)
          (equal-len (cdr svex) 2))
@@ -350,12 +357,23 @@ x
     (b* ((x (first (cdr svex))) (y (second (cdr svex)))
          ((mv new-x changed-x) (bitand/bitor-cancel-repeated-aux x leaves new-val :limit (+ limit -1) :under-xor t))
          ((mv new-y changed-y) (bitand/bitor-cancel-repeated-aux y leaves new-val :limit (+ limit -1) :under-xor t))
-         ((Unless (and (or changed-x changed-y)
-                       (integer-listp-of-svexlist leaves)))
+         ((Unless (and (or changed-x changed-y) ;; this is and not and* becasue
+                       ;; don't want to run integer-listp-of-svexlist if first
+                       ;; test fails.
+                       (or (integer-listp-of-svexlist leaves)
+                           (rp::cwe "integer-listp-of-svexlist check has failed for ~p0~%" leaves))))
           (mv svex nil))
          (res (bitand/or/xor-simple-constant-simplify 'sv::bitxor new-x new-y))
          (res (clear-1s-from-bitxor res)))
       (mv res t)))
+   #|((and (consp svex)
+   (equal (car svex) 'sv::id)
+   (equal-len (cdr svex) 1))
+   (b* (((mv res changed)
+   (bitand/bitor-cancel-repeated-aux (cadr svex) leaves new-val :limit (1- limit))))
+   (if changed
+   (mv (sv::svex-call 'id (hons-list res)) t)
+   (mv svex nil))))|#
    (t (mv svex nil)))
 
   ///
@@ -460,6 +478,8 @@ x
                                        (x sv::svex-p)
                                        (y sv::svex-p)
                                        &key
+                                       ((leave-depth integerp)
+                                        '*bitand/bitor-cancel-repeated-aux-limit*)
                                        ((env) 'env)
                                        ((context rp::rp-term-listp) 'context)
                                        ((config svex-reduce-config-p) 'config))
@@ -605,7 +625,7 @@ x
                                                   ((env) 'env)
                                                   ((context rp::rp-term-listp) 'context)
                                                   ((config svex-reduce-config-p) 'config)
-                                                  (skip 'nil) 
+                                                  (skip 'nil)
                                                   ((limit natp) 'limit))
     :measure (nfix limit)
     :returns (res svex-p :hyp (svex-p x))
@@ -806,6 +826,13 @@ x
 (defun single-bit-4vec-p (x)
   (equal (4vec-part-select 0 1 x)
          x))
+
+(local
+ (defthm bitp-implies-single-bit-4vec-p
+   (implies (bitp x)
+            (single-bit-4vec-p x))
+   :hints (("goal"
+            :in-theory (e/d (bitp) ())))))
 
 (svex-eval-lemma-tmpl
  (progn
@@ -1085,7 +1112,9 @@ x
                     (integerp-of-svex-extn-correct<$>-lst
                      (svex-reduce-config->integerp-extns config)))
                 (:@ :normal-eval
-                    (equal (svex-reduce-config->integerp-extns config) nil)))
+                    (equal (svex-reduce-config->integerp-extns config) nil))
+                (or* (svex-reduce-config->keep-missing-env-vars config)
+                     (equal big-env env)))
                (integerp (svex-eval-bitor-lst lst (rp-evlt env-term a))))
       :hints (("Goal"
                :induct (len lst)
@@ -1105,7 +1134,8 @@ x
                     (integerp-of-svex-extn-correct<$>-lst
                      (svex-reduce-config->integerp-extns config)))
                 (:@ :normal-eval
-                    (equal (svex-reduce-config->integerp-extns config) nil)))
+                    (equal (svex-reduce-config->integerp-extns config) nil))
+                (svex-reduce-config->keep-missing-env-vars config))
                (integerp (svex-eval-bitor-lst lst svex-env)))
       :hints (("Goal"
                :induct (len lst)
@@ -1130,7 +1160,9 @@ x
                     (integerp-of-svex-extn-correct<$>-lst
                      (svex-reduce-config->integerp-extns config)))
                 (:@ :normal-eval
-                    (equal (svex-reduce-config->integerp-extns config) nil)))
+                    (equal (svex-reduce-config->integerp-extns config) nil))
+                (or* (svex-reduce-config->keep-missing-env-vars config)
+                     (equal big-env env)))
                (integerp (svex-eval-bitand-lst lst (rp-evlt env-term a))))
       :hints (("Goal"
                :induct (len lst)
@@ -1149,7 +1181,8 @@ x
                     (integerp-of-svex-extn-correct<$>-lst
                      (svex-reduce-config->integerp-extns config)))
                 (:@ :normal-eval
-                    (equal (svex-reduce-config->integerp-extns config) nil)))
+                    (equal (svex-reduce-config->integerp-extns config) nil))
+                (svex-reduce-config->keep-missing-env-vars config))
                (integerp (svex-eval-bitand-lst lst svex-env)))
       :hints (("Goal"
                :induct (len lst)
@@ -1234,6 +1267,43 @@ x
  (in-theory (disable rp::falist-consistent-aux
                      rp::eval-and-all)))
 
+#|(skip-proofs
+(svex-eval-lemma-tmpl
+(local
+(defthm when-width-of-svex-is-1-its-rsh-is-0
+(implies (EQUAL (WIDTH-OF-SVEX SVEX) 1)
+(EQUAL (4VEC-RSH 1
+(SV::3VEC-FIX (SVEX-EVAL SVEX SVEX-ENV)))
+0))))))|#
+
+(local
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-member-hons-equal-of-negated-lemma-1
+    (implies (and (member-hons-equal-of-negated svex leaves)
+                  (integerp (svex-eval svex svex-env))
+                  (equal (4vec-part-select 0 1 (svex-eval svex svex-env))
+                         0))
+             (equal (4vec-part-select 0 1 (svex-eval-bitor-lst leaves svex-env))
+                    1))
+    :hints (("Goal"
+             :induct (MEMBER-HONS-EQUAL-OF-NEGATED SVEX LEAVES)
+             :do-not-induct t
+             :Expand ((SVEX-EVAL-BITOR-LST LEAVES SVEX-ENV))
+             :in-theory (e/d (4vec-rsh-of-3vec-fix
+                              MEMBER-HONS-EQUAL-OF-NEGATED
+                              4VEC-PART-SELECT-OF-4VEC-BITOR-BETTER
+                              4VEC-PART-SELECT-OF-4VEC-BITXOR-BETTER)
+                             ()))))))
+
+(local
+ (svex-eval-lemma-tmpl
+  (defthm dummy-integerp-of-svex-lemma-for-svex-eval
+    (implies (integerp (SVEX-EVAL SVEX SVEX-ENV))
+             (and (not (EQUAL (SVEX-EVAL SVEX SVEX-ENV)
+                              '(1 . 0)))
+                  (not (EQUAL (SVEX-EVAL SVEX SVEX-ENV)
+                              '(0 . 1))))))))
+
 (local
  (svex-eval-lemma-tmpl
   (defret svex-eval-of-bitand/bitor-cancel-repeated-aux-correct-1
@@ -1255,6 +1325,8 @@ x
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
                            (equal (svex-reduce-config->integerp-extns config) nil))
+                       (or* (svex-reduce-config->keep-missing-env-vars config)
+                            (equal big-env env))
 
                        )
                   (EQUAL
@@ -1274,7 +1346,8 @@ x
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (svex-reduce-config->keep-missing-env-vars config))
                   (equal
                    (4vec-bitor (svex-eval-bitor-lst leaves svex-env)
                                (svex-eval simplified-svex svex-env))
@@ -1317,86 +1390,141 @@ x
                               (:rewrite-quoted-constant  sv::svex-fix-under-svex-equiv)
                               (:definition true-list-listp)
                               (:rewrite acl2::member-equal-newvar-components-1)
+                              svex-eval-width-of-svex-is-correct
+                              ;;svex-eval-of-integerp-of-svex-is-correct-env=nil
                               )))
+            (and stable-under-simplificationp
+                 '(:use ((:instance svex-eval-width-of-svex-is-correct
+                                    (free-var-width 1)
+                                    (x svex)
+                                    (env (rp-evlt env-term a))
+                                    ;;(x `(unfloat ,svex))
+                                    )
+                         (:instance svex-eval-width-of-svex-is-correct
+                                    (free-var-width 1)
+                                    (x svex)
+                                    (env svex-env)
+                                    ;;(x `(unfloat ,svex))
+                                    ))))
+
             (and stable-under-simplificationp
                  '(:clause-processor
                    (single-bit-part-select-case-splitter clause)))
             ))))
 
+(encapsulate
+  nil
+  (local
+   (use-equal-by-logbitp t))
+
+  (local
+   (in-theory (enable acl2::b-and
+                      acl2::b-ior)))
+
+  (local
+   (defthmd logand-of-single-loghead-2
+     (and (equal (logand x (loghead size y))
+                 (loghead size (logand x y)))
+          (equal (logand (loghead size y) x)
+                 (loghead size (logand x y))))
+     :hints (("goal"
+              :use ((:instance logand-of-single-loghead))
+              :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                bitops::ihsext-inductions)
+                               ()) ))))
+
+  (defthmd pull-out-part-select-from-4vec-bitand
+    (implies (natp width)
+             (equal (4vec-bitand x
+                                 (4vec-part-select 0 width y))
+                    (4vec-part-select 0 width
+                                      (4vec-bitand x y))))
+    :hints (("goal"
+             :in-theory (e/d (4vec-bitand
+                              3vec-bitand
+                              4vec-part-select
+                              4vec-concat
+                              4vec
+                              sv::3vec-fix)
+                             (4vec
+                              logapp logand loghead
+                              )))
+            (bitops::logbitp-reasoning)
+            ))
+
+  (defthmd move-over-part-select-from-4vec-bitand
+    (implies (natp width)
+             (equal (4vec-bitand x
+                                 (4vec-part-select 0 width y))
+                    (4vec-bitand y
+                                 (4vec-part-select 0 width x))))
+    :hints (("goal"
+             :in-theory (e/d (4vec-bitand
+                              3vec-bitand
+                              4vec-part-select
+                              4vec-concat
+                              4vec
+                              sv::3vec-fix)
+                             (4vec
+                              logapp logand loghead
+                              )))
+            (bitops::logbitp-reasoning)
+            ))
+
+  (svex-eval-lemma-tmpl
+   (defthm width-of-svex-eval-bitand-lst-lemma
+     (implies (and (member-equal svex leaves)
+                   (natp width)
+                   (equal (4vec-part-select 0 width (svex-eval svex env))
+                          (svex-eval svex env)))
+              (equal (4vec-part-select 0 width (svex-eval-bitand-lst leaves env))
+                     (svex-eval-bitand-lst leaves env)))
+     :hints (("goal"
+              :in-theory (e/d (move-over-part-select-from-4vec-bitand
+                               member-equal
+                               svex-eval-bitand-lst
+                               4vec-part-select-of-4vec-bitand-better)
+                              ()))))))
+
 (local
- (encapsulate
-   nil
-   (local
-    (use-equal-by-logbitp t))
+ (defthm dummy-lemma-when-bitand-of-2-is-zero-with-other-is-also-zero
+   (implies (equal (4vec-bitand x y) 0)
+            (equal (4vec-bitand x (4vec-bitand a y)) 0))))
 
-   (local
-    (in-theory (enable acl2::b-and
-                       acl2::b-ior)))
+(local
+ (defthm 4vec-bitand-of-negated-same
+   (implies (and (4vec-correct-width-p 1 x)
+                 (integerp x))
+            (equal (4vec-bitand x (sv::4vec-bitxor 1 x))
+                   0))
+   :hints (("Goal"
+            :in-theory (e/d (4VEC-CORRECT-WIDTH-P
+                             SV::4VEC-BITXOR
+                             4VEC-BITAND
+                             4VEC
+                             3VEC-BITAND
+                             4VEC-PART-SELECT
+                             4VEC-RSH
+                             4VEC-SHIFT-CORE
+                             4VEC-CONCAT)
+                            (EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1))))))
 
-   (local
-    (defthmd logand-of-single-loghead-2
-      (and (equal (logand x (loghead size y))
-                  (loghead size (logand x y)))
-           (equal (logand (loghead size y) x)
-                  (loghead size (logand x y))))
-      :hints (("goal"
-               :use ((:instance logand-of-single-loghead))
-               :in-theory (e/d* (bitops::ihsext-recursive-redefs
-                                 bitops::ihsext-inductions)
-                                ()) ))))
-
-   (defthmd pull-out-part-select-from-4vec-bitand
-     (implies (natp width)
-              (equal (4vec-bitand x
-                                  (4vec-part-select 0 width y))
-                     (4vec-part-select 0 width
-                                       (4vec-bitand x y))))
-     :hints (("goal"
-              :in-theory (e/d (4vec-bitand
-                               3vec-bitand
-                               4vec-part-select
-                               4vec-concat
-                               4vec
-                               sv::3vec-fix)
-                              (4vec
-                               logapp logand loghead
-                               )))
-             (bitops::logbitp-reasoning)
-             ))
-
-   (defthmd move-over-part-select-from-4vec-bitand
-     (implies (natp width)
-              (equal (4vec-bitand x
-                                  (4vec-part-select 0 width y))
-                     (4vec-bitand y
-                                  (4vec-part-select 0 width x))))
-     :hints (("goal"
-              :in-theory (e/d (4vec-bitand
-                               3vec-bitand
-                               4vec-part-select
-                               4vec-concat
-                               4vec
-                               sv::3vec-fix)
-                              (4vec
-                               logapp logand loghead
-                               )))
-             (bitops::logbitp-reasoning)
-             ))
-
-   (svex-eval-lemma-tmpl
-    (defthm width-of-svex-eval-bitand-lst-lemma
-      (implies (and (member-equal svex leaves)
-                    (natp width)
-                    (equal (4vec-part-select 0 width (svex-eval svex env))
-                           (svex-eval svex env)))
-               (equal (4vec-part-select 0 width (svex-eval-bitand-lst leaves env))
-                      (svex-eval-bitand-lst leaves env)))
-      :hints (("goal"
-               :in-theory (e/d (move-over-part-select-from-4vec-bitand
-                                member-equal
-                                svex-eval-bitand-lst
-                                4vec-part-select-of-4vec-bitand-better)
-                               ())))))))
+(local
+ (svex-eval-lemma-tmpl
+  (defthm svex-eval-member-hons-equal-of-negated-lemma-for-bitand
+    (implies (and (member-hons-equal-of-negated svex leaves)
+                  (4vec-correct-width-p 1 (svex-eval svex env))
+                  (integerp (svex-eval svex env)))
+             (equal
+              (4vec-bitand (svex-eval svex env)
+                           (svex-eval-bitand-lst leaves env))
+              0))
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((SVEX-EVAL-BITAND-LST LEAVES ENV))
+             :induct (member-hons-equal-of-negated svex leaves)
+             :in-theory (e/d (member-hons-equal-of-negated)
+                             ()))))))
 
 (local
  (svex-eval-lemma-tmpl
@@ -1416,7 +1544,9 @@ x
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (or* (svex-reduce-config->keep-missing-env-vars config)
+                            (equal big-env env)))
                   (equal
                    (4vec-bitand (svex-eval-bitand-lst leaves (rp-evlt env-term a))
                                 (svex-eval simplified-svex (rp-evlt env-term a)))
@@ -1433,7 +1563,8 @@ x
                             (svex-reduce-config->integerp-extns config)))
                        (:@ :normal-eval
                            (equal (svex-reduce-config->width-extns config) nil)
-                           (equal (svex-reduce-config->integerp-extns config) nil)))
+                           (equal (svex-reduce-config->integerp-extns config) nil))
+                       (svex-reduce-config->keep-missing-env-vars config))
                   (equal
                    (4vec-bitand (svex-eval-bitand-lst leaves svex-env)
                                 (svex-eval simplified-svex svex-env))
@@ -1475,6 +1606,7 @@ x
                               sv::4vec-p-when-maybe-4vec-p
                               (:rewrite-quoted-constant  sv::svex-fix-under-svex-equiv)
                               (:definition true-list-listp)
+                              ;;svex-eval-width-of-svex-is-correct
                               acl2::member-equal-newvar-components-1)))))))
 
 (svex-eval-lemma-tmpl
@@ -1579,7 +1711,8 @@ x
                        (svex-reduce-config->integerp-extns config)))
                   (:@ :normal-eval
                       (equal (svex-reduce-config->width-extns config) nil)
-                      (equal (svex-reduce-config->integerp-extns config) nil)))
+                      (equal (svex-reduce-config->integerp-extns config) nil))
+                  )
              (equal (svex-eval res-svex env)
                     (sv::4vec-bitxor (svex-eval node-to-remove env)
                                      (svex-eval svex env))))
@@ -1590,51 +1723,63 @@ x
 
 (local
  (svex-eval-lemma-tmpl
-  (defret svex-eval-bitxor-remove-nodes-from-both-correct
-    (and
-     (implies (and (svex-p svex1)
-                   (svex-p svex2)
-                   (svexlist-p nodes-to-remove)
+  (defret svex-eval-bitxor-remove-nodes-from-both-correct-1
+    (implies (and (svex-p svex1)
+                  (svex-p svex2)
+                  (svexlist-p nodes-to-remove)
 
-                   (rp::rp-term-listp context)
-                   (rp::valid-sc env-term a)
-                   (rp::eval-and-all context a)
+                  (equal env nil)
 
-                   (sub-alistp env big-env)
-                   (rp::falist-consistent-aux big-env env-term)
+                  (:@ :dollar-eval
+                      (width-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->width-extns config))
+                      (integerp-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->integerp-extns config)))
+                  (:@ :normal-eval
+                      (equal (svex-reduce-config->width-extns config) nil)
+                      (equal (svex-reduce-config->integerp-extns config) nil))
 
-                   (:@ :dollar-eval
-                       (width-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->width-extns config))
-                       (integerp-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->integerp-extns config)))
-                   (:@ :normal-eval
-                       (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil))
-                   )
-              (equal (sv::4vec-bitxor (svex-eval res-svex1 (rp-evlt env-term a))
-                                      (svex-eval res-svex2 (rp-evlt env-term a)))
-                     (sv::4vec-bitxor (svex-eval svex1 (rp-evlt env-term a))
-                                      (svex-eval svex2 (rp-evlt env-term a)))))
-     (implies (and (svex-p svex1)
-                   (svex-p svex2)
-                   (svexlist-p nodes-to-remove)
+                  (svex-reduce-config->keep-missing-env-vars config)
+                  )
+             (equal (sv::4vec-bitxor (svex-eval res-svex1 svex-env)
+                                     (svex-eval res-svex2 svex-env))
+                    (sv::4vec-bitxor (svex-eval svex1 svex-env)
+                                     (svex-eval svex2 svex-env))))
+    :fn bitxor-remove-nodes-from-both
+    :hints (("Goal"
+             :in-theory (e/d (svex-p
+                              bitxor-remove-nodes-from-both)
+                             ()))))))
 
-                   (equal env nil)
+(local
+ (svex-eval-lemma-tmpl
+  (defret svex-eval-bitxor-remove-nodes-from-both-correct-2
+    (implies (and (rp::falist-consistent-aux big-env env-term)
+                  (sub-alistp env big-env)
+                  (svex-p svex1)
+                  (svex-p svex2)
+                  (svexlist-p nodes-to-remove)
 
-                   (:@ :dollar-eval
-                       (width-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->width-extns config))
-                       (integerp-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->integerp-extns config)))
-                   (:@ :normal-eval
-                       (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil))
-                   )
-              (equal (sv::4vec-bitxor (svex-eval res-svex1 svex-env)
-                                      (svex-eval res-svex2 svex-env))
-                     (sv::4vec-bitxor (svex-eval svex1 svex-env)
-                                      (svex-eval svex2 svex-env)))))
+                  (rp::rp-term-listp context)
+                  (rp::valid-sc env-term a)
+                  (rp::eval-and-all context a)
+
+                  (:@ :dollar-eval
+                      (width-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->width-extns config))
+                      (integerp-of-svex-extn-correct<$>-lst
+                       (svex-reduce-config->integerp-extns config)))
+                  (:@ :normal-eval
+                      (equal (svex-reduce-config->width-extns config) nil)
+                      (equal (svex-reduce-config->integerp-extns config) nil))
+
+                  (or* (svex-reduce-config->keep-missing-env-vars config)
+                       (equal big-env env))
+                  )
+             (equal (sv::4vec-bitxor (svex-eval res-svex1 (rp-evlt env-term a))
+                                     (svex-eval res-svex2 (rp-evlt env-term a)))
+                    (sv::4vec-bitxor (svex-eval svex1 (rp-evlt env-term a))
+                                     (svex-eval svex2 (rp-evlt env-term a)))))
     :fn bitxor-remove-nodes-from-both
     :hints (("Goal"
              :in-theory (e/d (svex-p
@@ -1668,14 +1813,14 @@ x
 
 (svex-eval-lemma-tmpl
  (defret svex-eval-of-bitand/or/xor-cancel-repeated-correct
-   (and (implies (and (fnsym-p fn)
+   (and (implies (and (rp::falist-consistent-aux big-env env-term)
+                      (sub-alistp env big-env)
+                      (fnsym-p fn)
                       (sv::svex-p x)
                       (sv::svex-p y)
                       (rp::rp-term-listp context)
                       (rp::valid-sc env-term a)
                       (rp::eval-and-all context a)
-                      (sub-alistp env big-env)
-                      (rp::falist-consistent-aux big-env env-term)
                       (:@ :dollar-eval
                           (width-of-svex-extn-correct<$>-lst
                            (svex-reduce-config->width-extns config))
@@ -1683,7 +1828,9 @@ x
                            (svex-reduce-config->integerp-extns config)))
                       (:@ :normal-eval
                           (equal (svex-reduce-config->width-extns config) nil)
-                          (equal (svex-reduce-config->integerp-extns config) nil)))
+                          (equal (svex-reduce-config->integerp-extns config) nil))
+                      (or* (svex-reduce-config->keep-missing-env-vars config)
+                           (equal big-env env)))
                  (equal
                   (svex-eval simplified-svex (rp-evlt env-term a))
                   (svex-eval `(,fn ,x ,y) (rp-evlt env-term a))))
@@ -1760,7 +1907,8 @@ x
                        (svex-reduce-config->integerp-extns config)))
                   (:@ :normal-eval
                       (equal (svex-reduce-config->width-extns config) nil)
-                      (equal (svex-reduce-config->integerp-extns config) nil)))
+                      (equal (svex-reduce-config->integerp-extns config) nil))
+                  (svex-reduce-config->keep-missing-env-vars config))
             (equal
              (svex-eval simplified-svex svex-env)
              (svex-eval `(,fn ,x ,y) svex-env)))
@@ -1838,7 +1986,9 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (or* (svex-reduce-config->keep-missing-env-vars config)
+                        (equal big-env env)))
               (equal
                (svex-eval res (rp-evlt env-term a))
                (svex-eval x (rp-evlt env-term a))))
@@ -1857,7 +2007,9 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (or* (svex-reduce-config->keep-missing-env-vars config)
+                        (equal big-env env)))
               (equal
                (svexlist-eval res (rp-evlt env-term a))
                (svexlist-eval lst (rp-evlt env-term a))))
@@ -1887,7 +2039,8 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (svex-reduce-config->keep-missing-env-vars config))
               (equal
                (svex-eval res svex-env)
                (svex-eval x svex-env)))
@@ -1902,7 +2055,8 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (svex-reduce-config->keep-missing-env-vars config))
               (equal
                (svexlist-eval res svex-env)
                (svexlist-eval lst svex-env)))
@@ -1936,7 +2090,9 @@ x
                       (svex-reduce-config->integerp-extns config)))
                  (:@ :normal-eval
                      (equal (svex-reduce-config->width-extns config) nil)
-                     (equal (svex-reduce-config->integerp-extns config) nil)))
+                     (equal (svex-reduce-config->integerp-extns config) nil))
+                 (or* (svex-reduce-config->keep-missing-env-vars config)
+                      (equal big-env env)))
             (equal
              (svex-alist-eval res (rp-evlt env-term a))
              (svex-alist-eval alist (rp-evlt env-term a))))
@@ -1982,7 +2138,8 @@ x
                       (svex-reduce-config->integerp-extns config)))
                  (:@ :normal-eval
                      (equal (svex-reduce-config->width-extns config) nil)
-                     (equal (svex-reduce-config->integerp-extns config) nil)))
+                     (equal (svex-reduce-config->integerp-extns config) nil))
+                 (svex-reduce-config->keep-missing-env-vars config))
             (equal
              (svex-alist-eval res svex-env)
              (svex-alist-eval alist svex-env)))
@@ -1991,7 +2148,6 @@ x
             :in-theory (e/d (SVEX-ALIST-EVAL
                              svex-alist-simplify-bitand/or/xor)
                             ())))))
-
 
 ;;;;;;;;;;; outside-in version
 
@@ -2011,7 +2167,9 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (or* (svex-reduce-config->keep-missing-env-vars config)
+                        (equal big-env env)))
               (equal
                (svex-eval res (rp-evlt env-term a))
                (svex-eval x (rp-evlt env-term a))))
@@ -2030,7 +2188,9 @@ x
                         (svex-reduce-config->integerp-extns config)))
                    (:@ :normal-eval
                        (equal (svex-reduce-config->width-extns config) nil)
-                       (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (or* (svex-reduce-config->keep-missing-env-vars config)
+                        (equal big-env env)))
               (equal
                (svexlist-eval res (rp-evlt env-term a))
                (svexlist-eval lst (rp-evlt env-term a))))
@@ -2064,7 +2224,9 @@ x
                       (svex-reduce-config->integerp-extns config)))
                  (:@ :normal-eval
                      (equal (svex-reduce-config->width-extns config) nil)
-                     (equal (svex-reduce-config->integerp-extns config) nil)))
+                     (equal (svex-reduce-config->integerp-extns config) nil))
+                 (or* (svex-reduce-config->keep-missing-env-vars config)
+                      (equal big-env env)))
             (equal
              (svex-alist-eval res (rp-evlt env-term a))
              (svex-alist-eval alist (rp-evlt env-term a))))
@@ -2089,7 +2251,8 @@ x
                       (svex-reduce-config->integerp-extns config)))
                  (:@ :normal-eval
                      (equal (svex-reduce-config->width-extns config) nil)
-                     (equal (svex-reduce-config->integerp-extns config) nil)))
+                     (equal (svex-reduce-config->integerp-extns config) nil))
+                 )
             (equal
              (svex-alist-eval res (rp-evlt env-term a))
              (svex-alist-eval alist (rp-evlt env-term a))))
@@ -2128,6 +2291,8 @@ x
           ((mv l2 r2) (bitand/or/xor-collect-leaves2 y fn (1- limit))))
        (mv (append l1 l2)
            (or r1 r2))))
+    #|(('id x)
+    (mv (list x svex) nil))|#
     (& (mv (list svex) nil)))
   ///
   (defret true-listp-of-<fn>
@@ -2233,9 +2398,16 @@ x
                                       (svex-eval-bitxor-lst (remove-equal-once x lst) env))
                      (svex-eval-bitxor-lst lst env)))
      :hints (("goal"
-              :in-theory (e/d (remove-equal-once) ()))))))
+              :in-theory (e/d (remove-equal-once) ())))))
+
+  (defret svexlist-p-of-<fn>
+    (implies (sv::svexlist-p l)
+             (sv::svexlist-p res))
+    )
+  )
 
 (define remove-pair-equal ((lst true-listp))
+  :returns (res sv::Svexlist-p :hyp (sv::Svexlist-p lst))
   :prepwork
   ()
   (cond
@@ -2525,3 +2697,955 @@ x
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bitp-of-svex ((svex sv::svex-p)
+                      &key
+                      ((env) 'env)
+                      ((context rp::rp-term-listp) 'context)
+                      ((config svl::svex-reduce-config-p) 'config))
+  :Returns res
+  (or (equal svex 0)
+      (and (equal (svl::width-of-svex svex) 1)
+           (svl::integerp-of-svex svex)))
+  ///
+
+  (local
+   (defthm lemma
+     (implies (and (integerp x)
+                   (equal (sv::4vec-part-select 0 1 x) x))
+              (bitp x))
+     :hints (("Goal"
+              :in-theory (e/d (SV::4VEC-RSH
+                               SV::4VEC-ZERO-EXT
+                               SV::4VEC-SHIFT-CORE
+                               sv::4vec-part-select)
+                              (SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT))))))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-is-correct
+     (implies (and res
+                   (sv::svex-p svex)
+                   (rp::rp-term-listp context)
+                   (rp::valid-sc env-term a)
+                   (rp::eval-and-all context a)
+                   (rp::falist-consistent-aux env env-term)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config))
+                       (integerp-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->integerp-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   )
+              (bitp (sv::svex-eval svex (rp-evlt env-term a))))
+     :rule-classes (:rewrite :type-prescription :forward-chaining)
+     :hints (("Goal"
+              :do-not-induct t
+              :use ((:instance svex-eval-of-integerp-of-svex-is-correct
+                               (big-env env)
+                               (x svex))
+                    (:instance svex-eval-width-of-svex-is-correct
+                               (env (rp-evlt env-term a))
+                               (free-var-width 1)
+                               (x svex)))
+
+              :in-theory (e/d ()
+                              (svex-eval-width-of-svex-is-correct
+                               svex-eval-of-integerp-of-svex-is-correct)))))))
+
+
+(define bit-listp-of-svex ((lst sv::svexlist-p)
+                           &key
+                           ((env) 'env)
+                           ((context rp::rp-term-listp) 'context)
+                           ((config svl::svex-reduce-config-p) 'config))
+  :Returns res
+  (if (atom lst)
+      (equal lst nil)
+    (and (bitp-of-svex (car lst))
+         (bit-listp-of-svex (cdr lst))))
+  ///
+
+  (svex-eval-lemma-tmpl
+   (defret svexlist-eval-of-<fn>-is-correct
+     (implies (and res
+                   (sv::svexlist-p lst)
+                   (rp::rp-term-listp context)
+                   (rp::valid-sc env-term a)
+                   (rp::eval-and-all context a)
+                   (rp::falist-consistent-aux env env-term)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config))
+                       (integerp-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->integerp-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   )
+              (bit-listp (sv::svexlist-eval lst (rp-evlt env-term a))))
+     :rule-classes (:rewrite :type-prescription :forward-chaining)
+     :hints (("Goal"
+              
+              :expand (sv::svexlist-eval lst (rp-evlt env-term a))
+
+              :in-theory (e/d (BIT-LISTP)
+                              (svex-eval-width-of-svex-is-correct
+                               svex-eval-of-integerp-of-svex-is-correct)))))))
+
+
+(define bitxor-1-term ((svex sv::svex-p))
+  :prepwork ((create-case-match-macro bitxor-of-1-term-1
+                                      ('sv::bitxor 1 x))
+             (create-case-match-macro bitxor-of-1-term-2
+                                      ('sv::bitxor x 1)))
+  :returns (res sv::svex-p :hyp (sv::svex-p svex)
+                :hints (("Goal"
+                         :in-theory (e/d (svex-p) ()))))
+  (cond ((bitxor-of-1-term-1-p svex)
+         (bitxor-of-1-term-1-body svex
+                                  x))
+        ((bitxor-of-1-term-2-p svex)
+         (bitxor-of-1-term-2-body svex
+                                  x))
+        (t
+         (svex-reduce-w/-env-apply 'sv::bitxor (hons-list 1 svex))))
+  ///
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-correct
+     (equal (sv::3vec-fix (sv::svex-eval res env))
+            (sv::4vec-bitxor 1 (sv::svex-eval svex env)))))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-correct-2
+     (and (equal (sv::4vec-bitand (sv::svex-eval res env)
+                                  other)
+                 (sv::4vec-bitand (sv::4vec-bitxor 1 (sv::svex-eval svex env))
+                                  other))
+          (equal (sv::4vec-bitand other
+                                  (sv::svex-eval res env))
+                 (sv::4vec-bitand (sv::4vec-bitxor 1 (sv::svex-eval svex env))
+                                  other))
+          (equal (sv::4vec-bitor (sv::svex-eval res env)
+                                 other)
+                 (sv::4vec-bitor (sv::4vec-bitxor 1 (sv::svex-eval svex env))
+                                 other))
+          (equal (sv::4vec-bitor other
+                                 (sv::svex-eval res env))
+                 (sv::4vec-bitor (sv::4vec-bitxor 1 (sv::svex-eval svex env))
+                                 other))
+          (equal (sv::4vec-bitxor (sv::svex-eval res env)
+                                  other)
+                 (sv::4vec-bitxor (sv::4vec-bitxor 1 (sv::svex-eval svex env))
+                                  other))
+          (equal (sv::4vec-bitxor other
+                                  (sv::svex-eval res env))
+                 (sv::4vec-bitxor (sv::4vec-bitxor 1 (sv::svex-eval svex env))
+                                  other)))))
+
+  ;; (local
+  ;;  (skip-proofs
+  ;;   (defthm bitp-of-logxor-1
+  ;;     (implies (and (integerp x)
+  ;;                   (bitp (logxor 1 x)))
+  ;;              (bitp x)))))
+
+  ;; (svex-eval-lemma-tmpl
+  ;;  (defret bitp-of-svex-eval-of-<fn>
+  ;;    (implies (bitp (sv::svex-eval svex env))
+  ;;             (bitp (sv::svex-eval res env)))
+  ;;    :hints (("Goal"
+  ;;             :use ((:instance SV::RETURN-TYPE-OF-SVEX-EVAL.VAL
+  ;;                              (acl2::x svex)
+  ;;                              (sv::env env))
+  ;;                   (:instance SV::RETURN-TYPE-OF-SVEX-EVAL.VAL
+  ;;                              (acl2::x (CADDR SVEX))
+  ;;                              (sv::env env))
+  ;;                   (:instance SV::RETURN-TYPE-OF-SVEX-EVAL.VAL
+  ;;                              (acl2::x (CADR SVEX))
+  ;;                              (sv::env env)))
+
+  ;;             :in-theory (e/d (sv::4vec-p
+  ;;                              sv::4vec->upper
+  ;;                              sv::4vec->lower
+  ;;                              ;;bitp
+  ;;                              sv::4vec-bitxor
+  ;;                              4vec)
+  ;;                             (
+  ;;                              sv::return-type-of-svex-eval.val))))))
+
+  )
+
+(define svex-reduce-bit-negations-aux ((svex sv::svex-p)
+                                       &key
+                                       ((env) 'env)
+                                       ((context rp::rp-term-listp) 'context)
+                                       ((config svl::svex-reduce-config-p) 'config)
+                                       ((limit natp) '(1- limit)))
+  :measure (nfix limit)
+
+  :verify-guards nil
+  :returns (res sv::svex-p
+                :hyp (sv::svex-p svex)
+                :hints (("Goal"
+                         :in-theory (e/d (bit-neg-of-gate-2-p
+                                          bitand/or-of-double-negated-p
+                                          bit-neg-of-gate-1-p)
+                                         ()))))
+  :prepwork ((create-case-match-macro bitand/or-of-one-negated
+                                      (fn x y)
+                                      (and (or (equal fn 'sv::bitor)
+                                               (equal fn 'sv::bitand))
+                                           (or (or (bitxor-of-1-term-1-p x)
+                                                   (bitxor-of-1-term-2-p x))
+                                               (or (bitxor-of-1-term-1-p y)
+                                                   (bitxor-of-1-term-2-p y)))))
+             (create-case-match-macro bitand/or-of-double-negated
+                                      (fn x y)
+                                      (and (or (equal fn 'sv::bitor)
+                                               (equal fn 'sv::bitand))
+                                           (or (and nil (bitand/or-of-one-negated-p x)
+                                                    (or (bitxor-of-1-term-1-p y)
+                                                        (bitxor-of-1-term-2-p y)))
+                                               (and nil (bitand/or-of-one-negated-p y)
+                                                    (or (bitxor-of-1-term-1-p x)
+                                                        (bitxor-of-1-term-2-p x)))
+                                               (and (or (bitxor-of-1-term-1-p x)
+                                                        (bitxor-of-1-term-2-p x))
+                                                    (or (bitxor-of-1-term-1-p y)
+                                                        (bitxor-of-1-term-2-p y))))))
+             (create-case-match-macro bit-neg-of-gate-1
+                                      ('sv::bitxor 1 (fn x y))
+                                      (and (or (equal fn 'sv::bitor)
+                                               (equal fn 'sv::bitand))
+                                           (or (bitxor-of-1-term-1-p x)
+                                               (bitxor-of-1-term-2-p x)
+                                               (bitxor-of-1-term-1-p y)
+                                               (bitxor-of-1-term-2-p y))))
+             (create-case-match-macro bit-neg-of-gate-2
+                                      ('sv::bitxor (fn x y) 1)
+                                      (and (or (equal fn 'sv::bitor)
+                                               (equal fn 'sv::bitand))
+                                           (or (bitxor-of-1-term-1-p x)
+                                               (bitxor-of-1-term-2-p x)
+                                               (bitxor-of-1-term-1-p y)
+                                               (bitxor-of-1-term-2-p y))))
+
+             )
+  (cond
+   ((zp limit)
+    svex)
+   ((bit-neg-of-gate-1-p svex)
+    (bit-neg-of-gate-1-body
+     svex
+     (cond ((not (and* (bitp-of-svex x)
+                       (bitp-of-svex y)))
+            svex)
+           ((or (eq fn 'sv::bitor)
+                (eq fn 'sv::bitand))
+            (svex-reduce-w/-env-apply (if (eq fn 'sv::bitor)
+                                          'sv::bitand
+                                        'sv::bitor)
+                                      (hons-list
+                                       (svex-reduce-bit-negations-aux (bitxor-1-term x))
+                                       (svex-reduce-bit-negations-aux (bitxor-1-term y)))))
+           (t svex))))
+   ((bit-neg-of-gate-2-p svex)
+    (bit-neg-of-gate-2-body
+     svex
+     (cond ((not (and* (bitp-of-svex x)
+                       (bitp-of-svex y)))
+            svex)
+           ((or (eq fn 'sv::bitor)
+                (eq fn 'sv::bitand))
+            (svex-reduce-w/-env-apply (if (eq fn 'sv::bitor)
+                                          'sv::bitand
+                                        'sv::bitor)
+                                      (hons-list
+                                       (svex-reduce-bit-negations-aux (bitxor-1-term x))
+                                       (svex-reduce-bit-negations-aux (bitxor-1-term y)))))
+           (t svex))))
+   ((bitand/or-of-double-negated-p svex)
+    (bitand/or-of-double-negated-body
+     svex
+     (cond ((not (and* (bitp-of-svex x)
+                       (bitp-of-svex y)))
+            svex)
+           (t
+            (svex-reduce-w/-env-apply
+             'sv::bitxor
+             (hons-list 1
+                        (svex-reduce-w/-env-apply (if (eq fn 'sv::bitor)
+                                                      'sv::bitand
+                                                    'sv::bitor)
+                                                  (hons-list
+                                                   (bitxor-1-term x)
+                                                   (bitxor-1-term y)))))))))
+
+   (t svex))
+  ///
+
+  (verify-guards svex-reduce-bit-negations-aux-fn
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (bit-neg-of-gate-2-p
+                              bit-neg-of-gate-1-p
+                              bitand/or-of-double-negated-p)
+                             ()))))
+
+  (local
+   (defthm not-of-bitand/or-lemma
+     (implies (and (bitp x)
+                   (bitp y))
+              (and (equal (SV::4VEC-BITXOR 1 (4VEC-BITOR x y))
+                          (sv::4vec-bitand
+                           (SV::4VEC-BITXOR 1 x)
+                           (SV::4VEC-BITXOR 1 y)))
+                   (equal (SV::4VEC-BITxor 1 (4VEC-BITand x y))
+                          (sv::4vec-bitor
+                           (SV::4VEC-BITXOR 1 x)
+                           (SV::4VEC-BITXOR 1 y)))
+
+                   (equal (sv::4vec-bitxor 1 (4vec-bitor (sv::4vec-bitxor 1 x)
+                                                         (sv::4vec-bitxor 1 y)))
+                          (sv::4vec-bitand x y))
+                   (equal (sv::4vec-bitxor 1 (4vec-bitand (sv::4vec-bitxor 1 x)
+                                                          (sv::4vec-bitxor 1 y)))
+                          (sv::4vec-bitor x y))))
+     :hints (("Goal"
+              :in-theory (e/d (bitp) ())))))
+
+  (local
+   (defthm dummy-svex-p-lemmas
+     (implies (svex-p svex)
+              (and (implies (bitand/or-of-double-negated-p svex)
+                            (and (svex-p (cadr svex))
+                                 (svex-p (caddr svex))))
+                   (implies (bit-neg-of-gate-2-p svex)
+                            (and (svex-p (cadr (cadr svex)))
+                                 (svex-p (caddr (cadr svex)))))
+                   (implies (bit-neg-of-gate-1-p svex)
+                            (and (svex-p (cadr (caddr svex)))
+                                 (svex-p (caddr (caddr svex)))))))
+     :hints (("goal"
+              :in-theory (e/d (bit-neg-of-gate-2-p
+                               bit-neg-of-gate-1-p
+                               bitand/or-of-double-negated-p)
+                              ())))))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-correct
+     (implies (and (sv::svex-p svex)
+                   (rp::rp-term-listp context)
+                   (rp::valid-sc env-term a)
+                   (rp::eval-and-all context a)
+                   (rp::falist-consistent-aux env env-term)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config))
+                       (integerp-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->integerp-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)
+                       (equal (svex-reduce-config->integerp-extns config) nil)))
+              (equal (sv::svex-eval res (rp-evlt env-term a))
+                     (sv::svex-eval svex (rp-evlt env-term a))))
+     :hints (("Goal"
+              :do-not-induct t
+              :induct (svex-reduce-bit-negations-aux svex :limit limit)
+              :in-theory (e/d (;;bit-neg-of-gate-1-p
+                               ;;bitand/or-of-double-negated-p
+                               ;;bit-neg-of-gate-2-p
+                               )
+                              (bitxor-of-1-term-2-p-implies
+                               bitxor-of-1-term-1-p-implies
+                               single-bit-4vec-p)))))))
+
+(defines svex-reduce-bit-negations
+  :verify-guards nil
+  (define svex-reduce-bit-negations ((x sv::svex-p)
+                                     &key
+                                     ((env) 'env)
+                                     ((context rp::rp-term-listp) 'context)
+                                     ((config svl::svex-reduce-config-p) 'config)
+                                     ((limit natp) 'limit))
+    :measure (nfix limit)
+    :returns (res svex-p :hyp (svex-p x))
+    :no-function t
+    (if (zp limit)
+        x
+      (let ((limit (1- limit)))
+        (sv::svex-case
+         x
+         :var x
+         :quote x
+         :call (b* (;; (new-x (svex-reduce-bit-negations-aux x))
+                    ;; ((unless (equal new-x x))
+                    ;;  (svex-reduce-bit-negations new-x))
+                    (new-x (sv::svex-call x.fn
+                                          (svexlist-reduce-bit-negations x.args))))
+                 (svex-reduce-bit-negations-aux new-x :limit (expt 2 10)))))))
+  (define svexlist-reduce-bit-negations ((lst sv::svexlist-p)
+                                         &key
+                                         ((env) 'env)
+                                         ((context rp::rp-term-listp) 'context)
+                                         ((config svl::svex-reduce-config-p) 'config)
+                                         ((limit natp) 'limit))
+    :measure (nfix limit)
+    :returns (res svexlist-p :hyp (svexlist-p lst))
+    :no-function t
+    (if (zp limit)
+        lst
+      (let ((limit (1- limit)))
+        (if (atom lst)
+            nil
+          (hons (svex-reduce-bit-negations (car lst))
+                (svexlist-reduce-bit-negations (cdr lst)))))))
+  ///
+  (verify-guards svex-reduce-bit-negations-fn)
+
+  (acl2::memoize-partial
+   ((svex-reduce-bit-negations*-fn svex-reduce-bit-negations-fn
+                                   :condition '(equal (svex-kind x) :call))
+    (svexlist-reduce-bit-negations*-fn svexlist-reduce-bit-negations-fn
+                                       :condition nil)))
+
+  (defmacro svex-reduce-bit-negations* (x
+                                        &key
+                                        (env 'env)
+                                        (context 'context)
+                                        (config 'config))
+    `(svex-reduce-bit-negations*-fn ,x ,env ,context ,config))
+
+  (svex-eval-lemma-tmpl
+   (defret-mutual svex-eval-of-<fn>
+     (defret svex-eval-of-<fn>
+       (implies (and (sv::svex-p x)
+                     (rp::rp-term-listp context)
+                     (rp::valid-sc env-term a)
+                     (rp::eval-and-all context a)
+                     (rp::falist-consistent-aux env env-term)
+                     (:@ :dollar-eval
+                         (width-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->width-extns config))
+                         (integerp-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->integerp-extns config)))
+                     (:@ :normal-eval
+                         (equal (svex-reduce-config->width-extns config) nil)
+                         (equal (svex-reduce-config->integerp-extns config) nil)))
+                (equal
+                 (svex-eval res (rp-evlt env-term a))
+                 (svex-eval x (rp-evlt env-term a))))
+       :fn svex-reduce-bit-negations)
+     (defret svexlist-eval-of-<fn>
+       (implies (and (sv::svexlist-p lst)
+                     (rp::rp-term-listp context)
+                     (rp::valid-sc env-term a)
+                     (rp::eval-and-all context a)
+                     (rp::falist-consistent-aux env env-term)
+                     (:@ :dollar-eval
+                         (width-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->width-extns config))
+                         (integerp-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->integerp-extns config)))
+                     (:@ :normal-eval
+                         (equal (svex-reduce-config->width-extns config) nil)
+                         (equal (svex-reduce-config->integerp-extns config) nil)))
+                (equal
+                 (svexlist-eval res (rp-evlt env-term a))
+                 (svexlist-eval lst (rp-evlt env-term a))))
+       :fn svexlist-reduce-bit-negations)
+
+     :hints (("Goal"
+              :expand ()
+              :in-theory (e/d (svexlist-eval)
+                              ())))))
+
+  (define svex-alist-reduce-bit-negations ((x sv::svex-alist-p)
+                                           &key
+                                           ((env) 'env)
+                                           ((context rp::rp-term-listp) 'context)
+                                           ((config svl::svex-reduce-config-p) 'config))
+    :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p x))
+    (if (atom x)
+        nil
+      (acons (caar x)
+             (svex-reduce-bit-negations* (cdar x))
+             (svex-alist-reduce-bit-negations (cdr x))))
+    ///
+    (svex-eval-lemma-tmpl
+     (defret svex-alist-eval-of-<fn>
+       (implies (and (sv::svex-alist-p x)
+                     (rp::rp-term-listp context)
+                     (rp::valid-sc env-term a)
+                     (rp::eval-and-all context a)
+                     (rp::falist-consistent-aux env env-term)
+                     (:@ :dollar-eval
+                         (width-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->width-extns config))
+                         (integerp-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->integerp-extns config)))
+                     (:@ :normal-eval
+                         (equal (svex-reduce-config->width-extns config) nil)
+                         (equal (svex-reduce-config->integerp-extns config) nil)))
+                (equal
+                 (svex-alist-eval res (rp-evlt env-term a))
+                 (svex-alist-eval x (rp-evlt env-term a))))
+       :hints (("goal"
+                :in-theory (e/d (svex-alist-eval) ())))
+       ))))
+
+(defines svex-propagate-bit-negations
+  :verify-guards nil
+  :prepwork ((create-case-match-macro bit-neg-of-bitand/or-1
+                                      ('sv::bitxor 1 (fn x y))
+                                      (or (equal fn 'sv::bitor)
+                                          (equal fn 'sv::bitand)))
+             (create-case-match-macro bit-neg-of-bitand/or-2
+                                      ('sv::bitxor (fn x y) 1)
+                                      (or (equal fn 'sv::bitor)
+                                          (equal fn 'sv::bitand))))
+  (define svex-propagate-bit-negations ((svex sv::svex-p)
+                                        &key
+                                        ((env) 'env)
+                                        ((context rp::rp-term-listp) 'context)
+                                        ((config svl::svex-reduce-config-p) 'config)
+                                        ((limit natp) 'limit))
+    :measure (nfix limit)
+    :returns (res svex-p :hyp (svex-p svex))
+    :no-function t
+    (if (zp limit)
+        svex
+      (let ((limit (1- limit)))
+        (sv::svex-case
+         svex
+         :var svex
+         :quote svex
+         :call
+         (cond ((bit-neg-of-bitand/or-1-p svex)
+                (bit-neg-of-bitand/or-1-body
+                 svex
+                 (cond ((not (and* (bitp-of-svex x)
+                                   (bitp-of-svex y)))
+                        (sv::svex-call svex.fn
+                                       (svexlist-propagate-bit-negations svex.args)))
+                       (t
+                        (b* ((x (bitxor-1-term x))
+                             (y (bitxor-1-term y)))
+                          (sv::svex-call (if (eq fn 'sv::bitor) 'sv::bitand 'sv::bitor)
+                                         (hons-list
+                                          (svex-propagate-bit-negations x)
+                                          (svex-propagate-bit-negations y))))))))
+               ((bit-neg-of-bitand/or-2-p svex)
+                (bit-neg-of-bitand/or-2-body
+                 svex
+                 (cond ((not (and* (bitp-of-svex x)
+                                   (bitp-of-svex y)))
+                        (sv::svex-call svex.fn
+                                       (svexlist-propagate-bit-negations svex.args)))
+                       (t
+                        (b* ((x (bitxor-1-term x))
+                             (y (bitxor-1-term y)))
+                          (sv::svex-call (if (eq fn 'sv::bitor) 'sv::bitand 'sv::bitor)
+                                         (hons-list
+                                          (svex-propagate-bit-negations x)
+                                          (svex-propagate-bit-negations y))))))))
+               (t (sv::svex-call svex.fn
+                                 (svexlist-propagate-bit-negations svex.args))))))))
+  (define svexlist-propagate-bit-negations ((lst sv::svexlist-p)
+                                            &key
+                                            ((env) 'env)
+                                            ((context rp::rp-term-listp) 'context)
+                                            ((config svl::svex-reduce-config-p) 'config)
+                                            ((limit natp) 'limit))
+    :measure (nfix limit)
+    :returns (res svexlist-p :hyp (svexlist-p lst))
+    :no-function t
+    (if (zp limit)
+        lst
+      (let ((limit (1- limit)))
+        (if (atom lst)
+            nil
+          (hons (svex-propagate-bit-negations (car lst))
+                (svexlist-propagate-bit-negations (cdr lst)))))))
+  ///
+  (verify-guards svex-propagate-bit-negations-fn
+    :hints (("Goal"
+             :in-theory (e/d (bit-neg-of-bitand/or-1-p
+                              bit-neg-of-bitand/or-2-p)
+                             ()))))
+
+  (acl2::memoize-partial
+   ((svex-propagate-bit-negations*-fn svex-propagate-bit-negations-fn
+                                      :condition '(equal (svex-kind svex) :call))
+    (svexlist-propagate-bit-negations*-fn svexlist-propagate-bit-negations-fn
+                                          :condition nil)))
+
+  (defmacro svex-propagate-bit-negations* (svex
+                                           &key
+                                           (env 'env)
+                                           (context 'context)
+                                           (config 'config))
+    `(svex-propagate-bit-negations*-fn ,svex ,env ,context ,config))
+
+  (local
+   (defthm not-of-bitand/or-lemma
+     (implies (and (bitp x)
+                   (bitp y))
+              (and (equal (SV::4VEC-BITXOR 1 (4VEC-BITOR x y))
+                          (sv::4vec-bitand
+                           (SV::4VEC-BITXOR 1 x)
+                           (SV::4VEC-BITXOR 1 y)))
+                   (equal (SV::4VEC-BITxor 1 (4VEC-BITand x y))
+                          (sv::4vec-bitor
+                           (SV::4VEC-BITXOR 1 x)
+                           (SV::4VEC-BITXOR 1 y)))
+
+                   (equal (sv::4vec-bitxor 1 (4vec-bitor (sv::4vec-bitxor 1 x)
+                                                         (sv::4vec-bitxor 1 y)))
+                          (sv::4vec-bitand x y))
+                   (equal (sv::4vec-bitxor 1 (4vec-bitand (sv::4vec-bitxor 1 x)
+                                                          (sv::4vec-bitxor 1 y)))
+                          (sv::4vec-bitor x y))))
+     :hints (("Goal"
+              :in-theory (e/d (bitp) ())))))
+
+  (svex-eval-lemma-tmpl
+   (defret-mutual svex-eval-of-<fn>
+     (defret svex-eval-of-<fn>
+       (implies (and (sv::svex-p svex)
+                     (rp::rp-term-listp context)
+                     (rp::valid-sc env-term a)
+                     (rp::eval-and-all context a)
+                     (rp::falist-consistent-aux env env-term)
+                     (:@ :dollar-eval
+                         (width-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->width-extns config))
+                         (integerp-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->integerp-extns config)))
+                     (:@ :normal-eval
+                         (equal (svex-reduce-config->width-extns config) nil)
+                         (equal (svex-reduce-config->integerp-extns config) nil)))
+                (equal
+                 (svex-eval res (rp-evlt env-term a))
+                 (svex-eval svex (rp-evlt env-term a))))
+       :fn svex-propagate-bit-negations)
+     (defret svexlist-eval-of-<fn>
+       (implies (and (sv::svexlist-p lst)
+                     (rp::rp-term-listp context)
+                     (rp::valid-sc env-term a)
+                     (rp::eval-and-all context a)
+                     (rp::falist-consistent-aux env env-term)
+                     (:@ :dollar-eval
+                         (width-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->width-extns config))
+                         (integerp-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->integerp-extns config)))
+                     (:@ :normal-eval
+                         (equal (svex-reduce-config->width-extns config) nil)
+                         (equal (svex-reduce-config->integerp-extns config) nil)))
+                (equal
+                 (svexlist-eval res (rp-evlt env-term a))
+                 (svexlist-eval lst (rp-evlt env-term a))))
+       :fn svexlist-propagate-bit-negations)
+
+     :hints (("Goal"
+              :do-not-induct t
+
+              :expand ((:free (args)
+                              (SVEX-APPLY 'BITXOR args))
+                       (:free (args)
+                              (SVEX-APPLY 'BITOR args))
+                       (:free (args)
+                              (SVEX-APPLY 'BITand args))
+                       (SVEX-PROPAGATE-BIT-NEGATIONS SVEX)
+                       (SVEX-PROPAGATE-BIT-NEGATIONS SVEX
+                                                     :LIMIT 1))
+              :in-theory (e/d (;;svex-apply
+                               BIT-NEG-OF-BITAND/OR-2-P
+                               BIT-NEG-OF-BITAND/OR-1-P
+                               SVEX-CALL->ARGS
+                               SVEX-CALL->fn
+                               4VECLIST-NTH-SAFE
+                               svexlist-eval)
+                              ((:DEFINITION RP::VALID-SC)
+                               (:DEFINITION WIDTH-OF-SVEX-EXTN-CORRECT$-LST)
+                               (:DEFINITION WIDTH-OF-SVEX-EXTN-CORRECT$)
+                               (:REWRITE DEFAULT-CAR)
+                               (:REWRITE DEFAULT-CDR)
+                               (:DEFINITION RP::TRANS-LIST)
+                               (:DEFINITION RP-TRANS)
+                               (:definition acl2::apply$-badgep)
+                               (:REWRITE 4VEC-P-OF-IF)
+                               (:rewrite acl2::apply$-badgep-properties . 1)
+                               svex-eval-of-integerp-of-svex-is-correct-env=nil
+                               (:rewrite svex-p-of-4vec-p)))))))
+
+  (define svex-alist-propagate-bit-negations ((x sv::svex-alist-p)
+                                              &key
+                                              ((env) 'env)
+                                              ((context rp::rp-term-listp) 'context)
+                                              ((config svl::svex-reduce-config-p) 'config))
+    :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p x))
+    (if (atom x)
+        nil
+      (acons (caar x)
+             (svex-propagate-bit-negations* (cdar x))
+             (svex-alist-propagate-bit-negations (cdr x))))
+    ///
+    (svex-eval-lemma-tmpl
+     (defret svex-alist-eval-of-<fn>
+       (implies (and (sv::svex-alist-p x)
+                     (rp::rp-term-listp context)
+                     (rp::valid-sc env-term a)
+                     (rp::eval-and-all context a)
+                     (rp::falist-consistent-aux env env-term)
+                     (:@ :dollar-eval
+                         (width-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->width-extns config))
+                         (integerp-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->integerp-extns config)))
+                     (:@ :normal-eval
+                         (equal (svex-reduce-config->width-extns config) nil)
+                         (equal (svex-reduce-config->integerp-extns config) nil)))
+                (equal
+                 (svex-alist-eval res (rp-evlt env-term a))
+                 (svex-alist-eval x (rp-evlt env-term a))))
+       :hints (("goal"
+                :in-theory (e/d (svex-alist-eval) ())))
+       ))))
+
+
+(define bitor-remove-node ((svex sv::svex-p)
+                           node
+                           &key
+                           ((config svl::svex-reduce-config-p) 'config))
+  :verify-guards :after-returns
+  :returns (mv success
+               (res-svex sv::svex-p :hyp (sv::Svex-p svex)))
+  (case-match svex
+    (('sv::bitor x y)
+     (b* (((when (equal x node))
+           (mv t (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list y))))
+          ((when (equal y node))
+           (mv t (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list x))))
+          ((mv s1 x) (bitor-remove-node x node))
+          ((mv s2 y) (bitor-remove-node y node)))
+       (mv (or s1 s2)
+           (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor x y))))
+    (('sv::id x)
+     (bitor-remove-node x node))
+    (('sv::unfloat x)
+     (bitor-remove-node x node)
+     #|(if (equal x node)
+     (mv t 0) ;
+     (mv nil svex))|#)
+    (& (if (equal svex node)
+           (mv t 0)
+         (mv nil svex))))
+  ///
+
+  (local
+   (defthm 4vec-bitor-dummy-lemma
+     (implies (equal (4vec-bitor x y) (sv::3vec-fix b))
+              (equal (equal (4vec-bitor x (4vec-bitor a y))
+                            (4vec-bitor a b))
+                     t))))
+
+  (local
+   (defthm 4vec-bitor-dummy-lemma-1
+     (implies (equal (4vec-bitor x y) (sv::3vec-fix b))
+              (equal (equal (4vec-bitor x (4vec-bitor a y))
+                            (4vec-bitor b a))
+                     t))))
+
+  (Local
+   (defthmd 4vec-bitor-dummy-distribute
+     (equal (sv::4vec-bitor x (sv::4vec-bitor y z))
+            (sv::4vec-bitor (sv::4vec-bitor x y)
+                            (sv::4vec-bitor x z)))))
+
+  (local
+   (defthm 4vec-bitor-dummy-lemma-3
+     (implies (and (equal (4vec-bitor x y1) (sv::3vec-fix z2))
+                   (equal (4vec-bitor x y2) (sv::3vec-fix z3)))
+              (equal (equal (4vec-bitor x (4vec-bitor y1 y2))
+                            (4vec-bitor z2 z3))
+                     t))
+     :hints (("goal"
+              :use ((:instance 4vec-bitor-dummy-distribute
+                               (y y1)
+                               (z y2)))
+              :in-theory '(sv::4vec-bitor-of-3vec-fix-y
+                           sv::4vec-bitor-of-3vec-fix-x)))))
+
+  (local
+   (in-theory (disable sv::svexlist-eval$-is-svexlist-eval
+                       sv::svex-apply$-is-svex-apply)))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-correct
+     (implies (and (svex-p svex)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)))
+              (and (implies success
+                            (equal (4vec-bitor (svex-eval res-svex env)
+                                               (svex-eval node env))
+                                   (sv::3vec-fix (svex-eval svex env))))
+                   (implies (Not success)
+                            (equal (sv::3vec-fix (svex-eval res-svex env))
+                                   (sv::3vec-fix (svex-eval svex env))))))
+     :hints (("Goal"
+              :expand ((:free (args) (sv::svex-apply 'sv::bitor args))
+                       (:free (args) (sv::svex-apply 'sv::id args))
+                       (:free (args) (sv::svex-apply 'sv::unfloat args))
+                       (sv::svexlist-eval (cdr svl::svex) env)
+                       (sv::svexlist-eval (cddr svl::svex) env))
+              :in-theory (e/d (SV::SVEX-CALL->FN
+                               SV::SVEX-CALL->ARGS)
+                              ())))))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-correct-2
+     (implies (and (svex-p svex)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)))
+              (implies success
+                       (equal (4vec-bitor (svex-eval res-svex env)
+                                          (4vec-bitor (svex-eval node env)
+                                                      other))
+                              (4vec-bitor (svex-eval svex env)
+                                          other))))
+     :hints (("Goal"
+              :do-not-induct t
+              :in-theory (e/d (SV::SVEX-CALL->FN
+                               SV::SVEX-CALL->ARGS)
+                              (<fn>)))))))
+
+
+(define bitand-remove-node ((svex sv::svex-p)
+                            node
+                            &key
+                            ((config svl::svex-reduce-config-p) 'config))
+  :verify-guards :after-returns
+  :returns (mv success
+               (res-svex sv::svex-p :hyp (sv::Svex-p svex)))
+  (case-match svex
+    (('sv::bitand x y)
+     (b* (((when (equal svex node))
+           (mv t -1))
+          ((when (equal x node))
+           (mv t (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list y))))
+          ((when (equal y node))
+           (mv t (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list x))))
+          ((mv s1 x) (bitand-remove-node x node))
+          ((mv s2 y) (bitand-remove-node y node)))
+       (mv (or s1 s2)
+           (svl::bitand/or/xor-simple-constant-simplify 'sv::bitand x y))))
+    (('sv::id x)
+     (bitand-remove-node x node))
+    (('sv::unfloat x)
+     (bitand-remove-node x node)
+     #|(if (equal x node)
+     (mv t 0) ;
+     (mv nil svex))|#)
+    (& (if (equal svex node)
+           (mv t -1)
+         (mv nil svex))))
+  ///
+
+  (local
+   (defthm 4vec-bitand-dummy-lemma
+     (implies (equal (4vec-bitand x y) (sv::3vec-fix b))
+              (equal (equal (4vec-bitand x (4vec-bitand a y))
+                            (4vec-bitand a b))
+                     t))))
+
+  (local
+   (defthm 4vec-bitand-dummy-lemma-1
+     (implies (equal (4vec-bitand x y) (sv::3vec-fix b))
+              (equal (equal (4vec-bitand x (4vec-bitand a y))
+                            (4vec-bitand b a))
+                     t))))
+
+  (Local
+   (defthmd 4vec-bitand-dummy-distribute
+     (equal (sv::4vec-bitand x (sv::4vec-bitand a b))
+            (sv::4vec-bitand (sv::4vec-bitand x a)
+                             (sv::4vec-bitand x b)))))
+
+  (local
+   (defthm 4vec-bitand-dummy-lemma-3
+     (implies (and (equal (4vec-bitand x y1) (sv::3vec-fix z2))
+                   (equal (4vec-bitand x y2) (sv::3vec-fix z3)))
+              (equal (equal (4vec-bitand x (4vec-bitand y1 y2))
+                            (4vec-bitand z2 z3))
+                     t))
+     :hints (("goal"
+              :use ((:instance 4vec-bitand-dummy-distribute
+                               (a y1)
+                               (b y2)))
+              :in-theory '(sv::4vec-bitand-of-3vec-fix-y
+                           sv::4vec-bitand-of-3vec-fix-x)))))
+
+  (local
+   (in-theory (disable sv::svexlist-eval$-is-svexlist-eval
+                       sv::svex-apply$-is-svex-apply)))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-correct
+     (implies (and (svex-p svex)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)))
+              (and (implies success
+                            (and (equal (4vec-bitand (svex-eval res-svex env)
+                                                     (svex-eval node env))
+                                        (sv::3vec-fix (svex-eval svex env)))
+                                 (equal (4vec-bitand (svex-eval node env)
+                                                     (svex-eval res-svex env))
+                                        (sv::3vec-fix (svex-eval svex env)))))
+                   (implies (Not success)
+                            (equal (sv::3vec-fix (svex-eval res-svex env))
+                                   (sv::3vec-fix (svex-eval svex env))))))
+     :hints (("Goal"
+              :expand ((:free (args) (sv::svex-apply 'sv::bitand args))
+                       (:free (args) (sv::svex-apply 'sv::id args))
+                       (:free (args) (sv::svex-apply 'sv::unfloat args))
+                       (sv::svexlist-eval (cdr svl::svex) env)
+                       (sv::svexlist-eval (cddr svl::svex) env))
+              :in-theory (e/d (SV::SVEX-CALL->FN
+                               SV::SVEX-CALL->ARGS)
+                              ())))))
+
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>-correct-2
+     (implies (and (svex-p svex)
+                   (:@ :dollar-eval
+                       (width-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->width-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->width-extns config) nil)))
+              (implies success
+                       (equal (4vec-bitand (svex-eval res-svex env)
+                                           (4vec-bitand (svex-eval node env)
+                                                        other))
+                              (4vec-bitand (svex-eval svex env)
+                                           other))))
+     :hints (("Goal"
+              :do-not-induct t
+              :in-theory (e/d (SV::SVEX-CALL->FN
+                               SV::SVEX-CALL->ARGS)
+                              (<fn>))))))
+
+  )

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function member-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,7 +27,7 @@
            nil))
   :hints (("Goal" :in-theory (enable member-equal))))
 
-(defthm member-equal-of-nil
+(defthm not-member-equal-of-nil
   (not (member-equal a nil))
   :hints (("Goal" :in-theory (enable member-equal))))
 
@@ -76,6 +76,13 @@
                   (if (equal a b)
                       (cons b x)
                     (member-equal a x)  )))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
+;; Enabled since we want this when b and x are constants.
+(defthm member-equal-of-cons-when-not-equal
+  (implies (not (equal a b))
+           (equal (member-equal a (cons b x))
+                  (member-equal a x)))
   :hints (("Goal" :in-theory (enable member-equal))))
 
 (defthmd member-equal-of-true-list-fix
@@ -143,7 +150,7 @@
 ;; Disabled since consp is so common.
 (defthmd consp-when-member-equal
   (implies (member-equal a x) ;note that a is a free var
-	   (consp x)))
+           (consp x)))
 
 (defthm true-listp-of-member-equal
   (implies (true-listp x)

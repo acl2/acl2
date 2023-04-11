@@ -1,7 +1,7 @@
 ; Theorems about merge-sort-<
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,9 @@
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/utilities/split-list-fast" :dir :system))
+
+(in-theory (disable mv-nth)) ; so the rules fire
 
 ;move
 (defthm all-<-of-+-of-1
@@ -33,11 +36,6 @@
            (equal (all-< x (+ 1 y))
                   (all-<= x y)))
   :hints (("Goal" :in-theory (enable all-<= all-<))))
-
-;; this one actually uses perm as the equiv
-(DEFTHM PERM-OF-MERGE-SORT-<-2
-  (PERM (MERGE-SORT-< X)
-        X))
 
 (defthm all-<=-all-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (all-<=-all x lst)

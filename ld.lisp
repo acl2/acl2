@@ -159,24 +159,64 @@
    (set-timer 'proof-tree-time '(0) state)
    (set-timer 'other-time '(0) state)))
 
+(defun world-extended-p (old-wrld wrld)
+
+; This function returns nil if wrld = old-wrld; :trivial if wrld extends
+; old-wrld only with essentially no-op tuples; and t otherwise.  Note that it
+; would be extremely rare to be inside certify-book here, since we are doing
+; this in support of adding a command-landmark.
+
+; We considered asserting that old-wrld starts with (command-landmark
+; global-value . _), at least if we're not in the boot-strap.  But we have seen
+; that fail when make-event calls ld, as in
+; books/kestrel/utilities/verify-guards-program-tests.lisp.
+
+  (cond ((endp wrld)
+         (er hard 'world-extended-p1
+             "Implementation error: Unexpected empty world!"))
+        ((eq old-wrld wrld)
+
+; The EQ call just above is of course a guard violation.  We probably could use
+; equal without much loss of efficiency.
+
+         :trivial)
+        (t
+
+; See the Essay on Fast-cert for discussion of this case.
+
+         (let ((trip2 (car wrld)))
+           (case-match trip2
+             (('ACL2-SYSTEM-TABLE 'TABLE-ALIST ('EMPTY-EVENT-KEY . &))
+; Added by maybe-add-event-landmark.
+              (world-extended-p old-wrld (cdr wrld)))
+             (('EVENT-LANDMARK 'GLOBAL-VALUE . &)
+              (world-extended-p old-wrld (cdr wrld)))
+             (('EVENT-INDEX 'GLOBAL-VALUE . &)
+              (world-extended-p old-wrld (cdr wrld)))
+             (('TOP-LEVEL-CLTL-COMMAND-STACK 'GLOBAL-VALUE . &)
+              (world-extended-p old-wrld (cdr wrld)))
+             (& t))))))
+
 (defun maybe-add-command-landmark (old-wrld old-default-defun-mode form
                                             trans-ans state)
 
 ; Old-wrld is the world before the trans-evaluation of form.  That
 ; trans-evaluation returned trans-ans, which is thus of the form (stobjs-out
-; . valx).  If valx contains a state (then it must in fact contain the state
-; state), and the current world of that state is different from old-wrld and
-; does not end with a command landmark, we add a command landmark for form.
+; . valx).  If stobjs-out suggests that valx contains a state (so, it must in
+; fact contain the ACL2 state), and the current world of that state does not
+; end with a command landmark and is essentially different from old-wrld, we
+; add a command landmark for form.
 
 ; We pass in old-default-defun-mode as the default-defun-mode of old-wrld.
 ; This way, we can compute that value at a time that old-wrld is still
 ; installed, so that the corresponding getprop will be fast.
 
-  (let ((wrld (w state)))
-    (cond ((and (member-eq 'state (car trans-ans))
-                (not (and (eq (caar wrld) 'command-landmark)
-                          (eq (cadar wrld) 'global-value)))
-                (not (equal old-wrld wrld)))
+  (let* ((wrld (w state))
+         (ext (and (member-eq 'state (car trans-ans))
+                   (not (and (eq (caar wrld) 'command-landmark)
+                             (eq (cadar wrld) 'global-value)))
+                   (world-extended-p old-wrld wrld))))
+    (cond ((eq ext t)
            (er-progn
             (get-and-chk-last-make-event-expansion
 
@@ -215,6 +255,18 @@
                      wrld)
                     state)
              (value nil))))
+          ((eq ext :trivial)
+
+; See the Essay on Fast-cert; but here is a summary of the current situation.
+; In this case, the world was extended only to support the possibility that we
+; are constructing the certification world for the later use of fast-cert mode,
+; by extending the top-level-cltl-command-stack when encountering redundant
+; events within a progn or the second pass of an encapsulate.  But there were
+; no actual events added to the world, so there's no such information that is
+; appropriate to record.
+
+           (pprogn (set-w! old-wrld state)
+                   (value nil)))
           (t (value nil)))))
 
 (defun replace-last-cdr (x val)
@@ -351,6 +403,9 @@
                      (value pair)))
           (ld-missing-input-ok
            (er-progn (chk-ld-missing-input-ok val ctx state)
+                     (value pair)))
+          (ld-always-skip-top-level-locals
+           (er-progn (chk-ld-always-skip-top-level-locals val ctx state)
                      (value pair)))
           (ld-pre-eval-filter
            (er-progn (chk-ld-pre-eval-filter val ctx state)
@@ -658,6 +713,8 @@
          (f-put-global 'ld-prompt (cdar alist) state))
         (ld-missing-input-ok
          (f-put-global 'ld-missing-input-ok (cdar alist) state))
+        (ld-always-skip-top-level-locals
+         (f-put-global 'ld-always-skip-top-level-locals (cdar alist) state))
         (ld-pre-eval-filter
          (if (and (f-boundp-global 'ld-pre-eval-filter state); for boot-strap
                   (eq (f-get-global 'ld-pre-eval-filter state) :illegal-state))
@@ -718,6 +775,8 @@
               (f-get-global 'ld-prompt state))
         (cons 'ld-missing-input-ok
               (f-get-global 'ld-missing-input-ok state))
+        (cons 'ld-always-skip-top-level-locals
+              (f-get-global 'ld-always-skip-top-level-locals state))
         (cons 'ld-pre-eval-filter
               (f-get-global 'ld-pre-eval-filter state))
         (cons 'ld-pre-eval-print
@@ -963,36 +1022,35 @@
   (cond
    ((and (raw-mode-p state)
          (bad-lisp-objectp x))
-    (if (not (eq channel *standard-co*))
-        (error "Attempted to print LD results to other than *standard-co*!"))
     (format t "[Note:  Printing non-ACL2 result.]")
     (terpri)
-    (cond ((and (cdr stobjs-out)
-                (true-listp x)
-                (true-listp raw-x)
-                (let ((len (length stobjs-out)))
-                  (and (= (length x) len)
-                       (= (length raw-x) len))))
+    (let ((str (get-output-stream-from-channel channel)))
+      (cond ((and (cdr stobjs-out)
+                  (true-listp x)
+                  (true-listp raw-x)
+                  (let ((len (length stobjs-out)))
+                    (and (= (length x) len)
+                         (= (length raw-x) len))))
 
 ; We eviscerate each bad-lisp-objectp in x-raw that is not already eviscerated
 ; in the corresponding position of x.
 
-           (princ "(")
-           (loop with col+1 = (1+ col)
-                 for y in x
-                 as y-raw in raw-x
-                 as i from 1
-                 do
-                 (progn (when (not (= i 1))
-                          (fms "~t0" (list (cons #\0 col+1))
-                               channel state nil))
-                        (cond ((and (not (and (consp y)
-                                              (evisceratedp t y)))
-                                    (bad-lisp-objectp y-raw))
-                               (prin1 y-raw))
-                              (t (ppr y col channel state t)))))
-           (princ ")"))
-          (t (prin1 raw-x)))
+             (princ "(" str)
+             (loop with col+1 = (1+ col)
+                   for y in x
+                   as y-raw in raw-x
+                   as i from 1
+                   do
+                   (progn (when (not (= i 1))
+                            (fms "~t0" (list (cons #\0 col+1))
+                                 channel state nil))
+                          (cond ((and (not (and (consp y)
+                                                (evisceratedp t y)))
+                                      (bad-lisp-objectp y-raw))
+                                 (prin1 y-raw str))
+                                (t (ppr y col channel state t)))))
+             (princ ")" str))
+            (t (prin1 raw-x str))))
     state)
    (t
     (ppr x col channel state t))))
@@ -1423,41 +1481,49 @@
                         (mv :return :exit state))
                        (t (pprogn
                            (ld-print-results trans-ans state)
-                           (cond
-                            ((and (ld-error-triples state)
-                                  (not (eq (ld-error-action state) :continue))
-                                  (equal (car trans-ans) *error-triple-sig*)
-                                  (let ((val (cadr (cdr trans-ans))))
-                                    (and (consp val)
-                                         (eq (car val) :stop-ld))))
-                             (mv :return
-                                 (list* :stop-ld
-                                        (f-get-global 'ld-level state)
-                                        (cdr (cadr (cdr trans-ans))))
-                                 state))
-                            (t
+                           (let ((action (ld-error-action state)))
+                             (cond
+                              ((and (ld-error-triples state)
+                                    (not (eq action :continue))
+                                    (equal (car trans-ans) *error-triple-sig*)
+                                    (let ((val (cadr (cdr trans-ans))))
+                                      (and (consp val)
+                                           (eq (car val) :stop-ld))))
+                               (cond
+                                ((and (consp action)
+                                      (eq (car action) :exit))
+                                 (mv action (good-bye-fn (cadr action)) state))
+                                (t
+                                 (mv :return
+                                     (list* :stop-ld
+                                            (f-get-global 'ld-level state)
+                                            (cdr (cadr (cdr trans-ans))))
+                                     state))))
+                              (t
 
 ; We make the convention of checking the new-namep filter immediately after
 ; we have successfully eval'd a form (rather than waiting for the next form)
 ; so that if the user has set the filter up he gets a satisfyingly
 ; immediate response when he introduces the name.
 
-                             (let ((filter (ld-pre-eval-filter state)))
-                               (cond
-                                ((and (not (eq filter :all))
-                                      (not (eq filter :query))
-                                      (not (eq filter :illegal-state))
-                                      (not (new-namep filter
-                                                      (w state))))
-                                 (er-progn
+                               (let ((filter (ld-pre-eval-filter state)))
+                                 (cond
+                                  ((and (not (eq filter :all))
+                                        (not (eq filter :query))
+                                        (not (eq filter :illegal-state))
+                                        (not (new-namep filter
+                                                        (w state))))
+                                   (er-progn
 
 ; We reset the filter to :all even though we are about to exit this LD
 ; with :return.  This just makes things work if "this LD" is the top-level
 ; one and LP immediately reenters.
 
-                                  (set-ld-pre-eval-filter :all state)
-                                  (mv :return :filter state)))
-                                (t (mv :continue nil state)))))))))))))))))))))))
+                                    (set-ld-pre-eval-filter :all state)
+                                    (mv :return :filter state)))
+                                  (t (mv :continue
+                                         nil
+                                         state))))))))))))))))))))))))
 
 (defun ld-loop (state)
 
@@ -1854,7 +1920,7 @@
 ; SETQ THROWN-VAL).  We make the convention that we always throw non-nil
 ; values to the tag so as to distinguish these two cases.
 
-                         #+akcl (si::RESET-STACK-LIMITS)
+                         #+gcl (si::RESET-STACK-LIMITS)
                          (COND ((EQ THROWN-VAL :ABORT)
 
 ; THROWN-VAL is always either NIL (meaning no throw occurred) or else the
@@ -1870,21 +1936,21 @@
 
 ; At *LD-LEVEL* = 1 we know *standard-co* is *STANDARD-OUTPUT*.
 
-                                       (PRINC "Abort to ACL2 top-level"
+                                       (PRINC "Abort to ACL2 top-level."
                                               *STANDARD-OUTPUT*)
                                        (TERPRI *STANDARD-OUTPUT*))
                                       (T
                                        (THROW 'LOCAL-TOP-LEVEL :ABORT))))
                                ((EQ THROWN-VAL :POP)
                                 (COND ((= *LD-LEVEL* 1)
-                                       (PRINC "Currently at ACL2 top-level"
+                                       (PRINC "Currently at ACL2 top-level."
                                               *STANDARD-OUTPUT*))
                                       (t
                                        (COND ((= *LD-LEVEL* 2)
-                                              (PRINC "Pop up to ACL2 top-level"
+                                              (PRINC "Pop up to ACL2 top-level."
                                                      *STANDARD-OUTPUT*))
                                              (t
-                                              (PRINC "Pop up one LD level"
+                                              (PRINC "Pop up one LD level."
                                                      *STANDARD-OUTPUT*)))
                                        (WHEN (NOT (EQ (LD-ERROR-ACTION STATE)
                                                       :ERROR))
@@ -2003,6 +2069,9 @@
               (ld-redefinition-action 'same ld-redefinition-actionp)
               (ld-prompt 'same ld-promptp)
               (ld-missing-input-ok 'same ld-missing-input-okp)
+              (ld-always-skip-top-level-locals
+               'same
+               ld-always-skip-top-level-localsp)
               (ld-pre-eval-filter 'same ld-pre-eval-filterp)
               (ld-pre-eval-print 'same ld-pre-eval-printp)
               (ld-post-eval-print 'same ld-post-eval-printp)
@@ -2047,6 +2116,10 @@
                  nil)
              (if ld-missing-input-okp
                  (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
+               nil)
+             (if ld-always-skip-top-level-localsp
+                 (list `(cons 'ld-always-skip-top-level-locals
+                              ,ld-always-skip-top-level-locals))
                nil)
              (if ld-pre-eval-filterp
                  (list `(cons 'ld-pre-eval-filter ,ld-pre-eval-filter))
@@ -2109,16 +2182,20 @@
        :ld-user-stobjs-modified-warning :same))
 
 (defun wormhole-prompt (channel state)
-  (fmt1 "Wormhole ~s0~sr ~@1~*2"
-        (list (cons #\0 (f-get-global 'current-package state))
-              (cons #\1 (defun-mode-prompt-string state))
-              (cons #\r
-                    #+:non-standard-analysis "(r)"
-                    #-:non-standard-analysis "")
-              (cons #\2
-                    (list "" ">" ">" ">"
-                          (make-list-ac (- (f-get-global 'ld-level state) 1) nil nil))))
-        0 channel state nil))
+  (the2s
+   (signed-byte 30)
+   (fmt1 "Wormhole ~s0~sr ~@1~*2"
+         (list (cons #\0 (f-get-global 'current-package state))
+               (cons #\1 (defun-mode-prompt-string state))
+               (cons #\r
+                     #+:non-standard-analysis "(r)"
+                     #-:non-standard-analysis "")
+               (cons #\2
+                     (list "" ">" ">" ">"
+                           (make-list-ac (- (f-get-global 'ld-level state) 1)
+                                         nil
+                                         nil))))
+         0 channel state nil)))
 
 (defun reset-ld-specials-fn (reset-channels-flg state)
 
@@ -2503,6 +2580,7 @@
           :ld-skip-proofsp t
           :ld-prompt nil
           :ld-missing-input-ok nil
+          :ld-always-skip-top-level-locals nil
           :ld-pre-eval-filter filter
           :ld-pre-eval-print nil
           :ld-post-eval-print :command-conventions
@@ -2569,17 +2647,16 @@
 ; There is a long comment in axioms.lisp under the heading STATE which
 ; describes the many fields that a state has.
 
-; At the beginning of any interaction with the top-level ACL2 ld-fn,
-; there is a ``partial current state'', which may be partially
-; perceived, without side-effect, in Common Lisp, but outside of ACL2,
-; by invoking (what-is-the-global-state).  This partial current-state
-; includes (a) the names, types, and times of the open input and
-; output channels (but not the characters read or written to those
-; channels), (b) the symbols in the global table, (c) the t-stack, (d)
-; the 32-bit stack, and (e) the file clock.  We say that an object o
-; satisfying state-p is ``consistent with the current partial state''
-; provided that every fact revealed by (what-is-the-global-state) and
-; by examination of the bound globals is true about o.
+; At the beginning of any interaction with the top-level ACL2 ld-fn, there is a
+; ``partial current state'', which may be partially perceived, without
+; side-effect, in Common Lisp, but outside of ACL2, by invoking
+; (what-is-the-global-state).  This partial current-state includes the names,
+; types, and times of the open input and output channels (but not the
+; characters read or written to those channels), the symbols in the global
+; table, and the file clock.  We say that an object o satisfying state-p is
+; ``consistent with the current partial state'' provided that every fact
+; revealed by (what-is-the-global-state) and by examination of the bound
+; globals is true about o.
 
 ; In Lisp (as opposed to Prolog) the input form has no explicit free
 ; variable.  In ACL2, however, one free variable is permitted, and
@@ -2736,14 +2813,6 @@
                      (sweep-stack-entry-for-bad-symbol
                       name i (cdr obj) deceased-packages state)))))
 
-(defun sweep-t-stack (i deceased-packages state)
-  (cond ((> i (t-stack-length state))
-         (value nil))
-        (t (er-progn
-            (sweep-stack-entry-for-bad-symbol
-             "t-stack" i (aref-t-stack i state) deceased-packages state)
-            (sweep-t-stack (+ 1 i) deceased-packages state)))))
-
 (defun sweep-acl2-oracle (i deceased-packages state)
 
 ; A valid measure is (- (len (acl2-oracle state)) if we want to admit this
@@ -2765,10 +2834,10 @@
 ; *the-live-state* to verify that no symbol is contained in a package that we
 ; are about to delete.  This is sensible before we undo a defpkg, for example,
 ; which may ``orphan'' some objects held in, say, global variables in the
-; state.  We look in the global variables, the t-stack, and acl2-oracle.  If a
-; global variable, t-stack entry, or acl2-oracle entry contains such an object,
-; we cause an error.  This function is structurally similar to
-; what-is-the-global-state in axioms.lisp.
+; state.  We look in the global variables and acl2-oracle.  If a global
+; variable or acl2-oracle entry contains such an object, we cause an error.
+; This function is structurally similar to what-is-the-global-state in
+; axioms.lisp.
 
 ; The components of the state and their disposition are:
 
@@ -2785,15 +2854,9 @@
 
   (er-progn
    (sweep-global-lst (global-table-cars state) deceased-packages state)
-
-
-; t-stack - this stack may contain bad objects.
-
-   (sweep-t-stack 0 deceased-packages state)
    (sweep-acl2-oracle 0 deceased-packages state))
 
 ; The remaining fields contain no ``static'' objects.  The fields are:
-; 32-bit-integer-stack
 ; big-clock
 ; idates
 ; file-clock
@@ -2801,7 +2864,6 @@
 ; written-files
 ; read-files
 ; writeable-files
-; list-all-package-names-lst
 
   )
 
@@ -3644,6 +3706,7 @@
                       (ld-verbose nil)
                       (ld-prompt nil)
                       (ld-missing-input-ok nil)
+                      (ld-always-skip-top-level-locals nil)
                       (ld-pre-eval-filter :all)
                       (ld-pre-eval-print :never)
                       (ld-post-eval-print nil)

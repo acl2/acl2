@@ -18,8 +18,8 @@
 ; University of Texas at Austin
 ; Austin, TX 78712 U.S.A.
 
-; This file, init.lisp, is the standard KCL init file.  We use this
-; tiny init file, which indirects to akcl-init.lisp, so that we can
+; This file, init.lisp, is the standard init file.  We use this tiny
+; init file, which mainly indirects to acl2-init.lisp, so that we can
 ; avoid loading in the full init file if it has already been loaded.
 
 ; This file need not be distributed with ACL2 and is unimportant for

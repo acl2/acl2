@@ -12,11 +12,13 @@
 (in-package "C")
 
 (include-book "../../language/dynamic-semantics")
+(include-book "exec-expr-pure")
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,15 +52,8 @@
      we introduce and enable a rule
      to turn @('<ident>') into @('(ident <string>')
      when it appears in @(tsee exec-fun).
-     We introduce similar rules for terms of the form
-     @('(create-var <ident> ...)'),
-     @('(read-var <ident> ...)'),
-     @('(read-static-var <ident> ...)'),
-     @('(write-var <ident> ...)'),
-     @('(write-static-var <ident> ...)'),
-     @('(type-struct <ident>)'),
-     @('(exec-member <ident>)'), and
-     @('(exec-memberp ... <ident> ...)')."))
+     We introduce similar rules for terms of the same form,
+     but with different functions from @(tsee exec-fun)."))
 
   (defruled equal-of-ident-and-const
     (implies (and (syntaxp (and (quotep x)
@@ -142,8 +137,8 @@
      (and (syntaxp (quotep mem))
           (identp mem))
      (equal
-      (exec-arrsub-of-member str mem sub)
-      (exec-arrsub-of-member str (ident (ident->name mem)) sub))))
+      (exec-arrsub-of-member str mem sub compst)
+      (exec-arrsub-of-member str (ident (ident->name mem)) sub compst))))
 
   (defruled exec-arrsub-of-memberp-of-const-identifier
     (implies
@@ -151,7 +146,13 @@
           (identp mem))
      (equal
       (exec-arrsub-of-memberp str mem sub compst)
-      (exec-arrsub-of-memberp str (ident (ident->name mem)) sub compst)))))
+      (exec-arrsub-of-memberp str (ident (ident->name mem)) sub compst))))
+
+  (defruled objdesign-of-var-of-const-identifier
+    (implies (and (syntaxp (quotep var))
+                  (identp var))
+             (equal (objdesign-of-var var compst)
+                    (objdesign-of-var (ident (ident->name var)) compst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,7 +180,8 @@
     exec-member-of-const-identifier
     exec-memberp-of-const-identifier
     exec-arrsub-of-member-of-const-identifier
-    exec-arrsub-of-memberp-of-const-identifier))
+    exec-arrsub-of-memberp-of-const-identifier
+    objdesign-of-var-of-const-identifier))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

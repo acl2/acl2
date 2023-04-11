@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function binary-append.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -157,6 +157,7 @@
   :hints (("Goal" :in-theory (enable equal-of-append))))
 
 ;; Improved to match std
+;; Not sure wheher this should be here or in last.lisp.
 (defthm last-of-append
   (equal (last (append x y))
          (if (consp y)
@@ -164,9 +165,35 @@
            (append (last x) y)))
   :hints (("Goal" :in-theory (enable last append))))
 
+;; (defthm last-of-append
+;;   (implies (and (true-listp x)
+;;                 (true-listp y)
+;;                 )
+;;            (equal (last (append x y))
+;;                   (if (consp y)
+;;                       (last y)
+;;                     (last x))))
+;;   :hints (("Goal" :in-theory (enable append))))
+
 ;now in std
 (defthm equal-of-append-and-append-same-arg2
   (equal (equal (append x1 y) (append x2 y))
          (equal (true-list-fix x1)
                 (true-list-fix x2)))
   :hints (("Goal" :in-theory (enable equal-of-append equal-of-true-list-fix-and-true-list-fix-forward))))
+
+(defthm <=-of-acl2-count-of-append-linear
+  (<= (acl2-count (append x y))
+      (+ (acl2-count x)
+         (acl2-count y)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable append))))
+
+(defthm acl2-count-of-append-of-cons
+  (equal (acl2-count (append (cons x y) z))
+         (acl2-count (cons x (append y z)))))
+
+(defthm acl2-count-of-append-of-cons-linear
+  (equal (acl2-count (append (cons x y) z))
+         (acl2-count (cons x (append y z))))
+  :rule-classes :linear)

@@ -75,6 +75,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ defdefparse-table
+  :parents (defdefparse-implementation)
   :short "Table of @(tsee defdefparse) calls."
   :long
   (xdoc::topstring

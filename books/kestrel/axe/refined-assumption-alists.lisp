@@ -1,7 +1,7 @@
 ; An alist that stores assumptions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,6 @@
 (in-package "ACL2")
 
 ;(include-book "all-dargp")
-;(include-book "kestrel/utilities/pseudo-termp" :dir :system) ;make local?
 ;(include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "renaming-array")
 (include-book "axe-trees")

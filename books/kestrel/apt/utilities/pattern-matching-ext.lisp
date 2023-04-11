@@ -27,6 +27,8 @@
 ; lemmas.  A nice challenge is to make all functions guard-verified; several
 ; remain in :program mode.
 
+; (depends-on "build/defrec-certdeps/STATE-VARS.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (include-book "std/util/bstar" :dir :system)

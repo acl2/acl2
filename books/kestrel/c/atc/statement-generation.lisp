@@ -25,8 +25,8 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
-
-(local (in-theory (disable default-car default-cdr)))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,7 +105,7 @@
 
 (define atc-make-mv-nth-terms ((indices nat-listp) (term pseudo-termp))
   :returns (terms pseudo-term-listp
-                  :hints (("Goal" :in-theory (enable pseudo-termp))))
+                  :hints (("Goal" :induct t :in-theory (enable pseudo-termp))))
   :short "Create a list of @(tsee mv-nth)s applied to a term
           for a list of indices."
   (cond ((endp indices) nil)
@@ -114,7 +114,8 @@
   ///
   (defret len-of-atc-make-mv-nth-terms
     (equal (len terms)
-           (len indices))))
+           (len indices))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,6 +143,7 @@
     "If the body of a non-recursive function @('fn')
      includes an @(tsee mv-let)s or a @(tsee let)
      that affects a formal of @('fn') of pointer or array type,
+     or a formal of integer type that represents an external object,
      that formal must be among the variables affected by ('fn').
      If the body of a recursive function @('fn')
      includes an @(tsee mv-let)s or a @(tsee let)
@@ -150,6 +152,8 @@
      In other words, no modification of formals must be ``lost''.
      The case of formals of pointer or array types is clear,
      because it means that objects in the heap are affected.
+     The case of formals of integer type that represent external objects
+     is also clear, as that object is globally accessible.
      The case of formals of non-pointer non-array types
      applies to recursive functions
      because they represent loops,
@@ -162,7 +166,8 @@
      the variables purported to be affected by @('fn').
      We go through the elements of @('bind-affect')
      and check each one against the formals of @('fn'),
-     taking into account the types and whether @('fn') is recursive."))
+     taking into account the information about the formals
+     and whether @('fn') is recursive."))
   (b* (((reterr))
        ((when (endp bind-affect)) (retok))
        (var (car bind-affect))
@@ -170,7 +175,8 @@
        ((when (and info
                    (or (irecursivep+ fn wrld)
                        (type-case (atc-var-info->type info) :pointer)
-                       (type-case (atc-var-info->type info) :array))
+                       (type-case (atc-var-info->type info) :array)
+                       (atc-var-info->externalp info))
                    (not (member-eq var fn-affect))))
         (reterr
          (msg "When generating C code for the function ~x0, ~
@@ -392,7 +398,7 @@
                                 :init? initer))
        (item (block-item-declon declon))
        (item-limit `(binary-+ '1 ,initer-limit))
-       (varinfo (make-atc-var-info :type type :thm nil))
+       (varinfo (make-atc-var-info :type type :thm nil :externalp nil))
        ((when (not proofs))
         (mv item
             item-limit
@@ -1154,6 +1160,7 @@
        (if-stmt-formula `(and ,if-stmt-formula1 ,if-stmt-formula2))
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
+       (value-kind-when-test-type-pred (pack 'value-kind-when- test-type-pred))
        (if-stmt-hints
         (if (consp else-items)
             `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
@@ -1168,7 +1175,13 @@
                                    (:e stmt-ifelse->else)
                                    ,else-stmt-thm
                                    ,valuep-when-test-type-pred
-                                   booleanp-compound-recognizer)))
+                                   booleanp-compound-recognizer
+                                   expr-valuep-of-expr-value
+                                   expr-value->value-of-expr-value
+                                   value-fix-when-valuep
+                                   ,valuep-when-test-type-pred
+                                   apconvert-expr-value-when-not-value-array
+                                   ,value-kind-when-test-type-pred)))
           `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
                                  exec-stmt-when-ifelse-and-false
                                  (:e stmt-kind)
@@ -1179,7 +1192,13 @@
                                  (:e stmt-if->then)
                                  ,then-stmt-thm
                                  ,valuep-when-test-type-pred
-                                 booleanp-compound-recognizer)))))
+                                 booleanp-compound-recognizer
+                                 expr-valuep-of-expr-value
+                                 expr-value->value-of-expr-value
+                                 value-fix-when-valuep
+                                 ,valuep-when-test-type-pred
+                                 apconvert-expr-value-when-not-value-array
+                                 ,value-kind-when-test-type-pred)))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize test-term
                                          gin.context nil nil nil nil nil wrld))
@@ -1671,7 +1690,9 @@
                                             :declor declor
                                             :init? (initer-single init.expr)))
                    (item (block-item-declon declon))
-                   (varinfo (make-atc-var-info :type init.type :thm nil))
+                   (varinfo (make-atc-var-info :type init.type
+                                               :thm nil
+                                               :externalp nil))
                    (inscope-body (atc-add-var var varinfo gin.inscope))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
@@ -3015,4 +3036,5 @@
   ///
 
   (defret stmt-kind-of-atc-gen-loop-stmt
-    (equal (stmt-kind (lstmt-gout->stmt gout)) :while)))
+    (equal (stmt-kind (lstmt-gout->stmt gout)) :while)
+    :hints (("Goal" :induct t))))

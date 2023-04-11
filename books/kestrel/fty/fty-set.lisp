@@ -1,10 +1,11 @@
 ; FTY Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Stephen Westfold (westfold@kestrel.edu), Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Stephen Westfold (westfold@kestrel.edu)
+;          Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -16,7 +17,6 @@
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,6 +151,8 @@
    (xdoc::p
     "See the implementation, which uses a readable backquote notation,
      for details.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defset-implementation
   :parents (defset)
@@ -333,6 +335,7 @@
          (defrule ,setp-when-pred
            (implies (,x.pred ,x.xvar)
                     (set::setp ,x.xvar))
+           :induct t
            :enable set::setp
            :rule-classes (:rewrite ;; :forward-chaining
                                    )) ; ??
@@ -354,24 +357,29 @@
            (equal (,x.pred (set::insert ,a ,x.xvar))
                   (and (,x.elt-type ,a)
                        (,x.pred (set::sfix ,x.xvar))))
+           :induct t
            :enable (set::insert set::empty set::head set::tail set::setp))
          (defrule ,elt-type-when-in-pred-binds-free-xvar
            (implies (and (set::in ,a ,x.xvar) ; binds free X
                          (,x.pred ,x.xvar))
                     (,x.elt-type ,a))
+           :induct t
            :enable (set::in set::head))
          (defrule ,pred-of-union
            (equal (,x.pred (set::union ,x.xvar ,y))
                   (and (,x.pred (set::sfix ,x.xvar))
                        (,x.pred (set::sfix ,y))))
+           :induct t
            :enable (set::union set::empty set::setp set::head set::tail))
          (defrule ,pred-of-difference
            (implies (,x.pred ,x.xvar)
                     (,x.pred (set::difference ,x.xvar ,y)))
+           :induct t
            :enable set::difference)
          (defrule ,pred-of-delete
            (implies (,x.pred ,x.xvar)
                     (,x.pred (set::delete ,a ,x.xvar)))
+           :induct t
            :enable set::delete)))))
 
 

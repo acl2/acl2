@@ -774,7 +774,10 @@ satisfiability is checked by exhaustive testing of the AIG using <see
 topic='@(url aignet::vector-simulation)'>vector simulation</see>, perhaps after
 some AIG transformations.  This requires that the AIG have 37 or fewer inputs,
 corresponding to the number of entries in FGL's Boolean variable database (see
-@(see fgl-getting-bits-from-objects).</p>
+@(see fgl-getting-bits-from-objects).  However, if the @('random-iters') field
+of the config object is set, then this input constraint is removed, randomized
+testing is used instead of exhaustive testing, and the check can never return
+UNSAT.</p>
 
 <p>All three such config object types are simple tagged products, and they have
 two fields in common:</p>

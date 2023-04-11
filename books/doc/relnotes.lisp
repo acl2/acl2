@@ -237,6 +237,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "digits-any-base" "Digits Library"))
+
+   (xdoc::p
+    "Several theorems have been added.")
+
+   (xdoc::p
+    "The @(tsee defdigits) tool has been extended
+     to generate additional theorems.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Library"))
 
    (xdoc::p
@@ -265,7 +276,7 @@
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p
-    "A concrete syntax for PFCS, in the form of an ABNF grammar,
+    "A concrete syntax for PFCSes, in the form of an ABNF grammar,
      has been defined.")
 
    (xdoc::p
@@ -273,8 +284,8 @@
      to be more in line with the general notion of constraint system.")
 
    (xdoc::p
-    "Some arguments of semantic functions have been reordered,
-     for a more natural order.")
+    "Some arguments of semantic functions
+     have been put into a more natural order.")
 
    (xdoc::p
     "Some theorems have been added and other theorems have been improved.")
@@ -286,6 +297,12 @@
     "A translator from R1CSes to PFCSes has been added,
      along with a checker for PFCSes that are in the R1CS subset,
      and along with a notion of structured R1CSes.")
+
+   (xdoc::p
+    "General rules have been added to support reasoning about PFCSes
+     without having to deal explicitly with the proof trees
+     used to define the PFCS semantics.
+     See @(see pfcs::proof-support) for details.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,13 +395,19 @@
    (xdoc::h4 "Tools Library")
 
    (xdoc::p
-    "The tool, @(see with-supporters), has been substantially enhanced.")
+    "The tool, @(tsee with-supporters), has been substantially enhanced.")
 
    (xdoc::p
-    "The tool, @(see prove$), now treats hard errors as ordinary failures by
+    "The tool, @(tsee prove$), now treats hard errors as ordinary failures by
      default, just as for soft errors.  It also now suppresses @(see
      time-limit) and @(see theory-invariant) error printing as it does for
      @(see step-limit) error printing.")
+
+   (xdoc::p
+    "The @(see time-tracker) capability is now turned off by the @(tsee
+     run-script) tool, to avoid output that differs from what is expected (say,
+     due to running on a slow machine, or with many threads when few are
+     available).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

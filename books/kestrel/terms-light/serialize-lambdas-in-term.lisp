@@ -1,6 +1,6 @@
 ; A tool to turn multi-var lambdas into nests of single-var lambdas
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,20 +10,27 @@
 
 (in-package "ACL2")
 
-(include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
+(include-book "subst-var-alt")
+(include-book "make-lambda-nest")
 ;; (include-book "trivial-formals")
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
+(local (include-book "make-lambda-nest-proofs"))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
+
+;; See serialize-lambda-in-term-tests.lisp.
+;; See serialize-lambda-in-term-proofs.lisp.
 
 (local (in-theory (disable mv-nth symbol-alistp)))
 
@@ -52,32 +59,6 @@
 ;;
 ;; Once we add the temporary (and the binding that is now safe), start again looking for additional safe ones.
 ;; TODO: Can we work harder to minimize the number of temporaries?
-
-;; Makes a nest of lambda applications, one for each of the BINDINGS, around BODY.
-;; TODO: Consider ignored vars
-;; Could optmize by having this also return the free vars.
-(defun make-lambda-nest (bindings body)
-  (declare (xargs :guard (and (symbol-alistp bindings)
-                              (pseudo-term-listp (strip-cdrs bindings))
-                              (pseudo-termp body))))
-  (if (endp bindings)
-      body
-    (let* ((binding (first bindings))
-           (var (car binding))
-           (val (cdr binding))
-           (body (make-lambda-nest (rest bindings) body))
-           (body-vars (free-vars-in-term body)))
-      (if (not (member-eq var body-vars))
-          ;; This var is not used, so skip it:
-          body
-        (let ((other-body-vars (remove1-eq var body-vars)))
-          `((lambda (,var ,@other-body-vars) ,body) ,val ,@other-body-vars))))))
-
-(defthm pseudo-termp-of-make-lambda-nest
-  (implies (and (symbol-alistp bindings)
-                (pseudo-term-listp (strip-cdrs bindings))
-                (pseudo-termp body))
-           (pseudo-termp (make-lambda-nest bindings body))))
 
 ;; Returns (mv safe-binding other-bindings) or (mv nil nil) if no safe binding is found.
 (defund find-safe-binding (bindings earlier-bindings-rev)
@@ -147,18 +128,21 @@
         (let* ((first-binding (first bindings))
                (first-var (car first-binding))
                (first-val (cdr first-binding))
-               (first-var-temp (fresh-symbol (pack$ first-var '-temp) names-to-avoid))
-               ;;now fix up the values in later bindings to use first-var-temp instead of first-var:
                (rest-bindings (rest bindings))
                (rest-binding-vars (strip-cars rest-bindings))
                (rest-binding-vals (strip-cdrs rest-bindings))
-               (new-rest-binding-vals (sublis-var-simple-lst (acons first-var first-var-temp nil)
-                                                             rest-binding-vals))
+               (rest-binding-free-vars (free-vars-in-terms rest-binding-vals)) ; must avoid these
+               ;; Make a name for the temporary:
+               ;; TODO: Make the suffix customizable?  Just add a numeric suffix?
+               (first-var-temp (fresh-symbol (pack$ first-var '-temp) (union-eq rest-binding-free-vars names-to-avoid)))
+               ;;now fix up the values in later bindings to use first-var-temp instead of first-var:
+               (new-rest-binding-vals (subst-var-alt-lst first-var first-var-temp rest-binding-vals))
                (new-rest-bindings (pairlis$ rest-binding-vars new-rest-binding-vals)))
-          (acons first-var-temp
+          (acons first-var-temp ; bind the temp var to the original value of the var
                  first-var
                  ;; now safe to overwrite first-var since we've saved its value in the temporary:
                  (acons first-var first-val
+                        ;; might we ever be able to reuse the temporary?
                         (serialize-bindings new-rest-bindings (cons first-var-temp names-to-avoid)))))))))
 
 (defthm alistp-of-serialize-bindings
@@ -189,7 +173,8 @@
   (let* ((bindings (non-trivial-bindings lambda-formals args)) ; all applied in parallel
          (body-vars (free-vars-in-term lambda-body))
          ;; (trivial-lambda-formals (trivial-formals lambda-formals args))
-         (serialized-bindings (serialize-bindings bindings (append body-vars vars-to-avoid))))
+         (serialized-bindings (serialize-bindings bindings (union-eq lambda-formals ; not sure this is needed
+                                                                     (union-eq body-vars vars-to-avoid)))))
     ;; Could make a let* here, but then it would not be a pseudo-term
     (make-lambda-nest serialized-bindings lambda-body)))
 

@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -69,13 +69,6 @@
   :ok identifier
   :pred identifier-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-identifierp
-  (implies (identifierp x)
-           (not (reserrp x)))
-  :enable (identifierp reserrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption identifier-option
@@ -98,13 +91,6 @@
   :short "Fixtype of errors and lists of identifiers."
   :ok identifier-list
   :pred identifier-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-identifier-listp
-  (implies (identifier-listp x)
-           (not (reserrp x)))
-  :enable reserrp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,13 +122,6 @@
   :short "Fixtype of errors and osets of identifiers."
   :ok identifier-set
   :pred identifier-set-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-identifier-setp
-  (implies (identifier-setp x)
-           (not (reserrp x)))
-  :enable (reserrp identifier-setp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -226,13 +205,6 @@
   :short "Fixtype of errors and paths."
   :ok path
   :pred path-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-pathp
-  (implies (pathp x)
-           (not (reserrp x)))
-  :enable (pathp reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,13 +491,6 @@
   :ok expression
   :pred expression-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-expressionp
-  (implies (expressionp x)
-           (not (reserrp x)))
-  :enable (expressionp reserrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption funcall-option
@@ -539,13 +504,6 @@
   :short "Fixtype of errors and function calls."
   :ok funcall
   :pred funcall-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-funcallp
-  (implies (funcallp x)
-           (not (reserrp x)))
-  :enable (funcallp reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -665,26 +623,12 @@
   :ok block
   :pred block-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-blockp
-  (implies (blockp x)
-           (not (reserrp x)))
-  :enable (blockp reserrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult statement-result
   :short "Fixtype of errors and statements."
   :ok statement
   :pred statement-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-statementp
-  (implies (statementp x)
-           (not (reserrp x)))
-  :enable (statementp reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -693,26 +637,12 @@
   :ok fundef
   :pred fundef-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-fundefp
-  (implies (fundefp x)
-           (not (reserrp x)))
-  :enable (fundefp reserrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult swcase-result
   :short "Fixtype of errors and swcase clauses (for switch statements)."
   :ok swcase
   :pred swcase-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-reserrp-when-swcasep
-  (implies (swcasep x)
-           (not (reserrp x)))
-  :enable (swcasep reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -31,6 +31,8 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -246,7 +248,8 @@
     :rule-classes :linear
     :enable (check-lambda-call
              pseudo-term-kind
-             pseudo-term-lambda->body)
+             pseudo-term-lambda->body
+             default-cdr)
     :expand (pseudo-term-count term))
 
   (defret pseudo-term-count-of-fty-check-lambda-call.body
@@ -343,6 +346,7 @@
                (<= (pseudo-term-list-count new-actuals)
                    (pseudo-term-list-count actuals))))
     :rule-classes :linear
+    :induct t
     :enable (remove-equal-formals-actuals
              pseudo-term-list-count))
 
@@ -510,7 +514,8 @@
        :rule-classes :linear
        :expand (pseudo-term-count term)
        :enable (pseudo-term-call->args
-                pseudo-term-kind))))
+                pseudo-term-kind
+                default-cdr))))
 
   (defret pseudo-term-count-of-fty-check-mv-let-call.mv-term
     (implies yes/no
@@ -641,7 +646,7 @@
     (defret len-of-fty-if-to-if*-lst
       (equal (len terms1)
              (len terms))
-      :hints (("Goal" :in-theory (enable len)))))
+      :hints (("Goal" :induct (len terms) :in-theory (enable len)))))
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 

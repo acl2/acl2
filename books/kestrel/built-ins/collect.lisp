@@ -446,9 +446,7 @@
     commutativity-2-of-+
     fold-consts-in-+
     distributivity-of-minus-over-+
-    pos-listp-forward-to-integer-listp
-    32-bit-integerp-forward-to-integerp
-    32-bit-integer-listp-forward-to-integer-listp))
+    pos-listp-forward-to-integer-listp))
 
 (defconst *builtin-defaxiom/defthm-characters*
   '(booleanp-characterp
@@ -719,6 +717,7 @@
     integerp-nth-2-var-fn-count-1
     ancestors-check-builtin-property
     ancestors-check-constraint
+    natp-conjoin-clause-sets-bound
     d-pos-listp-forward-to-true-listp
     true-listp-chars-for-tilde-@-clause-id-phrase/periods))
 

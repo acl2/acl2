@@ -3736,9 +3736,20 @@
   (cond
    ((ts= ts *ts-unknown*) type-alist)
    ((variablep term)
+
+; 3/27/2023 Ran "everything" regression, causing an error when both (eq term
+; (caar type-alist)) and (ts= ts (cadar type-alist)) -- but no error was
+; observed.
+
     (cons (list* term ts ttree) type-alist))
    ((fquotep term) type-alist)
-   (t (cons (list* term ts ttree) type-alist))))
+   (t
+
+; 3/27/2023 Ran "everything" regression, causing an error when both (equal term
+; (caar type-alist)) and (ts= ts (cadar type-alist)) -- but no error was
+; observed.
+
+    (cons (list* term ts ttree) type-alist))))
 
 (defun extend-type-alist1 (equiv occursp1 occursp2 both-canonicalp arg1-canon
                                  arg2-canon swap-flg term ts ttree type-alist)
@@ -6939,6 +6950,7 @@
                 (value :q)))
              :ld-prompt  nil
              :ld-missing-input-ok nil
+             :ld-always-skip-top-level-locals nil
              :ld-pre-eval-filter :all
              :ld-pre-eval-print nil
              :ld-post-eval-print :command-conventions
@@ -10105,27 +10117,42 @@
 
                           (mv-atf xnot-flg nil nil
                                   (and (not (eq ignore :tta))
-                                       (extend-with-proper/improper-cons-ts-tuple
-                                        arg t-int shared-ttree force-flg
-                                        dwp type-alist ancestors ens
-                                        (if strongp
-                                            type-alist
-                                          (extend-type-alist-simple
-                                           x *ts-t*
-                                           (push-lemma[s] var rune[s] xttree)
-                                           type-alist))
-                                        w
-                                        pot-lst pt backchain-limit))
+                                       (let ((type-alist0
+                                              (if strongp
+                                                  type-alist
+                                                (extend-type-alist-simple
+                                                 x *ts-t*
+                                                 (push-lemma[s] var
+                                                                rune[s]
+                                                                xttree)
+                                                 type-alist))))
+                                         (cond
+                                          ((ts= t-int ts)
+                                           type-alist0)
+                                          (t
+                                           (extend-with-proper/improper-cons-ts-tuple
+                                            arg t-int shared-ttree force-flg
+                                            dwp type-alist ancestors ens
+                                            type-alist0
+                                            w
+                                            pot-lst pt backchain-limit)))))
                                   (and (not (eq ignore :fta))
-                                       (extend-with-proper/improper-cons-ts-tuple
-                                        arg f-int shared-ttree force-flg
-                                        dwp type-alist ancestors ens
-                                        (if strongp
-                                            type-alist
-                                          (extend-type-alist-simple
-                                           x *ts-nil* xttree type-alist))
-                                        w
-                                        pot-lst pt backchain-limit))
+                                       (let ((type-alist0
+                                              (if strongp
+                                                  type-alist
+                                                (extend-type-alist-simple
+                                                 x *ts-nil* xttree
+                                                 type-alist))))
+                                         (cond
+                                          ((ts= f-int ts)
+                                           type-alist0)
+                                          (t
+                                           (extend-with-proper/improper-cons-ts-tuple
+                                            arg f-int shared-ttree force-flg
+                                            dwp type-alist ancestors ens
+                                            type-alist0
+                                            w
+                                            pot-lst pt backchain-limit)))))
                                   nil nil)))))))))))
            ((member-eq (ffn-symb x)
                        *expandable-boot-strap-non-rec-fns*)
@@ -10371,23 +10398,25 @@
                                                  (cond
                                                   ((ts= ts1 int)
                                                    true-type-alist1)
-                                                  (t (extend-with-proper/improper-cons-ts-tuple
-                                                      arg1 int shared-ttree
-                                                      force-flg dwp type-alist
-                                                      ancestors ens
-                                                      true-type-alist1 w
-                                                      pot-lst pt backchain-limit)))))
+                                                  (t
+                                                   (extend-with-proper/improper-cons-ts-tuple
+                                                    arg1 int shared-ttree
+                                                    force-flg dwp type-alist
+                                                    ancestors ens
+                                                    true-type-alist1 w
+                                                    pot-lst pt backchain-limit)))))
                                            (true-type-alist3
                                             (and (not (eq ignore :tta))
                                                  (cond
                                                   ((ts= ts2 int)
                                                    true-type-alist2)
-                                                  (t (extend-with-proper/improper-cons-ts-tuple
-                                                      arg2 int shared-ttree
-                                                      force-flg dwp type-alist
-                                                      ancestors ens
-                                                      true-type-alist2 w
-                                                      pot-lst pt backchain-limit)))))
+                                                  (t
+                                                   (extend-with-proper/improper-cons-ts-tuple
+                                                    arg2 int shared-ttree
+                                                    force-flg dwp type-alist
+                                                    ancestors ens
+                                                    true-type-alist2 w
+                                                    pot-lst pt backchain-limit)))))
                                            (false-type-alist1
                                             (and (not (eq ignore :fta))
                                                  (extend-type-alist1
@@ -10681,30 +10710,43 @@
                                    (ignore (adjust-ignore-for-atf not-flg ignore0))
                                    (true-type-alist
                                     (and (not (eq ignore :tta))
-                                         (extend-type-alist
-                                          ;;*** -simple
-                                          arg2
-                                          (ts-intersection
-                                           ts2
-                                           #+:non-standard-analysis
-                                           (ts-union *ts-positive-real*
+                                         (let ((ts (ts-intersection
+                                                    ts2
+                                                    #+:non-standard-analysis
+                                                    (ts-union
+                                                     *ts-positive-real*
                                                      *ts-complex*)
-                                           #-:non-standard-analysis
-                                           (ts-union *ts-positive-rational*
-                                                     *ts-complex-rational*))
-                                          shared-ttree type-alist w)))
+                                                    #-:non-standard-analysis
+                                                    (ts-union
+                                                     *ts-positive-rational*
+                                                     *ts-complex-rational*))))
+                                           (cond
+                                            ((ts= ts2 ts)
+                                             type-alist)
+                                            (t
+                                             (extend-type-alist
+                                              ;;*** -simple
+                                              arg2
+                                              (the-type-set ts)
+                                              shared-ttree type-alist w))))))
                                    (false-type-alist
                                     (and (not (eq ignore :fta))
-                                         (extend-type-alist
-                                          ;;*** -simple
-                                          arg2
-                                          (ts-intersection
-                                           ts2 (ts-complement
-                                                #+:non-standard-analysis
-                                                *ts-positive-real*
-                                                #-:non-standard-analysis
-                                                *ts-positive-rational*))
-                                          shared-ttree type-alist w))))
+                                         (let ((ts (ts-intersection
+                                                    ts2
+                                                    (ts-complement
+                                                     #+:non-standard-analysis
+                                                     *ts-positive-real*
+                                                     #-:non-standard-analysis
+                                                     *ts-positive-rational*))))
+                                           (cond
+                                            ((ts= ts2 ts)
+                                             type-alist)
+                                            (t
+                                             (extend-type-alist
+                                              ;;*** -simple
+                                              arg2
+                                              (the-type-set ts)
+                                              shared-ttree type-alist w)))))))
 
 ; We formerly put the inequality explicitly on the type-alist only in
 ; the case that (ts-intersectp ts2 *ts-complex-rational*).  We leave
@@ -10831,32 +10873,45 @@
                                    (ignore (adjust-ignore-for-atf not-flg ignore0))
                                    (true-type-alist
                                     (and (not (eq ignore :tta))
-                                         (extend-type-alist
-                                          ;;*** -simple
-                                          arg2
-                                          (ts-intersection
-                                           ts2
-                                           (ts-union *ts-integer>1*
+                                         (let ((ts (ts-intersection
+                                                    ts2
+                                                    (ts-union
+                                                     *ts-integer>1*
                                                      *ts-positive-ratio*
-                                                     *ts-complex-rational*))
-                                          shared-ttree type-alist w)))
+                                                     *ts-complex-rational*))))
+                                           (cond
+                                            ((ts= ts2 ts)
+                                             type-alist)
+                                            (t
+                                             (extend-type-alist
+                                              ;;*** -simple
+                                              arg2
+                                              (the-type-set ts)
+                                              shared-ttree type-alist w))))))
                                    (false-type-alist
                                     (and (not (eq ignore :fta))
-                                         (if (variablep arg2)
+                                         (cond
+                                          ((variablep arg2)
 
 ; By restricting to variables here, we avoid a failed proof for lemma LEMMA3 in
 ; community book books/data-structures/memories/memtree.lisp (and perhaps other
 ; failed proofs).  This weakened heuristic seems consistent with the spirit of
 ; the Essay on Strong Handling of *ts-one*, above.
 
-                                             (extend-type-alist
-                                              ;;*** -simple
-                                              arg2
-                                              (ts-intersection
-                                               ts2
-                                               (ts-complement *ts-integer>1*))
-                                              shared-ttree type-alist w)
-                                           type-alist))))
+                                           (let ((ts (ts-intersection
+                                                      ts2
+                                                      (ts-complement
+                                                       *ts-integer>1*))))
+                                             (cond
+                                              ((ts= ts2 ts)
+                                               type-alist)
+                                              (t
+                                               (extend-type-alist
+                                                ;;*** -simple
+                                                arg2
+                                                (the-type-set ts)
+                                                shared-ttree type-alist w)))))
+                                          (t type-alist)))))
                               (mv-atf-2 not-flg true-type-alist false-type-alist
                                         (mcons-term* '< *1* arg2)
                                         xnot-flg x shared-ttree xttree ignore)))))
@@ -10884,30 +10939,42 @@
                                    (ignore (adjust-ignore-for-atf not-flg ignore0))
                                    (true-type-alist
                                     (and (not (eq ignore :tta))
-                                         (extend-type-alist
-                                          ;;*** -simple
-                                          arg1
-                                          (ts-intersection
-                                           ts1
-                                           #+:non-standard-analysis
-                                           (ts-union *ts-negative-real*
+                                         (let ((ts (ts-intersection
+                                                    ts1
+                                                    #+:non-standard-analysis
+                                                    (ts-union
+                                                     *ts-negative-real*
                                                      *ts-complex*)
-                                           #-:non-standard-analysis
-                                           (ts-union *ts-negative-rational*
-                                                     *ts-complex-rational*))
-                                          shared-ttree type-alist w)))
+                                                    #-:non-standard-analysis
+                                                    (ts-union
+                                                     *ts-negative-rational*
+                                                     *ts-complex-rational*))))
+                                           (cond
+                                            ((ts= ts1 ts)
+                                             type-alist)
+                                            (t (extend-type-alist
+                                                ;;*** -simple
+                                                arg1
+                                                (the-type-set ts)
+                                                shared-ttree type-alist w))))))
                                    (false-type-alist
                                     (and (not (eq ignore :fta))
-                                         (extend-type-alist
-                                          ;;*** -simple
-                                          arg1
-                                          (ts-intersection
-                                           ts1 (ts-complement
-                                                #+:non-standard-analysis
-                                                *ts-negative-real*
-                                                #-:non-standard-analysis
-                                                *ts-negative-rational*))
-                                          shared-ttree type-alist w))))
+                                         (let ((ts (ts-intersection
+                                                    ts1
+                                                    (ts-complement
+                                                     #+:non-standard-analysis
+                                                     *ts-negative-real*
+                                                     #-:non-standard-analysis
+                                                     *ts-negative-rational*))))
+                                           (cond
+                                            ((ts= ts1 ts)
+                                             type-alist)
+                                            (t
+                                             (extend-type-alist
+                                              ;;*** -simple
+                                              arg1
+                                              (the-type-set ts)
+                                              shared-ttree type-alist w)))))))
                               (mv-atf-2 not-flg true-type-alist false-type-alist
                                         (mcons-term* '< arg1 *0*)
                                         xnot-flg x shared-ttree xttree ignore)))))
@@ -12023,6 +12090,70 @@
 ; The reconsidering approach took 1654 seconds.  Only six events had times more
 ; than 1 second greater than in the naive approach (and overall, it is about 30
 ; seconds faster).
+
+(mutual-recursion
+
+(defun sort-lits-heavy-p (term)
+
+; This function, which is used heuristically, returns t if the given term
+; contains a lambda application or at least two different free variables.
+; Otherwise, it returns the unique free variable unless there are no free
+; variables, in which case it returns nil.
+
+  (declare (xargs :guard (pseudo-termp term)))
+  (cond ((variablep term) term)
+        ((fquotep term) nil)
+        ((flambda-applicationp term) t)
+        (t (sort-lits-heavy-listp (fargs term) nil))))
+
+(defun sort-lits-heavy-listp (lst var)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (symbolp var))))
+  (cond ((endp lst) var)
+        (t (let ((x1 (sort-lits-heavy-p (car lst))))
+             (or (eq x1 t)
+                 (and x1 var (not (eq x1 var)))
+                 (sort-lits-heavy-listp (cdr lst)
+                                        (or x1 var)))))))
+)
+
+(defun sort-lits1 (cl ttree-lst)
+
+; See sort-lits.
+
+  (cond ((endp cl)
+         (mv nil nil nil nil))
+        (t (mv-let (cl-pre ttree-lst-pre cl-post ttree-lst-post)
+             (sort-lits1 (cdr cl) (cdr ttree-lst))
+             (cond ((eq (sort-lits-heavy-p (car cl))
+                        t)
+                    (mv cl-pre
+                        ttree-lst-pre
+                        (cons (car cl) cl-post)
+                        (cons (car ttree-lst) ttree-lst-post)))
+                   (t
+                    (mv (cons (car cl) cl-pre)
+                        (cons (car ttree-lst) ttree-lst-pre)
+                        cl-post
+                        ttree-lst-post)))))))
+
+(defun sort-lits (cl ttree-lst)
+
+; Cl is a list of literals and ttree-lst is a corresponding list of tag trees.
+; We sort cl by putting all the "heavy" literals at the end, in the sense of
+; sort-lits-heavy-p.  The intuition is that we want type-like predicates to
+; appear first in certain cases when we build a type-alist with
+; type-alist-clause.  As of this writing, those "certain cases" take place only
+; as part of our "desperation heuristics", which take place when we are calling
+; simplify-clause just after the clause has just settled down.  We restrict to
+; that case because it suffices for the example that motivated this change in
+; Feb. 2023, while being backward compatible at that time in the sense that all
+; the community books certified without change.
+
+  (mv-let (cl-pre tree-lst-pre cl-post ttree-lst-post)
+    (sort-lits1 cl ttree-lst)
+    (mv (append? cl-pre cl-post)
+        (append? tree-lst-pre ttree-lst-post))))
 
 (defun type-alist-clause (cl ttree-lst force-flg type-alist ens wrld
                           pot-lst pt)

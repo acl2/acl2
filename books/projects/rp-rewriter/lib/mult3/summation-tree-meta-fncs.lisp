@@ -3517,7 +3517,7 @@ c2-lst: ~p2 ~%"
      (t
       (progn$
        (hard-error 'extract-new-sum-element
-                   "Unexpexted term: ~p0 ~%"
+                   "Unexpected term: ~p0 ~%"
                    (list (cons #\0 term-orig)))
        (cons term-orig acc)))))
   ///
@@ -3584,7 +3584,7 @@ c2-lst: ~p2 ~%"
            ((when (and (is-equals cur)
                        (pp-term-p (caddr cur))))
             (mv (cdr e-lst)
-                (pp-flatten (caddr cur))))
+                (pp-flatten-memoized (caddr cur))))
            ((mv rest1 rest2)
             (extract-equals-from-pp-lst-aux (cdr e-lst))))
         (mv (cons-with-hint (car e-lst) rest1 e-lst)
@@ -3829,7 +3829,7 @@ to-be-coughed-c-lst))|#
   :returns (mv (s) (res-pp-lst) (c-lst) changed)
   :verify-guards nil
   (if (atom pp-lst)
-      (mv ''0 nil nil nil)
+      (mv ''nil nil nil nil)
     (b* ((cur-orig (car pp-lst))
          (rest (cdr pp-lst))
          ((mv s1 pp-lst1 c-lst1 changed1)
@@ -3848,7 +3848,8 @@ to-be-coughed-c-lst))|#
              (if (and (consp cur)
                       (or (equal (first cur) 's)
                           (equal (first cur) 'c)
-                          (equal (first cur) 's-c-res)))
+                          (equal (first cur) 's-c-res)
+                          (binary-fnc-p cur)))
                  (b* (((mv s pp-lst c-lst)
                        (new-sum-merge-aux (list cur) *large-number*)))
                    (mv s pp-lst c-lst t))
@@ -3928,9 +3929,10 @@ to-be-coughed-c-lst))|#
        ((mv s2 pp-lst2 c-lst2 changed2)
         (extract-from-equals-lst pp-lst))
 
-       ((unless changed2) ;; should not be logically necessary but mabe will
-        ;; have some runtime performance benfits
-        (mv s pp-lst c-lst))
+       ((unless changed2) 
+        (mv s
+            (if (pp-lst-orderedp pp-lst) pp-lst (pp-sum-sort-lst pp-lst))
+            c-lst))
        )
     (mv (s-sum-merge s s2)
         (if (pp-lst-orderedp pp-lst2) pp-lst2 (pp-sum-sort-lst pp-lst2))
@@ -4188,9 +4190,6 @@ nil
               (in-theory (disable natp))))
   (b* ((arg-s-lst (list-to-lst arg-s))
 
-
-      
-       
        ((mv arg-pp-lst arg-c-lst coughed-s-lst2 coughed-pp-lst2 to-be-coughed-c-lst)
         (c-of-s-fix-lst arg-s-lst arg-pp-lst arg-c-lst nil))
 
@@ -4227,6 +4226,32 @@ nil
                                      quarternaryp)))
     res))
 
+
+(progn
+  (define extract-binary-xor-for-s-spec-aux ((term rp-termp))
+    :returns (res rp-termp
+                  :hyp (rp-termp term))
+    (case-match term
+      (('binary-xor x y)
+       `(binary-sum ,(extract-binary-xor-for-s-spec-aux x)
+                    ,(extract-binary-xor-for-s-spec-aux y)))
+      (& term)))
+
+  (define extract-binary-xor-for-s-spec ((term rp-termp))
+    :returns (res rp-termp
+                  :hyp (rp-termp term))
+    (case-match term
+      (('cons x rest)
+       (b* ((x-orig x)
+            (x (ex-from-rp$ x)))
+         (if (and (consp x)
+                  (equal (car x) 'binary-xor)
+                  (pp-term-p x))
+             `(cons ,(extract-binary-xor-for-s-spec-aux x)
+                    ,(extract-binary-xor-for-s-spec rest))
+           `(cons ,x-orig ,(extract-binary-xor-for-s-spec rest)))))
+      (& term))))
+        
 
 
 (define s-c-spec-meta ((term rp-termp))
@@ -4272,9 +4297,14 @@ nil
                          (c-spec-meta-aux s pp-lst c-lst quarternaryp))))
              `(cons ,c-res (cons ,s-res 'nil))))
           (('s-spec sum)
-           (b* (((mv s pp-lst c-lst);;(mv s pp c)
-                 (new-sum-merge sum))
-                ((mv ?quarternaryp ?bitp) (quarternaryp-sum sum)))
+           (b* (((mv ?quarternaryp ?bitp) (quarternaryp-sum sum))
+                (sum (if bitp ;; when bitp, we'll want things to be coughed out
+                         ;; as is so don't try to prematurely flatten
+                         ;; binary-xors in such cases.
+                         sum
+                       (extract-binary-xor-for-s-spec sum)))
+                ((mv s pp-lst c-lst)
+                 (new-sum-merge sum)))
              (if bitp
                  (create-s-c-res-instance (list-to-lst s)
                                           pp-lst
@@ -4288,9 +4318,7 @@ nil
              (if bitp
                  ''0
                (c-spec-meta-aux s pp-lst c-lst quarternaryp))))
-          (& term)))
-
-       )
+          (& term))))
     (mv result t)))
 
 #|

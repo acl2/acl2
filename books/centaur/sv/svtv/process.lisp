@@ -603,6 +603,7 @@
                       (outs true-list-listp)
                       (internals true-list-listp)
                       (design design-p)
+                      (labels symbol-listp)
                       (simplify)
                       (pre-simplify)
                       (initial-state-vars)
@@ -752,6 +753,7 @@
                    :expanded-ins       ins
                    :expanded-overrides overrides
                    :nphases        nphases
+                   :labels         labels
                    :form           form)
         moddb aliases)))
 
@@ -764,16 +766,6 @@
   :hints(("Goal" :in-theory (enable svarlist-p)))
   :rule-classes :compound-recognizer)
 
-
-(defthm svarlist-p-alist-keys-of-svar-boolmasks
-  (implies (svar-boolmasks-p x)
-           (svarlist-p (alist-keys x)))
-  :hints(("Goal" :in-theory (enable svar-boolmasks-p svarlist-p alist-keys))))
-
-(defthm svarlist-p-alist-keys-of-svex-env
-  (implies (svex-env-p x)
-           (svarlist-p (alist-keys x)))
-  :hints(("Goal" :in-theory (enable svex-env-p svarlist-p alist-keys))))
 
 (define svar-boolmasks-limit-to-bound-vars ((keys svarlist-p)
                                             (boolvars svar-boolmasks-p))
@@ -802,79 +794,6 @@
   (implies (svex-alist-p x)
            (svex-alist-p (acl2::fal-extract keys x)))
   :hints(("Goal" :in-theory (enable acl2::fal-extract svex-alist-p))))
-
-
-
-(defxdoc svtv-utilities
-  :parents (svex-stvs)
-  :short "Various utilities for interacting with SVTV structures.")
-
-;; Stv compatibility stuff
-
-(defmacro defalias (new old &key (macro-alias 't) (xdoc 't))
-  `(progn (defmacro ,new (&rest args) (cons ',old args))
-          ,@(and xdoc
-                 `((defxdoc ,new :parents (,old)
-                     :short ,(concatenate
-                              'string "Same as @(see " (symbol-name old) ")."))))
-          ,@(and macro-alias `((add-macro-alias ,new ,old)))))
-
-(define svtv->in-width (name (svtv svtv-p))
-  :parents (svtv-utilities)
-  :short "Given an input name and an SVTV, get the width of the part that is used."
-  :returns (width natp :rule-classes :type-prescription)
-  (b* ((look (hons-assoc-equal name (svtv->inmasks svtv)))
-       ((unless look)
-        (raise "Unknown input: ~x0~%" name)
-        0))
-    (integer-length (nfix (cdr look))))
-  ///
-  (defalias stv->in-width svtv->in-width))
-
-(define svtv->out-width (name (svtv svtv-p))
-  :parents (svtv-utilities)
-  :short "Given an output name and an SVTV, finds the width of that output."
-  :returns (width natp :rule-classes :type-prescription)
-  (b* ((look (hons-assoc-equal name (svtv->outmasks svtv)))
-       ((unless look)
-        (raise "Unknown output: ~x0~%" name)
-        0))
-    (integer-length (nfix (cdr look))))
-  ///
-  (defalias stv->out-width svtv->out-width))
-
-
-
-(define svtv->ins ((svtv svtv-p))
-  :parents (svtv-utilities)
-  :short "Get the list of input variables of an SVTV."
-  :returns (names svarlist-p :rule-classes (:rewrite :type-prescription))
-  (alist-keys (svtv->inmasks svtv))
-  ///
-  (defalias stv->ins svtv->ins))
-
-(define svtv->outs ((svtv svtv-p))
-  :parents (svtv-utilities)
-  :short "Get the list of output variables of an SVTV."
-  :returns (names svarlist-p :rule-classes (:rewrite :type-prescription))
-  (svex-alist-keys (svtv->outexprs svtv))
-  ///
-  (defalias stv->outs svtv->outs))
-
-(define svtv->vars ((svtv svtv-p))
-  :parents (svtv-utilities)
-  :short "Union of the input and output variables of an SVTV."
-  :returns (names svarlist-p :rule-classes (:rewrite :type-prescription))
-  (append (svtv->ins svtv)
-          (svtv->outs svtv))
-  ///
-  (defalias stv->vars svtv->vars))
-
-
-
-
-
-
 
 
 
@@ -999,7 +918,6 @@
 
 (define defsvtv-events ((svtv svtv-p)
                         (design-const symbolp)
-                        labels
                         define-macros
                         define-mod
                         parents short long)
@@ -1008,10 +926,8 @@
   (b* (((svtv svtv))
        (name svtv.name)
                     
-       (?labels      (if (symbol-listp labels)
-                        labels
-                      (raise ":labels need to be a symbol-listp.")))
-
+       (labels      svtv.labels)
+       
        (want-xdoc-p (or parents short long))
        (short       (cond ((stringp short) short)
                           ((not short)     "")
@@ -1316,7 +1232,7 @@ defined with @(see sv::defsvtv).</p>"
                     (internals true-list-listp)
                     (design design-p)
                     (design-const symbolp)
-                    labels
+                    (labels symbol-listp)
                     simplify
                     pre-simplify
                     state-machine
@@ -1330,13 +1246,13 @@ defined with @(see sv::defsvtv).</p>"
   :irrelevant-formals-ok t
   :hooks nil
   ;; much of this copied from defstv
-  (b* ((svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify
+  (b* ((svtv (defsvtv-main name ins overrides outs internals design labels simplify pre-simplify
                (or state-machine initial-state-vars)
                (or state-machine keep-final-state)
                keep-all-states form))
        ((unless svtv)
         (raise "failed to generate svtv")))
-    (defsvtv-events svtv design-const labels define-macros define-mod parents short long)))
+    (defsvtv-events svtv design-const define-macros define-mod parents short long)))
 
 (defmacro defsvtv (&whole form
                           name &key design mod

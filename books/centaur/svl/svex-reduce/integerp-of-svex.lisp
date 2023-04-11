@@ -142,6 +142,19 @@
                               rp::valid-sc-cons
                               rp::rp-evl-of-trans-list-lemma))))))
 
+(define bit?!-test-is-dont-care-p ((x sv::svex-p)
+                                   &key
+                                   ((env) 'env)
+                                   ((config svex-reduce-config-p) 'config))
+  
+  :returns res
+  (and (not (svex-reduce-config->keep-missing-env-vars config))
+       (case-match x
+         (('sv::bit?! ('sv::partsel & & var1)
+                      &
+                      &)
+          (and (sv::svar-p var1) 
+               (not (hons-get (sv::svar-fix var1) env)))))))
 
 (defines integerp-of-svex
   :flag-local nil
@@ -152,8 +165,7 @@
                             &key
                             ((env) 'env)
                             ((context rp::rp-term-listp) 'context)
-                            ((config svex-reduce-config-p)
-                             'config))
+                            ((config svex-reduce-config-p) 'config))
     :measure (rp::cons-count x)
 
     :verify-guards nil
@@ -261,9 +273,11 @@
                              (equal x.fn 'sv::bit?)
                              (equal x.fn 'sv::bit?!)
                              (equal x.fn 'sv::?!)))
-                  (and (integerp-of-svex (first x.args))
-                       (integerp-of-svex (second x.args))
-                       (integerp-of-svex (third x.args))))
+                  (if (bit?!-test-is-dont-care-p x)
+                      (integerp-of-svex (third x.args))
+                    (and (integerp-of-svex (first x.args))
+                         (integerp-of-svex (second x.args))
+                         (integerp-of-svex (third x.args)))))
 
                  ((and* (equal-len x.args 3)
                         (equal x.fn 'sv::partsel))
@@ -870,9 +884,9 @@
 
 (local
  (defthm car-of-assoc-equal
-  (implies (assoc-equal fn alist)
-           (equal (car (assoc-equal fn alist))
-                  fn))))
+   (implies (assoc-equal fn alist)
+            (equal (car (assoc-equal fn alist))
+                   fn))))
 
 (defthm integerp-of-svex-extn-p-of-assoc-equal-of-svex-functions
   (implies (assoc-equal fn sv::*svex-op-table*)
@@ -882,7 +896,6 @@
            :in-theory (e/d
                        (svex-foreign-fnsym-p integerp-of-svex-extn-p)
                        (assoc-equal)))))
-
 
 (local
  (defthm integerp-of-svex-extn-correct$-lemma
@@ -941,6 +954,88 @@
    (equal (ASSOC-EQUAL (CAR X) NIL)
           nil)))
 
+(local
+ (defret bit?!-test-is-dont-care-p-implies
+   (implies res
+            (and (equal (car x) 'sv::bit?!)
+                 (NOT (SVEX-REDUCE-CONFIG->KEEP-MISSING-ENV-VARS CONFIG))))
+   :fn bit?!-test-is-dont-care-p
+   :rule-classes :forward-chaining
+   :hints (("Goal"
+            :in-theory (e/d (bit?!-test-is-dont-care-p) ())))))
+
+
+
+(local
+ (defthm svex-eval-of-bit?!-test-is-dont-care-p-correct-lemma
+   (b* (((sv::4vec x) (4VEC-PART-SELECT start size '(-1 . 0))))
+     (and (equal (logand x.upper x.lower) 0)
+          (equal (logand x.lower x.upper) 0)))
+   :hints (("Goal"
+            :in-theory (e/d (4VEC-SHIFT-CORE
+                             4VEC-RSH
+                             4VEC-CONCAT
+                             4VEC-PART-SELECT)
+                            ())))))
+
+(local
+ (defthm SV::4VEC-BIT?!-when-test-doesnt-have-1
+   (implies (equal (logand (sV::4vec->lower test) (sV::4vec->upper test)) 0)
+            (equal (sv::4vec-bit?! test then else)
+                   (sv::4vec-fix else)))
+   :hints (("Goal"
+            :in-theory (e/d (sv::4vec-bit?!) ())))))
+
+
+(svex-eval-lemma-tmpl
+ (local
+  (defret svex-eval-of-bit?!-test-is-dont-care-p-correct
+    (implies (and res
+                  (rp::falist-consistent-aux env env-term)
+                  )
+             (equal (sv::svex-eval x (rp-evlt env-term a))
+                    (sv::svex-eval (third (cdr x)) (rp-evlt env-term a))))
+    :fn bit?!-test-is-dont-care-p
+    :hints (("Goal"
+             :do-not-induct t
+             
+             :expand ((SVEX-EVAL X (RP-EVLT ENV-TERM A))
+                      (SVEXLIST-EVAL (CDDDR (CADR X))
+                                     (RP-EVLT ENV-TERM A))
+                      (SVEXLIST-EVAL (CDDR (CADR X))
+                                     (RP-EVLT ENV-TERM A))
+                      (SVEXLIST-EVAL (CDR (CADR X))
+                                     (RP-EVLT ENV-TERM A))
+                      (svex-eval (cadddr (cadr x))
+                                 (rp-evlt env-term a))
+                      (svexlist-eval (cddr (cadr x))
+                                     (rp-evlt env-term a))
+                      (svexlist-eval (cdr (cadr x))
+                                     (rp-evlt env-term a))
+                      (svex-eval (cadddr (cadr x)) env-term)
+                      (svexlist-eval (cdr x)
+                                     (rp-evlt env-term a))
+                      (svex-eval (cadr x)
+                                 (rp-evlt env-term a)))
+             :in-theory (e/d (;;4VEC-PART-SELECT
+                              ;;SV::4VEC-BIT?! 
+                              ;;SVEXLIST-EVAL
+                              SV::SVAR-P
+                              SVEX-KIND-WOG-IS-SVEX-KIND
+                              SV::SVEX-QUOTE->VAL
+                              SV::SVEX-ENV-LOOKUP
+                              ;;SV::SVAR-FIX
+                              SVEX-VAR->NAME
+                              SVEX-KIND
+                              SV::4VEC-FIX-UNDER-4VEC-EQUIV
+                              
+                              SVEX-APPLY
+                              SVEX-CALL->FN
+                              SVEX-CALL->args
+                              bit?!-test-is-dont-care-p)
+                             ((:definition rp::rp-termp)
+                              (:definition rp::rp-term-listp)
+                              (:rewrite rp::is-if-rp-termp))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; main lemma.
@@ -959,7 +1054,10 @@
                         (integerp-of-svex-extn-correct<$>-lst
                          (svex-reduce-config->integerp-extns config)))
                     (:@ :normal-eval
-                        (equal (svex-reduce-config->integerp-extns config) nil)))
+                        (equal (svex-reduce-config->integerp-extns config)
+                               nil))
+                    (or* (svex-reduce-config->keep-missing-env-vars config)
+                         (equal big-env env)))
                    (integerp (sv::svex-eval x (rp-evlt env-term a))))
           )
      :fn integerp-of-svex)
@@ -976,17 +1074,23 @@
                         (integerp-of-svex-extn-correct<$>-lst
                          (svex-reduce-config->integerp-extns config)))
                     (:@ :normal-eval
-                        (equal (svex-reduce-config->integerp-extns config) nil)))
+                        (equal (svex-reduce-config->integerp-extns config) nil))
+                    (or* (svex-reduce-config->keep-missing-env-vars config)
+                         (equal big-env env)))
                    (integer-listp (sv::svexlist-eval lst (rp-evlt env-term a))))
           )
      :fn integer-listp-of-svexlist)
 
-   :hints (("goal"
+   :hints (
+           ("goal"
             :do-not-induct t
             ;;:induct (integerp-of-svex svex env context)
             :expand ((svex-eval x (rp-evlt env-term a))
+                     (INTEGERP-OF-SVEX X)
                      (:free (lst) (member-equal (car x) lst)))
             :in-theory (e/d (or*
+
+                             ;;bit?!-test-is-dont-care-p
 
                              sv::svex-quote->val
                              svex-apply
@@ -1001,7 +1105,8 @@
                              hons-assoc-equal
 
                              )
-                            ((:META
+                            (svex-eval-of-bit?!-test-is-dont-care-p-correct
+                             (:META
                               RP::BINARY-OR**/AND**-GUARD-META-CORRECT)
                              (:REWRITE DEFAULT-CDR)
                              (:REWRITE DEFAULT-CAR)
@@ -1033,32 +1138,38 @@
                                    (rp::context context)
                                    (rp::a a)
                                    (rp::term (list 'integerp
-                                                   (cdr (hons-assoc-equal x env))))
+                                                   (cdr (hons-assoc-equal x big-env))))
                                    (rp::attach-sc nil)
-                                   (rp::rw-context-flg nil))))))))
+                                   (rp::rw-context-flg nil))
+                        (:instance svex-eval-of-bit?!-test-is-dont-care-p-correct
+                                   (env big-env))
+                        ))))))
 
 (svex-eval-lemma-tmpl
  (defret-mutual svex-eval-of-integerp-of-svex-is-correct-env=nil
    (defret svex-eval-of-<fn>-is-correct-env=nil
-     (implies (and (sv::svex-p x)
+     (implies (and (equal env nil)
+                   (sv::svex-p x)
                    res
-                   (equal env nil)
+                   
                    (:@ :dollar-eval
-                        (integerp-of-svex-extn-correct<$>-lst
-                         (svex-reduce-config->integerp-extns config)))
-                    (:@ :normal-eval
-                        (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (integerp-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->integerp-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (svex-reduce-config->keep-missing-env-vars config))
               (integerp (sv::svex-eval x svex-env)))
      :fn integerp-of-svex)
    (defret svexlist-eval-of-<fn>-is-correct-env=nil
-     (implies (and (sv::svexlist-p lst)
+     (implies (and (equal env nil)
+                   (sv::svexlist-p lst)
                    res
-                   (equal env nil)
                    (:@ :dollar-eval
-                        (integerp-of-svex-extn-correct<$>-lst
-                         (svex-reduce-config->integerp-extns config)))
-                    (:@ :normal-eval
-                        (equal (svex-reduce-config->integerp-extns config) nil)))
+                       (integerp-of-svex-extn-correct<$>-lst
+                        (svex-reduce-config->integerp-extns config)))
+                   (:@ :normal-eval
+                       (equal (svex-reduce-config->integerp-extns config) nil))
+                   (svex-reduce-config->keep-missing-env-vars config))
               (integer-listp (sv::svexlist-eval lst svex-env)))
      :fn integer-listp-of-svexlist)
    :hints (("goal"
@@ -1075,7 +1186,8 @@
                              sv::svex-call->args
                              integerp-of-svex
                              hons-assoc-equal)
-                            ((:definition acl2::apply$-badgep)
+                            (svex-eval-of-bit?!-test-is-dont-care-p-correct
+                             (:definition acl2::apply$-badgep)
                              (:rewrite acl2::apply$-badgep-properties . 1)
                              (:rewrite acl2::apply$-badgep-properties . 2)
                              (:rewrite rp::rp-term-listp-is-true-listp)
@@ -1101,6 +1213,7 @@
                              sub-alistp
                              rp::rp-evl-of-variable
                              rp::rp-check-context-is-correct-iff)))
+           
            )))
 
 #|(svex-eval-lemma-tmpl
@@ -1126,7 +1239,6 @@ sv::svexlist-eval)
 rp::falist-consistent-aux
 rp::eval-and-all
 svex-eval))))))|#
-
 
 (defmacro create-integerp-of-svex-extn (&key fn
                                              prepwork)

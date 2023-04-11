@@ -762,8 +762,10 @@
             '(lambda (acl2::whs)
                (let ((data (wormhole-data acl2::whs)))
                  (and data
-                      (acl2::warning$-cw
+                      (acl2::warning$-cw0
                        'xdoc
+                       nil
+                       (default-state-vars t)
                        "Please note the following broken topic link ~
                         name~#0~[~/s~]: ~&0.  To suppress such warnings: ~x1."
                        (reverse (remove-duplicates-equal data))

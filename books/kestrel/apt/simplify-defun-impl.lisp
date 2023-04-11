@@ -3,6 +3,7 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 ; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/STATE-VARS.certdep" :dir :system)
 
 (in-package "APT")
 

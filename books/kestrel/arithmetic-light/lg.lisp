@@ -11,8 +11,12 @@
 
 (in-package "ACL2")
 
-;TODO: Which do we prefer, lg or integer-length?  i think i like lg best,
-;but my current rules may target integer-length?
+;; See also log2.lisp and ceiling-of-lg.lisp.
+
+;; TODO: Deprecate this book in favor of log2.lisp.
+
+;TODO: Which do we prefer, lg or log2, or integer-length?  Some rules about
+;integer-length could be adapted to target lg or log2.
 
 (include-book "power-of-2p")
 (local (include-book "integer-length"))
@@ -20,16 +24,9 @@
 (local (include-book "plus"))
 (local (include-book "floor"))
 
-;; The function LG computes the floor of the base-2 logarithm of its argument.
-
+;; Returns the floor of the base-2 logarithm of x, which must be a positive integer.
 ;; TODO: Rename lg to floor-of-lg ?
-
 ;; TODO: what should lg of 0 be?
-;; TODO: Extend to non-integers?
-
-;; See also ceiling-of-lg.lisp.
-
-;; Returns the floor of the base 2 logarithm of x.  Not meaningful for 0.
 (defund lg (x)
   (declare (xargs :guard (posp x)
                   :split-types t)
@@ -42,19 +39,9 @@
                   x))
   :hints (("Goal" :in-theory (enable lg))))
 
-(defthmd lg-of-both-sides
-  (implies (equal x y)
-           (equal (lg x) (lg y))))
-
-(defthm equal-of-expt-and-constant
-  (implies (and (syntaxp (and (quotep k)
-                              (not (quotep size)) ;avoid loops if (:e expt) is disabled
-                              ))
-                (natp size))
-           (equal (equal (expt 2 size) k)
-                  (and (equal k (expt 2 (lg k))) ;k must be a power of 2
-                       (equal size (lg k)))))
-  :hints (("Goal" :use ((:instance lg-of-both-sides (x (expt 2 size)) (y k))))))
+;; (defthmd lg-of-both-sides
+;;   (implies (equal x y)
+;;            (equal (lg x) (lg y))))
 
 ;todo: lg of mask?
 

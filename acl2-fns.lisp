@@ -1213,7 +1213,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ;   Returns a string that is the name of the character, or nil if the
 ;   character has no name.
 
-; However, in akcl for example, (char-name #\\346) evaluates to NIL.  Even if
+; However, in gcl for example, (char-name #\\346) evaluates to NIL.  Even if
 ; it didn't, surely different lisps will define char-name differently.  So,
 ; we can't allow notation such as #\\346.
 
@@ -1745,6 +1745,10 @@ notation causes an error and (b) the use of ,. is not permitted."
   #-cltl2 x)
 
 (defmacro safe-open (filename &rest args &key direction &allow-other-keys)
+
+; Note that this macro has the same default :element-type (i.e., character) as
+; open.
+
   (assert (member direction ; might later support :io and :probe
                   '(:input :output)
                   :test #'eq))

@@ -1,7 +1,7 @@
 ; Rules about list operations that treat lists like sets
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -60,3 +60,8 @@
                  (append (intersection-equal y x)
                          (set-difference-equal x y)))
   :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal set-difference-equal))))
+
+(defthm subsetp-equal-of-append-of-set-difference-equal-same-when-subsetp-equal
+  (implies (subsetp-equal z x)
+           (subsetp-equal z (append y (set-difference-equal x y))))
+  :hints (("Goal" :in-theory (enable subsetp-equal))))

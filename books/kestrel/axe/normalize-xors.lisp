@@ -47,6 +47,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/utilities/split-list-fast" :dir :system))
 
 ;(local (in-theory (disable car-becomes-nth-of-0)))
 
@@ -1600,8 +1601,8 @@
 ;; (defun bit-blast-vars (dag var-width-alist)
 ;;   (let* ((dag-len (len dag))
 ;;          (dag-array (make-into-array 'dag-array dag))
-;; 	 (translation-array (make-empty-array 'translation-array dag-len))
-;; 	 )
+;;       (translation-array (make-empty-array 'translation-array dag-len))
+;;       )
 ;;     (bit-blast-vars-aux 0 dag-len dag-array var-width-alist nil translation-array)))
 
 ;; (skip- proofs (verify-guards bit-blast-vars))
@@ -1659,7 +1660,7 @@
 ;; (defun rename-vars (dag renaming-alist)
 ;;   (let* ((dag-len (len dag))
 ;;          (dag-array (make-into-array 'dag-array dag))
-;; 	 )
+;;       )
 ;;     (rename-vars-aux 0 dag-len dag-array renaming-alist nil)))
 
 ;; (skip- proofs (verify-guards rename-vars))

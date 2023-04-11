@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function acl2-count
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,8 @@
 (in-package "ACL2")
 
 ;; TODO: Consider disabling acl2-count here.
+
+;; TODO: Consider moving rules about take, nthcdr, etc. to the individual books.
 
 ;; Note that ACL2 now includes a pretty strong linear rule about acl2-count,
 ;; acl2-count-car-cdr-linear, though it does require consp.
@@ -53,7 +55,17 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable acl2-count))))
 
-(defthm <=-of-acl2-count-of-nthcdr
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm acl2-count-of-cons
+  (equal (acl2-count (cons x y))
+         (+ 1 (acl2-count x)
+            (acl2-count y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Disabled since we have the :linear rule just below
+(defthmd <=-of-acl2-count-of-nthcdr
   (<= (acl2-count (nthcdr n lst))
       (acl2-count lst))
   :hints (("Goal" :induct (nthcdr n lst)
@@ -75,33 +87,14 @@
           ("subgoal *1/1" :cases ((< 0 n)))
           ("subgoal *1/2" :cases ((< 0 n)))))
 
-(defthm acl2-count-of-cons
-  (equal (acl2-count (cons x y))
-         (+ 1 (acl2-count x)
-            (acl2-count y))))
+(defthm <-of-acl2-count-of-nthcdr-linear
+  (implies (and (posp n)
+                (consp lst))
+           (< (acl2-count (nthcdr n lst))
+              (acl2-count lst)))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (nthcdr n lst))))))
 
-(defthm <-of-acl2-count-of-remove1-equal
-  (implies (member-equal a x)
-           (< (acl2-count (remove1-equal a x))
-              (acl2-count x)))
-  :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
-  :hints (("Goal" :in-theory (enable remove1-equal))))
-
-(defthm <=-of-acl2-count-of-remove1-equal
-  (<= (acl2-count (remove1-equal a x))
-      (acl2-count x))
-  :rule-classes (:rewrite (:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
-  :hints (("Goal" :in-theory (enable remove1-equal))))
-
-(defthm equal-of-acl2-count-of-remove1-equal-and-acl2-count
-  (equal (equal (acl2-count (remove1-equal a x))
-                (acl2-count x))
-         (if (member-equal a x)
-             nil
-           (equal (acl2-count (true-list-fix x)) ;simplify?
-                  (acl2-count x))))
-  :hints (("Goal" :use (:instance <-of-acl2-count-of-remove1-equal)
-           :in-theory (disable <-of-acl2-count-of-remove1-equal))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm <=-of-acl2-count-of-nth
   (<= (acl2-count (nth n lst))
@@ -110,11 +103,15 @@
   :hints (("Goal" :induct (NTH N LST)
            :in-theory (enable nth))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm <-of-acl2-count-of-one-less
   (implies (posp x)
            (< (acl2-count (+ -1 x))
               (acl2-count x)))
   :hints (("Goal" :in-theory (enable acl2-count))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: use polarities?
 ;drop?

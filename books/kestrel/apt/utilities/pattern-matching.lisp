@@ -11,6 +11,8 @@
 ; but it may well be needed in order to take advantage of those triples, so we
 ; include it here.
 
+; (depends-on "build/defrec-certdeps/STATE-VARS.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (include-book "std/util/bstar" :dir :system)

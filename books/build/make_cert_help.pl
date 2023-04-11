@@ -646,9 +646,9 @@ $instrs .= "; portculli for included books:\n";
 foreach my $pair (@$includes) {
     my ($incname, $incdir) = @$pair;
     if ($incdir) {
-	$instrs .= "(acl2::ld \"$incname.port\" :dir :$incdir :ld-missing-input-ok t)\n";
+	$instrs .= "(acl2::ld \"$incname.port\" :dir :$incdir :ld-missing-input-ok t :ld-always-skip-top-level-locals t)\n";
     } else {
-	$instrs .= "(acl2::ld \"$incname.port\" :ld-missing-input-ok t)\n";
+	$instrs .= "(acl2::ld \"$incname.port\" :ld-missing-input-ok t :ld-always-skip-top-level-locals t)\n";
     }
 }
 

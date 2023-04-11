@@ -191,7 +191,7 @@ Common Lisp.  See source file acl2-init.lisp for this error message,
 which is preceded by information (Lisp features) indicating the legal Lisp
 implementations.")
 
-#+akcl
+#+gcl
 (setq si:*notify-gbc* t)
 
 ; The following has been superseded; see the section on reading characters from
@@ -349,10 +349,10 @@ implementations.")
 ; SEEMS to be necessary in order to permit the interaction of tracing
 ; with the redefinition of si::break-level.
 
-#+akcl
+#+gcl
 (declaim (special si::arglist))
 
-#+akcl
+#+gcl
 (let ((v (symbol-function 'si::break-level)))
   (setf (symbol-function 'si::break-level)
         (function
@@ -1098,7 +1098,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
   nil)
 
-#+akcl
+#+gcl
 (defvar *gcl-large-maxpages*
 
 ; This variable tells GCL to use Camm Maguire's strategy during development of
@@ -1110,12 +1110,12 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   (and (boundp 'si::*code-block-reserve*)
        (fboundp 'si::set-log-maxpage-bound)))
 
-#+akcl
-(defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
-                                          write-worklispext
-                                          set-optimize-maximum-pages
-                                          host-lisp-args
-                                          inert-args)
+#+gcl
+(defun save-acl2-in-gcl-aux (sysout-name gcl-exec-name
+                                         write-worklispext
+                                         set-optimize-maximum-pages
+                                         host-lisp-args
+                                         inert-args)
   (when *saved-system-banner*
     (when (not (boundp 'si::*system-banner*)) ; true, unless user intervened
       (setq si::*system-banner* *saved-system-banner*))
@@ -1171,9 +1171,9 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
     (chmod-executable sysout-name)
     (si::save-system (concatenate 'string sysout-name "." ext))))
 
-#+akcl
-(defun save-acl2-in-akcl (sysout-name gcl-exec-name
-                                      &optional mode do-not-save-gcl)
+#+gcl
+(defun save-acl2-in-gcl (sysout-name gcl-exec-name
+                                     &optional mode do-not-save-gcl)
   (declare (ignore mode))
   (setq *acl2-allocation-alist*
 
@@ -1248,8 +1248,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
         nil)
 
-; Now adjust if the page size differs from that for GCL/AKCL running on a
-; Sparc.  See comment above.
+; Now adjust if the page size differs from that for GCL running on a Sparc.
+; See comment above.
 
   (let ((multiplier (/ 4096 si::lisp-pagesize)))
     (cond ((not (= multiplier 1))
@@ -1361,14 +1361,14 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 ;  (print "Save the system") ;debugging
   (when (not do-not-save-gcl)
-    (save-acl2-in-akcl-aux sysout-name gcl-exec-name t t nil nil)))
+    (save-acl2-in-gcl-aux sysout-name gcl-exec-name t t nil nil)))
 
-#+akcl
+#+gcl
 (defun save-exec-raw (sysout-name host-lisp-args inert-args)
   (setq *acl2-allocation-alist* nil) ; Don't meddle with allocations.
   (setq *acl2-default-restart-complete* nil)
-  (save-acl2-in-akcl-aux sysout-name sysout-name nil nil host-lisp-args
-                         inert-args))
+  (save-acl2-in-gcl-aux sysout-name sysout-name nil nil host-lisp-args
+                        inert-args))
 
 (defvar *acl2-default-restart-complete* nil)
 
@@ -2338,11 +2338,11 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; case Camm Maguire uses compiler::link.
 
                             do-not-save-gcl)
-  #-akcl (declare (ignore do-not-save-gcl))
-  #-(or akcl allegro cmu sbcl clisp ccl)
+  #-gcl (declare (ignore do-not-save-gcl))
+  #-(or gcl allegro cmu sbcl clisp ccl)
   (declare (ignore other-info))
 
-  #+akcl
+  #+gcl
   (when (boundp 'si::*optimize-maximum-pages*) ; Camm Maguire suggestions
     (setq si::*optimize-maximum-pages* nil)
     (when *gcl-large-maxpages*
@@ -2368,8 +2368,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
                                  :initialized))))
     (error "Initialization has failed.  Try INITIALIZE-ACL2 again.")))
 
-  #+akcl
-  (save-acl2-in-akcl "nsaved_acl2" other-info mode do-not-save-gcl)
+  #+gcl
+  (save-acl2-in-gcl "nsaved_acl2" other-info mode do-not-save-gcl)
   #+lucid
   (save-acl2-in-lucid "nsaved_acl2" mode)
   #+lispworks
@@ -2384,7 +2384,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   (save-acl2-in-clisp "nsaved_acl2" mode other-info)
   #+ccl
   (save-acl2-in-ccl "nsaved_acl2" mode other-info)
-  #-(or akcl lucid lispworks allegro clisp ccl cmu sbcl)
+  #-(or gcl lucid lispworks allegro clisp ccl cmu sbcl)
   (error "We do not know how to save ACL2 in this Common Lisp.")
   (format t "Saving of ACL2 is complete.~%"))
 
@@ -2420,5 +2420,5 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; The following avoids core being dumped in certain circumstances
 ; resulting from very hard errors.
 
-#+akcl
+#+gcl
 (si::catch-fatal 1)

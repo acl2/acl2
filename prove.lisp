@@ -4068,76 +4068,6 @@
                                             (erase-rw-cache-from-pspv new-pspv)))))
                     state))))))))
 
-#-acl2-loop-only
-(defvar *iprint-read-state*
-
-; Possible values are:
-
-; nil      - no requirement on current iprint index
-; t        - either all indices must exceed iprint-last-index, or none does
-; (n . <=) - n, already read, is <= iprint-last-index; index must be too
-; (n .  >) - n, already read, is  > iprint-last-index; index must be too
-
-; The value is initially nil.  At a top-level read, it is set to nil if
-; iprint-fal is nil, else to t.  For the first index i that is read when the
-; value is t, we set the value to <= if (<= i iprint-last-index) and to >
-; otherwise.
-
-  nil)
-
-#-acl2-loop-only
-(defun iprint-oracle-updates-raw (state)
-
-; Warning: Keep in sync with iprint-oracle-updates.
-
-  (let* ((ar *wormhole-iprint-ar*))
-    (when ar
-      (f-put-global 'iprint-ar (compress1 'iprint-ar ar) state)
-      (f-put-global 'iprint-fal *wormhole-iprint-fal* state)
-      (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
-      (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
-      (setq *wormhole-iprint-ar* nil))
-    (setq *iprint-read-state*
-          (if (f-get-global 'iprint-fal state)
-              t
-            nil)))
-  state)
-
-(defun iprint-oracle-updates (state)
-
-; Warning: Keep in sync with iprint-oracle-updates-raw.
-
-  #+acl2-loop-only
-  (mv-let (erp val state)
-    (read-acl2-oracle state)
-    (declare (ignore erp))
-
-; If we intend to reason about this function, then we might want to check that
-; val is a reasonable value.  But that seems not to be important, since very
-; little reasoning would be possible anyhow for this function.
-
-    (let ((val (fix-true-list val)))
-      (pprogn (f-put-global 'iprint-ar
-                            (nth 0 val)
-                            state)
-              (f-put-global 'iprint-hard-bound
-                            (nfix (nth 1 val))
-                            state)
-              (f-put-global 'iprint-soft-bound
-                            (nfix (nth 2 val))
-                            state)
-              (f-put-global 'iprint-fal
-                            (nth 3 val)
-                            state)
-              state)))
-  #-acl2-loop-only
-  (iprint-oracle-updates-raw state))
-
-(defun iprint-oracle-updates@par ()
-  #-acl2-loop-only
-  (iprint-oracle-updates-raw *the-live-state*)
-  nil)
-
 (defun@par waterfall-step (processor cl-id clause hist pspv wrld ctx state
                                      step-limit)
 
@@ -4237,27 +4167,40 @@
      (iprint-oracle-updates state)
      (iprint-oracle-updates@par))
     (cond
-     (erp ; from out-of-time or clause-processor failure; treat as 'error signal
-      (mv-let@par (erp2 val state)
-                  (er-soft@par ctx signal "~@0" erp)
-                  (declare (ignore erp2 val))
-                  (pprogn@par
-                   (assert$
-                    (null ttree)
-                    (mv-let@par
-                     (erp3 val state)
-                     (accumulate-ttree-and-step-limit-into-state@par
-                      (add-to-tag-tree! 'abort-cause
-                                        (if (equal erp *interrupt-string*)
-                                            'interrupt
-                                          'time-limit-reached)
-                                        nil)
-                      step-limit
-                      state)
-                     (declare (ignore val))
-                     (assert$ (null erp3)
-                              (state-mac@par))))
-                   (mv@par step-limit 'error nil nil nil nil state))))
+     (erp ; from out-of-time or clause-processor fail; treat as 'error signal
+      (let ((time-limit-reached-p
+
+; As noted in comments above the definition of *acl2-time-limit*, the variable
+; *acl2-time-limit* is nil by default, but is set to a positive time limit (in
+; units of internal-time-units-per-second) by with-prover-time-limit, and is
+; set to 0 to indicate that a proof has been interrupted (see our-abort).
+
+             (not (equal erp *interrupt-string*))))
+        (mv-let@par (erp2 val state)
+                    (er-soft@par ctx
+                                 (if time-limit-reached-p
+                                     "Time-limit"
+                                   "Interrupt")
+                                 "~@0"
+                                 erp)
+                    (declare (ignore erp2 val))
+                    (pprogn@par
+                     (assert$
+                      (null ttree)
+                      (mv-let@par
+                       (erp3 val state)
+                       (accumulate-ttree-and-step-limit-into-state@par
+                        (add-to-tag-tree! 'abort-cause
+                                          (if time-limit-reached-p
+                                              'time-limit-reached
+                                            'interrupt)
+                                          nil)
+                        step-limit
+                        state)
+                       (declare (ignore val))
+                       (assert$ (null erp3)
+                                (state-mac@par))))
+                     (mv@par step-limit 'error nil nil nil nil state)))))
      (t
       (pprogn@par ; account for bddnote in case we do not have a hit
        (cond ((and (eq processor 'apply-top-hints-clause)
@@ -4905,7 +4848,7 @@
         ((fquotep term) n)
         ((flambda-applicationp term)
          (term-difficulty1-lst (fargs term) wrld
-                               (term-difficulty1 (lambda-body term)
+                               (term-difficulty1 (lambda-body (ffn-symb term))
                                                  wrld (1+ n))))
         ((eq (ffn-symb term) 'not)
          (term-difficulty1 (fargn term 1) wrld n))
@@ -8250,7 +8193,7 @@
 ; might have been two or three where an 8 hour day was put in.  We
 ; worked separately, "contracting" with one another to do the various
 ; parts and meeting to go over the code.  Bill Schelter was extremely
-; helpful in tuning akcl for us.  Several times we did massive
+; helpful in tuning akcl (later gcl) for us.  Several times we did massive
 ; rewrites as we changed the subset or discovered new programming
 ; styles.  During that period Moore went to the beach at Rockport one
 ; weekend, to Carlsbad Caverns for Labor Day, to the University of

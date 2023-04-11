@@ -27,6 +27,7 @@ We give an implementation with nodes as nats.
 (local (include-book "kestrel/utilities/lists/add-to-set-theorems" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 
 (in-theory (disable acl2-count))
 

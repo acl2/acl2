@@ -302,9 +302,11 @@
     :prepwork ((local
                 (in-theory (enable is-rp))))
     (cond ((times-p x)
-           (ex-from-rp/times (cadr x)))
+           (ex-from-rp/times (caddr x)))
           ((is-rp x)
            (ex-from-rp/times (caddr x)))
+          ((--.p x)
+           (ex-from-rp/times (cadr x)))
           (t x)))
 
   (define pp-order ((x rp-termp)
@@ -842,8 +844,19 @@
       t
     (if (atom (cdr lst))
         t
-      (and (not (equal (car lst) (cadr lst)))
+      (and (not (rp-equal-cnt
+                 (ex-from-rp/times (car lst))
+                 (ex-from-rp/times (cadr lst))
+                 0))
            (no-rep-p (cdr lst))))))
+
+(define list-of-only-s/c-p (lst fn)
+  (if (atom lst)
+      (equal lst nil)
+    (b* ((x (ex-from-rp/times (car lst))))
+      (and (consp x)
+           (equal (car x) fn)
+           (list-of-only-s/c-p (cdr lst) fn)))))
 
 (acl2::defines
   ordered-s/c-p
@@ -869,20 +882,25 @@
               (no-rep-p (shrinking-list-to-lst pp))
               (s-sum-ordered-listp (shrinking-list-to-lst c))
               (no-rep-p (shrinking-list-to-lst c))
+              (list-of-only-s/c-p (shrinking-list-to-lst c) 'c) 
               (ordered-s/c-p-lst (shrinking-list-to-lst c))))
         (('c & s pp c)
          (and (pp-lst-orderedp (shrinking-list-to-lst pp))
               (no-rep-p (shrinking-list-to-lst pp))
               (s-sum-ordered-listp (shrinking-list-to-lst s))
               (no-rep-p (shrinking-list-to-lst s))
+              (list-of-only-s/c-p (shrinking-list-to-lst s) 's)
               (s-sum-ordered-listp (shrinking-list-to-lst c))
               (no-rep-p (shrinking-list-to-lst c))
+              (list-of-only-s/c-p (shrinking-list-to-lst c) 'c)
               (ordered-s/c-p-lst (shrinking-list-to-lst s))
               (ordered-s/c-p-lst (shrinking-list-to-lst c))))
         (('s-c-res s pp c)
          (and (pp-lst-orderedp (shrinking-list-to-lst pp))
               (s-sum-ordered-listp (shrinking-list-to-lst s))
               (s-sum-ordered-listp (shrinking-list-to-lst c))
+              (list-of-only-s/c-p (shrinking-list-to-lst s) 's)
+              (list-of-only-s/c-p (shrinking-list-to-lst c) 'c)
               (ordered-s/c-p-lst (shrinking-list-to-lst s))
               (ordered-s/c-p-lst (shrinking-list-to-lst c))))
         (('-- term)

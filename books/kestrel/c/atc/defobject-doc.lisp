@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -95,19 +95,30 @@
      (xdoc::p
       "It must be one of")
      (xdoc::ul
-      (xdoc::li "@('(schar <pos>)')")
-      (xdoc::li "@('(uchar <pos>)')")
-      (xdoc::li "@('(sshort <pos>)')")
-      (xdoc::li "@('(ushort <pos>)')")
-      (xdoc::li "@('(sint <pos>)')")
-      (xdoc::li "@('(uint <pos>)')")
-      (xdoc::li "@('(slong <pos>)')")
-      (xdoc::li "@('(ulong <pos>)')")
-      (xdoc::li "@('(sllong <pos>)')")
-      (xdoc::li "@('(ullong <pos>)')"))
+      (xdoc::li "@('schar')")
+      (xdoc::li "@('uchar')")
+      (xdoc::li "@('sshort')")
+      (xdoc::li "@('ushort')")
+      (xdoc::li "@('sint')")
+      (xdoc::li "@('uint')")
+      (xdoc::li "@('slong')")
+      (xdoc::li "@('ulong')")
+      (xdoc::li "@('sllong')")
+      (xdoc::li "@('ullong')")
+      (xdoc::li "@('(schar <size>)')")
+      (xdoc::li "@('(uchar <size>)')")
+      (xdoc::li "@('(sshort <size>)')")
+      (xdoc::li "@('(ushort <size>)')")
+      (xdoc::li "@('(sint <size>)')")
+      (xdoc::li "@('(uint <size>)')")
+      (xdoc::li "@('(slong <size>)')")
+      (xdoc::li "@('(ulong <size>)')")
+      (xdoc::li "@('(sllong <size>)')")
+      (xdoc::li "@('(ullong <size>)')"))
      (xdoc::p
-      "where @('<pos>') is a positive integer not exceeding @(tsee ullong-max).
-       Each of these represents an integer array type with the specified size,
+      "where @('<size>') is a positive integer not exceeding @(tsee ullong-max).
+       Each of these represents either an integer type
+       or an integer array type with the specified size,
        where the limit on the size is so that
        it can be represented by a C integer constant."))
 
@@ -116,21 +127,29 @@
      (xdoc::p
       "Initializer of the externally defined object.")
      (xdoc::p
-      "It must be either @('nil') (the default)
-       or a list of length @('<pos>')
-       of constant expression terms returning @('T'),
-       where @('T') is the integer type specified in the @(':type') input
-       (i.e. the element type of the array),
-       and where the notion of constant expression term returning @('T')
-       is defined below.")
+      "It must be either of of the following
+       (where the notion of constant expression term returning @('T')
+       is defined later below):")
+     (xdoc::ul
+      (xdoc::li
+       "@('nil'), which is the default.")
+      (xdoc::li
+       "A constant expression terms returning @('T'),
+        where @('T') is the integer type specified in the @(':type') input,
+        if the @(':type') input specifies an integer type.")
+      (xdoc::li
+       "A list @('(... ... ...)') of constant expression terms returning @('T'),
+        where @('T') is the element type
+        of the integer array type specified in the @(':type') input,
+        when the @(':type') input specifies an integer array type."))
      (xdoc::p
       "If this input is not @('nil'),
-       it represents an array initializer [C:6.7.9].
+       it represents an initializer [C:6.7.9].
        If this input is @('nil'),
        the object declaration does not have an initializer.")
      (xdoc::p
       "If this input is not @('nil'),
-       its constituent terms must be guard-verifiable.
+       its term or terms must be guard-verifiable.
        This requirement is checked implicitly
        by generating the @('object-<name>-init') function
        (see the `"
@@ -140,7 +159,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Constant Expression Terms"
 
     (xdoc::p
@@ -296,9 +315,14 @@
      (xdoc::p
       "This is defined as")
      (xdoc::codeblock
+      ";; if the object has integer type:"
+      "(defun object-<name>-p (x)"
+      "  (<type>p x))"
+      ""
+      ";; if the object has integer array type:"
       "(defun object-<name>-p (x)"
       "  (and (<type>-arrayp x)"
-      "       (equal (<type>-array-length x) <pos>)))")
+      "       (equal (<type>-array-length x) <size>)))")
      (xdoc::p
       "where @('<name>') is the name of the object
        specified in the @('name') input
@@ -317,23 +341,35 @@
      (xdoc::p
       "This is defined as")
      (xdoc::codeblock
+      ";; if the object has integer type:"
+      "(defun object-<name>-init ()"
+      "  <term>)"
+      ""
+      ";; if the object has integer array type:"
       "(defun object-<name>-init ()"
       "  (<type>-array-of (list <term1> <term2> ...)))")
      (xdoc::p
       "where @('<name>') is the name of the object
        specified in the @('name') input,
        @('<type>') is the integer fixtype name
-       specified in the @(':type') input,
+       specified in the @(':type') input
+       (either the integer type of the object,
+       or the element type of the array type of the object),
+       @('<term>') is the term in the @(':init') input
+       (if the object has integer type and that input is not @('nil')),
        and @('<term1>'), @('<term2>'), etc.
-       are the terms in the list in the @(':init') input,
-       if that input is not @('nil');
+       are the terms in the list in the @(':init') input
+       (if the object has integer array type and that input is not @('nil'));
        if the @(':init') input is @('nil'),
-       each term is @('(<type>-dec-const 0)'),
-       where @('<type>') is the element type of the array,
-       and where the term is repeated @('<pos>') times,
-       reflecting the fact that an external array object
-       without an explicit initializer
-       is initialized with 0 values of the appropriate type.")
+       each term is @('(<type>-from-integer 0)'),
+       where @('<type>') is the type or element type of the object,
+       and where, in the case of the array,
+       the term is repeated @('<size>') times.
+       These default initializers reflect
+       the default initialization of external objects:
+       an integer external object is initialized with 0 of the type,
+       and an integer array external object
+       is initialized with 0 values of the element type.")
      (xdoc::p
       "The nullary function @('object-<name>-init') is
        in the same package as the @('name') input.

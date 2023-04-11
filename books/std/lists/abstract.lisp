@@ -532,7 +532,7 @@ about elementlist-mapappend."
     :rule-classes nil
     ;; NOTE: above should be a compound-recognizer.  We record that in the table
     ;; specially.
-    :name true-listp-when-element-list-p
+    :name true-listp-when-element-list-p-compound-recognizer
     :requirement (and true-listp single-var)
     :body (implies (element-list-p x)
                    (true-listp x))

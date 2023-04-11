@@ -327,6 +327,20 @@
       "         (pred x))"))
 
     (xdoc::desc
+     "@('not-reserrp-when-ok')"
+     (xdoc::p
+      "A theorem asserting that
+       a value in the fixtype specified by @(':ok')
+       is not an error in @(tsee reserrp):")
+     (xdoc::codeblock
+      "(implies (ok x)"
+      "         (not (reserrp x)))")
+     (xdoc::p
+      "This theorem is disabled by default,
+       because it backchains from @(tsee reserrp) to @('ok'),
+       where the former may be used without any reference to the latter."))
+
+    (xdoc::desc
      "@('ok-when-pred-and-not-error')"
      (xdoc::p
       "A theorem asserting that
@@ -552,7 +566,10 @@
          (type-pred (or pred (add-suffix type "-P")))
          (type-fix (or fix (add-suffix type "-FIX")))
          (type-equiv (or equiv (add-suffix type "-EQUIV")))
-         (ok-pred-when-type-pred-and-not-reserr
+         (not-reserrp-when-ok-pred
+          (acl2::packn-pos (list 'not-reserrp-when- ok-pred)
+                           type))
+         (ok-pred-when-type-pred-and-not-reserrp
           (acl2::packn-pos (list ok-pred '-when- type-pred '-and-not-reserrp)
                            type)))
       `(encapsulate ()
@@ -566,7 +583,11 @@
            :pred ,type-pred
            :fix ,type-fix
            :equiv ,type-equiv)
-         (defruled ,ok-pred-when-type-pred-and-not-reserr
+         (defruled ,not-reserrp-when-ok-pred
+           (implies (,ok-pred x)
+                    (not (reserrp x)))
+           :enable (,ok-pred reserrp))
+         (defruled ,ok-pred-when-type-pred-and-not-reserrp
            (implies (and (,type-pred x)
                          (not (reserrp x)))
                     (,ok-pred x))

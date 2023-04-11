@@ -78,7 +78,7 @@
            (not (equal (mul a b p) 0)))
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance acl2::euclid
+           :use ((:instance dm::euclid
                             (acl2::p p)
                             (acl2::a a)
                             (acl2::b b))

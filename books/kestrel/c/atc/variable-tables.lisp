@@ -17,6 +17,7 @@
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,10 +36,12 @@
   (xdoc::topstring
    (xdoc::p
     "For each variable, we store its C type,
-     and the name of a theorem about the variable.
-     (We are not generating the theorem yet, but we will soon.)."))
+     the name of a theorem about the variable,
+     and a flag indicating whether the variable represents an external object
+     (defined by a @(tsee defobject))."))
   ((type type)
-   (thm symbol))
+   (thm symbol)
+   (externalp bool))
   :pred atc-var-infop)
 
 ;;;;;;;;;;;;;;;;;;;;

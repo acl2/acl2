@@ -12,6 +12,201 @@
 
 (hons-clear t)
 
+(memoize 'ordered-s/c-p)
+
+;; (unpack-booth-later-enabled)
+
+(define pp-lst-flattened-p (pp-lst)
+  (if (atom pp-lst)
+      (equal pp-lst nil)
+    (b* ((e (car pp-lst))
+         (e (ex-from-rp/times e)))
+      (and (not (binary-fnc-p e))
+           (pp-lst-flattened-p (cdr pp-lst))))))
+
+
+(trace$
+ (extract-equals-from-pp-lst
+  :cond (or (equal acl2::traced-fn 'extract-equals-from-pp-lst)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list res-pp-lst)
+                acl2::values)
+               ((list pp-lst &)
+                acl2::arglist)
+               )
+            (if (and (pp-lst-orderedp res-pp-lst)
+                     (or (unpack-booth-later-enabled)
+                         (pp-lst-flattened-p res-pp-lst)))
+                (msg "")
+              (msg  "---Not ordered from extract-equals-from-pp-lst:~%--Inputs: pp-lst ~x0.~%--Rturned: ~%res-pp-lst: ~x1"
+                   (list (pp-lst-orderedp pp-lst) pp-lst)
+                   (list (pp-lst-orderedp res-pp-lst) res-pp-lst)
+                   ))))))
+
+(trace$
+ (extract-from-equals-lst
+  :cond (or (equal acl2::traced-fn 'extract-from-equals-lst)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list s res-pp-lst c-lst changed)
+                acl2::values)
+               ((list pp-lst)
+                acl2::arglist)
+               (s-lst (list-to-lst s)))
+            (if (or (not changed)
+                    (and (ordered-s/c-p-lst s-lst)
+                         (pp-lst-orderedp res-pp-lst)
+
+                         (or (unpack-booth-later-enabled)
+                             (pp-lst-flattened-p res-pp-lst))
+                     
+                         (ordered-s/c-p-lst c-lst)))
+                (msg "")
+              (msg  "---Not ordered from extract-from-equals-lst:~%--Inputs: pp-lst ~x0.~%--Rturned: ~%s-lst: ~x1.~%pp-lst:~x2.~%c-lst:~x3.~%"
+                   (list (pp-lst-orderedp pp-lst) pp-lst)
+                   (list (ordered-s/c-p-lst s-lst) s-lst)
+                   (list (pp-lst-orderedp res-pp-lst) res-pp-lst)
+                   (list (ordered-s/c-p-lst c-lst) c-lst)
+                   ))))))
+
+(trace$
+ (new-sum-merge
+  :cond (or (equal acl2::traced-fn 'new-sum-merge)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list s pp-lst c-lst)
+                acl2::values)
+               (s-lst (list-to-lst s))
+               ((list term)
+                acl2::arglist))
+            (if (and (ordered-s/c-p-lst s-lst)
+                     (pp-lst-orderedp pp-lst)
+                     (ordered-s/c-p-lst c-lst))
+                (msg "")
+              (msg  "---Not ordered from new-sum-merge:~%--Inputs: term: ~x0.~%--Rturned: ~%s-lst: ~x1.~%pp-lst:~x2.~%c-lst:~x3.~%"
+                   term
+                   (list (ordered-s/c-p-lst s-lst) s-lst)
+                   (list (pp-lst-orderedp pp-lst) pp-lst)
+                   (list (ordered-s/c-p-lst c-lst) c-lst)
+                   ))))))
+
+
+
+(trace$
+ (pp-sum-sort-lst
+  :cond (or (equal acl2::traced-fn 'pp-sum-sort-lst)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list res-pp-lst)
+                acl2::values)
+               ((list pp-lst)
+                acl2::arglist))
+            (if (pp-lst-orderedp res-pp-lst)
+                (msg "")
+              (msg "---Not ordered from pp-sum-sort-lst: ~%--Inputs: pp-lst: ~x0. ~%--Returned: res-pp-lst: ~x1.~%"
+                   (list `(:pp-order ,(pp-lst-orderedp pp-lst))
+                         pp-lst)
+                   (list ``(:pp-order ,(pp-lst-orderedp res-pp-lst))
+                         res-pp-lst)))))))
+
+(trace$
+ (s-fix-pp-args-aux
+  :cond (or (equal acl2::traced-fn 's-fix-pp-args-aux)) ;; Don't want to see *1* functions
+  :entry (:fmt! (b* (((list pp-lst) acl2::arglist))
+                  (if (or (ordered-s/c-p-lst pp-lst)
+                          (pp-lst-orderedp pp-lst))
+                      (msg "")
+                    (msg "---Not ordered input to s-fix-pp-args-aux: ~%--Inputs: pp-lst: ~x0.~%"
+                         (list `((:pp-order ,(pp-lst-orderedp pp-lst))
+                                 (:s/c-order ,(ordered-s/c-p-lst pp-lst)))
+                               pp-lst)))))
+  :exit  (:fmt!
+          (b* (((list cleaned-pp-lst)
+                acl2::values)
+               ((list pp-lst)
+                acl2::arglist))
+            (if (or (ordered-s/c-p-lst cleaned-pp-lst)
+                    (pp-lst-orderedp cleaned-pp-lst))
+                (msg "")
+              (msg "---Not ordered from s-fix-pp-args-aux: ~%--Inputs: pp-lst: ~x0. ~%--Returned: cleaned-pp-lst: ~x1.~%"
+                   (list `((:pp-order ,(pp-lst-orderedp pp-lst))
+                           (:s/c-order ,(ordered-s/c-p-lst pp-lst)))
+                         pp-lst)
+                   (list `((:pp-order ,(pp-lst-orderedp cleaned-pp-lst))
+                          (:s/c-order ,(ordered-s/c-p-lst cleaned-pp-lst)))
+                         cleaned-pp-lst)))))))
+
+(trace$
+ (s-spec-meta-aux
+  :cond (or (equal acl2::traced-fn 's-spec-meta-aux)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list res)
+                acl2::values)
+               ((list s pp-lst c-lst)
+                acl2::arglist)
+               (s-lst (list-to-lst s)))
+            (if (and (ordered-s/c-p res)
+                     (ordered-s/c-p-lst s-lst)
+                     (pp-lst-orderedp pp-lst)
+                     (ordered-s/c-p-lst c-lst))
+                (msg "")
+              (msg "---Not ordered from s-spec-meta-aux:~%--Inputs: s-lst: ~x0.~%pp-lst:~x1.~%c-lst:~x2.~%--Returned: res: ~x3.~%"
+                   (list (ordered-s/c-p-lst s-lst) s-lst)
+                   (list (pp-lst-orderedp pp-lst) pp-lst)
+                   (list (ordered-s/c-p-lst c-lst) c-lst)
+                   (list (ordered-s/c-p res) res)))))))
+
+
+(trace$
+ (cross-product-two-larges-aux-pp-lst
+  :cond (or (equal acl2::traced-fn 'cross-product-two-larges-aux-pp-lst)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list res-s-lst res-pp-lst res-c-lst valid)
+                acl2::values)
+               ((list pp-lst single-s/c2)
+                acl2::arglist))
+            (if (and valid
+                     (ordered-s/c-p-lst res-s-lst)
+                     (pp-lst-orderedp res-pp-lst)
+                     (ordered-s/c-p-lst res-c-lst))
+                (msg "")
+              (msg "---Not ordered from cross-product-two-larges-aux-pp-lst: ~%--Inputs: pp-lst: ~x0.~%single-s/c2:~x1. ~%--Returned: res-s-lst: ~x2, res-pp-lst: ~x3, res-c-lst: ~x4.~%"
+                   (list (pp-lst-orderedp pp-lst) pp-lst)
+                   (list (ordered-s/c-p single-s/c2) single-s/c2)
+                   
+                   (list (ordered-s/c-p-lst res-s-lst) res-s-lst)
+                   (list (pp-lst-orderedp res-pp-lst) res-pp-lst)
+                   (list (ordered-s/c-p-lst res-c-lst) res-c-lst)
+                   ))))))
+
+
+(trace$
+ (s-of-s-fix-lst
+  :cond (or (equal acl2::traced-fn 's-of-s-fix-lst)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list pp-res-lst c-res-lst)
+                acl2::values)
+               ((list s-lst pp-lst c-lst)
+                acl2::arglist))
+            (if (and (ordered-s/c-p-lst c-res-lst)
+                     (pp-lst-orderedp pp-res-lst))
+                (msg "")
+              (progn$
+               (msg "---Not ordered from s-of-s-fix-lst:~%--Inputs: s-lst: ~x0.~%pp-lst:~x1.~%c-lst:~x2.~%--Returned: pp-res-lst: ~x3.~%c-res-lst: ~x4 . ~%"
+                   (list (ordered-s/c-p-lst s-lst) s-lst)
+                   (list (pp-lst-orderedp pp-lst) pp-lst)
+                   (list (ordered-s/c-p-lst c-lst) c-lst)
+                   (list (pp-lst-orderedp pp-res-lst) pp-res-lst)
+                   (list (ordered-s/c-p-lst c-res-lst) c-res-lst))
+               ;;(break$)
+               ))))))
+
+
+
 (trace$
  (s-c-spec-meta
   :cond (or (equal acl2::traced-fn 's-c-spec-meta)) ;; Don't want to see *1* functions
@@ -27,7 +222,7 @@
                     (and (equal (caar acl2::arglist) 'c-spec)
                          (ordered-s/c-p res-term)))
                 (msg "")
-              (msg "Not ordered from s-c-spec-meta Input:
+              (msg "---Not ordered from s-c-spec-meta Input:
   ~x0. res-term: ~x1. ~%"
                    acl2::arglist res-term))))))
 
@@ -44,7 +239,7 @@
                      (ordered-s/c-p-lst c-res-lst)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from unpack-booth-for-s*. Input:
+              (msg "---Not ordered from unpack-booth-for-s*. Input:
   ~x0. s-res-lst: ~x1. pp-res-lst: ~x2. c-res-lst: ~x3 ~%"
                    acl2::arglist s-res-lst pp-res-lst c-res-lst))))))
 
@@ -60,7 +255,7 @@
                      (ordered-s/c-p-lst c-res-lst)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from unpack-booth-for-c* Input:
+              (msg "---Not ordered from unpack-booth-for-c* Input:
   ~x0. s-res-lst: ~x1. pp-res-lst: ~x2. c-res-lst: ~x3 ~%"
                    acl2::arglist s-res-lst pp-res-lst
                    c-res-lst))))))
@@ -77,7 +272,7 @@
                      (ordered-s/c-p-lst c-res-lst)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from unpack-booth-for-c-lst Input:
+              (msg "---Not ordered from unpack-booth-for-c-lst Input:
   ~x0 (ordered:~x1). Output vals: s-res-lst: ~x2. pp-res-lst: ~x3. c-res-lst: ~x4 ~%"
                    acl2::arglist (ordered-s/c-p-lst (car acl2::arglist))
 
@@ -95,7 +290,7 @@
                      (ordered-s/c-p-lst c-res-lst)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from unpack-booth-for-c-lst* Input:
+              (msg "---Not ordered from unpack-booth-for-c-lst* Input:
   ~x0 (ordered:~x1). Output vals: s-res-lst: ~x2. pp-res-lst: ~x3. c-res-lst: ~x4 ~%"
                    acl2::arglist (ordered-s/c-p-lst (car acl2::arglist))
 
@@ -113,7 +308,7 @@
                      (ordered-s/c-p-lst c-res-lst)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from unpack-booth-process-pp-arg* Input:
+              (msg "---Not ordered from unpack-booth-process-pp-arg* Input:
   ~x0. s-res-lst: ~x1. pp-res-lst: ~x2. c-res-lst: ~x3 ~%"
                    acl2::arglist s-res-lst pp-res-lst
                    c-res-lst))))))
@@ -130,7 +325,7 @@
                      (ordered-s/c-p-lst c-res-lst)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from unpack-booth-process-pp-arg Input:
+              (msg "---Not ordered from unpack-booth-process-pp-arg Input:
   ~x0 (ordered:~x1). s-res-lst: ~x2. pp-res-lst: ~x3. c-res-lst: ~x4 ~%"
                    acl2::arglist
                    (pp-orderedp (car acl2::arglist))
@@ -146,7 +341,7 @@
           (b* (((list pp-res-lst) acl2::values))
             (if (pp-lst-orderedp pp-res-lst)
                 (msg "")
-              (msg "Not ordered from pp-sum-merge-lst-for-s Input:
+              (msg "---Not ordered from pp-sum-merge-lst-for-s Input:
   ~x0 (ordered:~x1 ). pp-res-lst: ~x2. ~%"
                    acl2::arglist
                    (list (pp-lst-orderedp (car acl2::arglist))
@@ -163,7 +358,7 @@
           (b* (((list pp-res-lst) acl2::values))
             (if (pp-lst-orderedp pp-res-lst)
                 (msg "")
-              (msg "Not ordered from unpack-booth-buried-in-pp-lst-fn Input:
+              (msg "---Not ordered from unpack-booth-buried-in-pp-lst-fn Input:
   ~x0 (ordered:~x1 ). pp-res-lst: ~x2. ~%"
                    acl2::arglist
                    (pp-lst-orderedp (car acl2::arglist))
@@ -178,7 +373,7 @@
           (b* (((list pp-res-lst) acl2::values))
             (if (pp-lst-orderedp pp-res-lst)
                 (msg "")
-              (msg "Not ordered from unpack-booth-for-pp-lst Input:
+              (msg "---Not ordered from unpack-booth-for-pp-lst Input:
   ~x0 (ordered:~x1 ). pp-res-lst: ~x2. ~%"
                    acl2::arglist
                    (pp-lst-orderedp (car acl2::arglist))
@@ -194,10 +389,12 @@
           (b* (((list s-res-lst pp-res-lst c-res-lst)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 'c)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from ex-from-pp-lst Input:
+              (msg "---Not ordered from ex-from-pp-lst Input:
   ~x0 (ordered:~x1). s-res-lst: ~x2. pp-res-lst: ~x3. c-res-lst: ~x4 ~%"
                    acl2::arglist
                    (pp-lst-orderedp (car acl2::arglist))
@@ -212,10 +409,12 @@
           (b* (((list s-res-lst pp-res-lst c-res-lst)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 'c)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from pp-radix8+-fix:
+              (msg "---Not ordered from pp-radix8+-fix:
 Input: ~x0 (ordered:~x1).
 s-res-lst:~%~x2 (ordered: ~x3).
 pp-res-lst:~%~x4 (ordered: ~x5).
@@ -236,10 +435,12 @@ c-res-lst:~%~x6 (ordered: ~x7)~%~%"
           (b* (((list s-res-lst pp-res-lst c-res-lst ?valid)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 's)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from pp-radix8+-fix-aux-for-s/c
+              (msg "---Not ordered from pp-radix8+-fix-aux-for-s/c
 Input: ~x0 (ordered:~x1).
 s-res-lst:~%~x2 (ordered: ~x3).
 pp-res-lst:~%~x4 (ordered: ~x5).
@@ -261,10 +462,12 @@ Valid:~x8~%~%"
           (b* (((list s-res-lst pp-res-lst c-res-lst ?valid)
                 acl2::values))
             (if (and (ordered-s/c-p-lst s-res-lst)
+                     (list-of-only-s/c-p s-res-lst 's)
                      (ordered-s/c-p-lst c-res-lst)
+                     (list-of-only-s/c-p c-res-lst 'c)
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
-              (msg "Not ordered from pp-radix8+-fix-aux-for-s/c
+              (msg "---Not ordered from pp-radix8+-fix-aux-for-s/c
 Input: ~x0 (ordered:~x1).
 s-res-lst:~%~x2 (ordered: ~x3).
 pp-res-lst:~%~x4 (ordered: ~x5).

@@ -1048,7 +1048,6 @@
            :in-theory (e/d () (reduce-same-args-of-m2)))))
 
 (progn
-  
 
   (local
    (in-theory (enable -to---))))
@@ -3907,7 +3906,7 @@ x5)))||#
            :in-theory (e/d* (;;sum-of-repeated-to-times
                              times-of-sum-reverse
                              divide-by-2-is-floor2-when-even
-                             
+
                              GET-PP-AND-COEF
                              -to---
                              c-of-s-fix-lst
@@ -7071,6 +7070,140 @@ rp-evlt-of-ex-from-rp-reverse-only-atom-and-car)
   :hints (("Goal"
            :in-theory (e/d (s-spec-meta-aux) ()))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; extract-binary-xor-for-s-spec
+
+(defret valid-sc-of-<fn>
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc term a))
+           (valid-sc res a))
+  :fn extract-binary-xor-for-s-spec-aux
+  :hints (("Goal"
+           :in-theory (e/d (extract-binary-xor-for-s-spec-aux)
+                           ()))))
+
+(defret valid-sc-of-extract-binary-xor-for-s-spec
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc term a))
+           (valid-sc res a))
+  :fn extract-binary-xor-for-s-spec
+  :hints (("Goal"
+           :in-theory (e/d (valid-sc-single-step
+                            extract-binary-xor-for-s-spec)
+                           ()))))
+
+(defthm m2-of-binary-xor
+  (and (equal (m2 (sum (binary-xor x y) other))
+              (m2 (sum (bit-fix x)
+                       (bit-fix y)
+                       other)))
+       (equal (m2 (binary-xor x y))
+              (m2 (sum (bit-fix x)
+                       (bit-fix y)))))
+  :hints (("Goal"
+           :in-theory (e/d (binary-xor
+                            BIT-FIX
+                            bitp)
+                           ()))))
+
+(defthm bitp-of-pp-term-p-lemma-when-binary-xor
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc term a)
+                (pp-term-p term)
+                (case-match term (('binary-xor & &) t)))
+           (and (bitp (rp-evlt (cadr term) a))
+                (bitp (rp-evlt (caddr term) a))
+                (pp-term-p (cadr term) :strict nil)
+                (pp-term-p (caddr term) :strict nil)))
+  :hints (("goal"
+           :use ((:instance pp-termp-is-bitp
+                            (term (cadr term)))
+                 (:instance pp-termp-is-bitp
+                            (term (caddr term))))
+           :do-not-induct t
+           :expand ((pp-term-p term :strict nil)
+                    (valid-sc term a))
+           :in-theory (e/d (ex-from-rp
+                            ;;valid-sc
+                            is-rp is-if
+                            pp-term-p)
+                           (valid-sc-of-single-s-p
+                            valid-sc
+                            pp-termp-of-ex-from-rp
+                            when-ex-from-rp-is-1
+                            bitp-of-rp-evlt-of-binary-fnc-p/and-listp/logbit-p
+                            eval-and-all
+                            pp-termp-is-bitp))))) 
+
+(defret <fn>-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc term a)
+                (pp-term-p term))
+           (and (equal (m2 (rp-evlt res a))
+                       (m2 (rp-evlt term a)))
+                (equal (m2 (sum other (rp-evlt res a)))
+                       (m2 (sum other (rp-evlt term a))))))
+  :fn extract-binary-xor-for-s-spec-aux
+  :hints (("Goal"
+           :expand ((EXTRACT-BINARY-XOR-FOR-S-SPEC-AUX TERM))
+           :in-theory (e/d* (or*
+                             valid-sc-single-step
+                             extract-binary-xor-for-s-spec-aux
+                             regular-rp-evl-of_s_when_mult-formula-checks
+                             regular-rp-evl-of_cons_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-xor_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-sum_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-sum_when_mult-formula-checks)
+                            (pp-term-p
+                             M2-SUMS-EQUIVALENCE
+                             (:rewrite default-cdr)
+                             (:rewrite default-car)
+                             (:definition trans-list)
+                             eval-and-all
+                             and-list-to-binary-and-correct
+                             (:meta binary-or**/and**-guard-meta-correct)
+                             valid-sc-of-single-s-p
+                             (:rewrite valid-rp-bitp-lemma)
+                             valid-sc)))
+          (and stable-under-simplificationp
+               '(:use ((:instance M2-SUMS-EQUIVALENCE
+                                  (x (RP-EVLT (EXTRACT-BINARY-XOR-FOR-S-SPEC-AUX (CADDR TERM))
+                                              A))
+                                  (y (RP-EVLT (CADDR TERM) A))
+                                  (a (RP-EVLT (EXTRACT-BINARY-XOR-FOR-S-SPEC-AUX (CADR TERM))
+                                              A))
+                                  (b (RP-EVLT (CADR TERM) A))))))))  
+
+(defret <fn>-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc term a))
+           (equal (m2 (sum-list (rp-evlt res a)))
+                  (m2 (sum-list (rp-evlt term a)))))
+  :fn extract-binary-xor-for-s-spec
+  :hints (("Goal"
+           :in-theory (e/d* (or*
+                             valid-sc-single-step
+                             extract-binary-xor-for-s-spec
+                             regular-rp-evl-of_s_when_mult-formula-checks
+                             regular-rp-evl-of_cons_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-xor_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-sum_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_binary-sum_when_mult-formula-checks)
+                            ((:rewrite default-cdr)
+                             (:rewrite default-car)
+                             (:definition trans-list)
+                             eval-and-all
+                             and-list-to-binary-and-correct
+                             (:meta binary-or**/and**-guard-meta-correct)
+                             valid-sc-of-single-s-p
+                             (:rewrite valid-rp-bitp-lemma)
+                             valid-sc)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; s-c-spec-meta correct
 
@@ -7104,4 +7237,6 @@ rp-evlt-of-ex-from-rp-reverse-only-atom-and-car)
                             (term (CADR TERM))))
            :in-theory (e/d (s-c-spec-meta
                             dummy-m2-lemma)
-                           (new-sum-merge-correct)))))
+                           (new-sum-merge-correct)))
+          (and stable-under-simplificationp
+               '(:instructions ((s :backchain-limit 10))))))
