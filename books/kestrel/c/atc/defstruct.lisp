@@ -1505,8 +1505,8 @@
                                           (len (,reader-list struct)))))
        (fixtype-array-length (pack fixtype '-array-length))
        (fixtype-array-of (pack fixtype '-array-of))
-       (array-length-when-fixtype-array-length
-        (pack 'array-length-when- fixtype '-array-length))
+       (array-length-when-fixtype-arrayp
+        (pack 'value-array->length-when- fixtype '-arrayp))
        (consp-of-elem-type-list-fix (pack 'consp-of- elem-type-list-fix))
        (len-of-elem-type-list-fix (pack 'len-of- elem-type-list-fix))
        (not-flexible-array-member-p-when-fixtype-arrayp
@@ -1747,7 +1747,7 @@
                              value-struct-write
                              ,fixtype-array-length
                              ,fixtype-array-of
-                             ,array-length-when-fixtype-array-length
+                             ,array-length-when-fixtype-arrayp
                              ,consp-of-elem-type-list-fix
                              ,len-of-elem-type-list-fix
                              member-value-list->name-list-of-struct-write-aux

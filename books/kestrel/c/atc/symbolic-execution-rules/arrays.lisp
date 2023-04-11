@@ -398,7 +398,7 @@
      We also add existing (i.e. proved elsewhere) rules
      about @(tsee uchar-array-length) and the others being @(tsee natp)."))
 
-  (defruled array-length-when-uchar-array-length
+  (defruled value-array->length-when-uchar-arrayp
     (implies (uchar-arrayp x)
              (equal (value-array->length x)
                     (uchar-array-length x)))
@@ -407,7 +407,7 @@
              uchar-array->elements
              value-array->elements))
 
-  (defruled array-length-when-schar-array-length
+  (defruled value-array->length-when-schar-arrayp
     (implies (schar-arrayp x)
              (equal (value-array->length x)
                     (schar-array-length x)))
@@ -416,7 +416,7 @@
              schar-array->elements
              value-array->elements))
 
-  (defruled array-length-when-ushort-array-length
+  (defruled value-array->length-when-ushort-arrayp
     (implies (ushort-arrayp x)
              (equal (value-array->length x)
                     (ushort-array-length x)))
@@ -425,7 +425,7 @@
              ushort-array->elements
              value-array->elements))
 
-  (defruled array-length-when-sshort-array-length
+  (defruled value-array->length-when-sshort-arrayp
     (implies (sshort-arrayp x)
              (equal (value-array->length x)
                     (sshort-array-length x)))
@@ -434,7 +434,7 @@
              sshort-array->elements
              value-array->elements))
 
-  (defruled array-length-when-uint-array-length
+  (defruled value-array->length-when-uint-arrayp
     (implies (uint-arrayp x)
              (equal (value-array->length x)
                     (uint-array-length x)))
@@ -443,7 +443,7 @@
              uint-array->elements
              value-array->elements))
 
-  (defruled array-length-when-sint-array-length
+  (defruled value-array->length-when-sint-arrayp
     (implies (sint-arrayp x)
              (equal (value-array->length x)
                     (sint-array-length x)))
@@ -452,7 +452,7 @@
              sint-array->elements
              value-array->elements))
 
-  (defruled array-length-when-ulong-array-length
+  (defruled value-array->length-when-ulong-arrayp
     (implies (ulong-arrayp x)
              (equal (value-array->length x)
                     (ulong-array-length x)))
@@ -461,7 +461,7 @@
              ulong-array->elements
              value-array->elements))
 
-  (defruled array-length-when-slong-array-length
+  (defruled value-array->length-when-slong-arrayp
     (implies (slong-arrayp x)
              (equal (value-array->length x)
                     (slong-array-length x)))
@@ -470,7 +470,7 @@
              slong-array->elements
              value-array->elements))
 
-  (defruled array-length-when-ullong-array-length
+  (defruled value-array->length-when-ullong-arrayp
     (implies (ullong-arrayp x)
              (equal (value-array->length x)
                     (ullong-array-length x)))
@@ -479,7 +479,7 @@
              ullong-array->elements
              value-array->elements))
 
-  (defruled array-length-when-sllong-array-length
+  (defruled value-array->length-when-sllong-arrayp
     (implies (sllong-arrayp x)
              (equal (value-array->length x)
                     (sllong-array-length x)))
@@ -489,16 +489,16 @@
              value-array->elements))
 
   (defval *atc-array-length-rules*
-    '(array-length-when-uchar-array-length
-      array-length-when-schar-array-length
-      array-length-when-ushort-array-length
-      array-length-when-sshort-array-length
-      array-length-when-uint-array-length
-      array-length-when-sint-array-length
-      array-length-when-ulong-array-length
-      array-length-when-slong-array-length
-      array-length-when-ullong-array-length
-      array-length-when-sllong-array-length
+    '(value-array->length-when-uchar-arrayp
+      value-array->length-when-schar-arrayp
+      value-array->length-when-ushort-arrayp
+      value-array->length-when-sshort-arrayp
+      value-array->length-when-uint-arrayp
+      value-array->length-when-sint-arrayp
+      value-array->length-when-ulong-arrayp
+      value-array->length-when-slong-arrayp
+      value-array->length-when-ullong-arrayp
+      value-array->length-when-sllong-arrayp
       natp-of-uchar-array-length
       natp-of-schar-array-length
       natp-of-ushort-array-length
