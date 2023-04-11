@@ -376,9 +376,6 @@
              :use ((:instance svex-alist-<<=-necc
                     (env (svex-<<=-witness (svex-lookup k x) (svex-lookup k y))))))))
 
-  (local (defthmd svex-lookup-iff-member-svex-alist-keys
-           (iff (svex-lookup var x)
-                (member-equal (svar-fix var) (svex-alist-keys x)))))
 
   (defthm svex-<<=-of-svex-compose-lookup-when-svex-alist-<<=
     (implies (and (svex-alist-<<= x y)
@@ -513,9 +510,6 @@
              :use ((:instance svex-alist-compose-<<=-necc
                     (var k))))))
 
-  (local (defthmd svex-lookup-iff-member-svex-alist-keys
-           (iff (svex-lookup var x)
-                (member-equal (svar-fix var) (svex-alist-keys x)))))
 
   (defthm svex-alist-compose-<<=-refl
     (svex-alist-compose-<<= x x)

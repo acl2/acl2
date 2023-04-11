@@ -33,6 +33,7 @@
 
 
 (include-book "svtv-idealize-defs")
+(include-book "svtv-spec-override-transparency")
 (include-book "process")
 (include-book "std/util/defredundant" :dir :system)
 (include-book "override-common")
@@ -58,7 +59,7 @@
                            svex-env-reduce-<<=-same
                            svtv-override-triplemaplist-envs-ok-of-same-envs
                            4vec-override-mux-<<=-of-same-test/val
-                           ;; 4vec-override-mux-ok-of-same-test/val
+                           4vec-override-mux-ok-of-same
                            ))
 
 
@@ -198,6 +199,15 @@
 (fgl::remove-fgl-rewrite svtv-spec-run-fn)
 
 
+
+(define svtv-override-triplemaplist-overridekeys ((triplemaps svtv-override-triplemaplist-p)
+                                                  (namemap svtv-name-lhs-map-p))
+  (if (atom triplemaps)
+      nil
+    (acl2::hons-union (svtv-name-lhs-map-vars
+                       (fal-extract (svtv-override-triplemap-refvar-keys (car triplemaps))
+                                    (svtv-name-lhs-map-fix namemap)))
+                      (svtv-override-triplemaplist-overridekeys (cdr triplemaps) namemap))))
 
 
 

@@ -646,41 +646,6 @@
         (fal-extract (svex-alist-keys test-alist) namemap)
         ref-envs))))))
 
-(defsection member-of-svarlist-change-override
-
-  (defthmd member-of-svarlist-change-override
-    (implies (and (svar-equiv v1 (double-rewrite v))
-                  (svar-override-p v1 type1)
-                  (not (svar-overridetype-equiv type1 type2)))
-             (not (member-equal v (svarlist-change-override x type2))))
-    :hints(("Goal" :in-theory (enable svarlist-change-override
-                                      equal-of-svar-change-override
-                                      svar-override-p-when-other))))
-
-  (defthmd member-when-svar-override-p-diff
-    (implies (and (svar-equiv v1 (double-rewrite v))
-                  (svar-override-p v1 type1)
-                  (svarlist-equiv x1 (double-rewrite x))
-                  (svarlist-override-p x1 type2)
-                  (not (svar-overridetype-equiv type1 type2)))
-             (not (member-equal v x)))
-    :hints(("Goal" :in-theory (enable svarlist-override-p
-                                      svar-override-p-when-other))))
-
-  (defthmd member-when-not-svar-override-p
-    (implies (and (svarlist-equiv x1 (double-rewrite x))
-                  (svarlist-override-p x1 type)
-                  (svar-equiv v1 (double-rewrite v))
-                  (not (svar-override-p v1 type)))
-             (not (member-equal v x)))
-    :hints(("Goal" :in-theory (enable svarlist-override-p))))
-
-  (defthmd member-svarlist-change-override-when-not-svar-override-p
-    (implies (and (svar-equiv v1 (double-rewrite v))
-                  (not (svar-override-p v1 type)))
-             (not (member-equal v (svarlist-change-override x type))))
-    :hints(("Goal" :in-theory (enable svarlist-change-override
-                                      equal-of-svar-change-override)))))
 
 
 (local (defthm svex-alist-eval-monotonic-when-extract-vars-<<=
@@ -1927,10 +1892,10 @@
          (in-alists spec.in-alists)
          (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
          (impl-run (svtv-spec-run spec pipe-env)))
-      (implies (and (base-fsm-overridekey-transparent-p spec.fsm overridekeys)
+      (implies (and (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
+                    (base-fsm-overridekey-transparent-p spec.fsm overridekeys)
                     (base-fsm-partial-monotonic params spec.fsm)
 
-                    (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
                     (svex-env-<<= (svex-env-extract (svex-alistlist-vars in-alists) pipe-env)
                                   spec-env)
@@ -1969,13 +1934,13 @@
          (in-alists spec.in-alists)
          (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
          (impl-run (svtv-spec-run impl pipe-env)))
-      (implies (and (base-fsm-overridekey-transparent-p spec.fsm overridekeys)
+      (implies (and (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
+                    (base-fsm-overridekey-transparent-p spec.fsm overridekeys)
                     (base-fsm-partial-monotonic params spec.fsm)
                     (base-fsm-partial-monotonic params impl.fsm)
                     (base-fsm-<<= impl.fsm spec.fsm)
                     (svtv-spec-stimulus-equiv impl spec)
                     
-                    (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
                     (svex-env-<<= (svex-env-extract (svex-alistlist-vars in-alists) pipe-env)
                                   spec-env)

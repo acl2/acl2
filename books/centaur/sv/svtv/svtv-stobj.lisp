@@ -37,6 +37,7 @@
 (include-book "cycle-base")
 ;; (include-book "pipeline")
 (include-book "assign")
+(include-book "expand")
 (include-book "probe")
 (include-book "../svex/alist-equiv")
 (include-book "std/stobjs/nicestobj" :dir :system)

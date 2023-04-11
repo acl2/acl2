@@ -259,10 +259,9 @@
 ;;                                     svarlist-non-override-test-p))))
 
 (defthm svex-alist-partial-monotonic-of-svarlist-to-override-alist
-  (implies (svarlist-override-p x nil)
-           (svex-alist-partial-monotonic
-            (svarlist-change-override x :test)
-            (svarlist-to-override-alist x)))
+  (svex-alist-partial-monotonic
+   (svarlist-change-override x :test)
+   (svarlist-to-override-alist x))
   :hints(("Goal" :in-theory (enable svarlist-to-override-alist
                                     svarlist-change-override
                                     svarlist-override-p))))
@@ -319,13 +318,13 @@
          (subsetp-equal (intersection-equal x y) x)))
 
 (defthm svarlist-override-p-of-svtv-assigns-override-vars
-  (implies (svarlist-override-p (svex-alist-keys assigns) nil)
-           (svarlist-override-p (svtv-assigns-override-vars assigns config) nil))
+  (implies (svarlist-override-p (svex-alist-keys assigns) type)
+           (svarlist-override-p (svtv-assigns-override-vars assigns config) type))
   :hints(("Goal" :in-theory (enable svtv-assigns-override-vars)
           :use ((:instance svarlist-override-p-when-subsetp
                  (x (svtv-assigns-override-vars assigns config))
                  (y (svex-alist-keys assigns))
-                 (type nil))))))
+                 (type type))))))
 
 (local (defthm member-of-svarlist-change-override-when-other-override-p
          (implies (and (svar-override-p x type2)

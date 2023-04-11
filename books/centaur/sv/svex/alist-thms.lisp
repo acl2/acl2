@@ -650,53 +650,7 @@
   :hints(("Goal" :in-theory (enable svex-alist-eval-equiv))))
 
 
-(defsection svex-alist-same-keys
-  (acl2::def-universal-equiv svex-alist-same-keys
-    :qvars nil
-    :equiv-terms ((set-equiv (svex-alist-keys x))))
 
-
-  (defthmd svex-lookup-iff-member-svex-alist-keys
-    (iff (svex-lookup k x)
-         (member-equal (svar-fix k) (svex-alist-keys x))))
-
-
-  (defcong svex-alist-same-keys iff (svex-lookup k x) 2
-    :hints(("Goal" :in-theory (e/d (svex-alist-same-keys
-                                    svex-lookup-iff-member-svex-alist-keys)
-                                   (member-svex-alist-keys)))))
-
-  (defthm set-equiv-forward-to-svex-alist-same-keys
-    (implies (set-equiv (svex-alist-keys x) (svex-alist-keys y))
-             (svex-alist-same-keys x y))
-    :hints(("Goal" :in-theory (enable svex-alist-same-keys)))
-    :rule-classes :forward-chaining)
-
-  (defrefinement svex-alist-eval-equiv svex-alist-same-keys
-    :hints(("Goal" :in-theory (enable svex-alist-same-keys))))
-
-  (encapsulate
-    (((svex-alist-same-keys-lookup-witness * *) => *))
-    (local (defun svex-alist-same-keys-lookup-witness (x y)
-             (svar-fix (acl2::set-unequal-witness (svex-alist-keys x)
-                                                  (svex-alist-keys y)))))
-    (defthm svar-p-of-svex-alist-same-keys-lookup-witness
-      (svar-p (svex-alist-same-keys-lookup-witness x y)))
-           
-    (defthmd svex-alist-same-keys-in-terms-of-lookup
-      (equal (svex-alist-same-keys x y)
-             (let ((var (svex-alist-same-keys-lookup-witness x y)))
-               (iff (svex-lookup var x) (svex-lookup var y))))
-      :hints(("Goal" :in-theory (e/d (svex-alist-same-keys)))
-             (and stable-under-simplificationp
-                  '(:in-theory (e/d (acl2::set-unequal-witness-correct
-                                     svex-alist-same-keys-lookup-witness
-                                     svex-lookup-iff-member-svex-alist-keys)
-                                    (member-svex-alist-keys)))))
-      :rule-classes ((:definition :install-body nil))))
-
-  (defcong svex-alist-same-keys set-equiv (svex-alist-keys x) 1
-    :hints(("Goal" :in-theory (enable svex-alist-same-keys)))))
 
 
 

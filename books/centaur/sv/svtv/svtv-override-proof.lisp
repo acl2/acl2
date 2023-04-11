@@ -343,6 +343,71 @@
           (svex-alistlist-removekeys keys (cdr alists)))))
 
 
+;; Given an svtv-override-triplemap, get FSM signal names sufficient to
+;; generate the triples that need to be syntax-checked with
+;; svexlist-check-overridetriples.
+(define svtv-override-triplemap->override-keys ((x svtv-override-triplemap-p)
+                                                (namemap svtv-name-lhs-map-p))
+  :returns (keys svarlist-p)
+  (if (atom x)
+      nil
+    (append
+     (and (mbt (and (consp (car x))
+                    (svar-p (caar x))))
+          (b* (((svtv-override-triple x1) (cdar X)))
+            (and x1.refvar
+                 (lhs-vars (cdr (hons-get (caar x) (svtv-name-lhs-map-fix namemap)))))))
+     (svtv-override-triplemap->override-keys (cdr x) namemap)))
+  ///
+
+
+  (defthm member-<fn>-when-triple-has-refvar
+    (implies (and (member-equal v
+                                (lhs-vars (cdr (hons-assoc-equal (svar-fix name)
+                                                                 (svtv-name-lhs-map-fix namemap)))))
+                  (hons-assoc-equal (svar-fix name) (svtv-override-triplemap-fix x))
+                  (svtv-override-triple->refvar
+                   (cdr (hons-assoc-equal (svar-fix name) (svtv-override-triplemap-fix x)))))
+             (member-equal v (svtv-override-triplemap->override-keys x namemap))))
+  
+  ;; (defthm member-<fn>-when-envs-ok-and-tests-differ
+  ;;   (b* (((svtv-spec spec)))
+  ;;     (implies (and (svtv-override-triplemap-envs-ok x impl-env spec-env ref-env)
+  ;;                   (svtv-override-triplemap-syntax-check
+  ;;                    (svex-alist-keys spec.test-alist) phase spec.test-alist spec.val-alist probes x)
+  ;;                   (not (equal (svex-env-lookup
+  ;;                                (svar-change-override var :test)
+  ;;                                (svtv-spec-pip-env->phase-envs spec spec-env))
+  ;;                               (svex-env-lookup
+  ;;                                (svar-change-override var :test)
+  ;;                                (svtv-spec-pip-env->phase-envs spec impl-env)))))
+  ;;              (member-equal (svar-fix var)
+  ;;                            (svtv-override-triplemap->override-keys)))))
+  
+  (local (in-theory (enable svtv-override-triplemap-fix))))
+
+(define svtv-override-triplemaplist->override-keys ((x svtv-override-triplemaplist-p)
+                                                    (namemap svtv-name-lhs-map-p))
+  :returns (keys svarlist-p)
+  (if (atom x)
+      nil
+    (append
+     (svtv-override-triplemap->override-keys (car x) namemap)
+     (svtv-override-triplemaplist->override-keys (cdr x) namemap)))
+  ///
+  (defthm member-<fn>-when-triple-has-refvar
+    (implies (and (member-equal v
+                                (lhs-vars (cdr (hons-assoc-equal (svar-fix name)
+                                                                 (svtv-name-lhs-map-fix namemap)))))
+                  (hons-assoc-equal (svar-fix name) (nth n (svtv-override-triplemaplist-fix x)))
+                  (svtv-override-triple->refvar
+                   (cdr (hons-assoc-equal (svar-fix name) (svtv-override-triplemap-fix x)))))
+             (member-equal v (svtv-override-triplemaplist->override-keys x namemap)))))
+                   
+      
+
+
+
 
 (local
  (defsection svex-envlist-<<=-of-reduce-pipe-env->phase-envs
@@ -397,6 +462,26 @@
      :hints(("Goal" :in-theory (enable svex-envlist-reduce))))
 
    
+
+   (local (defthm svex-env-<<=-of-svex-env-reduce-both
+            (equal (svex-env-<<= (svex-env-reduce vars env1)
+                                 (svex-env-reduce vars env2))
+                   (svex-env-<<= (svex-env-reduce vars env1) env2))
+            :hints (("goal" :cases ((svex-env-<<= (svex-env-reduce vars env1)
+                                                  (svex-env-reduce vars env2)))
+                     )
+                    (And stable-under-simplificationp
+                         (let* ((lit (assoc 'svex-env-<<= clause))
+                                (other (if (eq (caddr lit) 'env2)
+                                           '(svex-env-reduce vars env2)
+                                         'env2)))
+                           `(:expand (,lit)
+                             :use ((:instance svex-env-<<=-necc
+                                    (x (svex-env-reduce vars env1))
+                                    (y ,other)
+                                    (var (svex-env-<<=-witness . ,(cdr lit)))))
+                             :in-theory (disable svex-env-<<=-necc)))))))
+                                    
    
    (local (defthm svex-envlist-<<=-of-svex-envlist-reduce-both
             (equal (svex-envlist-<<= (svex-envlist-reduce vars envs1)
@@ -642,7 +727,266 @@
      
    (defthm svex-envlist-<<=-of-reduce-divide
 
+     ;; Need to show:
+     ;; If you extract the variables of the FSM that are not override tests or values of the
+     ;; syntax-checked triples from the phase envs generated from both the pipe-env and spec-pipe-env,
+     ;; those from the pipe-env are <<= those from the phase-env.
 
+     ;; Additionally:
+     ;; If you extract the override tests that are not of the syntax-checked
+     ;; triples from the phase envs generated from both, they are equal.
+
+
+
+
+     
+     ;; We have
+     ;; alist: namemap names -> constant/SVTV variable exprs
+     ;; namemap: namemap names -> fsm LHSes
+     ;; inverse namemap: fsm names -> namemap LHSes
+
+     ;; SVTV triplemaplist: per phase, map namemap name -> test expr, val expr, output name
+     ;; FSM triples: syntax checked
+
+     ;; SVTV triple is consistent:
+     
+     ;; - for each namemap name in the override test alist:
+     ;;   * if mapped to a SVTV variable:
+     ;;     - if there is an SVTV triple whose test expr is that variable,
+     ;;       then the val expr must be the mapping of name in the override val alist
+     ;;     - if not, that test variable must be constant between pipe and spec envs
+     ;; - for each namemap name in the override val alist:
+     ;;   * if mapped to an SVTV variable:
+     ;;     - if there is an SVTV triple whose val expr is that variable,
+     ;;       then the test expr must be the mapping of name in the override val alist
+     
+     ;; SVTV triples denote overrides that can differ between spec/override runs
+     ;;  for each phase, mapping namemap name -> test expr, val expr, output name
+     ;;    namemap name must be bound to test expr in override test alist, val expr in override val alist for that phase
+     ;;    output name must be bound to probe of namemap name, phase in probes
+     ;; For each namemap name mapped to an SVTV triple
+     ;;     - for every variable in its corresponding LHS in the namemap, the triple generated from that variable must satisfy the syntax check
+     
+     ;; For any namemap name that is mapped in override test alist and not mapped in SVTV triples,
+     ;;     - if mapped to a SVTV input variable in override test alist, that variable's binidng must be equal in spec/override envs
+     ;;     - if the name is mapped to a variable in override val alist, that variable's binding in spec env is <<= its binding in override env
+     ;;              (possible weakening: only needs to be <<= under the test mask)
+
+     
+     
+
+     
+;; (IMPLIES
+;;  (AND
+;;   (NOT
+;;    (SVEX-ENVLIST-<<=
+;;     (SVEX-ENVLIST-REDUCE
+;;      (SET-DIFFERENCE-EQUAL
+;;       (APPEND
+;;          (SVEX-ALIST-VARS (BASE-FSM->NEXTSTATE (SVTV-DATA-OBJ->PHASE-FSM X)))
+;;          (SVEX-ALIST-VARS (BASE-FSM->VALUES (SVTV-DATA-OBJ->PHASE-FSM X))))
+;;       (APPEND (SVARLIST-CHANGE-OVERRIDE OVERRIDE-KEYS :VAL)
+;;               (SVARLIST-CHANGE-OVERRIDE OVERRIDE-KEYS :TEST)))
+;;      (SVTV-SPEC-PIPE-ENV->PHASE-ENVS
+;;       (SVTV-SPEC
+;;            '((VALUES) (NEXTSTATE))
+;;            (SVTV-DATA-OBJ->CYCLE-PHASES X)
+;;            (SVTV-DATA-OBJ->NAMEMAP X)
+;;            (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INPUTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;       PIPE-ENV))
+;;     (SVTV-SPEC-PIPE-ENV->PHASE-ENVS
+;;       (SVTV-SPEC
+;;            '((VALUES) (NEXTSTATE))
+;;            (SVTV-DATA-OBJ->CYCLE-PHASES X)
+;;            (SVTV-DATA-OBJ->NAMEMAP X)
+;;            (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INPUTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;       SPEC-PIPE-ENV)))
+;;   (SVTV-DATA$AP (SVTV-DATA-OBJ-TO-STOBJ-LOGIC X))
+;;   (SVTV-DATA-OBJ->FLATTEN-VALIDP X)
+;;   (SVTV-DATA-OBJ->FLATNORM-VALIDP X)
+;;   (SVTV-DATA-OBJ->PHASE-FSM-VALIDP X)
+;;   (SVTV-DATA-OBJ->CYCLE-FSM-VALIDP X)
+;;   (SVTV-DATA-OBJ->PIPELINE-VALIDP X)
+;;   (FLATNORM-SETUP->MONOTONIFY (SVTV-DATA-OBJ->FLATNORM-SETUP X))
+;;   (SVARLIST-OVERRIDE-P OVERRIDE-KEYS NIL)
+;;   (NO-DUPLICATESP-EQUAL (SVARLIST-FIX OVERRIDE-KEYS))
+;;   (NOT (SVEXLIST-CHECK-OVERRIDETRIPLES
+;;             (SVEX-ALIST-VALS (BASE-FSM->VALUES (SVTV-DATA-OBJ->PHASE-FSM X)))
+;;             (SVAR->SVEX-OVERRIDE-TRIPLELIST
+;;                  (SVARLIST-TO-OVERRIDE-TRIPLES OVERRIDE-KEYS)
+;;                  (BASE-FSM->VALUES (SVTV-DATA-OBJ->PHASE-FSM X)))))
+;;   (NOT
+;;     (SVEXLIST-CHECK-OVERRIDETRIPLES
+;;          (SVEX-ALIST-VALS (BASE-FSM->NEXTSTATE (SVTV-DATA-OBJ->PHASE-FSM X)))
+;;          (SVAR->SVEX-OVERRIDE-TRIPLELIST
+;;               (SVARLIST-TO-OVERRIDE-TRIPLES OVERRIDE-KEYS)
+;;               (BASE-FSM->VALUES (SVTV-DATA-OBJ->PHASE-FSM X)))))
+;;   (SVTV-OVERRIDE-TRIPLEMAPLIST-MUXES-<<=
+;;    TRIPLEMAPS PIPE-ENV SPEC-PIPE-ENV
+;;    (SVTV-SPEC-PHASE-OUTS->PIPE-OUT
+;;     (SVTV-SPEC '((VALUES) (NEXTSTATE))
+;;                (SVTV-DATA-OBJ->CYCLE-PHASES X)
+;;                (SVTV-DATA-OBJ->NAMEMAP X)
+;;                (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;                NIL NIL NIL NIL)
+;;     (BASE-FSM-EVAL
+;;      (SVTV-SPEC-PIPE-ENV->PHASE-ENVS
+;;       (SVTV-SPEC
+;;            '((VALUES) (NEXTSTATE))
+;;            (SVTV-DATA-OBJ->CYCLE-PHASES X)
+;;            (SVTV-DATA-OBJ->NAMEMAP X)
+;;            (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INPUTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;       SPEC-PIPE-ENV)
+;;      (SVEX-ALIST-EVAL
+;;           (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;           SPEC-PIPE-ENV)
+;;      (SVTV-DATA-OBJ->PHASE-FSM X))))
+;;   (SVTV-OVERRIDE-TRIPLEMAPLIST-MUXTESTS-SUBSETP
+;;        TRIPLEMAPS SPEC-PIPE-ENV PIPE-ENV)
+;;   (SVTV-OVERRIDE-TRIPLEMAPLIST-SYNTAX-CHECK
+;;        (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;        (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;        (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;        TRIPLEMAPS)
+;;   (SVARLIST-OVERRIDE-P
+;;        (SVTV-CYCLEPHASELIST-KEYS (SVTV-DATA-OBJ->CYCLE-PHASES X))
+;;        NIL)
+;;   (SVTV-CYCLEPHASELIST-UNIQUE-I/O-PHASE (SVTV-DATA-OBJ->CYCLE-PHASES X))
+;;   (EQUAL
+;;      (SVEX-ALIST-KEYS-LIST
+;;           (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;      (SVEX-ALIST-KEYS-LIST
+;;           (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X))))
+;;   (NO-DUPLICATESP-EACH
+;;     (SVEX-ALIST-KEYS-LIST
+;;          (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))))
+;;   (SVARLIST-OVERRIDE-P
+;;    (SVTV-NAME-LHS-MAP-LIST-ALL-KEYS
+;;     (SVTV-NAME-LHS-MAP-INVERSE-LIST
+;;      (SVTV-NAME-LHS-MAP-EXTRACT-LIST
+;;       (APPEND
+;;        (SVEX-ALIST-KEYS-LIST
+;;           (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;        (REPEAT
+;;         (+
+;;          (- (LEN (PIPELINE-SETUP->OVERRIDE-TESTS
+;;                       (SVTV-DATA-OBJ->PIPELINE-SETUP X))))
+;;          (LEN
+;;            (SVTV-PROBEALIST-OUTVARS
+;;                 (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X)))))
+;;         NIL))
+;;       (SVTV-DATA-OBJ->NAMEMAP X))))
+;;    NIL)
+;;   (<=
+;;      (LEN (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;      (LEN (SVTV-PROBEALIST-OUTVARS
+;;                (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X)))))
+;;   (SVEX-ENV-<<=
+;;        (SVEX-ENV-REDUCE
+;;             (SVEX-ALIST-VARS
+;;                  (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;             PIPE-ENV)
+;;        SPEC-PIPE-ENV)
+;;   (SVEX-ENV-<<=
+;;        (SVEX-ENV-REDUCE
+;;             (SVEX-ALISTLIST-VARS
+;;                  (PIPELINE-SETUP->INPUTS (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;             PIPE-ENV)
+;;        SPEC-PIPE-ENV)
+;;   (EQUAL
+;;    (SVEX-ENV-EXTRACT
+;;     (SVEX-ALISTLIST-VARS
+;;      (SVEX-ALISTLIST-REMOVEKEYS
+;;           (SVARLIST-CHANGE-OVERRIDE OVERRIDE-KEYS :VAL)
+;;           (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X))))
+;;     SPEC-PIPE-ENV)
+;;    (SVEX-ENV-EXTRACT
+;;     (SVEX-ALISTLIST-VARS
+;;      (SVEX-ALISTLIST-REMOVEKEYS
+;;           (SVARLIST-CHANGE-OVERRIDE OVERRIDE-KEYS :VAL)
+;;           (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X))))
+;;     PIPE-ENV))
+;;   (EQUAL
+;;    (SVEX-ENV-EXTRACT
+;;     (SVEX-ALISTLIST-VARS
+;;      (SVEX-ALISTLIST-REMOVEKEYS
+;;          (SVARLIST-CHANGE-OVERRIDE OVERRIDE-KEYS :TEST)
+;;          (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))))
+;;     SPEC-PIPE-ENV)
+;;    (SVEX-ENV-EXTRACT
+;;     (SVEX-ALISTLIST-VARS
+;;      (SVEX-ALISTLIST-REMOVEKEYS
+;;          (SVARLIST-CHANGE-OVERRIDE OVERRIDE-KEYS :TEST)
+;;          (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))))
+;;     PIPE-ENV))
+;;   (SVEX-ALISTLIST-CHECK-MONOTONIC
+;;        (PIPELINE-SETUP->INPUTS (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;   (SVEX-ALISTLIST-CHECK-MONOTONIC
+;;        (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;   (SVEX-ALISTLIST-CHECK-MONOTONIC
+;;        (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;   (SVEX-ALIST-CHECK-MONOTONIC
+;;        (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X))))
+;;  (SVEX-ENV-<<=
+;;   (SVTV-SPEC-PHASE-OUTS->PIPE-OUT
+;;    (SVTV-SPEC '((VALUES) (NEXTSTATE))
+;;               (SVTV-DATA-OBJ->CYCLE-PHASES X)
+;;               (SVTV-DATA-OBJ->NAMEMAP X)
+;;               (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;               NIL NIL NIL NIL)
+;;    (BASE-FSM-EVAL
+;;     (SVTV-SPEC-PIPE-ENV->PHASE-ENVS
+;;       (SVTV-SPEC
+;;            '((VALUES) (NEXTSTATE))
+;;            (SVTV-DATA-OBJ->CYCLE-PHASES X)
+;;            (SVTV-DATA-OBJ->NAMEMAP X)
+;;            (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INPUTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;       PIPE-ENV)
+;;     (SVEX-ALIST-EVAL
+;;          (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;          PIPE-ENV)
+;;     (SVTV-DATA-OBJ->PHASE-FSM X)))
+;;   (SVTV-SPEC-PHASE-OUTS->PIPE-OUT
+;;    (SVTV-SPEC '((VALUES) (NEXTSTATE))
+;;               (SVTV-DATA-OBJ->CYCLE-PHASES X)
+;;               (SVTV-DATA-OBJ->NAMEMAP X)
+;;               (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;               NIL NIL NIL NIL)
+;;    (BASE-FSM-EVAL
+;;     (SVTV-SPEC-PIPE-ENV->PHASE-ENVS
+;;       (SVTV-SPEC
+;;            '((VALUES) (NEXTSTATE))
+;;            (SVTV-DATA-OBJ->CYCLE-PHASES X)
+;;            (SVTV-DATA-OBJ->NAMEMAP X)
+;;            (PIPELINE-SETUP->PROBES (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INPUTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-TESTS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->OVERRIDE-VALS (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;            (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X)))
+;;       SPEC-PIPE-ENV)
+;;     (SVEX-ALIST-EVAL
+;;          (PIPELINE-SETUP->INITST (SVTV-DATA-OBJ->PIPELINE-SETUP X))
+;;          SPEC-PIPE-ENV)
+;;     (SVTV-DATA-OBJ->PHASE-FSM X)))))
+
+
+     
 (defsection svtv-data-obj->spec
 
 
@@ -736,21 +1080,23 @@
 
 
   (local (defthm svex-env-<<=-of-svex-env-reduce-both
-           (equal (svex-env-<<= (svex-env-reduce vars envs1)
-                                    (svex-env-reduce vars envs2))
-                  (svex-env-<<= (svex-env-reduce vars envs1) envs2))
-           :hints(("goal" :cases ((svex-env-<<= (svex-env-reduce vars envs1) envs2)))
-                  (and stable-under-simplificationp
-                       (b* ((lit (assoc 'svex-env-<<= clause))
-                            (witness `(svex-env-<<=-witness . ,(cdr lit)))
-                            (other (if (eq (caddr lit) 'envs2) '(svex-env-reduce vars envs2) 'envs2)))
-                         `(:expand (,lit)
-                           :use ((:instance svex-env-<<=-necc
-                                  (var ,witness)
-                                  (x (svex-env-reduce vars envs1))
-                                  (y ,other)))
-                           :in-theory (disable svex-env-<<=-necc)))))
-           :otf-flg t))
+            (equal (svex-env-<<= (svex-env-reduce vars env1)
+                                 (svex-env-reduce vars env2))
+                   (svex-env-<<= (svex-env-reduce vars env1) env2))
+            :hints (("goal" :cases ((svex-env-<<= (svex-env-reduce vars env1)
+                                                  (svex-env-reduce vars env2)))
+                     )
+                    (And stable-under-simplificationp
+                         (let* ((lit (assoc 'svex-env-<<= clause))
+                                (other (if (eq (caddr lit) 'env2)
+                                           '(svex-env-reduce vars env2)
+                                         'env2)))
+                           `(:expand (,lit)
+                             :use ((:instance svex-env-<<=-necc
+                                    (x (svex-env-reduce vars env1))
+                                    (y ,other)
+                                    (var (svex-env-<<=-witness . ,(cdr lit)))))
+                             :in-theory (disable svex-env-<<=-necc)))))))
 
   (local (defthm svarlist-override-p-of-set-diff
            (implies (svarlist-override-p x type)
@@ -805,16 +1151,17 @@
          (svex-triples (svar->svex-override-triplelist
                         (svarlist-to-override-triples override-keys)
                         fsm.values))
-         (unchecked-override-tests
-          (svex-alistlist-vars
-           (svex-alistlist-removekeys
-            (svarlist-change-override override-keys :test)
-            x.pipeline-setup.override-tests)))
-         (unchecked-override-vals
-          (svex-alistlist-vars
-           (svex-alistlist-removekeys
-            (svarlist-change-override override-keys :val)
-            x.pipeline-setup.override-vals))))
+         ;; (unchecked-override-tests
+         ;;  (svex-alistlist-vars
+         ;;   (svex-alistlist-removekeys
+         ;;    (svarlist-change-override override-keys :test)
+         ;;    x.pipeline-setup.override-tests)))
+         ;; (unchecked-override-vals
+         ;;  (svex-alistlist-vars
+         ;;   (svex-alistlist-removekeys
+         ;;    (svarlist-change-override override-keys :val)
+         ;;    x.pipeline-setup.override-vals)))
+         )
       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                     x.flatten-validp
                     x.flatnorm-validp
@@ -829,8 +1176,7 @@
                     (not (svexlist-check-overridetriples (svex-alist-vals fsm.values) svex-triples))
                     (not (svexlist-check-overridetriples (svex-alist-vals fsm.nextstate) svex-triples))
 
-                    (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
-                    (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                    (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-pipe-env spec-run)
                     (svtv-override-triplemaplist-syntax-check
                      x.pipeline-setup.override-tests x.pipeline-setup.override-vals
                      x.pipeline-setup.probes triplemaps)
@@ -857,10 +1203,10 @@
                                    pipe-env)
                                   spec-pipe-env)
 
-                    (equal (svex-env-extract unchecked-override-vals spec-pipe-env)
-                           (svex-env-extract unchecked-override-vals pipe-env))
-                    (equal (svex-env-extract unchecked-override-tests spec-pipe-env)
-                           (svex-env-extract unchecked-override-tests pipe-env))
+                    ;; (equal (svex-env-extract unchecked-override-vals spec-pipe-env)
+                    ;;        (svex-env-extract unchecked-override-vals pipe-env))
+                    ;; (equal (svex-env-extract unchecked-override-tests spec-pipe-env)
+                    ;;        (svex-env-extract unchecked-override-tests pipe-env))
                     
                     (svex-alistlist-check-monotonic x.pipeline-setup.inputs)
                     (svex-alistlist-check-monotonic x.pipeline-setup.override-vals)
@@ -942,8 +1288,7 @@
                     (flatnorm-setup->monotonify x.flatnorm-setup)
                     
 
-                    (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
-                    (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                    (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-pipe-env spec-run)
                     
                     (svtv-override-triplemaplist-syntax-check
                      x.pipeline-setup.override-tests x.pipeline-setup.override-vals
@@ -1016,8 +1361,7 @@
                      (flatnorm-setup->monotonify x.flatnorm-setup)
                     
 
-                     (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
-                     (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-pipe-env spec-run)
                      (svtv-override-triplemaplist-syntax-check
                       x.pipeline-setup.override-tests x.pipeline-setup.override-vals
                       x.pipeline-setup.probes triplemaps)
@@ -1134,8 +1478,7 @@
                     (flatnorm-setup->monotonify x.flatnorm-setup)
                     
 
-                    (svtv-override-triplemaplist-muxes-<<= triplemaps pipe-env spec-pipe-env spec-run)
-                    (svtv-override-triplemaplist-muxtests-subsetp triplemaps spec-pipe-env pipe-env)
+                    (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-pipe-env spec-run)
                     
                     (svtv-override-triplemaplist-syntax-check
                      x.pipeline-setup.override-tests x.pipeline-setup.override-vals

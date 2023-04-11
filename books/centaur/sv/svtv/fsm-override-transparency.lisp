@@ -34,18 +34,23 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :System))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :System))
 
+(local (std::add-default-post-define-hook :fix))
 
 (define base-fsm-overridekey-transparent-p ((x base-fsm-p)
                                             (overridekeys svarlist-p))
   (b* (((base-fsm x)))
     (and (ec-call (svex-alist-overridekey-transparent-p x.values overridekeys x.values))
-         (ec-call (svex-alist-overridekey-transparent-p x.nextstate overridekeys x.values)))))
+         (ec-call (svex-alist-overridekey-transparent-p x.nextstate overridekeys x.values))))
+  ///
+  (defcong set-equiv equal (base-fsm-overridekey-transparent-p x overridekeys) 2))
 
 (define base-fsm-partial-monotonic ((params svarlist-p)
                                     (x base-fsm-p))
   (b* (((base-fsm x)))
     (and (ec-call (svex-alist-partial-monotonic params x.values))
-         (ec-call (svex-alist-partial-monotonic params x.nextstate)))))
+         (ec-call (svex-alist-partial-monotonic params x.nextstate))))
+  ///
+  (defcong set-equiv equal (base-fsm-partial-monotonic params x) 1))
 
 
 (local (defthm svex-env-<<=-of-svex-env-extract

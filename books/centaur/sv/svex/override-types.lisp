@@ -776,3 +776,40 @@
            (svarlist-change-override x nil))
     :hints(("Goal" :in-theory (enable svex-alist-keys
                                       svarlist-change-override)))))
+
+
+(defsection member-of-svarlist-change-override
+
+  (defthmd member-of-svarlist-change-override
+    (implies (and (svar-equiv v1 (double-rewrite v))
+                  (svar-override-p v1 type1)
+                  (not (svar-overridetype-equiv type1 type2)))
+             (not (member-equal v (svarlist-change-override x type2))))
+    :hints(("Goal" :in-theory (enable svarlist-change-override
+                                      equal-of-svar-change-override
+                                      svar-override-p-when-other))))
+
+  (defthmd member-when-svar-override-p-diff
+    (implies (and (svar-equiv v1 (double-rewrite v))
+                  (svar-override-p v1 type1)
+                  (svarlist-equiv x1 (double-rewrite x))
+                  (svarlist-override-p x1 type2)
+                  (not (svar-overridetype-equiv type1 type2)))
+             (not (member-equal v x)))
+    :hints(("Goal" :in-theory (enable svarlist-override-p
+                                      svar-override-p-when-other))))
+
+  (defthmd member-when-not-svar-override-p
+    (implies (and (svarlist-equiv x1 (double-rewrite x))
+                  (svarlist-override-p x1 type)
+                  (svar-equiv v1 (double-rewrite v))
+                  (not (svar-override-p v1 type)))
+             (not (member-equal v x)))
+    :hints(("Goal" :in-theory (enable svarlist-override-p))))
+
+  (defthmd member-svarlist-change-override-when-not-svar-override-p
+    (implies (and (svar-equiv v1 (double-rewrite v))
+                  (not (svar-override-p v1 type)))
+             (not (member-equal v (svarlist-change-override x type))))
+    :hints(("Goal" :in-theory (enable svarlist-change-override
+                                      equal-of-svar-change-override)))))
