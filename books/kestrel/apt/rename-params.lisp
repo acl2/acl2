@@ -52,28 +52,29 @@
     (union-eq (fn-formals (first fns) wrld)
               (formals-of-fns (rest fns) wrld))))
 
-
-
 ;; drop these?:
 
-(defthm symbolp-of-cdr-assoc-equal-symbol-symbol-alist
+(local
+ (defthm symbolp-of-cdr-assoc-equal-symbol-symbol-alist
   (implies (and (symbolp x)
                 (symbol-symbol-alistp alist)
                 (assoc-equal (car l) alist))
-           (symbolp (cdr (assoc-equal x alist)))))
+           (symbolp (cdr (assoc-equal x alist))))))
 
-(defthm symbol-listp-of-sublis-var-simple-lst
+(local
+ (defthm symbol-listp-of-sublis-var-simple-lst
   (implies (and (symbol-listp l)
                 (symbol-symbol-alistp alist))
            (symbol-listp (sublis-var-simple-lst alist l)))
   :hints (("Goal" :in-theory (enable sublis-var-simple
-                                     sublis-var-simple-lst))))
+                                     sublis-var-simple-lst)))))
 
-(defthm pseudo-termp-of-lookup-equal
-  (implies (and (symbolp x)
-                (symbol-symbol-alistp alist))
-           (pseudo-termp (lookup-equal x alist)))
-  :hints (("Goal" :in-theory (enable symbol-symbol-alistp))))
+(local
+ (defthm pseudo-termp-of-lookup-equal
+   (implies (and (symbolp x)
+                 (symbol-symbol-alistp alist))
+            (pseudo-termp (lookup-equal x alist)))
+   :hints (("Goal" :in-theory (enable symbol-symbol-alistp)))))
 
 ;returns a new defun
 (defun rename-params-in-defun (fn
@@ -87,7 +88,7 @@
                               (function-renamingp function-renaming)
                               (member-eq untranslate '(t nil :nice)))))
   (let* ((wrld (w state))
-         (body (fn-body fn t wrld))
+         (body (fn-body fn t wrld)) ; translated
          (ubody (get-body-from-event fn fn-event))
          (formals (sublis-var-simple-lst renaming (fn-formals fn wrld)))
          (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.

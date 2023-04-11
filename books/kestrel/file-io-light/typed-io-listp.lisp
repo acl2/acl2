@@ -12,6 +12,8 @@
 
 (include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
 
+(in-theory (disable typed-io-listp))
+
 (defthm typed-io-listp-of-revappend
   (equal (typed-io-listp (revappend l1 l2) typ)
          (and (typed-io-listp (true-list-fix l1) typ)
