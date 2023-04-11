@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function string-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,3 +25,16 @@
 ;;   (implies (and (string-listp x)
 ;;                 (string-listp y))
 ;;            (string-listp (append x y))))
+
+(defthm string-listp-forward-to-true-listp
+  (implies (string-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable string-listp))))
+
+;; Kept disabled by default, to avoid introducing string-listp reasoning into a
+;; proof out of nowhere.
+(defthmd true-listp-when-string-listp
+  (implies (string-listp x)
+           (true-listp x))
+  :hints (("Goal" :in-theory (enable string-listp))))
