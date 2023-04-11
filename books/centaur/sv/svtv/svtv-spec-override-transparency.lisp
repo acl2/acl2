@@ -32,6 +32,7 @@
 (include-book "override-common")
 (include-book "override-envlist-defs")
 (include-book "fsm-override-transparency")
+(include-book "svtv-generalize-defs")
 
 (local (include-book "../svex/alist-thms"))
 (local (include-book "std/lists/nth" :dir :system))
@@ -63,17 +64,7 @@
                `(:expand (,(car (last clause)))))))
 
 
-(define svtv-override-triplemap-refvar-keys ((x svtv-override-triplemap-p))
-  (if (atom x)
-      nil
-    (if (and (mbt (and (consp (car x))
-                       (svar-p (caar x))))
-             (svtv-override-triple->refvar (cdar x)))
-        (cons (caar x)
-              (svtv-override-triplemap-refvar-keys (cdr x)))
-      (svtv-override-triplemap-refvar-keys (cdr x))))
-  ///
-  (local (in-theory (enable svtv-override-triplemap-fix))))
+
 
 
 
@@ -93,18 +84,9 @@
 
 (local (in-theory (disable acl2::hons-subset)))
 
-(define svtv-override-triplemap-overridekeys-ok ((triplemap svtv-override-triplemap-p)
-                                                 (namemap svtv-name-lhs-map-p)
-                                                 (override-keys svarlist-p))
-  ;; Checks whether all the keys of triplemap -- which are namemap keys as well
-  ;; -- map in namemap to LHSes containing only vars that are in override-keys.
-  :returns (ok)
-  (acl2::hons-subset (svtv-name-lhs-map-vars
-                      (fal-extract (svtv-override-triplemap-refvar-keys triplemap)
-                                   (svtv-name-lhs-map-fix namemap)))
-                     (svarlist-change-override override-keys nil))
-  ///
-  
+(defsection svtv-override-triplemap-overridekeys-ok
+  (local (in-theory (enable svtv-override-triplemap-overridekeys-ok)))
+  (local (std::set-define-current-function svtv-override-triplemap-overridekeys-ok))
   
   (local (defthm svtv-override-triplemap-overridekeys-ok-implies-subsetp-lookup
            (implies (and (svtv-override-triplemap-overridekeys-ok triplemap namemap overridekeys)
@@ -1171,40 +1153,12 @@
     :hints ((and stable-under-simplificationp
                  `(:expand (,(car (last clause))))))))
 
-(define alistlist-keys (x)
-  (if (atom x)
-      nil
-    (cons (alist-keys (car x))
-          (alistlist-keys (cdr x)))))
 
 
-(define svtv-override-triplemaplist-overridekeys-ok ((triplemaps svtv-override-triplemaplist-p)
-                                                     (namemap svtv-name-lhs-map-p)
-                                                     (override-keys svarlist-p))
-  (if (atom triplemaps)
-      t
-    (and (svtv-override-triplemap-overridekeys-ok (car triplemaps) namemap override-keys)
-         (svtv-override-triplemaplist-overridekeys-ok (cdr triplemaps) namemap override-keys))))
 
-(define svtv-override-triplemaplist-refvar-keys-subsetp ((triplemaps svtv-override-triplemaplist-p)
-                                                         (test-alists svex-alistlist-p))
-  :prepwork ((local (defthm hons-subset1-is-subsetp-alist-keys
-                      (iff (acl2::hons-subset1 x a)
-                           (subsetp-equal x (alist-keys a)))
-                      :hints(("Goal" :in-theory (enable acl2::hons-subset1)))))
-             (local (defthm alist-keys-when-svex-alist-p
-                      (implies (svex-alist-p x)
-                               (equal (alist-keys x)
-                                      (svex-alist-keys x)))
-                      :hints(("Goal" :in-theory (enable alist-keys svex-alist-keys))))))
-  (if (atom triplemaps)
-      t
-    (and (mbe :logic (subsetp-equal (svtv-override-triplemap-refvar-keys (car triplemaps))
-                                    (svex-alist-keys (car test-alists)))
-              :exec (b* ((test-alist (car test-alists)))
-                      (with-fast-alist test-alist
-                        (acl2::hons-subset1 (svtv-override-triplemap-refvar-keys (car triplemaps)) test-alist))))
-         (svtv-override-triplemaplist-refvar-keys-subsetp (cdr triplemaps) (cdr test-alists)))))
+
+
+
                                         
 
 (defsection svtv-override-triplemaplist-syntax-check-aux

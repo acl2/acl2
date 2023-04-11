@@ -28,10 +28,10 @@
 (include-book "svtv-data-obj-spec")
 (include-book "svtv-idealize-defs")
 (include-book "../svex/override")
-(include-book "../svex/fixpoint-override")
-
-(include-book "std/util/defredundant" :dir :system)
-(include-book "svtv-spec-override-transparency")
+(include-book "svtv-generalize-defs")
+(include-book "override-envlist-defs")
+(local (include-book "../svex/fixpoint-override"))
+(local (include-book "svtv-spec-override-transparency"))
 (local (include-book "svtv-stobj-pipeline-monotonicity"))
 (local (include-book "std/lists/sets" :dir :system))
 
@@ -64,12 +64,12 @@
 
   (local (in-theory (disable FLATNORM-OF-SVTV-DATA-OBJ)))
 
-  (defthm design-flatten-okp-of-svtv-data-obj
-    (b* (((svtv-data-obj x)))
-      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
-                    x.flatten-validp)
-               (design-flatten-okp x.design)))
-    :hints(("Goal" :in-theory (enable design-flatten-okp))))
+  (local (defthm design-flatten-okp-of-svtv-data-obj
+           (b* (((svtv-data-obj x)))
+             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                           x.flatten-validp)
+                      (design-flatten-okp x.design)))
+           :hints(("Goal" :in-theory (enable design-flatten-okp)))))
    
   (defthm override-transparency-of-svtv-data-obj->ideal-spec
     (b* (((svtv-spec spec) (svtv-data-obj->ideal-spec x))
@@ -173,23 +173,23 @@
             ;;        (config (svtv-data-obj->phase-fsm-setup x))))
             )))
 
-  (defthm svtv-spec-stimulus-equiv-of-svtv-data-obj->ideal-spec
-    (B* (((svtv-data-obj x)))
-      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
-                    x.flatten-validp
-                    x.flatnorm-validp
-                    x.phase-fsm-validp
-                    (flatnorm-setup->monotonify x.flatnorm-setup))
-               (svtv-spec-stimulus-equiv (svtv-data-obj->ideal-spec x)
-                                         (svtv-data-obj->spec x))))
-    :hints(("Goal" :in-theory (e/d (svtv-spec-stimulus-equiv
-                                    svtv-data-obj->spec
-                                    svtv-data-obj->ideal-spec
-                                    phase-fsm-composition-p
-                                    ;; svex-alist-eval-equiv!
-                                    )
-                                   (phase-fsm-validp-of-svtv-data-obj))
-            :use phase-fsm-validp-of-svtv-data-obj)))
+  (local (defthm svtv-spec-stimulus-equiv-of-svtv-data-obj->ideal-spec
+           (B* (((svtv-data-obj x)))
+             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                           x.flatten-validp
+                           x.flatnorm-validp
+                           x.phase-fsm-validp
+                           (flatnorm-setup->monotonify x.flatnorm-setup))
+                      (svtv-spec-stimulus-equiv (svtv-data-obj->ideal-spec x)
+                                                (svtv-data-obj->spec x))))
+           :hints(("Goal" :in-theory (e/d (svtv-spec-stimulus-equiv
+                                           svtv-data-obj->spec
+                                           svtv-data-obj->ideal-spec
+                                           phase-fsm-composition-p
+                                           ;; svex-alist-eval-equiv!
+                                           )
+                                          (phase-fsm-validp-of-svtv-data-obj))
+                   :use phase-fsm-validp-of-svtv-data-obj))))
 
   (local (defthm svex-alist-width-of-flatnorm-res
            (B* (((svtv-data-obj x))
