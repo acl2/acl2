@@ -1452,6 +1452,9 @@
        (fixtype-array-fix-when-fixtype-arrayp (pack fixtype-array-fix
                                                     '-when-
                                                     fixtype-arrayp))
+       (fixtype-arrayp-of-fixtype-array-fix (pack fixtype-arrayp
+                                                  '-of-
+                                                  fixtype-array-fix))
        (fixtype-arrayp-of-fixtype-array (pack fixtype
                                               '-arrayp-of-
                                               fixtype
@@ -1462,6 +1465,8 @@
                                                  fixtype-array-of))
        (fixtype-array-length (pack fixtype '-array-length))
        (fixtype-array-length-alt-def (pack fixtype-array-length '-alt-def))
+       (fixtype-array-length-of-fixtype-array-fix-array
+        (pack fixtype-array-length '-of- fixtype-array-fix '-array))
        (fixtype-array-integer-index-okp (pack fixtype
                                               '-array-integer-index-okp))
        (fixtype-array-integer-read (pack fixtype '-array-integer-read))
@@ -1491,6 +1496,10 @@
                                             '-compound-recognizer))
        (fixtype-array-of-of-fixtype-list-fix-elements
         (pack fixtype '-array-of-of- fixtype '-list-fix-elements))
+       (posp-of-fixtype-array-length (pack 'posp-of- fixtype-array-length))
+       (consp-when-fixtype-arrayp (pack 'consp-when- fixtype-arrayp))
+       (fixtype-arrayp-of-fixtype-array-integer-write
+        (pack fixtype-arrayp '-of- fixtype-array-integer-write))
        (member-length (packn-pos (list struct-tag
                                        '-
                                        (ident->name name)
@@ -1558,6 +1567,14 @@
                          struct-tag
                          '-equiv)
                    struct-tag))
+       (struct-tag-fix-when-struct-tag-p (packn-pos (list struct-tag-fix
+                                                          '-when-
+                                                          struct-tag-p)
+                                                    struct-tag-p))
+       (struct-tag-p-of-struct-tag-fix (packn-pos (list struct-tag-p
+                                                        '-of-
+                                                        struct-tag-fix)
+                                                  struct-tag-p))
        (member-length-theory `(consp-when-ucharp
                                consp-when-ushortp
                                consp-when-uintp
@@ -1589,8 +1606,8 @@
                                (:e equal)
                                (:e ident)
                                (:e identp)
-                               ,(packn (list struct-tag-fix '-when- struct-tag-p))
-                               (:t ,(pack 'posp-of- fixtype '-array-length))
+                               ,struct-tag-fix-when-struct-tag-p
+                               (:t ,posp-of-fixtype-array-length)
                                (:t value-struct->flexiblep)))
        (read-member-returns-theory
         `(,struct-tag-p
@@ -1801,13 +1818,13 @@
                                      consp-when-sintp
                                      consp-when-slongp
                                      consp-when-sllongp
-                                     ,(pack 'consp-when- fixtype-arrayp)
+                                     ,consp-when-fixtype-arrayp
                                      consp-when-valuep
                                      eq
                                      ifix
                                      integer-range-p
                                      not
-                                     ,(packn (list struct-tag-fix '-when- struct-tag-p))
+                                     ,struct-tag-fix-when-struct-tag-p
                                      value-struct-read
                                      value-optionp-when-valuep
                                      valuep-when-value-optionp
@@ -1818,9 +1835,7 @@
        (write-member-integer-lemma-theory
         `(,struct-tag-p
           value-struct-write
-          ,(packn-pos (list 'not-flexible-array-member-p-when-
-                            fixtype-arrayp)
-                      'not-flexible-array-member-p)
+          ,not-flexible-array-member-p-when-fixtype-arrayp
           member-value-listp-of-value-struct-write-aux
           member-value-list-fix-when-member-value-listp
           member-value-list->name-list-of-struct-write-aux
@@ -1841,9 +1856,8 @@
           consp-when-sintp
           consp-when-slongp
           consp-when-sllongp
-          ,(packn-pos (list 'consp-when- fixtype-arrayp)
-                      'consp-when-)
-          ,(packn (list struct-tag-fix '-when- struct-tag-p))
+          ,consp-when-fixtype-arrayp
+          ,struct-tag-fix-when-struct-tag-p
           (:e acl2::bool-fix)
           (:e equal)
           (:e ident)
@@ -1867,8 +1881,7 @@
           value-struct->flexiblep-of-value-struct
           value-struct->members-of-value-struct
           value-struct->tag-of-value-struct
-          ,(packn-pos (list 'valuep-when- fixtype-arrayp)
-                      'valuep-when-)
+          ,valuep-when-fixtype-arrayp
           valuep-when-value-optionp
           (:t ,struct-tag-p)
           (:t value-struct)
@@ -1907,10 +1920,10 @@
           (:e equal)
           (:e ident)
           (:e identp)
-          ,(packn (list struct-tag-fix '-when- struct-tag-p))
-          ,(pack fixtype-arrayp '-of- fixtype '-array-integer-write)
+          ,struct-tag-fix-when-struct-tag-p
+          ,fixtype-arrayp-of-fixtype-array-integer-write
           value-optionp-when-valuep
-          ,(pack 'valuep-when- fixtype-arrayp)
+          ,valuep-when-fixtype-arrayp
           valuep-when-value-optionp
           (:t value-struct->flexiblep)
           (:t value-struct-write)))
@@ -2083,16 +2096,8 @@
               (("Goal"
                 :in-theory
                 '(,read-member
-                  ,(packn-pos (list struct-tag
-                                    '-equiv-implies-equal-
-                                    struct-tag-fix
-                                    '-1)
-                              struct-tag)
-                  ,(packn-pos (list struct-tag
-                                    '-fix-under-
-                                    struct-tag
-                                    '-equiv)
-                              struct-tag))))))
+                  ,struct-tag-equiv-implies-equal-struct-tag-fix-1
+                  ,struct-tag-fix-under-struct-tag-equiv)))))
           (define ,write-member ((val ,fixtype-arrayp) (struct ,struct-tag-p))
             :guard (equal (,fixtype-array-length val)
                           ,(or size?
@@ -2121,20 +2126,11 @@
               (("Goal"
                 :in-theory '((:e ident)
                              ,write-member
-                             ,(packn-pos (list struct-tag-fix
-                                               '-when-
-                                               struct-tag-p)
-                                         struct-tag-p)
-                             ,(packn-pos (list struct-tag-p
-                                               '-of-
-                                               struct-tag-fix)
-                                         struct-tag-p)
-                             ,(pack fixtype-array-fix '-when- fixtype-arrayp)
-                             ,(pack fixtype-arrayp '-of- fixtype-array-fix)
-                             ,(pack fixtype-array-length
-                                    '-of-
-                                    fixtype-array-fix
-                                    '-array))))))
+                             ,struct-tag-fix-when-struct-tag-p
+                             ,struct-tag-p-of-struct-tag-fix
+                             ,fixtype-array-fix-when-fixtype-arrayp
+                             ,fixtype-arrayp-of-fixtype-array-fix
+                             ,fixtype-array-length-of-fixtype-array-fix-array)))))
           ,(if size?
                `(define ,member-integer-index-okp ((index integerp))
                   :returns (yes/no
@@ -2246,16 +2242,8 @@
               (("Goal"
                 :in-theory
                 '(,read-member-list
-                  ,(packn-pos (list struct-tag-fix
-                                    '-under-
-                                    struct-tag
-                                    '-equiv)
-                              struct-tag)
-                  ,(packn-pos (list struct-tag
-                                    '-equiv-implies-equal-
-                                    struct-tag-fix
-                                    '-1)
-                              struct-tag))))))
+                  ,struct-tag-fix-under-struct-tag-equiv
+                  ,struct-tag-equiv-implies-equal-struct-tag-fix-1)))))
           (define ,write-member-list ((values ,fixtype-listp) (struct ,struct-tag-p))
             :guard ,write-member-list-extra-guard
             :returns (new-struct
