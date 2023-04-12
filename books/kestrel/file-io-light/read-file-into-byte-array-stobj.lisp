@@ -35,10 +35,10 @@
 
 ;; Returns (mv byte-array-stobj state).
 (defund read-file-into-byte-array-stobj-aux (next-index len channel byte-array-stobj state)
-  (declare (xargs :guard (and (symbolp channel)
-                              (unsigned-byte-p 59 next-index) ; so that adding 1 still gives a fixnum
+  (declare (xargs :guard (and (unsigned-byte-p 59 next-index) ; so that adding 1 still gives a fixnum
                               (unsigned-byte-p 59 len)
                               (equal len (bytes-length byte-array-stobj))
+                              (symbolp channel)
                               (open-input-channel-p channel :byte state))
                   :stobjs (byte-array-stobj state)
                   :measure (nfix (+ 1 (- len next-index)))
@@ -56,7 +56,7 @@
           (prog2$ (er hard? 'read-file-into-byte-array-stobj-aux "Too few bytes in file.") ; should not happen since LEN is the file length
                   (mv byte-array-stobj state))
         (let ((byte-array-stobj (update-bytesi next-index maybe-byte byte-array-stobj)))
-          (read-file-into-byte-array-stobj-aux (the (unsigned-byte 60) (+ 1 next-index))
+          (read-file-into-byte-array-stobj-aux (the (unsigned-byte 59) (+ 1 next-index))
                                                len
                                                channel
                                                byte-array-stobj
