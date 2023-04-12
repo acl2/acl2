@@ -1,6 +1,7 @@
 (in-package "DM")
 
 (include-book "perms")
+(include-book "maps")
 (local (include-book "rtl/rel11/lib/top" :dir :system))
 
 ;; The list of members of the symmetric group:
@@ -420,3 +421,6 @@
   (implies (posp n)
 	   (equal (order (sym n))
 		  (fact n))))
+
+;; These rules got me into big trouble:
+(in-theory (disable len-perm dlistp-perm))

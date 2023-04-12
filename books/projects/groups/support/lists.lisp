@@ -19,6 +19,11 @@
                 (< n (len l)))
 	   (member (nth n l) l)))
 
+(defthmd dlistp-len-1
+  (implies (and (dlistp l) (equal (len l) 1))
+           (equal (list (car l)) l))
+  :hints (("Goal" :expand ((dlistp l)))))
+
 (defthm nth-dlist-distinct
   (implies (and (dlistp l) (natp i) (natp j) (< i (len l)) (< j (len l)) (not (= i j)))
             (not (equal (nth i l) (nth j l))))
@@ -58,6 +63,12 @@
 	   (equal (index (nth i l) l)
 	          i)))
 
+(defthm index-append
+  (equal (index x (append l m))
+         (if (member-equal x l)
+	     (index x l)
+	   (+ (len l) (index x m)))))
+
 ;; If 2 dlists of the same length are unequal, then they must have different members at some index less than the length.
 ;; This index is provided by the following witness function nth-diff.  The purpose of the lemma nth-diff-diff is to
 ;; conclude that 2 dlists are equal once we have shown that they agree at each index:
@@ -70,8 +81,8 @@
     ()))
 
 (defthmd nth-diff-diff
-  (implies (and (dlistp x)
-		(dlistp y)
+  (implies (and (true-listp x)
+		(true-listp y)
 		(equal (len x) (len y))
 		(not (equal x y)))
 	   (let ((n (nth-diff x y)))
@@ -304,10 +315,10 @@
 	   (disjointp-pairwise (cdr l)))
     t))
 
-(defthmd disjointp-pairwise-sublistp
-  (implies (and (disjointp-pairwise m)
-                (sublistp l m)
-		(dlistp l))
+(defthm disjointp-pairwise-sublistp
+  (implies (and (sublistp l m)
+                (dlistp l)
+                (disjointp-pairwise m))
 	   (disjointp-pairwise l)))
 
 (defun dlistp-list (l)
@@ -315,6 +326,11 @@
       (and (dlistp (car l))
            (dlistp-list (cdr l)))
     t))
+
+(defthm dlistp-list-sublist
+  (implies (and (sublistp l m)
+                (dlistp-list m))
+	   (dlistp-list l)))
 
 (defthm dlistp-append-list
   (implies (and (dlistp-list l)
@@ -452,9 +468,97 @@
   :hints (("Goal" :use ((:instance len-x-y (x (x)) (y (y)))))))
 
 
+;;---------------------------------------------------------------------------------------------------------------
 
+;; Some properties of intersection-equal:
 
+(local-defthmd sublistp-intersection-1
+  (implies (sublistp l1 l)
+           (and (sublistp (intersection-equal l1 m) m)
+	        (sublistp (intersection-equal l1 m) l)))
+  :hints (("Goal" :expand ((INTERSECTION-EQUAL L1 M) (INTERSECTION-EQUAL NIL M)))))
 
+(defthm sublistp-intersection
+  (and (sublistp (intersection-equal l m) m)
+       (sublistp (intersection-equal l m) l))
+  :hints (("Goal" :use ((:instance sublistp-intersection-1 (l1 l))))))
 
+(local-defthmd dlistp-intersection-1
+  (implies (and (dlistp l1) (sublistp l1 l))
+           (dlistp (intersection-equal l1 m)))
+  :hints (("Goal" :expand ((INTERSECTION-EQUAL L1 M) (INTERSECTION-EQUAL NIL M)))))
 
+(defthm dlistp-intersection
+  (implies (dlistp l)
+           (dlistp (intersection-equal l m)))
+  :hints (("Goal" :use ((:instance dlistp-intersection-1 (l1 l))))))
 
+(local-defthmd sublistp-append-intersection-1-1
+  (implies (and (sublistp m1 m) (sublistp m1 (append l1 l2)))
+           (sublistp m1 (append (intersection-equal l1 m) (intersection-equal l2 m)))))
+
+(defthmd sublistp-append-intersection-1
+  (implies (sublistp m (append l1 l2))
+           (sublistp m (append (intersection-equal l1 m) (intersection-equal l2 m))))
+  :hints (("Goal" :use ((:instance sublistp-append-intersection-1-1 (m1 m))))))
+
+(local-defthmd sublistp-append-intersection-2-1
+  (implies (and (sublistp l1 l) (sublistp l1 (append m1 m2)))
+           (sublistp l1 (append (intersection-equal l m1) (intersection-equal l m2)))))
+
+(defthmd sublistp-append-intersection-2
+  (implies (sublistp l (append m1 m2))
+           (sublistp l (append (intersection-equal l m1) (intersection-equal l m2))))
+  :hints (("Goal" :use ((:instance sublistp-append-intersection-2-1 (l1 l))))))
+
+(local-defthmd disjointp-append-intersection-1-1
+  (implies (and (sublistp l3 l1) (disjointp l1 l2))
+           (disjointp (intersection-equal l3 m)
+	              (intersection-equal l2 m)))
+  :hints (("Goal" :expand ((INTERSECTION-EQUAL L3 M)))))
+
+(defthmd disjointp-append-intersection-1
+  (implies (disjointp l1 l2)
+           (disjointp (intersection-equal l1 m)
+	              (intersection-equal l2 m)))
+  :hints (("Goal" :use ((:instance disjointp-append-intersection-1-1 (l3 l1))))))
+
+(defthmd disjointp-append-intersection-2
+  (implies (disjointp m1 m2)
+           (disjointp (intersection-equal l m1)
+	              (intersection-equal l m2)))
+  :hints (("Goal" :induct (len l) :expand ((INTERSECTION-EQUAL L M1) (INTERSECTION-EQUAL L M2)))))
+
+(defthmd len-append-intersection-1
+  (implies (and (dlistp m)
+                (dlistp l1)
+                (dlistp l2)
+                (disjointp l1 l2)
+		(sublistp m (append l1 l2)))
+           (equal (+ (len (intersection-equal l1 m))
+	             (len (intersection-equal l2 m)))
+		  (len m)))
+  :hints (("Goal" :use (disjointp-append-intersection-1
+                        sublistp-append-intersection-1
+			(:instance sublistp-equal-len (l (append (intersection-equal l1 m) (intersection-equal l2 m))))
+                        (:instance sublistp-intersection (l l1))
+			(:instance sublistp-intersection (l l2))
+			(:instance dlistp-intersection (l l1))
+			(:instance dlistp-intersection (l l2))))))
+
+(defthmd len-append-intersection-2
+  (implies (and (dlistp l)
+                (dlistp m1)
+                (dlistp m2)
+                (disjointp m1 m2)
+		(sublistp l (append m1 m2)))
+           (equal (+ (len (intersection-equal l m1))
+	             (len (intersection-equal l m2)))
+		  (len l)))
+  :hints (("Goal" :use (disjointp-append-intersection-2
+                        sublistp-append-intersection-2
+			(:instance sublistp-equal-len (l (append (intersection-equal l m1) (intersection-equal l m2))) (m l))
+                        (:instance sublistp-intersection (m m1))
+			(:instance sublistp-intersection (m m2))
+			(:instance dlistp-intersection (m m1))
+			(:instance dlistp-intersection (m m2))))))

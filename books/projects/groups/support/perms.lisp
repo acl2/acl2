@@ -1,6 +1,7 @@
 (in-package "DM")
 
-(include-book "groups")
+(include-book "lists")
+(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
 (local (include-book "rtl/rel11/lib/top" :dir :system))
 
 ;; perms constructs a list of all permutations of a dlist:
@@ -520,6 +521,152 @@
                 (permp l m))
   :hints (("Goal" :induct (permp-eq-len-induct l m))))
 
+
+;;--------------------------------------------------------------------------------------------------------------------
+
+;; While trying to prove the Fundamental Theorem of Finite Abelian Groups, I found a need for the following:
+
+(defun permutationp (l m)
+  (if (consp l)
+      (and (member-equal (car l) m)
+           (permutationp (cdr l) (remove1-equal (car l) m)))
+    (endp m)))
+
+(defthmd permutationp-member-iff
+  (implies (permutationp l m)
+	   (iff (member-equal x l) (member-equal x m))))
+
+(defthmd permutationp-eq-len
+  (implies (permutationp l m)
+	   (equal (len l) (len m))))
+
+(defthmd sublistp-remove1-sublistp
+  (implies (and (sublistp (remove1-equal x l) m)
+	        (member-equal x m))
+	   (sublistp l m))
+  :hints (("Goal" :induct (remove1-equal x l))))
+
+(local-defthm permp-remove1
+  (implies (and (dlistp l)
+                (dlistp m)
+                (consp l)
+                (member-equal (car l) m))
+           (iff (permp (cdr l) (remove1-equal (car l) m))
+	        (permp l m)))	        
+  :hints (("Goal" :in-theory (enable permp)
+                  :use ((:instance sublistp-sublistp (l (cdr l)) (m (remove1-equal (car l) m)) (n m))
+		        (:instance sublistp-remove1-sublistp (x (car l)) (l m) (m l))))))
+
+(defthmd permp-permutationp
+  (implies (and (dlistp l) (dlistp m))
+           (iff (permutationp l m)
+	        (permp l m)))
+  :hints (("Subgoal *1/3" :in-theory (enable permp))
+          ("Subgoal *1/2" :in-theory (enable permp))))
+
+;; An equivalent formulation of permutationp:
+
+;; The number of occurrences of x in l:
+
+(defun hits (x l)
+  (if (consp l)
+      (if (equal x (car l))
+          (1+ (hits x (cdr l)))
+        (hits x (cdr l)))
+    0))
+
+(defthm hits-member
+  (implies (not (member-equal x l))
+	   (equal (hits x l) 0)))
+
+(defthm hits-consp
+  (implies (not (consp l))
+	   (equal (hits x l) 0)))
+
+;; Search for an x that has different numbers of occurrences in l and m:
+
+(defun hits-diff-aux (test l m)
+  (if (consp test)
+      (if (equal (hits (car test) l) (hits (car test) m))
+          (hits-diff-aux (cdr test) l m)
+	(list (car test)))
+    ()))
+
+(defund hits-diff (l m)
+  (hits-diff-aux (append l m) l m))
+
+(defund hits-cex (l m)
+  (car (hits-diff l m)))
+
+(local-defthm hits-diff-aux-diff
+  (implies (hits-diff-aux test l m)
+           (not (equal (hits (car (hits-diff-aux test l m)) l)
+                       (hits (car (hits-diff-aux test l m)) m)))))
+
+(local-defthmd hits-diff-aux-equal
+  (implies (and (not (hits-diff-aux test l m))
+		(member-equal x test))
+	   (equal (hits x l) (hits x m))))
+
+(defthmd hits-diff-diff
+  (if (hits-diff l m)
+      (not (equal (hits (hits-cex l m) l)
+                  (hits (hits-cex l m) m)))
+   (equal (hits x l) (hits x m)))
+  :hints (("Goal" :in-theory (enable hits-diff hits-cex)
+	          :use ((:instance hits-diff-aux-equal (test (append l m)))))))
+
+(defthm hits-cdr
+  (implies (consp l)
+           (equal (hits a (cdr l))
+                  (if (equal a (car l))
+	              (1- (hits a l))
+	            (hits a l)))))
+
+(defthm hits-remove1
+  (equal (hits a (remove1-equal x l))
+         (if (and (equal a x) (member-equal x l))
+	     (1- (hits a l))
+	   (hits a l))))
+
+(defthm hits-diff-perm
+  (iff (permutationp l m)
+       (not (hits-diff l m)))
+  :hints (("Subgoal *1/3" :use ((:instance hits-diff-diff (x (car l)))
+				(:instance hits-diff-diff (x (car m)))))
+          ("Subgoal *1/2" :use ((:instance hits-diff-diff (x (car l)))
+				(:instance hits-diff-diff (x (car m)))))
+	  ("Subgoal *1/1.2" :use ((:instance hits-diff-diff (l (cdr l)) (m (remove1 (car l) m)))
+			  	  (:instance hits-cdr (a (HITS-cex (CDR L) (REMOVE1-EQUAL (CAR L) M))))
+				  (:instance hits-remove1 (a (HITS-cex (CDR L) (REMOVE1-EQUAL (CAR L) M))))
+				  (:instance hits-diff-diff (x (HITS-cex (CDR L) (REMOVE1-EQUAL (CAR L) M))))))
+	  ("Subgoal *1/1.1" :use (hits-diff-diff
+				  (:instance hits-diff-diff (l (cdr l)) (m (remove1 (car l) m)) (x (hits-cex l m)))
+			  	  (:instance hits-cdr (a (HITS-cex l m)))
+				  (:instance hits-remove1 (a (HITS-cex l m)))))))
+
+(defthmd perm-equal-hits
+  (implies (permutationp l m)
+           (equal (hits x l) (hits x m)))
+  :hints (("Goal" :use (hits-diff-diff hits-diff-perm))))
+
+(defthm permutationp-reflexive
+  (permutationp l l)
+  :hints (("Goal" :use ((:instance hits-diff-diff (m l))))))
+
+(defthmd permutationp-symmetric
+  (implies (permutationp l m)
+	   (permutationp m l))
+  :hints (("Goal" :use ((:instance hits-diff-diff (x (hits-cex m l)))
+			(:instance hits-diff-diff (l m) (m l))))))
+
+(defthmd permutationp-transitice
+  (implies (and (permutationp l m)
+	        (permutationp m n))
+	   (permutationp l n))
+  :hints (("Goal" :use ((:instance hits-diff-diff (x (hits-cex l n)))
+			(:instance hits-diff-diff (x (hits-cex l n)) (l m) (m n))
+			(:instance hits-diff-diff (m n))))))
 
 
 

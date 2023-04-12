@@ -82,6 +82,7 @@
 (defund actionp (a g)
   (and (groupp g)
        (dlistp (dom a))
+       (consp (dom a))
        (matrixp a (order g) (len (dom a)))
        (aclosedp a g)
        (aassocp a g)))
@@ -94,6 +95,11 @@
 (defthm actionp-dlistp
   (implies (actionp a g)
            (dlistp (dom a)))
+  :hints (("Goal" :in-theory (enable actionp))))
+
+(defthm actionp-consp
+  (implies (actionp a g)
+           (consp (dom a)))
   :hints (("Goal" :in-theory (enable actionp))))
 
 (defthm ordp-a
@@ -303,7 +309,7 @@
   (local (defun aelts () (list 0)))
   (local (defun aact (x y) (+ x y)))
   (defthm groupp-grp (groupp (agrp)))
-  ;(defthm consp-aelts (consp (aelts)))
+  (defthm consp-aelts (consp (aelts)))
   (defthm dlistp-aelts (dlistp (aelts)))
   ;(defthm a-non-nil (not (member-equal () (aelts))))
   (defthm a-identity
@@ -478,6 +484,64 @@
                 (IN S (CONJUGACY G)))
            (EQUAL (ACT X S (CONJUGACY G) G)
                   (CONJ S X G))))
+
+;; If h is a subgroup of g, then g acts on the left cosets of h:
+
+(defthm consp-lsosets
+  (implies (subgroupp h g)
+           (consp (lcosets h g)))
+  :hints (("Goal" :use ((:instance member-lcoset-cosets (x (e g)))))))
+
+(defthmd equal-lcosets-iff
+  (implies (and (subgroupp h g)
+                (in x g)
+		(in y g))
+           (iff (equal (lcoset x h g) (lcoset y h g))
+	        (in (op (inv x g) y g) h)))
+  :hints (("Goal" :use (member-lcoset-iff equal-lcoset
+                        (:instance member-self-lcoset (x y))))))
+
+(defthm act-lcosets-e
+  (implies (and (subgroupp h g)
+                (member-equal s (lcosets h g)))
+           (equal (lcoset (op (e g) (car s) g) h g)
+                  s))
+  :hints (("goal" :in-theory (enable lcosets-cars))))
+
+
+(defthm act-lcosets-closed
+  (implies (and (subgroupp h g)
+                (in x g)
+		(member-equal s (lcosets h g)))
+	   (member (lcoset (op x (car s) g) h g)
+	           (lcosets h g)))
+  :hints (("Goal" :use ((:instance member-lcoset-cosets (x (op x (car s) g)))
+                        (:instance lcosets-cars (c s))))))
+
+(defthmd act-lcoselt-assoc-1
+  (implies (and (subgroupp h g)
+                (in x g)
+		(in y g))
+	   (equal (lcoset (op x (car (lcoset y h g)) g) h g)
+	          (lcoset (op x y g) h g)))
+  :hints (("Goal" :in-theory (enable lcoset-car)
+                  :use ((:instance equal-lcosets-cancel (z (car (lcoset y h g))))))))
+
+(defthm act-lcosets-assoc
+  (implies (and (subgroupp h g)
+                (in x g)
+		(in y g)
+		(member-equal s (lcosets h g)))
+	   (equal (lcoset (op x (car (lcoset (op y (car s) g) h g)) g) h g)
+	          (lcoset (op (op x y g) (car s) g) h g)))
+  :hints (("Goal" :in-theory (enable lcosets-cars)
+                  :use ((:instance act-lcoselt-assoc-1 (y (op y (car s) g)))
+		        (:instance group-assoc (z (car s)))))))
+                        
+(defaction act-lcosets (h) g
+  (subgroupp h g)
+  (lcosets h g)
+  (lcoset (op x (car s) g) h g))
 
 ;; (sym n) acts on (ninit n):
 
@@ -1492,6 +1556,15 @@
   (dlistp (conjs-sub h g))
   :hints (("Goal" :in-theory (enable conjs-sub))))
 
+(local-defthm consp-conjs-sub-aux
+  (implies (consp l)
+           (consp (conjs-sub-aux h g l))))
+
+(defthm consp-conjs-sub
+  (implies (groupp g)
+           (consp (conjs-sub h g)))
+  :hints (("Goal" :in-theory (enable conjs-sub))))
+
 ;; (conjs-sub h g) contains every conjugate of h:
 
 (local-defthm member-conjs-sub-aux
@@ -1941,3 +2014,556 @@
 		        (:instance conj-stabilizer (a (conj-sub-act m g)) (x (conjer-sub c m g)) (s (conj-sub m (e g) g)))
 			(:instance conj-sub-conj-sub-e (h m) (x (conjer-sub c m g)))
 			(:instance conjs-sub-conjer (h m) (k c))))))
+
+;;---------------------------------------------------------------------------------------------------
+;; Induced Hormomorphisn into (sym (order g))
+;;---------------------------------------------------------------------------------------------------
+
+;; An action of a group g associates each element of g with a permutation of (dom a).
+;; By identifying an element of (dom a) with its index, we have an element of (sym n),
+;; where n = (order a).  If x is in g and p is the element of (sym n) corresponding to x,
+;; then for 0 <= k < n, the image of k under p is computed by the following:
+
+(defund act-perm-val (x k a g)
+  (index (act x (nth k (dom a)) a g)
+         (dom a)))
+
+(defthm actionp-pos-len
+  (implies (actionp a g)
+	   (posp (len (dom a))))
+  :hints (("Goal" :expand ((len (car a))))))
+
+(local-defthmd act-perm-val-val
+  (implies (and (actionp a g)
+		(in x g)
+		(member-equal k (ninit (order a))))
+	   (member-equal (act-perm-val x k a g)
+			 (ninit (order a))))
+  :hints (("Goal" :in-theory (enable act-perm-val member-ninit))))
+
+(local-defthmd act-perm-val-1-1
+  (implies (and (actionp a g)
+		(in x g)
+		(member-equal j (ninit (order a)))
+		(member-equal k (ninit (order a)))
+		(not (= j k)))
+	   (not (equal (act-perm-val x j a g)
+		       (act-perm-val x k a g))))
+  :hints (("Goal" :in-theory (enable act-perm-val member-ninit)
+	          :use ((:instance action-cancel (r (nth j (dom a))) (s (nth k (dom a))))
+		        (:instance index-1-to-1  (x (act x (nth j (car a)) a g)) (y (act x (nth k (car a)) a g)) (l (car a)))))))
+
+;; The element of (sym n) corresponding to x:
+
+(defun act-perm-aux (x k a g)
+  (if (zp k)
+      ()
+    (append (act-perm-aux x (1- k) a g)
+            (list (act-perm-val x (1- k) a g)))))
+
+(defund act-perm (x a g)
+  (act-perm-aux x (order a) a g))
+
+(local-defthmd member-act-perm-aux
+  (implies (and (actionp a g)
+		(in x g)
+		(member-equal k (ninit (order a)))
+		(natp j)
+		(<= j k))
+	   (not (member-equal (act-perm-val x k a g)
+	                      (act-perm-aux x j a g))))
+  :hints (("Subgoal *1/2" :use (act-perm-val-1-1
+                                (:instance act-perm-val-1-1 (j (1- j)))
+                                (:instance act-perm-val-1-1 (k (1- j))))
+                          :in-theory (enable member-ninit))))
+
+(local-defthmd sublistp-act-perm-aux
+  (implies (and (actionp a g)
+		(in x g)
+		(natp k)
+		(<= k (order a)))
+	   (and (sublistp (act-perm-aux x k a g)
+	                  (ninit (order a)))
+		(dlistp (act-perm-aux x k a g))))
+  :hints (("Subgoal *1/2" :use ((:instance act-perm-val-val (k (1- k)))
+                                (:instance member-act-perm-aux (k (1- k)) (j (1- k))))
+                          :in-theory (enable member-ninit))))
+
+(local-defthmd sublistp-act-perm
+  (implies (and (actionp a g)
+		(in x g))
+	   (and (sublistp (act-perm x a g)
+	                  (ninit (order a)))
+		(dlistp (act-perm x a g))))
+  :hints (("Goal" :in-theory (enable act-perm)
+                  :use ((:instance sublistp-act-perm-aux (k (order a)))))))
+
+(local-defthm len-act-perm-aux
+  (implies (and (actionp a g)
+		(in x g)
+		(natp k))
+	   (equal (len (act-perm-aux x k a g))
+	          k)))
+
+(local-defthm len-act-perm
+  (implies (and (actionp a g)
+		(in x g))
+	   (equal (len (act-perm x a g))
+	          (order a)))
+  :hints (("Goal" :in-theory (enable act-perm))))
+
+(defthmd act-perm-is-perm
+  (implies (and (actionp a g)
+                (in x g))
+	   (in (act-perm x a g)
+	       (sym (order a))))
+  :hints (("Goal" :use (sublistp-act-perm
+                        (:instance permp-eq-len (l (act-perm x a g)) (m (ninit (order a))))
+			(:instance member-perm-slist (n (order a)) (x (act-perm x a g)))))))
+
+(local-defthmd nth-act-perm-aux
+  (implies (and (actionp a g)
+		(in x g)
+		(natp k)
+		(<= k (order a))
+		(natp j)
+		(< j k))
+	   (equal (nth j (act-perm-aux x k a g))
+	          (act-perm-val x j a g))))
+
+(defthm act-perm-val-is-val
+  (implies (and (actionp a g)
+                (in x g)
+		(member-equal k (ninit (order a))))
+	   (equal (nth k (act-perm x a g))
+	          (act-perm-val x k a g)))
+  :hints (("Goal" :in-theory (enable member-ninit act-perm)
+                  :use ((:instance nth-act-perm-aux (k (order a)) (j k))))))
+
+(local-defthmd act-perm-val-e
+  (implies (and (actionp a g)
+		(member-equal k (ninit (order a))))
+	   (equal (nth k (act-perm (e g) a g))
+	          k))
+  :hints (("Goal" :in-theory (enable act-perm-val))))
+
+;; The identity of g corresponds to the identity of (sym n):
+
+(defthmd act-perm-e
+  (implies (actionp a g)
+	   (equal (act-perm (e g) a g)
+	          (ninit (order a))))
+  :hints (("Goal" :in-theory (enable member-ninit)
+                  :use ((:instance act-perm-is-perm (x (e g)))
+		        (:instance act-perm-val-e (k (nth-diff (act-perm (e g) a g) (ninit (len (car a))))))
+		        (:instance nth-diff-perm (n (order a)) (x (act-perm (e g) a g)) (y (ninit (order a))))))))
+
+;; The group operation is preserved by this correspondence:
+
+(local-defthmd act-perm-val-comp
+  (implies (and (actionp a g)
+                (in x g)
+		(in y g)
+		(member-equal k (ninit (order a))))
+	   (equal (nth k (act-perm (op x y g) a g))
+	          (nth (nth k (act-perm y a g)) (act-perm x a g))))
+  :hints (("Goal" :in-theory (enable act-perm-val action-aassoc))))
+
+(defthmd act-perm-comp
+  (implies (and (actionp a g)
+                (in x g)
+		(in y g))
+	   (equal (act-perm (op x y g) a g)
+	          (comp-perm (act-perm x a g)
+		             (act-perm y a g)
+			     (order a))))
+  :hints (("Goal" :use (act-perm-is-perm
+                        (:instance act-perm-is-perm (x y))
+                        (:instance act-perm-is-perm (x (op x y g)))
+			(:instance nth-diff-perm (n (order a)) (x (act-perm (op x y g) a g))
+			                                       (y (comp-perm (act-perm x a g) (act-perm y a g) (order a))))
+			(:instance act-perm-val-comp (k (nth-diff (act-perm (op x y g) a g) (comp-perm (act-perm x a g) (act-perm y a g) (order a)))))))))
+
+;; Thus, we have a homomorphism from g into the symmetric group:
+
+(defmap act-sym (a g)
+  (elts g)
+  (act-perm x a g))
+
+(local-defthmd act-perm-codomain-cex
+  (implies (actionp a g)
+           (not (codomain-cex (act-sym a g) g (sym (order a)))))
+  :hints (("Goal" :use ((:instance codomain-cex-lemma (map (act-sym a g)) (h (sym (order a))))
+                        (:instance act-perm-is-perm (x (codomain-cex (act-sym a g) g (sym (order a)))))))))
+
+(local-defthmd act-perm-homomorphism-cex
+  (implies (actionp a g)
+           (not (homomorphism-cex (act-sym a g) g (sym (order a)))))
+  :hints (("Goal" :use ((:instance act-perm-is-perm (x (car (homomorphism-cex (act-sym a g) g (sym (order a))))))
+                        (:instance act-perm-is-perm (x (cdr (homomorphism-cex (act-sym a g) g (sym (order a))))))
+                        (:instance act-perm-is-perm (x (op (car (homomorphism-cex (act-sym a g) g (sym (order a))))
+			                                   (cdr (homomorphism-cex (act-sym a g) g (sym (order a))))
+							   g)))
+                        (:instance act-perm-is-perm (x (op x y g)))
+			(:instance homomorphismp-cex-lemma (map (act-sym a g)) (h (sym (order a))))
+                        (:instance act-perm-comp (x (car (homomorphism-cex (act-sym a g) g (sym (order a)))))
+			                         (y (cdr (homomorphism-cex (act-sym a g) g (sym (order a))))))))))
+
+(defthmd homomorphismp-act-sym
+  (implies (actionp a g)
+           (homomorphismp (act-sym a g)
+	                  g
+			  (sym (order a))))
+  :hints (("Goal" :in-theory (enable e homomorphismp)
+                  :use (act-perm-e act-perm-codomain-cex act-perm-homomorphism-cex))))
+
+;; An element of the kernel of (act-sym a g) acts trivially on every element of (dom a):
+
+(local-defthmd act-perm-ninit
+  (implies (and (actionp a g)
+                (in x g)
+		(equal (act-perm x a g) (ninit (order a)))
+		(member-equal k (ninit (order a))))
+	   (equal (index (act x (nth k (dom a)) a g) (dom a))
+	          k))		  
+  :hints (("Goal" :use (act-perm-val-is-val)
+                  :in-theory (e/d (act-perm-val member-ninit) (act-perm-val-is-val)))))
+
+(local-defthmd index-act
+  (implies (and (actionp a g)
+                (in x g)
+		(in s a)
+		(equal (act-perm x a g) (ninit (order a))))
+	   (equal (index (act x s a g) (dom a))
+	          (index s (dom a))))
+  :hints (("Goal" :use ((:instance act-perm-ninit (k (index s (dom a))))))))
+
+(defthmd act-sym-kernel
+  (implies (and (actionp a g)
+                (in x g)
+                (equal (act-perm x a g) (e (sym (order a))))
+		(in s a))
+	  (equal  (act x s a g)
+	          s))
+  :hints (("Goal" :in-theory (enable e)
+                  :use (index-act (:instance index-1-to-1 (x (act x s a g)) (y s) (l (dom a)))))))
+
+;; We have observed that every group g is an action of itself on its element list, with (act g x s g) = (op x s g).
+;; The identity of g is the only element that acts trivially.  Therefore, every group g is isomorphic to a
+;; subgrouyp of (sym (order g)):
+
+(local-defthmd act-sym-g-e
+  (implies (and (groupp g)
+                (in x g)
+                (equal (act-perm x g g) (e (sym (order g)))))
+	   (equal (e g) x))
+  :hints (("Goal" :in-theory (enable actionp-group)
+                  :use ((:instance act-sym-kernel (a g) (s x))
+                        (:instance left-cancel (a x) (y (e g)))))))
+
+(defthm endomorphismp-act-sym-g
+  (implies (groupp g)
+	   (endomorphismp (act-sym g g) g (sym (order g))))
+  :hints (("Goal" :in-theory (enable actionp-group)
+                  :use ((:instance homomorphismp-act-sym (a g))
+		        (:instance act-sym-g-e (x (cadr (kelts (act-sym g g) g (sym (order g))))))
+                        (:instance homomorphism-endomorphism (map (act-sym g g)) (h (sym (order g))))))))
+
+;; Recall the action act-lcosets of a group g on the left cosets of a subgroup h.
+;; The kernel of the homomorphism induced by this action is a subgroup of h:
+
+(local-defthmd kernel-act-lcosets-sym-1
+  (implies (and (subgroupp h g)
+                (in x g)
+		(equal (act-perm x (act-lcosets h g) g)
+		       (e (sym (subgroup-index h g)))))
+	   (in x h))
+  :hints (("Goal" :use (equal-lcoset-lcoset-e
+                        (:instance act-sym-kernel (a (act-lcosets h g)) (s (lcoset (e g) h g)))
+                        (:instance equal-lcosets-cancel (y (car (lcoset (e g) h g))) (z (e g))))
+		  :in-theory (enable lcoset-car))))
+
+(local-defthmd kernel-act-lcosets-sym-2
+  (implies (and (subgroupp h g)
+		(in x (kernel (act-sym (act-lcosets h g) g) (sym (subgroup-index h g)) g)))
+	   (in x h))
+  :hints (("Goal" :use (kernel-act-lcosets-sym-1
+                        (:instance member-kelts (map (act-sym (act-lcosets h g) g)) (h (sym (subgroup-index h g))))
+		        (:instance homomorphismp-act-sym (a (act-lcosets h g)))
+                        (:instance member-kelts (map (act-sym (act-lcosets h g) g)) (h (sym (subgroup-index h g))))))))
+
+(local-defthmd kernel-act-lcosets-sym-3
+  (implies (subgroupp h g)
+           (sublistp (elts (kernel (act-sym (act-lcosets h g) g) (sym (subgroup-index h g)) g))
+	             (elts h)))
+  :hints (("Goal" :use ((:instance kernel-act-lcosets-sym-2 (x (scex1 (elts (kernel (act-sym (act-lcosets h g) g) (sym (subgroup-index h g)) g))
+                                                                      (elts h))))
+		        (:instance scex1-lemma (l (elts (kernel (act-sym (act-lcosets h g) g) (sym (subgroup-index h g)) g)))
+			                       (m (elts h)))))))
+
+(defthmd subgroup-kernel-act-cosets
+  (implies (subgroupp h g)
+	   (subgroupp (kernel (act-sym (act-lcosets h g) g)
+	                      (sym (subgroup-index h g))
+			      g)
+		      h))
+  :hints (("Goal" :use (kernel-act-lcosets-sym-3
+		        (:instance homomorphismp-act-sym (a (act-lcosets h g)))
+			(:instance subgroup-subgroup (K h) (h (kernel (act-sym (act-lcosets h g) g) (sym (subgroup-index h g)) g)))))))
+
+;; The last result has the following important consequence:
+
+;; LEMMA: Let p be the least prime dividing (order g) and suppose the index of h ib g is p.  Then h is normal in g.
+
+;; Proof: Let k = (kernel (act-sym (act-cosets h g) g) (sym (subgroup-index h g)) g).
+;; We have shown that k is normal in g.
+;; By endomorphism-quotient-map, (quotient g k) is isomorphic to a subgroup of (sym p),
+;; and therefore (subgroup-index k g) divides p!, which implies (subgroup-index k h) divides (p-1)!.
+;; If (subgroup-index k h) > 1, then (subgroup-index k g) has a prime divisor q.  Since q divides (p-1)!,
+;; q < p. (This may be proved by induction on p as a consequence of euclid.)
+;; But since q divides (order g), q >= p by assumption, a contradiction.  Thus, (subgroup-index k h) = 1,
+;; which implies (permp (elts k) (elts h)), and by permp-normalp, h is normal in g.
+
+(local-defund kern (g h) (kernel (act-sym (act-lcosets h g) g) (sym (subgroup-index h g)) g))
+
+(local-defund phi (g h) (quotient-map (act-sym (act-lcosets h g) g) g (sym (subgroup-index h g))))
+
+(local-defund symsub (g h) (image (phi g h) (quotient g (kern g h)) (sym (subgroup-index h g))))
+
+(local-defthmd ildn-0
+  (implies (subgroupp h g)
+           (normalp (kern g h) g))
+  :hints (("Goal" :in-theory (enable kern)
+		  :use ((:instance homomorphismp-act-sym (a (act-lcosets h g)))))))
+
+(local-defthmd ildn-1
+  (implies (subgroupp h g)
+	   (isomorphismp (phi g h) (quotient g (kern g h)) (symsub g h)))
+  :hints (("Goal" :in-theory (enable phi kern symsub)
+	          :use ((:instance endomorphismp-quotient-map (map (act-sym (act-lcosets h g) g)) (h (sym (subgroup-index h g))))
+		        (:instance homomorphismp-act-sym (a (act-lcosets h g)))
+		        (:instance endomorphismp-isomorphismp (map (phi g h)) (g (quotient g (kern g h))) (h (sym (subgroup-index h g))))))))
+
+(local-defthmd ildn-2
+  (implies (subgroupp h g)
+	   (subgroupp (symsub g h) (sym (subgroup-index h g))))
+  :hints (("Goal" :in-theory (enable phi kern symsub)
+	          :use ((:instance endomorphismp-quotient-map (map (act-sym (act-lcosets h g) g)) (h (sym (subgroup-index h g))))
+		        (:instance homomorphismp-act-sym (a (act-lcosets h g)))))))
+
+(local-defthmd ildn-3
+  (implies (subgroupp h g)
+	   (subgroupp (kern g h) h))
+  :hints (("Goal" :in-theory (enable kern)
+	          :use (subgroup-kernel-act-cosets))))
+
+(local-defund lpd (g) (least-prime-divisor (order g)))
+
+(local-defthmd ildn-4
+  (implies (and (groupp g)
+                (> (order g) 1))
+           (and (primep (lpd g))
+	        (divides (lpd g) (order g))))
+  :hints (("Goal" :in-theory (enable lpd)
+                  :use ((:instance primep-least-divisor (n (order g)))
+		        (:instance least-divisor-divides (k 2) (n (order g)))))))
+
+(local-defthmd ildn-5
+  (implies (and (groupp g)
+                (> (order g) 1)
+		(primep q)
+		(divides q (order g)))
+           (<= (lpd g) q))
+  :hints (("Goal" :in-theory (enable lpd)
+                  :use ((:instance least-divisor-is-least (d q) (k 2) (n (order g)))))))
+
+(local-defthmd ildn-6
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g)))
+           (divides (order (quotient g (kern g h)))
+	            (fact (lpd g))))
+  :hints (("Goal" :use (ildn-1 ildn-2 ildn-4
+                        (:instance lagrange (g (sym (lpd g))) (h (symsub g h)))
+			(:instance isomorphism-equal-orders (map (phi g h)) (g (quotient g (kern g h))) (h (symsub g h)))
+			(:instance order-sym (n (lpd g)))))))
+
+(local-defthmd len-lcosets-pos
+  (implies (subgroupp h g)
+           (> (len (lcosets h g)) 0))
+  :hints (("Goal" :in-theory (disable member-lcoset-cosets)
+                  :expand ((len (lcosets h g)))
+                  :use ((:instance member-lcoset-cosets (x (e g)))))))
+
+(local-defthmd ildn-7
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g)))
+           (divides (subgroup-index (kern g h) h)
+	            (fact (1- (lpd g)))))
+  :hints (("Goal" :in-theory (disable subgroup-e)
+                  :use (ildn-0 ildn-3 ildn-6 len-lcosets-pos
+                        (:instance prod-indices (k h) (h (kern g h)))
+			(:instance len-lcosets-pos (h (kern g h)))
+			(:instance len-lcosets-pos (h (kern g h)) (g h))
+			(:instance subgroupp-transitive (h (kern g h)) (k h))))))
+
+(local-defthmd ildn-8
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g))
+		(primep q)
+		(divides q (subgroup-index (kern g h) h)))
+           (divides q (fact (1- (lpd g)))))
+  :hints (("Goal" :use (ildn-7
+                        (:instance divides-transitive (x q) (y (subgroup-index (kern g h) h)) (z (fact (1- (lpd g)))))))))
+
+(local-defthmd ildn-9
+  (implies (and (primep q)
+                (posp n)
+		(divides q (fact n)))
+	   (<= q n))
+  :hints (("Subgoal *1/4" :use ((:instance euclid (p q) (a n) (b (fact (1- n))))))))
+
+(local-defthmd ildn-10
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g))
+		(primep q)
+		(divides q (subgroup-index (kern g h) h)))
+           (< q (lpd g)))
+  :hints (("Goal" :use (ildn-8
+                        (:instance ildn-9 (n (1- (lpd g))))))))
+
+(local-defthmd ildn-11
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g))
+		(primep q)
+		(divides q (subgroup-index (kern g h) h)))
+           (divides q (order h)))
+  :hints (("Goal" :use (ildn-3
+                        (:instance lagrange (h (kern g h)) (g h))
+                        (:instance divides-transitive (x q) (y (subgroup-index (kern g h) h)) (z (order h)))))))
+
+(local-defthmd ildn-12
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g))
+		(primep q)
+		(divides q (subgroup-index (kern g h) h)))
+           (divides q (order g)))
+  :hints (("Goal" :use (ildn-11 lagrange
+                        (:instance divides-transitive (x q) (y (order h)) (z (order g)))))))
+
+(local-defthmd ildn-13
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g))
+		(primep q))
+           (not (divides q (subgroup-index (kern g h) h))))
+  :hints (("Goal" :use (ildn-5 ildn-10 ildn-12))))
+
+(local-defthmd ildn-14
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g)))
+           (equal (subgroup-index (kern g h) h)
+	          1))
+  :hints (("Goal" :use (ildn-3
+                        (:instance ildn-13 (q (least-prime-divisor (subgroup-index (kern g h) h))))
+                        (:instance primep-least-divisor (n (subgroup-index (kern g h) h)))
+			(:instance len-lcosets-pos (h (kern g h)) (g h))
+			(:instance least-divisor-divides (k 2) (n (subgroup-index (kern g h) h)))))))
+
+
+(local-defthmd ildn-15
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g)))
+           (equal (order (kern g h)) (order h)))
+  :hints (("Goal" :use (ildn-3 ildn-14 (:instance lagrange (h (kern g h)) (g h))))))
+
+(local-defthmd ildn-16
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(= (subgroup-index h g) (lpd g)))
+           (permp (elts (kern g h)) (elts h)))
+  :hints (("Goal" :use (ildn-3 ildn-15
+                        (:instance permp-eq-len (l (elts (kern g h))) (m (elts h)))))))
+
+(defthmd index-least-divisor-normal
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(equal (subgroup-index h g)
+		       (least-prime-divisor (order g))))
+	   (normalp h g))
+  :hints (("Goal" :in-theory (enable lpd)
+                  :use (ildn-0 ildn-16
+                        (:instance permp-normalp (h (kern g h)) (k h))))))
+
+
+;;-------------------------------------------------------------------------------------------------------
+
+(local-defthmd conjs-sub-not-subgroup-1
+  (implies (and (subgroupp h g)
+		(member-equal k1 (conjs-sub h g))
+		(member-equal k2 (conjs-sub h g)))
+	   (member-equal k2 (conjs-sub k1 g)))
+  :hints (("Goal" :in-theory (e/d (permp) (ordp-conj-sub-list))
+                  :use ((:instance conjs-sub-conjer (k k1))
+                        (:instance permp-conjs-sub (x (conjer-sub k1 h g)))))))
+
+(local-defthmd conjs-sub-not-subgroup-2
+  (implies (and (subgroupp h g)
+		(member-equal k1 (conjs-sub h g)))
+	   (ordp (elts k1) g))
+  :hints (("Goal" :in-theory (disable conj-sub-elts ordp-conj-sub-list)
+                  :use ((:instance conjs-sub-conjer (k k1))
+		        (:instance conj-sub-elts (a (conjer-sub k1 h g)))
+			(:instance ordp-conj-sub-list (a (conjer-sub k1 h g)))))))
+
+(defthm conjs-sub-not-subgroup
+  (implies (and (subgroupp h g)
+		(member-equal k1 (conjs-sub h g))
+		(member-equal k2 (conjs-sub h g))
+		(subgroupp k1 k2))
+	   (equal k2 k1))
+  :rule-classes ()
+  :hints (("Goal" :use (conjs-sub-not-subgroup-1 conjs-sub-not-subgroup-2
+                        (:instance conjs-sub-subgroup (h k1) (k k2))
+			(:instance orpd-h-conj-sub (h k1))))))
+
+(defthmd order-conjs-sub
+  (implies (and (subgroupp h g)
+                (member-equal k (conjs-sub h g)))
+	   (equal (order k) (order h)))
+  :hints (("Goal" :use (conjs-sub-conjer (:instance order-conj-sub (a (conjer-sub k h g)))))))
+
+
+(local-defthmd lcsn-1
+  (implies (and (subgroupp h g)
+                (equal (len (conjs-sub h g)) 1))
+	   (equal (order (normalizer h g))
+	          (order g)))
+  :hints (("Goal" :use (index-normalizer (:instance lagrange (h (normalizer h g)))))))
+
+(defthm ordp-normalizer
+  (implies (subgroupp h g)
+           (ordp (elts (normalizer h g)) g))
+  :hints (("Goal" :in-theory (enable normalizer))))
+
+(defthmd posp-len-conjs-sub
+  (implies (subgroupp h g)
+           (posp (len (conjs-sub h g))))
+  :hints (("Goal" :in-theory (disable member-conjs-sub)
+                  :expand ((LEN (CONJS-SUB H G)))
+                  :use ((:instance member-conjs-sub (x (e g)))))))
+
+(defthmd len-conjs-sub-normalp
+  (implies (and (subgroupp h g)
+                (<= (len (conjs-sub h g)) 1))
+	   (normalp h g))
+  :hints (("Goal" :use (lcsn-1 normalizer-normp posp-len-conjs-sub
+                        (:instance ordp-subgroup-equal (h (normalizer h g)))))))
+

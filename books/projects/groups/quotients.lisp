@@ -11,8 +11,8 @@
 ;; Cosets
 ;;---------------------------------------------------------------------------------------------------
 
-;; Informally, the left coset of a subgroup H of G determined by an element x of G is the set of
-;; elements of G of the form xh, where h is in H.  In our formalization, we define a left coset
+;; Informally, the left coset of a subgroup h of g determined by an element x of g is the set of
+;; elements of g of the form xh, where h is in h.  in our formalization, we define a left coset
 ;; to be the list of these elements ordered according to group index.  This ensures that intersecting
 ;; cosets are equal.
 
@@ -122,15 +122,30 @@
 		(member-equal y (lcoset x2 h g)))
 	   (equal (lcoset x1 h g) (lcoset x2 h g))))
 	   
+(defthmd equal-lcosets-iff
+  (implies (and (subgroupp h g)
+                (in x g)
+		(in y g))
+           (iff (equal (lcoset x h g) (lcoset y h g))
+	        (in (op (inv x g) y g) h))))
+
+(defthmd equal-lcosets-cancel
+  (implies (and (subgroupp h g)
+                (in x g)
+		(in y g)
+		(in z g))
+           (iff (equal (lcoset (op x y g) h g) (lcoset (op x z g) h g))
+	        (equal (lcoset y h g) (lcoset z h g)))))
+
 
 ;;---------------------------------------------------------------------------------------------------
 ;; Lagrange's Theorem
 ;;---------------------------------------------------------------------------------------------------
 
-;; THEOREM: If H is a subgroup of G, the the order of G is the product of the order of H and the
-;; number of left cosets of H in G.
+;; THEOREM: If h is a subgroup of g, the the order of g is the product of the order of h and the
+;; number of left cosets of h in g.
 
-;; A list of all left cosets of H:
+;; A list of all left cosets of h:
 
 (defun member-list (x l)
   (if (consp l)
@@ -232,6 +247,8 @@
            (equal (* (order h) (subgroup-index h g))
                   (order g))))
 
+;; Corollaries:
+
 (defthmd order-subgroup-divides
   (implies (subgroupp h g)
            (divides (order h) (order g))))
@@ -239,6 +256,11 @@
 (defthmd subgroup-index-pos
   (implies (subgroupp h g)
            (posp (subgroup-index h g))))
+
+(defthmd subgroup-index-rewrite
+  (implies (subgroupp h g)
+           (equal (subgroup-index h g)
+                  (/ (order g) (order h)))))
 
 (defthmd prod-indices
   (implies (and (subgroupp h k)
@@ -251,6 +273,11 @@
   (implies (and (groupp g)
 		(in x g))
 	   (divides (ord x g) (order g))))
+
+(defthm primep-cyclicp
+  (implies (and (groupp g)
+		(primep (order g)))
+	   (cyclicp g)))
 
 
 ;;---------------------------------------------------------------------------------------------------
@@ -379,12 +406,30 @@
 	          (in y g)
 		  (not (in (conj x y g) h))))))
 
+(defthmd permp-normalp
+  (implies (and (normalp h g)
+                (subgroupp k g)
+		(permp (elts h) (elts k)))
+	   (normalp k g)))
+
+;; The trivial subgroup is trivially normal:
+
+(defthm normalp-trivial-subgroup
+  (implies (groupp g)
+           (normalp (trivial-subgroup g) g)))
+
 ;; A subgroup of an abelian group is normal:
   
 (defthmd abelianp-normalp
   (implies (and (abelianp g)
 		(subgroupp h g))
 	   (normalp h g)))
+
+;; The center of a group is a normal subgroup:
+
+(defthm normalp-center
+  (implies (groupp g)
+	   (normalp (center g) g)))
 
 ;; We shall use defgroup to define quotient groups.
 
@@ -558,6 +603,14 @@
 	   (divides (ord x (quotient g h))
 		    (ord a g))))
 
+;; If the quotient of the center of g is cyclic, then g is abelian:
+
+(defthmd quotient-center-cyclic-abelian
+  (implies (and (groupp g)
+                (cyclicp (quotient g (center g))))
+	   (abelianp g)))
+
+
 ;; In order to manage concrete quotient groups, the function quot remanes the elements of a quotient
 ;; group by replacing each coset with its car:
 
@@ -573,3 +626,74 @@
 
 (defun quot (g h)
   (collect-cars (quotient g h)))
+
+
+;;------------------------------------------------------------------------------------------------------
+;; Lifting a Subgroup of a Quotient Group
+;;------------------------------------------------------------------------------------------------------
+
+;; Given a subgroup h of a quotient group g/n, we construct a corresponding subgroup (lift h n g) of g.
+;; Its element list is constructed by appending the elements of h:
+
+(defund append-elts (h)
+  (append-list (elts h)))
+
+(defthm car-append-elts
+  (implies (and (normalp n g)
+                (subgroupp h (quotient g n)))
+	   (and (consp (append-elts h))
+	        (equal (car (append-elts h))
+		       (e g)))))
+
+(defthm dlistp-append-elts
+  (implies (and (normalp n g)
+                (subgroupp h (quotient g n)))
+	   (dlistp (append-elts h))))
+
+(defthm append-elts-closed
+  (implies (and (normalp n g)
+                (subgroupp h (quotient g n))
+		(member-equal x (append-elts h))
+		(member-equal y (append-elts h)))
+           (member-equal (op x y g) (append-elts h))))
+
+(defthm append-elts-inv
+  (implies (and (normalp n g)
+                (subgroupp h (quotient g n))
+		(member-equal x (append-elts h)))
+           (member-equal (inv x g) (append-elts h))))
+
+(defthm append-elts-non-nil
+  (implies (and (normalp n g)
+                (subgroupp h (quotient g n)))
+	   (not (member-equal () (append-elts h)))))
+
+(defsubgroup lift (h n) g
+  (and (normalp n g)
+       (subgroupp h (quotient g n)))
+  (append-elts h))
+
+(DEFTHM SUBGROUPP-LIFT
+  (IMPLIES (AND (GROUPP G)
+                (AND (NORMALP N G)
+                     (SUBGROUPP H (QUOTIENT G N))))
+           (SUBGROUPP (LIFT H N G) G)))
+
+(defthmd lift-subgroup
+  (implies (and (normalp n g)
+                (subgroupp h (quotient g n)))
+	   (subgroupp n (lift h n g))))
+
+(defthmd lift-order
+  (implies (and (normalp n g)
+                (subgroupp h (quotient g n)))
+	   (equal (order (lift h n g))
+		  (* (order h) (order n)))))
+
+(defthmd in-lift-subgroup-iff
+  (implies (and (normalp n g)
+                (subgroupp h (quotient g n))
+		(in x g))
+	   (iff (in x (lift h n g))
+	        (in (lcoset x n g) h))))
+

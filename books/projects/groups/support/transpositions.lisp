@@ -164,7 +164,7 @@
   (implies (trans-args-p i j n)
            (equal (least-moved (transpose i j n))
 	          (min i j)))
-  :hints (("Goal" :in-theory (enable transpose-vals)
+  :hints (("Goal" :in-theory (enable len-perm transpose-vals)
                   :use (permp-transpose
 		        (:instance least-moved-bounds (p (transpose i j n)))
 		        (:instance least-moved-moved (p (transpose i j n)))
@@ -207,7 +207,8 @@
                   (in p (sym n))
                   (< m n))
              (trans-args-p m (nth m p) n)))
-  :hints (("Goal" :use (least-moved-bounds least-moved-moved
+  :hints (("Goal" :in-theory (enable len-perm)
+	          :use (least-moved-bounds least-moved-moved
 		        (:instance permp-transpose (i (least-moved p)) (j (nth (least-moved p) p)))
 		        (:instance nth-perm-ninit (x p) (k (least-moved p)))))))
 
@@ -243,6 +244,8 @@
 ;; We shall prove constructively that every permutastion is a product of transpositions.
 ;; The construction uses a measure based on least-moved:
 
+(in-theory (enable dlistp-perm))
+
 (local-defthmd perm-meas-dec-1
   (let ((m (least-moved p)))
     (implies (and (posp n)
@@ -252,14 +255,14 @@
 		  (<= k m))
                (equal (nth k (comp-perm (transpose m (nth m p) n) p n))
 	              k)))
-  :hints (("Goal" :in-theory (e/d (transpose-vals) (least-moved-least))
+  :hints (("Goal" :in-theory (e/d (len-perm transpose-vals) (least-moved-least))
                   :use (least-moved-bounds least-moved-moved
 		        (:instance least-moved-least (n (nth (least-moved p) p)))
 		        (:instance least-moved-least (n k))
 		        (:instance nth-perm-ninit (x p) (k (least-moved p)))
 		        (:instance least-moved-transpose (i (least-moved p)) (j (nth (least-moved p) p)))
-		        (:instance least-moved-least (p (transpose (least-moved p) (nth (least-moved p) p) n)))
-		        (:instance least-moved-bounds (p (comp-perm (transpose (least-moved p) (nth (least-moved p) p) n) p n)))))))
+		        (::instance least-moved-least (p (transpose (least-moved p) (nth (least-moved p) p) n)))
+		        (::instance least-moved-bounds (p (comp-perm (transpose (least-moved p) (nth (least-moved p) p) n) p n)))))))
 
 (defthm perm-meas-dec
   (let ((m (least-moved p)))
@@ -297,3 +300,5 @@
 	                        (:instance sym-assoc (x (transpose (least-moved p) (nth (least-moved p) p) n))
 				                     (y (transpose (least-moved p) (nth (least-moved p) p) n))
 						     (z p))))))
+
+(in-theory (disable dlistp-perm))
