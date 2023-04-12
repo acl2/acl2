@@ -30,13 +30,54 @@
 (include-book "../svex/override")
 (include-book "svtv-generalize-defs")
 (include-book "override-envlist-defs")
+(include-book "std/util/defredundant" :dir :system)
+
 (local (include-book "../svex/fixpoint-override"))
 (local (include-book "svtv-spec-override-transparency"))
 (local (include-book "svtv-stobj-pipeline-monotonicity"))
 (local (include-book "std/lists/sets" :dir :system))
 
 
+(std::defredundant :names (svtv-spec-stimulus-equiv
+                           svtv-spec-stimulus-equiv-is-an-equivalence
+                           svtv-spec-stimulus-equiv-implies-equal-svtv-spec-override-syntax-checks-1))
+  
+
+
 (defsection override-transparency-of-svtv-data-obj->ideal-spec
+  (local (defthm svex-env-reduce-is-extract
+           (svex-envs-similar (svex-env-reduce keys x)
+                              (svex-env-extract keys x))
+           :hints(("Goal" :in-theory (enable svex-envs-similar)))))
+
+
+  (local
+   (defthm svex-env-<<=-of-append-svex-env-extracts
+     (iff (svex-env-<<= (append (svex-env-extract keys1 x)
+                                (svex-env-extract keys2 x))
+                        y)
+          (and (svex-env-<<= (svex-env-extract keys1 x) y)
+               (svex-env-<<= (svex-env-extract keys2 x) y)))
+     :hints ((and stable-under-simplificationp
+                  (b* ((lit (assoc 'svex-env-<<= clause))
+                       (append-p (and (consp (cadr lit))
+                                      (eq (caadr lit) 'acl2::binary-append))))
+                    (if append-p
+                        `(:expand (,lit)
+                          :use ((:instance svex-env-<<=-necc
+                                 (x (svex-env-extract keys1 x))
+                                 (var (svex-env-<<=-witness . ,(cdr lit))))
+                                (:instance svex-env-<<=-necc
+                                 (x (svex-env-extract keys2 x))
+                                 (var (svex-env-<<=-witness . ,(cdr lit)))))
+                          :in-theory (disable svex-env-<<=-necc))
+                      `(:expand (,lit)
+                        :use ((:instance svex-env-<<=-necc
+                               (x (append (svex-env-extract keys1 x)
+                                          (svex-env-extract keys2 x)))
+                               (var (svex-env-<<=-witness . ,(cdr lit)))))
+                        :in-theory (disable svex-env-<<=-necc))))))))
+  
   (local (defcong svex-alist-keys-equiv set-equiv (svtv-assigns-override-vars assigns config) 1
            :hints(("Goal" :in-theory (enable svtv-assigns-override-vars
                                              svex-alist-keys-equiv)))))
@@ -89,9 +130,9 @@
 
                     
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
-                    (svex-env-<<= (svex-env-extract (svex-alistlist-vars spec.in-alists) pipe-env)
-                                  spec-env)
-                    (svex-env-<<= (svex-env-extract (svex-alist-vars spec.initst-alist) pipe-env)
+                    (svex-env-<<= (svex-env-reduce (append (svex-alist-vars spec.initst-alist)
+                                                           (svex-alistlist-vars spec.in-alists))
+                                                   pipe-env)
                                   spec-env)
 
                     (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
@@ -158,9 +199,9 @@
                     (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.nextstate) overridetriples))
                     
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
-                    (svex-env-<<= (svex-env-extract (svex-alistlist-vars spec.in-alists) pipe-env)
-                                  spec-env)
-                    (svex-env-<<= (svex-env-extract (svex-alist-vars spec.initst-alist) pipe-env)
+                    (svex-env-<<= (svex-env-reduce (append (svex-alist-vars spec.initst-alist)
+                                                           (svex-alistlist-vars spec.in-alists))
+                                                   pipe-env)
                                   spec-env)
 
                     (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
@@ -173,23 +214,23 @@
             ;;        (config (svtv-data-obj->phase-fsm-setup x))))
             )))
 
-  (local (defthm svtv-spec-stimulus-equiv-of-svtv-data-obj->ideal-spec
-           (B* (((svtv-data-obj x)))
-             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
-                           x.flatten-validp
-                           x.flatnorm-validp
-                           x.phase-fsm-validp
-                           (flatnorm-setup->monotonify x.flatnorm-setup))
-                      (svtv-spec-stimulus-equiv (svtv-data-obj->ideal-spec x)
-                                                (svtv-data-obj->spec x))))
-           :hints(("Goal" :in-theory (e/d (svtv-spec-stimulus-equiv
-                                           svtv-data-obj->spec
-                                           svtv-data-obj->ideal-spec
-                                           phase-fsm-composition-p
-                                           ;; svex-alist-eval-equiv!
-                                           )
-                                          (phase-fsm-validp-of-svtv-data-obj))
-                   :use phase-fsm-validp-of-svtv-data-obj))))
+  (defthm svtv-spec-stimulus-equiv-of-svtv-data-obj->ideal-spec
+    (B* (((svtv-data-obj x)))
+      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                    x.flatten-validp
+                    x.flatnorm-validp
+                    x.phase-fsm-validp
+                    (flatnorm-setup->monotonify x.flatnorm-setup))
+               (svtv-spec-stimulus-equiv (svtv-data-obj->ideal-spec x)
+                                         (svtv-data-obj->spec x))))
+    :hints(("Goal" :in-theory (e/d (svtv-spec-stimulus-equiv
+                                    svtv-data-obj->spec
+                                    svtv-data-obj->ideal-spec
+                                    phase-fsm-composition-p
+                                    ;; svex-alist-eval-equiv!
+                                    )
+                                   (phase-fsm-validp-of-svtv-data-obj))
+            :use phase-fsm-validp-of-svtv-data-obj)))
 
   (local (defthm svex-alist-width-of-flatnorm-res
            (B* (((svtv-data-obj x))
@@ -369,41 +410,75 @@
                    :use phase-fsm-validp-of-svtv-data-obj))))
 
   
-   
-  (defthm override-transparency-of-svtv-data-obj->spec/ideal-spec-abstraction
-    (b* (((svtv-spec spec) (svtv-data-obj->ideal-spec x))
-         ((svtv-spec abs)  (svtv-data-obj->spec x))
-         ((svtv-data-obj x))
-         ((flatnorm-res x.flatnorm))
-         (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
-         (impl-run (svtv-spec-run abs pipe-env))
-         (overridekeys (svtv-assigns-override-vars x.flatnorm.assigns
-                                                   (phase-fsm-config->override-config x.phase-fsm-setup)))
-         (params (svarlist-change-override overridekeys :test)))
-      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
-                    x.flatten-validp
-                    x.flatnorm-validp
-                    x.phase-fsm-validp
-                    (flatnorm-setup->monotonify x.flatnorm-setup)
+  
+  (local
+   (defthm override-transparency-of-svtv-data-obj->spec/ideal-spec-abstraction-lemma
+     (b* (((svtv-spec spec) (svtv-data-obj->ideal-spec x))
+          ((svtv-spec abs)  (svtv-data-obj->spec x))
+          ((svtv-data-obj x))
+          ((flatnorm-res x.flatnorm))
+          (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
+          (impl-run (svtv-spec-run abs pipe-env))
+          (overridekeys (svtv-assigns-override-vars x.flatnorm.assigns
+                                                    (phase-fsm-config->override-config x.phase-fsm-setup)))
+          (params (svarlist-change-override overridekeys :test)))
+       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                     x.flatten-validp
+                     x.flatnorm-validp
+                     x.phase-fsm-validp
+                     (flatnorm-setup->monotonify x.flatnorm-setup)
 
-                    (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
+                     (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
 
                     
-                    (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
-                    (svex-env-<<= (svex-env-extract (svex-alistlist-vars spec.in-alists) pipe-env)
-                                  spec-env)
-                    (svex-env-<<= (svex-env-extract (svex-alist-vars spec.initst-alist) pipe-env)
+                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
+                     (svex-env-<<= (svex-env-reduce (append (svex-alist-vars spec.initst-alist)
+                                                           (svex-alistlist-vars spec.in-alists))
+                                                   pipe-env)
                                   spec-env)
 
-                    (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
-               (svex-env-<<= impl-run spec-run)))
-    :hints(("Goal" :in-theory (e/d (svtv-data-obj->ideal-spec
-                                    svtv-data-obj->spec
-                                    svtv-spec-stimulus-equiv
-                                    )
-                                   (design->ideal-fsm-overridekey-transparent))
-            :use ((:instance design->ideal-fsm-overridekey-transparent
-                   (x (svtv-data-obj->design x))
-                   (config (svtv-data-obj->phase-fsm-setup x))))))))
+                     (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
+                (svex-env-<<= impl-run spec-run)))
+     :hints(("Goal" :in-theory (e/d (svtv-data-obj->ideal-spec
+                                     svtv-data-obj->spec
+                                     svtv-spec-stimulus-equiv
+                                     )
+                                    (design->ideal-fsm-overridekey-transparent))
+             :use ((:instance design->ideal-fsm-overridekey-transparent
+                    (x (svtv-data-obj->design x))
+                    (config (svtv-data-obj->phase-fsm-setup x))))))))
 
-         
+  ;; The only difference here is that the syntax check and input/initst
+  ;; variable computations are done wrt the computed svtv-spec rather than the
+  ;; ideal-spec, which is then something that can be relieved by execution.
+   (defthm override-transparency-of-svtv-data-obj->spec/ideal-spec-abstraction
+     (b* (((svtv-spec spec) (svtv-data-obj->ideal-spec x))
+          ((svtv-spec abs)  (svtv-data-obj->spec x))
+          ((svtv-data-obj x))
+          ((flatnorm-res x.flatnorm))
+          (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
+          (impl-run (svtv-spec-run abs pipe-env))
+          (overridekeys (svtv-assigns-override-vars x.flatnorm.assigns
+                                                    (phase-fsm-config->override-config x.phase-fsm-setup)))
+          (params (svarlist-change-override overridekeys :test)))
+       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                     x.flatten-validp
+                     x.flatnorm-validp
+                     x.phase-fsm-validp
+                     (flatnorm-setup->monotonify x.flatnorm-setup)
+
+                     (svtv-spec-override-syntax-checks abs overridekeys params triplemaps)
+
+                    
+                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
+                     (svex-env-<<= (svex-env-reduce (append (svex-alist-vars abs.initst-alist)
+                                                            (svex-alistlist-vars abs.in-alists))
+                                                   pipe-env)
+                                  spec-env)
+
+                     (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
+                (svex-env-<<= impl-run spec-run)))
+     :hints(("Goal" :use override-transparency-of-svtv-data-obj->spec/ideal-spec-abstraction-lemma)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable svtv-data-obj->spec
+                                      svtv-data-obj->ideal-spec))))))

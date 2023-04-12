@@ -47,7 +47,7 @@
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/alists/alist-equiv" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
-  
+(local (include-book "std/lists/index-of" :dir :system))  
 (local (in-theory (disable mod floor ceiling)))
 
 (local (std::add-default-post-define-hook :fix))
@@ -70,11 +70,11 @@
   :hints(("Goal" :in-theory (enable base-fsm-to-cycle))))
 
 
-(defthm values-of-base-fsm-to-cycle-under-svex-alist-same-keys
+(defthm values-of-base-fsm-to-cycle-under-svex-alist-keys-equiv
   (implies (svtv-cyclephaselist-has-outputs-captured phases)
-           (svex-alist-same-keys (base-fsm->values (base-fsm-to-cycle phases fsm simp))
+           (svex-alist-keys-equiv (base-fsm->values (base-fsm-to-cycle phases fsm simp))
                                  (base-fsm->values fsm)))
-  :hints(("Goal" :in-theory (enable svex-alist-same-keys))))
+  :hints(("Goal" :in-theory (enable svex-alist-keys-equiv))))
 
 
 (define svtv-cycle-step-fsm-input-subst ((ins svex-alist-p)
@@ -347,8 +347,7 @@
                                  (y-equiv c)))
                    :in-theory (disable acl2::set-equiv-implies-iff-member-2
                                        acl2::subsetp-member
-                                       remove-equal
-                                       acl2::remove-when-not-member)))))
+                                       remove-equal)))))
   (defthmd svar-override-triplelist-override-vars-of-triples-when-svarlist-override-p
     (implies (svarlist-override-p vars nil)
              (set-equiv (svar-override-triplelist-override-vars
@@ -4185,31 +4184,32 @@ environments."
                                      svex-envs-similar))))
 
 
-;; (define svex-envlist-reduce-varlists ((vars svarlist-list-p)
-;;                                       (envs svex-envlist-p))
-;;   :returns (new-envs svex-envlist-p)
-;;   (if (atom vars)
-;;       nil
-;;     (cons (svex-env-reduce (car vars) (car envs))
-;;           (svex-envlist-reduce-varlists (cdr vars) (cdr envs)))))
+(define svex-envlist-reduce-varlists ((vars svarlist-list-p)
+                                      (envs svex-envlist-p))
+  :returns (new-envs svex-envlist-p)
+  (if (atom vars)
+      nil
+    (cons (svex-env-reduce (car vars) (car envs))
+          (svex-envlist-reduce-varlists (cdr vars) (cdr envs)))))
 
 
-;; (defsection svtv-name-lhs-map-list-eval-envlist-of-extract-list
-;;   (local (defun ind (vars envs)
-;;            (if (atom vars)
-;;                (list envs)
-;;              (ind (cdr vars) (cdr envs)))))
-;;   (defthm svtv-name-lhs-map-list-eval-envlist-of-extract-list
-;;     (implies (and (svarlist-list-p vars)
-;;                   (<= (len vars) (len envs)))
-;;              (equal (svtv-name-lhs-map-list-eval-envlist (svtv-name-lhs-map-extract-list vars x) envs)
-;;                     (svex-envlist-reduce-varlists vars (svtv-name-lhs-map-eval-list x envs))))
-;;     :hints(("Goal" :in-theory (enable svtv-name-lhs-map-list-eval-envlist
-;;                                       svtv-name-lhs-map-extract-list
-;;                                       svex-envlist-reduce-varlists
-;;                                       svarlist-list-p
-;;                                       svtv-name-lhs-map-eval-list)
-;;             :induct (ind vars envs)))))
+(defsection svtv-name-lhs-map-list-eval-envlist-of-extract-list
+  (local (defun ind (vars envs)
+           (if (atom vars)
+               (list envs)
+             (ind (cdr vars) (cdr envs)))))
+  (defthm svtv-name-lhs-map-list-eval-envlist-of-extract-list
+    (implies (and (svarlist-list-p vars)
+                  (<= (len vars) (len envs)))
+             (equal (svtv-name-lhs-map-list-eval-envlist (svtv-name-lhs-map-extract-list vars x) envs)
+                    (svex-envlist-reduce-varlists vars (svtv-name-lhs-map-eval-list x envs))))
+    :hints(("Goal" :in-theory (enable svtv-name-lhs-map-list-eval-envlist
+                                      svtv-name-lhs-map-extract-list
+                                      svex-envlist-reduce-varlists
+                                      svarlist-list-p
+                                      svtv-name-lhs-map-eval-list)
+            :induct (ind vars envs)))))
+
 
 
 
@@ -4609,6 +4609,18 @@ environments."
                                              (svex-alistlist-eval test-alists pipe-env)))))
 
 
+
+(local (defthm svarlist-list-p-of-append
+         (implies (and (svarlist-list-p x)
+                       (svarlist-list-p y))
+                  (svarlist-list-p (append x y)))))
+
+
+(local (defthm cyclephaselist-unique-i/o-implies-len-positive
+         (implies (svtv-cyclephaselist-unique-i/o-phase x)
+                  (posp (len x)))
+         :rule-classes :forward-chaining))
+
 (defthm svtv-override-triplemaplist-muxes-<<=-of-spec-outs-implies-svar-override-keys-check-separate-override-envlists-of-spec-ins
   (b* (((svtv-spec spec)))
     (implies (and
@@ -4648,54 +4660,6 @@ environments."
                                   svex-alist-keys-list-of-take
                                   svtv-cyclephaselist-unique-i/o-phase-implies-natp-output-phase)
                                  (acl2::take-of-too-many)))))
-
-
-(b* (((svtv-spec spec)
-      (make-svtv-spec :fsm (make-base-fsm)
-                      :cycle-phases (list (make-svtv-cyclephase :inputs-free t :outputs-captured t))
-                      :namemap (make-fast-alist
-                                `(("{foo}" . ,(list (lhrange 4 (make-lhatom-var :name "foosig" :rsh 0))))
-                                 ("foo" . ,(list (lhrange 4 (make-lhatom-var :name "foosig" :rsh 0))))))
-                      :probes (make-fast-alist `((foo-out . ,(make-svtv-probe :signal "foo" :time 0))))
-                      :in-alists nil
-                      :override-test-alists (list (make-fast-alist '(("foo" . foo-ovr))))
-                      :override-val-alists  (list (make-fast-alist '(("{foo}" . foooo-val)
-                                                                     ("foo" . foo-val))))
-                      :initst-alist nil))
-     (triplemaps (list (make-fast-alist `(("foo" . ,(make-svtv-override-triple :test 'foo-ovr :val 'foo-val :refvar 'foo-out))))))
-     (phase-outs (list (make-fast-alist '(("foosig" . #xd)))))
-     (pipe-env (make-fast-alist
-                '((foo-ovr . 3)
-                  (foo-val . 1)
-                  (foooo-val . 2))))
-     (spec-env nil)
-     (override-keys '("foosig"))
-     (spec-out (svtv-spec-phase-outs->pipe-out spec phase-outs)))
-  (cw "spec-out: ~x0~%" spec-out)
-  (list (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env
-                                             spec-out)
-              (svtv-override-triplemaplist-syntax-check
-               spec.override-test-alists spec.override-val-alists
-               spec.probes triplemaps)
-              (svarlist-override-p override-keys nil)
-              (svarlist-override-p (svtv-cyclephaselist-keys spec.cycle-phases) nil)
-              (svtv-cyclephaselist-unique-i/o-phase spec.cycle-phases)
-              (equal (svex-alist-keys-list spec.override-test-alists)
-                     (svex-alist-keys-list spec.override-val-alists))
-              (no-duplicatesp-each (svex-alist-keys-list spec.override-test-alists))
-              (svarlist-override-p
-               (svtv-name-lhs-map-list-all-keys
-                (svtv-name-lhs-map-inverse-list
-                 (svtv-name-lhs-map-extract-list
-                  (take (len (svtv-probealist-outvars (svtv-spec->probes spec)))
-                        (svex-alist-keys-list (svtv-spec->override-test-alists spec)))
-                  (svtv-spec->namemap spec))))
-               nil)
-              (equal (len phase-outs) (* (len spec.cycle-phases)
-                                         (len (svtv-probealist-outvars (svtv-spec->probes spec)))))
-              (<= (len (svtv-spec->override-test-alists spec))
-                  (len (svtv-probealist-outvars (svtv-spec->probes spec))))))
-
 
 
 

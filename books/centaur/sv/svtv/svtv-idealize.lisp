@@ -33,7 +33,7 @@
 
 
 (include-book "svtv-idealize-defs")
-(include-book "svtv-spec-override-transparency")
+(include-book "svtv-data-override-transparency")
 (include-book "process")
 (include-book "std/util/defredundant" :dir :system)
 (include-book "override-common")
@@ -41,8 +41,8 @@
 (include-book "centaur/fgl/def-fgl-thm" :dir :system)
 (include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
 (include-book "centaur/fgl/config" :dir :system)
-(local (include-book "svtv-idealize-proof"))
-(local (include-book "svtv-spec-override-mux"))
+;; (local (include-book "svtv-idealize-proof"))
+(local (include-book "svtv-spec-override-transparency"))
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :Dir :System))
@@ -50,17 +50,75 @@
 
 (local (std::add-default-post-define-hook :fix))
 
+
+(defthm 4vec-override-mux-<<=-of-same-test/val
+  (4vec-override-mux-<<= test val test val ref)
+  :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=-by-badbit))))
+
+(defthm 4vec-muxtest-subsetp-of-same
+  (4vec-muxtest-subsetp x x)
+  :hints(("Goal" :in-theory (enable 4vec-muxtest-subsetp))))
+
+(defthm 4vec-override-mux-ok-of-same
+  (4vec-override-mux-ok test val test val ref-p ref)
+  :hints(("Goal" :in-theory (enable 4vec-override-mux-ok))))
+
+(defcong set-equiv svex-envs-equivalent (svex-env-reduce keys x) 1
+  :hints (("goal" :in-theory (enable svex-envs-equivalent
+                                     svex-envs-similar))))
+
+(defthmd svtv-spec->initst-alist-of-svtv-data-obj->spec
+  (equal (svtv-spec->initst-alist (svtv-data-obj->spec x))
+         (pipeline-setup->initst (svtv-data-obj->pipeline-setup x)))
+  :hints(("Goal" :in-theory (enable svtv-data-obj->spec))))
+
+(defthmd svtv-spec->in-alists-of-svtv-data-obj->spec
+  (equal (svtv-spec->in-alists (svtv-data-obj->spec x))
+         (pipeline-setup->inputs (svtv-data-obj->pipeline-setup x)))
+  :hints(("Goal" :in-theory (enable svtv-data-obj->spec))))
+
+(defthmd svtv-spec->initst-alist-of-svtv-data-obj->ideal-spec
+  (equal (svtv-spec->initst-alist (svtv-data-obj->ideal-spec x))
+         (pipeline-setup->initst (svtv-data-obj->pipeline-setup x)))
+  :hints(("Goal" :in-theory (enable svtv-data-obj->ideal-spec))))
+
+(defthmd svtv-spec->in-alists-of-svtv-data-obj->ideal-spec
+  (equal (svtv-spec->in-alists (svtv-data-obj->ideal-spec x))
+         (pipeline-setup->inputs (svtv-data-obj->pipeline-setup x)))
+  :hints(("Goal" :in-theory (enable svtv-data-obj->ideal-spec))))
+
+(defthm svex-env-reduce-<<=-same
+  (svex-env-<<= (svex-env-reduce keys x) x)
+  :hints(("Goal" :in-theory (enable svex-env-<<=))))
+
+(defthm svtv-override-triplemap-envs-ok-of-same-envs
+  (svtv-override-triplemap-envs-ok triplemap pipe-env pipe-env spec-run)
+  :hints(("Goal" :in-theory (enable svtv-override-triplemap-envs-ok
+                                    svtv-override-triple-envs-ok))))
+
+(defthm svtv-override-triplemaplist-envs-ok-of-same-envs
+  (svtv-override-triplemaplist-envs-ok triplemaplist pipe-envs pipe-envs spec-run)
+  :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-envs-ok))))
+
+;; (defthmd set-equiv-by-mergesort-equal
+;;   (implies (syntaxp (and (quotep x) (quotep y)))
+;;            (equal (set-equiv x y)
+;;                   (equal (mergesort x) (mergesort y))))
+;;   :hints (("goal" :use ((:instance set::mergesort-under-set-equiv (x x))
+;;                         (:instance set::mergesort-under-set-equiv (x y)))
+;;            :in-theory (disable set::mergesort-under-set-equiv))))
+
 ;; Just a few theorems from svtv-idealize-proof are needed for this event.  We'll import them redundantly here.
-(std::defredundant :names (set-equiv-by-mergesort-equal
-                           SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1
-                           SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1
-                           SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-SPEC-RUN
-                           SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-IDEAL-SPEC-RUN
-                           svex-env-reduce-<<=-same
-                           svtv-override-triplemaplist-envs-ok-of-same-envs
-                           4vec-override-mux-<<=-of-same-test/val
-                           4vec-override-mux-ok-of-same
-                           ))
+;; (std::defredundant :names (set-equiv-by-mergesort-equal
+;;                            ;; SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1
+;;                            SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1
+;;                            ;; SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-SPEC-RUN
+;;                            ;; SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-IDEAL-SPEC-RUN
+;;                            ;; svex-env-reduce-<<=-same
+;;                            ;; svtv-override-triplemaplist-envs-ok-of-same-envs
+;;                            ;; 4vec-override-mux-<<=-of-same-test/val
+;;                            ;; 4vec-override-mux-ok-of-same
+;;                            ))
 
 
 (defthmd delays-of-design->flatnorm-of-svtv-data-obj
@@ -207,7 +265,9 @@
     (acl2::hons-union (svtv-name-lhs-map-vars
                        (fal-extract (svtv-override-triplemap-refvar-keys (car triplemaps))
                                     (svtv-name-lhs-map-fix namemap)))
-                      (svtv-override-triplemaplist-overridekeys (cdr triplemaps) namemap))))
+                      (svtv-override-triplemaplist-overridekeys (cdr triplemaps) namemap)))
+  ///
+  (local (in-theory (enable svtv-override-triplemaplist-fix))))
 
 
 
@@ -352,6 +412,29 @@
        ;;     (* (len x.cycle-phases)
        ;;        (len (svtv-probealist-outvars x.pipeline-setup.probes)))))
 
+       (local (defthm <data>-override-syntax-check
+                (b* (((svtv-data-obj x) (<data>))
+                     (override-vars (svtv-assigns-override-vars
+                                     (flatnorm-res->assigns x.flatnorm)
+                                     (phase-fsm-config->override-config x.phase-fsm-setup)))
+                     (override-keys override-vars)
+                     (params (svarlist-change-override override-vars :test)))
+                  (svtv-spec-override-syntax-checks
+                   (svtv-data-obj->spec x)
+                   override-keys
+                   params
+                   (<name>-triplemaplist)))
+                :hints(("Goal" :in-theory '((<data>)
+                                            (svtv-data-obj->spec)
+                                            (svtv-spec-override-syntax-checks)
+                                            (<name>-triplemaplist)
+                                            (svtv-data-obj->flatnorm)
+                                            (flatnorm-res->assigns)
+                                            (svtv-data-obj->phase-fsm-setup)
+                                            (phase-fsm-config->override-config)
+                                            (svtv-assigns-override-vars)
+                                            (svarlist-change-override))))))
+
        (local (defthm <data>-facts
                 (b* (((svtv-data-obj x) (<data>))
                      ((pipeline-setup x.pipeline-setup)))
@@ -424,12 +507,50 @@
                           (:EXECUTABLE-COUNTERPART SVTV-NAME-LHS-MAP-LIST-ALL-KEYS)
                           (:EXECUTABLE-COUNTERPART SVTV-PROBEALIST-OUTVARS)
                           (:EXECUTABLE-COUNTERPART TAKE)
-                          set-equiv-by-mergesort-equal
+                          ;; set-equiv-by-mergesort-equal
                           (mergesort)
                           (append)
                           (svex-alist-vars)
                           (svex-alistlist-vars)
                           (<name>-input-vars))))))
+                                      
+                                       
+       
+       (local (defthm <data>-ideal-override-syntax-check
+                (b* (((svtv-data-obj x) (<data>))
+                     (override-vars (svtv-assigns-override-vars
+                                     (flatnorm-res->assigns x.flatnorm)
+                                     (phase-fsm-config->override-config x.phase-fsm-setup)))
+                     (override-keys override-vars)
+                     (params (svarlist-change-override override-vars :test)))
+                  (svtv-spec-override-syntax-checks
+                   (svtv-data-obj->ideal-spec x)
+                   override-keys
+                   params
+                   (<name>-triplemaplist)))
+                :hints (("goal" :use <data>-override-syntax-check
+                         :in-theory '(svtv-spec-stimulus-equiv-implies-equal-svtv-spec-override-syntax-checks-1
+                                      svtv-spec-stimulus-equiv-of-svtv-data-obj->ideal-spec
+                                      <data>-correct
+                                      <data>-facts)))))
+
+       ;; (local (defthm <data>-syntax-checks
+       ;;          (SVTV-SPEC-OVERRIDE-SYNTAX-CHECKS
+       ;;           (SVTV-DATA-OBJ->IDEAL-SPEC (<DATA>))
+       ;;           (SVTV-ASSIGNS-OVERRIDE-VARS
+       ;;            (FLATNORM-RES->ASSIGNS (SVTV-DATA-OBJ->FLATNORM (<DATA>)))
+       ;;            (PHASE-FSM-CONFIG->OVERRIDE-CONFIG
+       ;;             (SVTV-DATA-OBJ->PHASE-FSM-SETUP (<DATA>))))
+       ;;           (SVARLIST-CHANGE-OVERRIDE
+       ;;            (SVTV-ASSIGNS-OVERRIDE-VARS
+       ;;             (FLATNORM-RES->ASSIGNS (SVTV-DATA-OBJ->FLATNORM (<DATA>)))
+       ;;             (PHASE-FSM-CONFIG->OVERRIDE-CONFIG
+       ;;              (SVTV-DATA-OBJ->PHASE-FSM-SETUP (<DATA>))))
+       ;;            :TEST)
+       ;;           (<NAME>-TRIPLEMAPLIST))
+       ;;          :hints (("goal" :in-theory '((<data>)
+       ;;                                       svtv-data-obj->ideal-spec
+       ;;                                       ))
 
        (defret no-duplicate-state-keys-of-<ideal-name>
          (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
@@ -438,7 +559,7 @@
                                       <ideal-name>
                                       design->ideal-fsm
                                       fields-of-svtv-data-obj->ideal-spec
-                                      svex-alist-keys-of-flatnorm->ideal-fsm-nextstate
+                                      alist-keys-of-flatnorm->ideal-fsm
                                       svex-alist-keys-of-delays-of-flatnorm-add-overrides
                                       delays-of-design->flatnorm-of-svtv-data-obj))
                  (and stable-under-simplificationp
@@ -454,7 +575,7 @@
                                       <ideal-name>
                                       design->ideal-fsm
                                       fields-of-svtv-data-obj->ideal-spec
-                                      svex-alist-keys-of-flatnorm->ideal-fsm-nextstate
+                                      alist-keys-of-flatnorm->ideal-fsm
                                       svex-alist-keys-of-delays-of-flatnorm-add-overrides
                                       delays-of-design->flatnorm-of-svtv-data-obj))
                  (and stable-under-simplificationp
@@ -473,7 +594,7 @@
                                       <ideal-name>
                                       design->ideal-fsm
                                       fields-of-svtv-data-obj->ideal-spec
-                                      svex-alist-keys-of-flatnorm->ideal-fsm-nextstate
+                                      alist-keys-of-flatnorm->ideal-fsm
                                       svex-alist-keys-of-delays-of-flatnorm-add-overrides
                                       delays-of-design->flatnorm-of-svtv-data-obj))
                  (and stable-under-simplificationp
@@ -515,12 +636,16 @@
                                      (:DEFINITION NOT)
                                      (:REWRITE <DATA>-CORRECT)
                                      (:REWRITE <DATA>-FACTS)
-                                     (:REWRITE SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-SPEC-RUN)
+                                     ;; (:REWRITE SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-SPEC-RUN)
                                      (:REWRITE
                                       SVTV-RUN-OF-<NAME>-IS-SVTV-SPEC-RUN-OF-<NAME>-SPEC)
                                      (:REWRITE SYNTAX-CHECK-OF-<NAME>-TRIPLEMAPLIST)
                                      (:TYPE-PRESCRIPTION LEN)
                                      (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
+                                     svtv-spec->initst-alist-of-svtv-data-obj->spec
+                                     svtv-spec->in-alists-of-svtv-data-obj->spec
+                                     OVERRIDE-TRANSPARENCY-OF-SVTV-DATA-OBJ->SPEC/IDEAL-SPEC-ABSTRACTION
+                                     MOD-RUN-DATA-OVERRIDE-SYNTAX-CHECK
                                      ;; (:TYPE-PRESCRIPTION SVTV-OVERRIDE-TRIPLEMAPLIST-OK)
                                      )
                  :do-not-induct t)))
@@ -544,12 +669,16 @@
                                      (:DEFINITION NOT)
                                      (:REWRITE <DATA>-CORRECT)
                                      (:REWRITE <DATA>-FACTS)
-                                     (:REWRITE SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-IDEAL-SPEC-RUN)
+                                     ;; (:REWRITE SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-IDEAL-SPEC-RUN)
                                      (:REWRITE
                                       SVTV-RUN-OF-<NAME>-IS-SVTV-SPEC-RUN-OF-<NAME>-SPEC)
                                      (:REWRITE SYNTAX-CHECK-OF-<NAME>-TRIPLEMAPLIST)
                                      (:TYPE-PRESCRIPTION LEN)
                                      (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
+                                     OVERRIDE-TRANSPARENCY-OF-SVTV-DATA-OBJ->IDEAL-SPEC
+                                     svtv-spec->initst-alist-of-svtv-data-obj->ideal-spec
+                                     svtv-spec->in-alists-of-svtv-data-obj->ideal-spec
+                                     <DATA>-IDEAL-OVERRIDE-SYNTAX-CHECK
                                      ;; (:TYPE-PRESCRIPTION SVTV-OVERRIDE-TRIPLEMAPLIST-OK)
                                      )
                  :do-not-induct t)))
@@ -1278,6 +1407,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                                spec-val-expr
                                x.refvar)))
   ///
+  
   (defret <fn>-correct
     (implies (and (svtv-override-subst-matches-env impl-subst impl-env)
                   (svtv-override-triple-envs-match x spec-env spec-override-consts))

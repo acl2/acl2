@@ -117,7 +117,7 @@
 (value-triple (acl2::tshell-ensure))
 
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
-(acl2::use-trivial-ancestors-check)
+(local (acl2::use-trivial-ancestors-check))
 
 (def-svtv-idealized-thm mod-run-res1-correct
   :override-vars (b)
