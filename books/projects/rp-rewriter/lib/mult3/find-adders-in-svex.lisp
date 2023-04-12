@@ -4996,7 +4996,22 @@
                   ((unless (and* (svl::bitp-of-svex e1)
                                  (svl::bitp-of-svex e2)
                                  (svl::bitp-of-svex test)))
-                   (progn$ (raise "Bitp check failed at last step~%")
+                   (progn$ (or (svl::bitp-of-svex e1)
+                                (cwe "bitp failing on e1: ~p0~%" e1)
+                                (cwe "integerp: ~p0 width:~p1~%"
+                                     (svl::integerp-of-svex e1)
+                                     (svl::width-of-svex e1)))
+                           (or (svl::bitp-of-svex e2)
+                                (cwe "bitp failing on e2 ~p0~%" e2)
+                                (cwe "integerp: ~p0 width:~p1~%"
+                                     (svl::integerp-of-svex e2)
+                                     (svl::width-of-svex e2)))
+                           (or (svl::bitp-of-svex test)
+                                (cwe "bitp failing on test: ~p0~%" test)
+                                (cwe "integerp: ~p0 width:~p1~%"
+                                     (svl::integerp-of-svex test)
+                                     (svl::width-of-svex test)))
+                           (raise "Bitp check failed at last step~%")
                            (mv 0 nil)))
                   (new-args (hons-list 0 test e1 e2)))
                (mv (sv::svex-call 'fa-c-chain new-args)
