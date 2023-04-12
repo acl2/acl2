@@ -1150,6 +1150,12 @@
 
 (defsection ha-s-chain
 
+  (create-case-match-macro partsel-of-atom-pattern
+                           ('sv::partsel start size term)
+                           (atom term))
+  (create-case-match-macro bitxor-pattern
+                           ('sv::bitxor x y))
+  
   (define ha-s-chain (x y)
     :verify-guards nil
     (sv::4vec-bitxor x y)
@@ -1185,8 +1191,15 @@
                     )))
 
   (create-look-for-pattern-fnc :name ha-s-chain-pattern
-                               :prepwork ((create-case-match-macro ha-s-chain-pattern
-                                                                   ('sv::bitxor x y))
+                               :prepwork (
+                                          (create-case-match-macro ha-s-chain-pattern
+                                                                   ('sv::bitxor x y)
+                                                                   ;; When two of them are variables, then don't try to create a a half-adder.
+                                                                   ;; This is redundant and only here for performance improvements.
+                                                                   ;; May cause issues in corner cases.
+                                                                   (or (not (and (partsel-of-atom-pattern-p x)
+                                                                                 (partsel-of-atom-pattern-p y)))
+                                                                       ))
                                           (create-case-match-macro ha-s-chain-self-pattern
                                                                    ('ha-s-chain x y))
                                           (local (in-theory (enable ha-s-chain))))
@@ -1212,6 +1225,9 @@
 
 (defsection ha-c-chain
 
+  (create-case-match-macro bitand-pattern
+                           ('sv::bitand x y))
+  
   (define ha-c-chain (x y)
     ;;:ignorable (method)
     :verify-guards nil
@@ -1234,7 +1250,11 @@
 
   (create-look-for-pattern-fnc :name ha-c-chain-pattern
                                :prepwork ((create-case-match-macro ha-c-chain-pattern
-                                                                   ('sv::bitand x y))
+                                                                   ('sv::bitand x y)
+                                                                   ;; prevent two partsels to be go intp a half-adder.
+                                                                   (or (not (and (partsel-of-atom-pattern-p x)
+                                                                                 (partsel-of-atom-pattern-p y)))
+                                                                       ))
                                           (create-case-match-macro ha-c-chain-pattern-itself
                                                                    ('ha-c-chain x y))
                                           (local (in-theory (enable ha-c-chain))))
@@ -2668,8 +2688,8 @@
                                     (equal exist-branch 2)
                                     (equal exist-branch 3))))
     :guard (if (equal bit-fn 'sv::bitand)
-               (ha-c-chain-pattern-p svex)
-             (ha-s-chain-pattern-p svex))
+               (bitand-pattern-p svex)
+             (bitxor-pattern-p svex))
     (if (atom exploded-args)
         0
       (b* ((rest (find-s-from-found-c-in-svex-aux-explore2 svex (cdr exploded-args)))
@@ -2695,7 +2715,7 @@
                                                         ;; give a large limit for measure. I don't expect this to go too big.
                                                         )
     :guard-debug t
-    :guard (if (equal bit-fn 'sv::bitand) (ha-c-chain-pattern-p svex) (ha-s-chain-pattern-p svex))
+    :guard (if (equal bit-fn 'sv::bitand) (bitand-pattern-p svex) (bitxor-pattern-p svex))
     :returns (mv (args sv::svexlist-p :hyp (force (exploded-args-and-args-list-p exploded-args-and-args-list)))
                  (exploded-args sv::svexlist-p :hyp (force (exploded-args-and-args-list-p
                                                             exploded-args-and-args-list))))
@@ -2747,7 +2767,7 @@
                                                    ;; give a large limit for measure. I don't expect this to go too big.
                                                    ((limit natp) '1000))
     :guard-debug t
-    :guard (if (equal bit-fn 'sv::bitand) (ha-c-chain-pattern-p svex) (ha-s-chain-pattern-p svex))
+    :guard (if (equal bit-fn 'sv::bitand) (bitand-pattern-p svex) (bitxor-pattern-p svex))
     :returns (mv (args sv::svexlist-p :hyp (force (exploded-args-and-args-alist-p exploded-args-and-args-alist)))
                  (exploded-args sv::svexlist-p :hyp (force (exploded-args-and-args-alist-p
                                                             exploded-args-and-args-alist))))
@@ -3314,7 +3334,7 @@
          :quote svex
          :var   svex
          :call
-         (cond ((if (eq adder-type 'ha-c) (ha-c-chain-pattern-p svex) (ha-s-chain-pattern-p svex))
+         (cond ((if (eq adder-type 'ha-c) (bitand-pattern-p svex) (bitxor-pattern-p svex))
                 ;; possible fa-s-chain/ha-s-chain here.
                 (b* ((bit-fn svex.fn)
 
@@ -3383,18 +3403,18 @@
   ///
 
   (local
-   (defthm ha-s-pattern-of-svex-call-of-bitxor
-     (ha-s-chain-pattern-p (sv::svex-call 'sv::bitxor
+   (defthm bitxor-pattern-of-svex-call-of-bitxor
+     (bitxor-pattern-p (sv::svex-call 'sv::bitxor
                                           (list x y)))
      :hints (("Goal"
-              :in-theory (e/d (SV::SVEX-CALL HA-S-CHAIN-PATTERN-P) ())))))
+              :in-theory (e/d (SV::SVEX-CALL bitxor-pattern-p) ())))))
 
   (local
-   (defthm ha-c-pattern-of-svex-call-of-bitxor
-     (ha-c-chain-pattern-p (sv::svex-call 'sv::bitand
+   (defthm bitand-pattern-of-svex-call-of-bitxor
+     (bitand-pattern-p (sv::svex-call 'sv::bitand
                                           (list x y)))
      :hints (("Goal"
-              :in-theory (e/d (SV::SVEX-CALL HA-c-CHAIN-PATTERN-P) ())))))
+              :in-theory (e/d (SV::SVEX-CALL bitand-pattern-p) ())))))
 
   (verify-guards find-s-from-found-c-in-svex-aux-fn
     :hints (("Goal"
@@ -4921,8 +4941,8 @@
 
       (cond ((zp limit)
              (mv 0 nil))
-            ((and* (ha-s-chain-pattern-p then)
-                   (ha-s-chain-pattern-p else))
+            ((and* (bitxor-pattern-p then)
+                   (bitxor-pattern-p else))
              (b* (((list t1 t2) (cdr then))
                   ((list e1 e2) (cdr else))
                   ((mv c eo to valid)
@@ -4941,7 +4961,7 @@
                   ((unless valid) (mv 0 nil))
                   ((unless (and* (svl::bit-listp-of-svex (cdr then))
                                  (svl::bit-listp-of-svex (cdr else))))
-                   (progn$ (raise "Bitp check failed under ha-s-chain-pattern-p~%")
+                   (progn$ (raise "Bitp check failed under bitxor-pattern-p~%")
                            (mv 0 nil)))
                   (new-args (hons-list rest-svex c)))
                (mv (sv::svex-call 'sv::bitxor new-args)
@@ -4966,7 +4986,7 @@
 
       (cond ((zp limit)
              (mv 0 nil))
-            ((and* (ha-c-chain-pattern-p else)
+            ((and* (bitand-pattern-p else)
                    (ha+1-c-chain-pattern-p then))
              (b* (((list e1 e2) (cdr else))
                   ((list t1 t2) (cdr then))
@@ -5001,7 +5021,8 @@
        (implies (and (sv::svex-p then)
                      (or (fa-c-chain-itself-pattern-p then)
                          (fa-s-chain-itself-pattern-p then)
-                         (HA-S-CHAIN-PATTERN-P then)))
+                         (bitxor-PATTERN-P then)
+                         (bitand-PATTERN-P then)))
                 (SV::SVEXLIST-P (CDR THEN)))
        :hints (("Goal"
                 :in-theory (e/d (sv::svex-p
@@ -5874,11 +5895,11 @@
                 ;; WARNING: TODO: DANGEROUS TO DO THIS HERE!!!!!!!!
                 ;; But this may help with the case where a constant 1 is propagated
                 ;; in the ppx adders...
-                (new-svex (if bitor-p
+                #|(new-svex (if bitor-p
                               (svl::bitand/or/xor-cancel-repeated
                                'sv::bitor (first (cdr new-svex)) (second (cdr new-svex))
                                :leave-depth 3)
-                            new-svex)))
+                            new-svex))|#)
              (if bitor-p
                  (ppx-simplify-mergeable-node new-svex :limit 10000)
                new-svex))))
