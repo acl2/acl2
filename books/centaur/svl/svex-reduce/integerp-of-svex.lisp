@@ -142,18 +142,57 @@
                               rp::valid-sc-cons
                               rp::rp-evl-of-trans-list-lemma))))))
 
+(define has-natp-rp (term)
+  :prepwork ((local
+              (in-theory
+               (enable rp::is-rp-loose))))
+  (and (rp::is-rp-loose term)
+       (or (equal (cadr term) ''natp)
+           (has-natp-rp (caddr term))))
+  ///
+  (local
+   (defthm rp-evlt-of-rp-call
+     (implies (and (consp x)
+                   (equal (car x) 'rp))
+              (equal (rp-evlt x a)
+                     (rp (rp-evlt (cadr x) a)
+                         (rp-evlt (caddr x) a))))))
+  (local
+   (defthm rp-evlt-of-natp-call
+     (implies (and (consp x)
+                   (equal (car x) 'natp))
+              (equal (rp-evlt x a)
+                     (natp (rp-evlt (cadr x) a))))))
+  (defthm has-natp-rp-is-correct
+    (implies (and (rp::valid-sc term a)
+                  (has-natp-rp term))
+             (and (natp (rp-evlt term a))))
+    :hints (("goal"
+             :do-not-induct t
+             :expand ((rp::valid-sc term a))
+             :induct (has-natp-rp term)
+             :in-theory (e/d (rp::context-from-rp
+                              rp::valid-sc rp::is-rp rp::is-if)
+                             (rp::rp-trans
+                              rp::rp-evl-and-side-cond-consistent-rp-rw-relieve-hyp
+                              rp::rp-term-listp
+                              rp::valid-sc-subterms
+                              rp::eval-and-all-context-from-when-valid-sc
+                              rp::valid-sc-cons
+                              rp::rp-evl-of-trans-list-lemma))))))
+
 (define bit?!-test-is-dont-care-p ((x sv::svex-p)
                                    &key
                                    ((env) 'env)
                                    ((config svex-reduce-config-p) 'config))
-  
+
   :returns res
   (and (not (svex-reduce-config->keep-missing-env-vars config))
        (case-match x
          (('sv::bit?! ('sv::partsel & & var1)
                       &
                       &)
-          (and (sv::svar-p var1) 
+          (and (sv::svar-p var1)
                (not (hons-get (sv::svar-fix var1) env)))))))
 
 (defines integerp-of-svex
@@ -214,6 +253,15 @@
                              ;; (equal x.fn 'sv::clog2) same as sv::onehot0, expect natp
                              ))
                   (integerp-of-svex (car x.args)))
+
+                 ((and* (equal-len x.args 1)
+                        (or* (equal x.fn 'sv::uxor) ;; same as sv::onehot0, expect natp
+                             (equal x.fn 'sv::countones) ;; same as sv::onehot0, expect natp
+                             (equal x.fn 'sv::onehot)    ;; expects a natp
+                             (equal x.fn 'sv::onehot0) ;; expects a natp, since there is not natp-of-svex, I am avoiding it here.
+                             (equal x.fn 'sv::clog2) ;;same as sv::onehot0, expect natp
+                             ))
+                  (natp-of-svex (car x.args)))
 
                  ((and* (equal-len x.args 2)
                         (or* (equal x.fn 'sv::bitand)
@@ -316,6 +364,172 @@
                          )
                       (integer-listp-of-svexlist x.args)))))))))
 
+  (define natp-of-svex ((x sv::svex-p)
+                        &key
+                        ((env) 'env)
+                        ((context rp::rp-term-listp) 'context)
+                        ((config svex-reduce-config-p) 'config))
+    :measure (rp::cons-count x)
+
+    :verify-guards nil
+    :returns (res )
+
+    (let* ((kind (sv::Svex-kind x)))
+      (case kind
+        (:var (b* ((val (hons-get x env))
+                   ((unless (consp val))
+                    nil)
+                   (val (cdr val))
+                   ((when (and (quotep val)
+                               (consp (cdr val))))
+                    (natp (unquote val)))
+                   (- (and (4vec-p val)
+                           (acl2::raise "Constants are expected to be quoted in the  given env. But given instead:~p0"
+                                        (cons x val))))
+
+                   ((when (has-natp-rp val)) t)
+
+                   ((unless (rp::rp-termp val)) ;; this may be taken out with guards on env
+                    nil)
+
+                   ((mv res &)
+                    (rp::rp-check-context `(natp ,val) nil context
+                                          :iff-flg t)))
+                (equal res ''t)))
+        (:quote (natp x))
+        (:call
+         (b* ((x.fn (car x))
+              (x.args (cdr x)))
+           (cond ((and* (equal-len x.args 1)
+                        (or* (equal x.fn 'sv::id)
+                             (equal x.fn 'sv::unfloat)
+                             (equal x.fn 'sv::onp)
+                             (equal x.fn 'sv::xdet)
+                             (equal x.fn 'sv::countones) ;; returns natp, when given natp
+                             (equal x.fn 'sv::onehot) ;; returns natp, when given natp
+                             (equal x.fn 'sv::onehot0) ;; same as above.
+                             (equal x.fn 'sv::clog2) ;; same as sv::onehot0, expect natp
+
+                             ;;(equal x.fn 'sv::uand) ;; either 0 or -1,
+                             ;;(equal x.fn 'sv::uor) ;; either 0 or -1
+                             ;;(equal x.fn 'sv::uxor) ;; returns 0 or -1
+
+                             ;;below 3 requires negative-svex-p; probably will never be necessary.
+                             ;;(equal x.fn 'sv::bitnot) ;; special: to be natp, arg should be integerp but not natp
+                             ;;(equal x.fn 'sv::offp) ;; same as sv::bitnot
+                             ;;(equal x.fn 'sv::u-) ;; 0 returns 0. Otherwise negates, so like sv::bitnot
+
+                             ))
+                  (natp-of-svex (car x.args)))
+
+                 ((and* (equal-len x.args 2)
+                        (or* (equal x.fn 'sv::bitand) ;; at least one natp
+                             (equal x.fn 'sv::resand) ;; same as bitand
+
+                             ;;(equal x.fn 'sv::res) ;; can return don't care even when two are integer.
+
+                             ;;(equal x.fn 'sv::pow) ;; pow likely to get constants
+
+                             ;;(equal x.fn 'sv::b-) ;; conservatively, first natp, second negp
+
+                             ;;(equal x.fn 'sv::<) ;; returns 0 or -1
+                             ;;(equal x.fn 'sv::==) ;; returns 0 or -1
+                             ;;(equal x.fn 'sv::===) ;; returns 0 or -1
+                             ;;(equal x.fn 'sv::===*) ;; returns 0 or -1
+                             ;;(equal x.fn 'sv::==?) ;; returns 0 or -1
+                             ;;(equal x.fn 'sv::==??) ;; returns 0 or -1
+                             ;;(equal x.fn 'sv::safer-==?) ;; returns 0 or -1
+                             ;;(equal x.fn 'sv::===) ;; same
+                             ))
+                  (b* ((n1 (natp-of-svex (first x.args)))
+                       (n2 (natp-of-svex (second x.args))))
+                    (cond ((and n1 n2) t)
+                          (n1 (integerp-of-svex (second x.args)))
+                          (n2 (integerp-of-svex (first x.args))))))
+                 ((and* (equal-len x.args 2)
+                        (or* (equal x.fn 'sv::bitor) ;; both natp
+                             (equal x.fn 'sv::resor) ;; same as bitor
+                             (equal x.fn 'sv::bitxor) ;; either both negp or both natp
+                             (equal x.fn 'sv::+)      ;; both natp
+                             (equal x.fn 'sv::*) ;; either both natp or both negp
+                             ))
+                  (and (natp-of-svex (first x.args))
+                       (natp-of-svex (second x.args))))
+
+                 ((and* (equal-len x.args 2)
+                        (or* ;; first integerp, second natp
+                         (equal x.fn 'sv::lsh)
+                         (equal x.fn 'sv::rsh)))
+                  (and (integerp-of-svex (first x.args))
+                       (natp-of-svex (second x.args))))
+
+                 ((and* (equal-len x.args 2)
+                        (or* ;; second integerp, first natp
+                         (equal x.fn 'sv::override)))
+                  (and (natp-of-svex (first x.args))
+                       (integerp-of-svex (second x.args))))
+
+                 ((and* (equal-len x.args 2)
+                        ;; Will likely have constants..
+                        (or* (equal x.fn 'sv::%) ;; first natp, second integer
+                             (equal x.fn 'sv::/) ;; like xor
+                             ))
+                  (and (and (natp (second x.args))
+                            (not (equal (second x.args) 0)))
+                       (natp-of-svex (first x.args))))
+
+                 ;; (equal x.fn 'sv::signx): could be anything.
+
+                 ((and* (equal-len x.args 2)
+                        (or* ;; always natp if args are integer
+                         (equal x.fn 'sv::bitsel)
+                         (equal x.fn 'sv::zerox)
+                         ))
+                  (and (natp (first x.args))
+                       (integerp-of-svex (second x.args))))
+
+                 ((and* (equal-len x.args 3)
+                        (or* (equal x.fn 'sv::?)
+                             (equal x.fn 'sv::?*)
+                             (equal x.fn 'sv::bit?)
+                             (equal x.fn 'sv::bit?!)
+                             (equal x.fn 'sv::?!)))
+                  (if (bit?!-test-is-dont-care-p x)
+                      (natp-of-svex (third x.args))
+                    (and (integerp-of-svex (first x.args))
+                         (natp-of-svex (second x.args))
+                         (natp-of-svex (third x.args)))))
+
+                 ((and* (equal-len x.args 3)
+                        (equal x.fn 'sv::partsel))
+                  ;; always natp when arg is integer
+                  (and (natp (first x.args))
+                       (natp (second x.args))
+                       (integerp-of-svex (third x.args))))
+
+                 ((and* (equal-len x.args 3)
+                        (equal x.fn 'sv::concat))
+                  (and (natp (first x.args))
+                       (integerp-of-svex (second x.args))
+                       (natp-of-svex (third x.args))))
+
+                 ((and* (equal-len x.args 3)
+                        (equal x.fn 'sv::blkrev))
+                  (and (natp (first x.args))
+                       (posp (second x.args))
+                       ;; logheads and concat repeatedly.
+                       (integerp-of-svex (third x.args))))
+
+                 ((and* (equal-len x.args 4)
+                        (equal x.fn 'sv::partinst))
+                  (and (natp (first x.args))
+                       (natp (second x.args))
+                       (natp-of-svex (third x.args))
+                       ;; old value should be natp
+                       (integerp-of-svex (fourth x.args))))
+                 (t ;; maybe configs can be supplied later
+                  nil)))))))
+
   (define integer-listp-of-svexlist ((lst sv::svexlist-p)
                                      &key
                                      ((env) 'env)
@@ -361,6 +575,7 @@
   (verify-guards integerp-of-svex-fn
     :hints (("goal"
              :expand ((:free (x) (rp::rp-termp (cons 'integerp x)))
+                      (:free (x) (rp::rp-termp (cons 'natp x)))
                       (:free (x y) (rp::rp-term-listp (cons x y))))
              :in-theory (e/d ()
                              ((:definition acl2::apply$-badgep)
@@ -374,7 +589,13 @@
                               rp::rp-termp
                               (:e tau-system)
                               ))))))
+
 (memoize 'integerp-of-svex-fn
+         :condition '(not (equal (svex-kind x) :quote))
+         ;;:aokp t
+         )
+
+(memoize 'natp-of-svex-fn
          :condition '(not (equal (svex-kind x) :quote))
          ;;:aokp t
          )
@@ -665,6 +886,364 @@
                               (logxor lognot logior logand)))
             ))
 
+
+  (defthm integerp-of-4vec-parity
+    (implies (and (natp a1))
+             (integerp (sv::4vec-parity a1)))
+    :hints (("goal"
+             :in-theory (e/d* (sv::4vec-parity
+                               4vec
+                               2vec)
+                              ()))
+            ))
+
+
+  (defthm integerp-of-4vec-clog2
+    (implies (natp x)
+             (and (integerp (sv::4vec-clog2 x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-clog2 4vec
+                              2VEC)
+                             ()))))
+
+  (defthm integerp-of-4vec-COUNTONES
+    (implies (natp x)
+             (and (integerp (sv::4vec-COUNTONES x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-COUNTONES 4vec
+                              2VEC)
+                             ()))))
+
+  (defthm integerp-of-4vec-onehot
+    (implies (natp x)
+             (and (integerp (sv::4vec-onehot x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-onehot 4vec
+                              2VEC)
+                             ()))))
+
+  (defthm integerp-of-4vec-onehot0
+    (implies (natp x)
+             (and (integerp (sv::4vec-onehot0 x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-onehot0 4vec
+                              2VEC)
+                             ()))))
+
+  
+
+  )
+
+(progn
+
+  (defthm natp-of-4vec-concat
+    (implies (and (force (natp a1))
+                  (integerp a2)
+                  (natp a3))
+             (natp (4vec-concat a1 a2 a3)))
+    :hints (("goal"
+             :in-theory (e/d (4vec-concat 4vec) ()))))
+
+  
+  (defthm natp-of-4vec-times
+    (implies (and
+              (or (and (natp a1)
+                       (natp a2))
+                  (and (not (posp a1))
+                       (not (posp a2)))
+                  (equal a1 0)
+                  (equal a2 0))
+              (integerp a1)
+              (integerp a2))
+             (natp (sv::4vec-times a1 a2)))
+    :hints (("goal"
+             :cases ((equal a1 0)
+                     (equal a2 0))
+             :in-theory (e/d (sv::4vec-times 2vec 4vec) ()))))
+
+  (defthm natp-of-4vec-plus-conservative
+    (implies (and
+              (natp a1)
+              (natp a2))
+             (natp (sv::4vec-plus a1 a2)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec-plus 2vec 4vec) ()))))
+
+  (defthm natpp-of-4vec-rsh
+    (implies (and (integerp a1)
+                  (natp a2))
+             (natp (4vec-rsh a1 a2)))
+    :hints (("goal"
+             :in-theory (e/d (4vec-shift-core
+                              4vec
+                              4vec-rsh)
+                             ()))))
+
+  (defthm natp-of-4vec-part-install
+    (implies (and (force (natp a1))
+                  (force (natp a2))
+                  (natp a3)
+                  (integerp a4))
+             (natp (4vec-part-install a1 a2 a3 a4)))
+    :hints (("goal"
+             :in-theory (e/d (2vec 4vec 4vec-part-install) ()))))
+
+  (defthm natpp-of-4vec-rev-blocks
+    (implies (and (force (natp a1))
+                  (force (posp a2))
+                  (integerp a3))
+             (natp (sv::4vec-rev-blocks a1 a2 a3)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec
+                              sv::4vec-rev-blocks
+                              SV::REV-BLOCKS)
+                             ()))))
+
+  (defthm natp-of-4vec-part-selectr
+    (implies (and (force (natp a1))
+                  (force (natp a2))
+                  (integerp a3))
+             (natp (sv::4vec-part-select a1 a2 a3)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec-part-select) ()))))
+
+  (defthm natp-of-4vec-bit-extract
+    (implies (and (force (natp a1))
+                  (integerp a2))
+             (natp (sv::4vec-bit-extract a1 a2)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec sv::4vec-bit-extract sv::4vec-bit-index) ()))))
+
+  (defthm natp-of-4vec-resor
+    (implies (and (natp a1)
+                  (natp a2))
+             (natp (sv::4vec-resor a1 a2)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec-resor
+                              4vec
+                              2vec)
+                             (logior logand)))))
+
+  (defthm natp-of-4vec-resand
+    (implies (and (or (natp a1)
+                      (natp a2))
+                  (integerp a1)
+                  (integerp a2))
+             (natp (sv::4vec-resand a1 a2)))
+    :hints (("goal"
+             :in-theory (e/d* (bitops::logior-of-self
+                               bitops::logand-of-logand-self-1
+                               sv::4vec-resand
+                               acl2::logand-logior
+                               acl2::commutativity-of-logand
+                               bitops::commutativity-2-of-logand
+                               4vec
+                               2vec)
+                              (logior logand)))))
+
+  (defthm natp-of-4vec-lsh
+    (implies (and (integerp a1)
+                  (natp a2))
+             (natp (sv::4vec-lsh a1 a2)))
+    :hints (("goal"
+             :in-theory (e/d* (4vec-shift-core
+                               4VEC
+                               sv::4vec-lsh 2vec)
+                              ()))))
+
+  (local
+   (use-ihs-logops-lemmas t))
+
+  (local
+   (use-ihs-extensions t))
+
+  (local
+   (use-arithmetic-5 t))
+
+  (defthm natp-of-4vec-remainder
+    (implies (and (natp a1)
+                  (integerp a2)
+                  (force (not (equal a2 0))))
+             (natp (sv::4vec-remainder a1 a2)))
+    :hints (("goal"
+             :in-theory (e/d* (2vec 4vec sv::4vec-remainder)
+                              (logxor lognot logior logand)))
+            ))
+
+  (local
+   (use-arithmetic-5 nil))
+
+  ;; or if both are neg, that would work too..
+  (defthm natp-of-4vec-quotient
+    (implies (and (or (and (natp a1)
+                           (natp a2))
+                      (and (not (natp a1))
+                           (not (natp a2))))
+                  (integerp a1)
+                  (integerp a2)
+                  (force (not (equal a2 0))))
+             (natp (sv::4vec-quotient a1 a2)))
+    :hints (("goal"
+             :in-theory (e/d* (4vec 2vec sv::4vec-quotient)
+                              (logxor lognot logior logand)))
+            ))
+
+  (defthm natp-of-4vec-onset
+    (implies (and (natp a1))
+             (natp (sv::4vec-onset a1)))
+    :hints (("goal"
+             :in-theory (e/d* (
+                               sv::4vec-onset
+                               4vec
+                               2vec)
+                              (logxor lognot logior logand)))
+            ))
+
+  (defthm natp-of-4vec-offset
+    (implies (and (not (natp a1))
+                  (integerp a1))
+             (natp (sv::4vec-offset a1)))
+    :hints (("goal"
+             :in-theory (e/d* (
+                               sv::4vec-offset
+                               4vec
+                               2vec)
+                              (logxor lognot logior logand)))
+            ))
+
+  (defthm natp-of-4vec-uminus
+    (implies (and (integerp a1)
+                  (not (posp a1)))
+             (natp (sv::4vec-uminus a1)))
+    :hints (("goal"
+             :in-theory (e/d* (
+                               sv::4vec-uminus
+                               4vec
+                               2vec)
+                              (logxor lognot logior logand)))
+            ))
+
+  (defthm natp-of-4VEC-?
+    (implies (and (integerp test)
+                  (natp then)
+                  (natp else))
+             (and (natp (sv::4vec-? test then else))))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-?
+                              SV::3VEC-?)
+                             ()))))
+
+  (local
+   (use-arithmetic-5 t))
+  (defthm natp-of-4VEC-bit?
+    (implies (and (integerp test)
+                  (natp then)
+                  (natp else))
+             (and (natp (sv::4vec-bit? test then else))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (4vec
+                              sv::4vec-bit?
+                              SV::3VEC-bit?)
+                             ()))))
+
+  (defthm natp-of-4VEC-bit?!
+    (implies (and (integerp test)
+                  (natp then)
+                  (natp else))
+             (and (natp (sv::4vec-bit?! test then else))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (4vec
+                              sv::4vec-bit?!
+                              )
+                             ()))))
+
+  (defthm natp-of-4VEC-?*
+    (implies (and (integerp test)
+                  (natp then)
+                  (natp else))
+             (and (natp (sv::4vec-?* test then else))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (4vec
+                              sv::4vec-?*
+                              SV::3VEC-?*)
+                             ()))))
+
+  (defthm natp-of-4VEC-?!
+    (implies (and (integerp test)
+                  (natp then)
+                  (natp else))
+             (and (natp (sv::4vec-?! test then else))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (4vec
+                              sv::4vec-?!
+                              )
+                             ()))))
+
+  (local
+   (use-arithmetic-5 nil))
+
+  (defthm natp-of-4vec-clog2
+    (implies (natp x)
+             (and (natp (sv::4vec-clog2 x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-clog2 4vec
+                              2VEC)
+                             ()))))
+
+  (defthm natp-of-4vec-COUNTONES
+    (implies (natp x)
+             (and (natp (sv::4vec-COUNTONES x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-COUNTONES 4vec
+                              2VEC)
+                             ()))))
+
+  (defthm natp-of-4vec-onehot
+    (implies (natp x)
+             (and (natp (sv::4vec-onehot x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-onehot 4vec
+                              2VEC)
+                             ()))))
+
+  (defthm natp-of-4vec-onehot0
+    (implies (natp x)
+             (and (natp (sv::4vec-onehot0 x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-onehot0 4vec
+                              2VEC)
+                             ()))))
+
+  (defthm natp-of-4vec-fix
+    (implies (natp x)
+             (and (natp (sv::4vec-fix x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::4vec-fix 4vec
+                              2VEC)
+                             ()))))
+
+  (defthm natp-of-3vec-fix
+    (implies (natp x)
+             (and (natp (sv::3vec-fix x))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (sv::3vec-fix 4vec
+                              2VEC)
+                             ()))))
+
   )
 
 (local
@@ -883,6 +1462,17 @@
                             ())))))
 
 (local
+ (defthm has-natp-rp-implies
+   (implies (has-natp-rp x)
+            (case-match x
+              (('rp & &) t)))
+   :rule-classes :forward-chaining
+   :hints (("Goal"
+            :in-theory (e/d (RP::IS-RP-LOOSE
+                             has-natp-rp)
+                            ())))))
+
+(local
  (defthm car-of-assoc-equal
    (implies (assoc-equal fn alist)
             (equal (car (assoc-equal fn alist))
@@ -964,8 +1554,6 @@
    :hints (("Goal"
             :in-theory (e/d (bit?!-test-is-dont-care-p) ())))))
 
-
-
 (local
  (defthm svex-eval-of-bit?!-test-is-dont-care-p-correct-lemma
    (b* (((sv::4vec x) (4VEC-PART-SELECT start size '(-1 . 0))))
@@ -986,7 +1574,6 @@
    :hints (("Goal"
             :in-theory (e/d (sv::4vec-bit?!) ())))))
 
-
 (svex-eval-lemma-tmpl
  (local
   (defret svex-eval-of-bit?!-test-is-dont-care-p-correct
@@ -998,7 +1585,7 @@
     :fn bit?!-test-is-dont-care-p
     :hints (("Goal"
              :do-not-induct t
-             
+
              :expand ((SVEX-EVAL X (RP-EVLT ENV-TERM A))
                       (SVEXLIST-EVAL (CDDDR (CADR X))
                                      (RP-EVLT ENV-TERM A))
@@ -1018,7 +1605,7 @@
                       (svex-eval (cadr x)
                                  (rp-evlt env-term a)))
              :in-theory (e/d (;;4VEC-PART-SELECT
-                              ;;SV::4VEC-BIT?! 
+                              ;;SV::4VEC-BIT?!
                               ;;SVEXLIST-EVAL
                               SV::SVAR-P
                               SVEX-KIND-WOG-IS-SVEX-KIND
@@ -1028,7 +1615,7 @@
                               SVEX-VAR->NAME
                               SVEX-KIND
                               SV::4VEC-FIX-UNDER-4VEC-EQUIV
-                              
+
                               SVEX-APPLY
                               SVEX-CALL->FN
                               SVEX-CALL->args
@@ -1037,184 +1624,245 @@
                               (:definition rp::rp-term-listp)
                               (:rewrite rp::is-if-rp-termp))))))))
 
+(local
+ (defthm rp-evlt-of-natp
+   (equal (rp-evlt `(natp ,x) a)
+          (natp (rp-evlt x a)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; main lemma.
-(svex-eval-lemma-tmpl
- (defret-mutual svex-eval-of-integerp-of-svex-is-correct
-   (defret svex-eval-of-<fn>-is-correct
-     (and (implies (and ;;(equal (svex-kind svex) :var)
-                    (sub-alistp env big-env)
-                    (sv::svex-p x)
-                    (rp::rp-term-listp context)
-                    res
-                    (rp::valid-sc env-term a)
-                    (rp::eval-and-all context a)
-                    (rp::falist-consistent-aux big-env env-term)
-                    (:@ :dollar-eval
-                        (integerp-of-svex-extn-correct<$>-lst
-                         (svex-reduce-config->integerp-extns config)))
-                    (:@ :normal-eval
-                        (equal (svex-reduce-config->integerp-extns config)
-                               nil))
-                    (or* (svex-reduce-config->keep-missing-env-vars config)
-                         (equal big-env env)))
-                   (integerp (sv::svex-eval x (rp-evlt env-term a))))
-          )
-     :fn integerp-of-svex)
-   (defret svexlist-eval-of-<fn>-is-correct
-     (and (implies (and ;;(equal (svex-kind svex) :var)
-                    (sub-alistp env big-env)
-                    (sv::svexlist-p lst)
-                    (rp::rp-term-listp context)
-                    res
-                    (rp::valid-sc env-term a)
-                    (rp::eval-and-all context a)
-                    (rp::falist-consistent-aux big-env env-term)
-                    (:@ :dollar-eval
-                        (integerp-of-svex-extn-correct<$>-lst
-                         (svex-reduce-config->integerp-extns config)))
-                    (:@ :normal-eval
-                        (equal (svex-reduce-config->integerp-extns config) nil))
-                    (or* (svex-reduce-config->keep-missing-env-vars config)
-                         (equal big-env env)))
-                   (integer-listp (sv::svexlist-eval lst (rp-evlt env-term a))))
-          )
-     :fn integer-listp-of-svexlist)
+(with-output
+  :off :all
+  :gag-mode nil
+  :on (error summary)
+  (svex-eval-lemma-tmpl
+   (defret-mutual svex-eval-of-integerp-of-svex-is-correct
+     (defret svex-eval-of-<fn>-is-correct
+       (and (implies (and ;;(equal (svex-kind svex) :var)
+                      (sub-alistp env big-env)
+                      (sv::svex-p x)
+                      (rp::rp-term-listp context)
+                      res
+                      (rp::valid-sc env-term a)
+                      (rp::eval-and-all context a)
+                      (rp::falist-consistent-aux big-env env-term)
+                      (:@ :dollar-eval
+                          (integerp-of-svex-extn-correct<$>-lst
+                           (svex-reduce-config->integerp-extns config)))
+                      (:@ :normal-eval
+                          (equal (svex-reduce-config->integerp-extns config)
+                                 nil))
+                      (or* (svex-reduce-config->keep-missing-env-vars config)
+                           (equal big-env env)))
+                     (integerp (sv::svex-eval x (rp-evlt env-term a))))
+            )
+       :fn integerp-of-svex)
+     (defret svex-eval-of-<fn>-is-correct
+       (and (implies (and ;;(equal (svex-kind svex) :var)
+                      (sub-alistp env big-env)
+                      (sv::svex-p x)
+                      (rp::rp-term-listp context)
+                      res
+                      (rp::valid-sc env-term a)
+                      (rp::eval-and-all context a)
+                      (rp::falist-consistent-aux big-env env-term)
+                      (:@ :dollar-eval
+                          (integerp-of-svex-extn-correct<$>-lst
+                           (svex-reduce-config->integerp-extns config)))
+                      (:@ :normal-eval
+                          (equal (svex-reduce-config->integerp-extns config)
+                                 nil))
+                      (or* (svex-reduce-config->keep-missing-env-vars config)
+                           (equal big-env env)))
+                     (natp (sv::svex-eval x (rp-evlt env-term a))))
+            )
+       :fn natp-of-svex)
+     (defret svexlist-eval-of-<fn>-is-correct
+       (and (implies (and ;;(equal (svex-kind svex) :var)
+                      (sub-alistp env big-env)
+                      (sv::svexlist-p lst)
+                      (rp::rp-term-listp context)
+                      res
+                      (rp::valid-sc env-term a)
+                      (rp::eval-and-all context a)
+                      (rp::falist-consistent-aux big-env env-term)
+                      (:@ :dollar-eval
+                          (integerp-of-svex-extn-correct<$>-lst
+                           (svex-reduce-config->integerp-extns config)))
+                      (:@ :normal-eval
+                          (equal (svex-reduce-config->integerp-extns config) nil))
+                      (or* (svex-reduce-config->keep-missing-env-vars config)
+                           (equal big-env env)))
+                     (integer-listp (sv::svexlist-eval lst (rp-evlt env-term a))))
+            )
+       :fn integer-listp-of-svexlist)
 
-   :hints (
-           ("goal"
-            :do-not-induct t
-            ;;:induct (integerp-of-svex svex env context)
-            :expand ((svex-eval x (rp-evlt env-term a))
-                     (INTEGERP-OF-SVEX X)
-                     (:free (lst) (member-equal (car x) lst)))
-            :in-theory (e/d (or*
+     :hints (
+             ("goal"
+              :do-not-induct t
+              ;;:induct (integerp-of-svex svex env context)
+              :expand ((svex-eval x (rp-evlt env-term a))
+                       (INTEGERP-OF-SVEX X)
+                       (natp-of-svex X)
+                       (:free (lst) (member-equal (car x) lst)))
+              :in-theory (e/d (or*
 
-                             ;;bit?!-test-is-dont-care-p
+                               ;;bit?!-test-is-dont-care-p
 
-                             sv::svex-quote->val
-                             svex-apply
-                             svexlist-eval
-                             svex-call->fn
-                             svex-var->name
-                             ;;sv::svex-env-lookup
-                             ;;sv::svar-fix
-                             sv::svex-call->args
-                             integerp-of-svex
-                             integer-listp-of-svexlist
-                             hons-assoc-equal
+                               sv::svex-quote->val
+                               svex-apply
+                               svexlist-eval
+                               svex-call->fn
+                               svex-var->name
+                               ;;sv::svex-env-lookup
+                               ;;sv::svar-fix
+                               sv::svex-call->args
+                               integerp-of-svex
+                               natp-of-svex
+                               integer-listp-of-svexlist
+                               hons-assoc-equal
 
-                             )
-                            (svex-eval-of-bit?!-test-is-dont-care-p-correct
-                             (:META
-                              RP::BINARY-OR**/AND**-GUARD-META-CORRECT)
-                             (:REWRITE DEFAULT-CDR)
-                             (:REWRITE DEFAULT-CAR)
-                             (:REWRITE ACL2::OR*-TRUE-FIRST)
-                             (:REWRITE ACL2::NATP-WHEN-GTE-0)
-                             (:REWRITE ACL2::OR*-TRUE-SECOND)
-                             (:DEFINITION ASSOC-EQUAL)
-                             INTEGERP-OF-SVEX-EXTN-CORRECT$
-                             (:definition acl2::apply$-badgep)
-                             (:rewrite acl2::apply$-badgep-properties . 1)
-                             (:definition rp::eval-and-all)
-                             (:rewrite rp::rp-evl-and-side-cond-consistent-rp-rw-relieve-hyp)
-                             (:definition subsetp-equal)
-                             (:definition member-equal)
-                             rp-trans
-                             rp::rp-trans-is-term-when-list-is-absent
-                             rp::valid-sc
-                             loghead
-                             4vec-reduction-and-to-4vec-bitand
-                             expt floor logapp
-                             posp natp
-                             sub-alistp
-                             rp::rp-evl-of-variable
-                             rp::rp-check-context-is-correct-iff)))
-           (and stable-under-simplificationp
-                '(:use ((:instance rp::rp-check-context-is-correct-iff
-                                   (rp::iff-flg t)
-                                   (rp::dont-rw nil)
-                                   (rp::context context)
-                                   (rp::a a)
-                                   (rp::term (list 'integerp
-                                                   (cdr (hons-assoc-equal x big-env))))
-                                   (rp::attach-sc nil)
-                                   (rp::rw-context-flg nil))
-                        (:instance svex-eval-of-bit?!-test-is-dont-care-p-correct
-                                   (env big-env))
-                        ))))))
+                               )
+                              (natp
+                               ACL2::NATP-WHEN-INTEGERP
+                               svex-eval-of-bit?!-test-is-dont-care-p-correct
+                               (:META
+                                RP::BINARY-OR**/AND**-GUARD-META-CORRECT)
+                               (:REWRITE DEFAULT-CDR)
+                               (:REWRITE DEFAULT-CAR)
+                               (:REWRITE ACL2::OR*-TRUE-FIRST)
+                               (:REWRITE ACL2::NATP-WHEN-GTE-0)
+                               (:REWRITE ACL2::OR*-TRUE-SECOND)
+                               (:DEFINITION ASSOC-EQUAL)
+                               INTEGERP-OF-SVEX-EXTN-CORRECT$
+                               (:definition acl2::apply$-badgep)
+                               (:rewrite acl2::apply$-badgep-properties . 1)
+                               (:definition rp::eval-and-all)
+                               (:rewrite rp::rp-evl-and-side-cond-consistent-rp-rw-relieve-hyp)
+                               (:definition subsetp-equal)
+                               (:definition member-equal)
+                               rp-trans
+                               rp::rp-trans-is-term-when-list-is-absent
+                               rp::valid-sc
+                               loghead
+                               4vec-reduction-and-to-4vec-bitand
+                               expt floor logapp
+                               posp natp
+                               sub-alistp
+                               rp::rp-evl-of-variable
+                               4VEC-PARITY-TO-BITXOR
+                               rp::rp-check-context-is-correct-iff)))
+             (and stable-under-simplificationp
+                  '(:use ((:instance rp::rp-check-context-is-correct-iff
+                                     (rp::iff-flg t)
+                                     (rp::dont-rw nil)
+                                     (rp::context context)
+                                     (rp::a a)
+                                     (rp::term (list 'integerp
+                                                     (cdr (hons-assoc-equal x big-env))))
+                                     (rp::attach-sc nil)
+                                     (rp::rw-context-flg nil))
+                          (:instance rp::rp-check-context-is-correct-iff
+                                     (rp::iff-flg t)
+                                     (rp::dont-rw nil)
+                                     (rp::context context)
+                                     (rp::a a)
+                                     (rp::term (list 'natp
+                                                     (cdr (hons-assoc-equal x big-env))))
+                                     (rp::attach-sc nil)
+                                     (rp::rw-context-flg nil))
+                          (:instance svex-eval-of-bit?!-test-is-dont-care-p-correct
+                                     (env big-env))
+                          )))))))
 
-(svex-eval-lemma-tmpl
- (defret-mutual svex-eval-of-integerp-of-svex-is-correct-env=nil
-   (defret svex-eval-of-<fn>-is-correct-env=nil
-     (implies (and (equal env nil)
-                   (sv::svex-p x)
-                   res
-                   
-                   (:@ :dollar-eval
-                       (integerp-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->integerp-extns config)))
-                   (:@ :normal-eval
-                       (equal (svex-reduce-config->integerp-extns config) nil))
-                   (svex-reduce-config->keep-missing-env-vars config))
-              (integerp (sv::svex-eval x svex-env)))
-     :fn integerp-of-svex)
-   (defret svexlist-eval-of-<fn>-is-correct-env=nil
-     (implies (and (equal env nil)
-                   (sv::svexlist-p lst)
-                   res
-                   (:@ :dollar-eval
-                       (integerp-of-svex-extn-correct<$>-lst
-                        (svex-reduce-config->integerp-extns config)))
-                   (:@ :normal-eval
-                       (equal (svex-reduce-config->integerp-extns config) nil))
-                   (svex-reduce-config->keep-missing-env-vars config))
-              (integer-listp (sv::svexlist-eval lst svex-env)))
-     :fn integer-listp-of-svexlist)
-   :hints (("goal"
-            :do-not-induct t
-            :expand ((:free (lst) (member-equal (car x) lst)))
-            ;;:induct (integerp-of-svex svex nil context)
-            :in-theory (e/d (SVEXLIST-EVAL
-                             INTEGER-LISTP-OF-SVEXLIST
-                             sv::svex-quote->val
-                             svex-apply
-                             svexlist-eval
-                             svex-call->fn
-                             svex-var->name
-                             sv::svex-call->args
-                             integerp-of-svex
-                             hons-assoc-equal)
-                            (svex-eval-of-bit?!-test-is-dont-care-p-correct
-                             (:definition acl2::apply$-badgep)
-                             (:rewrite acl2::apply$-badgep-properties . 1)
-                             (:rewrite acl2::apply$-badgep-properties . 2)
-                             (:rewrite rp::rp-term-listp-is-true-listp)
-                             (:definition subsetp-equal)
-                             (:definition true-listp)
-                             (:definition member-equal)
-                             (:definition rp::rp-term-listp)
-                             (:rewrite default-cdr)
-                             (:rewrite acl2::or*-true-second)
-                             (:definition assoc-equal)
-                             (:meta
-                              rp::binary-or**/and**-guard-meta-correct)
-                             (:rewrite
-                              acl2::member-equal-newvar-components-1)
-                             (:definition rp::rp-termp)
-                             (:rewrite rp::rp-termp-implies-cdr-listp)
+(with-output
+  :off :all
+  :gag-mode nil
+  :on (error summary)
+  (svex-eval-lemma-tmpl
+   (defret-mutual svex-eval-of-integerp-of-svex-is-correct-env=nil
+     (defret svex-eval-of-<fn>-is-correct-env=nil
+       (implies (and (equal env nil)
+                     (sv::svex-p x)
+                     res
 
-                             4VEC-PARITY-TO-BITXOR
-                             loghead
-                             4vec-reduction-and-to-4vec-bitand
-                             expt floor logapp
-                             posp natp
-                             sub-alistp
-                             rp::rp-evl-of-variable
-                             rp::rp-check-context-is-correct-iff)))
-           
-           )))
+                     (:@ :dollar-eval
+                         (integerp-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->integerp-extns config)))
+                     (:@ :normal-eval
+                         (equal (svex-reduce-config->integerp-extns config) nil))
+                     (svex-reduce-config->keep-missing-env-vars config))
+                (integerp (sv::svex-eval x svex-env)))
+       :fn integerp-of-svex)
+     (defret svex-eval-of-<fn>-is-correct-env=nil
+       (implies (and (equal env nil)
+                     (sv::svex-p x)
+                     res
+
+                     (:@ :dollar-eval
+                         (integerp-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->integerp-extns config)))
+                     (:@ :normal-eval
+                         (equal (svex-reduce-config->integerp-extns config) nil))
+                     (svex-reduce-config->keep-missing-env-vars config))
+                (natp (sv::svex-eval x svex-env)))
+       :fn natp-of-svex)
+     (defret svexlist-eval-of-<fn>-is-correct-env=nil
+       (implies (and (equal env nil)
+                     (sv::svexlist-p lst)
+                     res
+                     (:@ :dollar-eval
+                         (integerp-of-svex-extn-correct<$>-lst
+                          (svex-reduce-config->integerp-extns config)))
+                     (:@ :normal-eval
+                         (equal (svex-reduce-config->integerp-extns config) nil))
+                     (svex-reduce-config->keep-missing-env-vars config))
+                (integer-listp (sv::svexlist-eval lst svex-env)))
+       :fn integer-listp-of-svexlist)
+     :hints (("goal"
+              :do-not-induct t
+              :expand ((:free (lst) (member-equal (car x) lst)))
+              ;;:induct (integerp-of-svex svex nil context)
+              :in-theory (e/d (SVEXLIST-EVAL
+                               INTEGER-LISTP-OF-SVEXLIST
+                               sv::svex-quote->val
+                               svex-apply
+                               svexlist-eval
+                               svex-call->fn
+                               svex-var->name
+                               sv::svex-call->args
+                               integerp-of-svex
+                               natp-of-svex
+                               hons-assoc-equal)
+                              (svex-eval-of-bit?!-test-is-dont-care-p-correct
+                               (:definition acl2::apply$-badgep)
+                               (:rewrite acl2::apply$-badgep-properties . 1)
+                               (:rewrite acl2::apply$-badgep-properties . 2)
+                               (:rewrite rp::rp-term-listp-is-true-listp)
+                               (:definition subsetp-equal)
+                               (:definition true-listp)
+                               (:definition member-equal)
+                               (:definition rp::rp-term-listp)
+                               (:rewrite default-cdr)
+                               (:rewrite acl2::or*-true-second)
+                               (:definition assoc-equal)
+                               (:meta
+                                rp::binary-or**/and**-guard-meta-correct)
+                               (:rewrite
+                                acl2::member-equal-newvar-components-1)
+                               (:definition rp::rp-termp)
+                               (:rewrite rp::rp-termp-implies-cdr-listp)
+
+                               4VEC-PARITY-TO-BITXOR
+                               loghead
+                               4vec-reduction-and-to-4vec-bitand
+                               expt floor logapp
+                               posp natp
+                               sub-alistp
+                               rp::rp-evl-of-variable
+                               rp::rp-check-context-is-correct-iff)))
+
+             ))))
 
 #|(svex-eval-lemma-tmpl
 (defret svexlist-eval-of-integer-listp-of-svexlist-is-correct
