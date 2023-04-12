@@ -3138,7 +3138,8 @@
   :guard-hints (("goal" :in-theory (enable vl::vl-scopedef-is-scope-implies
                                            modscope-okp
                                            modscope-local-bound
-                                           modscope->modidx)))
+                                           modscope->modidx
+                                           svexlist-vars-of-svex-alist-vals)))
   :prepwork ((local (include-book "std/lists/resize-list" :dir :system))
              (local (defret assigns-boundedp-of-svex-design-flatten-special
                       (b* ((bound (moddb-mod-totalwires
