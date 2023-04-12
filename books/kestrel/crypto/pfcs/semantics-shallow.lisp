@@ -17,6 +17,8 @@
 (include-book "kestrel/std/util/defund-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -181,3 +183,88 @@
   (cond ((endp defs) nil)
         (t (cons (sesem-definition (car defs) prime)
                  (sesem-definition-list (cdr defs) prime)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sesem-definition-thm ((def definitionp) (prime symbolp))
+  :returns (even pseudo-event-formp)
+  :short "Generate theorem connecting deeply and shallowly embedded semantics,
+          for PFCS definitions without free variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given a PFCS definition,
+     @(tsee sesem-definition) generates a shallowly embedded version of it.
+     Here we define a theorem connecting that shallowly embedded version
+     to the deeply embedded semantics of the definition.")
+   (xdoc::p
+    "The theorem says that
+     the satisfaction of the definition (expressed via @(tsee definition-satp)
+     is equivalent to the satisfaction of the shallowly embedded definition."))
+  (b* (((definition def) def)
+       (thm-name (acl2::packn-pos (list 'definition-satp-of-
+                                        def.name
+                                        '-to-shallow)
+                                  def.name)))
+    `(defruled ,thm-name
+       (implies (and (equal (lookup-definition ',def.name defs)
+                            ',def)
+                     ,@(sesem-definition-thm-aux def.para prime))
+                (equal (definition-satp
+                         ',def.name defs (list ,@def.para) ,prime)
+                       (,def.name ,@def.para ,prime)))
+       :in-theory '(,def.name
+                    (:e ,def.name)
+                    definition-satp
+                    constraint-satp-of-relation-when-nofreevars
+                    constraint-relation-nofreevars-satp
+                    constraint-list-satp-of-cons
+                    constraint-list-satp-of-nil
+                    constraint-satp-of-equal
+                    constraint-equal-satp
+                    eval-expr
+                    eval-expr-list
+                    (:e definition->para)
+                    (:e definition->body)
+                    (:e definition-free-vars)
+                    (:e constraint-kind)
+                    (:e constraint-equal->left)
+                    (:e constraint-equal->right)
+                    (:e constraint-relation)
+                    (:e constraint-relation->name)
+                    (:e constraint-relation->args)
+                    (:e expression-kind)
+                    (:e expression-const->value)
+                    (:e expression-var->name)
+                    (:e expression-add->arg1)
+                    (:e expression-add->arg2)
+                    (:e expression-mul->arg1)
+                    (:e expression-mul->arg2)
+                    (:e expression-var-list)
+                    assignment-wfp-of-update
+                    assignment-wfp-of-nil
+                    assignment-fix-when-assignmentp
+                    assignmentp-of-update
+                    (:e assignmentp)
+                    omap::from-lists
+                    pfield::fep-fw-to-natp
+                    pfield::natp-of-add
+                    pfield::natp-of-mul
+                    len
+                    fty::consp-when-reserrp
+                    acl2::natp-compound-recognizer
+                    (:e nat-listp)
+                    (:e set::empty)
+                    car-cons
+                    cdr-cons
+                    omap::in-of-update
+                    acl2::nat-listp-of-cons
+                    acl2::not-reserrp-when-nat-listp
+                    nfix
+                    (:t mod))))
+  :prepwork
+  ((define sesem-definition-thm-aux ((paras symbol-listp) (prime symbolp))
+     :returns (terms true-listp)
+     (cond ((endp paras) nil)
+           (t (cons `(fep ,(car paras) ,prime)
+                    (sesem-definition-thm-aux (cdr paras) prime)))))))
