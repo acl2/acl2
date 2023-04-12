@@ -136,7 +136,7 @@
 		  (divides d n)
 		  (<= k d))
 	     (<= (least-divisor k n) d))
-  :rule-classes ())
+    :rule-classes ())
 
 (defn primep (n)
   (and (integerp n)
@@ -174,6 +174,17 @@
 				   (d (least-divisor 2 (least-divisor 2 n)))
 				   (k 2))))))
 
+(defun least-prime-divisor (n)
+  (declare (xargs :guard t))
+  (least-divisor 2 n))
+
+(defthm primep-least-prime-divisor
+    (implies (and (integerp n)
+		  (>= n 2))
+	     (primep (least-prime-divisor n)))
+  :rule-classes ()
+  :hints (("Goal" :use (primep-least-divisor))))
+
 (in-theory (disable primep))
 
 ;; Our formulation of the infinitude of the set of primes is based on a function that
@@ -187,7 +198,7 @@
 
 (defun greater-prime (n)
   (declare (xargs :guard (natp n)))
-  (least-divisor 2 (1+ (fact n))))
+  (least-prime-divisor (1+ (fact n))))
 
 (defthm greater-prime-divides
     (divides (greater-prime n) (1+ (fact n)))
@@ -228,7 +239,7 @@
 ;; Our main theorem of Euclid depends on the properties of the greatest common divisor,
 ;; which we define according to Euclid's algorithm.
 
-(defun g-c-d-nat (x y)
+(defun gcd-nat (x y)
   (declare (xargs :guard (and (natp x)
                               (natp y))
                   :measure (nfix (+ x y))))
@@ -237,49 +248,59 @@
     (if (zp y)
 	x
       (if (<= x y)
-	  (g-c-d-nat x (- y x))
-	(g-c-d-nat (- x y) y)))))
+	  (gcd-nat x (- y x))
+	(gcd-nat (- x y) y)))))
 
-(defun g-c-d (x y)
+(defun gcd (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
-  (g-c-d-nat (abs x) (abs y)))
+  (gcd-nat (abs x) (abs y)))
 
-(defthm g-c-d-nat-pos
+(defthm gcd-nat-pos
     (implies (and (natp x)
 		  (natp y)
 		  (not (and (= x 0) (= y 0))))
-	     (> (g-c-d-nat x y) 0))
+	     (> (gcd-nat x y) 0))
   :rule-classes ())
 
-(defthm g-c-d-pos
+(defthm gcd-pos
     (implies (and (integerp x)
 		  (integerp y)
 		  (not (and (= x 0) (= y 0))))
-	     (and (integerp (g-c-d x y))
-		  (> (g-c-d x y) 0)))
+	     (and (integerp (gcd x y))
+		  (> (gcd x y) 0)))
   :rule-classes ()
-  :hints (("Goal" :use (:instance g-c-d-nat-pos (x (abs x)) (y (abs y))))))
+  :hints (("Goal" :use (:instance gcd-nat-pos (x (abs x)) (y (abs y))))))
 
-(defthm divides-g-c-d-nat
+(local-defthmd gcd-nat-commutative
+  (implies (and (natp x) (natp y))
+           (equal (gcd-nat x y) (gcd-nat y x))))
+
+(defthmd gcd-commutative
+  (implies (and (integerp x) (integerp y))
+           (equal (gcd x y) (gcd y x)))
+  :hints (("Goal" :in-theory (enable gcd)
+                  :use ((:instance gcd-nat-commutative (x (abs x)) (y (abs y)))))))
+
+(defthm divides-gcd-nat
     (implies (and (natp x)
 		  (natp y))
-	     (and (or (= x 0) (divides (g-c-d-nat x y) x))
-		  (or (= y 0) (divides (g-c-d-nat x y) y))))
+	     (and (or (= x 0) (divides (gcd-nat x y) x))
+		  (or (= y 0) (divides (gcd-nat x y) y))))
   :rule-classes ()
-  :hints (("Goal" :induct (g-c-d-nat x y))
-	  ("Subgoal *1/4" :use (:instance divides-sum (x (g-c-d-nat (- x y) y)) (z (- x y))))
-	  ("Subgoal *1/3" :use (:instance divides-sum (x (g-c-d-nat x (- y x) )) (y x) (z (- y x))))))
+  :hints (("Goal" :induct (gcd-nat x y))
+	  ("Subgoal *1/4" :use (:instance divides-sum (x (gcd-nat (- x y) y)) (z (- x y))))
+	  ("Subgoal *1/3" :use (:instance divides-sum (x (gcd-nat x (- y x) )) (y x) (z (- y x))))))
 
-(defthm g-c-d-divides
+(defthm gcd-divides
     (implies (and (integerp x)
 		  (integerp y))
-	     (and (or (= x 0) (divides (g-c-d x y) x))
-		  (or (= y 0) (divides (g-c-d x y) y))))
+	     (and (or (= x 0) (divides (gcd x y) x))
+		  (or (= y 0) (divides (gcd x y) y))))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance divides-g-c-d-nat (x (abs x)) (y (abs y)))
-			(:instance divides-product (x (g-c-d-nat (abs x) (abs y))) (y (abs x)) (z -1))
-			(:instance divides-product (x (g-c-d-nat (abs x) (abs y))) (y (abs y)) (z -1))))))
+  :hints (("Goal" :use ((:instance divides-gcd-nat (x (abs x)) (y (abs y)))
+			(:instance divides-product (x (gcd-nat (abs x) (abs y))) (y (abs x)) (z -1))
+			(:instance divides-product (x (gcd-nat (abs x) (abs y))) (y (abs y)) (z -1))))))
 
 ;; It remains to be shown that the gcd of x and y is divisible by any common
 ;; divisor of x and y.  This depends on the observation that the gcd may be
@@ -319,7 +340,7 @@
 		  (natp y))
 	     (= (+ (* (r-nat x y) x)
 		   (* (s-nat x y) y))
-		(g-c-d-nat x y)))
+		(gcd-nat x y)))
   :rule-classes ())
 
 (defun r-int (x y)
@@ -344,39 +365,116 @@
     (integerp (s-int x y))
   :rule-classes (:type-prescription))
 |#
-(defthm g-c-d-linear-combination
+(defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
 	     (= (+ (* (r-int x y) x)
 		   (* (s-int x y) y))
-		(g-c-d x y)))
+		(gcd x y)))
   :rule-classes ()
   :hints (("Goal" :use (:instance r-s-nat (x (abs x)) (y (abs y))))))
 
-(in-theory (disable g-c-d r-int s-int))
+(in-theory (disable gcd r-int s-int))
 
-(defthm divides-g-c-d
+(defthm divides-gcd
     (implies (and (integerp x)
 		  (integerp y)
 		  (integerp d)
 		  (not (= d 0))
 		  (divides d x)
 		  (divides d y))
-	     (divides d (g-c-d x y)))
-  :hints (("Goal" :use (g-c-d-linear-combination
+	     (divides d (gcd x y)))
+  :hints (("Goal" :use (gcd-linear-combination
 			(:instance divides-sum (x d) (y (* (r-int x y) x)) (z (* (s-int x y) y)))
 			(:instance divides-product (x d) (y x) (z (r-int x y)))
 			(:instance divides-product (x d) (z (s-int x y)))))))
 
-(defthm g-c-d-prime
+(defthmd rel-prime-no-common-factor
+  (implies (and (integerp x)
+                (integerp y)
+		(integerp d)
+		(> d 1)
+		(divides d x)
+		(= (gcd x y) 1))
+	   (not (divides d y)))
+  :hints (("Goal" :in-theory (enable divides) :use (divides-gcd))))
+
+(defthmd gcd-quotient-1
+  (implies (and (integerp x)
+                (integerp y)
+		(not (= x 0))
+		(posp d)
+		(divides d x)
+		(= (gcd x y) 1))
+	   (equal (gcd (/ x d) y) 1))
+  :hints (("Goal" :in-theory (enable divides)
+                  :use ((:instance gcd-divides (x (/ x d)))
+		        (:instance gcd-pos (x (/ x d)))
+			(:instance divides-product (x (gcd (/ x d) y)) (y (/ x d)) (z d))
+			(:instance divides-gcd (d (gcd (/ x d) y)))))))
+
+(local-defthmd gcd-nat-quotient-2
+  (implies (and (natp x)
+                (natp y)
+		(posp d)
+		(divides d x)
+		(divides d y))
+	   (equal (gcd-nat (/ x d) (/ y d))
+	          (/ (gcd-nat x y) d)))
+  :hints (("Goal" :induct (gcd-nat x y))
+          ("Subgoal *1/4" :in-theory (enable divides)
+	                  :use ((:instance divides-minus (x d))
+	                        (:instance divides-sum (x d) (y x) (z (- y)))))
+          ("Subgoal *1/3" :in-theory (enable divides)
+	                  :use ((:instance divides-minus (x d) (y x))
+	                        (:instance divides-sum (x d) (z (- x)))))
+	  ("Subgoal *1/2" :in-theory (enable divides))))
+
+(defthmd gcd-quotient-2
+  (implies (and (integerp x)
+                (integerp y)
+		(posp d)
+		(divides d x)
+		(divides d y))
+	   (equal (gcd (/ x d) (/ y d))
+	          (/ (gcd x y) d)))
+  :hints (("Goal" :in-theory (enable divides gcd)
+	   :use ((:instance gcd-nat-quotient-2 (x (abs x)) (y (abs y)))))))
+
+(local-defthm gcd-prime-1
+  (implies (and (primep p)
+                (integerp a)
+	        (divides p a))
+	   (= (gcd p a) p))
+  :rule-classes ()
+  :hints (("Goal" :expand ((gcd p 0))
+	          :in-theory (enable divides)
+	          :use ((:instance gcd-quotient-2 (x a) (y p) (d p))
+		        (:instance gcd-pos (x (/ a p)) (y 1))
+			(:instance divides-leq (x (gcd a p)) (y 1))
+			(:instance gcd-commutative (x a) (y p))
+                        (:instance gcd-divides (x (/ a p)) (y 1))))))
+
+(local-defthm gcd-prime-2
     (implies (and (primep p)
 		  (integerp a)
 		  (not (divides p a)))
-	     (= (g-c-d p a) 1))
+	     (= (gcd p a) 1))
   :rule-classes ()
-  :hints (("Goal" :use ((:instance g-c-d-divides (x p) (y a))
-			(:instance g-c-d-pos (x p) (y a))
-			(:instance primep-no-divisor (d (g-c-d p a)))))))
+  :hints (("Goal" :use ((:instance gcd-divides (x p) (y a))
+			(:instance gcd-pos (x p) (y a))
+			(:instance primep-no-divisor (d (gcd p a)))))))
+
+(defthmd gcd-prime
+    (implies (and (primep p)
+		  (integerp a))
+	     (equal (gcd p a)
+		    (if (divides p a)
+			p
+		      1)))
+  :hints (("Goal" :use (gcd-prime-1 gcd-prime-2))))
+
+
 
 (local-defthm hack
   (implies (and (primep p)
@@ -396,8 +494,129 @@
 		  (not (divides p b)))
 	     (not (divides p (* a b))))
   :rule-classes ()
-  :hints (("Goal" :use (g-c-d-prime
-			(:instance g-c-d-linear-combination (x p) (y a))
+  :hints (("Goal" :use (gcd-prime
+			(:instance gcd-linear-combination (x p) (y a))
 			(:instance divides-sum (x p) (y (* (r-int p a) p b)) (z (* (s-int p a) a b)))
 			(:instance divides-product (x p) (y (* a b)) (z (s-int p a)))
 			(:instance divides-product (x p) (y p) (z (* b (r-int p a))))))))
+
+;; 1st corollary of euclid: If d divides mn and (gcd d m) = 1, then d divides n.
+;; The proof is by induction on d.  The claim is trivial for d = 1.
+;; Let p be a prime divisor of d.  Then p does not divide m ,and therefore d divides n.
+;; By induction, since d/p divides m(n/p), d/p divides n/p, which implies d divides n.
+
+(defun divides-product-divides-factor-induct (d n)
+  (declare (xargs :measure (nfix (abs d))
+                  :hints (("Goal" :use ((:instance primep-gt-1 (p (least-prime-divisor (abs d))))
+		                        (:instance primep-least-divisor (n (abs d))))))))
+  (if (or (not (integerp d)) (= d 0) (= d 1) (= d -1))
+      (list d n)
+    (let ((p (least-prime-divisor (abs d))))
+      (divides-product-divides-factor-induct (/ d p) (/ n p)))))
+
+(defthmd divides-product-divides-factor
+  (implies (and (integerp m) (not (= m 0))
+		(integerp n) (not (= n 0))
+		(integerp d) (not (= d 0))
+		(divides d (* m n))
+		(= (gcd d m) 1))
+	   (divides d n))
+  :hints (("Goal" :induct (divides-product-divides-factor-induct d n))
+          ("Subgoal *1/2" :in-theory (enable divides)
+	                  ::use ((:instance primep-gt-1 (p (least-prime-divisor (abs d))))
+		                 (:instance primep-least-divisor (n (abs d)))
+				 (:instance least-divisor-divides (k 2) (n (abs d)))
+				 (:instance gcd-quotient-1 (d (least-prime-divisor (abs d))) (x d) (y m))
+				 (:instance rel-prime-no-common-factor (d (least-prime-divisor (abs d))) (x d) (y m))
+				 (:instance euclid (p (least-prime-divisor (abs d))) (a m) (b n))
+				 (:instance divides-transitive (x (least-prime-divisor (abs d))) (y d) (z (* m n)))))
+	  ("Subgoal *1/1" :in-theory (enable divides))))
+
+;; 2nd corollary of euclid: If relatively prime integers x and y both divde m, then so does xy.
+;; The proof is by induction on x.  The claim is trivial for x = 1.
+;; Let p be a prime divisor of x. Then p does not divide y, but since p divides m = (m/y)* y, p divides m/y
+;; which implies that y divides m/p.  Thus, m/p is divisible by both x/p and y.  By induction, xy/p
+;; divides m/p, and therefore xy divides m.
+
+(defun product-rel-prime-divides-induct (x m)
+  (declare (xargs :measure (nfix (abs x))
+                  :hints (("Goal" :use ((:instance primep-gt-1 (p (least-prime-divisor (abs x))))
+		                        (:instance primep-least-divisor (n (abs x))))))))
+  (if (or (not (integerp x)) (= x 0) (= x 1) (= x -1))
+      x
+    (let ((p (least-prime-divisor (abs x))))
+      (list m (product-rel-prime-divides-induct (/ x p) (/ m p))))))
+
+(defthmd product-rel-prime-divides
+  (implies (and (integerp x)
+                (integerp y)
+		(not (= x 0))
+		(not (= y 0))
+		(= (gcd x y) 1)
+		(integerp m)
+		(divides x m)
+		(divides y m))
+	   (divides (* x y) m))
+  :hints (("Goal" :induct (product-rel-prime-divides-induct x m))
+          ("Subgoal *1/2" :in-theory (enable divides)
+	                  ::use ((:instance primep-gt-1 (p (least-prime-divisor (abs x))))
+		                 (:instance primep-least-divisor (n (abs x)))
+				 (:instance least-divisor-divides (k 2) (n (abs x)))
+				 (:instance gcd-quotient-1 (d (least-prime-divisor (abs x))))
+				 (:instance rel-prime-no-common-factor (d (least-prime-divisor (abs x))))
+				 (:instance euclid (p (least-prime-divisor (abs x))) (a (/ m y)) (b y))
+				 (:instance divides-transitive (x (least-prime-divisor (abs x))) (y x) (z m))))
+	  ("Subgoal *1/1" :in-theory (enable divides))))
+
+;; The last result allows us to define the least common multiple as follows:
+
+(defund lcm (x y)
+  (/ (* x y) (gcd x y)))
+
+(defthmd integerp-lcm-int
+  (implies (and (integerp x) (not (= x 0))
+                (integerp y) (not (= y 0)))
+           (and (integerp (lcm x y))
+	        (not (equal (lcm x y) 0))))
+  :hints (("Goal" :in-theory (enable divides lcm)
+                  :use (gcd-divides gcd-pos))))
+
+(defthmd posp-lcm
+  (implies (and (posp x)
+                (posp y))
+           (posp (lcm x y)))
+  :hints (("Goal" :in-theory (enable divides lcm)
+                  :use (gcd-divides gcd-pos))))
+
+(defthmd lcm-is-common-multiple
+  (implies (and (integerp x)
+                (integerp y)
+		(not (= x 0))
+		(not (= y 0)))
+	   (and (divides x (lcm x y))
+	        (divides y (lcm x y))))
+  :hints (("Goal" :in-theory (enable lcm divides)
+                  :use (gcd-divides))))
+
+;; product-rel-prime-divides is needed to prove the critical property of lcm that it divides any common multiple
+;; of its arguments: Suppose x and y both divide m and let g = (gcd x y), a = x/g, and b = y/g.  Then
+;;    m/(lcm x y) = mg/xy = m/gab.
+;; Since a and b both divide m/g, ab divides m/g, i.e., m/gab is an integer and (lcm x y) divides m.
+
+(defthmd lcm-is-least
+  (implies (and (integerp x)
+                (integerp y)
+		(not (= x 0))
+		(not (= y 0))
+		(integerp m))
+           (iff (and (divides x m)
+		     (divides y m))
+	        (divides (lcm x y) m)))
+  :hints (("Goal" :in-theory (enable lcm divides)
+                  :use (gcd-divides gcd-pos lcm-is-common-multiple
+		        (:instance divides-transitive (y (lcm x y)) (z m))
+		        (:instance divides-transitive (x y) (y (lcm x y)) (z m))
+		        (:instance divides-transitive (x (gcd x y)) (y x) (z m))
+		        (:instance gcd-quotient-2 (d (gcd x y)))
+			(:instance product-rel-prime-divides (x (/ x (gcd x y))) (y (/ y (gcd x y))) (m (/ m (gcd x y))))))))
+		

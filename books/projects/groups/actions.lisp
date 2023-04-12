@@ -22,6 +22,8 @@
 
 (defmacro dom (a) `(car ,a))
 
+;; Note that by definition, (order a) is just (len (domain a)).
+
 ;; a(x, s) is computed by a table look-up:
 
 (defund act (x s a g)
@@ -89,6 +91,7 @@
 (defund actionp (a g)
   (and (groupp g)
        (dlistp (dom a))
+       (consp (dom a))
        (matrixp a (order g) (len (dom a)))
        (aclosedp a g)
        (aassocp a g)))
@@ -100,6 +103,10 @@
 (defthm actionp-dlistp
   (implies (actionp a g)
            (dlistp (dom a))))
+
+(defthm actionp-pos-len
+  (implies (actionp a g)
+	   (posp (len (dom a)))))
 
 (defthm ordp-a
   (implies (actionp a g)
@@ -194,9 +201,8 @@
   (local (defun aelts () (list 0)))
   (local (defun aact (x y) (+ x y)))
   (defthm groupp-grp (groupp (agrp)))
-  ;(defthm consp-aelts (consp (aelts)))
+  (defthm consp-aelts (consp (aelts)))
   (defthm dlistp-aelts (dlistp (aelts)))
-  ;(defthm a-non-nil (not (member-equal () (aelts))))
   (defthm a-identity
     (implies (member-equal s (aelts))
              (equal (aact (e (agrp)) s) s)))
@@ -251,7 +257,7 @@
 ;; elts: a list of the elements of the domain as a function of args
 ;; act: the result of a group element x acting on an element s of the domain
 
-;; Prior to a call of defgroup, 5 rewrite rules corresponding to the theorems of the encapsulation must
+;; Prior to a call of defgroup, 6 rewrite rules corresponding to the theorems of the encapsulation must
 ;; be proved.
 
 (defmacro defaction (name args grp cond elts act)
@@ -336,6 +342,13 @@
            (EQUAL (ACT X S (CONJUGACY G) G)
                   (CONJ S X G))))
 
+;; If h is a subgroup of g, then g acts on the left cosets of h:
+                       
+(defaction act-lcosets (h) g
+  (subgroupp h g)
+  (lcosets h g)
+  (lcoset (op x (car s) g) h g))
+
 ;; A group action of g induces an action by any subgroup of g:
 
 (defaction subaction (a g) h
@@ -346,7 +359,7 @@
 
 
 ;;---------------------------------------------------------------------------------------------------
-;; Orbits
+;; Orbits of an Action
 ;;---------------------------------------------------------------------------------------------------
 
 ;; Given s in the domain of an action a, the orbit of s is the ordered list of all r in (dom a) such 
@@ -503,7 +516,7 @@
 
 
 ;;---------------------------------------------------------------------------------------------------
-;; Stabilizers
+;; Stabilizer of a Domain Element
 ;;---------------------------------------------------------------------------------------------------
 
 ;; The stabilizer of an element s of the domain of an action a is the ordered subgroup of g comprising
@@ -859,6 +872,21 @@
            (iff (subgroupp h k)
 	        (equal k (conj-sub h (e g) g)))))
 
+(defthm conjs-sub-not-subgroup
+  (implies (and (subgroupp h g)
+		(member-equal k1 (conjs-sub h g))
+		(member-equal k2 (conjs-sub h g))
+		(subgroupp k1 k2))
+	   (equal k2 k1))
+  :rule-classes ())
+
+;; If (conjs-sub h g) has length 1, then h is normal in g:
+
+(defthmd len-conjs-sub-normalp
+  (implies (and (subgroupp h g)
+                (<= (len (conjs-sub h g)) 1))
+	   (normalp h g)))
+
   ;; A conjugate of a subgroup h of g has the same conjugates as h:
 
 (defthm permp-conjs-sub
@@ -961,4 +989,125 @@
 (defthmd normalizer-conj-sub
   (implies (and (subgroupp m g)
 		(member-equal c (conjs-sub m g)))
-	   (equal (normalizer c g) (conj-sub (normalizer m g) (conjer-sub c m g) g))))
+	   (equal (normalizer c g)
+		  (conj-sub (normalizer m g) (conjer-sub c m g) g))))
+
+
+;;---------------------------------------------------------------------------------------------------
+;; Induced Hormomorphism from g to (sym (order a))
+;;---------------------------------------------------------------------------------------------------
+
+;; An action a of a group g associates each element of g with a permutation of (dom a).
+;; By identifying an element of (dom a) with its index, we have an element of (sym n),
+;; where n = (order a).  If x is in g and p is the element of (sym n) corresponding to x,
+;; then for 0 <= k < n, the image of k under p is computed by the following:
+
+(defund act-perm-val (x k a g)
+  (index (act x (nth k (dom a)) a g)
+         (dom a)))
+
+;; The element of (sym n) corresponding to x:
+
+(defun act-perm-aux (x k a g)
+  (if (zp k)
+      ()
+    (append (act-perm-aux x (1- k) a g)
+            (list (act-perm-val x (1- k) a g)))))
+
+(defund act-perm (x a g)
+  (act-perm-aux x (order a) a g))
+
+(defthmd act-perm-is-perm
+  (implies (and (actionp a g)
+                (in x g))
+	   (in (act-perm x a g)
+	       (sym (order a)))))
+
+(defthm act-perm-val-is-val
+  (implies (and (actionp a g)
+                (in x g)
+		(member-equal k (ninit (order a))))
+	   (equal (nth k (act-perm x a g))
+	          (act-perm-val x k a g))))
+
+;; The identity of g corresponds to the identity of (sym n):
+
+(defthmd act-perm-e
+  (implies (actionp a g)
+	   (equal (act-perm (e g) a g)
+	          (ninit (order a)))))
+
+;; The group operation is preserved by this correspondence:
+
+(defthmd act-perm-comp
+  (implies (and (actionp a g)
+                (in x g)
+		(in y g))
+	   (equal (act-perm (op x y g) a g)
+	          (comp-perm (act-perm x a g)
+		             (act-perm y a g)
+			     (order a)))))
+
+;; Thus, we have a homomorphism from g into the symmetric group:
+
+(defmap act-sym (a g)
+  (elts g)
+  (act-perm x a g))
+
+(defthmd homomorphismp-act-sym
+  (implies (actionp a g)
+           (homomorphismp (act-sym a g)
+	                  g
+			  (sym (order a)))))
+
+;; An element of the kernel of (act-sym a g) acts trivially on every element of (dom a):
+
+(defthmd act-sym-kernel
+  (implies (and (actionp a g)
+                (in x g)
+                (equal (act-perm x a g) (e (sym (order a))))
+		(in s a))
+	  (equal  (act x s a g)
+	          s))
+  :hints (("Goal" :in-theory (enable e)
+                  :use (index-act (:instance index-1-to-1 (x (act x s a g)) (y s) (l (dom a)))))))
+
+;; We have observed that every group g is an action of itself on its element list, with (act g x s g) = (op x s g).
+;; The identity of g is the only element that acts trivially.  Therefore, every group g is isomorphic to a
+;; subgroup of (sym (order g)):
+
+(defthm endomorphismp-act-sym-g
+  (implies (groupp g)
+	   (endomorphismp (act-sym g g) g (sym (order g)))))
+
+;; Recall the action act-lcosets of a group g on the left cosets of a subgroup h.
+;; The kernel of the homomorphism induced by this action is a subgroup of h:
+
+(defthmd subgroup-kernel-act-cosets
+  (implies (subgroupp h g)
+	   (subgroupp (kernel (act-sym (act-lcosets h g) g)
+	                      (sym (subgroup-index h g))
+			      g)
+		      h)))
+
+;; The preceding result has the following important consequence:
+
+;; LEMMA: Let p be the least prime dividing (order g) and suppose the index of h in g is p.
+;; Then h is normal in g.
+
+;; Proof: Let k = (kernel (act-sym (act-cosets h g) g) (sym (subgroup-index h g)) g).
+;; We have shown that k is normal in g.
+;; By endomorphism-quotient-map, (quotient g k) is isomorphic to a subgroup of (sym p),
+;; and therefore (subgroup-index k g) divides p!, which implies (subgroup-index k h) divides (p-1)!.
+;; If (subgroup-index k h) > 1, then (subgroup-index k g) has a prime divisor q.  Since q divides (p-1)!,
+;; q < p. (This may be proved by induction on p as a consequence of euclid.)
+;; But since q divides (order g), q >= p by assumption, a contradiction.  Thus, (subgroup-index k h) = 1,
+;; which implies (permp (elts k) (elts h)), and by permp-normalp, h is normal in g.
+
+(defthmd index-least-divisor-normal
+  (implies (and (subgroupp h g)
+                (> (order g) 1)
+		(equal (subgroup-index h g)
+		       (least-prime-divisor (order g))))
+	   (normalp h g)))
+

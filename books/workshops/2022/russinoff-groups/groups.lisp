@@ -924,7 +924,7 @@
 (defun rel-primes-aux (k n)
   (if (zp k)
       ()
-    (if (= (g-c-d k n) 1)
+    (if (= (gcd k n) 1)
         (append (rel-primes-aux (1- k) n) (list k))
       (rel-primes-aux (1- k) n))))
 
@@ -936,7 +936,7 @@
 	   (iff (member k (rel-primes n))
 	        (and (posp k)
 		     (< k n)
-		     (= (g-c-d k n) 1))))
+		     (= (gcd k n) 1))))
   :hints (("Goal" :in-theory (disable member-rel-primes-aux-<=) :use (member-rel-primes-1))))
 
 (defthm consp-rel-primes
@@ -967,10 +967,10 @@
 	          x))
   :hints (("Goal" :use ((:instance member-rel-primes (k x))))))
 
-(defthm g-c-d-0
+(defthm gcd-0
   (implies (posp n)
-           (equal (g-c-d 0 n) n))
-  :hints (("Goal" :in-theory (enable g-c-d))))
+           (equal (gcd 0 n) n))
+  :hints (("Goal" :in-theory (enable gcd))))
 
 (defthm z*-closed
   (implies (and (posp n) (> n 1)
@@ -981,7 +981,7 @@
                         (:instance member-rel-primes (k y))
                         (:instance member-rel-primes (k (z*-op x y n)))
 			(:instance mod-prod-rel-prime (a x) (b y))
-			(:instance g-c-d-divides (x (* x y)) (y n))))))
+			(:instance gcd-divides (x (* x y)) (y n))))))
 
 (defthm z*-assoc
   (implies (and (posp n)
@@ -998,12 +998,12 @@
 
 ;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
 
-(defthm g-c-d-linear-combination
+(defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
 	     (= (+ (* (r-int x y) x)
 		   (* (s-int x y) y))
-		(g-c-d x y)))
+		(gcd x y)))
     :rule-classes ())
 
 (defun z*-inv (x n) (mod (r-int x n) n))
