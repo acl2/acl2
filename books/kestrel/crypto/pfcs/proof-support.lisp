@@ -145,7 +145,8 @@
                             (constraint-equal->right constr))
                      (equal (eval-expr (constraint-equal->left constr) asg p)
                             (eval-expr (constraint-equal->right constr) asg p))
-                     (natp (eval-expr (constraint-equal->left constr) asg p)))))))
+                     (natp (eval-expr
+                            (constraint-equal->left constr) asg p)))))))
   :expand ((exec-proof-tree ptree defs p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -172,12 +173,12 @@
        (para (definition->para def))
        (body (definition->body def))
        (vals (eval-expr-list args asg p))
-       (asgext (proof-tree-relation->asgext ptree))
-       (asg-para-vals (omap::from-lists para vals))
+       (asgfree (proof-tree-relation->asgfree ptree))
+       (asgpara (omap::from-lists para vals))
        (outcome-sub (exec-proof-tree-list
                      (proof-tree-relation->sub ptree) defs p))
        (asser-sub (proof-list-outcome-assertions->get outcome-sub))
-       (asg-sub (omap::update* asgext asg-para-vals)))
+       (asgsub (omap::update* asgfree asgpara)))
     (implies (and (proof-outcome-case outcome :assertion)
                   (constraint-case constr :relation))
              (and (proof-tree-case ptree :relation)
@@ -187,12 +188,12 @@
                   def
                   (nat-listp vals)
                   (equal (len para) (len vals))
-                  (assignment-wfp asgext p)
-                  (equal (omap::keys asgext)
+                  (assignment-wfp asgfree p)
+                  (equal (omap::keys asgfree)
                          (definition-free-vars def))
                   (proof-list-outcome-case outcome-sub :assertions)
                   (equal (assertion-list->asg-list asser-sub)
-                         (repeat (len body) asg-sub))
+                         (repeat (len body) asgsub))
                   (equal (assertion-list->constr-list asser-sub)
                          body))))
   :expand ((exec-proof-tree ptree defs p)))
@@ -299,9 +300,9 @@
      to the values of the arguments,
      and that satisfies all the relation's constraints."))
   (exists
-   (asgext)
-   (and (assignmentp asgext)
-        (assignment-wfp asgext p)
+   (asgfree)
+   (and (assignmentp asgfree)
+        (assignment-wfp asgfree p)
         (b* ((def (lookup-definition name defs)))
           (and def
                (b* (((definition def) def))
@@ -310,10 +311,10 @@
                         (and (nat-listp vals)
                              (b* ((asg-para-vals (omap::from-lists def.para
                                                                    vals)))
-                               (and (equal (omap::keys asgext)
+                               (and (equal (omap::keys asgfree)
                                            (definition-free-vars def))
                                     (b* ((asg-sub (omap::update*
-                                                   asgext
+                                                   asgfree
                                                    asg-para-vals)))
                                       (constraint-list-satp def.body
                                                             defs
@@ -369,14 +370,14 @@
                       (args (constraint-relation->args constr))
                       (asg (proof-tree-relation->asg
                             (constraint-satp-witness constr defs asg p)))
-                      (asgext (proof-tree-relation->asgext
-                               (constraint-satp-witness constr defs asg p))))
+                      (asgfree (proof-tree-relation->asgfree
+                                (constraint-satp-witness constr defs asg p))))
            (:instance constraint-list-satp-suff
                       (constrs (definition->body
                                  (lookup-definition
                                   (constraint-relation->name constr) defs)))
                       (asg (omap::update*
-                            (proof-tree-relation->asgext
+                            (proof-tree-relation->asgfree
                              (constraint-satp-witness constr defs asg p))
                             (omap::from-lists
                              (definition->para
@@ -431,10 +432,10 @@
                                       (constraint-relation->args constr)
                                       asg p)))
                                    p)
-                             :asgext (constraint-relation-satp-witness
-                                      (constraint-relation->name constr)
-                                      (constraint-relation->args constr)
-                                      defs asg p)))))))
+                             :asgfree (constraint-relation-satp-witness
+                                       (constraint-relation->name constr)
+                                       (constraint-relation->args constr)
+                                       defs asg p)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -533,7 +534,7 @@
      :use (:instance constraint-relation-satp-suff
                      (name (constraint-relation->name constr))
                      (args (constraint-relation->args constr))
-                     (asgext nil)))))
+                     (asgfree nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
