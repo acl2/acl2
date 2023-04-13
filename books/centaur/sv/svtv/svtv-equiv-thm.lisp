@@ -26,7 +26,7 @@
 
 (in-package "SV")
 
-(include-book "svtv-generalized-thm")
+(include-book "svtv-generalize")
 
 (std::def-primitive-aggregate svtv-equiv-thm-data
   (name
