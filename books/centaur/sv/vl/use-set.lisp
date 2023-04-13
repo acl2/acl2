@@ -1613,7 +1613,7 @@
           ((mv errb sizesb) (vl-structmemberlist-sizes b)))
        (and (equal sizes (append sizesa sizesb))
             (iff err (or erra errb))))
-     :hints(("Goal" :in-theory (enable vl-structmemberlist-sizes))))
+     :hints(("Goal" :in-theory (enable vl-structmemberlist-sizes append))))
 
    (defthm vl-structmemberlist-sizes-of-rev
      (b* (((mv err sizes) (vl-structmemberlist-sizes (rev x)))
@@ -1734,7 +1734,7 @@
          (+ -1
             (vl-structmemberlist-count x)
             (vl-structmemberlist-count y)))
-  :hints(("Goal" :in-theory (enable vl-structmemberlist-count))))
+  :hints(("Goal" :in-theory (enable vl-structmemberlist-count append))))
 #!vl
 (defthm vl-structmemberlist-count-of-rev
   (equal (vl-structmemberlist-count (rev x))
