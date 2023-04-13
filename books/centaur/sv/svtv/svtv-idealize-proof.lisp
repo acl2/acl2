@@ -41,6 +41,16 @@
 
 (local (std::add-default-post-define-hook :fix))
 
+
+(local (defthmd svar-override-triplelist-override-vars-under-set-equiv
+         (set-equiv (svar-override-triplelist-override-vars x)
+                    (append (svar-override-triplelist->testvars x)
+                            (svar-override-triplelist->valvars x)))
+         :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
+                                           svar-override-triplelist->testvars
+                                           svar-override-triplelist-override-vars
+                                           acl2::set-unequal-witness-rw)))))
+
 (defsection base-fsm-eval-of-design->ideal-fsm-refines-overridden-approximation
   (local (defthm subsetp-of-set-difference
            (implies (subsetp-equal a c)
@@ -68,6 +78,13 @@
                    (not (svex-alist-depends-on v a)))
               (not (svex-alist-depends-on v y)))))
 
+  (local (defthmd svarlist-to-override-alist-in-terms-of-svarlist-to-override-triples
+           (equal (svarlist-to-override-alist x)
+                  (svar-override-triplelist->override-alist (svarlist-to-override-triples x)))
+           :hints(("Goal" :in-theory (enable svarlist-to-override-triples
+                                             svar-override-triplelist->override-alist
+                                             svarlist-to-override-alist)))))
+  
   (local (defthm svex-alist-vars-of-svarlist-to-override-alist
            (implies (svarlist-override-p x nil)
                     (set-equiv (svex-alist-vars (svarlist-to-override-alist x))
@@ -316,11 +333,11 @@
            :hints(("Goal" :in-theory (enable svarlist-override-p
                                              svar-override-p-when-other)))))
 
-  (local (defthm member-of-svarlist-change-override
-           (implies (and (svar-override-p v type2)
-                         (not (svar-overridetype-equiv type type2)))
-                    (not (member-equal v (svarlist-change-override x type))))
-           :hints(("Goal" :in-theory (enable svarlist-change-override)))))
+  ;; (local (defthm member-of-svarlist-change-override
+  ;;          (implies (and (svar-override-p v type2)
+  ;;                        (not (svar-overridetype-equiv type type2)))
+  ;;                   (not (member-equal v (svarlist-change-override x type))))
+  ;;          :hints(("Goal" :in-theory (enable svarlist-change-override)))))svex-envlists-o
 
 
   (local (in-theory (disable (:CONGRUENCE

@@ -6420,13 +6420,7 @@ environments."
 
 
 
-(defthm 4vec-muxtest-subsetp-of-same
-  (4vec-muxtest-subsetp x x)
-  :hints(("Goal" :in-theory (enable 4vec-muxtest-subsetp))))
 
-(defthm 4vec-override-mux-ok-of-same
-  (4vec-override-mux-ok test val test val ref-p ref)
-  :hints(("Goal" :in-theory (enable 4vec-override-mux-ok))))
 
 (defthm svtv-override-triplemap-envs-ok-of-same-envs
   (svtv-override-triplemap-envs-ok triplemap pipe-env pipe-env spec-run)
