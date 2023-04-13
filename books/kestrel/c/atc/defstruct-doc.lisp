@@ -368,7 +368,35 @@
        and used to check the index against it.")
      (xdoc::p
       "This checker converts the C integer index to an ACL2 integer index
-       and calls the checker @('struct-<tag>-<member>-integer-index-okp') above."))
+       and calls the checker @('struct-<tag>-<member>-integer-index-okp')
+       above."))
+
+    (xdoc::desc
+     "@('struct-<tag>-read-<member>-element')"
+     (xdoc::p
+      "Reader for an element of an array member of the structure type,
+       using a C integer as index.")
+     (xdoc::p
+      "There is one such reader for every member
+       whose name is @('<member>')
+       and whose type is an array type.")
+     (xdoc::p
+      "The reader has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-read-<member>-element ((index cintegerp)"
+      "                                            (struct struct-<tag>-p))"
+      "  :guard (struct-<tag>-<member>-index-okp index ...)"
+      "  :returns (value <elemtype>p)"
+      "  ...)")
+     (xdoc::p
+      "where @('<elemtype>p') is the recognizer of
+       the integer element type of
+       the @('typei') that specifies the type of the member,
+       and where the @('...') in the @(':guard') is
+       either @('struct') if the member is a flexible array member
+       or nothing otherwise.
+       The reader reads an element of the array member,
+       not the whole array member."))
 
     (xdoc::desc
      "@('struct-<tag>-read-<member>-integer')"

@@ -1467,8 +1467,12 @@
        (fixtype-array-length-alt-def (pack fixtype-array-length '-alt-def))
        (fixtype-array-length-of-fixtype-array-fix-array
         (pack fixtype-array-length '-of- fixtype-array-fix '-array))
+       (fixtype-array-index-okp (pack fixtype '-array-index-okp))
        (fixtype-array-integer-index-okp (pack fixtype
                                               '-array-integer-index-okp))
+       (fixtype-array-read (pack fixtype '-array-read))
+       (fixtype-array-read-of-cinteger-fix-index (pack fixtype-array-read
+                                                       '-of-cinteger-fix-index))
        (fixtype-array-integer-read (pack fixtype '-array-integer-read))
        (fixtype-array-integer-write (pack fixtype '-array-integer-write))
        (fixtypep (pack fixtype 'p))
@@ -1500,6 +1504,7 @@
        (consp-when-fixtype-arrayp (pack 'consp-when- fixtype-arrayp))
        (fixtype-arrayp-of-fixtype-array-integer-write
         (pack fixtype-arrayp '-of- fixtype-array-integer-write))
+       (fixtypep-of-fixtype-array-read (pack fixtypep '-of- fixtype-array-read))
        (member-length (packn-pos (list struct-tag
                                        '-
                                        (ident->name name)
@@ -1518,6 +1523,11 @@
                                           (ident->name name)
                                           '-index-okp)
                                     struct-tag))
+       (read-member-element (packn-pos (list struct-tag
+                                             '-read-
+                                             (ident->name name)
+                                             '-element)
+                                       struct-tag))
        (member-integer-index-okp (packn-pos (list struct-tag
                                                   '-
                                                   (ident->name name)
@@ -1585,6 +1595,11 @@
                                                                 struct-tag-fix
                                                                 '-struct)
                                                           struct-tag))
+       (read-member-of-struct-tag-fix-struct (packn-pos (list read-member
+                                                              '-of-
+                                                              struct-tag-fix
+                                                              '-struct)
+                                                        struct-tag))
        (member-length-theory `(consp-when-ucharp
                                consp-when-ushortp
                                consp-when-uintp
@@ -2165,6 +2180,34 @@
                   ,@(and (not size?)
                          (list
                           member-length-of-struct-tag-fix-struct)))))))
+          (define ,read-member-element ((index cintegerp)
+                                        (struct ,struct-tag-p))
+            :guard (,member-index-okp index ,@(and (not size?)
+                                                   (list 'struct)))
+            :returns (val ,fixtypep
+                          :hints
+                          (("Goal"
+                            :in-theory '(,read-member-element
+                                         ,fixtypep-of-fixtype-array-read))))
+            (,fixtype-array-read (,read-member struct) index)
+            :guard-hints
+            (("Goal" :in-theory '(,struct-tag-p
+                                  ,struct-tag-fix-when-struct-tag-p
+                                  ,member-index-okp
+                                  ,read-member
+                                  ,fixtype-array-index-okp
+                                  value-struct-read
+                                  integer-range-p
+                                  (:e ident)
+                                  ,@(and (not size?)
+                                         (list member-length)))))
+            ///
+            (fty::deffixequiv ,read-member-element
+              :hints
+              (("Goal"
+                :in-theory '(,read-member-element
+                             ,read-member-of-struct-tag-fix-struct
+                             ,fixtype-array-read-of-cinteger-fix-index)))))
           ,(if size?
                `(define ,member-integer-index-okp ((index integerp))
                   :returns (yes/no
