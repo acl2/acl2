@@ -224,11 +224,16 @@
      (xdoc::codeblock
       "(define struct-<tag>-write-<member> ((value <typei>p)"
       "                                     (struct struct-<tag>-p))"
+      "  ;; :guard present if <typei>p is <type>-arrayp:"
+      "  :guard (equal (<type>-array-length value) ...)"
       "  :returns (new-struct struct-<tag>-p)"
       "  ...)")
      (xdoc::p
       "where @('<typei>p') is the recognizer of the type corresponding to
-       the @('typei') that specifies the type of the member."))
+       the @('typei') that specifies the type of the member.
+       If the member has array type,
+       the @(':guard') constrains the length of @('value')
+       to be the one of the member."))
 
     (xdoc::desc
      "@('struct-<tag>-<member>-length')"
