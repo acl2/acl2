@@ -1467,12 +1467,22 @@
        (fixtype-array-length-alt-def (pack fixtype-array-length '-alt-def))
        (fixtype-array-length-of-fixtype-array-fix-array
         (pack fixtype-array-length '-of- fixtype-array-fix '-array))
+       (fixtype-array-write (pack fixtype '-array-write))
+       (fixtype-array-length-of-fixtype-array-write (pack fixtype-array-length
+                                                          '-of-
+                                                          fixtype-array-write))
        (fixtype-array-index-okp (pack fixtype '-array-index-okp))
        (fixtype-array-integer-index-okp (pack fixtype
                                               '-array-integer-index-okp))
        (fixtype-array-read (pack fixtype '-array-read))
        (fixtype-array-read-of-cinteger-fix-index (pack fixtype-array-read
                                                        '-of-cinteger-fix-index))
+       (fixtype-array-write-of-cinteger-fix-index (pack fixtype-array-write
+                                                        '-of-cinteger-fix-index))
+       (fixtype-array-write-of-fixtype-fix-element (pack fixtype-array-write
+                                                         '-of-
+                                                         fixtype
+                                                         '-fix-element))
        (fixtype-array-integer-read (pack fixtype '-array-integer-read))
        (fixtype-array-integer-write (pack fixtype '-array-integer-write))
        (fixtypep (pack fixtype 'p))
@@ -1505,6 +1515,9 @@
        (fixtype-arrayp-of-fixtype-array-integer-write
         (pack fixtype-arrayp '-of- fixtype-array-integer-write))
        (fixtypep-of-fixtype-array-read (pack fixtypep '-of- fixtype-array-read))
+       (fixtype-arrayp-of-fixtype-array-write (pack fixtype-arrayp
+                                                    '-of-
+                                                    fixtype-array-write))
        (member-length (packn-pos (list struct-tag
                                        '-
                                        (ident->name name)
@@ -1528,6 +1541,11 @@
                                              (ident->name name)
                                              '-element)
                                        struct-tag))
+       (write-member-element (packn-pos (list struct-tag
+                                              '-write-
+                                              (ident->name name)
+                                              '-element)
+                                        struct-tag))
        (member-integer-index-okp (packn-pos (list struct-tag
                                                   '-
                                                   (ident->name name)
@@ -1600,6 +1618,15 @@
                                                               struct-tag-fix
                                                               '-struct)
                                                         struct-tag))
+       (write-member-of-struct-tag-fix-struct (packn-pos (list write-member
+                                                               '-of-
+                                                               struct-tag-fix
+                                                               '-struct)
+                                                         struct-tag))
+       (struct-tag-p-of-write-member (packn-pos (list struct-tag-p
+                                                      '-of-
+                                                      write-member)
+                                                struct-tag))
        (member-length-theory `(consp-when-ucharp
                                consp-when-ushortp
                                consp-when-uintp
@@ -2208,6 +2235,41 @@
                 :in-theory '(,read-member-element
                              ,read-member-of-struct-tag-fix-struct
                              ,fixtype-array-read-of-cinteger-fix-index)))))
+          (define ,write-member-element ((index cintegerp)
+                                         (val ,fixtypep)
+                                         (struct ,struct-tag-p))
+            :guard (,member-index-okp index ,@(and (not size?)
+                                                   (list 'struct)))
+            :returns (new-struct ,struct-tag-p
+                                 :hints
+                                 (("Goal"
+                                   :in-theory
+                                   '(,write-member-element
+                                     ,struct-tag-p-of-write-member))))
+            (,write-member (,fixtype-array-write (,read-member struct)
+                                                 index
+                                                 val)
+                           struct)
+            :guard-hints
+            (("Goal" :in-theory '(,struct-tag-p
+                                  ,read-member
+                                  ,member-index-okp
+                                  ,struct-tag-fix-when-struct-tag-p
+                                  ,fixtype-array-index-okp
+                                  ,fixtype-arrayp-of-fixtype-array-write
+                                  ,fixtype-array-length-of-fixtype-array-write
+                                  value-struct-read
+                                  (:e ident)
+                                  ,@(and (not size?)
+                                         (list member-length)))))
+            ///
+            (fty::deffixequiv ,write-member-element
+              :hints
+              (("Goal" :in-theory '(,write-member-element
+                                    ,fixtype-array-write-of-cinteger-fix-index
+                                    ,fixtype-array-write-of-fixtype-fix-element
+                                    ,read-member-of-struct-tag-fix-struct
+                                    ,write-member-of-struct-tag-fix-struct)))))
           ,(if size?
                `(define ,member-integer-index-okp ((index integerp))
                   :returns (yes/no

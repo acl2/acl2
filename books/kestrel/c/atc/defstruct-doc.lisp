@@ -460,6 +460,34 @@
        and calls the reader @('struct-<tag>-read-<member>-integer') above."))
 
     (xdoc::desc
+     "@('struct-<tag>-write-<member>-element')"
+     (xdoc::p
+      "Writer for an array member of the structure type,
+       using a C integer as index.")
+     (xdoc::p
+      "There is one such writer for every member
+       whose name is @('<member>')
+       and whose type is an array type.")
+     (xdoc::p
+      "The writer has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-write-<member>-element ((index cintegerp)"
+      "                                             (value <elemtype>p)"
+      "                                             (struct struct-<tag>-p))"
+      "  :guard (struct-<tag>-<member>-index-okp index ...)"
+      "  :returns (new-struct struct-<tag>-p)"
+      "  ...)")
+     (xdoc::p
+      "where @('<elemtype>p') is the recognizer of
+       the integer element type of
+       the @('typei') that specifies the type of the member,
+       and where the @('...') in the @(':guard') is
+       either @('struct') if the member is a flexible array member
+       or nothing otherwise.
+       The writer writes an element of the array member,
+       not the whole array member."))
+
+    (xdoc::desc
      "@('struct-<tag>-write-<member>-integer')"
      (xdoc::p
       "Writer for an array member of the structure type,
