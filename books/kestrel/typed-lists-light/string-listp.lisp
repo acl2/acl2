@@ -12,19 +12,20 @@
 
 (in-package "ACL2")
 
-;dup
+(in-theory (disable string-listp))
+
+;; Matches the on in std/
 (defthm string-listp-of-append
-  ;; [Jared] changed from having a true-listp hyp to list-fixing a in the
-  ;; conclusion, for compatibility with std.
   (equal (string-listp (append a b))
          (and (string-listp (true-list-fix a))
               (string-listp b)))
-  :hints (("Goal" :in-theory (enable STRING-LISTP append))))
+  :hints (("Goal" :in-theory (enable string-listp append))))
 
-;; (defthm string-listp-of-append
-;;   (implies (and (string-listp x)
-;;                 (string-listp y))
-;;            (string-listp (append x y))))
+(defthm string-listp-of-cons
+  (equal (string-listp (cons a x))
+         (and (stringp a)
+              (string-listp x)))
+  :hints (("Goal" :in-theory (enable string-listp))))
 
 (defthm string-listp-forward-to-true-listp
   (implies (string-listp x)
