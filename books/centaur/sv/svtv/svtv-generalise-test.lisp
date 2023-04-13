@@ -29,7 +29,7 @@
 (set-waterfall-parallelism nil)
 
 (include-book "svtv-stobj-defsvtv")
-(include-book "svtv-idealize")
+(include-book "svtv-generalize")
 (local (include-book "centaur/fgl/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (disable unsigned-byte-p)))
