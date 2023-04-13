@@ -2250,7 +2250,7 @@
   (implies (and (natp amount)
                 (natp start)
                 (natp size)
-                (< size amount))
+                (<= size amount))
            (equal (sv::4vec-rsh amount (sv::4vec-part-select start size x))
                   0))
   :hints (("Goal"
@@ -8873,3 +8873,14 @@ lognot)
                                    bitops::logtail-of-logand
                                    bitops::logtail-of-logior)
                                  )))))
+
+(defthm 4vec-sign-ext-of-4vec-part-select
+  (implies (natp size)
+           (equal
+            (sv::4vec-sign-ext size (4vec-part-select 0 size term))
+            (sv::4vec-sign-ext size term)))
+  :hints (("goal"
+           :in-theory (e/d (sv::4vec-sign-ext
+                            4vec-part-select
+                            4vec-concat)
+                           ()))))

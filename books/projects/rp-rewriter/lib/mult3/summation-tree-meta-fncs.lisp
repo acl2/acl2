@@ -4235,6 +4235,9 @@ nil
       (('binary-xor x y)
        `(binary-sum ,(extract-binary-xor-for-s-spec-aux x)
                     ,(extract-binary-xor-for-s-spec-aux y)))
+      (('binary-not x)
+       `(binary-sum '1
+                    ,(extract-binary-xor-for-s-spec-aux x)))
       (& term)))
 
   (define extract-binary-xor-for-s-spec ((term rp-termp))

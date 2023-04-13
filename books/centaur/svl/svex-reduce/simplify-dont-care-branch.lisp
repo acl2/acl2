@@ -81,7 +81,7 @@
   (defines collect-part-sels-from-tests-aux
     :prepwork
     ((defconst *collect-part-sels-from-tests-aux-limit*
-       100))
+       128))
     (define collect-part-sels-from-tests-aux ((x sv::Svex-p)
                                               (limit natp))
       :verify-guards nil
@@ -609,8 +609,8 @@
                              4VEC)
                             (4VEC-ZERO-EXT-IS-4VEC-CONCAT))))))
 
-;; maybe memoize this...
-(profile 'collect-part-sels-from-tests)
+;; memoizing saves some time.
+(memoize 'collect-part-sels-from-tests)
 
 (define simplify-dont-care-branch ((x svex-p)
                                    &key
