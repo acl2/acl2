@@ -3903,7 +3903,7 @@ to-be-coughed-c-lst))|#
         `(defattach undo-rw-and-open-up-adders-enabled return-t)
       `(defattach undo-rw-and-open-up-adders-enabled return-nil)))
 
-  (enable-undo-rw-and-open-up-adders t))
+  (enable-undo-rw-and-open-up-adders nil))
 
 (define new-sum-merge ((term rp-termp))
   :verify-guards t
