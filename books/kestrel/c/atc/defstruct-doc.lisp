@@ -251,13 +251,51 @@
       "  ...)"))
 
     (xdoc::desc
+     "@('struct-<tag>-<member>-index-okp')"
+     (xdoc::p
+      "Index checker for an array member of the structure type.")
+     (xdoc::p
+      "There is one such checker for every member
+       whose name is @('<member>')
+       and whose type is an array type.")
+     (xdoc::p
+      "If the array type of the member has a specified size,
+       the checker has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-<member>-index-okp ((index cintegerp))"
+      "  :returns (yes/no booleanp)"
+      "  ...)")
+     (xdoc::p
+      "If the array type of the member does not have a specified size
+       (which may be only the case for the last member,
+       if it is a flexible array member),
+       the checker has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-<member>-index-okp ((index cintegerp)"
+      "                                         (struct struct-<tag>-p))"
+      "  :returns (yes/no booleanp)"
+      "  ...)")
+     (xdoc::p
+      "In either form,
+       this function checks if the C integer index is
+       within the range of the array.
+       If the length of the array is known
+       (specified by the @('<size?>')
+       in the @('<typei>') that specifies the type of the member),
+       the checker only needs the index.
+       For the flexible array member (if present),
+       we also need the structure as an additional argument,
+       from which the flexible array member size is obtained
+       and used to check the index against it."))
+
+    (xdoc::desc
      "@('struct-<tag>-<member>-integer-index-okp')"
      (xdoc::p
       "ACL2 integer index checker for an array member of the structure type.")
      (xdoc::p
       "There is one such checker for every member
        whose name is @('<member>')
-       ans whose type is an array type.")
+       and whose type is an array type.")
      (xdoc::p
       "If the array type of the member has a specified size,
        the checker has the form")

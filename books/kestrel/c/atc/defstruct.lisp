@@ -1513,6 +1513,11 @@
                                       '-write-
                                       (ident->name name))
                                 struct-tag))
+       (member-index-okp (packn-pos (list struct-tag
+                                          '-
+                                          (ident->name name)
+                                          '-index-okp)
+                                    struct-tag))
        (member-integer-index-okp (packn-pos (list struct-tag
                                                   '-
                                                   (ident->name name)
@@ -1575,6 +1580,11 @@
                                                         '-of-
                                                         struct-tag-fix)
                                                   struct-tag-p))
+       (member-length-of-struct-tag-fix-struct (packn-pos (list member-length
+                                                                '-of-
+                                                                struct-tag-fix
+                                                                '-struct)
+                                                          struct-tag))
        (member-length-theory `(consp-when-ucharp
                                consp-when-ushortp
                                consp-when-uintp
@@ -2131,6 +2141,30 @@
                              ,fixtype-array-fix-when-fixtype-arrayp
                              ,fixtype-arrayp-of-fixtype-array-fix
                              ,fixtype-array-length-of-fixtype-array-fix-array)))))
+          (define ,member-index-okp ((index cintegerp)
+                                     ,@(and (not size?)
+                                            `((struct ,struct-tag-p))))
+            :returns (yes/no
+                      booleanp
+                      :hints
+                      (("Goal"
+                        :in-theory '(booleanp-compound-recognizer
+                                     (:t ,member-index-okp)))))
+            (integer-range-p 0
+                             ,(or size?
+                                  `(,member-length struct))
+                             (integer-from-cinteger index))
+            :guard-hints (("Goal" :in-theory nil))
+            ///
+            (fty::deffixequiv ,member-index-okp
+              :hints
+              (("Goal"
+                :in-theory
+                '(,member-index-okp
+                  integer-from-cinteger-of-cinteger-fix-cint
+                  ,@(and (not size?)
+                         (list
+                          member-length-of-struct-tag-fix-struct)))))))
           ,(if size?
                `(define ,member-integer-index-okp ((index integerp))
                   :returns (yes/no
