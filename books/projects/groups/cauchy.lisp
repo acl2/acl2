@@ -7,37 +7,11 @@
 (include-book "quotients")
 (local (include-book "support/groups"))
 
-;; THEOREM: If the order of a group G is divisible by a prime p, then G has an element of order p.
+;; THEOREM: If the order of a group g is divisible by a prime p, then G has an element of order p.
  
 ;;---------------------------------------------------------------------------------------------------
 ;; Cauchy's Theorem for Abelian Groups
 ;;---------------------------------------------------------------------------------------------------
-
-;; The witness function:
-
-(defun elt-of-ord-aux (l n g)
-  (if (consp l)
-      (if (= (ord (car l) g) n)
-          (car l)
-	(elt-of-ord-aux (cdr l) n g))
-    ()))
-
-(defund elt-of-ord (n g) (elt-of-ord-aux (elts g) n g))
-
-(defthmd elt-of-ord-ord
-  (implies (and (groupp g)
-                (natp n)
-                (elt-of-ord n g))
-	   (and (in (elt-of-ord n g) g)
-	        (equal (ord (elt-of-ord n g) g)
-		       n))))
-
-(defthmd ord-elt-of-ord
-  (implies (and (groupp g)
-                (natp n)
-		(in x g)
-		(= (ord x g) n))
-           (elt-of-ord n g)))
 
 ;; If there is an element of order divisible by n then there is an element of order n:
 
@@ -340,7 +314,7 @@
 
 
 ;;----------------------------------------------------------------------------------------------------------
-;; Cauchy's Theorem
+;; Cauchy's Theorem for Non-abelian Groups
 ;;----------------------------------------------------------------------------------------------------------
 
 ;; Search for a non-central group element the centralizer of which has order divisible by p:
@@ -407,3 +381,165 @@
 		(divides p (order g)))
 	   (and (in (elt-of-ord p g) g)
 	        (equal (ord (elt-of-ord p g) g) p))))
+
+
+;;------------------------------------------------------------------------------------------------------
+;; Prime Powers and p-Groups
+;;------------------------------------------------------------------------------------------------------
+
+;; Recognizer of powers of n, where n > 1:
+
+(defun powerp (n p)
+  (if (and (natp p) (> p 1) (posp n) (divides p n))
+      (powerp (/ n p) p)
+    (equal n 1)))
+
+(defthmd p-divides-power-p
+  (implies (and (powerp n p)
+                (not (equal n 1)))
+	   (divides p n)))
+
+(defun log (n p)
+  (if (and (natp p) (> p 1) (posp n) (integerp (/ n p)))
+      (1+ (log (/ n p) p))
+    0))
+
+(defthmd max-power-p-dividing
+  (implies (and (primep p)
+                (posp n)
+		(natp k))
+	   (iff (divides (expt p k) n)
+	        (<= k (log n p)))))
+
+(defthmd powerp-log
+  (implies (and (natp p) (> p 1) (powerp n p))
+           (equal (expt p (log n p)) n)))
+
+(defthm powerp-power
+  (implies (and (natp p) (> p 1) (natp n))
+           (powerp (expt p n) p)))
+
+;; Any divisor of a power of a prime p is a power of p:
+
+(defthmd divides-power
+  (implies (and (primep p) (natp k) (posp m) (divides m (expt p k)))
+           (powerp m p)))
+
+(defthmd powerp-divides
+  (implies (and (primep p) (powerp n p) (posp m) (divides m n))
+           (powerp m p)))
+
+;; A prime is a power only of itself:
+
+(defthm not-powerp-prime
+  (implies (and (primep q) (posp n) (powerp q n))
+           (equal q n))
+  :rule-classes ())
+
+;; p is the only prime divisor of a power of p:
+
+(defthm powerp-prime-divisor
+  (implies (and (primep p)
+                (primep q)
+		(powerp n p)
+		(divides q n))
+           (equal p q))
+  :rule-classes ())
+
+;; p is the least prime divisor of a power of p:
+
+(defthmd least-prime-divisor-powerp
+  (implies (and (powerp n p)
+                (primep p)                
+                (> n 1))
+	   (equal (least-prime-divisor n)
+	          p)))
+
+;; The least (prime) divisor of n other than p:
+
+(defun least-divisor-not-p (n p)
+  (declare (xargs :measure (nfix n)))
+  (if (and (natp n) (> n 1))
+      (let ((q (least-prime-divisor n)))
+        (if (= q p)
+	    (least-divisor-not-p (/ n p) p)
+	  q))
+    ()))
+
+;; In n is not a power of prime p, then n has a prime divisor other than p:
+
+(defthmd primep-least-divisor-not-p
+  (implies (and (natp n)
+                (> n 1)
+                (primep p)
+		(not (powerp n p)))
+	   (let ((q (least-divisor-not-p n p)))
+	     (and (primep q)
+	          (not (= q p))
+	          (divides q n)))))
+
+;; A p-group is usually defined to be a group in which the order of every element is a power of p.
+;; For finite groups, as a consequence of Cauchy's Theorem, this is equivalent to the following
+;; (see not-p-groupp-not-powerp-ord below):
+
+(defund p-groupp (g p)
+  (and (primep p)
+       (groupp g)
+       (powerp (order g) p)))
+
+;; The order of an element of a p-group is a power of p:
+
+(defthmd p-groupp-ord-powerp
+  (implies (and (p-groupp g p)
+		(in x g))
+	   (powerp (ord x g) p)))
+
+;; The converse is a consequence of cauchy's theorem:
+
+(defthmd not-p-groupp-divisor
+  (implies (and (primep p)
+                (groupp g)
+		(> (order g) 1)
+		(not (p-groupp g p)))
+	   (let ((q (least-divisor-not-p (order g) p)))
+	     (and (primep q)
+	          (not (= q p))
+	          (divides q (order g))))))
+
+(defthmd not-p-groupp-ord-prime
+  (implies (and (primep p)
+                (groupp g)
+		(> (order g) 1)
+		(not (p-groupp g p)))
+	   (let* ((q (least-divisor-not-p (order g) p))
+	          (x (elt-of-ord q g)))
+	     (and (primep q)
+	          (not (= q p))
+		  (in x g)
+	          (equal (ord x g) q)))))
+
+(defthmd not-p-groupp-not-powerp-ord
+  (implies (and (primep p)
+                (groupp g)
+		(> (order g) 1)
+		(not (p-groupp g p)))
+	   (let* ((q (least-divisor-not-p (order g) p))
+	          (x (elt-of-ord q g)))
+	     (not (powerp (ord x g) p)))))
+
+;; Another consequence of the class equation is that the center of a non-trivial p-group is non-trivial:
+
+(defthm center-p-group
+  (implies (and (primep p)
+                (p-groupp g p)                
+		(> (order g) 1))
+	   (divides p (order (center g)))))
+
+;; If g is a group of order p^2, then the quotient of its center must be cyclic, and by quotient-center-cyclic-abelian,
+;; g is abelian:
+
+(defthmd p-squared-abelian
+  (implies (and (groupp g)
+		(primep p)
+		(equal (order g) (* p p)))
+	   (abelianp g)))

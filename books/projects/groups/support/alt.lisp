@@ -3,6 +3,8 @@
 (include-book "transpositions")
 (local (include-book "rtl/rel11/lib/top" :dir :system))
 
+(in-theory (enable dlistp-perm))
+
 ;; Given naturals j <= k, compute the list of all pairs (i . k) with 0 <= i < j:
 
 (defun pairs-aux (j k)
@@ -253,7 +255,7 @@
   (implies (and (posp n) (in p (sym n)) (member-equal x (invs p n)))
            (and (member-equal (f1 x p) (invs (inv-perm p n) n))
 	        (equal (g1 (f1 x p) p) x)))
-  :hints (("Goal" :in-theory (enable f1 g1 member-invs)
+  :hints (("Goal" :in-theory (enable len-perm f1 g1 member-invs)
                   :use ((:instance nth-perm-ninit (k (car x)) (x p))
                         (:instance nth-perm-ninit (k (cdr x)) (x p))))))
 
@@ -261,7 +263,7 @@
   (implies (and (posp n) (in p (sym n)) (member-equal x (invs (inv-perm p n) n)))
            (and (member-equal (g1 x p) (invs p n))
 	        (equal (f1 (g1 x p) p) x)))
-  :hints (("Goal" :in-theory (enable f1 g1 member-perm member-invs)
+  :hints (("Goal" :in-theory (enable len-perm f1 g1 member-perm member-invs)
                   :use ((:instance nth-perm-ninit (k (car x)) (x (inv-perm p n)))
                         (:instance nth-perm-ninit (k (cdr x)) (x (inv-perm p n)))
 			(:instance nth-inv-perm (k (car x)) (x p))
@@ -289,102 +291,6 @@
            (equal (parity (inv-perm p n) n)
 	          (parity p n)))
   :hints (("Goal" :in-theory (enable parity len-invs-inv))))
-
-
-;;---------------------------------------------------------------------------------------------------------------
-
-;; Some properties of intersection-equal:
-
-(local-defthmd sublistp-intersection-1
-  (implies (sublistp l1 l)
-           (and (sublistp (intersection-equal l1 m) m)
-	        (sublistp (intersection-equal l1 m) l)))
-  :hints (("Goal" :expand ((INTERSECTION-EQUAL L1 M) (INTERSECTION-EQUAL NIL M)))))
-
-(defthm sublistp-intersection
-  (and (sublistp (intersection-equal l m) m)
-       (sublistp (intersection-equal l m) l))
-  :hints (("Goal" :use ((:instance sublistp-intersection-1 (l1 l))))))
-
-(local-defthmd dlistp-intersection-1
-  (implies (and (dlistp l1) (sublistp l1 l))
-           (dlistp (intersection-equal l1 m)))
-  :hints (("Goal" :expand ((INTERSECTION-EQUAL L1 M) (INTERSECTION-EQUAL NIL M)))))
-
-(defthm dlistp-intersection
-  (implies (dlistp l)
-           (dlistp (intersection-equal l m)))
-  :hints (("Goal" :use ((:instance dlistp-intersection-1 (l1 l))))))
-
-(local-defthmd sublistp-append-intersection-1-1
-  (implies (and (sublistp m1 m) (sublistp m1 (append l1 l2)))
-           (sublistp m1 (append (intersection-equal l1 m) (intersection-equal l2 m)))))
-
-(defthmd sublistp-append-intersection-1
-  (implies (sublistp m (append l1 l2))
-           (sublistp m (append (intersection-equal l1 m) (intersection-equal l2 m))))
-  :hints (("Goal" :use ((:instance sublistp-append-intersection-1-1 (m1 m))))))
-
-(local-defthmd sublistp-append-intersection-2-1
-  (implies (and (sublistp l1 l) (sublistp l1 (append m1 m2)))
-           (sublistp l1 (append (intersection-equal l m1) (intersection-equal l m2)))))
-
-(defthmd sublistp-append-intersection-2
-  (implies (sublistp l (append m1 m2))
-           (sublistp l (append (intersection-equal l m1) (intersection-equal l m2))))
-  :hints (("Goal" :use ((:instance sublistp-append-intersection-2-1 (l1 l))))))
-
-(local-defthmd disjointp-append-intersection-1-1
-  (implies (and (sublistp l3 l1) (disjointp l1 l2))
-           (disjointp (intersection-equal l3 m)
-	              (intersection-equal l2 m)))
-  :hints (("Goal" :expand ((INTERSECTION-EQUAL L3 M)))))
-
-(defthmd disjointp-append-intersection-1
-  (implies (disjointp l1 l2)
-           (disjointp (intersection-equal l1 m)
-	              (intersection-equal l2 m)))
-  :hints (("Goal" :use ((:instance disjointp-append-intersection-1-1 (l3 l1))))))
-
-(defthmd disjointp-append-intersection-2
-  (implies (disjointp m1 m2)
-           (disjointp (intersection-equal l m1)
-	              (intersection-equal l m2)))
-  :hints (("Goal" :induct (len l) :expand ((INTERSECTION-EQUAL L M1) (INTERSECTION-EQUAL L M2)))))
-
-(defthmd len-append-intersection-1
-  (implies (and (dlistp m)
-                (dlistp l1)
-                (dlistp l2)
-                (disjointp l1 l2)
-		(sublistp m (append l1 l2)))
-           (equal (+ (len (intersection-equal l1 m))
-	             (len (intersection-equal l2 m)))
-		  (len m)))
-  :hints (("Goal" :use (disjointp-append-intersection-1
-                        sublistp-append-intersection-1
-			(:instance sublistp-equal-len (l (append (intersection-equal l1 m) (intersection-equal l2 m))))
-                        (:instance sublistp-intersection (l l1))
-			(:instance sublistp-intersection (l l2))
-			(:instance dlistp-intersection (l l1))
-			(:instance dlistp-intersection (l l2))))))
-
-(defthmd len-append-intersection-2
-  (implies (and (dlistp l)
-                (dlistp m1)
-                (dlistp m2)
-                (disjointp m1 m2)
-		(sublistp l (append m1 m2)))
-           (equal (+ (len (intersection-equal l m1))
-	             (len (intersection-equal l m2)))
-		  (len l)))
-  :hints (("Goal" :use (disjointp-append-intersection-2
-                        sublistp-append-intersection-2
-			(:instance sublistp-equal-len (l (append (intersection-equal l m1) (intersection-equal l m2))) (m l))
-                        (:instance sublistp-intersection (m m1))
-			(:instance sublistp-intersection (m m2))
-			(:instance dlistp-intersection (m m1))
-			(:instance dlistp-intersection (m m2))))))
 
 
 ;;---------------------------------------------------------------------------------------------------------------
@@ -493,7 +399,7 @@
                 (< (nth (car x) p) (nth (cdr x) p)))
 	   (and (member-equal (f1 x p) (pres-invs p r n))
 	        (equal (g1 (f1 x p) p) x)))
-  :hints (("Goal" :in-theory (enable pres-invs)
+  :hints (("Goal" :in-theory (enable len-perm pres-invs)
                   :use ((:instance member-invs (p (comp-perm r p n)))
 			(:instance member-invs (p r) (x (cons (nth (car x) p) (nth (cdr x) p))))
 			(:instance member-pres (p (inv-perm p n)) (x (cons (nth (car x) p) (nth (cdr x) p))))
@@ -507,7 +413,7 @@
                 (> (nth (car x) p) (nth (cdr x) p)))
 	   (and (member-equal (f1 x p) (invs-pres p r n))
 	        (equal (g1 (f1 x p) p) x)))
-  :hints (("Goal" :in-theory (enable invs-pres)
+  :hints (("Goal" :in-theory (enable len-perm invs-pres)
                   :use ((:instance member-invs (p (comp-perm r p n)))
 			(:instance member-pres (p r) (x (cons (nth (cdr x) p) (nth (car x) p))))
 			(:instance member-invs (p (inv-perm p n)) (x (cons (nth (cdr x) p) (nth (car x) p))))
@@ -520,7 +426,8 @@
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs (comp-perm r p n) n)))
            (or (> (nth (car x) p) (nth (cdr x) p))
 	       (< (nth (car x) p) (nth (cdr x) p))))
-  :hints (("Goal" :use ((:instance member-invs (p (comp-perm r p n)))
+  :hints (("Goal" :in-theory (enable len-perm)
+	          :use ((:instance member-invs (p (comp-perm r p n)))
                         (:instance nth-perm-distinct (i (car x)) (j (cdr x)) (x p))
 			(:instance nth-perm-ninit (k (car x)) (x p))
 			(:instance nth-perm-ninit (k (cdr x)) (x p))))))
@@ -534,7 +441,7 @@
 (local-defthmd f1-g1-1
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs-pres p r n)))
            (equal (f1 (g1 x p) p) x))
-  :hints (("Goal" :in-theory (enable invs-pres)
+  :hints (("Goal" :in-theory (enable len-perm invs-pres)
                   :use ((:instance member-invs (p (inv-perm p n)))
 			(:instance member-perm (k (car x)) (x p))
 			(:instance member-perm (k (cdr x)) (x p))))))
@@ -542,7 +449,7 @@
 (local-defthmd f1-g1-2
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (pres-invs p r n)))
            (equal (f1 (g1 x p) p) x))
-  :hints (("Goal" :in-theory (enable pres-invs)
+  :hints (("Goal" :in-theory (enable len-perm pres-invs)
                   :use ((:instance member-pres (p (inv-perm p n)))
 			(:instance member-perm (k (car x)) (x p))
 			(:instance member-perm (k (cdr x)) (x p))))))
@@ -554,7 +461,7 @@
 	        (< (index (cdr x) p) n) (< (index (car x) p) n)
 		(< (index (cdr x) p) (index (car x) p))
 		(> (nth (index (cdr x) p) (comp-perm r p n)) (nth (index (car x) p) (comp-perm r p n)))))
-  :hints (("Goal" :in-theory (e/d (invs-pres) (ind<len))
+  :hints (("Goal" :in-theory (e/d (len-perm invs-pres) (ind<len))
                   :use ((:instance member-invs (p (inv-perm p n)))
 		        (:instance member-pres (p r))
 			(:instance ind<len (x (car x)) (l p))
@@ -565,7 +472,7 @@
 (local-defthmd f1-g1-4
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs-pres p r n)))
            (member (g1 x p) (invs (comp-perm r p n) n)))
-  :hints (("Goal" :in-theory (e/d (invs-pres) (ind<len))
+  :hints (("Goal" :in-theory (e/d (len-perm invs-pres) (ind<len))
                   :use (f1-g1-3
 			(:instance member-invs (p (comp-perm r p n)) (x (cons (index (cdr x) p) (index (car x) p))))))))
 
@@ -576,7 +483,7 @@
 	        (< (index (cdr x) p) n) (< (index (car x) p) n)
 		(< (index (car x) p) (index (cdr x) p))
 		(> (nth (index (car x) p) (comp-perm r p n)) (nth (index (cdr x) p) (comp-perm r p n)))))
-  :hints (("Goal" :in-theory (e/d (pres-invs) (ind<len))
+  :hints (("Goal" :in-theory (e/d (len-perm pres-invs) (ind<len))
                   :use ((:instance member-pres (p (inv-perm p n)))
 		        (:instance member-invs (p r))
 			(:instance ind<len (x (car x)) (l p))
@@ -587,7 +494,7 @@
 (local-defthmd f1-g1-6
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (pres-invs p r n)))
            (member (g1 x p) (invs (comp-perm r p n) n)))
-  :hints (("Goal" :in-theory (e/d (invs-pres) (ind<len))
+  :hints (("Goal" :in-theory (e/d (len-perm invs-pres) (ind<len))
                   :use (f1-g1-5
 			(:instance member-invs (p (comp-perm r p n)) (x (cons (index (car x) p) (index (cdr x) p))))))))
 
@@ -977,3 +884,5 @@
 	          (/ (fact n) 2)))
   :hints (("Goal" :use (subgroup-index-alt
                         (:instance lagrange (h (alt n)) (g (sym n)))))))
+
+(in-theory (disable dlistp-perm))

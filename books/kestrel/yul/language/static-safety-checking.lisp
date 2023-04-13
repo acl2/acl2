@@ -30,9 +30,9 @@
      It consists of checks that ensure the safety of execution,
      i.e. that certain situations never happen during execution,
      such as reading or writing a non-existent variable.
-     Our formal
-     <see topic='@(url DYNAMIC-SEMANTICS)'>dynamic semantics</see>
-     of Yul defensively checks these conditions,
+     Our formal "
+    (xdoc::seetopic "dynamic-semantics" "dynamic semantics")
+    " of Yul defensively checks these conditions,
      returning error values when the conditions are not satisfied.
      The static safety checks formalized here
      ensure that those error values are never returned by the dynamic semantics,
@@ -64,7 +64,7 @@
      does not make use of that requirement.
      In fact, we do not include that requirement in the static safety checks
      formalized here.
-     This requirement is separately formalized
+     This requirement is formalized separately
      in  @(see static-shadowing-checking)."))
   :order-subtopics t
   :default-parent t)

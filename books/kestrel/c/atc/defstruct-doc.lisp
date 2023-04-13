@@ -200,11 +200,9 @@
     (xdoc::desc
      "@('struct-<tag>-read-<member>')"
      (xdoc::p
-      "Reader for an integer member of the structure type.")
+      "Reader for a member of the structure type.")
      (xdoc::p
-      "There is one such reader for every member
-       whose name is @('<member>')
-       and whose type is an integer type.")
+      "There is one such reader for every member whose name is @('<member>').")
      (xdoc::p
       "The reader has the form")
      (xdoc::codeblock
@@ -212,18 +210,15 @@
       "  :returns (value <typei>p)"
       "  ...)")
      (xdoc::p
-      "where @('<typei>p') is the recognizer of
-       the integer type corresponding to
+      "where @('<typei>p') is the recognizer of the type corresponding to
        the @('typei') that specifies the type of the member."))
 
     (xdoc::desc
      "@('struct-<tag>-write-<member>')"
      (xdoc::p
-      "Writer for an integer member of the structure type.")
+      "Writer for a member of the structure type.")
      (xdoc::p
-      "There is one such writer for every member
-       whose name is @('<member>')
-       and whose type is an integer type.")
+      "There is one such writer for every member whose name is @('<member>').")
      (xdoc::p
       "The writer has the form")
      (xdoc::codeblock
@@ -232,8 +227,7 @@
       "  :returns (new-struct struct-<tag>-p)"
       "  ...)")
      (xdoc::p
-      "where @('<typei>p') is the recognizer of
-       the integer type corresponding to
+      "where @('<typei>p') is the recognizer of the type corresponding to
        the @('typei') that specifies the type of the member."))
 
     (xdoc::desc

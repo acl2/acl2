@@ -9,127 +9,12 @@
 (include-book "actions")
 
 ;;------------------------------------------------------------------------------------------------------
-;; Lifting a Subgroup of a Quotient Group
-;;------------------------------------------------------------------------------------------------------
-
-;; Given a subgroup h of a quotient group g/n, we construct a corresponding subgroup (lift h n g) of g.
-;; Its element list is constructed by appending the elements of h:
-
-(defund append-elts (h)
-  (append-list (elts h)))
-
-(defthm car-append-elts
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (and (consp (append-elts h))
-	        (equal (car (append-elts h))
-		       (e g)))))
-
-(defthm dlistp-append-elts
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (dlistp (append-elts h))))
-
-(defthm append-elts-closed
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n))
-		(member-equal x (append-elts h))
-		(member-equal y (append-elts h)))
-           (member-equal (op x y g) (append-elts h))))
-
-(defthm append-elts-inv
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n))
-		(member-equal x (append-elts h)))
-           (member-equal (inv x g) (append-elts h)))
-  :hints (("Goal" :use (append-elts-inv-1 member-append-elts sublistp-append-elts
-                        (:instance member-append-elts (x (inv x g)))
-			(:instance inv-quotient-lcoset (h n) (x (lcoset x n g)) (a x))))))
-
-(defthm append-elts-non-nil
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (not (member-equal () (append-elts h))))
-  :hints (("Goal" :in-theory (disable non-nil-elts)
-                  :use (non-nil-elts sublistp-append-elts))))                        
-
-(defsubgroup lift (h n) g
-  (and (normalp n g)
-       (subgroupp h (quotient g n)))
-  (append-elts h))
-
-(DEFTHM SUBGROUPP-LIFT
-  (IMPLIES (AND (GROUPP G)
-                (AND (NORMALP N G)
-                     (SUBGROUPP H (QUOTIENT G N))))
-           (SUBGROUPP (LIFT H N G) G)))
-
-(defthmd lift-subgroup
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (subgroupp n (lift h n g))))
-
-(defthmd lift-order
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (equal (order (lift h n g))
-		  (* (order h) (order n)))))
-
-
-;;------------------------------------------------------------------------------------------------------
-;; Prime Powers and P-groups
-;;------------------------------------------------------------------------------------------------------
-
-;; Recognizer of powers of n, where n > 1:
-
-(defun powerp (n p)
-  (if (and (natp p) (> p 1) (posp n) (divides p n))
-      (powerp (/ n p) p)
-    (equal n 1)))
-
-(defun log (n p)
-  (if (and (natp p) (> p 1) (posp n) (integerp (/ n p)))
-      (1+ (log (/ n p) p))
-    0))
-
-(defthmd powerp-log
-  (implies (and (natp p) (> p 1) (powerp n p))
-           (equal (expt p (log n p)) n)))
-
-(defthm powerp-power
-  (implies (and (natp p) (> p 1) (natp n))
-           (powerp (expt p n) p)))
-
-;; Any divisor of a power of a prime p is a power of p:
-
-(defthmd divides-power
-  (implies (and (primep p) (natp k) (posp m) (divides m (expt p k)))
-           (powerp m p)))
-
-(defthmd powerp-divides
-  (implies (and (primep p) (powerp n p) (posp m) (divides m n))
-           (powerp m p)))
-
-;; Recognizer of p-groups:
-
-(defund p-groupp (g p)
-  (and (primep p)
-       (groupp g)
-       (powerp (order g) p)))
-
-(defthmd p-groupp-ord-powerp
-  (implies (and (p-groupp g p)
-		(in x g))
-	   (powerp (ord x g) p)))
-
-
-;;------------------------------------------------------------------------------------------------------
 ;; P-Sylow Subgroups
 ;;------------------------------------------------------------------------------------------------------
 
 ;; If h is a p-subgroup of g and p divides (subgroup-index p (normalizer h g)), then h is a proper
 ;; subgroup of a p-subgroup of g, which may be constructed by first applying cauchy's theorem
-;; to construct a subgroup of (quotient (normalizer h g) h) or order p and then lifting it to g:
+;; to construct a subgroup of (quotient (normalizer h g) h) of order p and then lifting it to g:
 
 (defund extend-p-subgroup (h g p)
   (lift (cyclic (elt-of-ord p (quotient (normalizer h g) h))
@@ -168,7 +53,7 @@
 
 
 ;;------------------------------------------------------------------------------------------------------
-;; Sylow Theorems
+;; Conjugation of P-Sylow Subgroups
 ;;------------------------------------------------------------------------------------------------------
 
 ;; Consider the action of g on the list of conjugates of a p-sylow subgroup m.  This action has one 
@@ -228,7 +113,9 @@
 	     (divides p (len (orbit c (subaction (conj-sub-act m g) g h) h))))))
 
 
-;;-----------------------------------
+;;------------------------------------------------------------------------------------------------------
+;; Sylow Theorems
+;;------------------------------------------------------------------------------------------------------
 
 ;; We apply the above result to the case h = m.  By conjs-sub-subgroup, m is a subgroup of exactly 
 ;; 1 conjugate of m, which implies there is exactly 1 orbit of length 1 and all others have length
@@ -297,13 +184,24 @@
 		(primep p))
 	   (not (divides p (subgroup-index (sylow-subgroup g p) g)))))
 
+;; As a consequence of Sylow-3, the order of a p-Sylow subgroup of g is the largest power of p
+;; dividing (order g):
+
+(defthmd order-sylow-subgroup
+  (implies (and (groupp g)
+                (primep p))
+	   (let ((m (sylow-subgroup g p)))
+             (and (subgroupp m g)
+	          (equal (order m)
+	                 (expt p (log (order g) p)))))))
+
 
 ;;----------------------------------
 
 ;; The final Sylow theorem states that every p-subgroup of g is a subgroup of some conjugate of m.
 ;; This is derived as another consequence of orbit-subaction-div-p.
 
-;; If some meber of the list l is a group of which h is a subgroup, then the following function
+;; If some member of the list l is a group of which h is a subgroup, then the following function
 ;; returns such a group, and otherwise it returns nil:
 
 (defun find-supergroup (h l)

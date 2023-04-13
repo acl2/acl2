@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
      all the identifiers in Yul code are well-formed.
      This check may go away altogether if we were to
      build these constraints into the definition of identifiers,
-     which may do at some point.
+     which we may do at some point.
      But for now, it is an explicit check.")
    (xdoc::p
     "We only check identifiers at the points in which they are declared.
@@ -45,7 +45,7 @@
   (xdoc::topstring
    (xdoc::p
     "It must consists of only
-     letter (lowercase and uppercase),
+     letters (lowercase and uppercase),
      (decimal) digits,
      underscores, and
      dollars.
