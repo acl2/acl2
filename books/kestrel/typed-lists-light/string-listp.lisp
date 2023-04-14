@@ -14,12 +14,19 @@
 
 (in-theory (disable string-listp))
 
-;; Matches the on in std/
+;; Matches the one in std/
 (defthm string-listp-of-append
   (equal (string-listp (append a b))
          (and (string-listp (true-list-fix a))
               (string-listp b)))
   :hints (("Goal" :in-theory (enable string-listp append))))
+
+;; Tweaked to match the one in std.
+(defthm string-listp-of-revappend
+  (equal (string-listp (revappend x y))
+         (and (string-listp (true-list-fix x))
+              (string-listp y)))
+  :hints (("Goal" :in-theory (enable string-listp revappend))))
 
 (defthm string-listp-of-cons
   (equal (string-listp (cons a x))
