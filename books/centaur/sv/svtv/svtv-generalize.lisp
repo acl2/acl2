@@ -2111,7 +2111,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
 
 
-(defxdoc svex-fixpoint-decomposition-methodology
+(defxdoc svex-decomposition-methodology
   :parents (sv)
   :short "High-level description of decomposition methodology for @(see SVTV)s."
   :long "<p>In hardware verification, it is important to be able to break down
@@ -2234,7 +2234,7 @@ terms of our imaginary @('run-design') function above, for the particular case
 of the partial-products-value of our multiplier design:</p>
 
 @({
- (defthm multiplier-partial-product-overrides-correct
+ (defthm multiplier-partial-product-overrides-transparent
    (let* ((base-run (run-design (multiplier) :inputs input-env))
           (partial-products-value (lookup 'partial-product-signal base-run))
           (override-run (run-design (multiplier)
@@ -2248,11 +2248,10 @@ generalization of the input environment would be sufficient to let us
 generalize @('multiplier-pp-sum-correct-override') to
 @('multiplier-pp-sum-correct-gen').</p>
 
-<p>Generally we also want to allow for multiple override signals in different combinations.
-potentially overridden signals:</p>
+<p>Generally we also want to allow for multiple potentially overriden signals in different combinations:</p>
 
 @({
- (defthm multiplier-partial-product-overrides-correct
+ (defthm multiplier-partial-product-overrides-transparent
    (let* ((base-run (run-design (multiplier) :inputs input-env))
           (override-run (run-design (multiplier)
                                     :inputs input-env
@@ -2265,14 +2264,32 @@ potentially overridden signals:</p>
 that all internal signals of the design that are bound in @('override-env') are
 bound to the same value in @('base-run').</p>
 
-<p>This overrides-correct condition seems intuitively obvious and we would like
+<p>This overrides-transparent condition seems intuitively obvious and we would like
 to prove it for all designs.  However, it is actually a fairly deep property of
 the design object, and as we'll see, depending how we compose the design
 together it may or may not be true.</p>
 
-<p>The problematic cases have to do with designs where there are 0-delay
-combinational loops.  These can occur due to latch-based logic or clock gating
-logic, often enough that it isn't workable to just disallow them.</p>
+<p>We have two underlying methods for ensuring that this property holds.  One
+is a syntactic check, which has the advantage that it proves this property for
+the SVTV we're used to working with; however, this will not work with all
+designs, particularly ones with latch-based logic.  The other, which uses an
+uncomputed idealized version of the SVTV, will work on any design but does the
+proof composition on the idealized version of the SVTV even though the
+lower-level proofs by symbolic simulation are done on the usual SVTV.  This can
+be a disadvantage because we don't then know whether the properties shown by
+composition are true of the SVTV.</p>
+
+<p>The syntactic check method works by checking the expressions that make up
+the finite-state machine derived from the circuit.  Overrides are accomplished
+by replacing references to signals with override muxes, essentially @('(if
+override-condition override-value original-signal-value)').  The syntactic
+check finds all such override muxes and ensures that the original signal value
+in each one matches the final value of the overridden signal.  If this is true,
+then it implies the overrides-correct condition above.  However, this syntactic
+condition can fail to hold in cases where there are combinational loops or
+apparent combinational loops.  Even dependency loops on a vector variable where the
+dependencies between the bits are acyclic can cause this check to fail if any
+overridden signals are involved in such a loop.</p>
 
 <p>The correct way to deal with 0-delay combinational loops is to compute a
 <i>fixpoint</i>.  That is, for a given setting of the circuit inputs and
@@ -2286,10 +2303,10 @@ internal signals.  A more in-depth exploration of this algorithm is written in
 @(see least-fixpoint).</p>
 
 <p>Because of the number of repetitions needed, it isn't always practical to
-actually compute the fixpoint.  Instead we use an approximate composition
-method that is efficient, practially useful, and conservative with respect to
-the fixpoint: that is, if a signal's value in this approximate composition is
-non-X, then its fixpoint value must be the same.</p>
+actually compute the fixpoint.  Instead, in the second method we use an
+approximate composition method that is efficient, practially useful, and
+conservative with respect to the fixpoint: that is, if a signal's value in this
+approximate composition is non-X, then its fixpoint value must be the same.</p>
 
 <p>The approximate composition does not always satisfy the overrides-correct
 condition above.  For example, if we override a signal that is part of a
@@ -2328,13 +2345,39 @@ property of <i>ideal</i> to prove the composition-friendly fact (such as
 </li>
 
 </ul>
+
+<p>Alternatively, to use the syntactic check method instead:</p>
+
+<ul>
+
+<li>Compute a symbolic representation of the desired run of the
+design based on the approximate composition -- in particular, using @(see
+defsvtv$).</li>
+
+<li>Check that the approximate composition satisfies the syntactic check
+described above regarding override muxes. Use this to prove the
+overrides-correct property of the SVTV.  This can be done using
+@('def-svtv-refinement').</li>
+
+<li>To prove composition-friendly facts about the SVTV, first prove a lemma
+with overrides along with the overrides-correct
+property of the SVTV to prove the composition-friendly fact (such as
+@('multiplier-pp-sum-correct-gen')). This is automated by
+@(see def-svtv-generalized-thm).
+</li>
+
+</ul>
+
+
 ")
 
 
 (defxdoc def-svtv-ideal
-  :parents (svex-fixpoint-decomposition-methodology)
-  :short "Define a non-executable, fixpoint-based analogue of a @(see symbolic-test-vector)."
-  :long " <p>To use this, first define an SVTV using @(see defsvtv$)
+  :parents (svex-decomposition-methodology)
+  :short "Define a non-executable, fixpoint-based analogue of a @(see symbolic-test-vector) and prove properties that allow it to be used in decomposition proofs."
+  :long "<p>See also @(see def-svtv-refinement), of which this is a wrapper.</p>
+
+<p>To use this, first define an SVTV using @(see defsvtv$)
 and (immediately after) save the contents of the resulting @(see svtv-data)
 stobj to an object using @(see def-svtv-data-export).  Then invoke
 @('def-svtv-ideal') as follows:</p>
@@ -2360,7 +2403,7 @@ stobj to an object using @(see def-svtv-data-export).  Then invoke
 @('my-mod-ideal'), which returns an @(see svtv-spec) object encapsulating the
 same pipeline run as in @('my-mod-run'), but based on a fixpoint composition of
 the module's assignments rather than the approximate composition that is
-computed for the SVTV.  See @(see svex-fixpoint-decomposition-methodology) for
+computed for the SVTV.  See @(see svex-decomposition-methodology) for
 further explanation.  A few important properties relating @('my-mod-ideal') and
 @('my-mod-run') are proved:</p>
 
@@ -2391,16 +2434,17 @@ this is the same as the @('svtv-spec-run') of @('my-mod-ideal').</p>
 
 
 (defxdoc def-svtv-generalized-thm
-  :parents (svex-fixpoint-decomposition-methodology)
+  :parents (svex-decomposition-methodology)
   :short "Prove a theorem about an idealized SVTV via a symbolic simulation lemma about the SVTV itself."
   :long "
-<p>See @(see svex-fixpoint-decomposition-methodology) for background on the methodology that this supports.</p>
+<p>See @(see svex-decomposition-methodology) for background on the methodology that this supports.</p>
 
 <p>Usage:</p>
 @({
  (def-svtv-generalized-thm theorem-name
    :svtv svtv-name
    :ideal ideal-name
+   :svtv-spec svtv-spec-name
    :input-vars input-variable-list
    :input-var-bindings input-variable-binding-list
    :override-vars override-variable-list
@@ -2429,9 +2473,39 @@ the @(see table) @('svtv-generalized-thm-defaults'), which may be (locally)
 modified by users in order to avoid (for example) the need to repeatedly
 specify the same SVTV and ideal in every form.</p>
 
-<p>Prerequisite: What we are calling the \"ideal\" here must be a @(see
-svtv-spec) object created for the given SVTV, which can be done using @(see
-def-svtv-ideal).</p>
+<p>Prerequisite: See @(see def-svtv-refinement) for the possible ways of
+showing that the override transparency property holds of your design, which is
+required for the use of this utility.</p>
+
+<p>The generalized theorem produced by this utility may be about either a run
+of the given SVTV, of an idealized SVTV-spec as produced by @(see
+def-svtv-ideal), or of an SVTV-spec object equivalent to the SVTV.</p>
+
+<ul>
+
+<li>If the @(':ideal') argument is given, it must be the name of the idealized
+svtv-spec function as defined by @(see def-svtv-ideal).  This allows the use of
+the fixpoint-based methodology disucssed in @(see
+svex-decomposition-methodology), which avoids the syntactic check on the FSM
+that is otherwise needed.  The generalized theorem will be about the
+@(see svtv-spec-run) of this idealized svtv-spec object.  This argument should
+be mutually exclusive with the @(':svtv-spec') argument.</li>
+
+<li>If the @(':svtv-spec') argument is given, it must be the name of the
+svtv-spec function produced by @(see def-svtv-refinement) with the optional
+@(':svtv-spec') argument, and that event will do the syntactic check necessary
+to ensure override transparency.  The generalized theorem will be about the
+@(see svtv-spec-run) of this object. The @(see svtv-spec-run) takes extra
+inputs @('base-ins') and @('initst') that makes this more general than the run
+of the SVTV (which always has Xes for the initial state and any inputs not
+bound in the SVTV stimulus pattern).</li>
+
+<li>If neither the @(':svtv-spec') nor the @(':ideal') argument is given, then
+the generalized theorem will be about the @('svtv-run') of the SVTV itself.
+The @(see def-svtv-refinement) event must have done the syntactic check
+necessary to ensure override transparency.</li>
+
+</ul>
 
 <p>We briefly describe the arguments of the macro and then we'll describe the
 theorem proved in FGL and the generalized corollary this macro generates.</p>
@@ -2439,12 +2513,11 @@ theorem proved in FGL and the generalized corollary this macro generates.</p>
 <h3>Arguments</h3>
 
 <ul>
-<li>@(':svtv') is the name of the SVTV</li>
 
-<li>@(':ideal') must be the name of the \"ideal\" function produced by @(see
-def-svtv-ideal), a 0-ary function that produces a @(see svtv-spec) object
-reflecting the same run as the SVTV, but based on a full fixpoint of the
-hardware module.</li>
+<li>@(':svtv') is the name of the SVTV.  This argument must always be provided
+either explicitly or via the defaults table.</li>
+
+<li>@(':ideal') and @(':svtv-spec') affect the form of the generalized theorem; see above.</li>
 
 <li>@(':input-vars') are the names of any input variables of the SVTV that will
 appear in the hypothesis or conclusion, except those that are bound in
@@ -2492,6 +2565,9 @@ generalized theorm, mainly useful when specifying @(':output-parts').</li>
 lemma and tries to prove the final (generalized) theorem directly, with the
 hints given by the user.</li>
 
+<li>@(':hints') are hints for the final theorem, used by themselves if @(':no-lemmas')
+is set and in addition to the automatically provided hints if not.</li>
+
 <li>@(':lemma-defthm') defaults to @('fgl::def-fgl-thm') but can be set
 to (e.g.) @('defthm') or @('fgl::def-fgl-param-thm') to change how the initial
 lemma is proved.</li>
@@ -2503,13 +2579,15 @@ keyword args for @('fgl::def-fgl-thm') or @('fgl::def-fgl-param-thm').</li>
 <li>@(':lemma-use-ideal') phrases the lemma in terms of a run of the ideal
 svtv-spec, rather than the SVTV.</li>
 
+<li>@(':lemma-use-svtv-spec') phrases the lemma in terms of a run of
+the (non-ideal) svtv-spec, rather than the SVTV.</li>
+
+<li>@(':lemma-nonlocal') makes the lemma not be local.</li>
+
 <li>@(':no-integerp') says to skip proving @('integerp') of each output in the
 initial override theorem.  The @(':enable') option typically must be used to
 provide additional rules for the final theorem to show that the lemma implies
 the outputs are integers.</li>
-
-<li>@(':hints') are hints for the final theorem, used by themselves if @(':no-lemmas')
-is set and in addition to the automatically provided hints if not.</li>
 
 <li>@(':final-defthm') defaults to @('defthm') but can be set to a different
 macro to change how the final generalized theorem is proved</li>
@@ -2521,6 +2599,14 @@ final generalized theorem.</li>
 
 <li>@(':unsigned-byte-hyps') says to automatically add @('unsigned-byte-p')
 hypotheses for each input and override variable.</li>
+
+<li>@(':run-before-concl') gives a term that is placed in the override lemma
+within @('(progn$ run-before-concl concl)'), perhaps to do some extra printing
+in case of a counterexample.</li>
+
+<li>@(':pkg-sym') defaults to the theorem name, and picks the package that
+various symbols are generated in.</li>
+
 </ul>
 
 <h3>Initial override lemma</h3>
@@ -2607,7 +2693,9 @@ that the only override test variables that are set in the env are those
 corresponding to the value variables listed in @(':spec-override-vars') and
 @(':spec-override-var-bindings'): this is the
 @('svtv-override-triplemaplist-envs-match') hypothesis in the theorem below.
-Finally, the svtv-spec-run allows an additional setting of input and initial
+Finally, when the @(':ideal') or @(':svtv-spec') options are used, the generalized
+theorem refers to @('svtv-spec-run') instead of @('svtv-run') which allows an
+additional setting of input and initial
 state variables not set by the SVTV itself; these are given respectively by
 @('base-ins') and @('initst') in the theorem.  Base-ins, however, must be
 assumed not to set any additional override test variables.</p>
@@ -2646,3 +2734,8 @@ from:</p>
              (equal product (sum-partial-products partial-products)))))
  })
 ")
+
+(defxdoc def-svtv-refinement
+  :parents (svex-decomposition-methodology)
+  :short "For a given SVTV, prove the theorems necessary to use that SVTV in (de)composition proofs using @(see def-svtv-generalized-thm), as in the @(see svex-decomposition-methodology)."
+  :long "<p>Placeholder</p>")

@@ -531,8 +531,8 @@ that the output computed is a function of those variables.  However, ultimately
 we want to know what happens in the SVTV when these signals are not
 overridden. To do this, we'll use the facts that we prove via symbolic
 simulation on the SVTV to prove similar facts about another object, the
-<i>ideal</i> svtv-spec.  The topic @(see
-svex-fixpoint-decomposition-methodology) has more details of what this object
+<i>ideal</i> svtv-spec.  The topic @(see svex-decomposition-methodology)
+has more details of what this object
 is; generally speaking, we won't compute the ideal but we'll prove things about
 it and we can sometimes execute a simulation of it (via a @(see mbe) trick).
 First we define the ideal as a 0-ary function (though it will produce an error
