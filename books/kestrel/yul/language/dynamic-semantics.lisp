@@ -210,7 +210,7 @@
      (we may formalize and prove this invariant at some point):
      thus, the search order would not matter
      if we only needed the function information;
-     however, as explained below, we also returned a function environment,
+     however, as explained below, we also return a function environment,
      and therefore the innermost-to-outermost search order is important.")
    (xdoc::p
     "If we find @('fun'), we return not only its information,
