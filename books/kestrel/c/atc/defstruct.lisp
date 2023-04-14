@@ -2276,7 +2276,8 @@
                             booleanp
                             :hints
                             (("Goal"
-                              :in-theory ',member-integer-index-okp-returns-theory)))
+                              :in-theory
+                              ',member-integer-index-okp-returns-theory)))
                   (integer-range-p 0 ,size? (ifix index))
                   :guard-hints (("Goal" :in-theory '((:t integer-range-p))))
                   :hooks (:fix))
@@ -2427,8 +2428,10 @@
             more-reader-return-thms
             more-writer-return-thms)
         (defstruct-gen-array-member-ops-aux *nonchar-integer-types*
-          struct-tag struct-tag-p name fixtypep
-          member-integer-index-okp read-member-integer write-member-integer size?))
+          struct-tag struct-tag-p struct-tag-fix name fixtype
+          member-integer-index-okp read-member-integer write-member-integer
+          member-index-okp read-member-element write-member-element
+          read-member write-member member-length size?))
        (event `(encapsulate () ,@events ,@more-events)))
     (mv event
         (and (not size?) member-length)
@@ -2442,11 +2445,18 @@
   ((define defstruct-gen-array-member-ops-aux ((index-types type-listp)
                                                (struct-tag symbolp)
                                                (struct-tag-p symbolp)
+                                               (struct-tag-fix symbolp)
                                                (name identp)
-                                               (fixtypep symbolp)
+                                               (elem-fixtype symbolp)
                                                (member-integer-index-okp symbolp)
                                                (read-member-integer symbolp)
                                                (write-member-integer symbolp)
+                                               (member-index-okp symbolp)
+                                               (read-member-element symbolp)
+                                               (write-member-element symbolp)
+                                               (read-member symbolp)
+                                               (write-member symbolp)
+                                               (member-length symbolp)
                                                (size? pos-optionp))
      :guard (type-nonchar-integer-listp index-types)
      :returns (mv (more-events pseudo-event-form-listp)
@@ -2457,6 +2467,7 @@
                   (more-writer-return-thms symbol-listp))
      :parents nil
      (b* (((when (endp index-types)) (mv nil nil nil nil nil nil))
+          (elem-fixtypep (pack elem-fixtype 'p))
           (index-type (car index-types))
           (index-fixtype (integer-type-to-fixtype index-type))
           (index-typep (pack index-fixtype 'p))
@@ -2480,7 +2491,7 @@
                                              '-
                                              index-fixtype)
                                        struct-tag))
-          (reader-return-thm (packn-pos (list fixtypep
+          (reader-return-thm (packn-pos (list elem-fixtypep
                                               '-of-
                                               reader-for-index)
                                         reader-for-index))
@@ -2493,23 +2504,67 @@
                   `(define ,index-okp-for-index ((index ,index-typep))
                      :returns (yes/no booleanp)
                      (,member-integer-index-okp (,index-getter index))
-                     :hooks (:fix))
+                     :hooks (:fix)
+                     ///
+                     (defruled ,(packn-pos (list index-okp-for-index '-alt-def)
+                                           index-okp-for-index)
+                       (implies (,index-typep index)
+                                (equal (,index-okp-for-index index)
+                                       (,member-index-okp index)))
+                       :hints
+                       (("Goal"
+                         :in-theory '(,index-okp-for-index
+                                      ,member-integer-index-okp
+                                      ,member-index-okp
+                                      integer-from-cinteger-alt-def
+                                      ifix
+                                      (:t ,index-getter)
+                                      ,@*integer-value-disjoint-rules*)))))
                 `(define ,index-okp-for-index ((index ,index-typep)
                                                (struct ,struct-tag-p))
                    :returns (yes/no booleanp)
                    (,member-integer-index-okp (,index-getter index) struct)
-                   :hooks (:fix)))
+                   :hooks (:fix)
+                   ///
+                   (defruled ,(packn-pos (list index-okp-for-index '-alt-def)
+                                         index-okp-for-index)
+                     (implies (,index-typep index)
+                              (equal (,index-okp-for-index index struct)
+                                     (,member-index-okp index struct)))
+                     :hints
+                     (("Goal"
+                       :in-theory '(,index-okp-for-index
+                                    ,member-integer-index-okp
+                                    ,member-index-okp
+                                    integer-from-cinteger-alt-def
+                                    ifix
+                                    (:t ,index-getter)
+                                    ,@*integer-value-disjoint-rules*))))))
              (define ,reader-for-index ((index ,index-typep)
                                         (struct ,struct-tag-p))
                :guard ,(if size?
                            `(,index-okp-for-index index)
                          `(,index-okp-for-index index struct))
-               :returns (val ,fixtypep)
+               :returns (val ,elem-fixtypep)
                (,read-member-integer (,index-getter index) struct)
                :guard-hints (("Goal" :in-theory (enable ,index-okp-for-index)))
-               :hooks (:fix))
+               :hooks (:fix)
+               ///
+               (defruled ,(packn-pos (list reader-for-index '-alt-def)
+                                     reader-for-index)
+                 (implies (,index-typep index)
+                          (equal (,reader-for-index index struct)
+                                 (,read-member-element index struct)))
+                 :in-theory '(,reader-for-index
+                              ,read-member-integer
+                              ,read-member-element
+                              ,read-member
+                              ,(pack elem-fixtype '-array-read)
+                              ,(pack elem-fixtype '-array-integer-read)
+                              integer-from-cinteger-alt-def
+                              ,@*integer-value-disjoint-rules*)))
              (define ,writer-for-index ((index ,index-typep)
-                                        (val ,fixtypep)
+                                        (val ,elem-fixtypep)
                                         (struct ,struct-tag-p))
                :guard ,(if size?
                            `(,index-okp-for-index index)
@@ -2517,7 +2572,41 @@
                :returns (new-struct ,struct-tag-p)
                (,write-member-integer (,index-getter index) val struct)
                :guard-hints (("Goal" :in-theory (enable ,index-okp-for-index)))
-               :hooks (:fix))))
+               :hooks (:fix)
+               ///
+               (defruled ,(packn-pos (list writer-for-index '-alt-def)
+                                     writer-for-index)
+                 (implies (and (,struct-tag-p struct)
+                               (,index-typep index))
+                          (equal (,writer-for-index index val struct)
+                                 (,write-member-element index val struct)))
+                 :in-theory '(,writer-for-index
+                              ,write-member-integer
+                              ,write-member-element
+                              ,write-member
+                              ,read-member
+                              ,(pack elem-fixtype
+                                     '-array-fix-when-
+                                     elem-fixtype
+                                     '-arrayp)
+                              ,(pack elem-fixtype
+                                     '-array-write-to-integer-write)
+                              ,(pack elem-fixtype
+                                     '-arrayp-of-
+                                     elem-fixtype
+                                     '-array-integer-write)
+                              integer-from-cinteger-alt-def
+                              ,(pack elem-fixtype
+                                     '-array-length-of-
+                                     elem-fixtype
+                                     '-array-integer-write)
+                              value-struct-read
+                              ,struct-tag-p
+                              ,struct-tag-fix
+                              (:e ident)
+                              ,@*integer-value-disjoint-rules*
+                              ,@(and (not size?)
+                                     (list member-length)))))))
           ((mv more-events
                more-readers
                more-writers
@@ -2528,11 +2617,18 @@
              (cdr index-types)
              struct-tag
              struct-tag-p
+             struct-tag-fix
              name
-             fixtypep
+             elem-fixtype
              member-integer-index-okp
              read-member-integer
              write-member-integer
+             member-index-okp
+             read-member-element
+             write-member-element
+             read-member
+             write-member
+             member-length
              size?)))
        (mv (append events more-events)
            (cons reader-for-index more-readers)
