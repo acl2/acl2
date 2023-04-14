@@ -71,7 +71,6 @@
 
 
 
-
 (std::def-primitive-aggregate svtv-generalized-thm
   (name
    spec-override-vars
@@ -544,8 +543,8 @@
 
        (input-vars (if (equal input-vars :all)
                        (b* ((all-ins (svtv->ins svtv-val))
-                            (ovr-controls (svex-alist-vars (svtv-override-triplemaplist->tests triplemaplist-val)))
-                            (ovr-signals (svex-alist-vars (svtv-override-triplemaplist->vals triplemaplist-val)))
+                            (ovr-controls (svexlist-collect-vars (svtv-override-triplemaplist->tests triplemaplist-val)))
+                            (ovr-signals (svexlist-collect-vars (svtv-override-triplemaplist->vals triplemaplist-val)))
                             (all-ins (acl2::hons-set-diff all-ins (append ovr-controls ovr-signals
                                                                           (alist-keys input-var-bindings)))))
                          all-ins)
@@ -607,4 +606,5 @@
 (defmacro def-svtv-generalized-thm (name &rest args)
   `(make-event (svtv-generalized-thm-fn ',name ',args state)))
 
-
+(defmacro def-svtv-idealized-thm (name &rest args)
+  `(def-svtv-generalized-thm ,name . ,args))

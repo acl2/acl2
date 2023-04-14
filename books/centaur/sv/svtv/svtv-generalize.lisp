@@ -280,6 +280,7 @@
   (local (in-theory (enable svtv-override-triplemaplist-fix))))
 
 
+                                      
 
 (defconst *svtv-generalize-template*
   '(defsection <name>-refinement
@@ -328,7 +329,9 @@
                                            SVTV-OVERRIDE-TRIPLEMAPLIST-P-OF-<NAME>-TRIPLEMAPLIST
                                            SVTV-NAME-LHS-MAP-P-OF-SVTV-DATA-OBJ->NAMEMAP)))
         (svtv-override-triplemaplist-overridekeys (<name>-triplemaplist)
-                                                  (svtv-data-obj->namemap (<data>)))))
+                                                  (svtv-data-obj->namemap (<data>)))
+        ///
+        (in-theory (disable (<name>-overridekeys)))))
       
      (define <name>-input-vars ()
        :prepwork ((local (in-theory nil))
@@ -915,7 +918,7 @@
                                     svtv-spec->initst-alist-of-svtv-data-obj->spec
                                     svtv-spec->in-alists-of-svtv-data-obj->spec
                                     OVERRIDE-TRANSPARENCY-OF-SVTV-DATA-OBJ->SPEC/IDEAL-SPEC-ABSTRACTION
-                                    MOD-RUN-DATA-OVERRIDE-SYNTAX-CHECK
+                                    <DATA>-OVERRIDE-SYNTAX-CHECK
                                     ;; (:TYPE-PRESCRIPTION SVTV-OVERRIDE-TRIPLEMAPLIST-OK)
                                     )
                 :do-not-induct t))
@@ -1889,6 +1892,11 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     (:rewrite svex-env-lookup-of-svex-env-reduce)
     (:executable-counterpart member-equal)
     (:executable-counterpart svarlist-fix$inline)
+    4vec-override-mux-ok-of-4vec-fix-ref-val
+    4vec-override-mux-ok-of-4vec-fix-spec-val
+    4vec-override-mux-ok-of-4vec-fix-spec-test
+    4vec-override-mux-ok-of-4vec-fix-impl-val
+    4vec-override-mux-ok-of-4vec-fix-impl-test
     ))
 
 
@@ -2030,6 +2038,76 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
   (in-theory (enable svtv-override-triplemaplist-envs-match-checks-when-variable-free)))
 
+
+
+(define svtv-override-triple-test/val-vars  ((x svtv-override-triple-p))
+  :returns (vars svarlist-p)
+  (b* (((svtv-override-triple x)))
+    (append (svex-vars x.test) (svex-vars x.val)))
+  ///
+  (defret svtv-override-triple-envs-match-remove-irrelevant-pair
+    (implies (and (not (member-equal var vars))
+                  (svar-p var)) ;; bozo shouldn't be necessary
+             (equal (svtv-override-triple-envs-match x (cons (cons var val) env) spec)
+                    (svtv-override-triple-envs-match x env spec)))
+    :hints(("Goal" :in-theory (enable svtv-override-triple-envs-match))))
+
+  (defret true-listp-of-<fn>
+    (true-listp vars)
+    :rule-classes :type-prescription))
+
+(define svtv-override-triplemap-test/val-vars  ((x svtv-override-triplemap-p))
+  :returns (vars svarlist-p)
+  (if (Atom x)
+      nil
+    (append (and (mbt (and (consp (car x))
+                           (svar-p (caar x))))
+                 (svtv-override-triple-test/val-vars (cdar x)))
+            (svtv-override-triplemap-test/val-vars (cdr x))))
+  ///
+  (defret svtv-override-triplemap-envs-match-remove-irrelevant-pair
+    (implies (and (not (member-equal var vars))
+                  (svar-p var)) ;; bozo shouldn't be necessary
+             (equal (svtv-override-triplemap-envs-match x (cons (cons var val) env) spec)
+                    (svtv-override-triplemap-envs-match x env spec)))
+    :hints(("Goal" :in-theory (enable svtv-override-triplemap-envs-match))))
+
+  (local (in-theory (enable svtv-override-triplemap-fix))))
+
+(define svtv-override-triplemaplist-test/val-vars  ((x svtv-override-triplemaplist-p))
+  :returns (vars svarlist-p)
+  (if (Atom x)
+      nil
+    (append (svtv-override-triplemap-test/val-vars (car x))
+            (svtv-override-triplemaplist-test/val-vars (cdr x))))
+  ///
+  (defretd svtv-override-triplemaplist-envs-match-remove-irrelevant-pair
+    (implies (and (not (member-equal var vars))
+                  (svar-p var)) ;; bozo shouldn't be necessary
+             (equal (svtv-override-triplemaplist-envs-match x (cons (cons var val) env) spec)
+                    (svtv-override-triplemaplist-envs-match x env spec)))
+    :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-envs-match)))))
+
+(define svtv-override-triplemaplist-test/val-var-set  ((x svtv-override-triplemaplist-p))
+  :returns (vars svar-key-alist-p)
+  :prepwork ((local (defthm svar-key-alist-p-of-pairlis$-nil
+                      (implies (svarlist-p x)
+                               (svar-key-alist-p (pairlis$ x nil)))
+                      :hints(("Goal" :in-theory (enable pairlis$))))))
+  (make-fast-alist (pairlis$ (svtv-override-triplemaplist-test/val-vars x) nil))
+  ///
+  (memoize 'svtv-override-triplemaplist-test/val-var-set)
+  (defret svtv-override-triplemaplist-envs-match-remove-irrelevant-pair-top
+    (implies (and (not (hons-get var vars))
+                  (svar-p var)) ;; bozo shouldn't be necessary
+             (equal (svtv-override-triplemaplist-envs-match x (cons (cons var val) env) spec)
+                    (svtv-override-triplemaplist-envs-match x env spec)))
+    :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-envs-match-remove-irrelevant-pair))))
+
+  (cmr::def-force-execute svtv-override-triplemaplist-test/val-var-set-when-variable-free
+    svtv-override-triplemaplist-test/val-var-set)
+
+  (in-theory (enable svtv-override-triplemaplist-test/val-var-set-when-variable-free)))
 
 
 
