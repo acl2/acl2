@@ -11314,6 +11314,18 @@
     (er soft 'brr
         "Brr is not supported in ACL2(p) with waterfall parallelism on.  See ~
          :DOC unsupported-waterfall-parallelism-features."))
+   ((eq (f-get-global 'gstackp state) :brr-data)
+    (cond (flg
+
+; This case allows gstackp to keep the value of :brr-data rather than
+; overwriting it with t.
+
+           (prog2$ (cw "No change: Break-rewrite is already enabled for ~
+                        brr-data.  See :DOC with-brr-data~|")
+                   (value nil)))
+          (t (er soft 'brr
+                 "It is illegal to exit break-rewrite using :brr when ~
+                  brr-data is being tracked.  See :DOC with-brr-data."))))
    (flg
     (pprogn
      (f-put-global 'gstackp t state)

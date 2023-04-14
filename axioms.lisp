@@ -24271,7 +24271,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun set-inhibit-output-lst-state (lst state)
   (declare (xargs :guard t))
   (let ((msg (chk-inhibit-output-lst-msg lst)))
-    (cond (msg (prog2$ (er hard 'set-inhibit-output-lst "~@0" msg)
+    (cond (msg (prog2$ (er hard? 'set-inhibit-output-lst "~@0" msg)
                        state))
           (t (f-put-global 'inhibit-output-lst
                            (if (member-eq 'warning! lst)
