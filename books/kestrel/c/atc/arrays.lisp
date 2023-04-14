@@ -215,7 +215,9 @@
         (pack <type> '-array-length-of- <type>-array-integer-write))
        (<type>-array-length-of-<type>-array-write
         (pack <type> '-array-length-of- <type>-array-write))
-       (type-of-value-when-<type>p (pack 'type-of-value-when- <type>p)))
+       (type-of-value-when-<type>p (pack 'type-of-value-when- <type>p))
+       (<type>-array-write-to-integer-write
+        (pack <type>-array-write '-to-integer-write)))
 
     `(progn
 
@@ -535,6 +537,16 @@
                     ,<type>-array-of
                     integer-range-p
                     max))
+
+         (defruled ,<type>-array-write-to-integer-write
+           (equal (,<type>-array-write array index val)
+                  (,<type>-array-integer-write array
+                                               (integer-from-cinteger index)
+                                               val))
+           :enable (,<type>-array-integer-write
+                    ,<type>-array-index-okp
+                    ,<type>-array-integer-index-okp
+                    ifix))
 
          (defruled ,<type>-array-write-alt-def
            (implies (and (,<type>-arrayp array)
