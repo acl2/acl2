@@ -200,8 +200,14 @@
    (xdoc::p
     "The theorem says that
      the satisfaction of the definition (expressed via @(tsee definition-satp)
-     is equivalent to the satisfaction of the shallowly embedded definition."))
+     is equivalent to the satisfaction of the shallowly embedded definition.")
+   (xdoc::p
+    "For now this only works for relations without free variables.
+     We plan to extend it to all relations."))
   (b* (((definition def) def)
+       ((when (definition-free-vars def))
+        (raise "Only definitions without free variables are supported.")
+        '(_))
        (thm-name (acl2::packn-pos (list 'definition-satp-of-
                                         def.name
                                         '-to-shallow)
