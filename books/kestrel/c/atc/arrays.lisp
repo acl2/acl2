@@ -215,7 +215,11 @@
         (pack <type> '-array-length-of- <type>-array-integer-write))
        (<type>-array-length-of-<type>-array-write
         (pack <type> '-array-length-of- <type>-array-write))
-       (type-of-value-when-<type>p (pack 'type-of-value-when- <type>p)))
+       (type-of-value-when-<type>p (pack 'type-of-value-when- <type>p))
+       (<type>-array-write-to-integer-write
+        (pack <type>-array-write '-to-integer-write))
+       (value-listp-when-<type>-listp (pack 'value-listp-when- <type>-listp))
+       (valuep-when-<type>p (pack 'valuep-when- <type>p)))
 
     `(progn
 
@@ -264,7 +268,8 @@
                     value-array->elements
                     ,<type>-arrayp
                     valuep
-                    value-kind)))
+                    value-kind
+                    ,value-listp-when-<type>-listp)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -491,7 +496,8 @@
                     flexible-array-member-p
                     nfix
                     ifix
-                    integer-range-p)))
+                    integer-range-p
+                    ,valuep-when-<type>p)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -536,6 +542,16 @@
                     integer-range-p
                     max))
 
+         (defruled ,<type>-array-write-to-integer-write
+           (equal (,<type>-array-write array index val)
+                  (,<type>-array-integer-write array
+                                               (integer-from-cinteger index)
+                                               val))
+           :enable (,<type>-array-integer-write
+                    ,<type>-array-index-okp
+                    ,<type>-array-integer-index-okp
+                    ifix))
+
          (defruled ,<type>-array-write-alt-def
            (implies (and (,<type>-arrayp array)
                          (cintegerp index)
@@ -556,7 +572,9 @@
                     ,type-of-value-when-<type>p
                     remove-flexible-array-member
                     flexible-array-member-p
-                    integer-range-p)))
+                    integer-range-p
+                    ,value-listp-when-<type>-listp
+                    ,valuep-when-<type>p)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

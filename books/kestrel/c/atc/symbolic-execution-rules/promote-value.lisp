@@ -63,32 +63,38 @@
   (defruled promote-value-when-sintp
     (implies (sintp x)
              (equal (promote-value x)
-                    x)))
+                    x))
+    :enable valuep-when-sintp)
 
   (defruled promote-value-when-uintp
     (implies (uintp x)
              (equal (promote-value x)
-                    x)))
+                    x))
+    :enable valuep-when-uintp)
 
   (defruled promote-value-when-slongp
     (implies (slongp x)
              (equal (promote-value x)
-                    x)))
+                    x))
+    :enable valuep-when-slongp)
 
   (defruled promote-value-when-ulongp
     (implies (ulongp x)
              (equal (promote-value x)
-                    x)))
+                    x))
+    :enable valuep-when-ulongp)
 
   (defruled promote-value-when-sllongp
     (implies (sllongp x)
              (equal (promote-value x)
-                    x)))
+                    x))
+    :enable valuep-when-sllongp)
 
   (defruled promote-value-when-ullongp
     (implies (ullongp x)
              (equal (promote-value x)
-                    x)))
+                    x))
+    :enable valuep-when-ullongp)
 
   (defval *atc-promote-value-rules*
     '(promote-value-when-scharp

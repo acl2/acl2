@@ -224,11 +224,16 @@
      (xdoc::codeblock
       "(define struct-<tag>-write-<member> ((value <typei>p)"
       "                                     (struct struct-<tag>-p))"
+      "  ;; :guard present if <typei>p is <type>-arrayp:"
+      "  :guard (equal (<type>-array-length value) ...)"
       "  :returns (new-struct struct-<tag>-p)"
       "  ...)")
      (xdoc::p
       "where @('<typei>p') is the recognizer of the type corresponding to
-       the @('typei') that specifies the type of the member."))
+       the @('typei') that specifies the type of the member.
+       If the member has array type,
+       the @(':guard') constrains the length of @('value')
+       to be the one of the member."))
 
     (xdoc::desc
      "@('struct-<tag>-<member>-length')"
@@ -246,13 +251,51 @@
       "  ...)"))
 
     (xdoc::desc
+     "@('struct-<tag>-<member>-index-okp')"
+     (xdoc::p
+      "Index checker for an array member of the structure type.")
+     (xdoc::p
+      "There is one such checker for every member
+       whose name is @('<member>')
+       and whose type is an array type.")
+     (xdoc::p
+      "If the array type of the member has a specified size,
+       the checker has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-<member>-index-okp ((index cintegerp))"
+      "  :returns (yes/no booleanp)"
+      "  ...)")
+     (xdoc::p
+      "If the array type of the member does not have a specified size
+       (which may be only the case for the last member,
+       if it is a flexible array member),
+       the checker has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-<member>-index-okp ((index cintegerp)"
+      "                                         (struct struct-<tag>-p))"
+      "  :returns (yes/no booleanp)"
+      "  ...)")
+     (xdoc::p
+      "In either form,
+       this function checks if the C integer index is
+       within the range of the array.
+       If the length of the array is known
+       (specified by the @('<size?>')
+       in the @('<typei>') that specifies the type of the member),
+       the checker only needs the index.
+       For the flexible array member (if present),
+       we also need the structure as an additional argument,
+       from which the flexible array member size is obtained
+       and used to check the index against it."))
+
+    (xdoc::desc
      "@('struct-<tag>-<member>-integer-index-okp')"
      (xdoc::p
       "ACL2 integer index checker for an array member of the structure type.")
      (xdoc::p
       "There is one such checker for every member
        whose name is @('<member>')
-       ans whose type is an array type.")
+       and whose type is an array type.")
      (xdoc::p
       "If the array type of the member has a specified size,
        the checker has the form")
@@ -325,7 +368,35 @@
        and used to check the index against it.")
      (xdoc::p
       "This checker converts the C integer index to an ACL2 integer index
-       and calls the checker @('struct-<tag>-<member>-integer-index-okp') above."))
+       and calls the checker @('struct-<tag>-<member>-integer-index-okp')
+       above."))
+
+    (xdoc::desc
+     "@('struct-<tag>-read-<member>-element')"
+     (xdoc::p
+      "Reader for an element of an array member of the structure type,
+       using a C integer as index.")
+     (xdoc::p
+      "There is one such reader for every member
+       whose name is @('<member>')
+       and whose type is an array type.")
+     (xdoc::p
+      "The reader has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-read-<member>-element ((index cintegerp)"
+      "                                            (struct struct-<tag>-p))"
+      "  :guard (struct-<tag>-<member>-index-okp index ...)"
+      "  :returns (value <elemtype>p)"
+      "  ...)")
+     (xdoc::p
+      "where @('<elemtype>p') is the recognizer of
+       the integer element type of
+       the @('typei') that specifies the type of the member,
+       and where the @('...') in the @(':guard') is
+       either @('struct') if the member is a flexible array member
+       or nothing otherwise.
+       The reader reads an element of the array member,
+       not the whole array member."))
 
     (xdoc::desc
      "@('struct-<tag>-read-<member>-integer')"
@@ -387,6 +458,34 @@
      (xdoc::p
       "This reader converts the C integer index to an ACL2 integer index
        and calls the reader @('struct-<tag>-read-<member>-integer') above."))
+
+    (xdoc::desc
+     "@('struct-<tag>-write-<member>-element')"
+     (xdoc::p
+      "Writer for an array member of the structure type,
+       using a C integer as index.")
+     (xdoc::p
+      "There is one such writer for every member
+       whose name is @('<member>')
+       and whose type is an array type.")
+     (xdoc::p
+      "The writer has the form")
+     (xdoc::codeblock
+      "(define struct-<tag>-write-<member>-element ((index cintegerp)"
+      "                                             (value <elemtype>p)"
+      "                                             (struct struct-<tag>-p))"
+      "  :guard (struct-<tag>-<member>-index-okp index ...)"
+      "  :returns (new-struct struct-<tag>-p)"
+      "  ...)")
+     (xdoc::p
+      "where @('<elemtype>p') is the recognizer of
+       the integer element type of
+       the @('typei') that specifies the type of the member,
+       and where the @('...') in the @(':guard') is
+       either @('struct') if the member is a flexible array member
+       or nothing otherwise.
+       The writer writes an element of the array member,
+       not the whole array member."))
 
     (xdoc::desc
      "@('struct-<tag>-write-<member>-integer')"
