@@ -187,7 +187,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sesem-definition-thm ((def definitionp) (prime symbolp))
-  :returns (even pseudo-event-formp)
+  :returns (event pseudo-event-formp)
   :short "Generate theorem connecting deeply and shallowly embedded semantics,
           for PFCS definitions without free variables."
   :long
