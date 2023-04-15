@@ -127,7 +127,12 @@
   (defrule valuep-when-sllongp
     (implies (sllongp x)
              (valuep x))
-    :enable (valuep sllongp)))
+    :enable (valuep sllongp))
+
+  (defruled valuep-when-cintegerp
+    (implies (cintegerp x)
+             (valuep x))
+    :enable cintegerp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
