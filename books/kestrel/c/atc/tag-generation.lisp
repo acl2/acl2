@@ -88,16 +88,11 @@
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
        (length (defstruct-member-info->length meminfo))
+       (reader (defstruct-member-info->reader meminfo))
        (readers (defstruct-member-info->readers meminfo))
        (checkers (defstruct-member-info->checkers meminfo))
        ((when (type-nonchar-integerp type))
-        (b* (((unless (and (consp readers)
-                           (endp (cdr readers))))
-              (prog2$
-               (raise "Internal error: not one reader ~x0." readers)
-               (mv nil nil nil)))
-             (reader (car readers))
-             (thm-member-name (pack 'exec-member-read-when-
+        (b* ((thm-member-name (pack 'exec-member-read-when-
                                     recognizer
                                     '-and-
                                     (ident->name memname)))

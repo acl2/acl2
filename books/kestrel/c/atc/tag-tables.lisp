@@ -104,6 +104,12 @@
   ((prec-tags atc-string-taginfo-alistp))
   :returns (readers symbol-listp)
   :short "Project the readers out of a tag information alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are only the readers that represent C code.
+     For an integer member, it is the reader in the @('reader') component.
+     For an array member, it is the readers in the @('readers') component."))
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (readers (atc-string-taginfo-alist-to-readers-aux
@@ -116,7 +122,12 @@
      :returns (readers symbol-listp)
      :parents nil
      (b* (((when (endp members)) nil)
-          (readers (defstruct-member-info->readers (car members)))
+          (member (car members))
+          (readers (if (type-integerp
+                        (member-type->type
+                         (defstruct-member-info->memtype member)))
+                       (list (defstruct-member-info->reader member))
+                     (defstruct-member-info->readers member)))
           (more-readers (atc-string-taginfo-alist-to-readers-aux
                          (cdr members))))
        (append readers more-readers)))))
@@ -152,6 +163,12 @@
   :short "Project the return type theorems
           for structure readers
           out of a tag information alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are only the readers that represent C code.
+     For an integer member, it is the reader in the @('reader') component.
+     For an array member, it is the readers in the @('readers') component."))
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (thms (atc-string-taginfo-alist-to-reader-return-thms-aux
@@ -165,7 +182,12 @@
      :returns (reader-return-thms symbol-listp)
      :parents nil
      (b* (((when (endp members)) nil)
-          (thms (defstruct-member-info->reader-return-thms (car members)))
+          (member (car members))
+          (thms (if (type-integerp
+                     (member-type->type
+                      (defstruct-member-info->memtype member)))
+                    (list (defstruct-member-info->reader-return-thm member))
+                  (defstruct-member-info->reader-return-thms member)))
           (more-thms
            (atc-string-taginfo-alist-to-reader-return-thms-aux (cdr members))))
        (append thms more-thms)))))
