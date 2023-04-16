@@ -167,7 +167,7 @@
        (body `(and ,@(sesem-constraint-list def.body prime))))
     (if free
         `(defund-sk ,def.name (,@def.para ,prime)
-           (exists (,@free) ,body))
+           (exists (,@free) (and (fe-listp (list ,@free) ,prime) ,body)))
       `(defund ,def.name (,@def.para ,prime)
          ,body))))
 
