@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/gen-xdoc-for-file" :dir :system)
+(include-book "output-theory-doc")
 
 (defxdoc file-io-light
   :short "A lightweight library for file input and output."

@@ -77,4 +77,8 @@
 (include-book "file-length-dollar")
 (include-book "file-is-newer-thanp")
 
+;; Books grouped together for a specific purpose:
+(include-book "output-theory")
+(include-book "output-theory-test")
+
 (include-book "doc")
