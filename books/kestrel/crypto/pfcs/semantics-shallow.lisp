@@ -132,6 +132,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sesem-gen-fep-terms ((vars symbol-listp) (prime symbolp))
+  :returns (terms pseudo-term-listp :hyp :guard)
+  :short "Generate a list of terms @('(fep x1 p)'), ..., @('(fep xn p)')
+          from a list of variables @('x1'), ..., @('xn')."
+  (cond ((endp vars) nil)
+        (t (cons `(fep ,(car vars) ,prime)
+                 (sesem-gen-fep-terms (cdr vars) prime))))
+  :prepwork ((local (in-theory (enable pseudo-termp pseudo-term-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sesem-definition ((def definitionp) (prime symbolp))
   :returns (event pseudo-event-formp)
   :short "Shallowly embedded semantics of a definition."
@@ -215,7 +226,7 @@
     `(defruled ,thm-name
        (implies (and (equal (lookup-definition ',def.name defs)
                             ',def)
-                     ,@(sesem-definition-thm-aux def.para prime))
+                     ,@(sesem-gen-fep-terms def.para prime))
                 (equal (definition-satp
                          ',def.name defs (list ,@def.para) ,prime)
                        (,def.name ,@def.para ,prime)))
@@ -267,10 +278,4 @@
                     acl2::nat-listp-of-cons
                     acl2::not-reserrp-when-nat-listp
                     nfix
-                    (:t mod))))
-  :prepwork
-  ((define sesem-definition-thm-aux ((paras symbol-listp) (prime symbolp))
-     :returns (terms true-listp)
-     (cond ((endp paras) nil)
-           (t (cons `(fep ,(car paras) ,prime)
-                    (sesem-definition-thm-aux (cdr paras) prime)))))))
+                    (:t mod)))))
