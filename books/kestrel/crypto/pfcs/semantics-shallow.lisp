@@ -26,6 +26,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruledl symbol-listp-when-symbol-setp
+  (implies (symbol-setp x)
+           (symbol-listp x))
+  :induct t
+  :enable symbol-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ semantics-shallowly-embedded
   :parents (semantics)
   :short "Shallowly embedded semantics of PFCSes."
@@ -178,7 +186,7 @@
        (body `(and ,@(sesem-constraint-list def.body prime))))
     (if free
         `(defund-sk ,def.name (,@def.para ,prime)
-           (exists (,@free) (and (fe-listp (list ,@free) ,prime) ,body)))
+           (exists (,@free) (and ,@(sesem-gen-fep-terms free prime) ,body)))
       `(defund ,def.name (,@def.para ,prime)
          ,body))))
 
