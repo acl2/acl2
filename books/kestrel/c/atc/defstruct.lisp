@@ -69,17 +69,20 @@
       See @(tsee member-type).")
     (xdoc::li
      "The name of the read of the member.
-      For an array member this is the reader for the whole array.")
+      For an array member, this is the reader for the whole array.")
     (xdoc::li
      "The names of the readers of the elements of an array member,
       one per C type of the index (ten readers),
       plus one (at the start of the list) that takes an ACL2 integer index.
       For an integer member, this is @('nil').")
     (xdoc::li
-     "The names of the writers of the member.
-      For an integer member, it is a singleton list of the one writer.
-      For an array member, it is a list of ten writers,
-      one for each supported integer type for the index.")
+     "The name of the writer of the member.
+      For an array member, this is the writer for the whole array.")
+    (xdoc::li
+     "The names of the writers of the elements of an array member,
+      one per C type of the index (ten readers),
+      plus one (at the start of the list) that takes an ACL2 integer index.
+      For an integer member, this is @('nil').")
     (xdoc::li
      "The names of the checkers of the member.
       This is the empty list for an integer member,
@@ -95,16 +98,21 @@
      "The names of the return type theorems for the readers in @('readers'),
       in the same order as in @('readers').")
     (xdoc::li
+     "The name of the return type theorem
+      of the writer in @('writer').")
+    (xdoc::li
      "The names of the return type theorems
       for all the writers, in the same order as the list of writers.")))
   ((memtype member-type)
    (reader symbolp)
    (readers symbol-listp)
+   (writer symbolp)
    (writers symbol-listp)
    (checkers symbol-listp)
    (length symbolp)
    (reader-return-thm symbolp)
    (reader-return-thms symbol-listp)
+   (writer-return-thm symbolp)
    (writer-return-thms symbol-listp))
   :pred defstruct-member-infop)
 
@@ -229,33 +237,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-info->writers ((info defstruct-infop))
-  :returns (writers symbol-listp)
-  :short "Names of all the writers of a @(tsee defstruct)."
-  (defstruct-info->writers-aux (defstruct-info->members info))
+(define defstruct-info->writer-list ((info defstruct-infop))
+  :returns (writer-list symbol-listp)
+  :short "Collect all the @('writer') components of a @(tsee defstruct)."
+  (defstruct-info->writer-list-aux (defstruct-info->members info))
   :prepwork
-  ((define defstruct-info->writers-aux ((members defstruct-member-info-listp))
-     :returns (writers symbol-listp)
-     :parents nil
+  ((define defstruct-info->writer-list-aux
+     ((members defstruct-member-info-listp))
+     :returns (writer-list symbol-listp)
      (cond ((endp members) nil)
-           (t (append (defstruct-member-info->writers (car members))
-                      (defstruct-info->writers-aux (cdr members))))))))
+           (t (cons (defstruct-member-info->writer (car members))
+                    (defstruct-info->writer-list-aux (cdr members))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defstruct-info->writer-return-thms ((info defstruct-infop))
-  :returns (thms symbol-listp)
-  :short "Names of all the writer return theorems of a @(tsee defstruct)."
-  (defstruct-info->writer-return-thms-aux (defstruct-info->members info))
+(define defstruct-info->writers-list ((info defstruct-infop))
+  :returns (writers-list symbol-listp)
+  :short "Collect all the @('writers') components of a @(tsee defstruct)."
+  (defstruct-info->writers-list-aux (defstruct-info->members info))
   :prepwork
-  ((define defstruct-info->writer-return-thms-aux
+  ((define defstruct-info->writers-list-aux
      ((members defstruct-member-info-listp))
-     :returns (thms symbol-listp)
-     :parents nil
-     (cond
-      ((endp members) nil)
-      (t (append (defstruct-member-info->writer-return-thms (car members))
-                 (defstruct-info->writer-return-thms-aux (cdr members))))))))
+     :returns (writers-list symbol-listp)
+     (cond ((endp members) nil)
+           (t (append (defstruct-member-info->writers (car members))
+                      (defstruct-info->writers-list-aux (cdr members))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1397,9 +1403,11 @@
                (checkers symbol-listp)
                (reader symbolp)
                (readers symbol-listp)
+               (writer symbolp)
                (writers symbol-listp)
                (reader-return-thm symbolp)
                (reader-return-thms symbol-listp)
+               (writer-return-thm symbolp)
                (writer-return-thms symbol-listp))
   :short "Generate the operations for an array member of
           the structures defined by @(tsee defstruct)."
@@ -2446,9 +2454,11 @@
         (cons member-integer-index-okp more-checkers)
         read-member
         (cons read-member-integer more-readers)
+        write-member
         (cons write-member-integer more-writers)
         (packn-pos (list fixtype-arrayp '-of- read-member) read-member)
         (cons read-member-integer-return-thm more-reader-return-thms)
+        (packn-pos (list fixtype-arrayp '-of- write-member) write-member)
         (cons write-member-integer-return-thm more-writer-return-thms)))
 
   :prepwork
@@ -2684,12 +2694,14 @@
                     :memtype member
                     :reader reader
                     :readers nil
-                    :writers (list writer)
+                    :writer writer
+                    :writers nil
                     :checkers nil
                     :length nil
                     :reader-return-thm reader-return-thm
                     :reader-return-thms nil
-                    :writer-return-thms (list writer-return-thm))))
+                    :writer-return-thm writer-return-thm
+                    :writer-return-thms nil)))
           (mv event info)))
        ((unless (type-case type :array))
         (raise "Internal error: member type ~x0." type)
@@ -2704,9 +2716,11 @@
             checkers
             reader
             readers
+            writer
             writers
             reader-return-thm
             reader-return-thms
+            writer-return-thm
             writer-return-thms)
         (defstruct-gen-array-member-ops
           struct-tag struct-tag-p struct-tag-fix name elem-type size?))
@@ -2714,11 +2728,13 @@
               :memtype member
               :reader reader
               :readers readers
+              :writer writer
               :writers writers
               :checkers checkers
               :length length
               :reader-return-thm reader-return-thm
               :reader-return-thms reader-return-thms
+              :writer-return-thm writer-return-thm
               :writer-return-thms writer-return-thms)))
     (mv event info)))
 

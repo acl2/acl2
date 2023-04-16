@@ -138,6 +138,12 @@
   ((prec-tags atc-string-taginfo-alistp))
   :returns (writers symbol-listp)
   :short "Project the writers out of a tag information alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are only the writers that represent C code.
+     For an integer member, it is the writer in the @('writer') component.
+     For an array member, it is the writers in the @('writers') component."))
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (writers (atc-string-taginfo-alist-to-writers-aux
@@ -150,7 +156,12 @@
      :returns (writers symbol-listp)
      :parents nil
      (b* (((when (endp members)) nil)
-          (writers (defstruct-member-info->writers (car members)))
+          (member (car members))
+          (writers (if (type-integerp
+                        (member-type->type
+                         (defstruct-member-info->memtype member)))
+                       (list (defstruct-member-info->writer member))
+                     (defstruct-member-info->writers member)))
           (more-writers (atc-string-taginfo-alist-to-writers-aux
                          (cdr members))))
        (append writers more-writers)))))
@@ -200,6 +211,12 @@
   :short "Project the return type theorems
           for structure writers
           out of a tag information alist."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are only the writers that represent C code.
+     For an integer member, it is the writer in the @('writer') component.
+     For an array member, it is the writers in the @('writers') component."))
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
        (thms (atc-string-taginfo-alist-to-writer-return-thms-aux
@@ -213,7 +230,12 @@
      :returns (writer-return-thms symbol-listp)
      :parents nil
      (b* (((when (endp members)) nil)
-          (thms (defstruct-member-info->writer-return-thms (car members)))
+          (member (car members))
+          (thms (if (type-integerp
+                     (member-type->type
+                      (defstruct-member-info->memtype member)))
+                    (list (defstruct-member-info->writer-return-thm member))
+                  (defstruct-member-info->writer-return-thms member)))
           (more-thms
            (atc-string-taginfo-alist-to-writer-return-thms-aux (cdr members))))
        (append thms more-thms)))))

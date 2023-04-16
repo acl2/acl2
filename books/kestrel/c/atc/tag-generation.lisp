@@ -535,18 +535,16 @@
        (memname (member-type->name memtype))
        (type (member-type->type memtype))
        (length (defstruct-member-info->length meminfo))
+       (writer (defstruct-member-info->writer meminfo))
        (writers (defstruct-member-info->writers meminfo))
-       (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
-       (writer-return-thm (car writer-return-thms))
+       (writer-return-thm (if (type-integerp type)
+                              (defstruct-member-info->writer-return-thm meminfo)
+                            (car
+                             (defstruct-member-info->writer-return-thms
+                               meminfo))))
        (checkers (defstruct-member-info->checkers meminfo))
        ((when (type-nonchar-integerp type))
-        (b* (((unless (and (consp writers)
-                           (endp (cdr writers))))
-              (prog2$
-               (raise "Internal error: not one writer ~x0." writers)
-               (mv nil nil nil)))
-             (writer (car writers))
-             (thm-member-name (pack 'exec-member-write-when-
+        (b* ((thm-member-name (pack 'exec-member-write-when-
                                     recognizer
                                     '-and-
                                     (ident->name memname)))
