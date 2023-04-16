@@ -49,5 +49,5 @@
          (and (fep x p)
               (fe-listp y p))))
 
-(defrule fe-list-of-nil
+(defrule fe-listp-of-nil
   (fe-listp nil p))
