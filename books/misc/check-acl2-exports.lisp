@@ -211,6 +211,7 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    WITH-BRR-DATA
   ))
 
 (defconst *special-ops*

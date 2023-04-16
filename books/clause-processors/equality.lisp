@@ -32,7 +32,7 @@
 ;
 ; Modified for v3-4 by Matt K.: or-list and and-list are now defined in ACL2.
 ;
-; Modified for v4-2 by Jared: this book was initially intended to be an
+; Modified for v4-2 by Jared: this book was initially intended to be a
 ; pedagogical example of a simple, verified clause processor.  Because of this,
 ; it formerly did "bad" things like defining "evl" and "evl-list" (which isn't
 ; very nice to the namespace) and theorems like "lemma".  I've now cleaned this

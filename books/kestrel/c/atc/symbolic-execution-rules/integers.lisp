@@ -44,7 +44,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule valuep-possibilities
+(defruled valuep-possibilities
   :short "Possible integer and other predicates for values."
   (implies (valuep x)
            (or (ucharp x)
@@ -79,55 +79,60 @@
 (defsection valuep-when-valuepred
   :short "Theorem saying that the value recognizers imply @(tsee valuep)."
 
-  (defrule valuep-when-ucharp
+  (defruled valuep-when-ucharp
     (implies (ucharp x)
              (valuep x))
     :enable (valuep ucharp))
 
-  (defrule valuep-when-scharp
+  (defruled valuep-when-scharp
     (implies (scharp x)
              (valuep x))
     :enable (valuep scharp))
 
-  (defrule valuep-when-ushortp
+  (defruled valuep-when-ushortp
     (implies (ushortp x)
              (valuep x))
     :enable (valuep ushortp))
 
-  (defrule valuep-when-sshortp
+  (defruled valuep-when-sshortp
     (implies (sshortp x)
              (valuep x))
     :enable (valuep sshortp))
 
-  (defrule valuep-when-uintp
+  (defruled valuep-when-uintp
     (implies (uintp x)
              (valuep x))
     :enable (valuep uintp))
 
-  (defrule valuep-when-sintp
+  (defruled valuep-when-sintp
     (implies (sintp x)
              (valuep x))
     :enable (valuep sintp))
 
-  (defrule valuep-when-ulongp
+  (defruled valuep-when-ulongp
     (implies (ulongp x)
              (valuep x))
     :enable (valuep ulongp))
 
-  (defrule valuep-when-slongp
+  (defruled valuep-when-slongp
     (implies (slongp x)
              (valuep x))
     :enable (valuep slongp))
 
-  (defrule valuep-when-ullongp
+  (defruled valuep-when-ullongp
     (implies (ullongp x)
              (valuep x))
     :enable (valuep ullongp))
 
-  (defrule valuep-when-sllongp
+  (defruled valuep-when-sllongp
     (implies (sllongp x)
              (valuep x))
-    :enable (valuep sllongp)))
+    :enable (valuep sllongp))
+
+  (defruled valuep-when-cintegerp
+    (implies (cintegerp x)
+             (valuep x))
+    :enable cintegerp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,65 +142,75 @@
 
   (local (in-theory (enable len)))
 
-  (defrule value-listp-when-uchar-listp
+  (defruled value-listp-when-uchar-listp
     (implies (uchar-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp)
+    :enable (value-listp
+             valuep-when-ucharp))
 
-  (defrule value-listp-when-schar-listp
+  (defruled value-listp-when-schar-listp
     (implies (schar-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp)
+    :enable (value-listp
+             valuep-when-scharp))
 
-  (defrule value-listp-when-ushort-listp
+  (defruled value-listp-when-ushort-listp
     (implies (ushort-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp)
+    :enable (value-listp
+             valuep-when-ushortp))
 
-  (defrule value-listp-when-sshort-listp
+  (defruled value-listp-when-sshort-listp
     (implies (sshort-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp)
+    :enable (value-listp
+             valuep-when-sshortp))
 
-  (defrule value-listp-when-uint-listp
+  (defruled value-listp-when-uint-listp
     (implies (uint-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp)
+    :enable (value-listp
+             valuep-when-uintp))
 
-  (defrule value-listp-when-sint-listp
+  (defruled value-listp-when-sint-listp
     (implies (sint-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp)
+    :enable (value-listp
+             valuep-when-sintp))
 
-  (defrule value-listp-when-ulong-listp
+  (defruled value-listp-when-ulong-listp
     (implies (ulong-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp)
+    :enable (value-listp
+             valuep-when-ulongp))
 
-  (defrule value-listp-when-slong-listp
+  (defruled value-listp-when-slong-listp
     (implies (slong-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp)
+    :enable (value-listp
+             valuep-when-slongp))
 
-  (defrule value-listp-when-ullong-listp
+  (defruled value-listp-when-ullong-listp
     (implies (ullong-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp)
+    :enable (value-listp
+             valuep-when-ullongp))
 
-  (defrule value-listp-when-sllong-listp
+  (defruled value-listp-when-sllong-listp
     (implies (sllong-listp x)
              (value-listp x))
     :induct (len x)
-    :enable value-listp))
+    :enable (value-listp
+             valuep-when-sllongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -420,7 +435,7 @@
 (defsection value-tau-rules
   :short "Some tau rules about values."
 
-  (defrule signed-integer-value-kinds
+  (defruled signed-integer-value-kinds
     (implies (or (scharp x)
                  (sshortp x)
                  (sintp x)
@@ -436,9 +451,19 @@
              value-arithmeticp
              value-realp
              value-integerp
-             value-signed-integerp-alt-def))
+             value-signed-integerp-alt-def
+             valuep-when-ucharp
+             valuep-when-scharp
+             valuep-when-ushortp
+             valuep-when-sshortp
+             valuep-when-uintp
+             valuep-when-sintp
+             valuep-when-ulongp
+             valuep-when-slongp
+             valuep-when-ullongp
+             valuep-when-sllongp))
 
-  (defrule unsigned-integer-value-kinds
+  (defruled unsigned-integer-value-kinds
     (implies (or (ucharp x)
                  (ushortp x)
                  (uintp x)
@@ -454,7 +479,17 @@
              value-arithmeticp
              value-realp
              value-integerp
-             value-unsigned-integerp-alt-def)))
+             value-unsigned-integerp-alt-def
+             valuep-when-ucharp
+             valuep-when-scharp
+             valuep-when-ushortp
+             valuep-when-sshortp
+             valuep-when-uintp
+             valuep-when-sintp
+             valuep-when-ulongp
+             valuep-when-slongp
+             valuep-when-ullongp
+             valuep-when-sllongp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

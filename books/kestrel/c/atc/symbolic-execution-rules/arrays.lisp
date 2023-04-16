@@ -27,7 +27,7 @@
 (defsection array-tau-rules
   :short "Some tau rules about arrays."
 
-  (defrule not-errorp-when-arrayp
+  (defruled not-errorp-when-arrayp
     (implies (or (schar-arrayp x)
                  (uchar-arrayp x)
                  (sshort-arrayp x)
@@ -57,111 +57,111 @@
 (defsection array-value-rules
   :short "Some rules about array values."
 
-  (defrule valuep-when-uchar-arrayp
+  (defruled valuep-when-uchar-arrayp
     (implies (uchar-arrayp x)
              (valuep x))
     :enable (valuep uchar-arrayp))
 
-  (defrule valuep-when-schar-arrayp
+  (defruled valuep-when-schar-arrayp
     (implies (schar-arrayp x)
              (valuep x))
     :enable (valuep schar-arrayp))
 
-  (defrule valuep-when-ushort-arrayp
+  (defruled valuep-when-ushort-arrayp
     (implies (ushort-arrayp x)
              (valuep x))
     :enable (valuep ushort-arrayp))
 
-  (defrule valuep-when-sshort-arrayp
+  (defruled valuep-when-sshort-arrayp
     (implies (sshort-arrayp x)
              (valuep x))
     :enable (valuep sshort-arrayp))
 
-  (defrule valuep-when-uint-arrayp
+  (defruled valuep-when-uint-arrayp
     (implies (uint-arrayp x)
              (valuep x))
     :enable (valuep uint-arrayp))
 
-  (defrule valuep-when-sint-arrayp
+  (defruled valuep-when-sint-arrayp
     (implies (sint-arrayp x)
              (valuep x))
     :enable (valuep sint-arrayp))
 
-  (defrule valuep-when-ulong-arrayp
+  (defruled valuep-when-ulong-arrayp
     (implies (ulong-arrayp x)
              (valuep x))
     :enable (valuep ulong-arrayp))
 
-  (defrule valuep-when-slong-arrayp
+  (defruled valuep-when-slong-arrayp
     (implies (slong-arrayp x)
              (valuep x))
     :enable (valuep slong-arrayp))
 
-  (defrule valuep-when-ullong-arrayp
+  (defruled valuep-when-ullong-arrayp
     (implies (ullong-arrayp x)
              (valuep x))
     :enable (valuep ullong-arrayp))
 
-  (defrule valuep-when-sllong-arrayp
+  (defruled valuep-when-sllong-arrayp
     (implies (sllong-arrayp x)
              (valuep x))
     :enable (valuep sllong-arrayp))
 
-  (defrule value-kind-when-uchar-arrayp
+  (defruled value-kind-when-uchar-arrayp
     (implies (uchar-arrayp x)
              (equal (value-kind x)
                     :array))
     :enable (valuep value-kind uchar-arrayp))
 
-  (defrule value-kind-when-schar-arrayp
+  (defruled value-kind-when-schar-arrayp
     (implies (schar-arrayp x)
              (equal (value-kind x)
                     :array))
     :enable (valuep value-kind schar-arrayp))
 
-  (defrule value-kind-when-ushort-arrayp
+  (defruled value-kind-when-ushort-arrayp
     (implies (ushort-arrayp x)
              (equal (value-kind x)
                     :array))
     :enable (valuep value-kind ushort-arrayp))
 
-  (defrule value-kind-when-sshort-arrayp
+  (defruled value-kind-when-sshort-arrayp
     (implies (sshort-arrayp x)
              (equal (value-kind x)
                     :array))
     :enable (valuep value-kind sshort-arrayp))
 
-  (defrule value-kind-when-uint-arrayp
+  (defruled value-kind-when-uint-arrayp
     (implies (uint-arrayp x)
              (equal (value-kind x)
                     :array))
     :enable (valuep value-kind uint-arrayp))
 
-  (defrule value-kind-when-sint-arrayp
+  (defruled value-kind-when-sint-arrayp
     (implies (sint-arrayp x)
              (equal (value-kind x)
                     :array))
     :enable (valuep value-kind sint-arrayp))
 
-  (defrule value-kind-when-ulong-arrayp
+  (defruled value-kind-when-ulong-arrayp
     (implies (ulong-arrayp x)
              (equal (value-kind x)
                     :array))
     :enable (valuep value-kind ulong-arrayp))
 
-  (defrule value-kind-when-slong-arrayp
+  (defruled value-kind-when-slong-arrayp
     (implies (slong-arrayp x)
              (equal (value-kind x)
                     :array))
     :enable (valuep value-kind slong-arrayp))
 
-  (defrule value-kind-when-ullong-arrayp
+  (defruled value-kind-when-ullong-arrayp
     (implies (ullong-arrayp x)
              (equal (value-kind x)
                     :array))
     :enable (valuep value-kind ullong-arrayp))
 
-  (defrule value-kind-when-sllong-arrayp
+  (defruled value-kind-when-sllong-arrayp
     (implies (sllong-arrayp x)
              (equal (value-kind x)
                     :array))
@@ -197,7 +197,8 @@
     :enable (type-of-value
              uchar-arrayp
              value-array->elemtype
-             value-array->length))
+             value-array->length
+             value-kind))
 
   (defruled type-of-value-when-schar-arrayp
     (implies (schar-arrayp x)
@@ -207,7 +208,8 @@
     :enable (type-of-value
              schar-arrayp
              value-array->elemtype
-             value-array->length))
+             value-array->length
+             value-kind))
 
   (defruled type-of-value-when-ushort-arrayp
     (implies (ushort-arrayp x)
@@ -217,7 +219,8 @@
     :enable (type-of-value
              ushort-arrayp
              value-array->elemtype
-             value-array->length))
+             value-array->length
+             value-kind))
 
   (defruled type-of-value-when-sshort-arrayp
     (implies (sshort-arrayp x)
@@ -227,7 +230,8 @@
     :enable (type-of-value
              sshort-arrayp
              value-array->elemtype
-             value-array->length))
+             value-array->length
+             value-kind))
 
   (defruled type-of-value-when-uint-arrayp
     (implies (uint-arrayp x)
@@ -237,7 +241,8 @@
     :enable (type-of-value
              uint-arrayp
              value-array->elemtype
-             value-array->length))
+             value-array->length
+             value-kind))
 
   (defruled type-of-value-when-sint-arrayp
     (implies (sint-arrayp x)
@@ -247,7 +252,8 @@
     :enable (type-of-value
              sint-arrayp
              value-array->elemtype
-             value-array->length))
+             value-array->length
+             value-kind))
 
   (defruled type-of-value-when-ulong-arrayp
     (implies (ulong-arrayp x)
@@ -257,7 +263,8 @@
     :enable (type-of-value
              ulong-arrayp
              value-array->elemtype
-             value-array->length))
+             value-array->length
+             value-kind))
 
   (defruled type-of-value-when-slong-arrayp
     (implies (slong-arrayp x)
@@ -267,7 +274,8 @@
     :enable (type-of-value
              slong-arrayp
              value-array->elemtype
-             value-array->length))
+             value-array->length
+             value-kind))
 
   (defruled type-of-value-when-ullong-arrayp
     (implies (ullong-arrayp x)
@@ -277,7 +285,8 @@
     :enable (type-of-value
              ullong-arrayp
              value-array->elemtype
-             value-array->length))
+             value-array->length
+             value-kind))
 
   (defruled type-of-value-when-sllong-arrayp
     (implies (sllong-arrayp x)
@@ -287,7 +296,8 @@
     :enable (type-of-value
              sllong-arrayp
              value-array->elemtype
-             value-array->length)))
+             value-array->length
+             value-kind)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,70 +317,80 @@
              (equal (value-array->elemtype x)
                     (type-uchar)))
     :enable (value-array->elemtype
-             uchar-arrayp))
+             uchar-arrayp
+             value-kind))
 
   (defruled value-array->elemtype-when-schar-arrayp
     (implies (schar-arrayp x)
              (equal (value-array->elemtype x)
                     (type-schar)))
     :enable (value-array->elemtype
-             schar-arrayp))
+             schar-arrayp
+             value-kind))
 
   (defruled value-array->elemtype-when-ushort-arrayp
     (implies (ushort-arrayp x)
              (equal (value-array->elemtype x)
                     (type-ushort)))
     :enable (value-array->elemtype
-             ushort-arrayp))
+             ushort-arrayp
+             value-kind))
 
   (defruled value-array->elemtype-when-sshort-arrayp
     (implies (sshort-arrayp x)
              (equal (value-array->elemtype x)
                     (type-sshort)))
     :enable (value-array->elemtype
-             sshort-arrayp))
+             sshort-arrayp
+             value-kind))
 
   (defruled value-array->elemtype-when-uint-arrayp
     (implies (uint-arrayp x)
              (equal (value-array->elemtype x)
                     (type-uint)))
     :enable (value-array->elemtype
-             uint-arrayp))
+             uint-arrayp
+             value-kind))
 
   (defruled value-array->elemtype-when-sint-arrayp
     (implies (sint-arrayp x)
              (equal (value-array->elemtype x)
                     (type-sint)))
     :enable (value-array->elemtype
-             sint-arrayp))
+             sint-arrayp
+             value-kind))
 
   (defruled value-array->elemtype-when-ulong-arrayp
     (implies (ulong-arrayp x)
              (equal (value-array->elemtype x)
                     (type-ulong)))
     :enable (value-array->elemtype
-             ulong-arrayp))
+             ulong-arrayp
+             value-kind))
 
   (defruled value-array->elemtype-when-slong-arrayp
     (implies (slong-arrayp x)
              (equal (value-array->elemtype x)
                     (type-slong)))
     :enable (value-array->elemtype
-             slong-arrayp))
+             slong-arrayp
+             value-kind))
 
   (defruled value-array->elemtype-when-ullong-arrayp
     (implies (ullong-arrayp x)
              (equal (value-array->elemtype x)
                     (type-ullong)))
     :enable (value-array->elemtype
-             ullong-arrayp))
+             ullong-arrayp
+             value-kind))
 
   (defruled value-array->elemtype-when-sllong-arrayp
     (implies (sllong-arrayp x)
              (equal (value-array->elemtype x)
                     (type-sllong)))
     :enable (value-array->elemtype
-             sllong-arrayp))
+             sllong-arrayp
+             value-kind))
 
   (defval *atc-value-array->elemtype-rules*
     '(value-array->elemtype-when-uchar-arrayp
