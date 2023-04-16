@@ -43,3 +43,11 @@
            (nat-listp x))
   :induct t
   :enable nat-listp)
+
+(defrule fe-listp-of-cons
+  (equal (fe-listp (cons x y) p)
+         (and (fep x p)
+              (fe-listp y p))))
+
+(defrule fe-list-of-nil
+  (fe-listp nil p))
