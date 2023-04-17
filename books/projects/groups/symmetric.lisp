@@ -5,76 +5,17 @@
 (in-package "DM")
 
 (include-book "quotients")
+(include-book "maps")
 (local (include-book "support/alt"))
-
-;;--------------------------------------------------------------------------------------------------------------
-;; Permutations
-;;--------------------------------------------------------------------------------------------------------------
-
-;; perms constructs a list of all permutations of a dlist:
-
-(defun conses (x l)
-  (if (consp l)
-      (cons (cons x (car l)) (conses x (cdr l)))
-    ()))
-
-
-(mutual-recursion
-
-  (defun perms-aux (l m)
-    (declare (xargs :measure (list (acl2-count m) (acl2-count l) 0)))
-    (if (and (consp l) (member (car l) m))
-        (append (conses (car l) (perms (remove1-equal (car l) m)))
-                (perms-aux (cdr l) m))
-      ()))
-
-  (defund perms (m)
-    (declare (xargs :measure (list (acl2-count m) (acl2-count m) 1)))
-    (if (consp m)
-        (perms-aux m m)
-      (list ())))
-)
-
-(defthmd len-perms
-  (implies (dlistp l)
-	   (equal (len (perms l))
-		  (fact (len l)))))
-
-;; A predicate that recognizes a permutation of a dlist:
-
-(defund permp (l m)
-  (and (dlistp l)
-       (dlistp m)
-       (sublistp l m)
-       (sublistp m l)))
-
-(defthmd permp-perms
-  (implies (and (dlistp l) (member-equal p (perms l)))
-           (permp p l)))
-
-(defthmd perms-permp
-  (implies (and (dlistp l) (permp p l))
-           (member-equal p (perms l))))
-
-(defthm dlistp-perms
-  (implies (dlistp l)
-           (dlistp (perms l))))
-
-(defthmd car-perms
-  (implies (and (dlistp l) (consp l))
-           (equal (car (perms l))
-                  l)))
-
-(defthmd permp-eq-len
-  (implies (and (dlistp l) (dlistp m) (sublistp l m) (equal (len l) (len m)))
-                (permp l m)))
-
+(local (include-book "support/alt5"))
+(local (include-book "support/permute"))
+(local (include-book "support/dihedral"))
 
 ;;--------------------------------------------------------------------------------------------------------------
 ;; Symmetric Groups
 ;;--------------------------------------------------------------------------------------------------------------
 
-;; The list of members of the symmetric group:
+;; The members of the symmetric group (sym n) are the permutations of ninit n):
 
 (defund slist (n)
   (perms (ninit n)))
@@ -95,12 +36,16 @@
   (implies (posp n)
            (consp (slist n))))
 
+(defthm dlistp-slist
+  (implies (posp n)
+           (dlistp (slist n))))
+
 (defthmd permp-slist
   (implies (posp n)
            (iff (member-equal x (slist n))
                 (permp x (ninit n)))))
 
-(defthm dlistp-perm
+(defthmd dlistp-perm
   (implies (and (posp n) (member-equal x (slist n)))
            (dlistp x)))
 
@@ -121,16 +66,15 @@
   (implies (and (posp n) (member-equal x (slist n)) (natp k) (< k n))
            (and (natp (nth k x)) (< (nth k x) n))))
 
-(defthm dlistp-slist
-  (implies (posp n)
-           (dlistp (slist n))))
-
 (defthmd member-perm-slist
   (implies (and (posp n)
                 (dlistp x)
                 (sublistp x (ninit n))
 		(= (len x) n))
 	   (member-equal x (slist n))))
+
+;; An element x of (slist n) may be viewed as a bijection of (ninit n) to itself, which maps k to
+;; (nth k x).  If 2 members of (slist n) agree on every element of (ninit n), then they are equal:
 
 (defthmd nth-diff-perm
   (implies (and (posp n)
@@ -142,15 +86,13 @@
                   (< k n)
                   (not (= (nth k x) (nth k y)))))))
 
-;; A permutation cannot have the same element at 2 distinct indices:
+;; A permutation cannot have the same number at 2 distinct indices:
 
 (defthmd nth-perm-distinct
   (implies (and (posp n) (member x (slist n)) (natp i) (natp j) (< i n) (< j n) (not (= i j)))
            (not (equal (nth i x) (nth j x)))))
 
-;; We may think of an element p of (slist n) as a bijection from (ninit n) to itself, under
-;; which the image p(k) of an index k is (nth k p).   The operation of the symmetric group is
-;; functional composition:
+;; The operation of the symmetric group is functional composition:
 
 (defun comp-perm-aux (x y l)
   (if (consp l)
@@ -236,6 +178,192 @@
 
 
 ;;--------------------------------------------------------------------------------------------------------------
+;; Permutations of Lists
+;;--------------------------------------------------------------------------------------------------------------
+
+;; This section was developed during the course of a proof of the Fundamental Theorem of Finite Abelian groups,
+;; Which I abandonned in favor of an alternative approach.  I'm keeping it here because it might be useful someday.
+
+;; If l is a list of length n and p is in (sym n), then p induces a permutation of l:
+
+(defun permute (l p)
+  (if (consp p)
+      (cons (nth (car p) l)
+            (permute l (cdr p)))
+    ()))
+
+(defthm nth-permute
+  (implies (and (consp l)
+                (in p (sym (len l)))
+		(natp k)
+		(< k (len l)))
+	   (equal (nth k (permute l p))
+	          (nth (nth k p) l))))
+
+(defthm permute-e
+  (implies (and (true-listp l) (consp l))
+	   (equal (permute l (ninit (len l)))
+	          l)))
+
+(defthm permute-comp-perm
+  (implies (and (true-listp l)
+                (consp l)
+		(in x (sym (len l)))
+		(in y (sym (len l))))
+	   (equal (permute (permute l x) y)
+	          (permute l (comp-perm x y (len l))))))
+
+(defthm permute-inverse
+  (implies (and (true-listp l)
+                (consp l)
+		(in x (sym (len l))))
+	   (equal (permute (permute l (inv x (sym (len l)))) x)
+	          l)))
+
+;; We shall prove by induction that (permute l p) is a permutation of p.  This requires finding the right generalization.
+
+;; (select p l) is the sublist of l constructed by extracting the memebrs of l at indices that are members of p:
+
+(defun select-aux (p l n)
+  (if (consp l)
+      (if (member-equal n p)
+          (cons (car l) (select-aux p (cdr l) (1+ n)))
+	(select-aux p (cdr l) (1+ n)))
+    ()))
+
+(defund select (p l)
+  (select-aux p l 0))
+
+;; If l is a true-list and p includes all indices of l, then (select p l) = l:
+
+(defthm select-all
+  (implies (and (true-listp l)
+                (sublistp (ninit (len l)) p))
+	   (equal (select p l) l)))
+
+;; By induction, if p is a dlist and its members are all indices in l, then every x has the 
+;; same number of occurrences in (permute l p) as in (select p l):
+
+(defthmd permutationp-permute-1
+  (implies (and (dlistp p)
+                (sublistp p (ninit (len l))))
+	   (equal (hits x (permute l p))
+	          (hits x (select p l)))))
+
+;; The desired result follows from hits-diff-perm and hits-diff-diff.. Note that the first hypothesis is not necessary,
+;; but it simplifies the proof, allowing us to use select-all above:
+
+(defthm permutationp-permute
+  (implies (and (true-listp l)
+                (consp l)
+                (in p (sym (len l))))
+	   (permutationp l (permute l p))))
+
+;; We shall prove a generalization of the above result.  Let val be an arbitrary unary function:
+
+(encapsulate (((val *) => *))
+  (local (defun val (x) x)))
+
+(defun collect-vals (l)
+  (if (consp l)
+      (cons (val (car l)) (collect-vals (cdr l)))
+    ()))
+
+;; The proof of the following is an adaptation of that of permutationp-permute.
+;; We shall apply it in the proof of the Fundamental Theorem of Finite Abelian Groups by functional instantiation:
+
+(defthm permutationp-permute-vals
+  (implies (and (true-listp l)
+                (consp l)
+                (in p (sym (len l))))
+	   (permutationp (collect-vals l)
+	                 (collect-vals (permute l p)))))
+
+
+;; Given a total order on the members of l, we construct an ordered permutation  of l.
+;; We begin with an encapsulated totally ordered set with recognizer tleq-dom, totally ordered by tleq-:
+
+(encapsulate (((tleq-dom *) => *) ((tleq * *) => *))
+  (local (defun tleq-dom (x) (natp x)))
+  (local (defun tleq (x y) (<= x y)))
+  (defthmd tleq-reflexive
+    (implies (tleq-dom x) (tleq x x)))
+  (defthmd tleq-antisymmetric
+    (implies (and (tleq-dom x) (tleq-dom y) (not (= x y)))
+             (not (and (tleq x y) (tleq y x)))))
+  (defthmd tleq-transitive
+    (implies (and (tleq-dom x) (tleq-dom y) (tleq-dom z)
+                  (tleq x y) (tleq y z))
+	     (tleq x z)))
+  (defthmd tleq-total
+    (implies (and (tleq-dom x) (tleq-dom y))
+             (or (tleq x y) (tleq y x)))))
+
+;; A list of elements of the domain:
+
+(defun tleq-dom-list-p (l)
+  (if (consp l)
+      (and (tleq-dom (car l)) (tleq-dom-list-p (cdr l)))
+    (null l)))
+
+;; List l is ordered by tleq-:
+
+(defun tleq-orderedp (l)
+  (if (and (consp l) (consp (cdr l)))
+      (and (tleq (car l) (cadr l))
+           (tleq-orderedp (cdr l)))
+    t))
+
+;; Given a list of indices into l, find one at which a minimum element occurs:
+
+(defun tleq-min-aux (ind inds l)
+  (if (consp inds)
+      (tleq-min-aux (if (tleq (nth ind l) (nth (car inds) l))
+                      ind
+	            (car inds))
+		  (cdr inds)
+		  l)
+    ind))
+
+(defund tleq-min (inds l)
+  (tleq-min-aux (car inds) (cdr inds) l))
+
+;; Replace n with m in the list inds:
+
+(defun replace (m n inds)
+  (if (consp inds)
+      (if (equal (car inds) n)
+          (cons m (cdr inds))
+	(cons (car inds) (replace m n (cdr inds))))
+    ()))
+
+;; Construct an ordered permutation of a tleq-dom-list:
+
+(defun tleq-ordering-perm-aux (inds l)
+  (declare (xargs :measure (len inds)))
+  (if (and (consp inds) (consp (cdr inds)))
+      (let ((min (tleq-min inds l)))
+        (if (equal min (car inds))
+            (cons (car inds) (tleq-ordering-perm-aux (cdr inds) l))
+          (cons min (tleq-ordering-perm-aux (replace (car inds) min (cdr inds)) l))))
+   inds))
+
+(defund tleq-ordering-perm (l)
+  (tleq-ordering-perm-aux (ninit (len l)) l))
+
+(defthmd tleq-ordering-perm-orders
+  (implies (and (consp l)
+                (tleq-dom-list-p l))
+           (let ((p (tleq-ordering-perm l)))
+	     (and (in p (sym (len l)))
+	          (tleq-orderedp (permute l p))))))
+
+;; Now, given a total on a set that contains the members of a list l, we can define a function analogous 
+;; to tleq-ordering-perm and show that it generates an ordered permutation of by functiuonally instantiating
+;; tleq-ordering-perm-orders.
+
+
+;;--------------------------------------------------------------------------------------------------------------
 ;; Transpositions
 ;;--------------------------------------------------------------------------------------------------------------
 
@@ -317,7 +445,6 @@
 		(>= (least-moved p) n))
 	   (equal (ninit n) p)))
 
-
 ;; Transposition recognizer:
 
 (defund transp (p n)
@@ -343,7 +470,6 @@
 (defthmd permp-trans-list
   (implies (and (posp n) (trans-list-p l n))
            (in (comp-perm-list l n) (sym n))))
-
 
 ;; We shall prove constructively that every permutation is a product of transpositions.
 ;; The construction uses a measure based on least-moved:
@@ -518,15 +644,15 @@
 ;; Determinants
 ;;--------------------------------------------------------------------------------------------------------------
 
-;; This is just an aside, but some day I hope to formalize basic linear algebra.
+;; This is just an aside, but some day I plan to formalize basic linear algebra.
 
-;; An mxn matrix is a list of m rows (of rationals, I suppose) of length n.
+;; An mxn matrix is a list of m rows (of rationals, let's say) of length n.
 ;; The entry in row i and column j:
 
 (defun entry (i j mat)
   (nth j (nth i mat)))
 
-;; The term contributed by a permutation p to the determinant of an nxn matrix:
+;; The term contributed by a permutation p in (sym n) to the determinant of an nxn matrix:
 
 (defun det-term-aux (mat p l)
   (if (consp l)
@@ -630,3 +756,108 @@
            (equal (order (alt n))
 	          (/ (fact n) 2))))
 
+
+;;--------------------------------------------------------------------------------------------------------------
+;; Dihedral Group
+;;--------------------------------------------------------------------------------------------------------------
+
+;; For n >= 3, consider a regular n-gon with vertices labeled 0, 1, ..., n-1 in clockwise order.  Intuitively, the
+;;  group (dihedral n) is the subgroup of (sym n) of order 2n consisting of the permutations of these vertices that 
+;; may be realized by rigid motion of the n-gon in 3-dimensional space.  Each of these is either a rotation or a 
+;; reflection through some axis of symmetry.  The group is generated by 2 elements, the first of which is the basic 
+;; clockwise rotation by 2*pi/n radians, which has order n:
+
+(defund rot (n) (append (cdr (ninit n)) (list 0)))
+
+(defthm permp-rot
+  (implies (posp n)
+	   (member-equal (rot n) (slist n))))
+
+(defthm nth-rot
+  (implies (and (posp n) (natp i) (< i n))
+	   (equal (nth i (rot n))
+		  (mod (1+ i) n))))
+
+(defthm index-rot
+  (implies (and (posp n) (natp i) (< i n))
+	   (equal (index i (rot n))
+		  (mod (1- i) n))))
+
+(defthm ord-rot
+  (implies (posp n)
+	   (equal (ord (rot n) (sym n))
+		  n)))
+
+;; The second element is the reflection about the axis of symmetry that passes through the center of the n-gon and 
+;; the midpoint of the side connecting vertices 0 and n - 1, which has order 2:
+
+(defund ref (n) (reverse (ninit n)))
+
+(defthm permp-ref
+  (implies (posp n)
+	   (member-equal (ref n) (slist n))))
+
+(defthm nth-ref
+  (implies (and (posp n) (natp i) (< i n))
+	   (equal (nth i (ref n))
+		  (- (1- n) i))))
+
+(defthm ord-ref
+  (implies (and (natp n) (> n 1))
+	   (equal (ord (ref n) (sym n))
+		  2)))
+
+;; The element list of (dihedral n) consists of the n powers of (rot n) together with the composition of
+;; (ref n) with each of these powers:
+
+(defun map-comp-perm (p l n)
+  ;; Compose a permutation p with each member of a list l of permutations:
+  (if (consp l)
+      (cons (comp-perm p (car l) n)
+            (map-comp-perm p (cdr l) n))
+    ()))
+
+(defun delts (n)
+  (append (powers (rot n) (sym n))
+          (map-comp-perm (ref n) (powers (rot n) (sym n)) n)))
+
+;; Computing the group operation on (dihedral n) is easy once we have the following:
+
+(defthm comp-perm-ref-rot
+  (implies (and (natp n) (>= n 3))
+           (equal (comp-perm (ref n) (rot n) n)
+	          (comp-perm (inv-perm (rot n) n) (ref n) n))))
+
+;; The rewrite rules required by defsubgroup:
+
+(defthm dlistp-delts
+  (implies (and (natp n) (>= n 3))
+	   (dlistp (delts n))))
+
+(defthm sublistp-delts-sym
+    (implies (posp n)
+             (sublistp (delts n) (slist n))))
+
+(defthm consp-delts
+    (implies (and (natp n) (>= n 3))
+             (consp (delts n))))
+
+(defthm delts-elts-identity
+    (implies (and (natp n) (>= n 3))
+             (equal (car (delts n)) (e (sym n)))))
+
+(defthm delts-elts-closed
+    (implies (and (natp n) (>= n 3)
+		  (member-equal x (delts n))
+		  (member-equal y (delts n)))
+	     (member-equal (comp-perm x y n) (delts n))))
+
+(defthm delts-elts-inverse
+      (implies (and (natp n) (>= n 3)
+                    (member-equal x (delts n)))
+               (member-equal (inv-perm x n) (delts n))))
+
+(defsubgroup dihedral (n)
+  (sym n)
+  (and (natp n) (>= n 3))
+  (delts n))

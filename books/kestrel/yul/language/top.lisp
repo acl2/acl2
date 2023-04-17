@@ -35,12 +35,9 @@
      a dynamic semantics.
      We plan to make this formalization more generic,
      and in particular to also support types in other Yul dialects."))
-  :order-subtopics nil)
-
-(xdoc::order-subtopics language
-                       (concrete-syntax
-                        abstract-syntax
-                        static-semantics
-                        dynamic-semantics
-                        static-soundness
-                        errors))
+  :order-subtopics (concrete-syntax
+                    abstract-syntax
+                    static-semantics
+                    dynamic-semantics
+                    static-soundness
+                    errors))

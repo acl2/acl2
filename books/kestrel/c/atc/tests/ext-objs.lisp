@@ -42,7 +42,7 @@
                                                     c::sint-integerp-alt-def
                                                     c::ne-sint-sint
                                                     c::uint-array-sint-index-okp
-                                                    c::uint-array-index-okp
+                                                    c::uint-array-integer-index-okp
                                                     object-|arr2|-p
                                                     c::assign)))
                   :measure (nfix (- 8 (c::integer-from-sint |i|)))
@@ -96,7 +96,7 @@
                                                     c::sint-integerp-alt-def
                                                     c::ne-sint-sint
                                                     c::uint-array-sint-index-okp
-                                                    c::uint-array-index-okp
+                                                    c::uint-array-integer-index-okp
                                                     object-|arr2|-p
                                                     c::assign)))
                   :measure (nfix (- 8 (c::integer-from-sint |idx|)))

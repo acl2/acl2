@@ -1252,35 +1252,40 @@
    (mv nil nil state)))
 
 (defun chk-inhibit-output-lst (lst ctx state)
-  (cond ((not (true-listp lst))
-         (er soft ctx
-             "The argument to set-inhibit-output-lst must evaluate to a ~
-              true-listp, unlike ~x0."
-             lst))
-        ((not (subsetp-eq lst *valid-output-names*))
-         (er soft ctx
-             "The argument to set-inhibit-output-lst must evaluate to a ~
-              subset of the list ~X01, but ~x2 contains ~&3."
-             *valid-output-names*
-             nil
-             lst
-             (set-difference-eq lst *valid-output-names*)))
-        (t (let ((lst (if (member-eq 'warning! lst)
-                          (add-to-set-eq 'warning lst)
-                        lst)))
-             (pprogn (cond ((and (member-eq 'prove lst)
-                                 (not (member-eq 'proof-tree lst))
-                                 (member-eq 'proof-tree
-                                            (f-get-global 'inhibit-output-lst
-                                                          state)))
-                            (warning$ ctx nil
-                                      "The printing of proof-trees is being ~
-                                       enabled while the printing of proofs ~
-                                       is being disabled.  You may want to ~
-                                       execute :STOP-PROOF-TREE in order to ~
-                                       inhibit proof-trees as well."))
-                           (t state))
-                     (value lst))))))
+  (let ((msg (chk-inhibit-output-lst-msg lst)))
+    (cond (msg (er soft ctx "~@0" msg))
+          (t (let ((lst (if (member-eq 'warning! lst)
+                            (add-to-set-eq 'warning lst)
+                          lst)))
+               (pprogn (cond ((and (member-eq 'prove lst)
+                                   (not (member-eq 'proof-tree lst))
+                                   (member-eq 'proof-tree
+                                              (f-get-global 'inhibit-output-lst
+                                                            state)))
+                              (warning$ ctx nil
+                                        "The printing of proof-trees is being ~
+                                         enabled while the printing of proofs ~
+                                         is being disabled.  You may want to ~
+                                         execute :STOP-PROOF-TREE in order to ~
+                                         inhibit proof-trees as well."))
+                             (t state))
+                       (value lst)))))))
+
+(defun set-inhibit-output-lst-fn (lst state)
+  (er-let* ((lst (chk-inhibit-output-lst lst 'set-inhibit-output-lst state)))
+    (pprogn (f-put-global 'inhibit-output-lst lst state)
+            (value lst))))
+
+(defmacro set-inhibit-output-lst (lst)
+
+; In spite of the documentation for this macro, 'warning and 'warning! are
+; handled completely independently by the ACL2 warning mechanism, which looks
+; for 'warning or 'warning! in the value of state global 'inhibit-output-lst.
+; Set-inhibit-output-lst adds 'warning to this state global whenever it adds
+; 'warning.  If the user sets inhibit-output-lst directly using f-put-global or
+; assign, then including 'warning! will not automatically include 'warning.
+
+  `(set-inhibit-output-lst-fn ,lst state))
 
 ; With er defined, we may now define chk-ld-skip-proofsp.
 
@@ -3188,13 +3193,14 @@
      ,form
      (declare (ignore val))
      (prog2$ (and erp (er hard ,ctx
-                          "Unexpected error.  An error message may have been ~
-                           printed above."))
+                          "An error message may have been printed above."))
              state)))
 
 (defmacro defun-for-state (name args)
   `(defun ,(defun-for-state-name name)
-       ,args
+       ,(if (member-eq 'state args)
+            args
+          (append args '(state)))
      (error-free-triple-to-state
       ',name
       (,name ,@args))))
@@ -4244,11 +4250,27 @@
   `(set-gag-mode-fn ,action state))
 
 (defun pop-inhibit-output-lst-stack (state)
+
+; If one messes with the value of 'inhibit-output-lst-stack, that could affect
+; with-output.  But there's no soundness issue; at worst, the call of
+; set-inhibit-output-lst-state below could cause a hard error.
+
   (let ((stk (f-get-global 'inhibit-output-lst-stack state)))
-    (cond ((null stk) state)
-          (t (pprogn (f-put-global 'inhibit-output-lst
-                                   (caar stk)
-                                   state)
+    (cond ((atom stk) state)
+          ((atom (car stk))
+
+; This case can't happen unless the user has assigned directly to
+; 'inhibit-output-lst-stack.  That's possible because state global
+; 'inhibit-output-lst-stack is not untouchable -- making it untouchable would
+; require introducing set-pop-inhibit-output-lst-stack-state or such to be used
+; automatically in the cleanup form of state-global-let*, to avoid assigning
+; directly to (untouchable) variable 'inhibit-output-lst-stack.  All we can do
+; here is to go ahead and cdr the stack.
+
+           (f-put-global 'inhibit-output-lst-stack
+                         (cdr stk)
+                         state))
+          (t (pprogn (set-inhibit-output-lst-state (caar stk) state)
                      (set-gag-mode (cdar stk))
                      (f-put-global 'inhibit-output-lst-stack
                                    (cdr stk)

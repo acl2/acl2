@@ -147,7 +147,7 @@ This book contains proofs of two theorems of Euclid:
 		  (divides d n)
 		  (<= k d))
 	     (<= (least-divisor k n) d))
-  :rule-classes ())
+    :rule-classes ())
 
 (defn primep (n)
   (and (integerp n)
@@ -172,6 +172,16 @@ This book contains proofs of two theorems of Euclid:
     (implies (and (integerp n)
 		  (>= n 2))
 	     (primep (least-divisor 2 n)))
+    :rule-classes ())
+
+(defun least-prime-divisor (n)
+  (declare (xargs :guard t))
+  (least-divisor 2 n))
+
+(defthm primep-least-prime-divisor
+    (implies (and (integerp n)
+		  (>= n 2))
+	     (primep (least-prime-divisor n)))
   :rule-classes ())
 
 (in-theory (disable primep))
@@ -193,7 +203,7 @@ This book contains proofs of two theorems of Euclid:
 
 (defun greater-prime (n)
   (declare (xargs :guard (natp n)))
-  (least-divisor 2 (1+ (fact n))))
+  (least-prime-divisor (1+ (fact n))))
 
 (defthm greater-prime-divides
     (divides (greater-prime n) (1+ (fact n)))
@@ -222,14 +232,14 @@ This book contains proofs of two theorems of Euclid:
 
 "Our main theorem of Euclid depends on the properties of the greatest common divisor,
  which we define according to Euclid's algorithm.
- @(def g-c-d-nat)
- @(def g-c-d)
- @(thm g-c-d-nat-pos)
- @(thm g-c-d-pos)
- @(thm divides-g-c-d-nat)
- @(thm g-c-d-divides)"
+ @(def gcd-nat)
+ @(def gcd)
+ @(thm gcd-nat-pos)
+ @(thm gcd-pos)
+ @(thm divides-gcd-nat)
+ @(thm gcd-divides)"
 
-(defun g-c-d-nat (x y)
+(defun gcd-nat (x y)
   (declare (xargs :guard (and (natp x)
                               (natp y))
                   :measure (:? x y)))
@@ -238,41 +248,45 @@ This book contains proofs of two theorems of Euclid:
     (if (zp y)
 	x
       (if (<= x y)
-	  (g-c-d-nat x (- y x))
-	(g-c-d-nat (- x y) y)))))
+	  (gcd-nat x (- y x))
+	(gcd-nat (- x y) y)))))
 
-(defun g-c-d (x y)
+(defun gcd (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
-  (g-c-d-nat (abs x) (abs y)))
+  (gcd-nat (abs x) (abs y)))
 
-(defthm g-c-d-nat-pos
+(defthm gcd-nat-pos
     (implies (and (natp x)
 		  (natp y)
 		  (not (and (= x 0) (= y 0))))
-	     (> (g-c-d-nat x y) 0))
+	     (> (gcd-nat x y) 0))
   :rule-classes ())
 
-(defthm g-c-d-pos
+(defthmd gcd-commutative
+  (implies (and (integerp x) (integerp y))
+           (equal (gcd x y) (gcd y x))))
+
+(defthm gcd-pos
     (implies (and (integerp x)
 		  (integerp y)
 		  (not (and (= x 0) (= y 0))))
-	     (and (integerp (g-c-d x y))
-		  (> (g-c-d x y) 0)))
+	     (and (integerp (gcd x y))
+		  (> (gcd x y) 0)))
   :rule-classes ())
 
-(defthm divides-g-c-d-nat
+(defthm divides-gcd-nat
     (implies (and (natp x)
 		  (natp y))
-	     (and (or (= x 0) (divides (g-c-d-nat x y) x))
-		  (or (= y 0) (divides (g-c-d-nat x y) y))))
+	     (and (or (= x 0) (divides (gcd-nat x y) x))
+		  (or (= y 0) (divides (gcd-nat x y) y))))
   :rule-classes ())
 
-(defthm g-c-d-divides
+(defthm gcd-divides
     (implies (and (integerp x)
 		  (integerp y))
-	     (and (or (= x 0) (divides (g-c-d x y) x))
-		  (or (= y 0) (divides (g-c-d x y) y))))
+	     (and (or (= x 0) (divides (gcd x y) x))
+		  (or (= y 0) (divides (gcd x y) y))))
   :rule-classes ())
 
 "It remains to be shown that the gcd of @('x') and @('y') is divisible by any common
@@ -284,9 +298,11 @@ This book contains proofs of two theorems of Euclid:
  @(thm r-s-nat)
  @(def r-int)
  @(def s-int)
- @(thm g-c-d-linear-combination)
- @(thm divides-g-c-d)
- @(thm g-c-d-prime)"
+ @(thm gcd-linear-combination)
+ @(thm divides-gcd)
+ @(thm gcd-prime)"
+
+;; We do this first for natural numbers x and y, and then extend the definition to integers:
 
 (mutual-recursion
 
@@ -321,7 +337,7 @@ This book contains proofs of two theorems of Euclid:
 		  (natp y))
 	     (= (+ (* (r-nat x y) x)
 		   (* (s-nat x y) y))
-		(g-c-d-nat x y)))
+		(gcd-nat x y)))
   :rule-classes ())
 
 (defun r-int (x y)
@@ -337,43 +353,60 @@ This book contains proofs of two theorems of Euclid:
   (if (< y 0)
       (- (s-nat (abs x) (abs y)))
     (s-nat (abs x) (abs y))))
-#|
-These type-prescription rules are redundant.
-ACL2 derives them from definitions.
 
-(defthm integerp-r-int
-    (integerp (r-int x y))
-  :rule-classes (:type-prescription))
-
-(defthm integerp-s-int
-    (integerp (s-int x y))
-  :rule-classes (:type-prescription))
-|#
-(defthm g-c-d-linear-combination
+(defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
 	     (= (+ (* (r-int x y) x)
 		   (* (s-int x y) y))
-		(g-c-d x y)))
+		(gcd x y)))
   :rule-classes ())
 
-(in-theory (disable g-c-d r-int s-int))
+(in-theory (disable gcd r-int s-int))
 
-(defthm divides-g-c-d
+(defthm divides-gcd
     (implies (and (integerp x)
 		  (integerp y)
 		  (integerp d)
 		  (not (= d 0))
 		  (divides d x)
 		  (divides d y))
-	     (divides d (g-c-d x y))))
+	     (divides d (gcd x y))))
 
-(defthm g-c-d-prime
+(defthmd rel-prime-no-common-factor
+  (implies (and (integerp x)
+                (integerp y)
+		(integerp d)
+		(> d 1)
+		(divides d x)
+		(= (gcd x y) 1))
+	   (not (divides d y))))
+
+(defthmd gcd-prime
     (implies (and (primep p)
-		  (integerp a)
-		  (not (divides p a)))
-	     (= (g-c-d p a) 1))
-  :rule-classes ())
+		  (integerp a))
+	     (equal (gcd p a)
+		    (if (divides p a)
+			p
+		      1))))
+
+(defthmd gcd-quotient-1
+  (implies (and (integerp x)
+                (integerp y)
+		(not (= x 0))
+		(posp d)
+		(divides d x)
+		(= (gcd x y) 1))
+	   (equal (gcd (/ x d) y) 1)))
+
+(defthmd gcd-quotient-2
+  (implies (and (integerp x)
+                (integerp y)
+		(posp d)
+		(divides d x)
+		(divides d y))
+	   (equal (gcd (/ x d) (/ y d))
+	          (/ (gcd x y) d))))
 
 "The main theorem:
  @(thm euclid)"
@@ -386,5 +419,74 @@ ACL2 derives them from definitions.
 		  (not (divides p b)))
 	     (not (divides p (* a b))))
   :rule-classes ())
+
+;; 1st corollary of euclid: If d divides mn and (gcd d m) = 1, then d divides n.
+;; The proof is by induction on d.  The claim is trivial for d = 1.
+;; Let p be a prime divisor of d.  Then p does not divide m ,and therefore d divides n.
+;; By induction, since d/p divides m(n/p), d/p divides n/p, which implies d divides n.
+
+(defthmd divides-product-divides-factor
+  (implies (and (integerp m) (not (= m 0))
+		(integerp n) (not (= n 0))
+		(integerp d) (not (= d 0))
+		(divides d (* m n))
+		(= (gcd d m) 1))
+	   (divides d n)))
+
+;; 2nd corollary of euclid: If relatively prime integers x and y both divde m, then so does xy.
+;; The proof is by induction on x.  The claim is trivial for x = 1.
+;; Let p be a prime divisor of x. Then p does not divide y, but since p divides m = (m/y)* y, p divides m/y
+;; which implies that y divides m/p.  Thus, m/p is divisible by both x/p and y.  By induction, xy/p
+;; divides m/p, and therefore xy divides m.
+
+(defthmd product-rel-prime-divides
+  (implies (and (integerp x)
+                (integerp y)
+		(not (= x 0))
+		(not (= y 0))
+		(= (gcd x y) 1)
+		(integerp m)
+		(divides x m)
+		(divides y m))
+	   (divides (* x y) m)))
+
+;; The last result allows us to define the least common multiple as follows:
+
+(defund lcm (x y)
+  (/ (* x y) (gcd x y)))
+
+(defthmd integerp-lcm-int
+  (implies (and (integerp x) (not (= x 0))
+                (integerp y) (not (= y 0)))
+           (and (integerp (lcm x y))
+	        (not (equal (lcm x y) 0)))))
+
+(defthmd posp-lcm
+  (implies (and (posp x)
+                (posp y))
+           (posp (lcm x y))))
+
+(defthmd lcm-is-common-multiple
+  (implies (and (integerp x)
+                (integerp y)
+		(not (= x 0))
+		(not (= y 0)))
+	   (and (divides x (lcm x y))
+	        (divides y (lcm x y)))))
+
+;; product-rel-prime-divides is needed to prove the critical property of lcm that it divides any common multiple
+;; of its arguments: Suppose x and y both divide m and let g = (gcd x y), a = x/g, b = y/g, and l = (lcm x y).  Then
+;;    m/l = mg/xy = m/gab.
+;; Since a and b both divide m/g, ab divides m/g, i.e., m/gab is an integer and l divides m.
+
+(defthmd lcm-is-least
+  (implies (and (integerp x)
+                (integerp y)
+		(not (= x 0))
+		(not (= y 0))
+		(integerp m))
+           (iff (and (divides x m)
+		     (divides y m))
+	        (divides (lcm x y) m))))
 
 )

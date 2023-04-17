@@ -1,6 +1,6 @@
 ; A variant of write-objects-to-file for use during make-event, etc.
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,11 +19,11 @@
 
 (local (in-theory (disable open-output-channel-p1 put-global)))
 
-;; Writes the OBJECTS to file FILENAME, overwriting its previous contents.
-;; Returns (mv erp state).  The ttag is needed because this calls
-;; open-output-channel!, but that makes this version usable during make-event
-;; expansion, clause-processors, etc.
-(defun write-objects-to-file! (objects filename ctx state)
+;; Writes the OBJECTS to FILENAME, each on a separate line, overwriting the
+;; previous contents of FILENAME.  Returns (mv erp state).  The ttag is needed
+;; because this calls open-output-channel!, but that makes this version usable
+;; during make-event expansion, clause-processors, etc.
+(defund write-objects-to-file! (objects filename ctx state)
   (declare (xargs :stobjs state
                   :guard (and (true-listp objects)
                               (stringp filename)

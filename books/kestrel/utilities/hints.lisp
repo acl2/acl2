@@ -17,7 +17,7 @@
 ;; STATUS: Working but needs to be generalized to support more kinds of hints.
 
 (include-book "theory-hints")
-(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
 ;(include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
 
 ;; Leaves SYM unchanged if it has no entry in RENAMING-ALIST.
@@ -85,7 +85,9 @@
                 (subst (cddr val)))
            `(,instance-type
              ,(apply-renaming-to-use-hint-instance lemma-ref renaming-alist)
-             ,@(rename-fns-in-var-untranslated-term-pairs subst renaming-alist))))))
+             ,@(make-doublets (strip-cars subst)
+                              (rename-fns-in-untranslated-term-list (strip-cadrs subst)
+                                                                    renaming-alist)))))))
 
 (defun apply-renaming-to-use-hint-instances (vals renaming-alist)
   (declare (xargs :guard (and (use-hint-instance-listp vals)

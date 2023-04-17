@@ -1,6 +1,6 @@
 ; A lightweight book about i/o channels
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,16 +10,18 @@
 
 (in-package "ACL2")
 
-;; See also channel-contents.lisp
+;; See also ../utilities/channel-contents.lisp
+
+;; TODO: Should this include all the other books about channels?
 
 (include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
+(local (include-book "typed-io-listp"))
 
 ;; So the rules in this book fire
 (in-theory (disable open-channels-p
                     add-pair
                     open-channel-listp
-                    open-channel1
-                    close-input-channel))
+                    open-channel1))
 
 ;move?
 (local
@@ -62,17 +64,6 @@
   (implies (open-channel1 l)
            (typed-io-listp (cdr l) (cadr (car l))))
   :hints (("Goal" :in-theory (enable open-channel1))))
-
-(defthm typed-io-listp-of-revappend
-  (equal (typed-io-listp (revappend x y) typ)
-         (and (typed-io-listp (true-list-fix x) typ)
-              (typed-io-listp y typ)))
-  :hints (("Goal" :in-theory (enable typed-io-listp revappend true-list-fix))))
-
-(defthm typed-io-listp-of-character-becomes-character-listp
-  (equal (typed-io-listp x :character)
-         (character-listp x))
-  :hints (("Goal" :in-theory (enable character-listp typed-io-listp))))
 
 ;; matches better
 (defthm typed-io-listp-of-cdr-gen
@@ -133,7 +124,7 @@
                 (open-channel-listp channels))
            (typed-io-listp (cdddr (assoc-equal channel channels))
                            (cadr (cadr (assoc-equal channel channels)))))
-  :hints (("Goal" :in-theory (enable open-channel-listp channel-headerp))))
+  :hints (("Goal" :in-theory (enable open-channel-listp channel-headerp typed-io-listp))))
 
 ;; different hyp
 (defthm typed-io-listp-of-cdddr-of-assoc-equal-and-cadr-of-cadr-of-assoc-equal-2
@@ -158,21 +149,6 @@
            (true-listp (cddr (assoc-equal channel channels))))
   :hints (("Goal" :in-theory (enable open-channel-listp open-channel1))))
 
-(defthmd nat-listp-when-typed-io-listp-of-byte
-  (implies (typed-io-listp vals :byte)
-           (nat-listp vals))
-  :hints (("Goal" :in-theory (enable typed-io-listp nat-listp))))
-
-(defthmd unsigned-byte-listp-when-typed-io-listp-of-byte
-  (implies (typed-io-listp vals :byte)
-           (unsigned-byte-listp 8 vals))
-  :hints (("Goal" :in-theory (enable typed-io-listp unsigned-byte-listp))))
-
-(defthmd character-listp-when-typed-io-listp-of-character
-  (implies (typed-io-listp vals :character)
-           (character-listp vals))
-  :hints (("Goal" :in-theory (enable typed-io-listp character-listp))))
-
 (defthm nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
   (implies (and (open-channel-listp channels)
                 (equal (cadr (cadr (assoc-equal channel channels))) :byte))
@@ -194,8 +170,7 @@
                 (equal (cadr (cadr (assoc-equal channel channels))) :character))
            (character-listp (cddr (assoc-equal channel channels))))
   :hints (("Goal" :in-theory (enable open-channel-listp
-                                     open-channel1
-                                     character-listp-when-typed-io-listp-of-character))))
+                                     open-channel1))))
 
 (defthm open-channel-listp-of-cons
   (equal (open-channel-listp (cons ch chs))
@@ -251,6 +226,7 @@
                                    symbolp-when-assoc-equal-of-open-input-channels-and-state-p1)
                                   (open-input-channels)))))
 
+;gen? drop?
 (defthm assoc-equal-of-open-input-channels-when-open-input-channel-p
   (implies (open-input-channel-p channel :byte state)
            (assoc-equal channel (open-input-channels state)))

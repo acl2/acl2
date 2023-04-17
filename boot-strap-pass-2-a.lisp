@@ -210,6 +210,21 @@
 (verify-termination-boot-strap warnings-as-errors-val-guard) ; and guards
 (verify-termination-boot-strap warnings-as-errors-val) ; and guards
 
+(verify-termination-boot-strap brr-data-p) ; and guards
+(verify-termination-boot-strap update-brr-data) ; and guards
+(verify-termination-boot-strap set-wormhole-data-fast) ; and guards
+(defthm state-p1-read-acl2-oracle
+    (implies (state-p1 state)
+             (state-p1 (mv-nth 2 (read-acl2-oracle state))))
+  :hints (("Goal" :in-theory (enable state-p1 read-acl2-oracle))))
+(verify-termination-boot-strap brr-data-lst) ; and guards
+; The following has caused the following error with "make proofs".
+; > Error: HARD ACL2 ERROR in EXECUTABLE-BADGE:  It is illegal to call this function
+; >        during boot strapping because primitives have not yet been identified
+; >        and badges not yet computed!
+; So clear-brr-data-lst has been put into *system-verify-guards-alist*.
+; (verify-termination-boot-strap clear-brr-data-lst) ; and guards
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

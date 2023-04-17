@@ -12,6 +12,14 @@
 
 (include-book "semantics-deep")
 
+(local (include-book "oset-lib-ext"))
+(local (include-book "omap-lib-ext"))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ proof-support
@@ -137,7 +145,8 @@
                             (constraint-equal->right constr))
                      (equal (eval-expr (constraint-equal->left constr) asg p)
                             (eval-expr (constraint-equal->right constr) asg p))
-                     (natp (eval-expr (constraint-equal->left constr) asg p)))))))
+                     (natp (eval-expr
+                            (constraint-equal->left constr) asg p)))))))
   :expand ((exec-proof-tree ptree defs p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -164,12 +173,12 @@
        (para (definition->para def))
        (body (definition->body def))
        (vals (eval-expr-list args asg p))
-       (asgext (proof-tree-relation->asgext ptree))
-       (asg-para-vals (omap::from-lists para vals))
+       (asgfree (proof-tree-relation->asgfree ptree))
+       (asgpara (omap::from-lists para vals))
        (outcome-sub (exec-proof-tree-list
                      (proof-tree-relation->sub ptree) defs p))
        (asser-sub (proof-list-outcome-assertions->get outcome-sub))
-       (asg-sub (omap::update* asgext asg-para-vals)))
+       (asgsub (omap::update* asgfree asgpara)))
     (implies (and (proof-outcome-case outcome :assertion)
                   (constraint-case constr :relation))
              (and (proof-tree-case ptree :relation)
@@ -179,12 +188,12 @@
                   def
                   (nat-listp vals)
                   (equal (len para) (len vals))
-                  (assignment-wfp asgext p)
-                  (not (set::intersectp (omap::keys asg-para-vals)
-                                        (omap::keys asgext)))
+                  (assignment-wfp asgfree p)
+                  (equal (omap::keys asgfree)
+                         (definition-free-vars def))
                   (proof-list-outcome-case outcome-sub :assertions)
                   (equal (assertion-list->asg-list asser-sub)
-                         (repeat (len body) asg-sub))
+                         (repeat (len body) asgsub))
                   (equal (assertion-list->constr-list asser-sub)
                          body))))
   :expand ((exec-proof-tree ptree defs p)))
@@ -291,9 +300,9 @@
      to the values of the arguments,
      and that satisfies all the relation's constraints."))
   (exists
-   (asgext)
-   (and (assignmentp asgext)
-        (assignment-wfp asgext p)
+   (asgfree)
+   (and (assignmentp asgfree)
+        (assignment-wfp asgfree p)
         (b* ((def (lookup-definition name defs)))
           (and def
                (b* (((definition def) def))
@@ -302,11 +311,10 @@
                         (and (nat-listp vals)
                              (b* ((asg-para-vals (omap::from-lists def.para
                                                                    vals)))
-                               (and (not (set::intersectp
-                                          (omap::keys asg-para-vals)
-                                          (omap::keys asgext)))
+                               (and (equal (omap::keys asgfree)
+                                           (definition-free-vars def))
                                     (b* ((asg-sub (omap::update*
-                                                   asgext
+                                                   asgfree
                                                    asg-para-vals)))
                                       (constraint-list-satp def.body
                                                             defs
@@ -362,14 +370,14 @@
                       (args (constraint-relation->args constr))
                       (asg (proof-tree-relation->asg
                             (constraint-satp-witness constr defs asg p)))
-                      (asgext (proof-tree-relation->asgext
-                               (constraint-satp-witness constr defs asg p))))
+                      (asgfree (proof-tree-relation->asgfree
+                                (constraint-satp-witness constr defs asg p))))
            (:instance constraint-list-satp-suff
                       (constrs (definition->body
                                  (lookup-definition
                                   (constraint-relation->name constr) defs)))
                       (asg (omap::update*
-                            (proof-tree-relation->asgext
+                            (proof-tree-relation->asgfree
                              (constraint-satp-witness constr defs asg p))
                             (omap::from-lists
                              (definition->para
@@ -397,7 +405,9 @@
                        (constraint-satp constr defs asg p)))
      :enable (constraint-relation-satp
               constraint-list-satp
-              exec-proof-tree)
+              exec-proof-tree
+              nfix
+              min)
      :use (:instance constraint-satp-suff
                      (ptree (make-proof-tree-relation
                              :asg asg
@@ -422,10 +432,109 @@
                                       (constraint-relation->args constr)
                                       asg p)))
                                    p)
-                             :asgext (constraint-relation-satp-witness
-                                      (constraint-relation->name constr)
-                                      (constraint-relation->args constr)
-                                      defs asg p)))))))
+                             :asgfree (constraint-relation-satp-witness
+                                       (constraint-relation->name constr)
+                                       (constraint-relation->args constr)
+                                       defs asg p)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define constraint-relation-nofreevars-satp ((name symbolp)
+                                             (args expression-listp)
+                                             (defs definition-listp)
+                                             (asg assignmentp)
+                                             (p primep))
+  :guard (assignment-wfp asg p)
+  :returns (yes/no booleanp)
+  :short "Satisfaction of a relation constraint without free variables,
+          expressed without proof trees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a specialized version of @(tsee constraint-relation-satp),
+     applicable when the definition of the relation has no free variables.
+     In this case, we can avoid the existential quantification."))
+  (b* ((def (lookup-definition name defs)))
+    (and def
+         (set::empty (definition-free-vars def))
+         (b* (((definition def) def))
+           (and (equal (len args) (len def.para))
+                (b* ((vals (eval-expr-list args asg p)))
+                  (and (nat-listp vals)
+                       (b* ((asg-para-vals (omap::from-lists def.para vals)))
+                         (constraint-list-satp def.body
+                                               defs
+                                               asg-para-vals
+                                               p))))))))
+  :guard-hints (("Goal" :in-theory (enable acl2::not-reserrp-when-nat-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-satp-of-relation-when-nofreevars
+  (implies (and (assignmentp asg)
+                (assignment-wfp asg p)
+                (constraint-case constr :relation))
+           (b* ((name (constraint-relation->name constr))
+                (args (constraint-relation->args constr))
+                (def (lookup-definition name defs)))
+             (implies (and def
+                           (set::empty (definition-free-vars def)))
+                      (equal (constraint-satp constr defs asg p)
+                             (constraint-relation-nofreevars-satp name
+                                                                  args
+                                                                  defs
+                                                                  asg
+                                                                  p)))))
+  :use (only-if-direction if-direction)
+
+  :prep-lemmas
+
+  ((defrule only-if-direction
+     (implies (and (assignmentp asg)
+                   (assignment-wfp asg p)
+                   (constraint-case constr :relation))
+              (b* ((name (constraint-relation->name constr))
+                   (args (constraint-relation->args constr))
+                   (def (lookup-definition name defs)))
+                (implies (and def
+                              (set::empty (definition-free-vars def)))
+                         (implies (constraint-satp constr defs asg p)
+                                  (constraint-relation-nofreevars-satp name
+                                                                       args
+                                                                       defs
+                                                                       asg
+                                                                       p)))))
+     :rule-classes nil
+     :enable (constraint-satp-of-relation
+              constraint-relation-satp
+              constraint-relation-nofreevars-satp
+              set::empty
+              omap::keys-iff-not-empty))
+
+   (defrule if-direction
+     (implies (and (assignmentp asg)
+                   (assignment-wfp asg p)
+                   (constraint-case constr :relation))
+              (b* ((name (constraint-relation->name constr))
+                   (args (constraint-relation->args constr))
+                   (def (lookup-definition name defs)))
+                (implies (and def
+                              (set::empty (definition-free-vars def)))
+                         (implies (constraint-relation-nofreevars-satp name
+                                                                       args
+                                                                       defs
+                                                                       asg
+                                                                       p)
+                                  (constraint-satp constr defs asg p)))))
+     :rule-classes nil
+     :enable (constraint-relation-nofreevars-satp
+              constraint-satp-of-relation
+              definition-free-vars
+              set::not-difference-when-subset)
+     :use (:instance constraint-relation-satp-suff
+                     (name (constraint-relation->name constr))
+                     (args (constraint-relation->args constr))
+                     (asgfree nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -496,7 +605,8 @@
                       (ptrees (cdr (constraint-list-satp-witness
                                     (cons constr constrs) defs asg p)))))
      :enable (exec-proof-tree-list
-              assertion-list-from))
+              assertion-list-from
+              len))
 
    (defruled if-direction
      (implies (and (constraint-satp constr defs asg p)
@@ -510,7 +620,8 @@
                             (constraint-list-satp-witness constrs defs asg p)))
                      (constrs (cons constr constrs)))
      :enable (exec-proof-tree-list
-              assertion-list-from))))
+              assertion-list-from
+              len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,7 +630,9 @@
   (equal (constraint-list-satp (append constrs1 constrs2) defs asg p)
          (and (constraint-list-satp constrs1 defs asg p)
               (constraint-list-satp constrs2 defs asg p)))
-  :enable (constraint-list-satp-of-cons
+  :induct t
+  :enable (append
+           constraint-list-satp-of-cons
            constraint-list-satp-of-atom))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -528,6 +641,7 @@
   :short "Proof rule for a reversed list of constraints."
   (equal (constraint-list-satp (rev constrs) defs asg p)
          (constraint-list-satp constrs defs asg p))
+  :induct t
   :enable (rev
            constraint-list-satp-of-atom
            constraint-list-satp-of-cons

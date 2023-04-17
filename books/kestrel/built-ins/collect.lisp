@@ -719,7 +719,8 @@
     ancestors-check-constraint
     natp-conjoin-clause-sets-bound
     d-pos-listp-forward-to-true-listp
-    true-listp-chars-for-tilde-@-clause-id-phrase/periods))
+    true-listp-chars-for-tilde-@-clause-id-phrase/periods
+    state-p1-read-acl2-oracle))
 
 (defconst *builtin-defaxiom/defthm-tau*
   '(basic-tau-rules

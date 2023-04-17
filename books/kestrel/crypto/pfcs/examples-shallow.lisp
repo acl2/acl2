@@ -11,8 +11,11 @@
 (in-package "PFCS")
 
 (include-book "semantics-shallow")
+(include-book "proof-support")
 
 (include-book "std/util/defrule" :dir :system)
+
+(local (include-book "omap-lib-ext"))
 
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 
@@ -48,6 +51,8 @@
 
 (make-event (sesem-definition (make-rel-boolean) 'p))
 
+(make-event (sesem-definition-thm (make-rel-boolean) 'p))
+
 (defruled rel-boolean-to-spec
   (implies (and (primep p)
                 (fep b p))
@@ -55,6 +60,18 @@
                   (or (equal b 0)
                       (equal b 1))))
   :enable rel-boolean)
+
+(defruled definition-satp-of-rel-boolean-to-spec
+  (implies (and (primep p)
+                (equal (lookup-definition 'rel-boolean defs)
+                       (make-rel-boolean))
+                (fep b p))
+           (equal (definition-satp 'rel-boolean defs (list b) p)
+                  (or (equal b 0)
+                      (equal b 1))))
+  :in-theory '((:e make-rel-boolean))
+  :use (definition-satp-of-rel-boolean-to-shallow
+         rel-boolean-to-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,6 +92,8 @@
 
 (make-event (sesem-definition (make-rel-condeq) 'p))
 
+(make-event (sesem-definition-thm (make-rel-condeq) 'p))
+
 (defruled rel-condeq-to-spec
   (implies (and (primep p)
                 (fep a p)
@@ -84,6 +103,20 @@
                   (or (equal a 0)
                       (equal b c))))
   :enable rel-condeq)
+
+(defruled definition-satp-of-rel-condeq-to-spec
+  (implies (and (primep p)
+                (equal (lookup-definition 'rel-condeq defs)
+                       (make-rel-condeq))
+                (fep a p)
+                (fep b p)
+                (fep c p))
+           (equal (definition-satp 'rel-condeq defs (list a b c) p)
+                  (or (equal a 0)
+                      (equal b c))))
+  :in-theory '((:e make-rel-condeq))
+  :use (definition-satp-of-rel-condeq-to-shallow
+         rel-condeq-to-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,6 +138,8 @@
 
 (make-event (sesem-definition (make-rel-select) 'p))
 
+(make-event (sesem-definition-thm (make-rel-select) 'p))
+
 (defruled rel-select-to-spec
   (implies (and (primep p)
                 (fep b p)
@@ -119,6 +154,22 @@
            rel-boolean-to-spec) ; uses spec of rel-boolean
   :prep-books
   ((include-book "kestrel/prime-fields/equal-of-add-rules" :dir :system)))
+
+(defruled definition-satp-of-rel-select-to-spec
+  (implies (and (primep p)
+                (equal (lookup-definition 'rel-select defs)
+                       (make-rel-select))
+                (fep b p)
+                (fep x p)
+                (fep y p)
+                (fep z p)
+                (rel-boolean b p)) ; precondition
+           (equal (definition-satp 'rel-select defs (list b x y z) p)
+                  (equal z
+                         (if (equal b 1) x y))))
+  :in-theory '((:e make-rel-select))
+  :use (definition-satp-of-rel-select-to-shallow
+         rel-select-to-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,6 +188,8 @@
            :right (expression-const 1)))))
 
 (make-event (sesem-definition (make-rel-nonzero) 'p))
+
+(make-event (sesem-definition-thm (make-rel-nonzero) 'p))
 
 (defruled rel-nonzero-to-spec
   (implies (and (primep p)
@@ -161,6 +214,18 @@
                        (rel-nonzero a p)))
      :use (:instance rel-nonzero-suff (ainv (inv a p))))))
 
+(defruled definition-satp-of-rel-nonzero-to-spec
+  (implies (and (primep p)
+                (equal (lookup-definition 'rel-nonzero defs)
+                       (make-rel-nonzero))
+                (fep a p))
+           (equal (definition-satp 'rel-nonzero defs (list a) p)
+                  (not (equal a 0))))
+  :in-theory '((:e make-rel-nonzero)
+               acl2::primep-forward-to-posp)
+  :use (definition-satp-of-rel-nonzero-to-shallow
+         rel-nonzero-to-spec))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; exclusive-or constrains [ZPS:A.3.1.5]
@@ -182,6 +247,8 @@
 
 (make-event (sesem-definition (make-rel-xor) 'p))
 
+(make-event (sesem-definition-thm (make-rel-xor) 'p))
+
 (defruled rel-xor-to-spec
   (implies (and (primep p)
                 (fep a p)
@@ -194,3 +261,19 @@
                   (equal c (if (equal a b) 0 1))))
   :enable (rel-xor
            rel-boolean-to-spec)) ; use spec of rel-boolean
+
+(defruled definition-satp-of-rel-xor-to-spec
+  (implies (and (primep p)
+                (equal (lookup-definition 'rel-xor defs)
+                       (make-rel-xor))
+                (fep a p)
+                (fep b p)
+                (fep c p)
+                (rel-boolean a p) ; precondition
+                (rel-boolean b p) ; precondition
+                (> p 2)) ; additional precondition
+           (equal (definition-satp 'rel-xor defs (list a b c) p)
+                  (equal c (if (equal a b) 0 1))))
+  :in-theory '((:e make-rel-xor))
+  :use (definition-satp-of-rel-xor-to-shallow
+         rel-xor-to-spec))

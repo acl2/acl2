@@ -1,7 +1,7 @@
 ; The Axe equivalence checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,6 +25,7 @@
 (include-book "rewriter") ;TODO: brings in JVM stuff...
 (include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "kestrel/utilities/check-boolean" :dir :system)
+(include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
 (include-book "kestrel/utilities/subtermp" :dir :system)
@@ -16166,7 +16167,7 @@
    (b* ((- (cw "(Sweep ~x0 (depth ~x1, max-conflicts ~x2) for ~x3 (~x4 nodes).~%" sweep-num miter-depth max-conflicts miter-name miter-len))
         (- (cw "(Assumptions:~%~x0)~%" assumptions))
         ;;also, maybe pass around and print the refined assumptions??
-        (state (if print
+        (state (if (print-level-at-least-tp print)
                    (progn$ (cw "(Writing DAG to file:~%")
                            (let ((state (print-dag-array-to-temp-file miter-array-name miter-array miter-len (concatenate 'string (symbol-name miter-name) "-DAG-BEFORE-SWEEP-" (nat-to-string sweep-num)) state)))
                              (prog2$ (cw ")~%")
@@ -16311,7 +16312,7 @@
                     (- (and print (prog2$ (cw "(Miter DAG to simplify after sweep ~x0 (depth ~x1):~%" sweep-num miter-depth)
                                           nil ;(print-list dag-lst)
                                           )))
-                    (state (if print
+                    (state (if (print-level-at-least-tp print)
                                (print-dag-array-to-temp-file miter-array-name miter-array miter-len
                                                              (concatenate 'string (symbol-name miter-name) "-DAG-TO-SIMP-AT-END-OF-SWEEP-" (nat-to-string sweep-num)) state)
 ;fixme at least print the number of nodes
@@ -16415,10 +16416,10 @@
                               (miter-array (make-into-array miter-array-name dag-lst-or-quotep))
                               (- (and print (cw "Miter DAG after sweep ~x0 (depth ~x1):~%" sweep-num miter-depth)))
                               ;;fixme do we now print the dag before and after each sweep?  is that a waste?
-                              (state (if print (print-dag-array-to-temp-file
-                                                miter-array-name miter-array miter-len
-                                                (concatenate 'string (symbol-name miter-name) "-DAG-AFTER-SWEEP-"
-                                                             (nat-to-string sweep-num)) state)
+                              (state (if (print-level-at-least-tp print)
+                                         (print-dag-array-to-temp-file miter-array-name miter-array miter-len
+                                                                       (concatenate 'string (symbol-name miter-name) "-DAG-AFTER-SWEEP-"
+                                                                                    (nat-to-string sweep-num)) state)
                                        ;;fixme at least print the number of nodes
                                        state))
                               (- (progn$ (cw "Done simplifying the miter.)~%")
@@ -16569,7 +16570,7 @@
         (let* ((dag-array (make-into-array dag-array-name dag-lst)) ;call a -with-len version?
                (dag-len (len dag-lst)) ;rename miter-len
                ;;fixme just print the dag-lst? or have miter and merge print before presimp and then print after each presimp sweep that changes something?
-               (state (if print
+               (state (if (print-level-at-least-tp print)
                           (print-dag-array-to-temp-file dag-array-name dag-array dag-len (concatenate 'string (symbol-name proof-name) "-BEFORE-PRE-SIMP-" (nat-to-string sweep-count)) state)
                         state)))
           (mv-let
@@ -16727,10 +16728,9 @@
                   (progn$ (cw "Done pre-simplifying (result is a constant).)~%")
                           (mv nil dag-lst interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state result-array-stobj))
                 (let* ((tag (pack$ (symbol-name proof-name) '-DAG-AFTER-PS)) ;fixme bad name, since we simplify below!
-                       (state (print-dag-to-temp-file
-                               dag-lst
-                               (symbol-name tag)
-                               state)))
+                       (state (if (print-level-at-least-tp print)
+                                  (print-dag-to-temp-file dag-lst (symbol-name tag) state)
+                                state)))
                   ;;ffixme concretize and rewrite until stable
                   (mv-let (erp dag-lst-or-quotep state) ;fffixme don't do this if the sweeps didn't do anything
                     ;;for this one we do do the work-hard (the default): (may need to do it after each sweep if the values flowing in to the rec fns need to be as nice as possible?)
@@ -16861,10 +16861,10 @@
                (prog2$ (cw "Proved the miter.)~%")
                        (mv (erp-nil) t rand state result-array-stobj))
              (b* ((- (cw "(May need to split the miter dag (depth ~x0, ~x1, ~x2):~%" miter-depth miter-name miter-array-name))
-                  (state (if print (print-dag-array-to-temp-file
-                                    miter-array-name miter-array miter-len
-                                    (concatenate 'string (symbol-name miter-name) "-PRE-SPLIT")
-                                    state)
+                  (state (if (print-level-at-least-tp print)
+                             (print-dag-array-to-temp-file miter-array-name miter-array miter-len
+                                                           (concatenate 'string (symbol-name miter-name) "-PRE-SPLIT")
+                                                           state)
                            state))
                   (- (cw ")~%(But we'll simplify first, using assumptions: ~x0~%" assumptions))
                   (miter-dag (array-to-alist miter-array-name miter-array miter-len))
@@ -19024,7 +19024,7 @@
             (er hard? 'prove-miter-core "If the tactic is :rewrite, the DAG must simplify to true, but it simplified to the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
             (mv :no-test-cases nil state rand result-array-stobj))
            ;; Tactic is :rewrite-and-sweep:
-           (state (if (and simplifyp print)
+           (state (if (and simplifyp (print-level-at-least-tp print))
                       (print-dag-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
                     state))
            ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?

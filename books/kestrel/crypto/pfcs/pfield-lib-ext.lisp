@@ -14,6 +14,11 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ prime-field-library-extensions
@@ -30,8 +35,19 @@
 
 (defruled true-listp-when-fe-listp
   (implies (fe-listp x p)
-           (true-listp x)))
+           (true-listp x))
+  :induct t)
 
 (defruled nat-listp-when-fe-listp
   (implies (fe-listp x p)
-           (nat-listp x)))
+           (nat-listp x))
+  :induct t
+  :enable nat-listp)
+
+(defrule fe-listp-of-cons
+  (equal (fe-listp (cons x y) p)
+         (and (fep x p)
+              (fe-listp y p))))
+
+(defrule fe-listp-of-nil
+  (fe-listp nil p))

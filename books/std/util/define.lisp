@@ -1553,7 +1553,7 @@ examples.</p>")
        (make-event
         (define-fn ',name ',args (w state))))))
 
-(table acl2::pp-special-syms 'define 2)
+(table acl2::ppr-special-syms 'define 2)
 
 #!ACL2
 (progn

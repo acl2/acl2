@@ -1,19 +1,86 @@
-;; David M. Russinoff
-;; david@russinoff.com
-;; http://www.russinoff.com
+David M. Russinoff
+david@russinoff.com
+http://www.russinoff.com
 
-This directory contains an initial ACL2 formalization of elementary finite group theory, consisting of the following books:
+This directory contains an ACL2 formalization of elementary finite group theory, essentially the content of an advanced undergraduate course in the subject that the author taught at Cooper Union in the Spring of 1976.  The top-level directory consists of the following books:
 
-* lists: a collection of results pertaining to list processing that were required in the development of the theory
+* lists
+  - Lists of distinct members
+  - Sublists
+  - Disjoint lists
+  - Permutations of lists
+  - Intersections of lists
+  
+* groups
+  - Finite groups: definition and properties
+  - Ordered lists of group elements
+  - Subgroups
+  - Defgroup: a macro for defining parametrized groups
+  - Additive and multiplicative groups of integers modulo n
+  - Defsubgroup: a macro for defining parametrized subgroups
+  - Intersection of subgroups
+  - Centralizer of a group element
+  - Center of a group
+  - Cyclic subgroups
 
-* groups: groups and subgroups, the macros defgroup and defsubgroup, and some examples
+* quotients
+  - Left cosets
+  - Lagrange's Theorem
+  - Normal subgroups
+  - Quotient groups
+  - Lifting a subgroup of a quotient group
 
-* quotients: left cosets, Lagrange's Theorem, normal subgroupss, quotient groups
+* cauchy
+  - Cauchy's Theorem for abelian groups
+  - Conjugacy classes
+  - Class equation
+  - Cauchy's Theorem for non-abelian groups
+  - P-groups
+  
+* maps
+  - Definition of a map as an alist
+  - Defmap: a macro for defining parametrized maps
+  - Homomorphisms
+  - Image of a homomorphism
+  - Kernel of a homomorphism
+  - Epimorphisms
+  - Endomorphisms
+  - Isomorphisms
+  
+* symmetric
+  - Symmetric groups
+  - Permutations of Lists
+  - Transpositions
+  - Parity
+  - Alternating groups
+  - Dihedral groups
 
-* cauchy: Cauchy's Theorem (If the order of a group g is divisible by prime p, then g has a subgroup of order p)
+* products
+  - Direct products
+  - Products of subgroups
+  - Internal direct products
 
-* symmetric: permutations, symmetric groups, tranpositions, parity of a permutation, alternating groups
+* abelian
+  - Every abelian p-group is a direct product of cyclic groups
+  - Every abelian group is a direct product of cyclic p-groups
+  - Powers of abelian groups
+  - Fundamental Theorem of Finite Abelian Groups
 
-* actions: group actions, the defaction macro, conjugate subgroups
+* actions
+  - Action of a group on a dlist
+  - Defaction: a macro for defining parametrized group actions
+  - Orbits of an action
+  - Stabilizer of a domain element
+  - Conjugate subgroups
+  - Conjugation of subgroups as a group action
+  - Normalizer of a subgroup
+  - Induced homomorphism to the symmetric group
 
-* sylow: lifting a subgroup of a quotient group, p-groups and maximal p-subgroups, Sylow theorems
+* sylow
+  - p-Sylow subgroups
+  - Comjugation of p-Sylow subgroups
+  - Sylow Theorems
+
+* simple
+  - Simplcity of the alternating group (alt 5) 
+  - Groups of order less than 60 are solvable
