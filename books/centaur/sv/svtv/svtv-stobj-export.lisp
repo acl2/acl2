@@ -47,6 +47,11 @@
 
   (make-event
    `(defprod svtv-data-obj
+      :parents (def-svtv-data-export)
+      :short "A non-stobj representation of a @(see svtv-data) stobj, as produced by @(see def-svtv-data-export)."
+      :long "<p>All fields are just as in the @(see svtv-data) stobj, except
+that the @('moddb') and @('aliases') fields are missing since they are stobjs
+themselves and can be fairly quickly regenerated.</p>"
       ,(svtv-data-obj-fields-from-decls *svtv-data-nonstobj-fields*)
       :layout :list)))
 

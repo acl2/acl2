@@ -445,8 +445,7 @@
                   (o         (svex-env-lookup 'o out-alist)))
                (equal o (loghead 32 (* (logext 16 a) (logext 16 b))))))
     :hints(("Goal" :in-theory (e/d (svex-env-lookup-of-cons
-                                    4vec-p-when-integerp
-                                    hons-intersection-force-execute)
+                                    4vec-p-when-integerp)
                                    ((svex-env-lookup)))))))
 
 
@@ -671,6 +670,20 @@ theorem essentially specifies a class of environment that does satisfy the
 hypotheses:</p>
 
 @(`(:code ($ boothpipe-correct))`)
+
+<h4>Alternatives to the "Ideal"</h4>
+
+<p>The @('def-svtv-generalized-thm') utility can be invoked without an
+@(':ideal') argument to prove theorems about the original SVTV directly, using
+a syntactic check to show that the overrides used behave as expected in the
+circuit design. See @(see svtv-decomposition-choosing-a-method) for pros and
+cons of using the ideal SVTV method versus the syntactic check method. See
+files "centaur/sv/tutorial/boothpipe-syn.lisp"
+and "centaur/sv/tutorial/boothpipe-svtv-spec.lisp" for the same proof done
+using the syntactic check method with generalized proofs done on (respectively)
+the SVTV itself or the analogous svtv-spec object.  Note that these are
+interchangeable; at the end of the file, we prove the top-level theorem about
+the other version in each case.</p>
 
 """})
 

@@ -384,8 +384,8 @@
                                      (:@ :lemma-use-ideal <ideal>-refines-<ideal>)
                                      (:@ (not :lemma-use-ideal) <ideal>-refines-<svtv>))
                                     (:@ :use-svtv-spec
-                                     (:@ :lemma-use-svtv-spec <svtv>-spec-refines-<svtv>-spec)
-                                     (:@ (not :lemma-use-svtv-spec) <svtv>-spec-refines-<svtv>))
+                                     (:@ :lemma-use-svtv-spec <svtvspec>-refines-<svtvspec>)
+                                     (:@ (not :lemma-use-svtv-spec) <svtvspec>-refines-<svtv>))
                                     (spec-pipe-env env)
                                     (:@ (or :use-ideal :use-svtv-spec)
                                      (spec-base-ins base-ins)
@@ -463,6 +463,7 @@
        (<args> . ,x.final-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name))
                   ("<SVTV>" . ,(symbol-name x.svtv))
+                  ("<SVTVSPEC>" . ,(symbol-name x.svtv-spec))
                   ("<IDEAL>" . ,(symbol-name x.ideal)))
      :features (append (and x.no-lemmas '(:no-lemmas))
                        (and x.ideal '(:use-ideal))
