@@ -116,6 +116,12 @@
   :pred assignmentp
   ///
 
+  (defrule natp-of-cdr-of-in-when-assignmentp-type
+    (implies (and (assignmentp asg)
+                  (omap::in sym asg))
+             (natp (cdr (omap::in sym asg))))
+    :rule-classes :type-prescription)
+
   (defrule assignmentp-of-from-lists
     (implies (and (symbol-listp keys)
                   (nat-listp vals)
