@@ -15,6 +15,8 @@
 
 (include-book "std/util/defrule" :dir :system)
 
+(local (include-book "omap-lib-ext"))
+
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -187,6 +189,8 @@
 
 (make-event (sesem-definition (make-rel-nonzero) 'p))
 
+(make-event (sesem-definition-thm (make-rel-nonzero) 'p))
+
 (defruled rel-nonzero-to-spec
   (implies (and (primep p)
                 (fep a p))
@@ -209,6 +213,18 @@
               (implies (not (equal a 0))
                        (rel-nonzero a p)))
      :use (:instance rel-nonzero-suff (ainv (inv a p))))))
+
+(defruled definition-satp-of-rel-nonzero-to-spec
+  (implies (and (primep p)
+                (equal (lookup-definition 'rel-nonzero defs)
+                       (make-rel-nonzero))
+                (fep a p))
+           (equal (definition-satp 'rel-nonzero defs (list a) p)
+                  (not (equal a 0))))
+  :in-theory '((:e make-rel-nonzero)
+               acl2::primep-forward-to-posp)
+  :use (definition-satp-of-rel-nonzero-to-shallow
+         rel-nonzero-to-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
