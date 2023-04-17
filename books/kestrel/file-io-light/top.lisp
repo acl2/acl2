@@ -79,6 +79,5 @@
 
 ;; Books grouped together for a specific purpose:
 (include-book "output-theory")
-(include-book "output-theory-test")
 
 (include-book "doc")
