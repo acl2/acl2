@@ -376,6 +376,8 @@
                                           (cdr readers)
                                           (cdr checkers)
                                           length
+                                          thm-member-name
+                                          thm-memberp-name
                                           names-to-avoid
                                           wrld)))
     (mv (list* event-member event-memberp more-events)
@@ -394,6 +396,8 @@
                                              (readers symbol-listp)
                                              (checkers symbol-listp)
                                              (length symbolp)
+                                             (reader-member-thm symbolp)
+                                             (reader-memberp-thm symbolp)
                                              (names-to-avoid symbol-listp)
                                              (wrld plist-worldp))
      :guard (and (type-nonchar-integerp elemtype)
@@ -408,14 +412,7 @@
           (reader (car readers))
           (checker (car checkers))
           (indexfixtype (integer-type-to-fixtype indextype))
-          (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
-          (array-reader (pack elemfixtype '-array-integer-read-alt-def))
-          (array-checker (pack elemfixtype '-array-integer-index-okp))
-          (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
-          (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
-          (valuep-when-indextype (pack 'valuep-when- indextypep))
-          (type-thm (pack 'integer-from- indexfixtype))
           (thm-member-name (pack 'exec-member-read-when-
                                  recognizer
                                  '-and-
@@ -483,117 +480,27 @@
                                           (value-pointer->designator ptr)
                                           (ident ,(ident->name memname)))
                                          (value-integer->get index))))))
-          (hints `(("Goal"
-                    :in-theory
-                    '(exec-arrsub-of-member
-                      exec-arrsub-of-memberp
-                      value-struct-read
-                      value-integer->get
-                      value-schar->get-to-integer-from-schar
-                      value-uchar->get-to-integer-from-uchar
-                      value-sshort->get-to-integer-from-sshort
-                      value-ushort->get-to-integer-from-ushort
-                      value-sint->get-to-integer-from-sint
-                      value-uint->get-to-integer-from-uint
-                      value-slong->get-to-integer-from-slong
-                      value-ulong->get-to-integer-from-ulong
-                      value-sllong->get-to-integer-from-sllong
-                      value-ullong->get-to-integer-from-ullong
-                      value-kind-when-scharp
-                      value-kind-when-ucharp
-                      value-kind-when-sshortp
-                      value-kind-when-ushortp
-                      value-kind-when-sintp
-                      value-kind-when-uintp
-                      value-kind-when-slongp
-                      value-kind-when-ulongp
-                      value-kind-when-sllongp
-                      value-kind-when-ullongp
-                      value-array->elemtype-when-uchar-arrayp
-                      value-array->elemtype-when-schar-arrayp
-                      value-array->elemtype-when-ushort-arrayp
-                      value-array->elemtype-when-sshort-arrayp
-                      value-array->elemtype-when-uint-arrayp
-                      value-array->elemtype-when-sint-arrayp
-                      value-array->elemtype-when-ulong-arrayp
-                      value-array->elemtype-when-slong-arrayp
-                      value-array->elemtype-when-ullong-arrayp
-                      value-array->elemtype-when-sllong-arrayp
-                      ifix
-                      integer-range-p
-                      not-errorp-when-valuep
-                      value-fix-when-valuep
-                      value-result-fix-when-value-resultp
-                      value-resultp-when-valuep
-                      value-integerp
-                      value-unsigned-integerp-alt-def
-                      value-signed-integerp-alt-def
-                      (:e ident)
-                      ,@*integer-value-disjoint-rules*
-                      ,recognizer
-                      ,fixer-recognizer-thm
-                      ,checker
-                      ,checker-acl2int
-                      ,reader
-                      ,reader-acl2int
-                      ,array-reader
-                      ,array-checker
-                      ,not-error-array-thm
-                      ,kind-array-thm
-                      ,valuep-when-indextype
-                      (:t ,type-thm)
-                      ,@(and length
-                             (list length
-                                   'value-struct-read))
-                      expr-value->value-of-expr-value
-                      expr-value->object-of-expr-value
-                      ,@*atc-array-read-rules*
-                      apconvert-expr-value-when-not-value-array
-                      apconvert-expr-value-when-uchar-arrayp
-                      apconvert-expr-value-when-schar-arrayp
-                      apconvert-expr-value-when-ushort-arrayp
-                      apconvert-expr-value-when-sshort-arrayp
-                      apconvert-expr-value-when-uint-arrayp
-                      apconvert-expr-value-when-sint-arrayp
-                      apconvert-expr-value-when-ulong-arrayp
-                      apconvert-expr-value-when-slong-arrayp
-                      apconvert-expr-value-when-ullong-arrayp
-                      apconvert-expr-value-when-sllong-arrayp
-                      expr-valuep-of-expr-value
-                      not-errorp-when-expr-valuep
-                      objdesign-option-fix
-                      objdesign-fix-when-objdesignp
-                      return-type-of-objdesign-member
-                      return-type-of-value-pointer
-                      value-pointer->designator-of-value-pointer
-                      value-pointer-validp-of-value-pointer
-                      return-type-of-pointer-valid
-                      pointer-valid->get-of-pointer-valid
-                      value-pointer->designator-of-value-pointer
-                      value-pointer->reftype-of-value-pointer
-                      read-object-of-objdesign-member
-                      (:e objdesignp)
-                      (:e type-fix)
-                      (:e type-uchar)
-                      (:e type-schar)
-                      (:e type-ushort)
-                      (:e type-sshort)
-                      (:e type-uint)
-                      (:e type-sint)
-                      (:e type-ulong)
-                      (:e type-slong)
-                      (:e type-ullong)
-                      (:e type-sllong)
-                      (:t objdesign-member)))))
+          (reader-alt-def (packn-pos (list reader '-alt-def) reader))
+          (checker-alt-def (packn-pos (list checker '-alt-def) checker))
+          (hints-member `(("Goal"
+                           :in-theory '(,reader-member-thm
+                                        ,reader-alt-def
+                                        ,checker-alt-def
+                                        cintegerp))))
+          (hints-memberp `(("Goal"
+                            :in-theory '(,reader-memberp-thm
+                                         ,reader-alt-def
+                                         ,checker-alt-def
+                                         cintegerp))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member
-                                  :hints hints
+                                  :hints hints-member
                                   :enable nil))
           ((mv event-memberp &)
            (evmac-generate-defthm thm-memberp-name
                                   :formula formula-memberp
-                                  :hints hints
+                                  :hints hints-memberp
                                   :enable nil))
           ((mv events thm-names names-to-avoid)
            (atc-gen-tag-member-read-thms-aux tag
@@ -607,6 +514,8 @@
                                              (cdr readers)
                                              (cdr checkers)
                                              length
+                                             reader-member-thm
+                                             reader-memberp-thm
                                              names-to-avoid
                                              wrld)))
        (mv (append (and (not length)
