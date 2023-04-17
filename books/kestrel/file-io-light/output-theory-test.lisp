@@ -1,4 +1,4 @@
-; Simple regresstion tests for output-theory.lisp
+; Simple regression tests for output-theory.lisp
 ;
 ; Copyright (C) 2023 Kestrel Institute
 ;
