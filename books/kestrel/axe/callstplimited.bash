@@ -1,7 +1,7 @@
 # A script to call the STP solver with a limit on the number of conflicts
 #
 # Copyright (C) 2008-2011 Eric Smith and Stanford University
-# Copyright (C) 2013-2021 Kestrel Institute
+# Copyright (C) 2013-2023 Kestrel Institute
 #
 # License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 #
@@ -11,7 +11,8 @@
 
 #!/bin/bash
 
-# This script calls STP (with a max conflicts) on a file.
+# This script calls STP on a file (with a max conflicts option).
+# See also callstp.bash.
 
 set -e # Exit immediately on errors
 
@@ -38,11 +39,13 @@ fi
 
 #TODO: The STP timeout is hardly graceful.  It says "Aborted..." Try the new STP?  <-- old comment?
 
-# echo "CALLING STP"
+# Use STP environment var, if set, otherwise look for 'stp' on the user's path:
+STP=${STP:-stp}
 
-## Requires a relatively new STP:
-stp ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
-## For a newer STP, this may be needed:
+# echo "CALLING ${STP}"
+# Requires a relatively new STP:
+${STP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
+## For a newer STP, this may be needed (or maybe either is ok, if the boost library is new enough):
 # stp ${COUNTEREXAMPLE_ARGS} --max-num-confl $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
 
 # if [ -f "${NEWSTP}" ]; then
