@@ -212,7 +212,7 @@
     ()))
 
 ;; Let h be a p-subgroup of g.  If h is not a subgroup of any conjugate of m, then according to
-;; orbit-subaction-div-p, the lenght of every orbit of h is divisible by p, which implies the
+;; orbit-subaction-div-p, the length of every orbit of h is divisible by p, which implies the
 ;; following:
 
 (defthmd not-find-supergroup-divides-p
