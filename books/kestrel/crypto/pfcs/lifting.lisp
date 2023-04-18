@@ -27,12 +27,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruledl symbol-listp-when-symbol-setp
-  (implies (symbol-setp x)
-           (symbol-listp x))
-  :induct t
-  :enable symbol-setp)
-
 (defruled sesem-omap-in-to-in-of-keys
   (iff (omap::in key map)
        (set::in key (omap::keys map)))

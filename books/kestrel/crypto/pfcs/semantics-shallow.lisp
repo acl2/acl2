@@ -24,14 +24,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruledl symbol-listp-when-symbol-setp
-  (implies (symbol-setp x)
-           (symbol-listp x))
-  :induct t
-  :enable symbol-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ semantics-shallowly-embedded
   :parents (semantics)
   :short "Shallowly embedded semantics of PFCSes."
