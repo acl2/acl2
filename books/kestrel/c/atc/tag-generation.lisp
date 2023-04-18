@@ -934,6 +934,16 @@
                                            nil
                                            names-to-avoid
                                            wrld))
+       (thm-memberp-name (pack 'exec-memberp-write-when-
+                               recognizer
+                               '-and-
+                               (ident->name memname)
+                               '-element))
+       ((mv thm-memberp-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix thm-memberp-name
+                                           nil
+                                           names-to-avoid
+                                           wrld))
        (elemfixtype (integer-type-to-fixtype elemtype))
        (elemfixtypep (pack elemfixtype 'p))
        (valuep-when-elemtype-arrayp (pack 'valuep-when- elemfixtype '-arrayp))
@@ -986,6 +996,49 @@
                  (write-var var
                             (,writer-element idx val struct)
                             compst))))
+       (formula-memberp
+        `(implies
+          (and (equal (expr-kind e) :binary)
+               (equal (binop-kind (expr-binary->op e)) :asg)
+               (equal left (expr-binary->arg1 e))
+               (equal right (expr-binary->arg2 e))
+               (equal (expr-kind left) :arrsub)
+               (equal array (expr-arrsub->arr left))
+               (equal index (expr-arrsub->sub left))
+               (equal (expr-kind array) :memberp)
+               (equal target (expr-memberp->target array))
+               (equal member (expr-memberp->name array))
+               (equal (expr-kind target) :ident)
+               (equal member (ident ,(ident->name memname)))
+               (not (zp limit))
+               (equal ptr (read-var (expr-ident->get target)
+                                    compst))
+               (valuep ptr)
+               (value-case ptr :pointer)
+               (value-pointer-validp ptr)
+               (equal (value-pointer->reftype ptr)
+                      (type-struct (ident ,(ident->name tag))))
+               (equal struct
+                      (read-object (value-pointer->designator ptr)
+                                   compst))
+               (,recognizer struct)
+               (equal eidx (exec-expr-pure index compst))
+               (expr-valuep eidx)
+               (equal eidx1 (apconvert-expr-value eidx))
+               (expr-valuep eidx1)
+               (equal idx (expr-value->value eidx1))
+               (cintegerp idx)
+               (,checker idx ,@(and length (list 'struct)))
+               (equal eval (exec-expr-pure right compst))
+               (expr-valuep eval)
+               (equal eval1 (apconvert-expr-value eval))
+               (expr-valuep eval1)
+               (equal val (expr-value->value eval1))
+               (,elemfixtypep val))
+          (equal (exec-expr-asg e compst fenv limit)
+                 (write-object (value-pointer->designator ptr)
+                               (,writer-element idx val struct)
+                               compst))))
        (theory-member
         `(exec-expr-asg
           expr-fix-when-exprp
@@ -1044,10 +1097,45 @@
           write-object
           exec-expr-pure
           ,@(and length (list length))))
+       (theory-memberp
+        `(exec-expr-asg
+          ,recognizer
+          value-struct-read
+          not-errorp-when-valuep
+          ,valuep-when-elemtype-arrayp
+          (:e ident)
+          ,value-kind-when-elemfixtype-arrayp
+          not-errorp-when-expr-valuep
+          ,checker
+          integer-range-p
+          value-integer->get-when-cintegerp
+          ,value-array-write-when-elemfixtype-arrayp
+          ,elemfixtype-array-index-okp
+          ,elemfixtype-arrayp-of-elemfixtype-array-write
+          ,writer-element
+          ,writer
+          value-integerp-when-cintegerp
+          ,elemfixtype-array-fix-when-elemfixtype-arrayp
+          ,reader
+          ,fixer
+          ,elemfixtype-array-length-of-elemfixtype-array-write
+          value-struct-write
+          return-type-of-value-struct
+          not-errorp-when-member-value-listp
+          member-value-listp-of-value-struct-write-aux
+          ,type-of-value-when-elemfixtype-arrayp
+          ,value-array->length-when-elemfixtype-arrayp
+          ,type-of-value-thm
+          ,@(and length (list length))))
        ((mv event-member &)
         (evmac-generate-defthm thm-member-name
                                :formula formula-member
                                :hints `(("Goal" :in-theory ',theory-member))
+                               :enable nil))
+       ((mv event-memberp &)
+        (evmac-generate-defthm thm-memberp-name
+                               :formula formula-memberp
+                               :hints `(("Goal" :in-theory ',theory-memberp))
                                :enable nil))
        ((mv more-events
             member-write-thms
@@ -1067,9 +1155,10 @@
                                            type-of-value-thm
                                            length
                                            thm-member-name
+                                           thm-memberp-name
                                            names-to-avoid
                                            wrld)))
-    (mv (list* event-member more-events)
+    (mv (list* event-member event-memberp more-events)
         member-write-thms
         names-to-avoid))
 
@@ -1089,6 +1178,7 @@
                                               (type-of-value-thm symbolp)
                                               (length symbolp)
                                               (writer-member-thm symbolp)
+                                              (writer-memberp-thm symbolp)
                                               (names-to-avoid symbol-listp)
                                               (wrld plist-worldp))
      :guard (and (type-nonchar-integerp elemtype)
@@ -1106,16 +1196,6 @@
           (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
           (elemtypep (pack elemfixtype 'p))
-          (integer-from-indextype (pack 'integer-from- indexfixtype))
-          (array-writer (pack elemfixtype '-array-integer-write-alt-def))
-          (array-checker (pack elemfixtype '-array-integer-index-okp))
-          (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
-          (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
-          (valuep-when-indextypep (pack 'valuep-when- indextypep))
-          (valuep-when-elemtypep (pack 'valuep-when- elemtypep))
-          (value-kind-when-indextypep (pack 'value-kind-when- indextypep))
-          (value-kind-when-elemtypep (pack 'value-kind-when- elemtypep))
-          (type-thm (pack 'integer-from- indexfixtype))
           (thm-member-name (pack 'exec-member-write-when-
                                  recognizer
                                  '-and-
@@ -1138,8 +1218,6 @@
                                               nil
                                               names-to-avoid
                                               wrld))
-          (arrayp-of-arrary-write
-           (pack elemfixtype '-arrayp-of- elemfixtype '-array-integer-write))
           (check-hyp (if length
                          `(,checker idx struct)
                        `(,checker idx)))
@@ -1225,111 +1303,10 @@
                                                ,writer-alt-def
                                                ,checker-alt-def
                                                cintegerp))))
-          (hints-memberp
-           `(("Goal"
-              :in-theory
-              '(exec-expr-asg
-                value-integer->get
-                value-schar->get-to-integer-from-schar
-                value-uchar->get-to-integer-from-uchar
-                value-sshort->get-to-integer-from-sshort
-                value-ushort->get-to-integer-from-ushort
-                value-sint->get-to-integer-from-sint
-                value-uint->get-to-integer-from-uint
-                value-slong->get-to-integer-from-slong
-                value-ulong->get-to-integer-from-ulong
-                value-sllong->get-to-integer-from-sllong
-                value-ullong->get-to-integer-from-ullong
-                value-kind-when-scharp
-                value-kind-when-ucharp
-                value-kind-when-sshortp
-                value-kind-when-ushortp
-                value-kind-when-sintp
-                value-kind-when-uintp
-                value-kind-when-slongp
-                value-kind-when-ulongp
-                value-kind-when-sllongp
-                value-kind-when-ullongp
-                value-struct-read
-                value-struct-write
-                not-errorp-when-valuep
-                value-integerp
-                value-unsigned-integerp-alt-def
-                value-signed-integerp-alt-def
-                value-fix-when-valuep
-                ifix
-                integer-range-p
-                (:e ident)
-                (:compound-recognizer consp-when-ucharp)
-                ,recognizer
-                ,fixer-recognizer-thm
-                ,not-error-thm
-                ,type-of-value-thm
-                ,kind-array-thm
-                ,checker
-                ,checker-acl2int
-                ,writer
-                ,writer-acl2int
-                ,not-error-array-thm
-                ,array-writer
-                ,array-checker
-                ,valuep-when-elemtypep
-                ,valuep-when-indextypep
-                ,@*integer-value-disjoint-rules*
-                (:t ,type-thm)
-                ,@(and length (list length))
-                not-errorp-when-expr-valuep
-                apconvert-expr-value-when-not-value-array-alt
-                ,value-kind-when-elemtypep
-                ,value-kind-when-indextypep
-                expr-value-fix-when-expr-valuep)
-              :use
-              ((:instance
-                ,writer-return-thm
-                (index
-                 (,integer-from-indextype
-                  (expr-value->value
-                   (apconvert-expr-value
-                    (exec-expr-pure (expr-arrsub->sub (expr-binary->arg1 e))
-                                    compst)))))
-                (val
-                 (expr-value->value
-                  (apconvert-expr-value
-                   (exec-expr-pure (expr-binary->arg2 e) compst))))
-                (struct
-                 (read-object
-                  (value-pointer->designator
-                   (read-var
-                    (expr-ident->get
-                     (expr-memberp->target
-                      (expr-arrsub->arr (expr-binary->arg1 e))))
-                    compst))
-                  compst)))
-               (:instance
-                ,arrayp-of-arrary-write
-                (array
-                 (value-struct-read-aux
-                  (ident ,(ident->name memname))
-                  (value-struct->members
-                   (read-object
-                    (value-pointer->designator
-                     (read-var
-                      (expr-ident->get
-                       (expr-memberp->target
-                        (expr-arrsub->arr (expr-binary->arg1 e))))
-                      compst))
-                    compst))))
-                (index
-                 (,integer-from-indextype
-                  (expr-value->value
-                   (apconvert-expr-value
-                    (exec-expr-pure
-                     (expr-arrsub->sub (expr-binary->arg1 e))
-                     compst)))))
-                (element
-                 (expr-value->value
-                  (apconvert-expr-value
-                   (exec-expr-pure (expr-binary->arg2 e) compst)))))))))
+          (hints-memberp `(("Goal" :in-theory '(,writer-memberp-thm
+                                                ,writer-alt-def
+                                                ,checker-alt-def
+                                                cintegerp))))
           ((mv event-member &)
            (evmac-generate-defthm thm-member-name
                                   :formula formula-member
@@ -1356,6 +1333,7 @@
                                               type-of-value-thm
                                               length
                                               writer-member-thm
+                                              writer-memberp-thm
                                               names-to-avoid
                                               wrld)))
        (mv (append (and (not length)
