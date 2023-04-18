@@ -351,7 +351,7 @@
        (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
        (info (atc-tag-info->defstruct info))
-       ((unless (member-eq term.fn (defstruct-info->readers info))) (no))
+       ((unless (member-eq term.fn (defstruct-info->reader-list info))) (no))
        (tag (defstruct-info->tag info))
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
@@ -360,6 +360,7 @@
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
+       ((unless (type-integerp mem-type)) (no))
        ((unless (list-lenp 1 term.args)) (no))
        (arg (car term.args)))
     (mv t arg tag member mem-type))
@@ -411,7 +412,7 @@
        (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
        (info (atc-tag-info->defstruct info))
-       ((unless (member-eq term.fn (defstruct-info->readers info))) (no))
+       ((unless (member-eq term.fn (defstruct-info->readers-list info))) (no))
        (tag (defstruct-info->tag info))
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
@@ -492,7 +493,7 @@
        (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
        (info (atc-tag-info->defstruct info))
-       ((unless (member-eq val.fn (defstruct-info->writers info))) (no))
+       ((unless (member-eq val.fn (defstruct-info->writer-list info))) (no))
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (tag (defstruct-info->tag info))
@@ -501,6 +502,7 @@
        (member (ident member))
        (mem-type (member-type-lookup member members))
        ((unless mem-type) (no))
+       ((unless (type-integerp mem-type)) (no))
        ((unless (list-lenp 2 val.args)) (no))
        (mem (first val.args))
        (struct (second val.args)))
@@ -572,7 +574,7 @@
        (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
        (info (atc-tag-info->defstruct info))
-       ((unless (member-eq val.fn (defstruct-info->writers info))) (no))
+       ((unless (member-eq val.fn (defstruct-info->writers-list info))) (no))
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (tag (defstruct-info->tag info))
