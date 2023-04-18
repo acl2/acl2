@@ -9304,51 +9304,56 @@
 ;   If pathname does not specify a host, device, directory, name, or type, each
 ;   such component is copied from default-pathname.
 
-  (let ((os (os (w state)))
-        (ctx (cons 'set-cbd str)))
-    (cond
-     ((not (stringp str))
-      (cond ((and (null str)
-                  (f-get-global 'boot-strap-flg state))
+  (cond
+   ((and str ; avoid a boot-strap problem
+         (equal (cbd) str)) ; optimization to avoid canonical-dirname!
+    (value nil))
+   (t
+    (let ((os (os (w state)))
+          (ctx (cons 'set-cbd str)))
+      (cond
+       ((not (stringp str))
+        (cond ((and (null str)
+                    (f-get-global 'boot-strap-flg state))
 
 ; This special case is expected.
 
-             (set-cbd-fn1 nil state))
-            (t
-             (er soft ctx
-                 "The argument of set-cbd must be a string, unlike ~x0.  See ~
-                  :DOC cbd."
-                 str))))
-     (t (let ((str (expand-tilde-to-user-home-dir str os ctx state)))
-          (cond
-           ((absolute-pathname-string-p str nil os)
-            (set-cbd-fn1
-             (canonical-dirname! (maybe-add-separator str)
-                                 ctx
-                                 state)
-             state))
-           ((not (absolute-pathname-string-p
+               (set-cbd-fn1 nil state))
+              (t
+               (er soft ctx
+                   "The argument of set-cbd must be a string, unlike ~x0.  ~
+                    See :DOC cbd."
+                   str))))
+       (t (let ((str (expand-tilde-to-user-home-dir str os ctx state)))
+            (cond
+             ((absolute-pathname-string-p str nil os)
+              (set-cbd-fn1
+               (canonical-dirname! (maybe-add-separator str)
+                                   ctx
+                                   state)
+               state))
+             ((not (absolute-pathname-string-p
+                    (f-get-global 'connected-book-directory state)
+                    t
+                    os))
+              (er soft ctx
+                  "An attempt was made to set the connected book directory ~
+                   (cbd) using relative pathname ~p0, but surprisingly, the ~
+                   existing cbd is ~p1, which is not an absolute pathname.  ~
+                   This appears to be an implementation error; please contact ~
+                   the ACL2 implementors."
+                  str
+                  (f-get-global 'connected-book-directory state)))
+             (t
+              (set-cbd-fn1
+               (canonical-dirname!
+                (maybe-add-separator
+                 (our-merge-pathnames
                   (f-get-global 'connected-book-directory state)
-                  t
-                  os))
-            (er soft ctx
-                "An attempt was made to set the connected book directory ~
-                 (cbd) using relative pathname ~p0, but surprisingly, the ~
-                 existing cbd is ~p1, which is not an absolute pathname.  ~
-                 This appears to be an implementation error; please contact ~
-                 the ACL2 implementors."
-                str
-                (f-get-global 'connected-book-directory state)))
-           (t
-            (set-cbd-fn1
-             (canonical-dirname!
-              (maybe-add-separator
-               (our-merge-pathnames
-                (f-get-global 'connected-book-directory state)
-                str))
-              ctx
-              state)
-             state))))))))
+                  str))
+                ctx
+                state)
+               state))))))))))
 
 (defmacro set-cbd (str)
   `(set-cbd-fn ,str state))
