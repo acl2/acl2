@@ -20,16 +20,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; These are examples from Zcash (see :DOC ZCASH::ZCASH).
+; These are (simple) examples from Zcash (see :DOC ZCASH::ZCASH).
 ; They may be moved to the Zcash library at some point.
 
-; Each example defines a PFCS named relation
-; and proves its equivalence with an ACL2 specification,
-; using the PFCS shallowly embedded semantics.
-
-; These are simple examples for now,
-; but they should demonstrate how PFCSes can support
-; the modular verification of hierarchical gadgets.
+; Each example defines a (deeply embedded) PFCS named relation
+; and proves its equivalence with an ACL2 specification.
+; First the PFCS definition is lifted (automatically).
+; Then the lifted (shallowly embedded) definition
+; is proved equivalent to the specification.
+; Finally the original definition is proved equivalent to the specification,
+; by composing the liftin theorem with the manually proved theorem;
+; (this theorem composition could be automated).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
