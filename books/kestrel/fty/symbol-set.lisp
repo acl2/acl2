@@ -28,4 +28,9 @@
     (implies (and (symbol-setp x)
                   (not (set::empty x)))
              (symbolp (set::head x)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defruled symbol-listp-when-symbol-setp
+    (implies (symbol-setp x)
+             (symbol-listp x))
+    :enable symbol-setp))
