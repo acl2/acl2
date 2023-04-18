@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See also std/io/read-file-bytes.lisp.
+
 (include-book "read-bytes-from-channel")
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 ;; (include-book "kestrel/utilities/channel-contents" :dir :system)
