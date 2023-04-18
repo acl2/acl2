@@ -17,13 +17,6 @@
 (include-book "kestrel/std/util/defund-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "omap-lib-ext"))
-
-(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
-(local (include-book "kestrel/utilities/nfix" :dir :system))
-(local (include-book "std/typed-lists/symbol-listp" :dir :system))
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -36,25 +29,6 @@
            (symbol-listp x))
   :induct t
   :enable symbol-setp)
-
-(defruled sesem-omap-in-to-in-of-keys
-  (iff (omap::in key map)
-       (set::in key (omap::keys map)))
-  :by omap::in-to-in-of-keys)
-
-(defruled sesem-omap-consp-of-in-iff-in
-  (iff (consp (omap::in key map))
-       (omap::in key map))
-  :by omap::consp-of-in-iff-in)
-
-(defruled sesem-natp-of-mod
-  (implies (and (natp a)
-                (posp b))
-           (natp (mod a b))))
-
-(defruled sesem-nfix-when-natp
-  (implies (natp x)
-           (equal (nfix x) x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
