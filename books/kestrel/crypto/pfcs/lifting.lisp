@@ -91,8 +91,7 @@
 
 (define sesem-definition-thm ((def definitionp) (prime symbolp))
   :returns (event pseudo-event-formp)
-  :short "Generate theorem connecting deeply and shallowly embedded semantics,
-          for PFCS definitions without free variables."
+  :short "Generate theorem connecting deeply and shallowly embedded semantics."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -390,3 +389,35 @@
               (t (cons `(mv-nth ,index ,witness)
                        (sesem-definition-thm-aux3-aux
                         (cdr free) (1+ index) witness)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-fn ((def definitionp) (prime symbolp))
+  :returns (event pseudo-event-formp)
+  :short "Lift a deeply embedded PFCS definition
+          to a shallowly embedded PFCS definition
+          with a theorem relating the two."
+  (b* ((event-fn (sesem-definition def prime))
+       (event-thm (sesem-definition-thm def prime)))
+    `(encapsulate ()
+       ,event-fn
+       ,event-thm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::defmacro+ lift (def &key (prime 'p))
+  :short "Macro to lift a deeply embedded PFCS definition
+          to a shallowly embedded PFCS definition
+          with a theorem relating the two."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The required argument must be a ground form
+     that evaluates to a PFCS @(tsee definition).
+     The form is evaluated and the resulting definition is processed.")
+   (xdoc::p
+    "The keyword argument must be a symbol
+     to use for the prime that parameterizes the PFCS semantics.
+     It is @('p') by default.
+     This is quoted (not evaluated) for processing."))
+  `(make-event (lift-fn ,def ',prime)))
