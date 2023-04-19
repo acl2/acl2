@@ -572,8 +572,19 @@
                                                                itypes)))))
 
   (defval *atc-array-length-write-rules*
-    (atc-array-length-write-rules-loop-atypes *nonchar-integer-types*
-                                              *nonchar-integer-types*)))
+    (append
+     (atc-array-length-write-rules-loop-atypes *nonchar-integer-types*
+                                               *nonchar-integer-types*)
+     '(schar-array-length-of-schar-array-write
+       uchar-array-length-of-uchar-array-write
+       sshort-array-length-of-sshort-array-write
+       ushort-array-length-of-ushort-array-write
+       sint-array-length-of-sint-array-write
+       uint-array-length-of-uint-array-write
+       slong-array-length-of-slong-array-write
+       ulong-array-length-of-ulong-array-write
+       sllong-array-length-of-sllong-array-write
+       ullong-array-length-of-ullong-array-write))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -658,6 +669,96 @@
                   (c::sllong-array-integer-index-okp array index))
              (not (c::errorp (c::value-array-read index array))))
     :use (:instance c::sllong-array-integer-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-uchar-array-and-in-range-cinteger
+    (implies (and (c::uchar-arrayp array)
+                  (cintegerp index)
+                  (c::uchar-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::uchar-array-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-schar-array-and-in-range-cinteger
+    (implies (and (c::schar-arrayp array)
+                  (cintegerp index)
+                  (c::schar-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::schar-array-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-ushort-array-and-in-range-cinteger
+    (implies (and (c::ushort-arrayp array)
+                  (cintegerp index)
+                  (c::ushort-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::ushort-array-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-sshort-array-and-in-range-cinteger
+    (implies (and (c::sshort-arrayp array)
+                  (cintegerp index)
+                  (c::sshort-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::sshort-array-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-uint-array-and-in-range-cinteger
+    (implies (and (c::uint-arrayp array)
+                  (cintegerp index)
+                  (c::uint-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::uint-array-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-sint-array-and-in-range-cinteger
+    (implies (and (c::sint-arrayp array)
+                  (cintegerp index)
+                  (c::sint-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::sint-array-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-ulong-array-and-in-range-cinteger
+    (implies (and (c::ulong-arrayp array)
+                  (cintegerp index)
+                  (c::ulong-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::ulong-array-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-slong-array-and-in-range-cinteger
+    (implies (and (c::slong-arrayp array)
+                  (cintegerp index)
+                  (c::slong-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::slong-array-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-ullong-array-and-in-range-cinteger
+    (implies (and (c::ullong-arrayp array)
+                  (cintegerp index)
+                  (c::ullong-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::ullong-array-read-alt-def
+                    (index index) (array array)))
+
+  (defruled not-errorp-of-value-array-read-when-sllong-array-and-in-range-cinteger
+    (implies (and (c::sllong-arrayp array)
+                  (cintegerp index)
+                  (c::sllong-array-index-okp array index))
+             (not (c::errorp
+                   (c::value-array-read (integer-from-cinteger index) array))))
+    :use (:instance c::sllong-array-read-alt-def
                     (index index) (array array)))
 
   (defruled value-array-read-when-uchar-arrayp
@@ -750,7 +851,17 @@
       not-errorp-of-value-array-read-when-ulong-array-and-in-range
       not-errorp-of-value-array-read-when-slong-array-and-in-range
       not-errorp-of-value-array-read-when-ullong-array-and-in-range
-      not-errorp-of-value-array-read-when-sllong-array-and-in-range)))
+      not-errorp-of-value-array-read-when-sllong-array-and-in-range
+      not-errorp-of-value-array-read-when-uchar-array-and-in-range-cinteger
+      not-errorp-of-value-array-read-when-schar-array-and-in-range-cinteger
+      not-errorp-of-value-array-read-when-ushort-array-and-in-range-cinteger
+      not-errorp-of-value-array-read-when-sshort-array-and-in-range-cinteger
+      not-errorp-of-value-array-read-when-uint-array-and-in-range-cinteger
+      not-errorp-of-value-array-read-when-sint-array-and-in-range-cinteger
+      not-errorp-of-value-array-read-when-ulong-array-and-in-range-cinteger
+      not-errorp-of-value-array-read-when-slong-array-and-in-range-cinteger
+      not-errorp-of-value-array-read-when-ullong-array-and-in-range-cinteger
+      not-errorp-of-value-array-read-when-sllong-array-and-in-range-cinteger)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -846,3 +957,68 @@
              (equal (value-array-write (integer-from-cinteger i) e x)
                     (sllong-array-write x i e)))
     :enable sllong-array-write-alt-def))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-value-array->elements-rules
+  :short "Rules about @(tsee value-array->elements)."
+
+  (defruled value-array->elements-when-uchar-arrayp
+    (implies (uchar-arrayp x)
+             (equal (value-array->elements x)
+                    (uchar-array->elements x)))
+    :enable uchar-array->elements-alt-def)
+
+  (defruled value-array->elements-when-schar-arrayp
+    (implies (schar-arrayp x)
+             (equal (value-array->elements x)
+                    (schar-array->elements x)))
+    :enable schar-array->elements-alt-def)
+
+  (defruled value-array->elements-when-ushort-arrayp
+    (implies (ushort-arrayp x)
+             (equal (value-array->elements x)
+                    (ushort-array->elements x)))
+    :enable ushort-array->elements-alt-def)
+
+  (defruled value-array->elements-when-sshort-arrayp
+    (implies (sshort-arrayp x)
+             (equal (value-array->elements x)
+                    (sshort-array->elements x)))
+    :enable sshort-array->elements-alt-def)
+
+  (defruled value-array->elements-when-uint-arrayp
+    (implies (uint-arrayp x)
+             (equal (value-array->elements x)
+                    (uint-array->elements x)))
+    :enable uint-array->elements-alt-def)
+
+  (defruled value-array->elements-when-sint-arrayp
+    (implies (sint-arrayp x)
+             (equal (value-array->elements x)
+                    (sint-array->elements x)))
+    :enable sint-array->elements-alt-def)
+
+  (defruled value-array->elements-when-ulong-arrayp
+    (implies (ulong-arrayp x)
+             (equal (value-array->elements x)
+                    (ulong-array->elements x)))
+    :enable ulong-array->elements-alt-def)
+
+  (defruled value-array->elements-when-slong-arrayp
+    (implies (slong-arrayp x)
+             (equal (value-array->elements x)
+                    (slong-array->elements x)))
+    :enable slong-array->elements-alt-def)
+
+  (defruled value-array->elements-when-ullong-arrayp
+    (implies (ullong-arrayp x)
+             (equal (value-array->elements x)
+                    (ullong-array->elements x)))
+    :enable ullong-array->elements-alt-def)
+
+  (defruled value-array->elements-when-sllong-arrayp
+    (implies (sllong-arrayp x)
+             (equal (value-array->elements x)
+                    (sllong-array->elements x)))
+    :enable sllong-array->elements-alt-def))

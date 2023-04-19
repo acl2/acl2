@@ -201,6 +201,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-array-read$ ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (arr pseudo-termp)
+               (sub pseudo-termp)
+               (arr-type typep)
+               (elem-type typep))
+  :short "Check if a term may represent an array read."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This will replace @(tsee atc-check-array-read),
+     and will be renamed to that (i.e. without the @('$')).")
+   (xdoc::p
+    "If the term is a call of one of the ACL2 functions
+     that represent C array read operations,
+     we return the two argument terms.")
+   (xdoc::p
+    "We also return the input array type
+     and the output element type
+     of the array read.")
+   (xdoc::p
+    "If the term does not have the form explained above,
+     we return an indication of failure."))
+  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type)))
+       ((unless (pseudo-term-case term :fncall)) (no))
+       ((pseudo-term-fncall term) term)
+       ((mv okp etype array read) (atc-check-symbol-3part term.fn))
+       ((unless (and okp
+                     (eq array 'array)
+                     (eq read 'read)))
+        (no))
+       (elem-type (fixtype-to-integer-type etype))
+       ((when (not elem-type)) (no))
+       (arr-type (make-type-array :of elem-type :size nil))
+       ((unless (list-lenp 2 term.args)) (no))
+       (arr (first term.args))
+       (sub (second term.args)))
+    (mv t arr sub arr-type elem-type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-array-read$-arr
+    (implies yes/no
+             (< (pseudo-term-count arr)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-array-read$-sub
+    (implies yes/no
+             (< (pseudo-term-count sub)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-array-read ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (arr pseudo-termp)
@@ -249,6 +303,69 @@
     (implies yes/no
              (< (pseudo-term-count sub)
                 (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-array-write$ ((var symbolp) (val pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (sub pseudo-termp)
+               (elem pseudo-termp)
+               (elem-type typep))
+  :short "Check if a @(tsee let) binding may represent an array write."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This will replace @(tsee atc-check-array-write),
+     and will be renamed to that (i.e. without the @('$')).")
+   (xdoc::p
+    "An array write, i.e. an assignment to an array element,
+     is represented by a @(tsee let) binding of the form")
+   (xdoc::codeblock
+    "(let ((<arr> (<type>-array-write <arr> <sub> <elem>))) ...)")
+   (xdoc::p
+    "where @('<arr>') is a variable of pointer type to an integer type,
+     which must occur identically as
+     both the @(tsee let) variable
+     and as the first argument of @('<type1>-array-write-<type2>'),
+     @('<sub>') is an expression that yields the index of the element to write,
+     @('<elem>') is an expression that yields the element to write,
+     and @('...') represents the code that follows the array assignment.
+     This function takes as arguments
+     the variable and value of a @(tsee let) binder,
+     and checks if they have the form described above.
+     If they do, the components are returned for further processing.
+     We also return the types of the index and element
+     as gathered from the name of the array write function."))
+  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type)))
+       ((unless (pseudo-term-case val :fncall)) (no))
+       ((pseudo-term-fncall val) val)
+       ((mv okp etype array write) (atc-check-symbol-3part val.fn))
+       ((unless (and okp
+                     (eq array 'array)
+                     (eq write 'write)))
+        (no))
+       (elem-type (fixtype-to-integer-type etype))
+       ((when (not elem-type)) (no))
+       ((unless (list-lenp 3 val.args)) (no))
+       (arr (first val.args))
+       (sub (second val.args))
+       (elem (third val.args)))
+    (if (eq arr var)
+        (mv t sub elem elem-type)
+      (no)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-array-write$-sub
+    (implies yes/no
+             (< (pseudo-term-count sub)
+                (pseudo-term-count val)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-array-write$-elem
+    (implies yes/no
+             (< (pseudo-term-count elem)
+                (pseudo-term-count val)))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

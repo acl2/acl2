@@ -26,8 +26,8 @@
 (defun |read| (|a| |i|)
   (declare (xargs :guard (and (c::uchar-arrayp |a|)
                               (c::sintp |i|)
-                              (c::uchar-array-sint-index-okp |a| |i|))))
-  (c::uchar-array-read-sint |a| |i|))
+                              (c::uchar-array-index-okp |a| |i|))))
+  (c::uchar-array-read |a| |i|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,9 +65,9 @@
    (xargs
     :guard (and (c::uchar-arrayp |a|)
                 (c::sintp |i|)
-                (c::uchar-array-sint-index-okp |a| |i|))))
-  (let ((|a| (c::uchar-array-write-sint |a| |i| (c::uchar-from-sint
-                                                 (c::sint-dec-const 88)))))
+                (c::uchar-array-index-okp |a| |i|))))
+  (let ((|a| (c::uchar-array-write |a| |i| (c::uchar-from-sint
+                                            (c::sint-dec-const 88)))))
     |a|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -88,14 +88,15 @@
                   :guard-hints (("Goal"
                                  :do-not-induct t
                                  :in-theory
-                                 (enable c::uchar-array-sint-index-okp
+                                 (enable c::uchar-array-index-okp
                                          c::uchar-array-integer-index-okp
                                          c::boolean-from-sint
                                          c::lt-sint-sint
                                          c::add-sint-sint
                                          c::add-sint-sint-okp
                                          c::sint-integerp-alt-def
-                                         c::assign)))
+                                         c::assign
+                                         c::integer-from-cinteger-alt-def)))
                   :measure (nfix (- (c::integer-from-sint |len|)
                                     (c::integer-from-sint |i|)))
                   :hints (("Goal"
@@ -109,8 +110,8 @@
                 (>= (c::integer-from-sint |i|) 0)
                 (>= (c::integer-from-sint |len|) 0)))
       (if (c::boolean-from-sint (c::lt-sint-sint |i| |len|))
-          (let* ((|b| (c::uchar-array-write-sint
-                       |b| |i| (c::uchar-array-read-sint |a| |i|)))
+          (let* ((|b| (c::uchar-array-write
+                       |b| |i| (c::uchar-array-read |a| |i|)))
                  (|i| (c::assign (c::add-sint-sint |i| (c::sint-dec-const 1)))))
             (|copy$loop| |a| |b| |len| |i|))
         (mv |b| |i|))

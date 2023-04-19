@@ -688,6 +688,36 @@
        the writing to an integer by pointer.")
      (xdoc::li
       "A term
+       @('(let ((var (<type>-array-write var term1 term2))) body)'),
+       when @('<type>') is among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('var') is in scope,
+       @('var') has an array type whose element type is
+       the C integer type corresponding to @('<type>'),
+       @('var') is one of the symbols in @('vars'),
+       @('term1') is a pure expression term for @('fn')
+       returning a C integer type,
+       @('term2') is a pure expression term for @('fn')
+       returning the C integer type corresponding to @('<type>'),
+       @('body') is a statement term for @('fn') with loop flag @('L')
+       returning @('T') and affecting @('vars').
+       This represents a C assignment to
+       an element of the array represented by @('var')
+       with the subscript expression represented by @('term1')
+       with the new element expression represented by @('term2'),
+       followed by the C code represented by @('body').")
+     (xdoc::li
+      "A term
        @('(let ((var (<type1>-array-write-<type2> var term1 term2))) body)'),
        when @('<type1>') and @('<type2>') are among"
       (xdoc::ul
@@ -1160,6 +1190,27 @@
        This represents the application of the indirection operator @('*')
        to the expression represented by the argument of @('<type>-read').")
      (xdoc::li
+      "A call of @('<type>-array-read')
+       on pure expression terms for @('fn') returning @('U') and @('V'),
+       when @('<type>') is among"
+      (xdoc::ul
+       (xdoc::li "@('schar')")
+       (xdoc::li "@('uchar')")
+       (xdoc::li "@('sshort')")
+       (xdoc::li "@('ushort')")
+       (xdoc::li "@('sint')")
+       (xdoc::li "@('uint')")
+       (xdoc::li "@('slong')")
+       (xdoc::li "@('ulong')")
+       (xdoc::li "@('sllong')")
+       (xdoc::li "@('ullong')"))
+      "@('T') is the C type correponding to @('<type>'),
+       @('U') is the array type of element type @('T'), and
+       @('V') is a C integer type.
+       This represents an array subscripting expression.
+       The guard verification requirement ensures that
+       the array access is well-defined.")
+     (xdoc::li
       "A call of @('<type1>-array-read-<type2>')
        on pure expression terms for @('fn') returning @('U') and @('V'),
        when @('<type1>') and @('<type2>') are among"
@@ -1619,13 +1670,13 @@
        That is,
        the C function is functionally equivalent to the ACL2 function.")
      (xdoc::p
-      "If the ACL2 function takes arrays or pointers to structures as inputs,
+      "If the ACL2 function takes arrays or pointers as inputs,
        the generated correctness theorem includes hypotheses
-       saying that the arrays and structures are all at different addresses.
+       saying that the pointed objects are all at different addresses.
        The formal model of C that the proofs rely on
-       assumes that arrays and structures do not overlap.
+       assumes that objects do not overlap.
        Thus, the guarantees provided by the generated theorems about the C code
-       hold only if pointers to distinct, non-overlapping arrays and structures
+       hold only if pointers to distinct, non-overlapping objects
        are passed to the generated C functions.")
      (xdoc::p
       "If the @(':proofs') input is @('nil'),

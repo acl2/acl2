@@ -1535,6 +1535,45 @@
                                        arg.thm-name
                                        gin
                                        state)))
+         ((mv okp arr-term sub-term arr-type elem-type)
+          (atc-check-array-read$ term))
+         ((when okp)
+          (b* (((erp (pexpr-gout arr))
+                (atc-gen-expr-pure arr-term gin state))
+               ((erp (pexpr-gout sub))
+                (atc-gen-expr-pure sub-term
+                                   (change-pexpr-gin
+                                    gin
+                                    :thm-index arr.thm-index
+                                    :names-to-avoid arr.names-to-avoid)
+                                   state))
+               ((unless (and (type-case arr.type :array)
+                             (type-case arr-type :array)
+                             (equal (type-array->of arr.type)
+                                    (type-array->of arr-type))
+                             (or (equal (type-array->size arr.type)
+                                        (type-array->size arr-type))
+                                 (not (type-array->size arr.type))
+                                 (not (type-array->size arr-type)))
+                             (type-integerp sub.type)))
+                (reterr
+                 (msg "The reading of a ~x0 array is applied to ~
+                       an expression term ~x1 returning ~x2 ~
+                       and to an expression term ~x3 returning ~x4, ~
+                       but a ~x0 and an integer operand is expected. ~
+                       This is indicative of provably dead code, ~
+                       given that the code is guard-verified."
+                      arr-type arr-term arr.type sub-term sub.type))))
+            (retok (make-pexpr-gout
+                    :expr (make-expr-arrsub :arr arr.expr
+                                            :sub sub.expr)
+                    :type elem-type
+                    :term term
+                    :events (append arr.events sub.events)
+                    :thm-name nil
+                    :thm-index sub.thm-index
+                    :names-to-avoid sub.names-to-avoid
+                    :proofs nil))))
          ((mv okp arr-term sub-term in-type1 in-type2 out-type)
           (atc-check-array-read term))
          ((when okp)

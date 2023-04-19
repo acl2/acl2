@@ -372,7 +372,8 @@
                                                           name))
          ((mv more-names more-events)
           (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
-      (mv (append names more-names) (append (list event) events more-events))))
+      (mv (append (list name) names more-names)
+          (append (list event) events more-events))))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-all ()
     :returns (event pseudo-event-formp)

@@ -160,7 +160,8 @@
           (atc-exec-arrsub-rules-gen-loop-itypes (car atypes) itypes name))
          ((mv more-names more-events)
           (atc-exec-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
-      (mv (append names more-names) (append (list event) events more-events))))
+      (mv (append (list name) names more-names)
+          (append (list event) events more-events))))
 
   (define atc-exec-arrsub-rules-gen-all ()
     :returns (event pseudo-event-formp)
