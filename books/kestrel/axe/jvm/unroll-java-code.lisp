@@ -105,7 +105,9 @@
                     :normalize-xors normalize-xors
                     :memoizep memoizep
                     ;;:exhaustivep (if chunkedp t nil)
-                    :limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration))
+                    ;; todo: do we need both of these?:
+                    :limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration)
+                              (run-until-return-from-stack-height-opener-fast-axe . ,steps-for-this-iteration))
                     :check-inputs nil))
          ((when erp) (mv erp nil state))
          (dag-fns (dag-fns dag)))
@@ -334,7 +336,7 @@
        ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-run-with-output-extractor nil))
        ((when erp) (mv erp nil nil nil nil nil state))
        (step-limit 1000000)
-       (step-increment (if chunkedp 100 1000000))
+       (step-increment (if chunkedp 100 1000000)) ; todo: let the chunk size be configurable
        ((mv erp dag state)
         (repeatedly-run dag-to-simulate
                         step-limit

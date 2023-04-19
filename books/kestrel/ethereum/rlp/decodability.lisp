@@ -170,7 +170,7 @@
      via the rule @('equal-of-appends-decompose')
      that we also used to prove the injectivity of @(tsee rlp-encode-bytes).
      For this, we need to relieve the hypothesis of that rule
-     that the lenghts of the encodings of the @(tsee car)s are equal:
+     that the lengths of the encodings of the @(tsee car)s are equal:
      this is done by the lemma @('car-encodings-same-len').")
    (xdoc::p
     "The key to proving @('car-encodings-same-len')

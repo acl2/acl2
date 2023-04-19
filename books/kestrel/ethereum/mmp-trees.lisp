@@ -250,7 +250,7 @@
 (define nibblelist-bytelist-map-sup-len-key ((map nibblelist-bytelist-mapp))
   :returns (sup natp)
   :parents (mmp-trees)
-  :short "Natural number supremum of the lenghts of the keys
+  :short "Natural number supremum of the lengths of the keys
           in a map from nibble arrays to byte arrays."
   :long
   (xdoc::topstring
