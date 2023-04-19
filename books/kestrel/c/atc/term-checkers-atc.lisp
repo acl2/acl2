@@ -201,7 +201,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-array-read$ ((term pseudo-termp))
+(define atc-check-array-read ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (arr pseudo-termp)
                (sub pseudo-termp)
@@ -210,9 +210,6 @@
   :short "Check if a term may represent an array read."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This will replace @(tsee atc-check-array-read),
-     and will be renamed to that (i.e. without the @('$')).")
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C array read operations,
@@ -241,13 +238,13 @@
     (mv t arr sub arr-type elem-type))
   ///
 
-  (defret pseudo-term-count-of-atc-check-array-read$-arr
+  (defret pseudo-term-count-of-atc-check-array-read-arr
     (implies yes/no
              (< (pseudo-term-count arr)
                 (pseudo-term-count term)))
     :rule-classes :linear)
 
-  (defret pseudo-term-count-of-atc-check-array-read$-sub
+  (defret pseudo-term-count-of-atc-check-array-read-sub
     (implies yes/no
              (< (pseudo-term-count sub)
                 (pseudo-term-count term)))
@@ -255,7 +252,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-array-read ((term pseudo-termp))
+(define atc-check-array-read-deprecated ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (arr pseudo-termp)
                (sub pseudo-termp)
@@ -293,13 +290,13 @@
     (mv t arr sub in-type1 in-type2 out-type))
   ///
 
-  (defret pseudo-term-count-of-atc-check-array-read-arr
+  (defret pseudo-term-count-of-atc-check-array-read-deprecated-arr
     (implies yes/no
              (< (pseudo-term-count arr)
                 (pseudo-term-count term)))
     :rule-classes :linear)
 
-  (defret pseudo-term-count-of-atc-check-array-read-sub
+  (defret pseudo-term-count-of-atc-check-array-read-deprecated-sub
     (implies yes/no
              (< (pseudo-term-count sub)
                 (pseudo-term-count term)))
@@ -307,7 +304,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-array-write$ ((var symbolp) (val pseudo-termp))
+(define atc-check-array-write ((var symbolp) (val pseudo-termp))
   :returns (mv (yes/no booleanp)
                (sub pseudo-termp)
                (elem pseudo-termp)
@@ -315,9 +312,6 @@
   :short "Check if a @(tsee let) binding may represent an array write."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This will replace @(tsee atc-check-array-write),
-     and will be renamed to that (i.e. without the @('$')).")
    (xdoc::p
     "An array write, i.e. an assignment to an array element,
      is represented by a @(tsee let) binding of the form")
@@ -356,13 +350,13 @@
       (no)))
   ///
 
-  (defret pseudo-term-count-of-atc-check-array-write$-sub
+  (defret pseudo-term-count-of-atc-check-array-write-sub
     (implies yes/no
              (< (pseudo-term-count sub)
                 (pseudo-term-count val)))
     :rule-classes :linear)
 
-  (defret pseudo-term-count-of-atc-check-array-write$-elem
+  (defret pseudo-term-count-of-atc-check-array-write-elem
     (implies yes/no
              (< (pseudo-term-count elem)
                 (pseudo-term-count val)))
@@ -370,7 +364,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-array-write ((var symbolp) (val pseudo-termp))
+(define atc-check-array-write-deprecated ((var symbolp) (val pseudo-termp))
   :returns (mv (yes/no booleanp)
                (sub pseudo-termp)
                (elem pseudo-termp)
@@ -419,13 +413,13 @@
       (no)))
   ///
 
-  (defret pseudo-term-count-of-atc-check-array-write-sub
+  (defret pseudo-term-count-of-atc-check-array-write-deprecated-sub
     (implies yes/no
              (< (pseudo-term-count sub)
                 (pseudo-term-count val)))
     :rule-classes :linear)
 
-  (defret pseudo-term-count-of-atc-check-array-write-elem
+  (defret pseudo-term-count-of-atc-check-array-write-deprecated-elem
     (implies yes/no
              (< (pseudo-term-count elem)
                 (pseudo-term-count val)))

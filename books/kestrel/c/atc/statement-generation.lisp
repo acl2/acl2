@@ -1992,7 +1992,7 @@
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
              ((mv okp sub-term elem-term elem-type)
-              (atc-check-array-write$ var val-term))
+              (atc-check-array-write var val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
                     (reterr
@@ -2111,7 +2111,7 @@
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
              ((mv okp sub-term elem-term sub-type elem-type)
-              (atc-check-array-write var val-term))
+              (atc-check-array-write-deprecated var val-term))
              ((when (and okp (member-eq :arrays gin.deprecated)))
               (b* (((unless (eq wrapper? nil))
                     (reterr
