@@ -1,7 +1,7 @@
 # A script to call the STP solver
 #
 # Copyright (C) 2008-2011 Eric Smith and Stanford University
-# Copyright (C) 2013-2021 Kestrel Institute
+# Copyright (C) 2013-2023 Kestrel Institute
 #
 # License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 #
@@ -11,7 +11,8 @@
 
 #!/bin/bash
 
-# This script calls STP (with no max conflicts) on a file.
+# This script calls STP on a file (with no max conflicts option).
+# See also callstplimited.bash
 
 set -e # Exit immediately on errors
 
@@ -35,11 +36,12 @@ else
     exit 1
 fi
 
-# echo "CALLING STP"
+# Use STP environment var, if set, otherwise look for 'stp' on the user's path:
+STP=${STP:-stp}
 
-## Requires a relatively new STP:
-stp ${COUNTEREXAMPLE_ARGS} -r ${INPUT_FILE} > ${OUTPUT_FILE}
-
+# echo "CALLING ${STP}"
+# Requires a relatively new STP:
+${STP} ${COUNTEREXAMPLE_ARGS} -r ${INPUT_FILE} > ${OUTPUT_FILE}
 # if [ -f "${NEWSTP}" ]; then
 #     echo "Using NEWSTP, which is ${NEWSTP}."
 #     ## Call a relatively new version of STP:
@@ -55,7 +57,6 @@ stp ${COUNTEREXAMPLE_ARGS} -r ${INPUT_FILE} > ${OUTPUT_FILE}
 #     echo "(STP environment var = ${STP})"
 #     exit 201
 # fi
-
 
 EXITSTATUS=$?
 # echo "STP exit status: $EXITSTATUS"

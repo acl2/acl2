@@ -59,7 +59,7 @@
            :do-not '(generalize eliminate-destructors))))
 
 ;bozo might loop?
-(defthmd take-equal-lenghten
+(defthmd take-equal-lengthen
   (implies (and (EQUAL (NTH n lst1)
                        (NTH n lst2))
                 (< n (len lst1)) ;drop?
