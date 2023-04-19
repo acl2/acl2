@@ -217,7 +217,8 @@
    (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred stmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -780,7 +781,8 @@
                                      :prec-tags gin.prec-tags
                                      :thm-index gin.thm-index
                                      :names-to-avoid gin.names-to-avoid
-                                     :proofs gin.proofs)
+                                     :proofs gin.proofs
+                                     :deprecated gin.deprecated)
                       state))
        ((unless (equal expr.affect must-affect))
         (reterr
@@ -1659,7 +1661,8 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs gin.proofs
+                                   :deprecated gin.deprecated)
                                   state))
                    ((when (or (type-case init.type :pointer)
                               (type-case init.type :array)))
@@ -1753,7 +1756,8 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs gin.proofs
+                                   :deprecated gin.deprecated)
                                   state))
                    ((unless (equal prev-type rhs.type))
                     (reterr
@@ -2494,7 +2498,8 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs gin.proofs
+                                   :deprecated gin.deprecated)
                                   state))
                    ((when (or (type-case init.type :pointer)
                               (type-case init.type :array)))
@@ -2595,7 +2600,8 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs gin.proofs
+                                   :deprecated gin.deprecated)
                                   state))
                    ((unless (equal prev-type rhs.type))
                     (reterr
@@ -2959,7 +2965,8 @@
    (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred lstmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -3127,7 +3134,8 @@
                        :prec-objs gin.prec-objs
                        :thm-index test.thm-index
                        :names-to-avoid test.names-to-avoid
-                       :proofs test.proofs)
+                       :proofs test.proofs
+                       :deprecated gin.deprecated)
                       state))
        ((unless (type-case body.type :void))
         (reterr

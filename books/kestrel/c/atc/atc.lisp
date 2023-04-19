@@ -196,7 +196,7 @@
              & ; fn-limits
              & ; fn-body-limits
              print
-             & ; deprecated
+             deprecated
              state)
         (atc-process-inputs args state))
        ((erp event)
@@ -210,6 +210,7 @@
                             wf-thm
                             fn-thms
                             print
+                            deprecated
                             call
                             state)))
     (retok event state)))

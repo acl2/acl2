@@ -54,7 +54,8 @@
    (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred pexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1890,18 +1891,7 @@
          ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
-                (atc-gen-expr-pure arg-term
-                                   (make-pexpr-gin
-                                    :context gin.context
-                                    :inscope gin.inscope
-                                    :prec-tags gin.prec-tags
-                                    :fn gin.fn
-                                    :fn-guard gin.fn-guard
-                                    :compst-var gin.compst-var
-                                    :thm-index gin.thm-index
-                                    :names-to-avoid gin.names-to-avoid
-                                    :proofs gin.proofs)
-                                   state))
+                (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
                                       :names-to-avoid arg.names-to-avoid
@@ -1948,7 +1938,8 @@
    (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred pexprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2020,7 +2011,8 @@
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
-                            :proofs gin.proofs)
+                            :proofs gin.proofs
+                            :deprecated gin.deprecated)
                            state))
        ((erp (pexprs-gout rest))
         (atc-gen-expr-pure-list (cdr terms)
@@ -2063,7 +2055,8 @@
    (prec-tags atc-string-taginfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2148,7 +2141,8 @@
                                            :compst-var gin.compst-var
                                            :thm-index gin.thm-index
                                            :names-to-avoid gin.names-to-avoid
-                                           :proofs gin.proofs)
+                                           :proofs gin.proofs
+                                           :deprecated gin.deprecated)
                            state))
        (bound '(quote 1))
        ((when (not pure.proofs))
@@ -2288,7 +2282,8 @@
                                        :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
-                                       :proofs gin.proofs)
+                                       :proofs gin.proofs
+                                       :deprecated gin.deprecated)
                                       state))
              ((unless (equal args.types in-types))
               (reterr

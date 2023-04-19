@@ -98,6 +98,12 @@
            (pseudo-term-listp (cdr term)))
   :enable pseudo-termp)
 
+(defrulel symbol-listp-when-keyword-listp
+  (implies (keyword-listp x)
+           (symbol-listp x))
+  :induct t
+  :enable keyword-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-function-and-loop-generation
@@ -2582,6 +2588,7 @@
                         (init-fun-env-thm symbolp)
                         (fn-thms symbol-symbol-alistp)
                         (print evmac-input-print-p)
+                        (deprecated keyword-listp)
                         (names-to-avoid symbol-listp)
                         state)
   :guard (not (eq fn 'quote))
@@ -2703,7 +2710,8 @@
                        :thm-index 1
                        :names-to-avoid names-to-avoid
                        :proofs (and proofs
-                                    modular-proofs))
+                                    modular-proofs)
+                       :deprecated deprecated)
                       state))
        (names-to-avoid body.names-to-avoid)
        ((when (and (type-case body.type :void)
@@ -3984,6 +3992,7 @@
                       (fn-appconds symbol-symbol-alistp)
                       (appcond-thms keyword-symbol-alistp)
                       (print evmac-input-print-p)
+                      (deprecated keyword-listp)
                       (names-to-avoid symbol-listp)
                       state)
   :guard (and (function-symbolp fn (w state))
@@ -4051,7 +4060,8 @@
                                            :prec-objs prec-objs
                                            :thm-index 1
                                            :names-to-avoid names-to-avoid
-                                           :proofs nil)
+                                           :proofs nil
+                                           :deprecated deprecated)
                            state))
        (names-to-avoid loop.names-to-avoid)
        ((erp local-events
