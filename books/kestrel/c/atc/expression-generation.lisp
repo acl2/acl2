@@ -1577,7 +1577,7 @@
                     :proofs nil))))
          ((mv okp arr-term sub-term in-type1 in-type2 out-type)
           (atc-check-array-read term))
-         ((when okp)
+         ((when (and okp (member-eq :arrays gin.deprecated)))
           (b* (((erp (pexpr-gout arr))
                 (atc-gen-expr-pure arr-term gin state))
                ((erp (pexpr-gout sub))

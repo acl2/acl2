@@ -61,6 +61,14 @@
   :induct t
   :enable symbol-alistp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel true-listp-when-keyword-listp
+  (implies (keyword-listp x)
+           (true-listp x))
+  :induct t
+  :enable keyword-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing atc)
@@ -821,11 +829,13 @@
        ((unless deprecated)
         (reterr (msg "The :DEPRECATED input must be ~
                       a non-empty list of keywords, ~
-                      but it is NIL instead."))))
-    (reterr (msg "Currently no deprecated features ~
-                  can be specified in the :DEPRECATED input, ~
-                  but instead the input is specifying ~x0."
-                 deprecated))))
+                      but it is NIL instead.")))
+       (allowed '(:arrays))
+       ((unless (subsetp-eq deprecated allowed))
+        (reterr (msg "The allowed keywords for the :DEPRECATED input are ~&0, ~
+                      but it includes ~&1 instead."
+                     allowed (set-difference-eq deprecated allowed)))))
+    (retok deprecated)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
