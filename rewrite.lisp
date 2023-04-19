@@ -9736,20 +9736,17 @@ its attachment is ignored during proofs"))))
 (defun brr-data-lst (state)
   (declare (xargs :stobjs state))
   (er-let* ((status (get-wormhole-status 'brr-data state)))
-    (value (let ((pair (wormhole-data status)))
-             (cond ((consp pair)
-                    (let ((data (cdr pair)))
-                      (if (consp data)
+    (value (let ((data (wormhole-data status)))
+             (cond ((consp data)
 
 ; Data is of the form (brr-data-1-stack . brr-data-lst).  We expect stack to be
 ; nil unless the proof was interrupted.
 
-                          (cdr data)
+                    (cdr data))
 
 ; If data is not a cons then we haven't collected any data or we have run
 ; (clear-brr-data-lst).
 
-                        nil)))
                    (t :none))))))
 
 (defun clear-brr-data-lst ()
