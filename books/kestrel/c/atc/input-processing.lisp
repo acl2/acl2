@@ -790,6 +790,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-process-deprecated ((options symbol-alistp))
+  :returns (mv erp (deprecated keyword-listp))
+  :short "Process the @(':deprecated') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an undocumented input,
+     used to instruct ATC to accept some deprecated features,
+     temporarily until all uses of ATC are updated
+     to no longer use such deprecated features.
+     This input must be a list of keywords,
+     each of which specifies a particular deprecated feature.
+     If the input is present,
+     it must be a non-empty list of keywords.")
+   (xdoc::p
+    "For now we do not have any deprecated features,
+     so this input must absent, currently.
+     However, this will change soon,
+     as we plan to deprecate certain features."))
+  (b* (((reterr) nil)
+       (deprecated-option (assoc-eq :deprecated options))
+       ((when (not deprecated-option)) (retok nil))
+       (deprecated (cdr deprecated-option))
+       ((unless (keyword-listp deprecated))
+        (reterr (msg "The :DEPRECATED input must be ~
+                      a list of keywords, ~
+                      but it is ~x0 instead."
+                     deprecated)))
+       ((unless deprecated)
+        (reterr (msg "The :DEPRECATED input must be ~
+                      a non-empty list of keywords, ~
+                      but it is NIL instead."))))
+    (reterr (msg "Currently no deprecated features ~
+                  can be specified in the :DEPRECATED input, ~
+                  but instead the input is specifying ~x0."
+                 deprecated))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
   (list :output-dir
@@ -798,7 +837,8 @@
         :pretty-printing
         :proofs
         :const-name
-        :print)
+        :print
+        :deprecated)
   ///
   (assert-event (keyword-listp *atc-allowed-options*))
   (assert-event (no-duplicatesp-eq *atc-allowed-options*)))
@@ -819,10 +859,12 @@
                (fn-limits symbol-symbol-alistp)
                (fn-body-limits symbol-symbol-alistp)
                (print evmac-input-print-p)
+               (deprecated keyword-listp)
                state)
   :short "Process all the inputs."
   (b* (((reterr)
-        nil "" "" nil (irr-pprint-options) nil nil nil nil nil nil nil state)
+        nil "" "" nil (irr-pprint-options)
+        nil nil nil nil nil nil nil nil state)
        (wrld (w state))
        ((mv erp targets options)
         (partition-rest-and-keyword-args args *atc-allowed-options*))
@@ -838,7 +880,8 @@
        ((erp proofs) (atc-process-proofs options))
        ((erp prog-const wf-thm fn-thms fn-limits fn-body-limits)
         (atc-process-const-name options target-fns proofs wrld))
-       ((erp print) (atc-process-print options)))
+       ((erp print) (atc-process-print options))
+       ((erp deprecated) (atc-process-deprecated options)))
     (retok targets
            file-name
            path-wo-ext
@@ -851,4 +894,5 @@
            fn-limits
            fn-body-limits
            print
+           deprecated
            state)))

@@ -196,6 +196,7 @@
              & ; fn-limits
              & ; fn-body-limits
              print
+             & ; deprecated
              state)
         (atc-process-inputs args state))
        ((erp event)
