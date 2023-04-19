@@ -630,6 +630,11 @@ an approximation of its value in @('y')?"
     :rewrite :direct))
 
 
+(defthmd svex-monotonic-p-of-const
+  (implies (svex-case x :quote)
+           (svex-monotonic-p x))
+  :hints(("Goal" :in-theory (enable svex-monotonic-p))))
+
 (defines svex-check-monotonic
   (define svex-check-monotonic ((x svex-p))
     :measure (svex-count x)
@@ -694,7 +699,15 @@ an approximation of its value in @('y')?"
   (verify-guards svex-check-monotonic
     :hints(("Goal" :expand ((nth 1 (svex-call->args x))))))
 
-  (memoize 'svex-check-monotonic :condition '(svex-case x :call)))
+  (fty::deffixequiv-mutual svex-check-monotonic)
+  
+  (memoize 'svex-check-monotonic :condition '(svex-case x :call))
+
+  
+  (defthm svex-monotonic-p-when-svex-check-monotonic
+    (implies (svex-check-monotonic x)
+             (svex-monotonic-p x))
+    :hints(("Goal" :in-theory (enable svex-monotonic-p)))))
 
 
 

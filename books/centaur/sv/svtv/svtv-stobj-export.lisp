@@ -501,6 +501,22 @@
              :use ((:instance svtv-data$c-pipeline-okp-necc
                     (svtv-data$c (svtv-data-obj-to-stobj-logic x))
                     (results (svtv-data-obj->pipeline x)))))))
+
+  (defthm svtv-data-obj-ok-implies-svarlist-addr-p-of-flatnorm-assigns-keys
+    (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
+                  (svtv-data-obj->flatnorm-validp obj)
+                  (svtv-data-obj->flatten-validp obj))
+             (svarlist-addr-p (svex-alist-keys (flatnorm-res->assigns (svtv-data-obj->flatnorm obj)))))
+    :hints (("Goal" :use ((:instance svtv-data$ap-implies-flatnorm-okp
+                           (x (svtv-data-obj-to-stobj-logic obj)) )
+                          (:instance svtv-data$ap-implies-flatten-okp
+                           (x (svtv-data-obj-to-stobj-logic obj)) ))
+             :in-theory (enable svtv-data$c-flatnorm-okp
+                                svtv-data$c-flatten-okp
+                                svtv-normalize-assigns
+                                svtv-design-flatten))))
+
+  
   )
 
 (defconst *svtv-data-import-template*

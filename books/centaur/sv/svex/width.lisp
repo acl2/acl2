@@ -544,6 +544,12 @@
            (equal (equal x (svar-fix x))
                   (svar-p x))))
 
+  (local (Defthm svex-width-limited-p-of-const
+           (implies (and (svex-case x :quote)
+                         (4vec-width-p n (svex-quote->val x)))
+                    (svex-width-limited-p n x))
+           :hints (("goal" :expand ((svex-width-limited-p n x))))))
+
   (local (defthm svex-alist-width-limited-p-aux-when-equiv-atom
            (implies (and (svex-alist-eval-equiv x y)
                          (not (consp x)))
@@ -553,8 +559,11 @@
                             (var (caar y))))
                      :in-theory (e/d (svex-lookup-redef)
                                      (svex-alist-eval-equiv-necc
-                                      svex-alist-same-keys-implies-iff-svex-lookup-2
-                                      svex-alist-eval-equiv-implies-iff-svex-lookup-2))))))
+                                      svex-alist-eval-equiv-refines-svex-alist-keys-equiv
+                                      svex-alist-keys-equiv-implies-iff-svex-lookup-2
+                                      SVEX-ALIST-EVAL-EQUIV-IMPLIES-IFF-SVEX-LOOKUP-2
+                                      SVEX-ALIST-EVAL-EQUIV-IMPLIES-SVEX-EVAL-EQUIV-SVEX-LOOKUP-2
+                                      SVEX-EVAL-EQUIV-IMPLIES-SVEX-PAIR-EVAL-EQUIV-CONS-2))))))
   
   (defthmd svex-alist-width-limited-p-aux-eval-equiv-congruence-when-no-duplicate-keys
     (implies (and (svex-alist-eval-equiv x y)
@@ -715,7 +724,7 @@
                             (var (caar y))))
                      :in-theory (e/d (svex-lookup-redef)
                                      (svex-alist-eval-equiv-necc
-                                      svex-alist-same-keys-implies-iff-svex-lookup-2
+                                      svex-alist-keys-equiv-implies-iff-svex-lookup-2
                                       svex-alist-eval-equiv-implies-iff-svex-lookup-2))))))
   
   (defthmd svex-alist-width-aux-eval-equiv-congruence-when-no-duplicate-keys

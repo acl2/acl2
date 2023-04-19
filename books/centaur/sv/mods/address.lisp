@@ -36,6 +36,8 @@
 (local (include-book "std/osets/under-set-equiv" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
+(local (in-theory (enable svexlist-vars-of-svex-alist-vals)))
+
 (defxdoc name
   :parents (svmods)
   :short "Type of the names of wires, module instances, and namespaces (such as

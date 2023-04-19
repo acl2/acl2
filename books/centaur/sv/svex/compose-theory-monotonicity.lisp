@@ -1017,20 +1017,6 @@
   )
 
 
-(defthm svex-partial-monotonic-when-monotonic
-  (implies (svex-monotonic-p x)
-           (svex-partial-monotonic params x))
-  :hints(("Goal" :in-theory (enable svex-partial-monotonic))))
-
-(defthm svexlist-partial-monotonic-when-monotonic
-  (implies (svexlist-monotonic-p x)
-           (svexlist-partial-monotonic params x))
-  :hints(("Goal" :in-theory (enable svexlist-partial-monotonic))))
-
-(defthm svex-alist-partial-monotonic-when-monotonic
-  (implies (svex-alist-monotonic-p x)
-           (svex-alist-partial-monotonic params x))
-  :hints(("Goal" :in-theory (enable svex-alist-partial-monotonic))))
 
 
 (defthm svex-alist-compose-preserves-partial-monotonic-when-monotonic-2

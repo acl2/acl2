@@ -225,18 +225,18 @@
 ; We'll now prove, separately, our two main lemmas, about the decomposed
 ; circuit.
 
-(def-saved-event svtv-idealized-thm-defaults
-  (progn (local (table sv::svtv-idealized-thm-defaults :svtv 'boothpipe-run))
-         (local (table sv::svtv-idealized-thm-defaults :ideal 'boothpipe-ideal))
-         (local (table sv::svtv-idealized-thm-defaults :unsigned-byte-hyps t))
-         (local (table sv::svtv-idealized-thm-defaults :input-var-bindings '((en 1))))))
+(def-saved-event svtv-generalized-thm-defaults
+  (progn (local (table sv::svtv-generalized-thm-defaults :svtv 'boothpipe-run))
+         (local (table sv::svtv-generalized-thm-defaults :ideal 'boothpipe-ideal))
+         (local (table sv::svtv-generalized-thm-defaults :unsigned-byte-hyps t))
+         (local (table sv::svtv-generalized-thm-defaults :input-var-bindings '((en 1))))))
 
 
 
 (def-saved-event boothpipe-pp-correct
    ;; Main Lemma 1.  Partial Products Part is Correct.
    ;; This is a very easy proof for Glucose, taking about 1.5 seconds.
- (def-svtv-idealized-thm boothpipe-pp-correct
+ (def-svtv-generalized-thm boothpipe-pp-correct
    :input-vars (a b)
    :output-vars (pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7)
    :concl (and (equal pp0 (boothpipe-pp-spec 16 0 a b))
@@ -264,10 +264,12 @@
                            'find-boothpipe-pp-correct-fgl
                            state))
       (form (cadr make-event))
+      (- (cw "form: ~x0~%" form))
       ((er (cons ?stobjs-out (list ?eval-err form ?replaced-state)))
        (trans-eval-default-warning form 'find-boothpipe-pp-correct-fgl state t))
       ((when eval-err)
        (er soft 'find-boothpipe-pp-correct-fgl "~@0" eval-err))
+      (- (cw "form: ~x0~%" form))
       (fgl-form (find-form '(fgl::def-fgl-thm boothpipe-pp-correct-override-lemma) form))
       (final-thm-form (find-form '(defthm boothpipe-pp-correct) form)))
    (value `(progn (table saved-forms-table 'boothpipe-pp-correct-fgl ',fgl-form)
@@ -277,7 +279,7 @@
 ;; Main Lemma 2.  Addition Part is Correct.
 
 (def-saved-event boothpipe-sum-correct
- (def-svtv-idealized-thm boothpipe-sum-correct
+ (def-svtv-generalized-thm boothpipe-sum-correct
    :override-vars (pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7)
    :output-vars (o)
    :concl (b* ((- (cw "o: ~s0~%" (str::hexify o)))
@@ -394,14 +396,14 @@
 ;; (local (in-theory (disable boothpipe-decomp-is-boothpipe-via-GL)))
 
 ; All that remains is to chain the above facts together.  Fortunately, the
-; theorem resulting from each def-svtv-idealized-thm form is one that can
+; theorem resulting from each def-svtv-generalized-thm form is one that can
 ; easily be composed with other such theorems.  Boothpipe-pp-correct shows that
 ; the partial products are computed correctly; boothpipe-sum-correct shows that
 ; the partial products are correctly summed, and booth-sum-of-products-correct
 ; shows that the composition of the partial product computation and summing
 ; produces the signed 16-bit multiply.  The composition of these is just an
 ; ordinary ACL2 theorem (by rewriting), but we can write it succinctly as
-; another def-svtv-idealized-thm form (using the :no-lemmas option to skip the
+; another def-svtv-generalized-thm form (using the :no-lemmas option to skip the
 ; FGL step.)
 
 (in-theory (disable loghead logext unsigned-byte-p))
@@ -409,7 +411,7 @@
 ;; This is the most general form of the theorem. Note the ugly hyp #4 -- really
 ;; this just says that the PP override test variables should be unbound, or set to 0 or X.
 (def-saved-event boothpipe-correct-gen
-  (def-svtv-idealized-thm boothpipe-correct-gen
+  (def-svtv-generalized-thm boothpipe-correct-gen
     :input-vars (a b)
     :output-vars (o)
     :concl (equal o (loghead 32 (* (logext 16 a)
@@ -444,10 +446,7 @@
                (equal o (loghead 32 (* (logext 16 a) (logext 16 b))))))
     :hints(("Goal" :in-theory (e/d (svex-env-lookup-of-cons
                                     4vec-p-when-integerp
-                                    svex-env-lookup-use-exec
-                                    svex-env-keys-no-1s-p-of-variable-free-term
-                                    hons-intersection-force-execute
-                                    svex-env-keys-no-1s-p-of-cons)
+                                    hons-intersection-force-execute)
                                    ((svex-env-lookup)))))))
 
 
@@ -532,8 +531,8 @@ that the output computed is a function of those variables.  However, ultimately
 we want to know what happens in the SVTV when these signals are not
 overridden. To do this, we'll use the facts that we prove via symbolic
 simulation on the SVTV to prove similar facts about another object, the
-<i>ideal</i> svtv-spec.  The topic @(see
-svex-fixpoint-decomposition-methodology) has more details of what this object
+<i>ideal</i> svtv-spec.  The topic @(see svex-decomposition-methodology)
+has more details of what this object
 is; generally speaking, we won't compute the ideal but we'll prove things about
 it and we can sometimes execute a simulation of it (via a @(see mbe) trick).
 First we define the ideal as a 0-ary function (though it will produce an error
@@ -562,14 +561,14 @@ signals from a run of @('boothpipe-ideal') -- but since @('boothpipe-ideal')
 isn't executable, it actually uses @('boothpipe-run') to compute what must be
 the values of those varibles.</p>
 
-<p>Now we can use the @(see def-svtv-idealized-thm) utility to prove our two
+<p>Now we can use the @(see def-svtv-generalized-thm) utility to prove our two
 steps. First, we set some defaults that will be used for all
-@('def-svtv-idealized-thm') invocations in this book: these forms say which
+@('def-svtv-generalized-thm') invocations in this book: these forms say which
 SVTV we're using, the name of the SVTV's corresponding ideal, to assume by
 default that all input and override variables used are appropriate-sized
 unsigned bytes, and to assume the enable signal is 1.</p>
 
-@(`(:code ($ svtv-idealized-thm-defaults))`)
+@(`(:code ($ svtv-generalized-thm-defaults))`)
 
 <p>We can start by proving the partial product computation correct:</p>
 @(`(:code ($ boothpipe-pp-correct))`)
@@ -630,7 +629,7 @@ to be idealized into this form.</p>
 partial products:</p>
 @(`(:code ($ boothpipe-sum-correct-fgl))`)
 
-<p>The final theorem proved by the @('def-svtv-idealized-thm') form, however,
+<p>The final theorem proved by the @('def-svtv-generalized-thm') form, however,
 eliminates these overrides.  It again has the
 @('svtv-override-triplemaplist-envs-match') and @('svarlist-override-p')
 hypotheses, but extracts the partial products from the outputs of the
@@ -654,7 +653,7 @@ it's purely an ACL2 arithmetic theorem:</p>
 @(`(:code ($ booth-sum-of-products-correct))`)
 
 <p>This can now be used to prove our top-level theorem.  We can do this with
-another @('def-svtv-idealized-thm') form, this time with the @(':no-lemmas t')
+another @('def-svtv-generalized-thm') form, this time with the @(':no-lemmas t')
 argument, which directs it to prove the idealized theorem directly with ACL2
 rather than first proving an FGL lemma:</p>
 
