@@ -75,11 +75,8 @@
 
 ;; Thus, p does not divide (subgroup-index c (normalizer c g)).  Now suppose x is an element of both
 ;; h and (normalizer c g), but not an element of c.  Since the order of x is a power of p, the order
-;; of the coset of x in (quotient (normalizer c g) c) is also a power of p.  It follows that
-;; (quotient (normalizer c g) c) has an element of order p.  By Cauchy's Theorem,
-;; (quotient (normalizer c g) c) has a subgroup of order p, and by lift-subgroup and lift-order,
-;; (normalizer c g) has a subgroup containing c with order (* p (order c)), contradicting the
-;; assumption (not (divides p (subgroup-index m (normalizer m g)). Thus, we have the following:
+;; of the coset of x in (quotient (normalizer c g) c) is also a power of p, and p must divide
+;; (subgroup-index c (normalizer c g)), a contradiction.  Thus, we have the following:
 
 (defthmd in-normalizer-in-c
   (implies (and (subgroupp m g)
