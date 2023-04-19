@@ -310,7 +310,10 @@
                           <env>)
                          ((svassocs <input-var-svassocs-other>
                                     <input-unbound-svassocs-other>)
-                          <env-other>))
+                          <env-other>)
+                         (run-other (svtv-run (<svtv-other>)
+                                              <env-other>))
+                         ((svassocs <outputs-other>) run-other))
                       (implies (and <input-binding-hyp>
                                     (svex-env-keys-no-1s-p
                                      (svar-override-triplelist->testvars (<triples>)) <env>))
@@ -331,7 +334,10 @@
                                                            ((svassocs <input-unbound-svassocs>) <env>)
                                                            ((svassocs <input-var-svassocs-other>
                                                                       <input-unbound-svassocs-other>)
-                                                            <env-other>))
+                                                            <env-other>)
+                                                           (run-other (svtv-run (<svtv-other>)
+                                                                                <env-other>))
+                                                           ((svassocs <outputs-other>) run-other))
                                                         <fixed-env>
                                                         #|(append <input-bindings>
                                                                 <input-vars>
@@ -418,6 +424,8 @@
            (<env> . env-1)
            (<env-other> . env-2)
            (<svtv> . ,x.svtv-1)
+           (<svtv-other> . ,x.svtv-2)
+           (<outputs-list-other> . ,x.output-vars-2)
            (<triples> . ,x.triples-name-1)
            ;; (<input-bindings> . (list ,@(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-1)
            ;;                           ,@(svtv-genthm-input-var-bindings-alist-termlist x.override-var-bindings-1)))
@@ -444,7 +452,10 @@
          (<env> . env-2)
          (<env-other> . env-1)
          (<svtv> . ,x.svtv-2)
+         (<svtv-other> . ,x.svtv-1)
+         (<outputs-list-other> . ,x.output-vars-1)
          (<triples> . ,x.triples-name-2)
+         
          ;; (<input-bindings> . (list ,@(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-2)
          ;;                           ,@(svtv-genthm-input-var-bindings-alist-termlist x.override-var-bindings-2)))
          ;; (<input-vars> . (list . ,(svtv-equiv-thm-input-vars-to-alist x.input-vars-2 x.pkg-sym 2)))
@@ -467,6 +478,11 @@
                                          x.input-vars-1 x.pkg-sym 1))
            (<input-unbound-svassocs-other> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
                                                x.input-vars-2 x.pkg-sym 2))
+
+           (<outputs-other> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
+                                           (append x.output-vars-2 x.override-vars-2)
+                                           x.pkg-sym 2))
+           
            (<input-binding-hyp> .  ,(svtv-equiv-thm-input-binding-hyp-termlist
                                      (append x.input-var-bindings-1 x.override-var-bindings-1)
                                      x.pkg-sym 1))
@@ -479,6 +495,9 @@
                                          (append (strip-cars x.input-var-bindings-1)
                                                  (strip-cars x.override-var-bindings-1))
                                          x.pkg-sym 1))
+         (<outputs-other> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
+                              (append x.output-vars-1 x.override-vars-1)
+                              x.pkg-sym 1))
          (<input-unbound-svassocs> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
                                        x.input-vars-2 x.pkg-sym 2))
          (<input-unbound-svassocs-other> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
