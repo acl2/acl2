@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/sets/sets" :dir :system)
-(include-book "coi/records/records" :dir :system) ;fixme why? g is called below
+;(include-book "coi/records/records" :dir :system) ;fixme why? g is called below
 ;(include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)

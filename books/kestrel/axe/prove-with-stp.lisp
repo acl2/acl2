@@ -75,10 +75,18 @@
                                      bounded-possibly-negated-nodenump
                                      all-<))))
 
+;; todo: make local or move
 (defthm <-of--1-and-maxelem
   (implies (and (all-natp x)
                 (consp x))
            (< -1 (MAXELEM x))))
+
+;dup
+(local
+ (defthm maxelem-bound
+  (implies (and (all-natp x)
+                (consp x))
+           (<= 0 (maxelem x)))))
 
 (local (in-theory (disable nth-of-cdr
                            ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
@@ -88,6 +96,7 @@
                            CONSP-FROM-LEN-CHEAP
                            DEFAULT-CAR
                            ALL-<-WHEN-NOT-CONSP
+                           eqlable-alistp ;prevent inductions
                            )))
 
 (local (in-theory (enable posp
@@ -95,18 +104,8 @@
                           ceiling-in-terms-of-floor
                           TRUE-LISTP-OF-CDR
                           nth-of-cdr
-                          )))
+                          car-when-alistp-iff)))
 
-(local (in-theory (enable car-when-alistp-iff)))
-
-(local (in-theory (disable eqlable-alistp))) ;prevent inductions
-
-;dup
-(local
- (defthm maxelem-bound
-  (implies (and (all-natp x)
-                (consp x))
-           (<= 0 (maxelem x)))))
 
 ;FIXME: Some functions in this file should call remove-temp-dir (think about exactly which ones)
 
