@@ -1,6 +1,6 @@
 ; Lists of field elements
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "PFIELD")
 
-(include-book "prime-fields") ;todo: reduce?
+(include-book "fep") ; reduce?
 
 ;; Recognize a true list of field elements.
 (defun fe-listp (elems prime)

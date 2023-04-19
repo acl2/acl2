@@ -1,6 +1,6 @@
 ; Documentation for Axe
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
   :short "An SMT solver used by the Axe toolkit"
   :parents (axe)
   :long "STP is an SMT solver available <a href='https://github.com/stp/stp'>here</a>.
-  It is used by several tools in the @(see axe) toolkit.  See @(see build::cert_param) for
+  It is used by several tools in the @(see Axe) toolkit.  See @(see build::cert_param) for
 information on suppressing attempts to use STP during builds.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
