@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function ceiling.
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,12 +12,14 @@
 
 (local (include-book "integerp"))
 (local (include-book "times"))
+(local (include-book "divide"))
 (local (include-book "times-and-divide"))
 (local (include-book "floor"))
 (local (include-book "numerator"))
 (local (include-book "denominator"))
 (local (include-book "minus"))
 (local (include-book "mod"))
+(local (include-book "nonnegative-integer-quotient"))
 
 (in-theory (disable ceiling))
 
@@ -31,8 +33,13 @@
    :hints (("Goal" :use (:instance integerp-of-- (x (* x y)))
             :in-theory (disable integerp-of--)))))
 
-(defthmd ceiling-of-0-arg1
+(defthm ceiling-of-0-arg1
   (equal (ceiling 0 j)
+         0)
+  :hints (("Goal" :in-theory (enable ceiling floor))))
+
+(defthm ceiling-of-0-arg2
+  (equal (ceiling i 0)
          0)
   :hints (("Goal" :in-theory (enable ceiling floor))))
 
@@ -247,4 +254,14 @@
          (if (equal (fix z) 0)
              0
            (ceiling x y)))
+  :hints (("Goal" :in-theory (enable ceiling))))
+
+(defthm <-of-ceiling-and-0
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (< (ceiling i j) 0)
+                  (if (< 0 j)
+                      (<= i (- j))
+                    (and (< j 0)
+                         (<= (- j) i)))))
   :hints (("Goal" :in-theory (enable ceiling))))
