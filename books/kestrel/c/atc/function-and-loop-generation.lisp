@@ -1718,7 +1718,7 @@
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :in-theory (union-theories
-                             (theory ',(if deprecated
+                             (theory ',(if (member-eq :arrays deprecated)
                                            'atc-all-rules-deprecated
                                          'atc-all-rules))
                              '(not-errorp-when-expr-valuep
@@ -1744,7 +1744,7 @@
                  :expand (:lambdas))
                 (and stable-under-simplificationp
                      '(:in-theory (union-theories
-                                   (theory ',(if deprecated
+                                   (theory ',(if (member-eq :arrays deprecated)
                                                  'atc-all-rules-deprecated
                                                'atc-all-rules))
                                    '(,fn
@@ -3443,7 +3443,7 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory ',(if deprecated
+                             (theory ',(if (member-eq :arrays deprecated)
                                            'atc-all-rules-deprecated
                                          'atc-all-rules))
                              '(not
@@ -3638,7 +3638,7 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory ',(if deprecated
+                             (theory ',(if (member-eq :arrays deprecated)
                                            'atc-all-rules-deprecated
                                          'atc-all-rules))
                              '(,@not-error-thms

@@ -211,8 +211,8 @@
 
 (defval *atc-all-rules-deprecated*
   :short "Variant of @(tsee *atc-all-rules*)
-          that has rules about deprecated operations
-          instead of rules about new operations."
+          that has rules about deprecated array operations
+          instead of rules about new array operations."
   ;; differences with *ATC-ALL-RULES* are marked below via 'diff' comments
   (append *atc-symbolic-computation-state-rules*
           *atc-tyname-to-type-rules*
