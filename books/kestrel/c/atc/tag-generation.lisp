@@ -381,7 +381,7 @@
                                           names-to-avoid
                                           wrld)))
     (mv (list* event-member event-memberp more-events)
-        member-read-thms
+        (list* thm-member-name thm-memberp-name member-read-thms)
         names-to-avoid))
 
   :prepwork
@@ -1159,7 +1159,7 @@
                                            names-to-avoid
                                            wrld)))
     (mv (list* event-member event-memberp more-events)
-        member-write-thms
+        (list* thm-member-name thm-memberp-name member-write-thms)
         names-to-avoid))
 
   :prepwork

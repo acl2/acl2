@@ -98,8 +98,8 @@
     (and
      (c::sintp |i|)
      (struct-|scalar_and_array|-p |a|)
-     (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
-  (struct-|scalar_and_array|-read-|aggreg|-sint |i| |a|))
+     (struct-|scalar_and_array|-|aggreg|-index-okp |i|))))
+  (struct-|scalar_and_array|-read-|aggreg|-element |i| |a|))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -110,16 +110,16 @@
     (and
      (c::sintp |i|)
      (c::star (struct-|scalar_and_array|-p |a|))
-     (c::star (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|)))))
-  (struct-|scalar_and_array|-read-|aggreg|-sint |i| |a|))
+     (c::star (struct-|scalar_and_array|-|aggreg|-index-okp |i|)))))
+  (struct-|scalar_and_array|-read-|aggreg|-element |i| |a|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |read_flex_last| (|fl| |i|)
   (declare (xargs :guard (and (c::star (struct-|flex|-p |fl|))
                               (c::sintp |i|)
-                              (struct-|flex|-|last|-sint-index-okp |i| |fl|))))
-  (struct-|flex|-read-|last|-sint |i| |fl|))
+                              (struct-|flex|-|last|-index-okp |i| |fl|))))
+  (struct-|flex|-read-|last|-element |i| |fl|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -257,8 +257,8 @@
      (c::sintp |i|)
      (c::ucharp |v|)
      (struct-|scalar_and_array|-p |a|)
-     (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|))))
-  (let ((|a| (struct-|scalar_and_array|-write-|aggreg|-sint |i| |v| |a|)))
+     (struct-|scalar_and_array|-|aggreg|-index-okp |i|))))
+  (let ((|a| (struct-|scalar_and_array|-write-|aggreg|-element |i| |v| |a|)))
     |a|))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -271,8 +271,8 @@
      (c::sintp |i|)
      (c::ucharp |v|)
      (c::star (struct-|scalar_and_array|-p |a|))
-     (c::star (struct-|scalar_and_array|-|aggreg|-sint-index-okp |i|)))))
-  (let ((|a| (struct-|scalar_and_array|-write-|aggreg|-sint |i| |v| |a|)))
+     (c::star (struct-|scalar_and_array|-|aggreg|-index-okp |i|)))))
+  (let ((|a| (struct-|scalar_and_array|-write-|aggreg|-element |i| |v| |a|)))
     |a|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -280,9 +280,9 @@
 (defun |write_flex_last| (|fl| |i| |c|)
   (declare (xargs :guard (and (c::star (struct-|flex|-p |fl|))
                               (c::sintp |i|)
-                              (struct-|flex|-|last|-sint-index-okp |i| |fl|)
+                              (struct-|flex|-|last|-index-okp |i| |fl|)
                               (c::ucharp |c|))))
-  (let ((|fl| (struct-|flex|-write-|last|-sint |i| |c| |fl|)))
+  (let ((|fl| (struct-|flex|-write-|last|-element |i| |c| |fl|)))
     |fl|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

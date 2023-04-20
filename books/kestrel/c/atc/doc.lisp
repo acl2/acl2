@@ -757,72 +757,25 @@
      (xdoc::li
       "A term
        @('(let
-           ((var (struct-<tag>-write-<member>-<type> term1 term2 var))) body)'),
+            ((var (struct-<tag>-write-<member>-element term1 term2 var)))
+            body)'),
        when @('<tag>') is a @(tsee defstruct) name,
        @('<member>') is the name of
        one of the members of that @(tsee defstruct),
-       @('<member>') has an integer array type in the @(tsee defstruct)
-       with element type @('<type2>'),
-       @('<type>') and @('<type2>') are among"
-      (xdoc::ul
-       (xdoc::li "@('schar')")
-       (xdoc::li "@('uchar')")
-       (xdoc::li "@('sshort')")
-       (xdoc::li "@('ushort')")
-       (xdoc::li "@('sint')")
-       (xdoc::li "@('uint')")
-       (xdoc::li "@('slong')")
-       (xdoc::li "@('ulong')")
-       (xdoc::li "@('sllong')")
-       (xdoc::li "@('ullong')"))
-      "@('var') is assignable,
-       @('var') has the C structure type represented by @('<tag>'),
+       @('<member>') has an integer array type in the @(tsee defstruct),
+       @('var') is assignable,
+       @('var') has the C structure type represented by @('<tag>')
+       or the pointer type to that C structure type,
        @('term1') is a pure expression term for @('fn')
-       returning the C type corresponding to @('<type2>'),
+       returning a C integer type,
        @('term2') is a pure expression term for @('fn')
        returning the C type corresponding to @('<type>'),
        @('body') is a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents a C assignment to
        an element of a member of the structure represented by @('var')
-       by value (i.e. using @('.'))
-       using @('term1') as the index
-       with the new value expression represented by @('term2'),
-       followed by the C code represented by @('body').")
-     (xdoc::li
-      "A term
-       @('(let
-           ((var (struct-<tag>-write-<member>-<type> term1 term2 var))) body)'),
-       when @('<tag>') is a @(tsee defstruct) name,
-       @('<member>') is the name of
-       one of the members of that @(tsee defstruct),
-       @('<member>') has an integer array type in the @(tsee defstruct)
-       with element type @('<type2>'),
-       @('<type>') and @('<type2>') are among"
-      (xdoc::ul
-       (xdoc::li "@('schar')")
-       (xdoc::li "@('uchar')")
-       (xdoc::li "@('sshort')")
-       (xdoc::li "@('ushort')")
-       (xdoc::li "@('sint')")
-       (xdoc::li "@('uint')")
-       (xdoc::li "@('slong')")
-       (xdoc::li "@('ulong')")
-       (xdoc::li "@('sllong')")
-       (xdoc::li "@('ullong')"))
-      "@('var') is in scope,
-       @('var') has a pointer type whose referenced type is
-       the C structure type represented by @('<tag>'),
-       @('var') is one of the symbols in @('vars'),
-       @('term1') is a pure expression term for @('fn')
-       returning the C type corresponding to @('<type2>'),
-       @('term2') is a pure expression term for @('fn')
-       returning the C type corresponding to @('<type>'),
-       @('body') is a statement term for @('fn') with loop flag @('L')
-       returning @('T') and affecting @('vars').
-       This represents a C assignment to
-       an element of a member of the structure represented by @('var')
-       by pointer (i.e. using @('->'))
+       by value (i.e. using @('.')) if @('var') has structure type
+       or by pointer (i.e. using @('->') if @('var') has pointer type,
        using @('term1') as the index
        with the new value expression represented by @('term2'),
        followed by the C code represented by @('body').")
@@ -1196,25 +1149,14 @@
        or by pointer if @('U') is the pointer type to the C structure type
        (i.e. using @('->')).")
      (xdoc::li
-      "A call of @('struct-<tag>-read-<member>-<type>')
+      "A call of @('struct-<tag>-read-<member>-element')
        on pure expression terms for @('fn') returning @('U') and @('V')
        when @('<tag>') is a @(tsee defstruct) name,
        @('<member>') is the name of
        one of the members of that @(tsee defstruct),
-       @('<type>') is among"
-      (xdoc::ul
-       (xdoc::li "@('schar')")
-       (xdoc::li "@('uchar')")
-       (xdoc::li "@('sshort')")
-       (xdoc::li "@('ushort')")
-       (xdoc::li "@('sint')")
-       (xdoc::li "@('uint')")
-       (xdoc::li "@('slong')")
-       (xdoc::li "@('ulong')")
-       (xdoc::li "@('sllong')")
-       (xdoc::li "@('ullong')"))
-      "@('T') is the C element type of the array type of @('<member>'),
-       @('U') is the C type corresponding to @('<type>'), and
+       @('<member>') has an integer array type in the @(tsee defstruct),
+       @('T') is the C element type of the array type of @('<member>'),
+       @('U') is a C integer type, and
        @('V') is the C structure type represented by @('<tag>')
        or the pointer type to that C structure type.
        This represents an access to an element of a structure member,

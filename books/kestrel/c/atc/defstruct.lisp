@@ -248,6 +248,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defstruct-info->reader-element-list ((info defstruct-infop))
+  :returns (reader-element-list symbol-listp)
+  :short "Collect all the @('reader-element') components
+          of a @(tsee defstruct)."
+  (defstruct-info->reader-element-list-aux (defstruct-info->members info))
+  :prepwork
+  ((define defstruct-info->reader-element-list-aux
+     ((members defstruct-member-info-listp))
+     :returns (reader-element-list symbol-listp)
+     (cond ((endp members) nil)
+           (t (cons
+               (defstruct-member-info->reader-element (car members))
+               (defstruct-info->reader-element-list-aux (cdr members))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defstruct-info->readers-list ((info defstruct-infop))
   :returns (readers-list symbol-listp)
   :short "Collect all the @('readers') components of a @(tsee defstruct)."
@@ -273,6 +289,22 @@
      (cond ((endp members) nil)
            (t (cons (defstruct-member-info->writer (car members))
                     (defstruct-info->writer-list-aux (cdr members))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defstruct-info->writer-element-list ((info defstruct-infop))
+  :returns (writer-list symbol-listp)
+  :short "Collect all the @('writer-element') components
+          of a @(tsee defstruct)."
+  (defstruct-info->writer-element-list-aux (defstruct-info->members info))
+  :prepwork
+  ((define defstruct-info->writer-element-list-aux
+     ((members defstruct-member-info-listp))
+     :returns (writer-element-list symbol-listp)
+     (cond ((endp members) nil)
+           (t (cons
+               (defstruct-member-info->writer-element (car members))
+               (defstruct-info->writer-element-list-aux (cdr members))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2494,7 +2526,7 @@
                    read-member-element)
         (cons read-member-integer-return-thm more-reader-return-thms)
         (packn-pos (list fixtype-arrayp '-of- write-member) write-member)
-        (packn-pos (list fixtype-arrayp '-of- write-member-element)
+        (packn-pos (list struct-tag-p '-of- write-member-element)
                    write-member-element)
         (cons write-member-integer-return-thm more-writer-return-thms)))
 

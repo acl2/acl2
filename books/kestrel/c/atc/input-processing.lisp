@@ -811,12 +811,7 @@
      This input must be a list of keywords,
      each of which specifies a particular deprecated feature.
      If the input is present,
-     it must be a non-empty list of keywords.")
-   (xdoc::p
-    "For now we do not have any deprecated features,
-     so this input must absent, currently.
-     However, this will change soon,
-     as we plan to deprecate certain features."))
+     it must be a non-empty list of keywords."))
   (b* (((reterr) nil)
        (deprecated-option (assoc-eq :deprecated options))
        ((when (not deprecated-option)) (retok nil))
@@ -830,7 +825,7 @@
         (reterr (msg "The :DEPRECATED input must be ~
                       a non-empty list of keywords, ~
                       but it is NIL instead.")))
-       (allowed '(:arrays))
+       (allowed '(:arrays :structs))
        ((unless (subsetp-eq deprecated allowed))
         (reterr (msg "The allowed keywords for the :DEPRECATED input are ~&0, ~
                       but it includes ~&1 instead."

@@ -198,7 +198,9 @@
                      (member-type->type
                       (defstruct-member-info->memtype member)))
                     (list (defstruct-member-info->reader-return-thm member))
-                  (defstruct-member-info->reader-return-thms member)))
+                  (cons
+                   (defstruct-member-info->reader-element-return-thm member)
+                   (defstruct-member-info->reader-return-thms member))))
           (more-thms
            (atc-string-taginfo-alist-to-reader-return-thms-aux (cdr members))))
        (append thms more-thms)))))
@@ -235,7 +237,9 @@
                      (member-type->type
                       (defstruct-member-info->memtype member)))
                     (list (defstruct-member-info->writer-return-thm member))
-                  (defstruct-member-info->writer-return-thms member)))
+                  (cons
+                   (defstruct-member-info->writer-element-return-thm member)
+                   (defstruct-member-info->writer-return-thms member))))
           (more-thms
            (atc-string-taginfo-alist-to-writer-return-thms-aux (cdr members))))
        (append thms more-thms)))))

@@ -492,6 +492,77 @@
                (struct pseudo-termp)
                (tag identp)
                (member identp)
+               (elem-type typep))
+  :short "Check if a term may represent a structure read
+          of an element of an array member."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of the ACL2 function
+     that represent the C structure read operation
+     for elements of array members,
+     we return the argument terms (index and structure),
+     the tag name, and the name of the member.
+     The C structure type of the reader must be in the preceding tags;
+     we consult the alist to retrieve the relevant information.")
+   (xdoc::p
+    "We also return the type of the array element.")
+   (xdoc::p
+    "If the term does not have the right form,
+     we return an indication of failure."))
+  (b* (((acl2::fun (no)) (mv nil nil nil (irr-ident) (irr-ident) (irr-type)))
+       ((unless (pseudo-term-case term :fncall)) (no))
+       ((pseudo-term-fncall term) term)
+       ((mv okp struct tag read member element) (atc-check-symbol-5part term.fn))
+       ((unless (and okp
+                     (equal (symbol-name struct) "STRUCT")
+                     (equal (symbol-name read) "READ")
+                     (equal (symbol-name element) "ELEMENT")))
+        (no))
+       (tag (symbol-name tag))
+       (info (cdr (assoc-equal tag prec-tags)))
+       ((unless info) (no))
+       (info (atc-tag-info->defstruct info))
+       ((unless (member-eq term.fn (defstruct-info->reader-element-list info)))
+        (no))
+       (tag (defstruct-info->tag info))
+       (members (defstruct-member-info-list->memtype-list
+                  (defstruct-info->members info)))
+       (member (symbol-name member))
+       ((unless (paident-stringp member)) (no))
+       (member (ident member))
+       (mem-type (member-type-lookup member members))
+       ((unless mem-type) (no))
+       ((unless (type-case mem-type :array)) (no))
+       (elem-type (type-array->of mem-type))
+       ((unless (list-lenp 2 term.args)) (no))
+       (index (first term.args))
+       (struct (second term.args)))
+    (mv t index struct tag member elem-type))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-struct-read-array-index
+    (implies yes/no
+             (< (pseudo-term-count index)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-struct-read-array-struct
+    (implies yes/no
+             (< (pseudo-term-count struct)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-struct-read-array-deprecated
+  ((term pseudo-termp)
+   (prec-tags atc-string-taginfo-alistp))
+  :returns (mv (yes/no booleanp)
+               (index pseudo-termp)
+               (struct pseudo-termp)
+               (tag identp)
+               (member identp)
                (index-type typep)
                (elem-type typep))
   :short "Check if a term may represent a structure read
@@ -543,13 +614,13 @@
     (mv t index struct tag member index-type elem-type))
   ///
 
-  (defret pseudo-term-count-of-atc-check-struct-read-array-index
+  (defret pseudo-term-count-of-atc-check-struct-read-array-deprecated-index
     (implies yes/no
              (< (pseudo-term-count index)
                 (pseudo-term-count term)))
     :rule-classes :linear)
 
-  (defret pseudo-term-count-of-atc-check-struct-read-array-struct
+  (defret pseudo-term-count-of-atc-check-struct-read-array-deprecated-struct
     (implies yes/no
              (< (pseudo-term-count struct)
                 (pseudo-term-count term)))
@@ -638,6 +709,97 @@
                (elem pseudo-termp)
                (tag identp)
                (member identp)
+               (elem-type typep))
+  :short "Check if a @(tsee let) binding may represent a structure write
+          of an element of an array member."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A structure write of an element of an array member,
+     i.e. an assignment to an element of an array structure member
+     via a pointer to the structure,
+     is represented by a @(tsee let) binding of the form")
+   (xdoc::codeblock
+    "(let ((<struct>
+            (struct-<tag>-write-<member>-element <index> <elem> <struct>)))
+       ...)")
+   (xdoc::p
+    "where @('<struct>') is a variable of structure type
+     or of pointer type to a structure type,
+     which must occur identically as
+     both the @(tsee let) variable
+     and as the last argument of @('struct-<tag>-write-<member>-element'),
+     @('<index>') is an expression that yields an integer used as array index,
+     @('<elem>') is an expression that yields the member element value to write,
+     and @('...') represents the code that follows the assignment.
+     This function takes as arguments
+     the variable and value of a @(tsee let) binder,
+     and checks if they have the form described above.
+     If they do, the index and member argument
+     are returned for further processing.
+     We also return the tag, the member name, and the member type.")
+   (xdoc::p
+    "Similarly to @(tsee atc-check-struct-read-array),
+     we consult the @('prec-tags') alist,
+     which must contain the C structure type associated to the writer."))
+  (b* (((acl2::fun (no))
+        (mv nil nil nil (irr-ident) (irr-ident) (irr-type)))
+       ((unless (pseudo-term-case val :fncall)) (no))
+       ((pseudo-term-fncall val) val)
+       ((mv okp struct tag write member element) (atc-check-symbol-5part val.fn))
+       ((unless (and okp
+                     (equal (symbol-name struct) "STRUCT")
+                     (equal (symbol-name write) "WRITE")
+                     (equal (symbol-name element) "ELEMENT")))
+        (no))
+       (tag (symbol-name tag))
+       (info (cdr (assoc-equal tag prec-tags)))
+       ((unless info) (no))
+       (info (atc-tag-info->defstruct info))
+       ((unless (member-eq val.fn (defstruct-info->writer-element-list info)))
+        (no))
+       (members (defstruct-member-info-list->memtype-list
+                  (defstruct-info->members info)))
+       (tag (defstruct-info->tag info))
+       (member (symbol-name member))
+       ((unless (paident-stringp member)) (no))
+       (member (ident member))
+       (mem-type (member-type-lookup member members))
+       ((unless mem-type) (no))
+       ((unless (type-case mem-type :array)) (no))
+       (elem-type (type-array->of mem-type))
+       ((unless (list-lenp 3 val.args)) (no))
+       (index (first val.args))
+       (mem (second val.args))
+       (struct (third val.args)))
+    (if (equal struct var)
+        (mv t index mem tag member elem-type)
+      (no)))
+  ///
+
+  (defret pseudo-term-count-of-atc-check-struct-write-array-index
+    (implies yes/no
+             (< (pseudo-term-count index)
+                (pseudo-term-count val)))
+    :rule-classes :linear)
+
+  (defret pseudo-term-count-of-atc-check-struct-write-array-elem
+    (implies yes/no
+             (< (pseudo-term-count elem)
+                (pseudo-term-count val)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-struct-write-array-deprecated
+  ((var symbolp)
+   (val pseudo-termp)
+   (prec-tags atc-string-taginfo-alistp))
+  :returns (mv (yes/no booleanp)
+               (index pseudo-termp)
+               (elem pseudo-termp)
+               (tag identp)
+               (member identp)
                (index-type typep)
                (elem-type typep))
   :short "Check if a @(tsee let) binding may represent a structure write
@@ -708,13 +870,13 @@
       (no)))
   ///
 
-  (defret pseudo-term-count-of-atc-check-struct-write-array-index
+  (defret pseudo-term-count-of-atc-check-struct-write-array-deprecated-index
     (implies yes/no
              (< (pseudo-term-count index)
                 (pseudo-term-count val)))
     :rule-classes :linear)
 
-  (defret pseudo-term-count-of-atc-check-struct-write-array-elem
+  (defret pseudo-term-count-of-atc-check-struct-write-array-deprecated-elem
     (implies yes/no
              (< (pseudo-term-count elem)
                 (pseudo-term-count val)))
