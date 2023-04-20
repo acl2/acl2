@@ -2528,10 +2528,15 @@ parameter to get all the input variables that are not bound.</li>
 variables to expressions.</li>
 
 <li>@(':override-vars') is a list of override-value variables of the SVTV to be
-overridden in the FGL theorem.</li>
+overridden in the FGL lemma but not overridden in the generalized theorem.
+Each such variable must have a corresponding output sampling the same signal at
+the same time so as to support eliminating the override.</li>
 
 <li>@(':override-var-bindings') is a list of @('let')-like bindings of override
-value variables to expressions.</li>
+value variables to expressions, to be overridden in the lemma but not
+overridden in the generalized theorem.  Each such variable must have a
+corresponding output sampling the same signal at the same time so as to support
+eliminating the override.</li>
 
 <li>@(':spec-override-vars') is a list of override-value variables of the SVTV
 to be overridden in both the FGL theorem and the resulting generalized theorem.
