@@ -1486,6 +1486,7 @@
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
                                   (limit pseudo-termp)
+                                  (deprecated keyword-listp)
                                   state)
   :returns (mv (local-events pseudo-event-form-listp)
                (exported-events pseudo-event-form-listp)
@@ -1717,7 +1718,9 @@
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :in-theory (union-theories
-                             (theory 'atc-all-rules)
+                             (theory ',(if deprecated
+                                           'atc-all-rules-deprecated
+                                         'atc-all-rules))
                              '(not-errorp-when-expr-valuep
                                ,@not-error-thms
                                ,@valuep-thms
@@ -1741,7 +1744,9 @@
                  :expand (:lambdas))
                 (and stable-under-simplificationp
                      '(:in-theory (union-theories
-                                   (theory 'atc-all-rules)
+                                   (theory ',(if deprecated
+                                                 'atc-all-rules-deprecated
+                                               'atc-all-rules))
                                    '(,fn
                                      not-errorp-when-expr-valuep
                                      ,@not-error-thms
@@ -2812,6 +2817,7 @@
                                                     fn-thms
                                                     fn-fun-env-thm
                                                     limit
+                                                    deprecated
                                                     state)))
                       (mv local-events exported-events name names-to-avoid))))
                  (progress-start?
@@ -3368,6 +3374,7 @@
                                        (prec-tags atc-string-taginfo-alistp)
                                        (prec-objs atc-string-objinfo-alistp)
                                        (names-to-avoid symbol-listp)
+                                       (deprecated keyword-listp)
                                        state)
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-test-thm symbolp)
@@ -3436,7 +3443,9 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory 'atc-all-rules)
+                             (theory ',(if deprecated
+                                           'atc-all-rules-deprecated
+                                         'atc-all-rules))
                              '(not
                                not-errorp-when-expr-valuep
                                ,@not-error-thms
@@ -3541,6 +3550,7 @@
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
                                        (names-to-avoid symbol-listp)
+                                       (deprecated keyword-listp)
                                        state)
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-body-thm symbolp)
@@ -3628,7 +3638,9 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory 'atc-all-rules)
+                             (theory ',(if deprecated
+                                           'atc-all-rules-deprecated
+                                         'atc-all-rules))
                              '(,@not-error-thms
                                ,@valuep-thms
                                ,@value-kind-thms
@@ -4125,6 +4137,7 @@
                                                  prec-tags
                                                  prec-objs
                                                  names-to-avoid
+                                                 deprecated
                                                  state))
                  ((mv body-local-events
                       correct-body-thm
@@ -4142,6 +4155,7 @@
                                                  fn-thms
                                                  loop.limit-body
                                                  names-to-avoid
+                                                 deprecated
                                                  state))
                  ((mv correct-local-events
                       correct-exported-events
