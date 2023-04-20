@@ -661,7 +661,7 @@
   :hints (("Goal" :in-theory (enable constant-pool-entryp))))
 
 ;; Introduces constant-poolp
-;; TODO: Also introduce an invaraint over the constant pool, saying that the information in it is well-typed.
+;; TODO: Also introduce an invariant over the constant pool, saying that the information in it is well-typed.
 (defstobj constant-pool
   (entries :type (array (satisfies constant-pool-entryp) (0)) ; initially empty
            :initially nil
