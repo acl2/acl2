@@ -1,4 +1,4 @@
-# A script to call the STP solver with a limit on the number of conflicts
+# A script to call the STP solver.
 #
 # Copyright (C) 2008-2011 Eric Smith and Stanford University
 # Copyright (C) 2013-2023 Kestrel Institute
@@ -11,22 +11,19 @@
 
 #!/bin/bash
 
-# This script calls STP on a file (with a max conflicts option).
-# See also callstp.bash.
-
 set -e # Exit immediately on errors
 
-#Check the number of arguments supplied:
+# Check the number of arguments supplied:
 if [ $# -ne 4 ]
 then
-    echo "callstplimited.bash: ERROR: Arguments must be the input file, output file, max conflicts, and whether to generate a counterexample (y/n)."
+    echo "callstplimited.bash: ERROR: Arguments must be the input file, output file, max conflicts (-1 for no max), and whether to generate a counterexample (y/n)."
     exit 1
 fi
 
 INPUT_FILE=$1  # This should be the .cvc file
-OUTPUT_FILE=$2 # The caller should check whether this contains "Valid."
-MAX_CONFLICTS=$3 # number of conflicts
-COUNTEREXAMPLE=$4
+OUTPUT_FILE=$2 # Where to write the output (caller can then check whether this contains "Valid.")
+MAX_CONFLICTS=$3 # number of conflicts (-1 means no max)
+COUNTEREXAMPLE=$4 # Whether to generate a counterexample ("y" or "n")
 
 if [ ${COUNTEREXAMPLE} = "y" ] ; then
     COUNTEREXAMPLE_ARGS="--print-counterex --print-counterexbin"
