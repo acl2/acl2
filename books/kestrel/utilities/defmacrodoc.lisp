@@ -399,7 +399,7 @@
 ;; Returns a defxdoc form.
 ;; TODO: Think about all the & things that can occur in the macro-args
 (defund defxdoc-for-macro-fn (name    ; the name of the macro being documented
-                              macro-args ; the formals of the macro, possibly with initial values, and suppliedp variable; also includs &whole, &key, etc.
+                              macro-args ; the formals of the macro, possibly with initial values, and suppliedp variable; also includes &whole, &key, etc.
                               parents
                               short ; a form that evaluates to a string or to nil
                               arg-descriptions
