@@ -29,6 +29,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrulel true-listp-when-keyword-listp
+  (implies (keyword-listp x)
+           (true-listp x))
+  :induct t
+  :enable keyword-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ atc-tag-generation
   :parents (atc-event-and-code-generation)
   :short "Generation of C tag declarations (currently just structures)."
@@ -44,6 +52,7 @@
                                       (not-error-thm symbolp)
                                       (meminfo defstruct-member-infop)
                                       (names-to-avoid symbol-listp)
+                                      (deprecated keyword-listp)
                                       (wrld plist-worldp))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-read-thms symbol-listp)
@@ -380,9 +389,13 @@
                                           thm-memberp-name
                                           names-to-avoid
                                           wrld)))
-    (mv (list* event-member event-memberp more-events)
-        (list* thm-member-name thm-memberp-name member-read-thms)
-        names-to-avoid))
+    (if (member-eq :structs deprecated)
+        (mv (list* event-member event-memberp more-events)
+            member-read-thms
+            names-to-avoid)
+      (mv (list event-member event-memberp)
+          (list thm-member-name thm-memberp-name)
+          names-to-avoid)))
 
   :prepwork
   ((define atc-gen-tag-member-read-thms-aux ((tag identp)
@@ -537,6 +550,7 @@
                                           (not-error-thm symbolp)
                                           (meminfos defstruct-member-info-listp)
                                           (names-to-avoid symbol-listp)
+                                          (deprecated keyword-listp)
                                           (wrld plist-worldp))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-read-thms symbol-listp)
@@ -558,6 +572,7 @@
                                       not-error-thm
                                       (car meminfos)
                                       names-to-avoid
+                                      deprecated
                                       wrld))
        ((mv more-events more-thms names-to-avoid)
         (atc-gen-tag-member-read-all-thms tag
@@ -567,6 +582,7 @@
                                           not-error-thm
                                           (cdr meminfos)
                                           names-to-avoid
+                                          deprecated
                                           wrld)))
     (mv (append events more-events)
         (append thms more-thms)
@@ -582,6 +598,7 @@
                                        (type-of-value-thm symbolp)
                                        (meminfo defstruct-member-infop)
                                        (names-to-avoid symbol-listp)
+                                       (deprecated keyword-listp)
                                        (wrld plist-worldp))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-write-thms symbol-listp)
@@ -1158,9 +1175,13 @@
                                            thm-memberp-name
                                            names-to-avoid
                                            wrld)))
-    (mv (list* event-member event-memberp more-events)
-        (list* thm-member-name thm-memberp-name member-write-thms)
-        names-to-avoid))
+    (if (member-eq :structs deprecated)
+        (mv (list* event-member event-memberp more-events)
+            member-write-thms
+            names-to-avoid)
+      (mv (list event-member event-memberp)
+          (list thm-member-name thm-memberp-name)
+          names-to-avoid)))
 
   :prepwork
   ((define atc-gen-tag-member-write-thms-aux ((tag identp)
@@ -1357,6 +1378,7 @@
    (type-of-value-thm symbolp)
    (meminfos defstruct-member-info-listp)
    (names-to-avoid symbol-listp)
+   (deprecated keyword-listp)
    (wrld plist-worldp))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-write-thms symbol-listp)
@@ -1381,6 +1403,7 @@
                                        type-of-value-thm
                                        (car meminfos)
                                        names-to-avoid
+                                       deprecated
                                        wrld))
        ((mv more-events more-thms names-to-avoid)
         (atc-gen-tag-member-write-all-thms tag
@@ -1391,6 +1414,7 @@
                                            type-of-value-thm
                                            (cdr meminfos)
                                            names-to-avoid
+                                           deprecated
                                            wrld)))
     (mv (append events more-events)
         (append thms more-thms)
@@ -1418,6 +1442,7 @@
                             (prec-tags atc-string-taginfo-alistp)
                             (proofs booleanp)
                             (names-to-avoid symbol-listp)
+                            (deprecated keyword-listp)
                             (wrld plist-worldp))
   :returns (mv (declon tag-declonp)
                (local-events pseudo-event-form-listp)
@@ -1448,6 +1473,7 @@
                                               not-error-thm
                                               meminfos
                                               names-to-avoid
+                                              deprecated
                                               wrld)
           (mv nil nil names-to-avoid)))
        ((mv write-thm-events write-thm-names names-to-avoid)
@@ -1460,6 +1486,7 @@
                                                type-of-value-thm
                                                meminfos
                                                names-to-avoid
+                                               deprecated
                                                wrld)
           (mv nil nil names-to-avoid)))
        (thm-events (append read-thm-events write-thm-events))

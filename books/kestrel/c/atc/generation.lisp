@@ -326,7 +326,7 @@
              ((when info)
               (b* (((mv tag-declon tag-thms prec-tags names-to-avoid)
                     (atc-gen-tag-declon name info prec-tags proofs
-                                        names-to-avoid (w state)))
+                                        names-to-avoid deprecated (w state)))
                    (ext (ext-declon-tag-declon tag-declon)))
                 (if header
                     (retok (list ext)

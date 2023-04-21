@@ -152,21 +152,23 @@
     :guard (and (type-nonchar-integer-listp atypes)
                 (type-nonchar-integer-listp itypes))
     :returns (mv (names symbol-listp)
+                 (names-deprecated symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
-    (b* (((when (endp atypes)) (mv nil nil))
+    (b* (((when (endp atypes)) (mv nil nil nil))
          ((mv name event) (atc-exec-arrsub-rules-gen-1 (car atypes)))
-         ((mv names events)
+         ((mv names-deprecated events)
           (atc-exec-arrsub-rules-gen-loop-itypes (car atypes) itypes name))
-         ((mv more-names more-events)
+         ((mv more-names more-names-deprecated more-events)
           (atc-exec-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
-      (mv (append (list name) names more-names)
+      (mv (append (list name) more-names)
+          (append names-deprecated more-names-deprecated)
           (append (list event) events more-events))))
 
   (define atc-exec-arrsub-rules-gen-all ()
     :returns (event pseudo-event-formp)
     :parents nil
-    (b* (((mv names events)
+    (b* (((mv names names-deprecated events)
           (atc-exec-arrsub-rules-gen-loop-atypes
            *nonchar-integer-types*
            *nonchar-integer-types*)))
@@ -175,7 +177,9 @@
            :short "Rules for executing array subscript expressions."
            ,@events
            (defval *atc-exec-arrsub-rules*
-             '(,@names)))))))
+             '(,@names))
+           (defval *atc-exec-arrsub-rules-deprecated*
+             '(,@names-deprecated)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
