@@ -877,7 +877,8 @@
                   *atc-pointed-integers-type-prescription-rules*
                   *atc-array-length-write-rules*
                   *atc-wrapper-rules*
-                  '(,fn
+                  '((:e tau-system)
+                    ,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (all-fnnames (ubody+ fn wrld)))
                     ,@(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
