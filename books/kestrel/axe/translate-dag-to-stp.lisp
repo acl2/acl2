@@ -1,7 +1,7 @@
 ; Creating STP queries from DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -2198,10 +2198,8 @@
                               (booleanp counterexamplep))
                   :stobjs state))
   (b* ((counterexample-arg (if counterexamplep "y" "n"))
-       ((mv status state) (if max-conflicts
-                              (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string max-conflicts) counterexample-arg) state)
-                            ;;don't time out:
-                            (call-axe-script "callstp.bash" (list input-filename output-filename counterexample-arg) state)))
+       (max-conflicts-string (if max-conflicts (nat-to-string max-conflicts) "-1")) ; -1 means no max
+       ((mv status state) (call-axe-script "callstplimited.bash" (list input-filename output-filename max-conflicts-string counterexample-arg) state))
        ;;(- (cw "STP exit status: ~x0~%" status))
        )
     ;;(prog2$ (cw "sys-call status: ~x0~%" status)
