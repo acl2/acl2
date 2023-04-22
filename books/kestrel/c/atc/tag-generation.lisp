@@ -965,6 +965,8 @@
        (valuep-when-elemtype-arrayp (pack 'valuep-when- elemfixtype '-arrayp))
        (value-kind-when-elemfixtype-arrayp
         (pack 'value-kind-when- elemfixtype '-arrayp))
+       (value-kind-when-elemfixtypep
+        (pack 'value-kind-when- elemfixtype 'p))
        (value-array-write-when-elemfixtype-arrayp
         (pack 'value-array-write-when- elemfixtype '-arrayp))
        (elemfixtype-array-index-okp (pack elemfixtype '-array-index-okp))
@@ -1065,7 +1067,8 @@
                                (,writer-element idx val struct)
                                compst))))
        (theory-member
-        `(acl2::mv-nth-of-cons
+        `(,value-kind-when-elemfixtypep
+          acl2::mv-nth-of-cons
           (:e zp)
           ,valuep-when-elemfixtypep
           (:t expr-value->value)
@@ -1150,7 +1153,53 @@
                             compst))
            :in-theory ',theory-member)))
        (theory-memberp
-        `(exec-expr-asg
+        `(acl2::mv-nth-of-cons
+          (:e zp)
+          ,valuep-when-elemfixtypep
+          valuep-of-expr-value->value
+          (:t expr-value->value)
+          exec-ident
+          expr-fix-when-exprp
+          exprp-of-expr-binary->arg1
+          exprp-of-expr-arrsub->arr
+          exprp-of-expr-memberp->target
+          expr-valuep-of-expr-value
+          exec-memberp
+          read-object-of-objdesign-of-var-to-read-var
+          apconvert-expr-value-when-not-value-array-alt
+          expr-value->value-of-expr-value
+          value-fix-when-valuep
+          expr-value-fix-when-expr-valuep
+          exec-arrsub
+          ,apconvert-expr-value-when-elemfixtype-arrayp
+          return-type-of-objdesign-member
+          return-type-of-value-pointer
+          value-pointer-validp-of-value-pointer
+          return-type-of-pointer-valid
+          value-pointer->designator-of-value-pointer
+          pointer-valid->get-of-pointer-valid
+          objdesign-fix-when-objdesignp
+          read-object-of-objdesign-member
+          value-pointer->reftype-of-value-pointer
+          ,value-array->elemtype-when-elemtype-arrayp
+          (:e type-fix)
+          (:e ,type-elemfixtype)
+          ,value-array-read-when-elemfixtype-arrayp
+          ,elemfixtypep-of-elemfixtype-array-read
+          expr-value->object-of-expr-value
+          objdesign-option-fix
+          (:t objdesign-element)
+          return-type-of-objdesign-element
+          objdesign-element->super-of-objdesign-element
+          objdesign-element->index-of-objdesign-element
+          objdesign-member->super-of-objdesign-member
+          objdesign-member->name-of-objdesign-member
+          nfix
+          objdesignp-of-value-pointer->designator
+          (:e ident-fix)
+          objdesign-of-var-when-valuep-of-read-var
+          write-object
+          exec-expr-asg
           ,recognizer
           value-struct-read
           not-errorp-when-valuep
@@ -1177,9 +1226,19 @@
           member-value-listp-of-value-struct-write-aux
           ,type-of-value-when-elemfixtype-arrayp
           ,value-array->length-when-elemfixtype-arrayp
-          ,type-of-value-thm
           ,@(and length (list length))))
-       ((mv event-member &)
+       (hints-memberp
+        `(("Goal"
+           :expand
+           ((exec-expr-pure (expr-binary->arg1 e)
+                            compst)
+            (exec-expr-pure (expr-arrsub->arr (expr-binary->arg1 e))
+                            compst)
+            (exec-expr-pure (expr-memberp->target
+                             (expr-arrsub->arr (expr-binary->arg1 e)))
+                            compst))
+           :in-theory ',theory-memberp)))
+      ((mv event-member &)
         (evmac-generate-defthm thm-member-name
                                :formula formula-member
                                :hints hints-member
@@ -1187,7 +1246,7 @@
        ((mv event-memberp &)
         (evmac-generate-defthm thm-memberp-name
                                :formula formula-memberp
-                               :hints `(("Goal" :in-theory ',theory-memberp))
+                               :hints hints-memberp
                                :enable nil))
        ((mv more-events
             member-write-thms
