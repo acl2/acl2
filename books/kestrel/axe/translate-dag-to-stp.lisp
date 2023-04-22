@@ -12,6 +12,9 @@
 
 (in-package "ACL2")
 
+;; Ensures this book and all STP examples get rebuilt when the script changes:
+;; (depends-on "callstp.bash")
+
 ;; TODO: Use an array instead of nodenum-type-alist everywhere?
 
 ;; TODO: Consider adding support for the shift operators (bvshl, bvshr, bvashr).
@@ -2199,7 +2202,7 @@
                   :stobjs state))
   (b* ((counterexample-arg (if counterexamplep "y" "n"))
        (max-conflicts-string (if max-conflicts (nat-to-string max-conflicts) "-1")) ; -1 means no max
-       ((mv status state) (call-axe-script "callstplimited.bash" (list input-filename output-filename max-conflicts-string counterexample-arg) state))
+       ((mv status state) (call-axe-script "callstp.bash" (list input-filename output-filename max-conflicts-string counterexample-arg) state))
        ;;(- (cw "STP exit status: ~x0~%" status))
        )
     ;;(prog2$ (cw "sys-call status: ~x0~%" status)

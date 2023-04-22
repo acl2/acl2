@@ -34,6 +34,13 @@ else
     exit 1
 fi
 
+# For STP versions that include:
+# https://github.com/stp/stp/commit/d29b19d4b8cf42df49789cf0a3b6c493c823e559
+# this can restore good behavior on abs example.
+# (but this option is not available on earlier STPs):
+#MULT_OPTIONS=" --bb.mult-variant 13"
+MULT_OPTIONS=""
+
 #TODO: The STP timeout is hardly graceful.  It says "Aborted..." Try the new STP?  <-- old comment?
 
 # Use STP environment var, if set, otherwise look for 'stp' on the user's path:
@@ -41,7 +48,7 @@ STP=${STP:-stp}
 
 # echo "CALLING ${STP}"
 # Requires a relatively new STP:
-${STP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
+${STP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
 ## For a newer STP, this may be needed (or maybe either is ok, if the boost library is new enough):
 # stp ${COUNTEREXAMPLE_ARGS} --max-num-confl $MAX_CONFLICTS -r ${INPUT_FILE} > ${OUTPUT_FILE}
 
