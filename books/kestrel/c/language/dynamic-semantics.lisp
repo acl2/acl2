@@ -1052,51 +1052,7 @@
         (:arrsub
          (b* ((arr (expr-arrsub->arr left))
               (sub (expr-arrsub->sub left)))
-           (cond ((expr-case arr :member)
-                  (b* ((str (expr-member->target arr))
-                       (mem (expr-member->name arr))
-                       ((unless (expr-case str :ident))
-                        (error (list :expr-asg-arrsub-member-not-supported
-                                     str)))
-                       (eval (exec-expr-pure str compst))
-                       ((when (errorp eval)) eval)
-                       (eval (apconvert-expr-value eval))
-                       ((when (errorp eval)) eval)
-                       (struct (expr-value->value eval))
-                       (objdes (expr-value->object eval))
-                       ((unless objdes) (error :impossible))
-                       ((unless (value-case struct :struct))
-                        (error (list :not-struct str (compustate-fix compst))))
-                       (array (value-struct-read mem struct))
-                       ((when (errorp array)) array)
-                       (objdes-mem
-                        (make-objdesign-member :super objdes :name mem))
-                       ((unless (value-case array :array))
-                        (error (list :not-array array)))
-                       (index (exec-expr-pure sub compst))
-                       ((when (errorp index)) index)
-                       (index (apconvert-expr-value index))
-                       ((when (errorp index)) index)
-                       (index (expr-value->value index))
-                       ((unless (value-integerp index))
-                        (error (list :mistype-struct-array-read
-                                     :required :integer
-                                     :supplied index)))
-                       (index (value-integer->get index))
-                       ((when (< index 0)) (error (list :negative-array-index
-                                                        :struct struct
-                                                        :array array
-                                                        :index index)))
-                       (eval (exec-expr-pure right compst))
-                       ((when (errorp eval)) eval)
-                       (eval (apconvert-expr-value eval))
-                       ((when (errorp eval)) eval)
-                       (val (expr-value->value eval))
-                       (objdes-mem-elem
-                        (make-objdesign-element :super objdes-mem
-                                                :index index)))
-                    (write-object objdes-mem-elem val compst)))
-                 ((expr-case arr :memberp)
+           (cond ((expr-case arr :memberp)
                   (b* ((str (expr-memberp->target arr))
                        (mem (expr-memberp->name arr))
                        ((unless (expr-case str :ident))
