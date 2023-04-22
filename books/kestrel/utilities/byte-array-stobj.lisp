@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/bv-lists/byte-listp" :dir :system)
 (local (include-book "kestrel/lists-light/resize-list" :dir :system))
 
 ;; A stobj with a single field, which is a byte array.
@@ -33,3 +34,9 @@
            (equal (bytes-length (resize-bytes len byte-array-stobj))
                   len))
   :hints (("Goal" :in-theory (enable resize-bytes bytes-length))))
+
+;; Always rewrite BYTESP (the auto-generated recognizer for the bytes field of
+;; the stobj) to the more standard function BYTE-LISTP:
+(defthm bytesp-becomes-byte-listp
+  (equal (bytesp x)
+         (byte-listp x)))
