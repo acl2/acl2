@@ -12,6 +12,9 @@
 
 (in-package "ACL2")
 
+;; Ensures this book and all STP examples get rebuilt when the script changes:
+;; (depends-on "callstplimited.bash")
+
 ;; TODO: Use an array instead of nodenum-type-alist everywhere?
 
 ;; TODO: Consider adding support for the shift operators (bvshl, bvshr, bvashr).
