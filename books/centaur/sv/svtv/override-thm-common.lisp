@@ -235,7 +235,11 @@
        (trip (cdr (hons-get valvar triple-val-alist)))
        ((unless trip) (er hard? 'def-svtv-generalized-thm "Override name not present in triples ~x0: ~x1~%"
                           (list triples-name) (car override-valnames)))
-       ((svtv-override-triple trip)))
+       ((svtv-override-triple trip))
+       ((unless trip.refvar)
+        (er hard? 'def-svtv-generalized-thm
+            "Override variable ~x0 is not associated with an output variable --- need to either add an SVTV output for the same signal at the same time, or else put it in ~x1/~x2 instead of ~x3/~x4"
+            valvar :spec-override-vars :spec-override-var-bindings :override-vars :override-var-bindings)))
     (cons (if (eq valvar trip.refvar)
               valvar
             `(,valvar ',trip.refvar))
@@ -323,8 +327,13 @@
        (valvar (car override-vars))
        (trip (cdr (hons-get valvar triple-val-alist)))
        ((unless trip) (er hard? 'def-svtv-generalized-thm "Override name not present in triples ~x0: ~x1~%"
-                            (list triples-name) valvar)))
-    (cons `(,valvar (svex-env-lookup ',(svtv-override-triple->refvar trip) ,run))
+                          (list triples-name) valvar))
+       (refvar (svtv-override-triple->refvar trip))
+       ((unless refvar)
+        (er hard? 'def-svtv-generalized-thm
+            "Override variable ~x0 is not associated with an output variable --- need to either add an SVTV output for the same signal at the same time, or else put it in ~x1/~x2 instead of ~x3/~x4"
+            valvar :spec-override-vars :spec-override-var-bindings :override-vars :override-var-bindings)))
+    (cons `(,valvar (svex-env-lookup ',refvar ,run))
           (svtv-genthm-override-var-instantiation (cdr override-vars) triple-val-alist triples-name run))))
 
 (defun svtv-genthm-spec-override-var-instantiation (override-vars)
