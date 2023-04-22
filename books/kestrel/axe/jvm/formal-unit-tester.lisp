@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/jvm/load-class-from-hierarchy" :dir :system)
+(include-book "kestrel/jvm/read-class-from-hierarchy" :dir :system)
 ;(include-book "../jvm/gather-relevant-classes2")
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "unroll-java-code")
@@ -301,7 +301,7 @@
 ;;        (defconst-name (pack$ '*lifted-program- method-name '-*))
 ;;        )
 ;;     `(progn
-;;        (load-class ,class-name :root ,root-of-class-hierarchy) ;; done so that unroll-java-code can find it
+;;        (read-class ,class-name :root ,root-of-class-hierarchy) ;; done so that unroll-java-code can find it
 ;;        (unroll-java-code ,defconst-name ,method-designator-string
 ;;                          :chunkedp t)
 ;;        (prove-with-tactics ,defconst-name

@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "load-class")
+(include-book "read-class")
 (include-book "class-and-path-utils")
 
 ;Returns (mv erp event state constant-pool)

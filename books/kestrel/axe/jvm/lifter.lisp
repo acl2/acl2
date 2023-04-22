@@ -41,7 +41,7 @@
 ;; TODO: Print a warning or error if user attempts to lift a recursive function
 
 (include-book "kestrel/jvm/control-flow" :dir :system)
-(include-book "kestrel/jvm/load-class" :dir :system)
+(include-book "kestrel/jvm/read-class" :dir :system)
 (include-book "rule-lists-jvm")
 (include-book "output-indicators")
 (include-book "rules-in-rule-lists-jvm") ;include less?  but some of these rules are now used during decompilation?
