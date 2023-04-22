@@ -1444,3 +1444,12 @@ term
        svl::bits
 
        ))))
+
+
+(defmacro and*-exec (&rest args)
+  `(mbe :exec (and ,@args)
+        :logic (and* ,@args)))
+
+(defmacro or*-exec (&rest args)
+  `(mbe :exec (or ,@args)
+        :logic (or ,@args)))
