@@ -48,6 +48,7 @@
 (include-book "syntheto/top")
 (include-book "typed-lists-light/doc")
 (include-book "utilities/top")
+(include-book "utilities/io/doc")
 (include-book "utilities/show-books-doc")
 (include-book "utilities/ubi-doc")
 (include-book "utilities/checkpoints-doc")
