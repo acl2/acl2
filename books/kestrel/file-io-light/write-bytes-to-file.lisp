@@ -1,6 +1,6 @@
 ; A function to write a sequence of bytes to a file
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 
 (include-book "write-bytes-to-channel")
 (local (include-book "open-output-channel"))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 
 (local (in-theory (disable state-p)))
 

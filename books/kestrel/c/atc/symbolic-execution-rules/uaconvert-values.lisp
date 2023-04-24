@@ -61,6 +61,12 @@
                             type-of-value-when-ulongp
                             type-of-value-when-sllongp
                             type-of-value-when-ullongp
+                            valuep-when-uintp
+                            valuep-when-sintp
+                            valuep-when-ulongp
+                            valuep-when-slongp
+                            valuep-when-ullongp
+                            valuep-when-sllongp
                             value-integerp
                             value-unsigned-integerp-alt-def
                             value-signed-integerp-alt-def

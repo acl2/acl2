@@ -1646,7 +1646,7 @@
 ;        after doing so the eye tends to miss little atoms (like b above)
 ;        hiding in their shadows.
 
-; See :DOC pp-special-syms for a discussion of the special-term-num feature.
+; See :DOC ppr-special-syms for a discussion of the special-term-num feature.
 
 ; To play with ppr we recommend executing this form:
 
@@ -1756,9 +1756,9 @@
 ;                      length of the longest line we will print is n.
 
 ; Supporting the extension by Stephen Westfold described in :DOC
-; pp-special-syms:
+; ppr-special-syms:
 ; (SPECIAL-TERM n t1 (i-ind i1 ...) r-ind r1 ...)
-;                    - Here, t1 is a FLAT tuple of width j. 
+;                    - Here, t1 is a FLAT tuple of width j.
 ;                      o-nm is NIL or a FLAT tuple that fits on the same
 ;                        line as t1.
 ;                      i-ind is NIL or a natural number.
@@ -2029,7 +2029,7 @@
 (defmacro ppr-flat-right-margin ()
   '(f-get-global 'ppr-flat-right-margin state))
 
-(defconst *pp-special-syms*
+(defconst *ppr-special-syms*
 
 ; The values in the following alist must all satisfy natp.  We keep this alist
 ; sorted by key (for readability only).
@@ -2038,7 +2038,7 @@
     (case-match . 1)
     (defabsstobj . 1)
     (defaxiom . 1)
-    (defchoose . 3) 
+    (defchoose . 3)
     (defcong . 2)
     (defconst . 1)
     (defmacro . 2)
@@ -2059,16 +2059,16 @@
     (mv-let . 2)
     (table . 1)))
 
-(table pp-special-syms nil nil
+(table ppr-special-syms nil nil
        :guard (and (symbolp key)
                    (natp val)))
 
-(table pp-special-syms nil *pp-special-syms* :clear)
+(table ppr-special-syms nil *ppr-special-syms* :clear)
 
 (defun special-term-num (sym state)
-  (let ((pair (assoc-eq sym (table-alist 'pp-special-syms (w state)))))
+  (let ((pair (assoc-eq sym (table-alist 'ppr-special-syms (w state)))))
 
-; Because of the table guard on pp-special-syms, we know that all values in the
+; Because of the table guard on ppr-special-syms, we know that all values in the
 ; table satisfy natp.  So this function is guaranteed to return either nil or a
 ; natp.
 
@@ -5876,6 +5876,38 @@
                            ,(make-record-recognizer-body field-layout)))))))))
 
 (defun record-macros (name field-layout cheap recog-name)
+
+; We considered avoiding the use of defabbrev, which introduces a LET, in
+; make-record-accessors when cheap is nil.  But the following experiment
+; convinced us that this wasn't worth messing with.  This experiment is based
+; on the accessor introduced for the rune field by the defrec event for
+; def-body.
+
+;   (value :q)
+;   (defabbrev foo-abbrev (rune)
+;     (car (cdr (cdr (cdr (cdr rune))))))
+;   (defmacro foo-mac (rune)
+;     (list 'car
+;           (list 'cdr
+;                 (list 'cdr
+;                       (list 'cdr (list 'cdr rune))))))
+;   (defun f-abbrev (x)
+;     (declare (xargs :guard (true-listp x)))
+;     (foo-abbrev x))
+;   (defun f-mac (x)
+;     (declare (xargs :guard (true-listp x)))
+;     (foo-mac x))
+;   (defconstant *lstlst*
+;     (loop for i from 1 to 10000000 collect (make-list 10)))
+;   (defun test-abbrev ()
+;     (loop for lst in *lstlst* always (eq (f-abbrev lst) nil)))
+;   (defun test-mac ()
+;     (loop for lst in *lstlst* always (eq (f-mac lst) nil)))
+;   ; There was no observable time difference upon evaluating the following two
+;   ; forms.
+;   (time$ (test-abbrev))
+;   (time$ (test-mac))
+
   (declare (xargs :guard (or recog-name (symbolp name))))
   (let ((recog-name (or recog-name
                         (record-maker-recognizer-name name))))
@@ -5886,9 +5918,10 @@
                                   (make-record-car-cdrs field-layout
                                                         (if cheap nil '(cdr)))
                                   cheap)
-           (list (make-record-changer name field-layout cheap)
-                 (make-record-maker name field-layout cheap)
-                 (make-record-recognizer name field-layout cheap recog-name))))))
+           (list
+            (make-record-changer name field-layout cheap)
+            (make-record-maker name field-layout cheap)
+            (make-record-recognizer name field-layout cheap recog-name))))))
 
 ; WARNING: If you change the layout of records, you must change
 ; certain functions that build them in.  Generally, these functions
@@ -6355,6 +6388,17 @@
    (io? error nil state (alist str ctx)
         (error-fms nil ctx nil str alist state))
    (mv nil nil state)))
+
+(defun set-inhibited-summary-types-fn (lst state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (let ((msg (chk-inhibited-summary-types 'set-inhibited-summary-types lst)))
+    (cond (msg (er soft 'set-inhibited-summary-types "~@0" msg))
+          (t (pprogn (f-put-global 'inhibited-summary-types lst state)
+                     (value lst))))))
+
+(defmacro set-inhibited-summary-types (lst)
+  `(set-inhibited-summary-types-fn ,lst state))
 
 (defconst *uninhibited-warning-summaries*
   '("Uncertified"

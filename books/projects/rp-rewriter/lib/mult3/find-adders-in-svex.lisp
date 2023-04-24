@@ -4486,8 +4486,6 @@
                 (b* ((lst1 (fix-order-of-fa/ha-chain-args-lst (cdr x.args)))
                      (lst2 (acl2::merge-sort-lexorder lst1)))
                   (sv::svex-call x.fn (cons (car x.args) lst2))))
-
-               ;; TODO: Maybe add ha+1 stuff here....
                (&
                 (b* ((res (sv::svex-call x.fn
                                          (fix-order-of-fa/ha-chain-args-lst x.args)))
@@ -4929,9 +4927,6 @@
                                  (mv t1 t2))))))
            ((unless (or (and* (equal e1 t1) (equal e2 t2))
                         (and* (equal e1 t2) (equal e2 t1))))
-            ;; TODO:  instead of  exiting here,  add a  go-on mechanism.
-            ;; Maybe, call  recursively on  the same  svex asking  it to
-            ;; skip this branch.
             (mv 0 nil))
            ((unless (and* (svl::bitp-of-svex e1) ;; maybe remove
                           (svl::bitp-of-svex e2) ;; maybe remove
@@ -5326,11 +5321,6 @@
 
       (cond ((zp limit)
              (mv 0 nil))
-
-            ;; End point1.
-
-            ;; End point2.
-
             (t (b* (((mv new-svex valid) (csel-simplify-fa-c test then else))
                     ((when valid) (mv new-svex valid))
 
@@ -6393,6 +6383,23 @@
                              sv::4vec-bitor)
                             ())))))
 
+(define ppx-simplify-mergeable-node-simplify-args ((remaining-bitor sv::Svex-p)
+                                                   (fa-c-arg1 sv::Svex-p)
+                                                   (fa-c-arg2 sv::Svex-p)
+                                                   (fa-c-arg3 sv::Svex-p)
+                                                   &key
+                                                   ((env) 'env)
+                                                   ((context rp-term-listp) 'context)
+                                                   ((config svl::svex-reduce-config-p) 'config))
+  (b* ((svl::under-xor nil)
+       (svl::leave-depth 2)
+       (leaves (svl::bitand/or/xor-collect-leaves remaining-bitor 'sv::bitor))
+       ((mv fa-c-arg1 &) (svl::bitand/bitor-cancel-repeated-aux fa-c-arg1 leaves 0))
+       ((mv fa-c-arg2 &) (svl::bitand/bitor-cancel-repeated-aux fa-c-arg2 leaves 0))
+       ((mv fa-c-arg3 &) (svl::bitand/bitor-cancel-repeated-aux fa-c-arg3 leaves 0)))
+    (mv fa-c-arg1 fa-c-arg2 fa-c-arg3)))
+  
+
 (define ppx-simplify-mergeable-node ((svex sv::svex-p)
                                      &key
                                      ((limit natp) 'limit)
@@ -6424,22 +6431,22 @@
            ((mv found remaining-bitor remaining-bitand m2-term fa-c-term)
             (ppx-mergeable-extract-matching-m2 svex collected-fa-c-args))
            ((unless found)
-            (b* (;; ;; if not found try simplifing first
-                 ;; ((mv new-svex &) ;; NOTE: THIS MAY NEVER BE USEFUL.
-                 ;;  (simplify-to-find-fa-c-patterns-aux
-                 ;;   x 5 :strength 2
-                 ;;   :inside-out t))
-                 ;; #|(new-svex (svl::bitand/or/xor-cancel-repeated
-                 ;;            'sv::bitor (first (cdr svex)) (second (cdr svex))
-                 ;;            :leave-depth 5))|#
-                 ;; (simp-changed (not (equal new-svex svex)))
-                 ;; (new-new-svex (if simp-changed
-                 ;;                   (ppx-simplify-mergeable-node new-svex)
-                 ;;                 new-svex))
-                 ;; ((when (not (equal new-new-svex new-svex)))
-                 ;;  new-new-svex)
-                 ;; ;; if here, it means svl::bitand/or/xor-cancel-repeated didn't
-                 ;; ;; help.
+            (b* (;; if not found try simplifing first
+                 #|((mv new-svex &) ;; NOTE: THIS MAY NEVER BE USEFUL.
+                  (simplify-to-find-fa-c-patterns-aux
+                   x 5 :strength 2
+                   :inside-out t))|#
+                 (new-svex (svl::bitand/or/xor-cancel-repeated
+                            'sv::bitor (first (cdr svex)) (second (cdr svex))
+                            :leave-depth 5))
+                 (simp-changed (not (equal new-svex svex)))
+                 (new-new-svex (if simp-changed
+                                   (ppx-simplify-mergeable-node new-svex)
+                                 new-svex))
+                 ((when (not (equal new-new-svex new-svex)))
+                  new-new-svex)
+                 ;; if here, it means svl::bitand/or/xor-cancel-repeated didn't
+                 ;; help.
                  ((mv common-terms pulled-svex)
                   (svl::bitor-of-and-pull-commons-aux svex
                                                       :leave-depth 5
@@ -6486,12 +6493,21 @@
                              (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor
                                                                           other-arg
                                                                           remaining-bitand)))
+           #|((mv shared-arg1 shared-arg2 new-inner-bitor)
+            (ppx-simplify-mergeable-node-simplify-args remaining-bitor shared-arg1 shared-arg2 new-inner-bitor))|#
+             
            (new-inner-bitor (ppx-simplify-mergeable-node new-inner-bitor))
+
+           #|((mv shared-arg1 shared-arg2 new-inner-bitor)
+            (ppx-simplify-mergeable-node-simplify-args remaining-bitor shared-arg1 shared-arg2 new-inner-bitor))|#
+           
            (new-fa-c-chain (create-fa-c-chain-instance shared-arg1 shared-arg2 new-inner-bitor))
 
+           ;; TODO:
            ;; MAYBE I SHOULD TRY CLEARING  THE ARGS OF NEW-FA-C-CHAIN HERE WITH
            ;; REPEATED    CHECK    (svl::bitand/or/xor-cancel-repeated)    FROM
            ;; REMAINING-BITOR TO HELP THE CONSTANT 1 PROPAGATION CASE......
+           ;; IDEALLY BEFORE THE RECURSIVE CALL.....
 
            (new-bitor (ex-adder-fnc-from-unfloat
                        (svl::bitand/or/xor-simple-constant-simplify 'sv::bitor
@@ -6610,10 +6626,10 @@
                 ;; But this may help with the case where a constant 1 is propagated
                 ;; in the ppx adders...
                 #|(new-svex (if bitor-p
-                (svl::bitand/or/xor-cancel-repeated
-                'sv::bitor (first (cdr new-svex)) (second (cdr new-svex))
-                :leave-depth 3)
-                new-svex))|#)
+                              (svl::bitand/or/xor-cancel-repeated
+                               'sv::bitor (first (cdr new-svex)) (second (cdr new-svex))
+                               :leave-depth 1)
+                            new-svex))|#)
              (if bitor-p
                  (ppx-simplify-mergeable-node new-svex :limit 10000)
                new-svex))))
@@ -7497,16 +7513,24 @@ pattern
 
                 (parsed-svexes (hons-acons parse-key nil parsed-svexes)))
              (collect-ha-args-under-gates-list svex.args
-                                               (and (or underadder adder-p)
+                                               (or adder-p
+                                                   (and
                                                     ;; carry on underadder only
                                                     ;; through these gates.
-                                                    (or (equal svex.fn 'sv::bitand)
-                                                        (equal svex.fn 'sv::unfloat)
-                                                        (equal svex.fn 'sv::id)
-                                                        (equal svex.fn 'sv::bitor)
-                                                        (equal svex.fn 'sv::bitxor)))
+                                                    underadder
+                                                    #|(member-equal
+                                                     svex.fn
+                                                     (list 'sv::bitand
+                                                           'sv::unfloat
+                                                           'sv::id 'sv::?* 'sv::?
+                                                           'sv::bitor
+                                                           'sv::uor
+                                                           'SV::uand
+                                                           'sv::bitxor))|#))
                                                (or (equal svex.fn 'sv::bitand)
                                                    (equal svex.fn 'sv::bitor)
+                                                   (equal svex.fn 'sv::uor)
+                                                   (equal svex.fn 'sv::uand)
                                                    (and (or (equal svex.fn 'sv::unfloat)
                                                             (equal svex.fn 'sv::id))
                                                         undergate)
@@ -9289,13 +9313,13 @@ svex-alist)
                      ,thm-body)
             ,@args))
 
-         (with-output :off :all :on (error)
+         (with-output :off :all :on (error) :gag-mode nil
            (local
             (defun my-badge-userfn (fn)
               (declare (xargs :guard t))
               (cond ,@my-badge-userfn-body))))
 
-         (with-output :off :all :on (error)
+         (with-output :off :all :on (error) :gag-mode nil
            (local
             (defun my-apply$-userfn (fn args)
               (declare (xargs :guard (True-listp args)))
@@ -9303,7 +9327,7 @@ svex-alist)
 
          (with-output
            :off :all
-           :gag-mode t
+           :gag-mode nil
            :on (summary error)
            (defthm ,thm-name
              ,thm-body

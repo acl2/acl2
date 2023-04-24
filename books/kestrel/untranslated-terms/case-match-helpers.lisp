@@ -1,18 +1,22 @@
 ; Helper functions for manipulating calls of case-match
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Stephen Westfold (westfold@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
+;; See tests in case-match-helpers-tests.lisp.
+
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
+(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
 (defund legal-case-match-casesp (cases)
   (declare (xargs :guard t))
@@ -84,3 +88,39 @@
   (implies (legal-case-match-casesp cases)
            (legal-case-match-casesp (recreate-case-match-cases cases new-terms)))
   :hints (("Goal" :in-theory (enable legal-case-match-casesp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthm alistp-of-mv-nth-1-of-match-tests-and-bindings
+   (implies (alistp bindings)
+            (alistp (mv-nth 1 (match-tests-and-bindings x pat tests bindings))))))
+
+(local
+ (defthm symbol-alistp-of-mv-nth-1-of-match-tests-and-bindings
+   (implies (symbol-alistp bindings)
+            (symbol-alistp (mv-nth 1 (match-tests-and-bindings x pat tests bindings))))))
+
+;; todo: nested induction.  use an alists book?
+(local
+ (defthm no-duplicatesp-equal-of-strip-cars-of-mv-nth-1-of-match-tests-and-bindings
+   (implies (no-duplicatesp-equal (strip-cars bindings))
+            (no-duplicatesp-equal (strip-cars (mv-nth 1 (match-tests-and-bindings x pat tests bindings)))))
+   :hints (("Goal" :do-not '(generalize eliminate-destructors)))))
+
+;; Returns a list of all the vars bound by case-match when something
+;; successfully matches PAT.
+(defund vars-bound-in-case-match-pattern (pat)
+  (declare (xargs :guard t))
+  (mv-let (tests bindings)
+      (match-tests-and-bindings :ignore pat nil nil)
+    (declare (ignore tests))
+    (strip-cars bindings)))
+
+(defthm symbol-listp-of-vars-bound-in-case-match-pattern
+  (symbol-listp (vars-bound-in-case-match-pattern pat))
+  :hints (("Goal" :in-theory (enable vars-bound-in-case-match-pattern))))
+
+(defthm no-duplicatesp-equal-of-vars-bound-in-case-match-pattern
+  (no-duplicatesp-equal (vars-bound-in-case-match-pattern pat))
+  :hints (("Goal" :in-theory (enable vars-bound-in-case-match-pattern))))

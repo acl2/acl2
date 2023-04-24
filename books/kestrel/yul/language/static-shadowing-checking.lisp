@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,7 +22,7 @@
    (xdoc::p
     "According to [Yul: Specification of Yul: Scoping Rules],
      a variable declaration cannot shadow a variable
-     that is visible at point in which the variable declaration occurs.
+     that is visible at the point in which the variable declaration occurs.
      The notion of `visible' applies
      not only to variables declared in outer blocks in the same function,
      but also to variables declared in blocks in outer functions:

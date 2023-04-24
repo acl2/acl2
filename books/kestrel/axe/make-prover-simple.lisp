@@ -40,6 +40,7 @@
 (include-book "axe-clause-utilities")
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
 (include-book "kestrel/utilities/equal" :dir :system) ; for equal-same
+(include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "rewriter-common") ; for axe-bind-free-result-okayp, etc.
 ;(include-book "contexts") ;for max-nodenum-in-context
 (include-book "unify-term-and-dag-fast")

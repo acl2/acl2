@@ -29,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-tah-generation
+(defxdoc+ atc-tag-generation
   :parents (atc-event-and-code-generation)
   :short "Generation of C tag declarations (currently just structures)."
   :order-subtopics t
@@ -237,8 +237,8 @@
           (indexfixtype (integer-type-to-fixtype indextype))
           (elemfixtype (integer-type-to-fixtype elemtype))
           (indextypep (pack indexfixtype 'p))
-          (array-reader (pack elemfixtype '-array-read-alt-def))
-          (array-checker (pack elemfixtype '-array-index-okp))
+          (array-reader (pack elemfixtype '-array-integer-read-alt-def))
+          (array-checker (pack elemfixtype '-array-integer-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextype (pack 'valuep-when- indextypep))
@@ -887,8 +887,8 @@
           (indextypep (pack indexfixtype 'p))
           (elemtypep (pack elemfixtype 'p))
           (integer-from-indextype (pack 'integer-from- indexfixtype))
-          (array-writer (pack elemfixtype '-array-write-alt-def))
-          (array-checker (pack elemfixtype '-array-index-okp))
+          (array-writer (pack elemfixtype '-array-integer-write-alt-def))
+          (array-checker (pack elemfixtype '-array-integer-index-okp))
           (not-error-array-thm (pack 'not-errorp-when- elemfixtype '-arrayp))
           (kind-array-thm (pack 'value-kind-when- elemfixtype '-arrayp))
           (valuep-when-indextypep (pack 'valuep-when- indextypep))
@@ -919,7 +919,7 @@
                                               names-to-avoid
                                               wrld))
           (arrayp-of-arrary-write
-           (pack elemfixtype '-arrayp-of- elemfixtype '-array-write))
+           (pack elemfixtype '-arrayp-of- elemfixtype '-array-integer-write))
           (check-hyp (if length
                          `(,checker idx struct)
                        `(,checker idx)))
@@ -1056,7 +1056,35 @@
                 apconvert-expr-value-when-not-value-array-alt
                 ,value-kind-when-elemtypep
                 ,value-kind-when-indextypep
-                expr-value-fix-when-expr-valuep)
+                expr-value-fix-when-expr-valuep
+                exec-ident
+                expr-fix-when-exprp
+                exprp-of-expr-member->target
+                not-errorp-when-expr-valuep
+                expr-valuep-of-expr-value
+                expr-value->value-of-expr-value
+                expr-value->object-of-expr-value
+                read-object-of-objdesign-of-var-to-read-var
+                objdesign-of-var-when-valuep-of-read-var
+                objdesignp-of-objdesign-of-var-when-valuep-of-read-var
+                objdesign-option-fix
+                objdesign-fix-when-objdesignp
+                write-object-of-objdesign-of-var-to-write-var
+                objdesign-member->super-of-objdesign-member
+                objdesign-member->name-of-objdesign-member
+                objdesign-element->super-of-objdesign-element
+                objdesign-element->index-of-objdesign-element
+                return-type-of-objdesign-member
+                return-type-of-objdesign-element
+                read-object
+                nfix
+                (:e ident-fix))
+              :expand
+              ((exec-expr-pure (expr-member->target
+                                (expr-arrsub->arr (expr-binary->arg1 e)))
+                               compst)
+               (:free (x y z w) (write-object (objdesign-member x y) z w))
+               (:free (x y z w) (write-object (objdesign-element x y) z w)))
               :use
               ((:instance
                 ,writer-return-thm

@@ -1394,19 +1394,29 @@
                                     "Failed attempt (when building a term) to ~
                                      call "
                                   "Failed attempt to call "))
-                          (str1 (if (eq fn 'non-exec)
-                                    ""
-                                  (if non-executablep
-                                      "non-executable function "
-                                    "constrained function "))))
+                          (str1 (cond
+                                 ((eq fn 'non-exec) "")
+                                 (non-executablep "non-executable function ")
+                                 (t "constrained function ")))
+                          (str2 (cond
+                                 ((or (eq fn 'non-exec)
+                                      (null (attachment-pair fn wrld)))
+                                  "")
+                                 ((warrant-function-namep fn wrld)
+                                  ":
+warrant functions are not executable during proofs")
+                                 (t
+                                  ":
+its attachment is ignored during proofs"))))
                      (if skip-pkg-prefix
-                         (concatenate 'string str0 str1 (symbol-name fn))
+                         (concatenate 'string str0 str1 (symbol-name fn) str2)
                        (concatenate 'string
                                     str0
                                     str1
                                     (symbol-package-name fn)
                                     "::"
-                                    (symbol-name fn))))))))
+                                    (symbol-name fn)
+                                    str2)))))))
       (case-match reason
         ((:non-executable . erp)
          (let ((reason-string (reason-string erp nil wrld state)))
@@ -9595,6 +9605,185 @@
                   (get-rule-field (get-brr-local 'lemma state) :rune)))
             (value :invisible)))))))
 
+(defrec brr-data-1
+
+; Warning: Keep this in sync with the definition in :DOC brr-data.
+
+; This record stores information at calls of brkpt1.
+
+  (((lemma . target) . (unify-subst . type-alist))
+   .
+   ((pot-list . ancestors) . (rcnst initial-ttree . gstack)))
+  nil)
+
+(defrec brr-data-2
+
+; Warning: Keep this in sync with the definition in :DOC brr-data.
+
+; This record stores information at calls of brkpt2.
+
+  ((failure-reason unify-subst . brr-result)
+   .
+   (rcnst final-ttree . gstack))
+  nil)
+
+(defrec brr-data
+
+; Warning: Keep this in sync with the definition in :DOC brr-data.
+
+; This is a recursive record: pre and post are brr-data-1 and brr-data-2
+; records, respectively, and completed is a list of brr-data records, all as
+; follows.
+
+; For a given call C1 of brkpt1, pre is a brr-data-1 record from that call,
+; post is a brr-data-2 record from the matching (and subsequent) call C2 of
+; brkpt2, and completed is a list of brr-data records similarly constructed
+; from matching brkpt1 and brkpt2 calls at the top level between calls C1 and
+; C2.
+
+  (pre post . completed)
+  nil)
+
+(mutual-recursion
+
+(defun brr-data-p (completed-p x)
+
+; The :post of x is a record when completed-p is t and is nil otherwise.  Such
+; records are called "complete" and "incomplete", respectively.
+
+  (declare (xargs :guard t
+                  :measure (acl2-count x)))
+  (and (weak-brr-data-p x)
+       (weak-brr-data-1-p (access brr-data x :pre))
+       (if completed-p
+           (weak-brr-data-2-p (access brr-data x :post))
+         (null (access brr-data x :post)))
+       (brr-data-listp t (access brr-data x :completed))))
+
+(defun brr-data-listp (completed-p lst)
+  (declare (xargs :guard t
+                  :measure (acl2-count lst)))
+  (cond ((atom lst) (null lst))
+        ((brr-data-p completed-p (car lst))
+         (brr-data-listp completed-p (cdr lst)))
+        (t nil)))
+)
+
+(defun update-brr-data (flg x whs-data)
+
+; This function constructs the records described in (defrec brr-data ...), as
+; follows.  See that comment for relevant background.
+
+; Flg is nil for brkpt1 and t for brkpt2.  X is a brr-data-1 record if flg is
+; nil and a brr-data-2 record if flg is t.  Whs-data is the wormhole-data of
+; the current wormhole status, whose brr-data is of the form (r1 . r2), where
+; r1 is a list of complete brr-data-1 records -- we push a new one with each
+; brkpt1 call (when tracking with gstackp = :brr-data) -- and r2 is a list of
+; complete brr-data records, representing the top-level calls of brkpt1 that
+; have completed.
+
+  (declare (xargs :guard
+                  (and (consp whs-data)
+                       (brr-data-listp nil (car whs-data))
+                       (brr-data-listp t (cdr whs-data)))))
+  (let* ((pending (car whs-data))
+         (completed (cdr whs-data)))
+    (cond (flg             ; brkpt2; so we know (consp pending)
+           (cond ((null x) ; wonp = t, so pop
+                  (cons (cdr pending)
+                        completed))
+                 ((cdr pending)
+
+; Pop pending, folding (car pending) into the :completed field of (cadr
+; pending), filling in the :post field of (car pending).  There is no change to
+; completed.
+
+                  (cons (cons (change brr-data (cadr pending)
+                                      :completed
+                                      (cons (change brr-data (car pending)
+                                                    :post x)
+                                            (access brr-data (cadr pending)
+                                                    :completed)))
+                              (cddr pending))
+                        completed))
+                 (t
+
+; Pop pending, leaving an empty stack.  So, we set the :post field of (car
+; pending) to x and then push the resulting record onto completed.
+
+                  (cons nil
+                        (cons (change brr-data (car pending)
+                                      :post x)
+                              completed)))))
+          (t ; brkpt1
+           (cons (cons (make brr-data
+                             :pre x
+                             :post nil
+                             :completed nil)
+                       pending)
+                 completed)))))
+
+(defun set-wormhole-data-fast (whs data)
+
+; This function is like set-wormhole-data, except that it avoids a potentially
+; expensive equality test with the trade-off that here, we always cons.
+
+  (declare (xargs :guard t))
+  (if (consp whs)
+      (cons (car whs) data)
+    (cons :enter data)))
+
+(defun brr-data-lst (state)
+  (declare (xargs :stobjs state))
+  (er-let* ((status (get-wormhole-status 'brr-data state)))
+    (value (let ((pair (wormhole-data status)))
+             (cond ((consp pair)
+                    (let ((data (cdr pair)))
+                      (if (consp data)
+
+; Data is of the form (brr-data-1-stack . brr-data-lst).  We expect stack to be
+; nil unless the proof was interrupted.
+
+                          (cdr data)
+
+; If data is not a cons then we haven't collected any data or we have run
+; (clear-brr-data-lst).
+
+                        nil)))
+                   (t :none))))))
+
+(defun clear-brr-data-lst ()
+  (declare (xargs :guard t))
+  (wormhole-eval
+   'brr-data
+   '(lambda (whs)
+      (set-wormhole-data-fast whs nil))
+   nil))
+
+(defmacro with-brr-data (form &optional brr-data-returned)
+
+; Form, which needs to return a value-triple, is evaluated to obtain a result
+; (mv erp val state).
+
+; If optional argument brr-data-returned is nil, then that error triple is
+; returned.  Moreover, the 'brr-data wormhole modified so that the list of
+; brr-data resulting from form can subsequently be obtained as a value triple
+; by evaluating (brr-data-lst state).
+
+; If optional argument brr-data-returned is non-nil, then (mv erp lst state) is
+; returned, where lst is the resulting list of brr-data records.
+
+  (let ((form+ `(state-global-let* ((gstackp :brr-data))
+                                   ,form)))
+    `(prog2$ (clear-brr-data-lst)
+             ,(if brr-data-returned
+                  `(mv-let (erp val state)
+                     ,form+
+                     (declare (ignore val))
+                     (er-let* ((x (brr-data-lst state)))
+                       (mv erp x state)))
+                form+))))
+
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
                      gstack rcnst simplify-clause-pot-lst state)
 
@@ -9617,53 +9806,81 @@
    #+acl2-par ; test is always false anyhow when #-acl2-par
    ((f-get-global 'waterfall-parallelism state)
     nil)
-   ((not (f-get-global 'gstackp state))
-    nil)
    (t
-    (brr-wormhole
-     '(lambda (whs)
-        (set-wormhole-entry-code
-         whs
-         (if (assoc-equal (get-rule-field lemma :rune)
-                          (cdr (assoc-eq 'brr-monitored-runes
-                                         (wormhole-data whs))))
-             :ENTER
-           :SKIP)))
-     `((brr-gstack . ,gstack)
-       (brr-alist . ((lemma . ,lemma)
-                     (target . ,target)
-                     (unify-subst . ,unify-subst)
-                     (type-alist . ,type-alist)
-                     (pot-list . ,simplify-clause-pot-lst)
-                     (ancestors . ,ancestors)
-                     (rcnst . ,rcnst)
-                     (initial-ttree . ,initial-ttree))))
-     '(pprogn
-       (push-brr-stack-frame state)
-       (put-brr-local 'depth (1+ (or (get-brr-local 'depth state) 0)) state)
-       (let ((pair (assoc-equal (get-rule-field (get-brr-local 'lemma state)
+    (let ((gstackp (f-get-global 'gstackp state)))
+      (cond
+       ((not gstackp)
+        nil)
+       (t
+        (prog2$
+         (and (eq gstackp :brr-data)
+              (wormhole-eval 'brr-data
+                             '(lambda (whs)
+                                (set-wormhole-data-fast
+                                 whs
+                                 (update-brr-data
+                                  nil
+                                  (make brr-data-1
+                                        :lemma lemma
+                                        :target target
+                                        :unify-subst unify-subst
+                                        :type-alist type-alist
+                                        :pot-list simplify-clause-pot-lst
+                                        :ancestors ancestors
+                                        :rcnst rcnst
+                                        :initial-ttree initial-ttree
+                                        :gstack gstack)
+                                  (wormhole-data whs))))
+                             (list lemma target unify-subst type-alist
+                                   simplify-clause-pot-lst ancestors rcnst
+                                   initial-ttree gstack)))
+         (brr-wormhole
+          '(lambda (whs)
+             (set-wormhole-entry-code
+              whs
+              (if (assoc-equal (get-rule-field lemma :rune)
+                               (cdr (assoc-eq 'brr-monitored-runes
+                                              (wormhole-data whs))))
+                  :ENTER
+                :SKIP)))
+          `((brr-gstack . ,gstack)
+            (brr-alist . ((lemma . ,lemma)
+                          (target . ,target)
+                          (unify-subst . ,unify-subst)
+                          (type-alist . ,type-alist)
+                          (pot-list . ,simplify-clause-pot-lst)
+                          (ancestors . ,ancestors)
+                          (rcnst . ,rcnst)
+                          (initial-ttree . ,initial-ttree))))
+          '(pprogn
+            (push-brr-stack-frame state)
+            (put-brr-local 'depth (1+ (or (get-brr-local 'depth state) 0))
+                           state)
+            (let ((pair
+                   (assoc-equal (get-rule-field (get-brr-local 'lemma state)
                                                 :rune)
                                 (get-brr-global 'brr-monitored-runes state))))
 ; We know pair is non-nil because of the entrance test on wormhole above
-         (er-let*
-          ((okp (eval-break-condition (car pair) (cadr pair) 'wormhole state)))
-          (cond
-           (okp
-            (pprogn
-             (cond ((true-listp okp)
-                    (stuff-standard-oi okp state))
-                   (t state))
-             (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|"
-                         (get-brr-local 'depth state)
-                         (get-rule-field (get-brr-local 'lemma state)
-                                         :rune)
-                         (get-brr-local 'target state)
-                         (brr-evisc-tuple state))
-                     (value t))))
-           (t (pprogn
-               (pop-brr-stack-frame state)
-               (value nil)))))))
-     *brkpt1-aliases*))))
+              (er-let*
+                  ((okp (eval-break-condition (car pair) (cadr pair) 'wormhole
+                                              state)))
+                (cond
+                 (okp
+                  (pprogn
+                   (cond ((true-listp okp)
+                          (stuff-standard-oi okp state))
+                         (t state))
+                   (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|"
+                               (get-brr-local 'depth state)
+                               (get-rule-field (get-brr-local 'lemma state)
+                                               :rune)
+                               (get-brr-local 'target state)
+                               (brr-evisc-tuple state))
+                           (value t))))
+                 (t (pprogn
+                     (pop-brr-stack-frame state)
+                     (value nil)))))))
+          *brkpt1-aliases*))))))))
 
 (defun brkpt2 (wonp failure-reason unify-subst gstack brr-result final-ttree
                     rcnst state)
@@ -9674,100 +9891,129 @@
    #+acl2-par ; test is always false anyhow when #-acl2-par
    ((f-get-global 'waterfall-parallelism state)
     nil)
-   ((not (f-get-global 'gstackp state))
-    nil)
    (t
-    (brr-wormhole
-     '(lambda (whs)
-        (set-wormhole-entry-code
-         whs
-         (if (assoc-equal gstack
-                          (cdr (assoc-eq 'brr-stack (wormhole-data whs))))
-             :ENTER
-           :SKIP)))
-     `((brr-gstack . ,gstack)
-       (brr-alist . ((wonp . ,wonp)
-                     (failure-reason . ,failure-reason)
-                     (unify-subst . ,unify-subst) ; maybe changed
-                     (brr-result . ,brr-result)
-                     (rcnst . ,rcnst)
-                     (final-ttree . ,final-ttree))))
-     '(cond
-       ((eq (get-brr-local 'action state) 'silent)
-        (prog2$ (cw "~F0)~%" (get-brr-local 'depth state))
-                (pprogn
-                 (f-put-global 'brr-monitored-runes
-                               (get-brr-local 'saved-brr-monitored-runes state)
-                               state)
-                 (f-put-global 'brr-evisc-tuple
-                               (get-brr-local 'saved-brr-evisc-tuple state)
-                               state)
-                 (pop-brr-stack-frame state)
-                 (value nil))))
-       ((eq (get-brr-local 'action state) 'print)
-        (pprogn
-         (put-brr-local-lst (f-get-global 'brr-alist state) state)
-         (prog2$ (if (get-brr-local 'wonp state)
-                     (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%"
-                         (get-brr-local 'depth state)
-                         (get-rule-field (get-brr-local 'lemma state) :rune)
-                         (brr-result state)
-                         (brr-evisc-tuple state))
-                   (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%"
-                       (get-brr-local 'depth state)
-                       (get-rule-field (get-brr-local 'lemma state) :rune)
-                       (tilde-@-failure-reason-phrase
-                        (get-brr-local 'failure-reason state)
-                        1
-                        (get-brr-local 'unify-subst state)
-                        (brr-evisc-tuple state)
-                        (free-vars-display-limit state)
-                        state)))
+    (let ((gstackp (f-get-global 'gstackp state)))
+      (cond
+       ((not gstackp)
+        nil)
+       (t
+        (prog2$
+         (brr-wormhole
+          '(lambda (whs)
+             (set-wormhole-entry-code
+              whs
+              (if (assoc-equal gstack
+                               (cdr (assoc-eq 'brr-stack (wormhole-data whs))))
+                  :ENTER
+                :SKIP)))
+          `((brr-gstack . ,gstack)
+            (brr-alist . ((wonp . ,wonp)
+                          (failure-reason . ,failure-reason)
+                          (unify-subst . ,unify-subst) ; maybe changed
+                          (brr-result . ,brr-result)
+                          (rcnst . ,rcnst)
+                          (final-ttree . ,final-ttree))))
+          '(cond
+            ((eq (get-brr-local 'action state) 'silent)
+             (prog2$ (cw "~F0)~%" (get-brr-local 'depth state))
+                     (pprogn
+                      (f-put-global 'brr-monitored-runes
+                                    (get-brr-local 'saved-brr-monitored-runes
+                                                   state)
+                                    state)
+                      (f-put-global 'brr-evisc-tuple
+                                    (get-brr-local 'saved-brr-evisc-tuple
+                                                   state)
+                                    state)
+                      (pop-brr-stack-frame state)
+                      (value nil))))
+            ((eq (get-brr-local 'action state) 'print)
+             (pprogn
+              (put-brr-local-lst (f-get-global 'brr-alist state) state)
+              (prog2$ (if (get-brr-local 'wonp state)
+                          (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%"
+                              (get-brr-local 'depth state)
+                              (get-rule-field (get-brr-local 'lemma state)
+                                              :rune)
+                              (brr-result state)
+                              (brr-evisc-tuple state))
+                        (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%"
+                            (get-brr-local 'depth state)
+                            (get-rule-field (get-brr-local 'lemma state) :rune)
+                            (tilde-@-failure-reason-phrase
+                             (get-brr-local 'failure-reason state)
+                             1
+                             (get-brr-local 'unify-subst state)
+                             (brr-evisc-tuple state)
+                             (free-vars-display-limit state)
+                             state)))
+                      (pprogn
+                       (f-put-global 'brr-monitored-runes
+                                     (get-brr-local 'saved-brr-monitored-runes
+                                                    state)
+                                     state)
+                       (f-put-global 'brr-evisc-tuple
+                                     (get-brr-local 'saved-brr-evisc-tuple
+                                                    state)
+                                     state)
+                       (pop-brr-stack-frame state)
+                       (value nil)))))
+            (t (pprogn
+                (put-brr-local-lst (f-get-global 'brr-alist state) state)
+                (er-progn
+                 (set-standard-oi
+                  (get-brr-local 'saved-standard-oi state)
+                  state)
+                 (cond ((consp (f-get-global 'standard-oi state))
+                        (set-ld-pre-eval-print t state))
+                       (t (value nil)))
                  (pprogn
                   (f-put-global 'brr-monitored-runes
-                                (get-brr-local 'saved-brr-monitored-runes state)
+                                (get-brr-local 'saved-brr-monitored-runes
+                                               state)
                                 state)
                   (f-put-global 'brr-evisc-tuple
-                                (get-brr-local 'saved-brr-evisc-tuple state)
+                                (get-brr-local 'saved-brr-evisc-tuple
+                                               state)
                                 state)
-                  (pop-brr-stack-frame state)
-                  (value nil)))))
-       (t (pprogn
-           (put-brr-local-lst (f-get-global 'brr-alist state) state)
-           (er-progn
-            (set-standard-oi
-             (get-brr-local 'saved-standard-oi state)
-             state)
-            (cond ((consp (f-get-global 'standard-oi state))
-                   (set-ld-pre-eval-print t state))
-                  (t (value nil)))
-            (pprogn (f-put-global 'brr-monitored-runes
-                                  (get-brr-local 'saved-brr-monitored-runes
-                                                 state)
-                                  state)
-                    (f-put-global 'brr-evisc-tuple
-                                  (get-brr-local 'saved-brr-evisc-tuple
-                                                 state)
-                                  state)
-                    (prog2$
-                     (if (get-brr-local 'wonp state)
-                         (cw "~%~F0! ~F1 produced ~X23.~|~%"
-                             (get-brr-local 'depth state)
-                             (get-rule-field (get-brr-local 'lemma state) :rune)
-                             (brr-result state)
-                             (brr-evisc-tuple state))
-                       (cw "~%~F0x ~F1 failed because ~@2~|~%"
+                  (prog2$
+                   (if (get-brr-local 'wonp state)
+                       (cw "~%~F0! ~F1 produced ~X23.~|~%"
                            (get-brr-local 'depth state)
                            (get-rule-field (get-brr-local 'lemma state) :rune)
-                           (tilde-@-failure-reason-phrase
-                            (get-brr-local 'failure-reason state)
-                            1
-                            (get-brr-local 'unify-subst state)
-                            (brr-evisc-tuple state)
-                            (free-vars-display-limit state)
-                            state)))
-                     (value t)))))))
-     *brkpt2-aliases*))))
+                           (brr-result state)
+                           (brr-evisc-tuple state))
+                     (cw "~%~F0x ~F1 failed because ~@2~|~%"
+                         (get-brr-local 'depth state)
+                         (get-rule-field (get-brr-local 'lemma state) :rune)
+                         (tilde-@-failure-reason-phrase
+                          (get-brr-local 'failure-reason state)
+                          1
+                          (get-brr-local 'unify-subst state)
+                          (brr-evisc-tuple state)
+                          (free-vars-display-limit state)
+                          state)))
+                   (value t)))))))
+          *brkpt2-aliases*)
+         (and (eq gstackp :brr-data)
+              (wormhole-eval 'brr-data
+                             '(lambda (whs)
+                                (set-wormhole-data-fast
+                                 whs
+                                 (update-brr-data
+                                  t
+                                  (if wonp
+                                      nil
+                                    (make brr-data-2
+                                          :failure-reason failure-reason
+                                          :unify-subst unify-subst
+                                          :brr-result brr-result
+                                          :rcnst rcnst
+                                          :final-ttree final-ttree
+                                          :gstack gstack))
+                                  (wormhole-data whs))))
+                             (list wonp failure-reason unify-subst brr-result
+                                   rcnst final-ttree gstack))))))))))
 
 ; We now develop some of the code for an implementation of an idea put
 ; forward by Diederik Verkest, namely, that patterns should be allowed

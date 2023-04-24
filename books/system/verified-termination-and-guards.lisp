@@ -104,6 +104,7 @@
 (verify-termination filename-to-book-name) ; and guards
 (verify-termination include-book-dir) ; and guards
 (verify-termination strip-non-hidden-package-names) ; and guards
+(verify-termination clear-brr-data-lst) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; The following section was written by Matt Kaufmann.

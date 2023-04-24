@@ -93,16 +93,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 FIB
 
 Summary
@@ -180,19 +170,6 @@ Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
-
-The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
-events.
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-:REDUNDANT
-FIB
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 FIB
 
 ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE FIB-LIMIT-CHANGE ...)
@@ -279,33 +256,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( DEFUN FIB2-MEMOIZE-CONDITION ...)
-Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-FIB2-MEMOIZE-CONDITION
-
-Summary
-Form:  ( VERIFY-GUARDS FIB2-MEMOIZE-CONDITION)
-Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
-        (:EXECUTABLE-COUNTERPART EQL)
-        (:EXECUTABLE-COUNTERPART EQLABLEP)
-        (:EXECUTABLE-COUNTERPART NOT))
-FIB2-MEMOIZE-CONDITION
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB2
-
-Summary
-Form:  ( PROGN (DEFUN FIB2-MEMOIZE-CONDITION ...) ...)
-Rules: NIL
-
-Summary
-Form:  ( MAKE-EVENT (LET* ...))
-Rules: NIL
 FIB2
 
 Summary
@@ -508,16 +458,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB-MV
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 FIB-MV
 
 Summary
@@ -604,27 +544,7 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 EVENLP
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-EVENLP
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-ODDLP
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 ODDLP
 
 Summary
@@ -758,33 +678,7 @@ Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
-
-The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
-events.
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-:REDUNDANT
 EVENLP
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-EVENLP
-
-The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
-events.
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-:REDUNDANT
-ODDLP
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 ODDLP
 
 ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE EVENLP-BDD-CHANGE
@@ -1221,93 +1115,13 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 XX-WORSE-THAN*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-XX-WORSE-THAN*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 XX-WORSE-THAN-OR-EQUAL*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-XX-WORSE-THAN-OR-EQUAL*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 BASIC-XX-WORSE-THAN-LST1*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-BASIC-XX-WORSE-THAN-LST1*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 BASIC-XX-WORSE-THAN-LST2*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-BASIC-XX-WORSE-THAN-LST2*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 BASIC-XX-WORSE-THAN*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-BASIC-XX-WORSE-THAN*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-XX-WORSE-THAN-LST*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 XX-WORSE-THAN-LST*
 
 Summary
@@ -2223,33 +2037,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( DEFUN FIB2-NEW-MEMOIZE-CONDITION ...)
-Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-FIB2-NEW-MEMOIZE-CONDITION
-
-Summary
-Form:  ( VERIFY-GUARDS FIB2-NEW-MEMOIZE-CONDITION)
-Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
-        (:EXECUTABLE-COUNTERPART EQL)
-        (:EXECUTABLE-COUNTERPART EQLABLEP)
-        (:EXECUTABLE-COUNTERPART NOT))
-FIB2-NEW-MEMOIZE-CONDITION
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB2-NEW
-
-Summary
-Form:  ( PROGN (DEFUN FIB2-NEW-MEMOIZE-CONDITION ...) ...)
-Rules: NIL
-
-Summary
-Form:  ( MAKE-EVENT (LET* ...))
-Rules: NIL
 FIB2-NEW
 
 Summary
@@ -2484,16 +2271,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB-ST
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 FIB-ST
 
 Summary
@@ -2754,16 +2531,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-COLLATZ
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 COLLATZ
 
 Summary
@@ -2841,19 +2608,6 @@ Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
-
-The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
-events.
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-:REDUNDANT
-COLLATZ
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 COLLATZ
 
 ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE COLLATZ-LIMIT-CHANGE

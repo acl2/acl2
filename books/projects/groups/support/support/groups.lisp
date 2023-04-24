@@ -211,9 +211,9 @@
     t))
 
 (defthmd disjointp-pairwise-sublistp
-  (implies (and (disjointp-pairwise m)
-                (sublistp l m)
-		(dlistp l))
+  (implies (and (sublistp l m)
+                (dlistp l)
+                (disjointp-pairwise m))
 	   (disjointp-pairwise l)))
 
 (defun dlistp-list (l)
@@ -1404,29 +1404,29 @@
 		(divides (least-divisor 2 n) n)))
   :hints (("Goal" :use (primep-least-divisor (:instance least-divisor-divides (k 2))))))
 
-(defthmd g-c-d-symmetry
+(defthmd gcd-symmetry
   (implies (and (natp x) (natp y))
-           (equal (g-c-d x y) (g-c-d y x)))
-  :hints (("Goal" :in-theory (enable g-c-d))))
+           (equal (gcd x y) (gcd y x)))
+  :hints (("Goal" :in-theory (enable gcd))))
 
 (defthmd prod-rel-prime
   (implies (and (posp n)
 		(integerp a)
 		(integerp b)
-		(= (g-c-d a n) 1)
-		(= (g-c-d b n) 1))
-	   (equal (g-c-d (* a b) n) 1))
-  :hints (("Goal" :use ((:instance least-divisor-prime-divides (n (g-c-d (* a b) n)))
-                        (:instance euclid (p (least-divisor 2 (g-c-d (* a b) n))))
-			(:instance divides-leq (x (least-divisor 2 (g-c-d (* a b) n))) (y 1))
-			(:instance g-c-d-pos (x (* a b)) (y n))
-			(:instance g-c-d-symmetry (x a) (y n))
-			(:instance g-c-d-symmetry (x b) (y n))
-			(:instance g-c-d-divides (x (* a b)) (y n))
-			(:instance divides-transitive (x (least-divisor 2 (g-c-d (* a b) n))) (y (g-c-d (* a b) n)) (z (* a b)))
-			(:instance divides-transitive (x (least-divisor 2 (g-c-d (* a b) n))) (y (g-c-d (* a b) n)) (z n))
-			(:instance divides-g-c-d (d (least-divisor 2 (g-c-d (* a b) n))) (x a) (y n))
-			(:instance divides-g-c-d (d (least-divisor 2 (g-c-d (* a b) n))) (x b) (y n))))))
+		(= (gcd a n) 1)
+		(= (gcd b n) 1))
+	   (equal (gcd (* a b) n) 1))
+  :hints (("Goal" :use ((:instance least-divisor-prime-divides (n (gcd (* a b) n)))
+                        (:instance euclid (p (least-divisor 2 (gcd (* a b) n))))
+			(:instance divides-leq (x (least-divisor 2 (gcd (* a b) n))) (y 1))
+			(:instance gcd-pos (x (* a b)) (y n))
+			(:instance gcd-symmetry (x a) (y n))
+			(:instance gcd-symmetry (x b) (y n))
+			(:instance gcd-divides (x (* a b)) (y n))
+			(:instance divides-transitive (x (least-divisor 2 (gcd (* a b) n))) (y (gcd (* a b) n)) (z (* a b)))
+			(:instance divides-transitive (x (least-divisor 2 (gcd (* a b) n))) (y (gcd (* a b) n)) (z n))
+			(:instance divides-gcd (d (least-divisor 2 (gcd (* a b) n))) (x a) (y n))
+			(:instance divides-gcd (d (least-divisor 2 (gcd (* a b) n))) (x b) (y n))))))
 
 (local-defthm divides-mod-n
   (implies (and (posp n) (integerp m) (posp k) (divides k n) (divides k (mod m n)))
@@ -1439,22 +1439,22 @@
   (implies (and (posp n)
 		(posp a)
 		(posp b)
-		(= (g-c-d a n) 1)
-		(= (g-c-d b n) 1))
-	   (equal (g-c-d (mod (* a b) n) n) 1))
+		(= (gcd a n) 1)
+		(= (gcd b n) 1))
+	   (equal (gcd (mod (* a b) n) n) 1))
   :hints (("Goal" :in-theory (enable divides)
                   :use (prod-rel-prime
-		        (:instance g-c-d-pos (x (* a b)) (y n))
-		        (:instance g-c-d-pos (x (mod (* a b) n)) (y n))
-		        (:instance divides-mod-n (k (g-c-d (mod (* a b) n) n)) (m (* a b)))
-                        (:instance g-c-d-divides (x (mod (* a b) n)) (y n))
-			(:instance divides-g-c-d (d (g-c-d (mod (* a b) n) n)) (x (* a b)) (y n))
-			(:instance divides-leq (x (g-c-d (mod (* a b) n) n)) (y 1))))))
+		        (:instance gcd-pos (x (* a b)) (y n))
+		        (:instance gcd-pos (x (mod (* a b) n)) (y n))
+		        (:instance divides-mod-n (k (gcd (mod (* a b) n) n)) (m (* a b)))
+                        (:instance gcd-divides (x (mod (* a b) n)) (y n))
+			(:instance divides-gcd (d (gcd (mod (* a b) n) n)) (x (* a b)) (y n))
+			(:instance divides-leq (x (gcd (mod (* a b) n) n)) (y 1))))))
 
 (defun rel-primes-aux (k n)
   (if (zp k)
       ()
-    (if (= (g-c-d k n) 1)
+    (if (= (gcd k n) 1)
         (append (rel-primes-aux (1- k) n) (list k))
       (rel-primes-aux (1- k) n))))
 
@@ -1472,7 +1472,7 @@
                 (posp j)
 		(<= j k))
 	   (iff (member j (rel-primes-aux k n))
-	        (= (g-c-d j n) 1))))
+	        (= (gcd j n) 1))))
 
 (local-defthmd member-rel-primes-aux-2
   (implies (and (posp k)
@@ -1485,7 +1485,7 @@
 	   (iff (member j (rel-primes-aux k n))
 	        (and (posp j)
 		     (<= j k)
-		     (= (g-c-d j n) 1))))
+		     (= (gcd j n) 1))))
   :hints (("Goal" :use (member-rel-primes-aux-1 member-rel-primes-aux-2))))
 
 (local-defthmd member-rel-primes-1
@@ -1493,29 +1493,29 @@
 	   (iff (member k (rel-primes n))
 	        (and (posp k)
 		     (<= k n)
-		     (= (g-c-d k n) 1))))
+		     (= (gcd k n) 1))))
   :hints (("Goal" :use ((:instance member-rel-primes-aux (k n) (j k))))))
 
-(defthm g-c-d-n-n
+(defthm gcd-n-n
   (implies (posp n)
-           (equal (g-c-d n n) n))
-  :hints (("Goal" :in-theory (enable g-c-d))))
+           (equal (gcd n n) n))
+  :hints (("Goal" :in-theory (enable gcd))))
 
 (defthmd member-rel-primes
   (implies (and (posp n) (> n 1))
 	   (iff (member k (rel-primes n))
 	        (and (posp k)
 		     (< k n)
-		     (= (g-c-d k n) 1))))
+		     (= (gcd k n) 1))))
   :hints (("Goal" :in-theory (disable member-rel-primes-aux-<=) :use (member-rel-primes-1))))
 
-(defthm g-c-d-1
+(defthm gcd-1
   (implies (posp n)
-           (equal (g-c-d 1 n)
+           (equal (gcd 1 n)
 	          1))
-  :hints (("Goal" :use ((:instance g-c-d-divides (x 1) (y n))
-                        (:instance g-c-d-pos (x 1) (y n))
-                        (:instance divides-leq (x (g-c-d 1 n)) (y 1))))))
+  :hints (("Goal" :use ((:instance gcd-divides (x 1) (y n))
+                        (:instance gcd-pos (x 1) (y n))
+                        (:instance divides-leq (x (gcd 1 n)) (y 1))))))
 
 (local-defthm member-1-rel-primes-aux
   (implies (and (posp n) (posp k) (<= k n))
@@ -1571,10 +1571,10 @@
 	          x))
   :hints (("Goal" :use ((:instance member-rel-primes (k x))))))
 
-(defthm g-c-d-0
+(defthm gcd-0
   (implies (posp n)
-           (equal (g-c-d 0 n) n))
-  :hints (("Goal" :in-theory (enable g-c-d))))
+           (equal (gcd 0 n) n))
+  :hints (("Goal" :in-theory (enable gcd))))
 
 (defthm z*-closed
   (implies (and (posp n) (> n 1)
@@ -1585,7 +1585,7 @@
                         (:instance member-rel-primes (k y))
                         (:instance member-rel-primes (k (z*-op x y n)))
 			(:instance mod-prod-rel-prime (a x) (b y))
-			(:instance g-c-d-divides (x (* x y)) (y n))))))
+			(:instance gcd-divides (x (* x y)) (y n))))))
 
 (defthm z*-assoc
   (implies (and (posp n)
@@ -1602,12 +1602,12 @@
 
 ;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
 
-(defthm g-c-d-linear-combination
+(defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
 	     (= (+ (* (r-int x y) x)
 		   (* (s-int x y) y))
-		(g-c-d x y)))
+		(gcd x y)))
     :rule-classes ())
 
 (defun z*-inv (x n) (mod (r-int x n) n))
@@ -1625,7 +1625,7 @@
                 (member-equal x (rel-primes n)))
 	   (equal (z*-op (z*-inv x n) x n) 1))
   :hints (("Goal" :use (hack
-		        (:instance g-c-d-linear-combination (y n))
+		        (:instance gcd-linear-combination (y n))
                         (:instance member-rel-primes (k x))
 			(:instance rtl::mod-mod-times (n n) (a (r-int x n)) (b x))
                         (:instance rtl::mod-mult (n n) (m 1) (a (- (s-int x n))))))))
@@ -1652,18 +1652,18 @@
   :hints (("Goal" :use (z*-inverse-2
 		        (:instance divides-sum (x k) (y (* (r-int x n) x)) (z (* (s-int x n) n)))
 		        (:instance member-rel-primes (k x))
-			(:instance g-c-d-linear-combination (y n))
+			(:instance gcd-linear-combination (y n))
                         (:instance divides-mod-n (m (r-int x n)))))))
 
 (local-defthmd z*-inverse-4
   (implies (and (posp n) (> n 1)
                 (member-equal x (rel-primes n)))
-	   (equal (g-c-d (z*-inv x n) n) 1))
-  :hints (("Goal" :use ((:instance z*-inverse-3 (k (g-c-d (z*-inv x n) n)))
-                        (:instance divides-leq (x (g-c-d (z*-inv x n) n)) (y 1))
-		        (:instance g-c-d-pos (x (z*-inv x n)) (y n))
+	   (equal (gcd (z*-inv x n) n) 1))
+  :hints (("Goal" :use ((:instance z*-inverse-3 (k (gcd (z*-inv x n) n)))
+                        (:instance divides-leq (x (gcd (z*-inv x n) n)) (y 1))
+		        (:instance gcd-pos (x (z*-inv x n)) (y n))
 		        (:instance member-rel-primes (k x))
-			(:instance g-c-d-divides (x (z*-inv x n)) (y n))))))
+			(:instance gcd-divides (x (z*-inv x n)) (y n))))))
 
 (local-defthmd z*-inverse-5
   (implies (and (posp n) (> n 1)
@@ -2764,7 +2764,7 @@
        (local-defthm ,assoc-name
          (implies (and ,cond (member-equal x ,elts) (member-equal y ,elts) (member-equal z ,elts))
 	          (equal (op x (op y z ,grp) ,grp) (op (op x y ,grp) z ,grp)))
-	 :hints (("Goal" :use (group-assoc))))
+         :hints (("Goal" :use ((:instance group-assoc (g ,grp))))))
        (defgroup ,name ,args
          ,cond
 	 ,elts

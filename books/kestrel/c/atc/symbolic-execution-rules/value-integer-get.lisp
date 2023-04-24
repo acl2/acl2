@@ -103,6 +103,34 @@
     :enable (value-integer->get
              value-ullong->get-to-integer-from-ullong))
 
+  (defruled value-integer->get-when-cintegerp
+    (implies (cintegerp x)
+             (equal (value-integer->get x)
+                    (integer-from-cinteger x)))
+    :enable (cintegerp
+             cinteger-kind
+             integer-from-cinteger
+             cinteger-schar->get
+             cinteger-uchar->get
+             cinteger-sshort->get
+             cinteger-ushort->get
+             cinteger-sint->get
+             cinteger-uint->get
+             cinteger-slong->get
+             cinteger-ulong->get
+             cinteger-sllong->get
+             cinteger-ullong->get
+             value-integer->get-when-scharp
+             value-integer->get-when-ucharp
+             value-integer->get-when-sshortp
+             value-integer->get-when-ushortp
+             value-integer->get-when-sintp
+             value-integer->get-when-uintp
+             value-integer->get-when-slongp
+             value-integer->get-when-ulongp
+             value-integer->get-when-sllongp
+             value-integer->get-when-ullongp))
+
   (defval *atc-value-integer->get-rules*
     '(value-integer->get-when-scharp
       value-integer->get-when-ucharp

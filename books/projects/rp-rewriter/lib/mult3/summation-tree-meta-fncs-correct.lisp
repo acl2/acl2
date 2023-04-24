@@ -4580,9 +4580,18 @@ x5)))||#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; cross-product-pp
 
+(defret extract-first-arg-of-equals-valid-sc
+  (implies (valid-sc term a)
+           (and (valid-sc res a)
+                (equal (rp-evlt res a)
+                       (rp-evlt term a))))
+  :fn EXTRACT-FIRST-ARG-OF-EQUALS
+  :hints (("Goal"
+           :in-theory (e/d (EXTRACT-FIRST-ARG-OF-EQUALS) ()))))
+
 (defret cross-product-pp-aux-precollect-valid-sc
   (implies (valid-sc-subterms e-lst a)
-           (and (valid-sc single-s/c a)
+           (and (valid-sc-subterms single-s/c-lst a)
                 (valid-sc-subterms res-e-lst a)))
   :fn cross-product-pp-aux-precollect
   :hints (("Goal"
@@ -4631,6 +4640,11 @@ x5)))||#
       (rp-evlt single-s/c a)
     0))
 
+(define and-eval-for-cross-product-lst-pp (single-s/c-lst e-lst a)
+  (if (equal (and-list 0 (rp-evlt-lst e-lst a)) 1)
+      (and-list 0 (rp-evlt-lst single-s/c-lst a))
+    0))
+
 (define and-eval-for-cross-product-pp-lst (single-s/c pp-lst a)
   :verify-guards nil
   (if (equal (rp-evlt single-s/c a) 1)
@@ -4660,21 +4674,46 @@ x5)))||#
 :hints (("Goal"
 :in-theory (e/d (and-eval-for-cross-product-pp) ()))))|#
 
+(local
+ (defthmd when-of-known-value
+   (implies (and (equal (bit-fix x) val)
+                 (bitp other))
+            (equal (and$ x other)
+                   (if (equal val 1)
+                       other
+                     0)))
+   :hints (("Goal"
+            :in-theory (e/d (and$) ())))))
+                       
+
+
 (defret cross-product-pp-aux-precollect-correct
   (implies (and (force (valid-sc-subterms e-lst a))
                 valid
                 (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
-           (and (equal (and-eval-for-cross-product-pp
-                        single-s/c res-e-lst a)
+           (and (equal (and-eval-for-cross-product-lst-pp
+                        single-s/c-lst res-e-lst a)
                        (and-list hash (rp-evlt-lst e-lst a)))
-                (bitp (rp-evlt single-s/c a))))
+                (implies (equal (len single-s/c-lst) 1)
+                         (equal (and-eval-for-cross-product-pp
+                                 (car single-s/c-lst) res-e-lst a)
+                                (and-list hash (rp-evlt-lst e-lst a))))
+                (bit-listp (rp-evlt-lst single-s/c-lst a))))
   :fn cross-product-pp-aux-precollect
   :hints (("Goal"
            ;;:expand ((:free (x y) (and-list 0 (cons x y))))
-           :in-theory (e/d* (regular-rp-evl-of_s_when_mult-formula-checks
+           :in-theory (e/d* (bit-listp
+
+                             has-bitp-rp-force-hyp-rewrite
+                             
+                             ;;EXTRACT-FIRST-ARG-OF-EQUALS
+                             when-of-known-value
+                             regular-rp-evl-of_equals_when_mult-formula-checks
+                             regular-rp-evl-of_s_when_mult-formula-checks
                              regular-rp-evl-of_logbit$inline_when_mult-formula-checks
                              and-eval-for-cross-product-pp;;-redef
+                             and-eval-for-cross-product-lst-pp
                              cross-product-pp-aux-precollect
                              rp-evlt-of-ex-from-rp-reverse)
                             (rp-trans
@@ -4685,7 +4724,9 @@ x5)))||#
                              (:rewrite
                               rp-trans-is-term-when-list-is-absent)
                              rp-evlt-of-ex-from-rp
-                             rp-trans-lst)))))
+                             rp-trans-lst)))
+          (and stable-under-simplificationp
+               '(:expand ((EXTRACT-FIRST-ARG-OF-EQUALS (EX-FROM-RP (CAR E-LST))))))))
 
 (local
  (defthm rp-evlt-ex-from-rp-with-binary-and
@@ -4741,6 +4782,28 @@ x5)))||#
                              and$ not$)
                             ())))))
 
+(DEFTHMd RP-EVLT-OF-EX-FROM-RP-REVERSE-with-EXTRACT-FIRST-ARG-OF-EQUALS
+  (IMPLIES
+   (AND (SYNTAXP (OR (ATOM TERM)
+                     (AND (NOT (EQUAL (CAR TERM) 'EXTRACT-FIRST-ARG-OF-EQUALS))
+                          (NOT (EQUAL (CAR TERM) 'EX-FROM-RP))
+                          (NOT (EQUAL (CAR TERM) 'QUOTE)))))
+        (valid-sc term a))
+   (and
+    (EQUAL (RP-EVL (RP-TRANS TERM) A)
+           (RP-EVL (RP-TRANS (EXTRACT-FIRST-ARG-OF-EQUALS (EX-FROM-RP TERM)))
+                   A))
+    (EQUAL (RP-EVL (RP-TRANS (EX-FROM-RP TERM)) A)
+           (RP-EVL (RP-TRANS (EXTRACT-FIRST-ARG-OF-EQUALS (EX-FROM-RP TERM)))
+                   A)))))
+
+(DEFTHM EXTRACT-FIRST-ARG-OF-EQUALS-onlyVALID-SC
+  (B* ((?RES (EXTRACT-FIRST-ARG-OF-EQUALS TERM)))
+    (IMPLIES (VALID-SC TERM A)
+             (AND (VALID-SC RES A))))
+  :HINTS (("Goal" :IN-THEORY (E/D (EXTRACT-FIRST-ARG-OF-EQUALS)
+                                  NIL))))
+
 (defret cross-product-pp-aux-precollect2-correct
   (implies (and valid
                 (valid-sc single-pp a)
@@ -4762,7 +4825,8 @@ x5)))||#
   :hints (("Goal"
            :do-not-induct t
            :induct (cross-product-pp-aux-precollect2 SINGLE-PP)
-           :in-theory (e/d* (bitp BINARY-?-rw-to-sum
+           :in-theory (e/d* (bitp ;;EXTRACT-FIRST-ARG-OF-EQUALS
+                                  BINARY-?-rw-to-sum
                                   regular-rp-evl-of_s_when_mult-formula-checks
                                   regular-rp-evl-of_binary-and_when_mult-formula-checks
                                   regular-rp-evl-of_binary-and_when_mult-formula-checks_with-ex-from-rp
@@ -4778,12 +4842,13 @@ x5)))||#
 
                                   and-eval-for-cross-product-pp;;-redef
                                   cross-product-pp-aux-precollect2
-                                  rp-evlt-of-ex-from-rp-reverse
+                                  RP-EVLT-OF-EX-FROM-RP-REVERSE 
                                   and$
                                   BIT-LISTP
                                   has-bitp-rp-force-hyp-rewrite
                                   bit-fix)
                             (rp-trans
+                             ;;EXTRACT-FIRST-ARG-OF-EQUALS-VALID-SC
                              ;;RP-TRANS-OPENER
                              (:definition valid-sc)
                              (:rewrite valid-sc-subterms-cdr)
@@ -5598,6 +5663,19 @@ regular-rp-evl-of_s_when_mult-formula-checks)
                 (valid-sc term a))
            (valid-sc (caddr term) a)))
 
+(local
+ (defthmd valid-sc-of-car-when-validlistp
+  (implies (and (valid-sc-subterms lst a)
+                (consp lst))
+           (valid-sc (car lst) a))
+  :rule-classes :rewrite))
+(local
+ (defthmd rp-termp-of-car-when-rp-term-listp
+  (implies (and (rp-term-listp lst)
+                (consp lst))
+           (rp-termp (car lst)))
+  :rule-classes :rewrite))
+
 (defret cross-product-pp-aux-correct
   (implies (and valid
                 (valid-sc single-pp a)
@@ -5616,9 +5694,9 @@ regular-rp-evl-of_s_when_mult-formula-checks)
 
            ;;       (:instance cross-product-pp-aux-precollect2-correct))
            :in-theory (e/d (times-of-sum-reverse
-
+                            valid-sc-of-car-when-validlistp
                             cross-product-pp-aux-precollect2-correct
-
+                            rp-termp-of-car-when-rp-term-listp
                             valid-sc-caddr-when-times
                             GET-PP-AND-COEF
                             and*
@@ -5664,6 +5742,8 @@ regular-rp-evl-of_s_when_mult-formula-checks)
   :fn cross-product-pp-aux
   :hints (("Goal"
            :in-theory (e/d (cross-product-pp-aux
+                            VALID-SC-OF-CAR-WHEN-VALIDLISTP
+                            RP-TERMP-OF-CAR-WHEN-RP-TERM-LISTP
                             regular-rp-evl-of_--_when_mult-formula-checks_with-ex-from-rp
                             regular-rp-evl-of_--_when_mult-formula-checks
                             regular-rp-evl-of_and-list_when_mult-formula-checks_with-ex-from-rp

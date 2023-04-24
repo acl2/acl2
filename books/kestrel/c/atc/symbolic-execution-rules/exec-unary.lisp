@@ -97,12 +97,18 @@
                     result-integer-value
                     ,@*atc-value-integer->get-rules*
                     value-integer
-                    value-sint-to-sint
-                    value-uint-to-uint
-                    value-slong-to-slong
-                    value-ulong-to-ulong
-                    value-sllong-to-sllong
-                    value-ullong-to-ullong
+                    valuep-when-uintp
+                    valuep-when-sintp
+                    valuep-when-ulongp
+                    valuep-when-slongp
+                    valuep-when-ullongp
+                    valuep-when-sllongp
+                    value-sint-to-sint-from-integer
+                    value-uint-to-uint-from-integer
+                    value-slong-to-slong-from-integer
+                    value-ulong-to-ulong-from-integer
+                    value-sllong-to-sllong-from-integer
+                    value-ullong-to-ullong-from-integer
                     sint-integerp-alt-def
                     uint-integerp-alt-def
                     slong-integerp-alt-def

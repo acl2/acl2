@@ -33,6 +33,7 @@
 (local (include-book "centaur/fgl/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (disable unsigned-byte-p)))
+(local (std::remove-default-post-define-hook :fix))
 
 ; cert_param: (uses-glucose)
 

@@ -34,6 +34,7 @@
 
 (include-book "svtv-idealize-defs")
 (include-book "svtv-data-override-transparency")
+(include-book "override-part-selects")
 (include-book "process")
 (include-book "std/util/defredundant" :dir :system)
 (include-book "override-common")
@@ -349,15 +350,15 @@
 
      ((:@ :svtv-spec progn)
       (:@ (not :svtv-spec) local)
-      (define <name>-spec ()
+      (define <specname> ()
         :prepwork ((local (in-theory nil)))
         :returns (spec svtv-spec-p
                        :hints (("goal" :in-theory '(svtv-spec-p-of-svtv-data-obj->spec
-                                                    <name>-spec))))
+                                                    <specname>))))
         :guard-hints (("goal" :in-theory '(SVTV-DATA-OBJ-P-OF-<DATA>)))
         (svtv-data-obj->spec (<data>))
         ///
-        (in-theory (disable (<name>-spec)))
+        (in-theory (disable (<specname>)))
 
         (local (defthm <name>-is-<data>-pipeline
                  (equal (svtv->outexprs (<name>))
@@ -397,7 +398,7 @@
                                              (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->PIPELINE-VALIDP$INLINE))))))
 
 
-        (defretd svtv-run-of-<name>-is-svtv-spec-run-of-<name>-spec
+        (defretd svtv-run-of-<name>-is-svtv-spec-run-of-<specname>
           (svex-envs-equivalent (svtv-run (<name>) env
                                           :boolvars boolvars
                                           :simplify simplify
@@ -405,7 +406,7 @@
                                           :readable readable
                                           :allvars allvars)
                                 (svtv-spec-run spec env))
-          :hints(("Goal" :in-theory '((:DEFINITION <NAME>-SPEC)
+          :hints(("Goal" :in-theory '((:DEFINITION <SPECNAME>)
                                       (:EQUIVALENCE SVEX-ENVS-EQUIVALENT-IS-AN-EQUIVALENCE)
                                       (:REWRITE <DATA>-CORRECT)
                                       (:REWRITE <DATA>-FACTS-FOR-SPEC)
@@ -627,7 +628,7 @@
             (:definition not)
             (:rewrite <data>-correct)
             (:rewrite <data>-facts)
-            (:rewrite svtv-run-of-<name>-is-svtv-spec-run-of-<name>-spec)
+            (:rewrite svtv-run-of-<name>-is-svtv-spec-run-of-<specname>)
             (:rewrite syntax-check-of-<name>-triplemaplist)
             (:type-prescription len)
             (:type-prescription svex-env-<<=)
@@ -636,7 +637,7 @@
             override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
             svexlist-check-overridetriples-of-<data>
             <data>-generalize-override-syntax-check
-            <name>-spec
+            <specname>
             svtv-spec->fsm-of-svtv-data-obj->spec
             (svex-envlist-all-keys)
             (svarlist-override-p))
@@ -644,8 +645,8 @@
 
       (:@ :svtv-spec
        (defthm
-         <name>-spec-refines-<name>
-         (b* ((spec-run (svtv-spec-run (<name>-spec) spec-pipe-env 
+         <specname>-refines-<name>
+         (b* ((spec-run (svtv-spec-run (<specname>) spec-pipe-env 
                                        :base-ins spec-base-ins
                                        :initst spec-initst))
               (impl-run (svtv-run (<name>) pipe-env)))
@@ -670,7 +671,7 @@
              (:definition not)
              (:rewrite <data>-correct)
              (:rewrite <data>-facts)
-             (:rewrite svtv-run-of-<name>-is-svtv-spec-run-of-<name>-spec)
+             (:rewrite svtv-run-of-<name>-is-svtv-spec-run-of-<specname>)
              (:rewrite syntax-check-of-<name>-triplemaplist)
              (:type-prescription len)
              (:type-prescription svex-env-<<=)
@@ -679,18 +680,18 @@
              override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
              svexlist-check-overridetriples-of-<data>
              <data>-generalize-override-syntax-check
-             <name>-spec
+             <specname>
              svtv-spec->fsm-of-svtv-data-obj->spec
              (svex-envlist-all-keys)
              (svarlist-override-p))
            :do-not-induct t)))
 
        (defthm
-         <name>-spec-refines-<name>-spec
-         (b* ((spec-run (svtv-spec-run (<name>-spec) spec-pipe-env 
+         <specname>-refines-<specname>
+         (b* ((spec-run (svtv-spec-run (<specname>) spec-pipe-env 
                                        :base-ins spec-base-ins
                                        :initst spec-initst))
-              (impl-run (svtv-spec-run (<name>-spec) pipe-env)))
+              (impl-run (svtv-spec-run (<specname>) pipe-env)))
            (implies
             (and
              (svtv-override-triplemaplist-envs-ok (<name>-triplemaplist)
@@ -720,7 +721,7 @@
              override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
              svexlist-check-overridetriples-of-<data>
              <data>-generalize-override-syntax-check
-             <name>-spec
+             <specname>
              svtv-spec->fsm-of-svtv-data-obj->spec
              (svex-envlist-all-keys)
              (svarlist-override-p))
@@ -745,11 +746,11 @@
      ;;                                       ))
 
      (:@ :svtv-spec
-      (defret no-duplicate-state-keys-of-<name>-spec
+      (defret no-duplicate-state-keys-of-<specname>
         (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
-                                     <name>-spec
+                                     <specname>
                                      fields-of-svtv-data-obj->ideal-spec
                                      alist-keys-of-flatnorm->ideal-fsm
                                      svex-alist-keys-of-delays-of-flatnorm-add-overrides
@@ -758,14 +759,14 @@
                      '(:in-theory '(hons-dups-p-when-variable-free
                                     no-duplicatesp-by-hons-dups-p)))
                 )
-        :fn <name>-spec)
+        :fn <specname>)
 
-      (defret initst-keys-of-<name>-spec
+      (defret initst-keys-of-<specname>
         (equal (svex-alist-keys (svtv-spec->initst-alist spec))
                (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
-                                     <name>-spec
+                                     <specname>
                                      svtv-data-obj->spec
                                      svtv-spec->fsm-of-svtv-spec
                                      svtv-spec->initst-alist-of-svtv-spec
@@ -781,14 +782,14 @@
                                     (svtv-data-obj->phase-fsm)
                                     (svtv-data-obj->pipeline-setup))))
                 )
-        :fn <name>-spec)
+        :fn <specname>)
 
-      (defret probe-keys-of-<name>-spec
+      (defret probe-keys-of-<specname>
         (equal (alist-keys (svtv-spec->probes spec))
                (svex-alist-keys (svtv->outexprs (<name>))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
-                                     <name>-spec
+                                     <specname>
                                      svtv-data-obj->spec
                                      svtv-spec->probes-of-svtv-spec
                                      svtv-probealist-fix-when-svtv-probealist-p
@@ -801,14 +802,14 @@
                                     (alist-keys)
                                     (pipeline-setup->probes)
                                     (svtv-data-obj->pipeline-setup)))))
-        :fn <name>-spec)
+        :fn <specname>)
 
-      (defret cycle-outputs-captured-of-<name>-spec
+      (defret cycle-outputs-captured-of-<specname>
         (svtv-cyclephaselist-has-outputs-captured
          (svtv-spec->cycle-phases spec))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
-                                     <name>-spec
+                                     <specname>
                                      svtv-data-obj->spec
                                      svtv-spec->cycle-phases-of-svtv-spec
                                      svtv-cyclephaselist-fix-when-svtv-cyclephaselist-p
@@ -817,7 +818,7 @@
                      '(:in-theory '((<data>)
                                     (svtv-data-obj->cycle-phases)
                                     (svtv-cyclephaselist-has-outputs-captured)))))
-        :fn <name>-spec))
+        :fn <specname>))
 
      
      (:@ :ideal
@@ -905,13 +906,13 @@
                                      SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1)
                                     (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1)
                                     (:DEFINITION <IDEAL-NAME>)
-                                    (:DEFINITION <NAME>-SPEC)
+                                    (:DEFINITION <SPECNAME>)
                                     (:DEFINITION NOT)
                                     (:REWRITE <DATA>-CORRECT)
                                     (:REWRITE <DATA>-FACTS)
                                     ;; (:REWRITE SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-SPEC-RUN)
                                     (:REWRITE
-                                     SVTV-RUN-OF-<NAME>-IS-SVTV-SPEC-RUN-OF-<NAME>-SPEC)
+                                     SVTV-RUN-OF-<NAME>-IS-SVTV-SPEC-RUN-OF-<SPECNAME>)
                                     (:REWRITE SYNTAX-CHECK-OF-<NAME>-TRIPLEMAPLIST)
                                     (:TYPE-PRESCRIPTION LEN)
                                     (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
@@ -939,13 +940,13 @@
                                      SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1)
                                     (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1)
                                     (:DEFINITION <IDEAL-NAME>)
-                                    (:DEFINITION <NAME>-SPEC)
+                                    (:DEFINITION <SPECNAME>)
                                     (:DEFINITION NOT)
                                     (:REWRITE <DATA>-CORRECT)
                                     (:REWRITE <DATA>-FACTS)
                                     ;; (:REWRITE SVTV-DATA-OBJ->IDEAL-SPEC-RUN-REFINES-SVTV-IDEAL-SPEC-RUN)
                                     (:REWRITE
-                                     SVTV-RUN-OF-<NAME>-IS-SVTV-SPEC-RUN-OF-<NAME>-SPEC)
+                                     SVTV-RUN-OF-<NAME>-IS-SVTV-SPEC-RUN-OF-<SPECNAME>)
                                     (:REWRITE SYNTAX-CHECK-OF-<NAME>-TRIPLEMAPLIST)
                                     (:TYPE-PRESCRIPTION LEN)
                                     (:TYPE-PRESCRIPTION SVEX-ENV-<<=)
@@ -1085,7 +1086,11 @@
   (acl2::template-subst *svtv-generalize-template*
                         :str-alist `(("<NAME>" . ,(symbol-name svtv-name))
                                      ("<DATA>" . ,(symbol-name data-name))
-                                     ("<IDEAL-NAME>" . ,(symbol-name ideal)))
+                                     ("<IDEAL-NAME>" . ,(symbol-name ideal))
+                                     ("<SPECNAME>" . ,(if (and svtv-spec
+                                                               (not (eq svtv-spec t)))
+                                                          (symbol-name svtv-spec)
+                                                        (concatenate 'string (symbol-name svtv-name) "-SPEC"))))
                         :features (append (if ideal
                                               '(:ideal)
                                             '(:triplecheck))
@@ -1094,15 +1099,18 @@
 
 (defmacro def-svtv-refinement (svtv-name data-name
                                          &key ideal svtv-spec pkg-sym)
-  (def-svtv-refinement-fn svtv-name data-name ideal svtv-spec pkg-sym))
+  `(make-event
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal ',svtv-spec ',pkg-sym)))
 
 
 
 (defmacro def-svtv-ideal (ideal-name svtv-name data-name &key pkg-sym svtv-spec)
-  (def-svtv-refinement-fn svtv-name data-name ideal-name svtv-spec pkg-sym))
+  `(make-event
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal-name ',svtv-spec ',pkg-sym)))
 
 (defmacro def-svtv-override-thms (name export &key pkg-sym svtv-spec)
-  (def-svtv-refinement-fn name export nil svtv-spec pkg-sym))
+  `(make-event
+    (def-svtv-refinement-fn ',name ',export ',nil ',svtv-spec ',pkg-sym)))
 
 
 ;;; For each decomposition proof, we'll have a fixed set of signals overridden
@@ -1155,6 +1163,44 @@
 (define svtv-override-triplemaplist-envs-match ((triplemaps svtv-override-triplemaplist-p)
                                                 (env svex-env-p)
                                                 (spec svex-env-p))
+  :parents (def-svtv-generalized-thm)
+  :short "Checks that the given environment @('env') has values matching
+@('spec') for the override test and value variables of the given triplemaplist
+@('triplemaps')."
+  :long "<p>An occurrence of this function is used by @(see
+def-svtv-generalized-thm) as a hypothesis of the generalized theorems it
+proves, serving to assume that the environment used in the SVTV run of the
+theorem overrides exactly the signals it's supposed to, i.e. matching
+@('spec').</p>
+
+<p>This function returns true iff for every @(see svtv-override-triple) in
+@('triplemaps'), the evaluation of the @('test') field on @('env') equals its
+evaluation on @('spec'), and the evaluation of the @('val') field on @('spec')
+is @(see 4vec-<<=) its evaluation on @('env'). In the current framework each
+@('test') and @('val') expression is always either a constant or variable.  For
+constants, the conditions are automatically true, and for variables the
+bindings in @('env') and @('spec') must be compared.</p>
+
+<p>When instantiating a generalized SVTV theorem (as produced by @(see
+def-svtv-generalized-thm) to prove something about an SVTV run on a more
+particular environment,  there are a couple of helpful rewriting strategies.</p>
+
+<ul>
+
+<li>@('svtv-override-triplemaplist-envs-match-simplify') applies when @('env')
+is a term containing a list of pairs with constant keys and (as is usually the
+case) @('spec') is a constant.  It simplifies the call of
+@('svtv-override-triplemaplist-envs-match') to a call of
+ @('svtv-override-triplelist-envs-match') on a smaller set of triples, only the ones
+that couldn't be resolved by just examining the syntax of the @('env') and
+@('spec') terms.  Then, @('svtv-override-triplelist-envs-match') has rules to
+open up and solve the requirements for the remaining triples.</li>
+
+<li>@('svtv-override-triplemaplist-envs-match-remove-irrelevant-pair-top') can
+simplify @('env') terms containing irrelevant pairs, i.e. those that aren't
+test or value variables of the triplemaps.</li>
+
+</ul>"
   (if (atom triplemaps)
       t
     (and (svtv-override-triplemap-envs-match (car triplemaps) env spec)
@@ -2125,6 +2171,9 @@ is important to be able to use a theorem proved about a design's behavior with
 certain signals overridden to prove a theorem about the design without (some
 of) those overrides.</p>
 
+<p>See also the @(see sv-tutorial) and in particular the topic @(see
+decomposition-proofs), which walks through a runnable example.</p>
+
 <p>As a high-level example, suppose we prove that the partial product summation
 of a multiplier is correct by overriding the partial product signals.  Note:
 the following uses a made-up syntax, for illustration purposes only.  In our
@@ -2277,7 +2326,8 @@ uncomputed idealized version of the SVTV, will work on any design but does the
 proof composition on the idealized version of the SVTV even though the
 lower-level proofs by symbolic simulation are done on the usual SVTV.  This can
 be a disadvantage because we don't then know whether the properties shown by
-composition are true of the SVTV.</p>
+composition are true of the SVTV. See @(see
+svtv-decomposition-choosing-a-method) for more on this topic.</p>
 
 <p>The syntactic check method works by checking the expressions that make up
 the finite-state machine derived from the circuit.  Overrides are accomplished
@@ -2368,6 +2418,7 @@ property of the SVTV to prove the composition-friendly fact (such as
 
 </ul>
 
+<p>See @(see svtv-decomposition-choosing-a-method) for pros and cons of the above methods.</p>
 
 ")
 
@@ -2430,8 +2481,64 @@ accomplishes this (when successful) executing @(see svtv-run) of
 @('my-mod-run').  If the outputs from the @('svtv-run') contain no Xes, then
 this is the same as the @('svtv-spec-run') of @('my-mod-ideal').</p>
 
+
 ")
 
+
+(defxdoc svtv-decomposition-choosing-a-method
+  :parents (svex-decomposition-methodology)
+  :short "Summary of the relative advantages of the ideal-based vs
+syntactic-check-based methods for SVTV decomposition."
+  :long "
+
+<p>See @(see svex-decomposition-methodology) for background on these choices.
+This topic pertains to the choice in SVTV decomposition proofs of whether, in
+proofs using @(see def-svtv-generalized-thm), to target the SVTV
+itself (showing the override transparency property using a syntactic check),
+the SVTV-spec analogous to that SVTV (also using the syntactic check), or the
+idealized SVTV-spec based on a fixpoint composition (without needing the
+syntactic check).</p>
+
+<p>The main advantage of the ideal-based method is that the syntactic check of
+the other method might not pass on your design.  If it does, you can do your
+decomposition proofs using the syntax check method, and subsequently if needed
+you can always define an ideal later; any theorems already proved about the
+SVTV are true of it as well.  However, it's also possible that the syntactic
+check will work on some set of overrides but fail if more override signals are
+added because some new signal to be overridden is involved in an apparent
+combinational loop. This is mainly of concern if there is latch-based logic in
+the design, but can come up in other situations.</p>
+
+<p>The disadvantage of the ideal-based method is that what you've proved about
+the ideal isn't always provable about the computed SVTV.  Generally we only
+know that the computed SVTV's results are conservative approximations of those
+of the ideal SVTV.  If we can show that the computed SVTV's results are non-X
+for some case, then we know it's equivalent to the ideal SVTV for that case.
+But this has to be proved without overrides, which can be prohibitively
+expensive. In most cases it's good enough to know these facts about the ideal.
+However, if (e.g.) we want to prove via equivalence checking that some new
+design produces the same result as an original design, which we've proven
+correct via decomposition, then the equivalence check has to be done between
+the computed SVTVs, but we really want to show that the ideal SVTV for the new
+design is equivalent to the ideal SVTV of the original design.  Assuming the
+equivalence check passes, it's still possible that the new design's SVTV and
+ideal SVTV along with the original design's SVTV all produce X in some case
+where the correct result (and the result computed by the original design's
+ideal SVTV) is non-X.</p>
+
+<p>If the syntactic check works on your design for all the override signals
+needed, you can choose to phrase your generalized theorems on the SVTV itself
+or an analogous SVTV-spec object.  This decision isn't as important because the
+two types of generalized theorems can be reproved about the other object.  If
+the generalized theorems are proved about SVTV-spec objects, they can be
+reproved about the SVTV itself by using the equivalence between the SVTV and
+SVTV-spec (a theorem named according to the scheme
+@('svtv-run-of-SVTV-is-svtv-spec-run-of-SVTVSPEC')).  If proved about the SVTV
+object, it can be proved about the SVTV-spec by doing a duplicate
+@('def-svtv-generalized-thm') with the @(':svtv-spec') argument added and the
+lemma proved using the original generalized theorem.</p>
+
+")
 
 (defxdoc def-svtv-generalized-thm
   :parents (svex-decomposition-methodology)
@@ -2473,7 +2580,8 @@ the @(see table) @('svtv-generalized-thm-defaults'), which may be (locally)
 modified by users in order to avoid (for example) the need to repeatedly
 specify the same SVTV and ideal in every form.</p>
 
-<p>Prerequisite: See @(see def-svtv-refinement) for the possible ways of
+<p>Prerequisite: See @(see def-svtv-refinement) and @(see def-svtv-ideal)
+for the possible ways of
 showing that the override transparency property holds of your design, which is
 required for the use of this utility.</p>
 
@@ -2703,7 +2811,8 @@ theorem refers to @('svtv-spec-run') instead of @('svtv-run') which allows an
 additional setting of input and initial
 state variables not set by the SVTV itself; these are given respectively by
 @('base-ins') and @('initst') in the theorem.  Base-ins, however, must be
-assumed not to set any additional override test variables.</p>
+assumed not to set any additional override test variables.  The
+@('svarlist-override-p') hypothesis of the theorem below ensures this.</p>
 
 <p>For example, the form above produces approximately the following generalized
 theorem, which we have annotated to say where each binding and hypothesis comes
@@ -2742,5 +2851,50 @@ from:</p>
 
 (defxdoc def-svtv-refinement
   :parents (svex-decomposition-methodology)
-  :short "For a given SVTV, prove the theorems necessary to use that SVTV in (de)composition proofs using @(see def-svtv-generalized-thm), as in the @(see svex-decomposition-methodology)."
-  :long "<p>Placeholder</p>")
+  :short "For a given SVTV, prove the theorems necessary to use that SVTV
+in (de)composition proofs using @(see def-svtv-generalized-thm), as in the
+@(see svex-decomposition-methodology)."
+  :long "
+
+<p>Prerequisite: An SVTV defined with @(see defsvtv$), and an @(see
+svtv-data-obj) created using @(see def-svtv-data-export) immediately after
+defining that SVTV.</p>
+
+<p>Usage:</p>
+
+@({
+ (def-svtv-refinement svtv-name data-name
+         ;; optional:
+         :ideal idealname
+         :svtv-spec specname
+         :pkg-sym pkg-sym)
+ })
+
+<p>A particular type of invocation has an alias, @(see def-svtv-ideal) -- in
+particular, these two forms are equivalent:</p>
+@({
+ (def-svtv-ideal ideal-name svtv-name data-name)
+ (def-svtv-refinement svtv-name data-name :ideal ideal-name)
+ })
+
+<p>This form either proves the override transparency property (discussed in
+@(see svex-decomposition-methodology)) of the given SVTV, or defines an
+idealized SVTV and proves the override transparency property about it.</p>
+
+<p>If the @(':ideal') is provided, this is like an invocation of @(see
+def-svtv-ideal): it produces an idealized svtv-spec object that is a refinement
+of the given SVTV and proves that it satisfies the override-transparency
+property.  The top-level theorems are then called
+@('idealname-refines-idealname') (the ideal SVTV-spec satisfies the
+override-transparency property on its own) and
+@('idealname-refines-svtvname') (relating the ideal SVTV-spec with the original
+SVTV).</p>
+
+<p>If not, then the syntactic check method is used to prove the
+override-transparency property of the given SVTV itself. The main theorem,
+showing that it satisfies the override-transparency property, is
+@('svtvname-refines-svtvname').  If the @(':svtv-spec') argument is given, this
+also defines a function (with the given name) with the same behavior as the
+original SVTV and adds another refinement theorem,
+@('specname-refines-svtvname').</p>
+")
