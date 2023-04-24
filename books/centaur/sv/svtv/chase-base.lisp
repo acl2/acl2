@@ -95,7 +95,8 @@
          (modidx :type (integer 0 *) :initially 0)
          (probes :type (satisfies svtv-probealist-p))
          (namemap :type (satisfies svtv-name-lhs-map-p))
-         (print-with-mask-mode :type symbol :initially :default)))
+         (print-with-mask-mode :type symbol :initially :default)
+         (print-overrides-mode :type symbol :initially nil)))
       (field-names (strip-cars fields))
       (renaming (svtv-chase-data-renaming field-names))
       ;; (fns (append '(debugdatap create-debugdata)
@@ -933,9 +934,9 @@
               (list (2col4vecline "Initial state." nil)))
              ((when (eq type :prevst))
               (cons (2col4vecline "Previous state var." nil)
-                    (svtv-chase-print-signals 0 vars phase nil))))
+                    (svtv-chase-print-signals 0 vars phase svtv-chase-data.print-overrides-mode))))
           (cons (2col4vecline "Internal signal; dependencies:" nil)
-                (svtv-chase-print-signals 0 vars phase nil))))
+                (svtv-chase-print-signals 0 vars phase svtv-chase-data.print-overrides-mode))))
        (last-line (list (2col4vecline "================================================================================" nil)))
        (msg (print-2col4vecs
              (append signal-lines phase-line deps-lines last-line))))
@@ -1306,7 +1307,12 @@ What you can enter at the SVTV-CHASE prompt:
                     printing.  The default is to only AND the value with the mask if
                     the unmasked value is not 2valued and the masked value is 2valued.
                     The -always and -never settings change this to always/never 
-                    (respectively) the value with the mask.
+                    (respectively) AND the value with the mask.
+
+ OVERRIDES-VERBOSE
+ OVERRIDES-DEFAULT  Affects whether the derivation of signal values from overrides is
+                    printed for only the current signal (default) or for all
+                    dependencies as well (verbose).
 ")
 
 (defmacro setup-ev-for-chase ()
@@ -1461,12 +1467,23 @@ What you can enter at the SVTV-CHASE prompt:
 
              ((when (equal objname "MASK-ALWAYS"))
               (b* ((svtv-chase-data (set-svtv-chase-data->print-with-mask-mode t svtv-chase-data)))
+                (cw! "Changed mask mode: always apply caremask to signal values~%")
                 (mv nil svtv-chase-data state)))
              ((when (equal objname "MASK-NEVER"))
               (b* ((svtv-chase-data (set-svtv-chase-data->print-with-mask-mode nil svtv-chase-data)))
+                (cw! "Changed mask mode: never apply caremask to signal values~%")
                 (mv nil svtv-chase-data state)))
              ((when (equal objname "MASK-DEFAULT"))
               (b* ((svtv-chase-data (set-svtv-chase-data->print-with-mask-mode :default svtv-chase-data)))
+                (cw! "Changed mask mode: apply caremask to signal values if it results in a 2vec~%")
+                (mv nil svtv-chase-data state)))
+             ((when (equal objname "OVERRIDES-VERBOSE"))
+              (b* ((svtv-chase-data (set-svtv-chase-data->print-overrides-mode t svtv-chase-data)))
+                (cw! "Changed override mode: print overrides for dependencies~%")
+                (mv nil svtv-chase-data state)))
+             ((when (equal objname "OVERRIDES-DEFAULT"))
+              (b* ((svtv-chase-data (set-svtv-chase-data->print-overrides-mode nil svtv-chase-data)))
+                (cw! "Changed override mode: print overrides only for current signal~%")
                 (mv nil svtv-chase-data state))))
           (cw! "Error -- unrecognized directive: ~x0~%Type ? for allowed commands.~%" obj)
           (mv nil svtv-chase-data state)))
@@ -1572,7 +1589,8 @@ What you can enter at the SVTV-CHASE prompt:
                                                *svtv-chase-data->sigtype*
                                                *svtv-chase-data->vars*
                                                *svtv-chase-data->expr*
-                                               *svtv-chase-data->print-with-mask-mode*)))
+                                               *svtv-chase-data->print-with-mask-mode*
+                                               *svtv-chase-data->print-overrides-mode*)))
              (equal (nth n new-svtv-chase-data)
                     (nth n svtv-chase-data)))
     :hints(("Goal" :in-theory (enable member-equal)))))
@@ -1614,7 +1632,8 @@ What you can enter at the SVTV-CHASE prompt:
                                                *svtv-chase-data->sigtype*
                                                *svtv-chase-data->vars*
                                                *svtv-chase-data->expr*
-                                               *svtv-chase-data->print-with-mask-mode*)))
+                                               *svtv-chase-data->print-with-mask-mode*
+                                               *svtv-chase-data->print-overrides-mode*)))
              (equal (nth n new-svtv-chase-data)
                     (nth n svtv-chase-data)))))
 
@@ -1654,7 +1673,8 @@ What you can enter at the SVTV-CHASE prompt:
                                                *svtv-chase-data->sigtype*
                                                *svtv-chase-data->vars*
                                                *svtv-chase-data->expr*
-                                               *svtv-chase-data->print-with-mask-mode*)))
+                                               *svtv-chase-data->print-with-mask-mode*
+                                               *svtv-chase-data->print-overrides-mode*)))
              (equal (nth n new-svtv-chase-data)
                     (nth n svtv-chase-data)))))
 
@@ -1707,7 +1727,8 @@ What you can enter at the SVTV-CHASE prompt:
                                                *svtv-chase-data->sigtype*
                                                *svtv-chase-data->vars*
                                                *svtv-chase-data->expr*
-                                               *svtv-chase-data->print-with-mask-mode*)))
+                                               *svtv-chase-data->print-with-mask-mode*
+                                               *svtv-chase-data->print-overrides-mode*)))
              (equal (nth n new-svtv-chase-data)
                     (nth n svtv-chase-data)))))
 
