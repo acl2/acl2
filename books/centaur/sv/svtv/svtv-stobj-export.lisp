@@ -47,6 +47,11 @@
 
   (make-event
    `(defprod svtv-data-obj
+      :parents (def-svtv-data-export)
+      :short "A non-stobj representation of a @(see svtv-data) stobj, as produced by @(see def-svtv-data-export)."
+      :long "<p>All fields are just as in the @(see svtv-data) stobj, except
+that the @('moddb') and @('aliases') fields are missing since they are stobjs
+themselves and can be fairly quickly regenerated.</p>"
       ,(svtv-data-obj-fields-from-decls *svtv-data-nonstobj-fields*)
       :layout :list)))
 
@@ -501,6 +506,22 @@
              :use ((:instance svtv-data$c-pipeline-okp-necc
                     (svtv-data$c (svtv-data-obj-to-stobj-logic x))
                     (results (svtv-data-obj->pipeline x)))))))
+
+  (defthm svtv-data-obj-ok-implies-svarlist-addr-p-of-flatnorm-assigns-keys
+    (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
+                  (svtv-data-obj->flatnorm-validp obj)
+                  (svtv-data-obj->flatten-validp obj))
+             (svarlist-addr-p (svex-alist-keys (flatnorm-res->assigns (svtv-data-obj->flatnorm obj)))))
+    :hints (("Goal" :use ((:instance svtv-data$ap-implies-flatnorm-okp
+                           (x (svtv-data-obj-to-stobj-logic obj)) )
+                          (:instance svtv-data$ap-implies-flatten-okp
+                           (x (svtv-data-obj-to-stobj-logic obj)) ))
+             :in-theory (enable svtv-data$c-flatnorm-okp
+                                svtv-data$c-flatten-okp
+                                svtv-normalize-assigns
+                                svtv-design-flatten))))
+
+  
   )
 
 (defconst *svtv-data-import-template*

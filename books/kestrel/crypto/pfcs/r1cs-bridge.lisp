@@ -17,6 +17,11 @@
 
 (include-book "std/util/defprojection" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ r1cs-bridge
@@ -89,10 +94,11 @@
            (t (make-expression-add
                :arg1 (r1cs-vector-to-pfcs-aux (cdr rev-vec))
                :arg2 (r1cs-vec-elem-to-pfcs (car rev-vec)))))
+     :verify-guards :after-returns
      ///
      (more-returns
       (expr r1cs-polynomialp
-            :hints (("Goal" :in-theory (enable r1cs-polynomialp)))))))
+            :hints (("Goal" :induct t :in-theory (enable r1cs-polynomialp)))))))
 
   ///
 

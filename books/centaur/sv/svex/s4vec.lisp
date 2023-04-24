@@ -855,36 +855,41 @@
   ///
   (s4vec-correct))
 
+
+(define s4vec-1mask ((x s4vec-p))
+  :returns (1mask sparseint-p)
+  (b* (((s4vec x)))
+    (sparseint-bitand x.upper x.lower))
+  ///
+  (defret <fn>-correct
+    (equal (sparseint-val 1mask)
+           (4vec-1mask (s4vec->4vec x)))
+    :hints(("Goal" :in-theory (enable 4vec-1mask)))))
+
+(define s4vec-bitmux ((test sparseint-p) (then s4vec-p) (else s4vec-p))
+  :returns (mux s4vec-p)
+  :guard-hints (("goal" :in-theory (enable logite)))
+  (b* (((s4vec then))
+       ((s4vec else))
+       ((when (sparseint-equal test -1)) (s4vec-fix then))
+       ((when (sparseint-equal test 0)) (s4vec-fix else)))
+    (s4vec (bitops::sparseint-bitite test then.upper else.upper)
+           (bitops::sparseint-bitite test then.lower else.lower)))
+  ///
+  (local (in-theory (enable logite)))
+  (defret <fn>-correct
+    (equal (s4vec->4vec mux)
+           (4vec-bitmux (sparseint-val test)
+                        (s4vec->4vec then)
+                        (s4vec->4vec else)))
+    :hints(("Goal" :in-theory (enable 4vec-bitmux)))))
+
 (define s4vec-bit?! ((test s4vec-p)
                      (thens s4vec-p)
                      (elses s4vec-p))
   :returns (res s4vec-p)
-  (b* (((s4vec test))
-       (pick-then (sparseint-bitand test.upper test.lower))
-       ((when (sparseint-equal pick-then -1)) (s4vec-fix thens))
-       ((when (sparseint-equal pick-then 0)) (s4vec-fix elses))
-       (pick-else (sparseint-bitnot pick-then))
-       ((s4vec thens))
-       ((s4vec elses))
-       (upper (sparseint-bitor (sparseint-bitand pick-then thens.upper)
-                               (sparseint-bitand pick-else elses.upper)))
-       (lower (sparseint-bitor (sparseint-bitand pick-then thens.lower)
-                               (sparseint-bitand pick-else elses.lower))))
-    (s4vec upper lower))
+  (s4vec-bitmux (s4vec-1mask test) thens elses)
   ///
-  (local (defthm logand-a-b-c-when-a-b-equal-cons
-           (implies (and (equal k (logand x y))
-                         (syntaxp (quotep k)))
-                    (equal (logand x y z) (logand k z)))
-           :hints(("Goal" :use ((:instance bitops::associativity-of-logand
-                                 (a x) (b y) (c z)))
-                   :in-theory (disable bitops::associativity-of-logand)))))
-  (local (defthm logior-0
-           (equal (logior x 0) (ifix x))
-           :hints(("Goal" :in-theory (enable bitops::logior**)))))
-  (local (in-theory (disable acl2::commutativity-of-logand
-                             acl2::commutativity-of-logior
-                             bitops::commutativity-2-of-logand)))
   (s4vec-correct))
 
 

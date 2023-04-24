@@ -30,8 +30,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SV")
-(include-book "eval")
-(include-book "vars")
+(include-book "lists")
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
@@ -1035,3 +1034,50 @@ of @(see svex-env-lookup), and they bind the same variables.")
                     (svex-alist-eval x env2)))
     :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-vars
                                       svex-eval-when-agree-except-non-intersecting)))))
+
+(defsection svex-envs-agree-except-by-removekeys
+  
+  (defthmd svex-envs-agree-except-when-removekeys-similar
+    (implies (svex-envs-similar (svex-env-removekeys vars x)
+                                (svex-env-removekeys vars y))
+             (svex-envs-agree-except vars x y))
+    :hints(("Goal" :in-theory (e/d (svex-envs-agree-except-by-witness)
+                                   (svex-envs-similar-necc
+                                    svex-envs-similar-implies-equal-svex-env-lookup-2))
+            :use ((:instance svex-envs-similar-necc
+                   (k (svex-envs-agree-except-witness vars x y))
+                   (x (svex-env-removekeys vars x))
+                   (y (svex-env-removekeys vars y)))))))
+
+  (defthmd svex-envs-agree-except-implies-removekeys-similar
+    (implies (svex-envs-agree-except vars x y)
+             (svex-envs-similar (svex-env-removekeys vars x)
+                                (svex-env-removekeys vars y)))
+    :hints(("Goal" :in-theory (e/d (svex-envs-similar
+                                    svex-envs-agree-except-implies)))))
+
+  (defthmd svex-envs-agree-except-by-removekeys
+    (equal (svex-envs-agree-except vars x y)
+           (svex-envs-similar (svex-env-removekeys vars x)
+                              (svex-env-removekeys vars y)))
+    :hints (("goal" :in-theory (enable svex-envs-agree-except-implies-removekeys-similar
+                                       svex-envs-agree-except-when-removekeys-similar)
+             :cases ((svex-envs-agree-except vars x y))))))
+
+
+(define svex-envlist-removekeys ((vars svarlist-p)
+                                 (envs svex-envlist-p))
+  (if (atom envs)
+      nil
+    (cons (svex-env-removekeys vars (car envs))
+          (svex-envlist-removekeys vars (cdr envs))))
+  ///
+  (defthm svex-envlist-removekeys-of-cons
+    (Equal (svex-envlist-removekeys vars (cons env envs))
+           (cons (svex-env-removekeys vars env)
+                 (svex-envlist-removekeys vars envs))))
+
+  (defthm svex-envlist-removekeys-of-append
+    (Equal (svex-envlist-removekeys vars (append envs envs2))
+           (append (svex-envlist-removekeys vars envs)
+                   (svex-envlist-removekeys vars envs2)))))

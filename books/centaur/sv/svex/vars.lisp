@@ -245,7 +245,12 @@ the expressions that the keys are bound to.</p>"
                   (not (member v (svex-alist-vars y))))
              (not (member v (svex-alist-vars (fast-alist-fork x y)))))
     :hints(("Goal" :in-theory (enable svex-alist-vars
-                                      fast-alist-fork)))))
+                                      fast-alist-fork))))
+
+  (defthmd svexlist-vars-of-svex-alist-vals
+    (equal (svexlist-vars (svex-alist-vals x))
+           (svex-alist-vars x))
+    :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-vars svexlist-vars)))))
 
 
 

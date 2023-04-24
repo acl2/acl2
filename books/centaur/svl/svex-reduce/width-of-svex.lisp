@@ -406,6 +406,9 @@
             :do-not-induct t
             :do-not '(preprocess)
             :in-theory (e/d (SV::4VEC-BIT?!
+                             sv::4vec-bitmux
+                             sv::4vec-1mask
+                             acl2::logite
                              4VEC-CONCAT
                              4VEC-RSH
                              4VEC-SHIFT-CORE

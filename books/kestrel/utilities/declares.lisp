@@ -15,7 +15,7 @@
 ;; This book includes utilities about declares that also need to manipulate untranslated terms.
 
 (include-book "declares0")
-(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
 (include-book "hints")
 
 ;;; Applying a substitution to a guard

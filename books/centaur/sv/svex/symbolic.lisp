@@ -392,7 +392,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 (local (defthm 4vec-bit?!-of-3vec-fix
          (equal (4vec-bit?! (3vec-fix test) then else)
                 (4vec-bit?! test then else))
-         :hints(("Goal" :in-theory (enable 4vec-bit?! 3vec-fix)))))
+         :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-1mask 3vec-fix)))))
 
 
 

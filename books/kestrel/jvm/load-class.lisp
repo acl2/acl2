@@ -1,7 +1,7 @@
 ; A tool to read in a Java class and create ACL2 events representing it
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,8 +11,12 @@
 
 (in-package "ACL2")
 
-;; This book defines a utility, load-class, to read in a Java class and create
-;; ACL2 events representing its contents.
+;; This book defines a utility, load-class, to read in a Java class, create
+;; ACL2 events representing its contents, and register it as a known class
+;; whose contents should be assumed in subsequent Axe lifter calls.
+
+;; Note that this utility is not really related to the JVM's notion of "class
+;; loading".  TODO: So consider renaming this utility.
 
 ;; NOTE: Users of load-class may want to add DEPENDS-ON forms to their books to
 ;; inform cert.pl about the dependencies on the loaded class files (see :doc

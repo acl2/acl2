@@ -17,6 +17,8 @@
 
 (include-book "fty-pseudo-terms")
 
+(include-book "../representation/integer-operations")
+
 (include-book "kestrel/fty/pseudo-event-form" :dir :system)
 (include-book "kestrel/std/system/check-user-term" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)

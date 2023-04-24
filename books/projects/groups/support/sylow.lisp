@@ -4,274 +4,6 @@
 
 (include-book "actions")
 
-;; Given a subgroup h of a quotient group g/n, we construct a corresponding subgroup (lift h n g) of g.
-;; Its element list is constructed by appending the elements of h:
-
-(defund append-elts (h)
-  (append-list (elts h)))
-
-(defthm car-append-elts
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (and (consp (append-elts h))
-	        (equal (car (append-elts h))
-		       (e g))))
-  :hints (("Goal" :in-theory (e/d (e append-elts) (non-nil-elts))
-                  :expand ((APPEND-LIST (CAR H))
-		           (APPEND (CAR (CAR H)) (APPEND-LIST (CDR (CAR H)))))
-		  :use (non-nil-elts in-e-g order-pos
-		        (:instance subgroup-e (g (quotient g n)))
-		        (:instance car-qe (h n))))))
-
-;; Move to lists.lisp:
-
-(defthmd sublistp-append-list
-  (implies (and (sublistp l m)
-                (sublistp (append-list m) n))
-           (sublistp (append-list l) n)))
-
-(defthmd sublistp-dlistp-list
-  (implies (and (dlistp-list m)
-                (sublistp l m))
-	   (dlistp-list l)))
-
-(local-defthm sublistp-append-elts
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (sublistp (append-elts h) (elts g)))
-  :hints (("Goal" :in-theory (enable append-elts)
-                  :use (sublistp-subgroup-lcosets
-                        (:instance sublistp-append-list (l (elts h)) (m (lcosets n g)) (n (elts g)))
-                        (:instance sublistp-lcosets-elts (h n))))))
-
-(defthm dlistp-append-elts
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (dlistp (append-elts h)))
-  :hints (("Goal" :in-theory (enable append-elts)
-                  :use (sublistp-subgroup-lcosets
-                        (:instance disjointp-pairwise-sublistp (l (elts h)) (m (lcosets n g)))
-			(:instance sublistp-dlistp-list (l (elts h)) (m (lcosets n g)))
-			(:instance dlistp-append-list (l (elts h)))))))
-
-(defthm member-append
-  (implies (or (member-equal x l) (member-equal x m))
-           (member-equal x (append l m))))
-
-(local-defthmd member-append-elts-1
-  (implies (and (normalp n g)
-                (sublistp l (lcosets n g))
-		(in x g)
-		(member-equal (lcoset x n g) l))
-	   (member x (append-list l)))
-  :hints (("Subgoal *1/2" :use ((:instance member-self-lcoset (h n))))))
-
-(defthmd member-append-iff
-  (iff (or (member-equal x l) (member-equal x m))
-       (member-equal x (append l m))))
-
-(local-defthmd member-append-elts-2
-  (implies (and (normalp n g)
-                (sublistp l (lcosets n g))
-		(in x g)
-		(member x (append-list l)))
-	   (member-equal (lcoset x n g) l))	   
-  :hints (("Subgoal *1/3" :use ((:instance lcosets-cars (c (car l)) (h n))
-                                (:instance equal-lcoset (y x) (h n) (x (caar l)))
-				(:instance member-append-iff (l (car l)) (m (append-list (cdr l))))))))
-
-(local-defthmd member-append-elts
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n))
-		(in x g))
-           (iff (member x (append-elts h))
-	        (member-equal (lcoset x n g) (elts h))))	   
-  :hints (("Goal" :in-theory (enable append-elts)
-                  :use (sublistp-subgroup-lcosets
-		        (:instance member-append-elts-1 (l (elts h)))
-                        (:instance member-append-elts-2 (l (elts h)))))))
-
-(local-defthmd append-elts-closed-1
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n))
-		(member-equal x (append-elts h))
-		(member-equal y (append-elts h)))
-           (in (qop (lcoset x n g) (lcoset y n g) n g) h))
-  :hints (("Goal" :in-theory (disable lcoset-member-lcoset group-closure)
-                  :use (member-append-elts sublistp-subgroup-lcosets sublistp-append-elts
-                        (:instance member-append-elts (x y))
-			(:instance member-self-lcoset (h n))
-			(:instance member-self-lcoset (h n) (x y))
-			(:instance group-closure (g h) (x (lcoset x n g)) (y (lcoset y n g)))))))
-
-(defthm append-elts-closed
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n))
-		(member-equal x (append-elts h))
-		(member-equal y (append-elts h)))
-           (member-equal (op x y g) (append-elts h)))
-  :hints (("Goal" :use (append-elts-closed-1 member-append-elts sublistp-append-elts
-                        (:instance member-append-elts (x y))
-                        (:instance member-append-elts (x (op x y g)))
-			(:instance op-quotient-lcoset (h n) (x (lcoset x n g)) (y (lcoset y n g)) (a x) (b y))))))
-
-(local-defthmd append-elts-inv-1
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n))
-		(member-equal x (append-elts h)))
-           (in (qinv (lcoset x n g) n g) h))
-  :hints (("Goal" :in-theory (disable lcoset-member-lcoset group-left-inverse)
-                  :use (member-append-elts sublistp-subgroup-lcosets sublistp-append-elts
-			(:instance member-self-lcoset (h n))
-			(:instance group-left-inverse (g h) (x (lcoset x n g)))))))
-
-(defthm append-elts-inv
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n))
-		(member-equal x (append-elts h)))
-           (member-equal (inv x g) (append-elts h)))
-  :hints (("Goal" :use (append-elts-inv-1 member-append-elts sublistp-append-elts
-                        (:instance member-append-elts (x (inv x g)))
-			(:instance inv-quotient-lcoset (h n) (x (lcoset x n g)) (a x))))))
-
-(defthm append-elts-non-nil
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (not (member-equal () (append-elts h))))
-  :hints (("Goal" :in-theory (disable non-nil-elts)
-                  :use (non-nil-elts sublistp-append-elts))))                        
-
-(local (in-theory (enable sublistp-append-elts)))
-
-(defsubgroup lift (h n) g
-  (and (normalp n g)
-       (subgroupp h (quotient g n)))
-  (append-elts h))
-
-(defthmd car-elts-h
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (equal (e h) (lcoset (e g) n g))))
-
-(local-defthmd sublistp-n-append-elts-1
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n))
-		(sublistp l (elts n)))
-	   (sublistp l (lcoset (e g) n g)))
-  :hints (("Subgoal *1/2" :use ((:instance member-lcoset-iff (h n) (y (car l)) (x (e g)))))))
-
-(local-defthmd sublistp-n-append-elts-2
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (sublistp (elts n) (lcoset (e g) n g)))
-  :hints (("Goal" :in-theory (enable sublistp-n-append-elts-1))))
-
-(defthmd sublistp-append-2
-  (implies (sublistp l m)
-           (sublistp l (append m n))))
-
-(defthmd sublistp-n-append-elts
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (sublistp (elts n) (append-elts h)))
-  :hints (("Goal" :in-theory (e/d (e append-elts) (QUOTIENT-E))
-                  :use (sublistp-n-append-elts-2 car-elts-h
-                        (:instance sublistp-append-2 (l (elts n)) (m (car (elts h))) (n (append-list (cdr (elts h)))))))))
-
-(defthmd lift-subgroup
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (subgroupp n (lift h n g)))
-  :hints (("Goal" :use (sublistp-n-append-elts
-                        (:instance subgroup-subgroup (h n) (k (lift h n g)))))))
-
-(local-defthmd lift-order-1
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n))
-		(sublistp l (elts h)))
-	   (equal (len (append-list l))
-		  (* (len l) (order n))))
-  :hints (("Subgoal *1/1" :use (sublistp-subgroup-lcosets
-                                (:instance lcosets-cars (c (car l)) (h n))
-				(:instance len-lcoset (x (caar l)) (h n))))))
-
-(defthmd lift-order
-  (implies (and (normalp n g)
-                (subgroupp h (quotient g n)))
-	   (equal (order (lift h n g))
-		  (* (order h) (order n))))
-  :hints (("Goal" :use ((:instance lift-order-1 (l (elts h))))
-                  :in-theory (enable append-elts))))
-
-
-;;------------------------------------------------------------------------------------------------------------------
-
-;; Recognizer of powers of an integer greater than 1:
-
-(in-theory (enable divides))
-
-(defun powerp (n p)
-  (if (and (natp p) (> p 1) (posp n) (divides p n))
-      (powerp (/ n p) p)
-    (equal n 1)))
-
-(defun log (n p)
-  (if (and (natp p) (> p 1) (posp n) (integerp (/ n p)))
-      (1+ (log (/ n p) p))
-    0))
-
-(defthmd powerp-log
-  (implies (and (natp p) (> p 1) (powerp n p))
-           (equal (expt p (log n p)) n)))
-
-(defthm powerp*p
-  (implies (and (natp p) (> p 1) (powerp n p))
-           (powerp (* p n) p))
-  :hints (("Goal" :in-theory (enable powerp))))
-
-(defthm powerp-power
-  (implies (and (natp p) (> p 1) (natp n))
-           (powerp (expt p n) p))
-  :hints (("Goal" :induct (fact n))))
-
-(local-defthmd divides-power-1
-  (implies (and (primep p) (posp k) (posp m) (divides m (expt p k)))
-           (or (divides p m)
-	       (divides m (expt p (1- k)))))
-  :hints (("Goal" :use ((:instance euclid (a m) (b (/ (expt p k) m)))))))
-
-(local-defun divides-power-induct (p m k)
-  (if (and (primep p) (posp m) (posp k))
-      (list (divides-power-induct p m (1- k))
-            (divides-power-induct p (/ m p) (1- k)))
-    ()))
-
-(defthmd divides-power
-  (implies (and (primep p) (natp k) (posp m) (divides m (expt p k)))
-           (powerp m p))	   
-  :hints (("Goal" :induct (divides-power-induct p m k))
-          ("Subgoal *1/1" :use (divides-power-1))))
-
-(defthmd powerp-divides
-  (implies (and (primep p) (powerp n p) (posp m) (divides m n))
-           (powerp m p))
-  :hints (("Goal" :use (powerp-log (:instance divides-power (k (log n p)))))))
-
-;; Recognizer of p-groups:
-
-(defund p-groupp (g p)
-  (and (primep p)
-       (groupp g)
-       (powerp (order g) p)))
-
-(defthmd p-groupp-ord-powerp
-  (implies (and (p-groupp g p)
-		(in x g))
-	   (powerp (ord x g) p))
-  :hints (("Goal" :in-theory (enable p-groupp)
-                  :use (ord-divides-order (:instance powerp-divides (m (ord x g)) (n (order g)))))))
-
-
 ;;------------------------------------------------------------------------------------------------------------------
 
 ;; If h is a p-subgroup of g and p divides (subgroup-index p (normalizer h g)), then h is a proper
@@ -779,6 +511,57 @@
 	   (not (divides p (subgroup-index (sylow-subgroup g p) g))))
   :hints (("Goal" :use (index-sylow-subgroup
                         (:instance not-divides-p-index-m (m (sylow-subgroup g p)))))))
+
+(local-defthmd order-sylow-1
+  (implies (and (groupp g)
+                (primep p))
+	   (let ((m (sylow-subgroup g p)))
+             (and (subgroupp m g)
+	          (p-groupp m p)
+	          (equal (order m) (expt p (log (order m) p)))
+	          (<= (log (order m) p)
+		      (log (order g) p)))))
+  :hints (("Goal" :in-theory (e/d (p-groupp) (index-sylow-subgroup))
+                  :use (index-sylow-subgroup order-pos
+		        (:instance powerp-log (n (order (sylow-subgroup g p))))
+			(:instance max-power-p-dividing (k (log (order (sylow-subgroup g p)) p)) (n (order g)))
+			(:instance order-subgroup-divides (h (sylow-subgroup g p)))))))
+
+(defthmd posp-len-conjs-sub-sylow-subgroup
+  (implies (and (groupp g)
+                (primep p))
+	   (posp (len (conjs-sub (sylow-subgroup g p) g))))
+  :hints (("Goal" :use (order-sylow-1 (:instance posp-len-conjs-sub (h (sylow-subgroup g p)))))))
+
+(local-defthmd order-sylow-2
+  (implies (and (primep p)
+                (natp k)
+		(natp s)
+		(divides (expt p (1+ k)) (* s (expt p k))))
+	   (divides p s)))
+
+(local-defthmd order-sylow-3
+  (implies (and (groupp g)
+                (primep p))
+	   (let ((m (sylow-subgroup g p)))
+             (> (1+ (log (order m) p))
+                (log (order g) p))))
+  :hints (("Goal" :in-theory (e/d (p-groupp) (index-sylow-subgroup))
+                  :use (sylow-3 order-sylow-1 order-pos
+		        (:instance order-sylow-2 (k (log (order (sylow-subgroup g p)) p))
+			                         (s (subgroup-index (sylow-subgroup g p) g)))
+		        (:instance powerp-log (n (order (sylow-subgroup g p))))
+			(:instance max-power-p-dividing (k (1+ (log (order (sylow-subgroup g p)) p))) (n (order g)))
+			(:instance lagrange (h (sylow-subgroup g p)))))))
+
+(defthmd order-sylow-subgroup
+  (implies (and (groupp g)
+                (primep p))
+	   (let ((m (sylow-subgroup g p)))
+             (and (subgroupp m g)
+	          (equal (order m)
+	                 (expt p (log (order g) p))))))
+  :hints (("Goal" :use (order-sylow-1 order-sylow-3))))
 
 
 ;;------------------------------------------------------------------------------------------------------------------

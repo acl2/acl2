@@ -30,6 +30,7 @@
                          pseudo-event-form-listp
                          symbol-fix
                          symbol-list
+                         symbol-setp
                          dm::primep
                          fty::ok
                          fty::reserr

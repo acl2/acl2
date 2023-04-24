@@ -3480,7 +3480,10 @@
 
  <p>Title: Some Illustrations of ACL2 Development<br/>
  Speaker: Matt Kaufmann<br/>
- Date/venue: March 31, 2023, over zoom</p>
+ Date/venue: March 31, 2023, over zoom<br/>
+ Follow <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/manuals/movies/2023-03-31-Developer-Talk.mov'>this
+ link</a> to see a video recording of the talk (@('.mov') format).</p>
 
  <p>Abstract:</p>
 
@@ -3838,7 +3841,7 @@
  (defrec warnings-as-errors
    (default . alist)
    nil)
- })  
+ })
 
  <p>Notice the &lsquo;cheap&rsquo; flag of @('nil'), which causes accesses to
  check that we indeed have a @('warnings-as-errors') record.  We can use

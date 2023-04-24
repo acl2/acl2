@@ -3737,17 +3737,17 @@
    ((ts= ts *ts-unknown*) type-alist)
    ((variablep term)
 
-; 3/27/2023 Ran "everything" regression, causing an error when both (eq term
-; (caar type-alist)) and (ts= ts (cadar type-alist)) -- but no error was
-; observed.
+; 3/27/2023 Ran "everything" regression, with a check here that would cause an
+; error when both (eq term (caar type-alist)) and (ts= ts (cadar type-alist))
+; hold -- but no error was observed.
 
     (cons (list* term ts ttree) type-alist))
    ((fquotep term) type-alist)
    (t
 
-; 3/27/2023 Ran "everything" regression, causing an error when both (equal term
-; (caar type-alist)) and (ts= ts (cadar type-alist)) -- but no error was
-; observed.
+; 3/27/2023 Ran "everything" regression, with a check here that would cause an
+; error when both (equal term (caar type-alist)) and (ts= ts (cadar
+; type-alist)) hold -- but no error was observed.
 
     (cons (list* term ts ttree) type-alist))))
 

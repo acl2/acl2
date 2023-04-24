@@ -8,7 +8,7 @@
 (defund relatively-primep (a b)
   (declare (xargs :guard (and (natp a)
 			      (natp b))))
-  (equal (dm::g-c-d a b) 1))
+  (equal (dm::gcd a b) 1))
 
 (defthm relatively-primes-have-no-common-factors
   (implies (and (natp a)
@@ -20,12 +20,12 @@
 	   (equal k 1))
   :rule-classes nil
   :hints (("Goal"
-	   :use ((:instance dm::divides-g-c-d
+	   :use ((:instance dm::divides-gcd
 			    (acl2::x a)
 			    (acl2::y b)
 			    (acl2::d k)))
 	   :in-theory (e/d (relatively-primep dm::divides)
-			   (dm::divides-g-c-d)))))
+			   (dm::divides-gcd)))))
 
 
 
@@ -313,7 +313,7 @@
   :rule-classes nil
   :hints (("Goal"
            :use ((:instance construct-product-order-part2g)
-                 (:instance dm::divides-g-c-d
+                 (:instance dm::divides-gcd
                             (acl2::x (order a p))
                             (acl2::y (order b p))
                             (acl2::d (order (pow a k p) p)))
@@ -451,24 +451,24 @@
                                acl2::mod-theorem-one-b))))
 
 (local
- (defun g-c-d-nat-x-1-induction-hint (x)
+ (defun gcd-nat-x-1-induction-hint (x)
    (if (or (zp x) (= x 1))
        0
-     (1+ (g-c-d-nat-x-1-induction-hint (1- x))))))
+     (1+ (gcd-nat-x-1-induction-hint (1- x))))))
 
-(defthm g-c-d-nat-x-1
+(defthm gcd-nat-x-1
   (implies (natp x)
-           (= (dm::g-c-d-nat x 1) 1))
+           (= (dm::gcd-nat x 1) 1))
   :hints (("Goal"
-           :induct (g-c-d-nat-x-1-induction-hint x)
-           :in-theory (enable dm::g-c-d-nat)))
+           :induct (gcd-nat-x-1-induction-hint x)
+           :in-theory (enable dm::gcd-nat)))
   )
 
-(defthm g-c-d-x-1
+(defthm gcd-x-1
   (implies (integerp x)
-           (= (dm::g-c-d x 1) 1))
+           (= (dm::gcd x 1) 1))
   :hints (("Goal"
-           :in-theory (enable dm::g-c-d)))
+           :in-theory (enable dm::gcd)))
   )
 
 
@@ -493,7 +493,7 @@
                  1))
      :rule-classes nil
      :hints (("Goal"
-              :use ((:instance dm::g-c-d-linear-combination
+              :use ((:instance dm::gcd-linear-combination
                                (acl2::x x)
                                (acl2::y z)))
               :in-theory (enable relatively-primep)))))
@@ -731,17 +731,17 @@
   (implies (and (dm::primep p)
                 (posp x)
                 )
-           (or (= (dm::g-c-d p x) 1)
-               (= (dm::g-c-d p x) p)))
+           (or (= (dm::gcd p x) 1)
+               (= (dm::gcd p x) p)))
   :rule-classes nil
   :hints (("Goal"
-           :use ((:instance dm::g-c-d-divides
+           :use ((:instance dm::gcd-divides
                             (x p)
                             (y x))
                  (:instance dm::primep-no-divisor
                             (p p)
-                            (d (dm::g-c-d p x)))
-                 (:instance dm::g-c-d-pos
+                            (d (dm::gcd p x)))
+                 (:instance dm::gcd-pos
                             (x p)
                             (y x))
                  ))))
@@ -769,7 +769,7 @@
                 (posp x)
                 (natp n)
                 (dm::divides x (expt p n))
-                (= (dm::g-c-d p x) 1))
+                (= (dm::gcd p x) 1))
            (equal x (expt p (number-of-powers x p))))
   :rule-classes nil
   :hints (("Goal"
@@ -816,13 +816,13 @@
                 (posp x)
                 (natp n)
                 (dm::divides x (expt p n))
-                (= (dm::g-c-d p x) p))
+                (= (dm::gcd p x) p))
            (equal x (expt p (number-of-powers x p))))
   :rule-classes nil
   :hints (("Goal"
            :induct (factors-of-prime-powers-part2-induction-hint x p n))
           ("Subgoal *1/3"
-           :use ((:instance dm::g-c-d-divides
+           :use ((:instance dm::gcd-divides
                             (x p)
                             (y x)))
            ;:in-theory (enable dm::divides)
@@ -832,7 +832,7 @@
                             (x p)
                             (y (/ x p))
                             (z (expt p (1- n))))
-                 (:instance dm::g-c-d-divides
+                 (:instance dm::gcd-divides
                             (x p)
                             (y x))
                  (:instance must-be-1-if-divides-1)
@@ -848,11 +848,11 @@
            )
           ("Subgoal *1/1"
            :use ((:instance must-be-1-if-divides-1)
-                 (:instance dm::g-c-d-divides
+                 (:instance dm::gcd-divides
                             (x p)
                             (y x))
                  (:instance dm::divides-leq
-                            (x (dm::g-c-d p x))
+                            (x (dm::gcd p x))
                             (y x))
                  )
            )
@@ -1551,7 +1551,7 @@
                 (posp k)
                 (< 1 k)
                 )
-           (= (dm::g-c-d (expt (dm::least-divisor 2 k)
+           (= (dm::gcd (expt (dm::least-divisor 2 k)
                                 (number-of-powers k (dm::least-divisor 2 k)))
                           (/ k (expt (dm::least-divisor 2 k)
                                      (number-of-powers k (dm::least-divisor 2
@@ -1561,7 +1561,7 @@
   :INSTRUCTIONS
   (:PROMOTE
    (:USE
-    (:INSTANCE DM::G-C-D-DIVIDES
+    (:INSTANCE DM::GCD-DIVIDES
                (X (EXPT (DM::LEAST-DIVISOR 2 K)
                         (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))
                (Y (/ K
@@ -1591,7 +1591,7 @@
     (:INSTANCE
      PRIME-DIVIDES-DIVISOR-OF-PRIME-POWERS
      (P (DM::LEAST-DIVISOR 2 K))
-     (X (DM::G-C-D
+     (X (DM::GCD
          (EXPT (DM::LEAST-DIVISOR 2 K)
                (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))
          (* K
@@ -1601,7 +1601,7 @@
    :PROMOTE
    (:USE
     (:INSTANCE
-     DM::G-C-D-POS
+     DM::GCD-POS
      (X (EXPT (DM::LEAST-DIVISOR 2 K)
               (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K))))
      (Y (* K
@@ -1618,7 +1618,7 @@
     (:INSTANCE
      DM::DIVIDES-TRANSITIVE
      (X (DM::LEAST-DIVISOR 2 K))
-     (Y (DM::G-C-D
+     (Y (DM::GCD
          (EXPT (DM::LEAST-DIVISOR 2 K)
                (NUMBER-OF-POWERS K (DM::LEAST-DIVISOR 2 K)))
          (* K
@@ -1635,7 +1635,7 @@
   ;;                           ))
   ;;          :use ((:instance dm::primep-least-divisor
   ;;                           (n k))
-  ;;                (:instance dm::g-c-d-divides
+  ;;                (:instance dm::gcd-divides
   ;;                           (x (expt (dm::least-divisor 2 k)
   ;;                                    (number-of-powers k (dm::least-divisor 2
   ;;                                                                            k))))
@@ -1647,7 +1647,7 @@
   ;;                           (k k))
   ;;                (:instance prime-divides-non-trivial-divisor-of-prime-power
   ;;                           (p (dm::least-divisor 2 k))
-  ;;                           (x (dm::g-c-d (expt (dm::least-divisor 2 k)
+  ;;                           (x (dm::gcd (expt (dm::least-divisor 2 k)
   ;;                                                (number-of-powers k (dm::least-divisor 2 k)))
   ;;                                          (/ k (expt (dm::least-divisor 2 k)
   ;;                                                     (number-of-powers
@@ -1662,17 +1662,17 @@
   ;;                           (f (dm::least-divisor 2 k)))
   ;;                (:instance prime-divides-divisor-of-prime-powers
   ;;                           (p (dm::least-divisor 2 k))
-  ;;                           (x (dm::g-c-d (expt (dm::least-divisor 2 k)
+  ;;                           (x (dm::gcd (expt (dm::least-divisor 2 k)
   ;;                                                (number-of-powers k (dm::least-divisor 2 k)))
   ;;                                          (* k
   ;;                                             (expt (dm::least-divisor 2 k)
   ;;                                                   (- (number-of-powers k
   ;;                                                                        (dm::least-divisor 2 k)))))))
   ;;                           (n (number-of-powers k (dm::least-divisor 2 k))))
-  ;;                (:instance dm::g-c-d-pos
+  ;;                (:instance dm::gcd-pos
   ;;                           (x 1)
   ;;                           (y k))
-  ;;                (:instance dm::g-c-d-pos
+  ;;                (:instance dm::gcd-pos
   ;;                           (x (expt (dm::least-divisor 2 k)
   ;;                                    (number-of-powers k (dm::least-divisor 2 k))))
   ;;                           (y (* k
@@ -1681,7 +1681,7 @@
   ;;                                                            (dm::least-divisor 2 k)))))))
   ;;                (:instance dm::divides-transitive
   ;;                           (x (dm::least-divisor 2 k))
-  ;;                           (y (dm::g-c-d
+  ;;                           (y (dm::gcd
   ;;                               (expt (dm::least-divisor 2 k)
   ;;                                     (number-of-powers k (dm::least-divisor 2 k)))
   ;;                               (* k

@@ -378,22 +378,6 @@ Rules: NIL
 ACL2 !>>(MEMOIZE 'FN)
 
 
-ACL2 !>>>(TABLE MEMOIZE-TABLE
-           (DEREF-MACRO-NAME 'FN
-                             (MACRO-ALIASES WORLD))
-           (LIST* (CONS :CONDITION-FN T)
-                  (CONS :INLINE T)
-                  (CONS :COMMUTATIVE NIL)
-                  (CONS :FORGET NIL)
-                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                  (CONS :AOKP 'NIL)
-                  (CONS :STATS :DEFAULT)
-                  (CONS :TOTAL NIL)
-                  (CONS :INVOKE NIL)
-                  (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                       (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
-
 ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to set memoize-
 table:  The function symbol FN is in :logic mode but has not had its
 guards verified.  Either run VERIFY-GUARDS, or specify :IDEAL-OKP T
@@ -402,82 +386,19 @@ in your MEMOIZE call, or else evaluate
 (TABLE ACL2-DEFAULTS-TABLE :MEMOIZE-IDEAL-OKP :WARN).
 
 
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-
 ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
-
-******** FAILED ********
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-
-ACL2 Error [Failure] in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See
-:DOC failure.
-
-******** FAILED ********
 ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
-
-
-ACL2 !>>>(TABLE MEMOIZE-TABLE
-           (DEREF-MACRO-NAME 'FN
-                             (MACRO-ALIASES WORLD))
-           (LIST* (CONS :CONDITION-FN T)
-                  (CONS :INLINE T)
-                  (CONS :COMMUTATIVE NIL)
-                  (CONS :FORGET NIL)
-                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                  (CONS :AOKP 'NIL)
-                  (CONS :STATS :DEFAULT)
-                  (CONS :TOTAL NIL)
-                  (CONS :INVOKE NIL)
-                  (AND (NOT (EQ ':WARN :DEFAULT))
-                       (LIST (CONS :IDEAL-OKP ':WARN)))))
 
 ACL2 Warning [Memoize] in MEMOIZE-TABLE-CHK:  The function FN to be
 memoized is in :logic mode but has not had its guards verified.  Memoization
 might therefore not take place; see :DOC memoize.
 
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-Warnings:  Memoize
-MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'FN
-                                         (MACRO-ALIASES (W STATE))))
-FN
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-Warnings:  Memoize
  FN
 ACL2 !>>(U)
  L         9:x(DEFUN FN (X) ...)
 ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
 <state>
 ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
-
-
-ACL2 !>>>(TABLE MEMOIZE-TABLE
-           (DEREF-MACRO-NAME 'FN
-                             (MACRO-ALIASES WORLD))
-           (LIST* (CONS :CONDITION-FN T)
-                  (CONS :INLINE T)
-                  (CONS :COMMUTATIVE NIL)
-                  (CONS :FORGET NIL)
-                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                  (CONS :AOKP 'NIL)
-                  (CONS :STATS :DEFAULT)
-                  (CONS :TOTAL NIL)
-                  (CONS :INVOKE NIL)
-                  (AND (NOT (EQ ':WARN :DEFAULT))
-                       (LIST (CONS :IDEAL-OKP ':WARN)))))
 
 
 HARD ACL2 ERROR [Memoize] in MEMOIZE-TABLE-CHK:  The function FN to
@@ -506,55 +427,10 @@ could not be evaluated.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-
 ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
-
-******** FAILED ********
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-
-ACL2 Error [Failure] in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See
-:DOC failure.
-
-******** FAILED ********
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(WARNING))
  (WARNING)
 ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
-
-
-ACL2 !>>>(TABLE MEMOIZE-TABLE
-           (DEREF-MACRO-NAME 'FN
-                             (MACRO-ALIASES WORLD))
-           (LIST* (CONS :CONDITION-FN T)
-                  (CONS :INLINE T)
-                  (CONS :COMMUTATIVE NIL)
-                  (CONS :FORGET NIL)
-                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                  (CONS :AOKP 'NIL)
-                  (CONS :STATS :DEFAULT)
-                  (CONS :TOTAL NIL)
-                  (CONS :INVOKE NIL)
-                  (AND (NOT (EQ ':WARN :DEFAULT))
-                       (LIST (CONS :IDEAL-OKP ':WARN)))))
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'FN
-                                         (MACRO-ALIASES (W STATE))))
-FN
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
  FN
 ACL2 !>>(U)
  L         9:x(DEFUN FN (X) ...)
@@ -564,22 +440,6 @@ ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS '("memoize")
 ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
 
 
-ACL2 !>>>(TABLE MEMOIZE-TABLE
-           (DEREF-MACRO-NAME 'FN
-                             (MACRO-ALIASES WORLD))
-           (LIST* (CONS :CONDITION-FN T)
-                  (CONS :INLINE T)
-                  (CONS :COMMUTATIVE NIL)
-                  (CONS :FORGET NIL)
-                  (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                  (CONS :AOKP 'NIL)
-                  (CONS :STATS :DEFAULT)
-                  (CONS :TOTAL NIL)
-                  (CONS :INVOKE NIL)
-                  (AND (NOT (EQ ':WARN :DEFAULT))
-                       (LIST (CONS :IDEAL-OKP ':WARN)))))
-
-
 HARD ACL2 ERROR [Memoize] in MEMOIZE-TABLE-CHK:  The function FN to
 be memoized is in :logic mode but has not had its guards verified.
 Memoization might therefore not take place; see :DOC memoize.
@@ -606,22 +466,7 @@ could not be evaluated.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-
 ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
-
-******** FAILED ********
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-
-ACL2 Error [Failure] in ( PROGN (TABLE MEMOIZE-TABLE ...) ...):  See
-:DOC failure.
-
-******** FAILED ********
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
 ACL2 !>>(SET-WARNINGS-AS-ERRORS T '("use")

@@ -393,6 +393,45 @@
        t)
       (& nil))))
 
+(define append-reverse (x y)
+    (if (atom x)
+        y
+      (append-reverse (cdr x) (cons (car x) y))))
+
+#|(define pp-sum-merge-aux ((pp1-lst rp-term-listp)
+                          (pp2-lst rp-term-listp)
+                          &key
+                          ((acc rp-term-listp) 'nil))
+  :measure (+ (cons-count pp1-lst)
+              (cons-count pp2-lst))
+  :hints (("Goal"
+           :in-theory (e/d (measure-lemmas) ())))
+  :returns (merged-pp-lst rp-term-listp
+                          :hyp (and (rp-term-listp pp1-lst)
+                                    (rp-term-listp pp2-lst)))
+  (cond ((atom pp1-lst) (append-reverse acc pp2-lst))
+        ((atom pp2-lst) (append-reverse acc pp1-lst))
+        (t (b* (((mv coef1 cur1) (get-pp-and-coef (car pp1-lst)))
+                ((mv coef2 cur2) (get-pp-and-coef (car pp2-lst)))
+                ((when (or* (equal (ex-from-rp$ cur1) ''0)
+                            (= coef1 0)))
+                 (pp-sum-merge-aux (cdr pp1-lst) pp2-lst :acc acc ))
+                ((when (or* (equal (ex-from-rp$ cur2) ''0)
+                            (= coef2 0)))
+                 (pp-sum-merge-aux pp1-lst (cdr pp2-lst)) :acc acc)
+                ((mv order equals)
+                 (pp-order cur1 cur2))
+                (equals (or* equals
+                             (rp-equal-cnt cur1 cur2 0))))
+             (cond (equals
+                    (pp-sum-merge-aux (cdr pp1-lst) (cdr pp2-lst)
+                                      :acc  (cons-with-times (+ coef1 coef2)
+                                                             cur1 acc)))
+                   (order
+                    (pp-sum-merge-aux (cdr pp1-lst) pp2-lst :acc (cons (car pp1-lst) acc)))
+                   (t
+                    (pp-sum-merge-aux pp1-lst (cdr pp2-lst) :acc (cons (car pp2-lst) acc))))))))|#
+
 (define pp-sum-merge-aux ((pp1-lst rp-term-listp)
                           (pp2-lst rp-term-listp))
   :measure (+ (cons-count pp1-lst)
@@ -581,6 +620,43 @@
                (not order))
              (s-sum-ordered-listp (cdr lst))))))
 
+  #|(define s-sum-merge-aux ((s1-lst rp-term-listp)
+                           (s2-lst rp-term-listp)
+                           &key
+                           ((acc rp-term-listp) 'nil) )
+    :measure (+ (cons-count s1-lst)
+                (cons-count s2-lst))
+    :hints (("Goal"
+             :in-theory (e/d (measure-lemmas) ())))
+    :returns (merged-s-lst rp-term-listp
+                           :hyp (and (rp-term-listp s1-lst)
+                                     (rp-term-listp s2-lst)))
+    (cond ((atom s1-lst)
+           (append-reverse acc s2-lst))
+          ((atom s2-lst)
+           (append-reverse acc s1-lst))
+          (t (b* ((cur1-orig (car s1-lst))
+                  (cur2-orig (car s2-lst))
+                  ((mv coef1 cur1) (get-pp-and-coef cur1-orig))
+                  ((mv coef2 cur2) (get-pp-and-coef cur2-orig))
+
+                  ((mv order equalsp)
+                   (s-order-main cur1 cur2)))
+               (cond (equalsp 
+                      (s-sum-merge-aux (cdr s1-lst) (cdr s2-lst)
+                                       :acc (cons-with-times (+ coef1 coef2)
+                                                             cur1 acc)))
+                     ((or* (equal cur1 ''0)
+                           (= coef1 0))
+                      (s-sum-merge-aux (cdr s1-lst) s2-lst :acc acc))
+                     ((or* (equal cur2 ''0)
+                           (= coef2 0))
+                      (s-sum-merge-aux s1-lst (cdr s2-lst) :acc acc))
+                     (order
+                      (s-sum-merge-aux (cdr s1-lst) s2-lst :acc (cons cur1-orig acc)))
+                     (t
+                      (s-sum-merge-aux s1-lst (cdr s2-lst) :acc (cons cur2-orig acc))))))))|#
+
   (define s-sum-merge-aux ((s1-lst rp-term-listp)
                            (s2-lst rp-term-listp))
     :measure (+ (cons-count s1-lst)
@@ -627,6 +703,55 @@
 
   (profile 'same-hash-dif-term)
 
+  
+
+  #|(define sum-merge-lst-for-s ((s1-lst rp-term-listp)
+			       (s2-lst rp-term-listp)
+			       &key
+			       ((acc rp-term-listp) 'nil))
+    :measure (+ (cons-count s1-lst)
+                (cons-count s2-lst))
+    :hints (("Goal"
+             :in-theory (e/d (measure-lemmas) ())))
+    :returns (merged-s-lst rp-term-listp
+                           :hyp (and (rp-term-listp s1-lst)
+				     (rp-term-listp acc)
+                                     (rp-term-listp s2-lst)))
+    (cond ((atom s1-lst)
+	   (progn$ ;;(break$)
+		   (append-reverse acc s2-lst)))
+          ((atom s2-lst)
+	   (progn$ ;;(break$)
+		   (append-reverse acc  s1-lst)))
+          (t (b* ((cur1-orig (car s1-lst))
+                  (cur2-orig (car s2-lst))
+                  ((mv coef1 cur1) (get-pp-and-coef cur1-orig))
+                  ((mv coef2 cur2) (get-pp-and-coef cur2-orig))
+                  ((mv order terms-are-equal)
+                   (s-order-main cur1 cur2)))
+               (cond (terms-are-equal
+                      (b* ((new-coef (+ coef1 coef2)))
+                        (if (evenp new-coef)
+                            (sum-merge-lst-for-s (cdr s1-lst)
+						 (cdr s2-lst)
+						 :acc acc)
+                          (sum-merge-lst-for-s (cdr s1-lst)
+					       (cdr s2-lst)
+					       :acc (cons cur1 acc)))))
+                     ((or* (equal cur1 ''0)
+                           (evenp coef1))
+                      (sum-merge-lst-for-s (cdr s1-lst) s2-lst :acc acc))
+                     ((or* (equal cur2 ''0)
+                           (evenp coef2))
+                      (sum-merge-lst-for-s s1-lst (cdr s2-lst) :acc acc))
+                     (order
+                      (sum-merge-lst-for-s (cdr s1-lst) s2-lst
+					   :acc (cons cur1 acc)))
+                     (t
+                      (sum-merge-lst-for-s s1-lst
+					   (cdr s2-lst)
+					   :acc (cons cur2 acc))))))))|#
+  
   (define sum-merge-lst-for-s ((s1-lst rp-term-listp)
                                (s2-lst rp-term-listp))
     :measure (+ (cons-count s1-lst)

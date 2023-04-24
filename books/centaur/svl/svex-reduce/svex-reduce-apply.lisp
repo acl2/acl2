@@ -334,6 +334,35 @@
           (hons-list 'sv::partsel st1 (+ sz1 sz2) x)))
         (t svex)))
 
+
+(define rsh-reduce ((svex))
+  :returns (res sv::svex-p :hyp (sv::svex-p svex)
+                :hints (("Goal"
+                         :in-theory (e/d (svex-p
+                                          SVEXLIST-P)
+                                         ()))))
+  :guard-hints (("Goal"
+                 :in-theory (e/d (svex-p
+                                  SVEXLIST-P)
+                                 ())))
+  :prepwork ((create-case-match-macro rsh-of-partsel
+                                      ('sv::rsh size ('sv::partsel start2 size2 var))
+                                      (and (natp size)
+                                           (natp start2)
+                                           (natp size2)))
+
+             (set-ignore-ok t))
+  (cond ((rsh-of-partsel-p svex)
+         (rsh-of-partsel-body
+          svex
+          (b* (((when (<= size2 size))
+                0)
+               (new-start (+ start2 size))
+               (new-size (+ size2 (- size))))
+            (hons-list 'sv::partsel new-start new-size var))))
+        (t svex)))
+  
+
 (define svex-reduce-w/-env-apply-specials (fn args)
   :returns (res svex-p :hyp (and (FNSYM-P fn)
                                  (SVEXLIST-P args))
@@ -425,6 +454,11 @@
           (equal-len args 3))
     (b* ((res (hons fn args)))
       (concat-reduce res)))
+
+   ((and* (equal fn 'sv::rsh)
+          (equal-len args 2))
+    (b* ((res (hons fn args)))
+      (rsh-reduce res)))
 
    (t (hons fn args))))
 
@@ -684,6 +718,35 @@
                              (:definition subsetp-equal)
                              (:definition member-equal)))))))
 
+(svex-eval-lemma-tmpl
+ (defret svex-eval-of-<fn>-correct
+   (equal (svex-eval res env)
+          (svex-eval svex env))
+   :fn rsh-reduce
+   :otf-flg t
+   :hints (("goal"
+            :expand ((svex-eval svex env)
+                     (SVEXLIST-EVAL (CDDR (CADDR SVEX)) ENV)
+                     (SVEXLIST-EVAL (CDR (CADDR SVEX)) ENV)
+                     (SVEXLIST-EVAL (CDDR SVEX) ENV)
+                     (SVEXLIST-EVAL (CDR SVEX) ENV)
+                     (SVEXLIST-EVAL (CDDDR (CADDR SVEX)) ENV))
+            :do-not-induct t
+            :in-theory (e/d (svex-apply
+                             svex-kind
+                             svex-call->fn
+                             svex-call->args
+                             svexlist-eval
+                             svex-eval
+                             RSH-REDUCE
+                             concat-of-conseq-partsel-pattern-p
+                             3vec-fix-of-4vec-concat-reverse)
+                            ((:rewrite sv::4veclist-nth-safe-out-of-bounds)
+                             (:definition acl2::apply$-badgep)
+                             (:linear acl2::apply$-badgep-properties . 1)
+                             (:definition subsetp-equal)
+                             (:definition member-equal)))))))
+
 
 (svex-eval-lemma-tmpl
  (defthm svex-eval-of-svex-reduce-w/-env-apply-specials-correct
@@ -712,6 +775,9 @@
                      (:free (x) (sv::svex-apply 'sv::bit? x)))
             :in-theory (e/d (svex-reduce-w/-env-apply-specials
                              4vec-?
+                             sv::4vec-bitmux
+                             sv::4vec-1mask
+                             acl2::logite
                              or*
                              svex-call->args
                              sv::4vec-bit?!

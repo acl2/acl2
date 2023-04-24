@@ -67,6 +67,12 @@
    (ctrex-force-resim booleanp "Force resimulation of a counterexample before checking another node in the same equivalence class" :default t)
    (random-seed-name symbolp "Name to use for seed-random, or NIL to not reseed the random number generator")
    (outs-only booleanp "Only check the combinational outputs of the network" :default nil)
+   (delete-class-on-fail
+    natp :default 0
+    "If set greater than 0, then if a SAT check fails, don't try to prove any
+     of the other equivalences in that node's equiv class (delete the class), unless
+     it was the constant class.  If set greater than 1, delete the class even if
+     it's the constant class (drastic!).")
    (gatesimp gatesimp-p :default (default-gatesimp)
              "Gate simplification parameters.  Warning: This transform will do
               nothing good if hashing is turned off."))
@@ -92,6 +98,7 @@
                   (fraig-failed-checks :type (integer 0 *) :initially 0)
                   (fraig-class-lits-refined :type (integer 0 *) :initially 0)
                   (fraig-const-lits-refined :type (integer 0 *) :initially 0)
+                  (fraig-class-lits-deleted :type (integer 0 *) :initially 0)
                   (fraig-resims          :type (integer 0 *) :initially 0)
                   (fraig-classes-refined :type (integer 0 *) :initially 0)
                   (fraig-ipasir-recycles :type (integer 0 *) :initially 0)
@@ -1974,7 +1981,35 @@
       (update-fraig-last-chance-refines-forced-proved
        (+ 1 (fraig-last-chance-refines-forced-proved fraig-stats)) fraig-stats)
     fraig-stats))
-               
+
+(define fraig-classes-maybe-delete-class ((delete-class-on-fail natp)
+                                          (node natp)
+                                          (classes)
+                                          (fraig-stats))
+  :returns (mv new-classes new-fraig-stats)
+  :guard (and (< node (classes-size classes))
+              (classes-wellformed classes))
+  (b* (((when (zp delete-class-on-fail))
+        (mv classes fraig-stats))
+       (head (node-head node classes))
+       ((when (and (eql 0 head)
+                   (eql 1 delete-class-on-fail)))
+        ;; don't delete the constant class unless delete-class-on-fail is set > 1
+        (mv classes fraig-stats))
+       ((mv classes ndeleted) (classes-delete-class-aux head 0 classes))
+       (fraig-stats (update-fraig-class-lits-deleted
+                     (+ ndeleted (fraig-class-lits-deleted fraig-stats))
+                     fraig-stats)))
+    (mv classes fraig-stats))
+  ///
+  (defret classes-wellformed-of-<fn>
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes)))
+
+  (defret classes-size-of-<fn>
+    (equal (classes-size new-classes)
+           (classes-size classes))))
+
 (define fraig-sweep-node ((node natp "Current node ID")
                           (aignet  "Input aignet")
                           (aignet2 "New aignet")
@@ -2070,8 +2105,9 @@
            ((mv status sat-lits ipasir fraig-stats)
             (ipasir-check-aignet-equivalence and-lit equiv-copy config aignet2 aignet-refcounts sat-lits ipasir fraig-stats))
            ((when (eq status :failed))
-            ;; nothing to do really, maybe mark equivalence as failed?
-            (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
+            (b* (((mv classes fraig-stats)
+                  (fraig-classes-maybe-delete-class config.delete-class-on-fail n classes fraig-stats)))
+            (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state)))
            ((when (eq status :unsat))
             ;; nodes are equivalent! change copy so that it uses the equivalent rather than the new node.
             (b* ((fraig-stats (fraig-stats-increment-forced-proved forced-refinedp fraig-stats))
@@ -2570,6 +2606,7 @@
     (equal (w new-state) (w state))))
     
   
+
 
 
 

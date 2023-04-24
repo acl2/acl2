@@ -30,7 +30,6 @@
 
 
 (in-package "SV")
-(include-book "expand")
 (include-book "fsm-base")
 (include-book "../svex/rewrite-base")
 (include-book "../svex/alist-thms")
@@ -49,31 +48,6 @@
 
 
 
-
-(define svtv-namemap->lhsmap ((x svtv-namemap-p
-                                 "User-provided mapping.  An alist where the keys
-                                  are arbitary names (svars, typically symbols)
-                                  and the values are SystemVerilog-syntax hierarchical
-                                  names (strings).")
-                              (modidx natp)
-                              (moddb moddb-ok)
-                              (aliases))
-  :parents (svtv-name-lhs-map)
-  :short "Processes a list of nicknames for SystemVerilog-syntax signals into an internal form."
-  :long "<p></p>"
-  :guard (svtv-mod-alias-guard modidx moddb aliases)
-  :returns (mv errs
-               (lhses svtv-name-lhs-map-p))
-  (b* (((when (atom x)) (mv nil nil))
-       ((unless (mbt (and (consp (car x))
-                          (svar-p (caar x)))))
-        (svtv-namemap->lhsmap (cdr x) modidx moddb aliases))
-       ((mv err1 first) (svtv-wire->lhs! (cdar x) modidx moddb aliases))
-       ((mv errs rest) (svtv-namemap->lhsmap (cdr x) modidx moddb aliases))
-       ((when err1) (mv (append-without-guard err1 errs) rest)))
-    (mv errs (cons (cons (caar x) first) rest)))
-  ///
-  (local (in-theory (enable svtv-namemap-fix))))
 
 
 ;; (define lhs-value/mask-to-svtv-assigns ((lhs lhs-p)
@@ -134,19 +108,6 @@
 ;; (local (fty::defmap svtv-name-lhs-map :key-type svar :val-type lhs :true-listp t))
 
 
-(defsection svtv-name-lhs-map-p-of-fal-extract
-  (local (defthm lookup-when-not-svar-p-of-svtv-name-lhs-map
-           (implies (and (svtv-name-lhs-map-p x)
-                         (not (svar-p k)))
-                    (not (hons-assoc-equal k x)))
-           :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
-  (local (defthm car-of-hons-assoc-equal
-           (equal (car (hons-assoc-equal k x))
-                  (and (hons-assoc-equal k x) k))))
-  (defthm svtv-name-lhs-map-p-of-fal-extract
-    (implies (svtv-name-lhs-map-p x)
-             (svtv-name-lhs-map-p (fal-extract keys x)))
-    :hints(("Goal" :in-theory (enable fal-extract svtv-name-lhs-map-p)))))
 
 
 (define svtv-fsm-env-inversemap ((keys svarlist-p)
@@ -1553,37 +1514,6 @@
             :do-not-induct t))
     :otf-flg t))
 
-
-
-
-
-(define svtv-fsm-mod-alias-guard ((top modname-p)
-                                  (moddb moddb-ok) aliases)
-  :enabled t
-  (b* ((modidx (moddb-modname-get-index top moddb)))
-    (and modidx
-         (svtv-mod-alias-guard modidx moddb aliases))))
-
-
-(define svtv-fsm-add-names ((names svtv-namemap-p)
-                            (x svtv-fsm-p)
-                            &key
-                            ((top modname-p) 'nil)
-                            ((moddb moddb-ok) 'moddb)
-                            (aliases 'aliases))
-  :guard (svtv-fsm-mod-alias-guard top moddb aliases)
-  :returns (mv err
-               (new-fsm (implies (not err) (svtv-fsm-p new-fsm))))
-  (b* (((svtv-fsm x))
-       ((mv errs lhsmap)
-        (svtv-namemap->lhsmap
-         names 
-         (moddb-modname-get-index top moddb)
-         moddb aliases))
-       ((when errs)
-        (mv (msg-list errs) nil)))
-    (mv nil
-        (change-svtv-fsm x :namemap (append lhsmap x.namemap)))))
 
 
 

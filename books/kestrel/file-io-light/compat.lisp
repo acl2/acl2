@@ -1,6 +1,6 @@
 ; Check compatibility with std
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,5 +12,4 @@
 
 ;; Any name clash with std would cause an error:
 (include-book "std/io/top" :dir :system)
-(include-book "../utilities/channels")
 (include-book "top")
