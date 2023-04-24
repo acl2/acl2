@@ -31,45 +31,95 @@
 
 (local (std::add-default-post-define-hook :fix))
 
-(define svtv-override-triplemap->tests ((triplemap svtv-override-triplemap-p))
-  :returns (tests svexlist-p)
-  (if (atom triplemap)
-      nil
-    (if (mbt (and (consp (car triplemap))
-                  (svar-p (caar triplemap))))
-        (cons (svtv-override-triple->test (cdar triplemap))
-              (svtv-override-triplemap->tests (cdr triplemap)))
-      (svtv-override-triplemap->tests (cdr triplemap))))
-  ///
-  (local (in-theory (enable svtv-override-triplemap-fix))))
 
-(define svtv-override-triplemaplist->tests ((x svtv-override-triplemaplist-p))
+(define svtv-override-triplelist->tests ((x svtv-override-triplelist-p))
   :returns (tests svexlist-p)
   (if (atom x)
       nil
-    (append (svtv-override-triplemap->tests (car x))
-            (svtv-override-triplemaplist->tests (cdr x)))))
+    (cons (svtv-override-triple->test (car x))
+          (svtv-override-triplelist->tests (cdr x)))))
 
-(define svtv-override-triplemap->vals ((triplemap svtv-override-triplemap-p))
-  :returns (vals svexlist-p)
-  (if (atom triplemap)
-      nil
-    (if (mbt (and (consp (car triplemap))
-                  (svar-p (caar triplemap))))
-        (cons (svtv-override-triple->val (cdar triplemap))
-              (svtv-override-triplemap->vals (cdr triplemap)))
-      (svtv-override-triplemap->vals (cdr triplemap))))
-  ///
-  (local (in-theory (enable svtv-override-triplemap-fix))))
-
-(define svtv-override-triplemaplist->vals ((x svtv-override-triplemaplist-p))
+(define svtv-override-triplelist->vals ((x svtv-override-triplelist-p))
   :returns (vals svexlist-p)
   (if (atom x)
       nil
-    (append (svtv-override-triplemap->vals (car x))
-            (svtv-override-triplemaplist->vals (cdr x)))))
+    (cons (svtv-override-triple->val (car x))
+          (svtv-override-triplelist->vals (cdr x)))))
+
+(define svtv-override-triplelist-keep-non-refvars ((x svtv-override-triplelist-p))
+  :returns (new-x svtv-override-triplelist-p)
+  (if (atom x)
+      nil
+    (if (svtv-override-triple->refvar (car x))
+        (svtv-override-triplelist-keep-non-refvars (cdr x))
+      (cons (svtv-override-triple-fix (car x))
+            (svtv-override-triplelist-keep-non-refvars (cdr x))))))
+
+(define svtv-override-triplelist-keep-refvars ((x svtv-override-triplelist-p))
+  :returns (new-x svtv-override-triplelist-p)
+  (if (atom x)
+      nil
+    (if (svtv-override-triple->refvar (car x))
+        (cons (svtv-override-triple-fix (car x))
+              (svtv-override-triplelist-keep-refvars (cdr x)))
+      (svtv-override-triplelist-keep-refvars (cdr x)))))
+
+(define svtv-override-triplelist-keep-conditional ((x svtv-override-triplelist-p))
+  :returns (new-x svtv-override-triplelist-p)
+  (if (atom x)
+      nil
+    (if (svex-case (svtv-override-triple->test (car x)) :quote)
+        (svtv-override-triplelist-keep-conditional (cdr x))
+      (cons (svtv-override-triple-fix (car x))
+            (svtv-override-triplelist-keep-conditional (cdr x))))))
+
+(define svtv-override-triplelist-keep-unconditional ((x svtv-override-triplelist-p))
+  :returns (new-x svtv-override-triplelist-p)
+  (if (atom x)
+      nil
+    (if (svex-case (svtv-override-triple->test (car x)) :quote)
+        (cons (svtv-override-triple-fix (car x))
+              (svtv-override-triplelist-keep-unconditional (cdr x)))
+      (svtv-override-triplelist-keep-unconditional (cdr x)))))
 
 
+;; (define svtv-override-triplemap->tests ((triplemap svtv-override-triplemap-p))
+;;   :returns (tests svexlist-p)
+;;   (if (atom triplemap)
+;;       nil
+;;     (if (mbt (and (consp (car triplemap))
+;;                   (svar-p (caar triplemap))))
+;;         (cons (svtv-override-triple->test (cdar triplemap))
+;;               (svtv-override-triplemap->tests (cdr triplemap)))
+;;       (svtv-override-triplemap->tests (cdr triplemap))))
+;;   ///
+;;   (local (in-theory (enable svtv-override-triplemap-fix))))
+
+;; (define svtv-override-triplemaplist->tests ((x svtv-override-triplemaplist-p))
+;;   :returns (tests svexlist-p)
+;;   (if (atom x)
+;;       nil
+;;     (append (svtv-override-triplemap->tests (car x))
+;;             (svtv-override-triplemaplist->tests (cdr x)))))
+
+;; (define svtv-override-triplemap->vals ((triplemap svtv-override-triplemap-p))
+;;   :returns (vals svexlist-p)
+;;   (if (atom triplemap)
+;;       nil
+;;     (if (mbt (and (consp (car triplemap))
+;;                   (svar-p (caar triplemap))))
+;;         (cons (svtv-override-triple->val (cdar triplemap))
+;;               (svtv-override-triplemap->vals (cdr triplemap)))
+;;       (svtv-override-triplemap->vals (cdr triplemap))))
+;;   ///
+;;   (local (in-theory (enable svtv-override-triplemap-fix))))
+
+;; (define svtv-override-triplemaplist->vals ((x svtv-override-triplemaplist-p))
+;;   :returns (vals svexlist-p)
+;;   (if (atom x)
+;;       nil
+;;     (append (svtv-override-triplemap->vals (car x))
+;;             (svtv-override-triplemaplist->vals (cdr x)))))
 
 (std::def-primitive-aggregate svtv-generalized-thm
   (name
@@ -552,12 +602,26 @@
 
        (input-vars (if (equal input-vars :all)
                        (b* ((all-ins (svtv->ins svtv-val))
-                            (ovr-controls (svexlist-collect-vars (svtv-override-triplemaplist->tests triplemaplist-val)))
-                            (ovr-signals (svexlist-collect-vars (svtv-override-triplemaplist->vals triplemaplist-val)))
+                            (triplelist (svtv-override-triplemaplist-to-triplelist triplemaplist-val))
+                            (conditional-triples (svtv-override-triplelist-keep-conditional triplelist))
+                            (ovr-controls (svexlist-collect-vars (svtv-override-triplelist->tests conditional-triples)))
+                            (conditional-ovr-signals (svexlist-collect-vars (svtv-override-triplelist->vals conditional-triples)))
+                            ;; Conditional overrides/override tests should not be treated as input vars.
+                            ;; Unconditional overrides should be treated as inputs UNLESS they're explicitly listed in the override-vars/override-var-bindings.
+                            (ovr-signals (append override-vars
+                                                 (alist-keys override-var-bindings)
+                                                 conditional-ovr-signals))
                             (all-ins (acl2::hons-set-diff all-ins (append ovr-controls ovr-signals
                                                                           (alist-keys input-var-bindings)))))
                          all-ins)
                      input-vars))
+       (dupes (acl2::hons-duplicates (append input-vars (alist-keys input-var-bindings)
+                                             override-vars (alist-keys override-var-bindings)
+                                             spec-override-vars (alist-keys spec-override-var-bindings))))
+       (- (and dupes
+               (er hard? 'def-svtv-generalize-thm
+                   "Some variables were duplicated between the input-vars/var-bindings, override-vars/var-bindings, and/or spec-override-vars/var-bindings.  Duplicated vars: ~x0~%"
+                   dupes)))
        (hyp (if unsigned-byte-hyps
                 (b* ((inmasks (svtv->inmasks svtv-val))
                      (inputs (append input-vars override-vars spec-override-vars))
