@@ -45,8 +45,8 @@
 
 ;;(attach-meta-fncs fgl-mult-rules)
 
-(enable-postprocessor make-sc-fgl-ready-meta)
-(disable-postprocessor medw-compress-any)
+;;(enable-postprocessor make-sc-fgl-ready-meta)
+;;(disable-postprocessor medw-compress-any)
 
 ;;(enable-meta-rules make-sc-fgl-ready-meta-main)--------------------------
 ;;(enable-rules '((:META medw-compress-meta . equal)))
