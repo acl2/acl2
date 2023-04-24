@@ -573,6 +573,7 @@ my $acl2 = read_whole_file_if_exists("$file.image");
 $acl2 = read_whole_file_if_exists("cert.image") if !$acl2;
 $acl2 = $default_acl2 if !$acl2;
 $acl2 = trim($acl2);
+$acl2 = $default_acl2 if $acl2 eq "acl2";
 $ENV{"ACL2"} = $acl2;
 print "-- Image to use = $acl2\n" if $DEBUG;
 die("Can't determine which ACL2 to use.") if !$acl2;
