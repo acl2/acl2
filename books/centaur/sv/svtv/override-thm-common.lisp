@@ -28,7 +28,7 @@
 (include-book "override-common")
 (include-book "structure")
 (include-book "centaur/fgl/portcullis" :dir :system)
-
+(include-book "../svex/svex-env-val-widths")
 (local (std::add-default-post-define-hook :fix))
 
 (define svtv-override-triplemap->tests ((triplemap svtv-override-triplemap-p))
@@ -83,6 +83,8 @@
    output-parts
    output-part-vars
    hyp
+   lemma-hyp
+   final-hyp
    concl
    run-before-concl
    svtv
@@ -159,47 +161,62 @@
       (cons (cons (svar-fix (car vars)) look)
             (svex-env-extract-non-2vecs (cdr vars) env)))))
 
+
+
+(define svtv-genthm-hyp-to-list (x)
+  ;; x and y are hyp terms like (foo x), (and (foo x) (bar y)), or t
+  (cond ((eq x t) nil)
+        ((eq (car x) 'and) (cdr x))
+        (t (list x))))
+
+(define svtv-genthm-conjoin-hyps (x y)
+  ;; x and y are hyp terms like (foo x), (and (foo x) (bar y)), or t
+  (b* ((list (append (svtv-genthm-hyp-to-list x)
+                     (svtv-genthm-hyp-to-list y))))
+    (cond ((atom list) t)
+          ((atom (cdr list)) (car list))
+          (t (cons 'and list)))))
+
+
+
 (defun svtv-genthm-initial-override-lemma (x)
   (declare (Xargs :mode :program))
   (b* (((svtv-generalized-thm x))
        (template '(<defthm> <name>-override-lemma
-                    (implies <hyp>
-                             (b* ((run (:@ (and (not :use-ideal)
-                                                (not :use-svtv-spec))
-                                           (svtv-run (<svtv>)
-                                                     (append <input-bindings>
-                                                             <input-vars>
-                                                             <override-tests>
-                                                             <override-bindings>
-                                                             <override-vals>)
-                                                     :include
-                                                     '<outputs-list>))
-                                       (:@ (or :use-ideal :use-svtv-spec)
-                                           (svex-env-reduce '<outputs-list>
-                                                            (svtv-spec-run ((:@ :use-ideal <ideal>)
-                                                                            (:@ :use-svtv-spec <svtv-spec>))
-                                                                           (append <input-bindings>
-                                                                                   <input-vars>
-                                                                                   <override-tests>
-                                                                                   <override-bindings>
-                                                                                   <override-vals>)))))
-                                  ((svassocs <outputs>) run))
-                               (progn$
-                                <run-before-concl>
-                                (and (:@ (not :no-integerp)
-                                      (or (and <integerp-concls>)
-                                          (progn$
-                                           (cw "*** Failed: Some output variables contained Xes/Zs:~%")
-                                           (svtv-print-alist-readable
-                                            (svex-env-extract-non-2vecs
-                                             '<outputs-list> run))
-                                           nil)))
-                                     <concl>))))
-                    <args>)))
+                   (implies <hyp>
+                            (b* ((env (append <input-bindings>
+                                              <input-vars>
+                                              <override-tests>
+                                              <override-bindings>
+                                              <override-vals>))
+                                 (run (:@ (and (not :use-ideal)
+                                               (not :use-svtv-spec))
+                                       (svtv-run (<svtv>)
+                                                 env
+                                                 :include
+                                                 '<outputs-list>))
+                                      (:@ (or :use-ideal :use-svtv-spec)
+                                       (svex-env-reduce '<outputs-list>
+                                                        (svtv-spec-run ((:@ :use-ideal <ideal>)
+                                                                        (:@ :use-svtv-spec <svtv-spec>))
+                                                                       env))))
+                                 ((svassocs <outputs>) run))
+                              (progn$
+                               <run-before-concl>
+                               (and (:@ (not :no-integerp)
+                                     (or (and <integerp-concls>)
+                                         (progn$
+                                          (cw "*** Failed: Some output variables contained Xes/Zs:~%")
+                                          (svtv-print-alist-readable
+                                           (svex-env-extract-non-2vecs
+                                            '<outputs-list> run))
+                                          nil)))
+                                    <concl>))))
+                   <args>)))
     (acl2::template-subst
      template
      :atom-alist `((<defthm> . ,x.lemma-defthm)
-                   (<hyp> . ,x.hyp)
+                   (<hyp> . ,(svtv-genthm-conjoin-hyps x.lemma-hyp x.hyp))
                    (<svtv> . ,x.svtv)
                    (<svtv-spec> . ,x.svtv-spec)
                    (<ideal> . ,x.ideal)
@@ -235,10 +252,11 @@
        (trip (cdr (hons-get valvar triple-val-alist)))
        ((unless trip) (er hard? 'def-svtv-generalized-thm "Override name not present in triples ~x0: ~x1~%"
                           (list triples-name) (car override-valnames)))
-       ((svtv-override-triple trip)))
+       ((svtv-override-triple trip))
+       (qmark-valvar (intern-in-package-of-symbol (concatenate 'string "?" (symbol-name valvar)) valvar)))
     (cons (if (eq valvar trip.refvar)
-              valvar
-            `(,valvar ',trip.refvar))
+              qmark-valvar
+            `(,qmark-valvar ',trip.refvar))
           (svtv-genthm-override-svassocs (cdr override-valnames) triple-val-alist triples-name))))
 
 
@@ -313,6 +331,14 @@
     (cons `(unsigned-byte-p ,(integer-length mask) ,var)
           (svtv-unsigned-byte-hyps (cdr x)))))
 
+(define svtv-svar-widths ((x svar-boolmasks-p))
+  :hooks nil
+  (b* (((when (atom x)) nil)
+       ((unless (mbt (consp (car x)))) (svtv-svar-widths (cdr x)))
+       ((cons var mask) (car x)))
+    (cons (cons var (integer-length mask))
+          (svtv-svar-widths (cdr x)))))
+
 
 
 
@@ -349,6 +375,18 @@
 
 
 
+(defun svtv-genthm-qmark-vars (x)
+  (if (atom x)
+      nil
+    (cons (intern-in-package-of-symbol (concatenate 'string "?" (symbol-name (car x))) (car x))
+          (svtv-genthm-qmark-vars (cdr x)))))
+
+(defun svtv-genthm-qmark-svassocs (x)
+  (if (atom x)
+      nil
+    (cons `(,(intern-in-package-of-symbol (concatenate 'string "?" (symbol-name (car x))) (car x))
+            ',(car x))
+          (svtv-genthm-qmark-svassocs (cdr x)))))
 
 
 (defun svtv-genthm-final-thm (x)
@@ -364,7 +402,8 @@
                  (run <run>
                       )
                  ((svassocs <override-svassocs>) run))
-              (implies (and <hyp>
+              (implies (and <hyps>
+                            <final-hyps>
                             <input-binding-hyp>
                             <override-binding-hyp>
                             (svtv-override-triplemaplist-envs-match
@@ -407,6 +446,15 @@
                                   (;; (:EXECUTABLE-COUNTERPART <SVTV>-TRIPLEMAPLIST)
                                    (:REWRITE SVARLIST-P-OF-<SVTV>-INPUT-VARS)
                                    (:ruleset svtv-generalized-thm-rules)
+                                   unsigned-byte-p-by-svex-env-val-widths-from-type-alist
+                                   (unsigned-byte-p)
+                                   (natp)
+                                   (svar-p)
+                                   (ifix)
+                                   (svar-widths-implies-top)
+                                   svex-env-val-widths-p-list-of-nil
+                                   svex-env-val-widths-p-list-of-cons
+                                   svex-env-val-widths-p-list-of-cons-singleton
                                    <enable>)
                                   )
                       :do-not '(generalize fertilize eliminate-destructors)
@@ -417,8 +465,7 @@
     (acl2::template-subst
      template
      :atom-alist
-     `((<hyp> . ,x.hyp)
-       (<concl> . ,x.concl)
+     `((<concl> . ,x.concl)
        (<ideal> . ,x.ideal)
        (<defthm> . ,x.final-defthm)
        (<triplemaps> . ,x.triples-name)
@@ -440,14 +487,16 @@
        (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist (append x.spec-override-vars x.override-vars))))
        (<rule-classes> . ,x.rule-classes))
      :splice-alist
-     `((<input-var-svassocs> . ,(append x.input-vars (strip-cars x.input-var-bindings)))
-       (<input-unbound-svassocs> . ,x.input-vars)
+     `((<hyps> . ,(svtv-genthm-hyp-to-list x.hyp))
+       (<final-hyps> . ,(svtv-genthm-hyp-to-list x.final-hyp))
+       (<input-var-svassocs> . ,(svtv-genthm-qmark-svassocs (append x.input-vars (strip-cars x.input-var-bindings))))
+       (<input-unbound-svassocs> . ,(svtv-genthm-qmark-svassocs x.input-vars))
        (<override-svassocs> . ,(svtv-genthm-override-svassocs (append x.override-vars (alist-keys x.override-var-bindings))
                                                               x.triple-val-alist x.triples-name))
        (<override-inst-svassocs> . ,(svtv-genthm-override-svassocs x.override-vars
                                                               x.triple-val-alist x.triples-name))
-       (<spec-override-svassocs> . ,(append x.spec-override-vars (alist-keys x.spec-override-var-bindings)))
-       (<spec-override-inst-svassocs> . ,x.spec-override-vars
+       (<spec-override-svassocs> . ,(svtv-genthm-qmark-svassocs (append x.spec-override-vars (alist-keys x.spec-override-var-bindings))))
+       (<spec-override-inst-svassocs> . ,(svtv-genthm-qmark-svassocs x.spec-override-vars)
                                       ;; (svtv-genthm-override-svassocs x.spec-override-vars
                                       ;;                                   x.triple-val-alist x.triples-name)
                                       )
@@ -488,6 +537,17 @@
        ,(svtv-genthm-final-thm x))))
 
 
+(defun svtv-genthm-override-svar-widths (override-input-widths triple-val-alist triples-name)
+  (b* (((when (Atom override-input-widths)) nil)
+       ((unless (consp (car override-input-widths)))
+        (svtv-genthm-override-svar-widths (cdr override-input-widths) triple-val-alist triples-name))
+       ((cons valvar width) (car override-input-widths))
+       (trip (cdr (hons-get valvar triple-val-alist)))
+       ((unless trip) (er hard? 'def-svtv-generalized-thm "Override name not present in triples ~x0: ~x1~%"
+                            (list triples-name) valvar)))
+    (cons (cons (svtv-override-triple->refvar trip) width)
+          (svtv-genthm-override-svar-widths (cdr override-input-widths) triple-val-alist triples-name))))
+
 
 (defun svtv-generalized-thm-fn (name args state)
   (declare (xargs :stobjs state))
@@ -509,6 +569,7 @@
          input-var-bindings
          enable
          unsigned-byte-hyps
+         env-val-widths-hyp
          (hyp 't)
          concl
          (run-before-concl 'nil)
@@ -540,6 +601,7 @@
 
        (triplelist (svtv-override-triplemaplist-to-triplelist triplemaplist-val))
        (triple-val-alist (svtv-override-triplelist-val-alist triplelist))
+       ((acl2::with-fast triple-val-alist))
 
 
        (input-vars (if (equal input-vars :all)
@@ -550,24 +612,33 @@
                                                                           (alist-keys input-var-bindings)))))
                          all-ins)
                      input-vars))
-       (hyp (if unsigned-byte-hyps
-                (b* ((inmasks (svtv->inmasks svtv-val))
-                     (inputs (append input-vars override-vars spec-override-vars))
-                     (masks (acl2::fal-extract inputs inmasks))
-                     (hyps (if (eq (car hyp) 'and) (cdr hyp) (list hyp))))
-                  `(and ,@(svtv-unsigned-byte-hyps masks) . ,hyps))
-              hyp))
-
-       ;; (override-subst (make-fast-alist (svtv-genthm-override-subst override-vars triple-val-alist triplemaplist)))
-       ;; (mux-<<=-triples
-       ;;  (svtv-override-triplemaplist-analyze-necessary-mux-<<=-checks triplemaplist-val override-subst))
-       ;; (muxtests (svtv-override-triplemaplist-analyze-necessary-muxtests triplemaplist-val override-subst (make-fast-alist const-overrides)))
-
-       ;; (constlist-hyp `(and ,(if mux-<<=-triples
-       ;;                           `(svtv-override-triplelist-muxes-<<=-of-nil(if consts
-       ;;                    `(svtv-override-constantlist-ok ',consts run)
-       ;;                  t))
-       ((acl2::with-fast triple-val-alist)))
+       (lemma-hyp (if (or env-val-widths-hyp
+                          unsigned-byte-hyps)
+                      (b* ((inmasks (svtv->inmasks svtv-val))
+                           (inputs (append input-vars override-vars spec-override-vars))
+                           (masks (acl2::fal-extract inputs inmasks)))
+                        `(and . ,(svtv-unsigned-byte-hyps masks)))
+                    t))
+       (final-hyp 
+        (cond (unsigned-byte-hyps
+               (b* ((inmasks (svtv->inmasks svtv-val))
+                    (inputs (append input-vars override-vars spec-override-vars))
+                    (masks (acl2::fal-extract inputs inmasks)))
+                 `(and . ,(svtv-unsigned-byte-hyps masks))))
+              (env-val-widths-hyp
+               (b* ((inmasks (svtv->inmasks svtv-val))
+                    (input-masks (acl2::fal-extract (append input-vars spec-override-vars) inmasks))
+                    (override-masks (acl2::fal-extract override-vars inmasks))
+                    (in-widths (svtv-svar-widths input-masks))
+                    (override-widths (svtv-genthm-override-svar-widths (svtv-svar-widths override-masks) triple-val-alist triplemaplist))
+                    (in-hyp (if in-widths
+                                `(svex-env-val-widths-p ',in-widths env)
+                              t))
+                    (override-hyp (if override-widths
+                                      `(svex-env-val-widths-p ',override-widths run)
+                                    t)))
+                 (svtv-genthm-conjoin-hyps in-hyp override-hyp)))
+              (t t))))
 
     (value
      (svtv-generalized-thm-events
@@ -584,6 +655,8 @@
        :input-var-bindings input-var-bindings
        :enable enable
        :hyp hyp
+       :lemma-hyp lemma-hyp
+       :final-hyp final-hyp
        :concl concl
        :run-before-concl run-before-concl
        :svtv svtv

@@ -1099,15 +1099,18 @@
 
 (defmacro def-svtv-refinement (svtv-name data-name
                                          &key ideal svtv-spec pkg-sym)
-  (def-svtv-refinement-fn svtv-name data-name ideal svtv-spec pkg-sym))
+  `(make-event
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal ',svtv-spec ',pkg-sym)))
 
 
 
 (defmacro def-svtv-ideal (ideal-name svtv-name data-name &key pkg-sym svtv-spec)
-  (def-svtv-refinement-fn svtv-name data-name ideal-name svtv-spec pkg-sym))
+  `(make-event
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal-name ',svtv-spec ',pkg-sym)))
 
 (defmacro def-svtv-override-thms (name export &key pkg-sym svtv-spec)
-  (def-svtv-refinement-fn name export nil svtv-spec pkg-sym))
+  `(make-event
+    (def-svtv-refinement-fn ',name ',export ',nil ',svtv-spec ',pkg-sym)))
 
 
 ;;; For each decomposition proof, we'll have a fixed set of signals overridden
@@ -1187,8 +1190,8 @@ particular environment,  there are a couple of helpful rewriting strategies.</p>
 <li>@('svtv-override-triplemaplist-envs-match-simplify') applies when @('env')
 is a term containing a list of pairs with constant keys and (as is usually the
 case) @('spec') is a constant.  It simplifies the call of
-@('svtv-override-triplemaplist-envs-match') to a call of @(see
-svtv-override-triplelist-envs-match) on a smaller set of triples, only the ones
+@('svtv-override-triplemaplist-envs-match') to a call of
+ @('svtv-override-triplelist-envs-match') on a smaller set of triples, only the ones
 that couldn't be resolved by just examining the syntax of the @('env') and
 @('spec') terms.  Then, @('svtv-override-triplelist-envs-match') has rules to
 open up and solve the requirements for the remaining triples.</li>
