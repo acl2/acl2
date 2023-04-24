@@ -434,10 +434,11 @@
   :hints (("Goal" :in-theory (enable logext logapp))))
 
 (defthmd logext-when-negative
-  (implies (< (logext 32 x) 0)
-           (equal (logext 32 x)
-                  (+ (bvchop 31 x)
-                     (- (expt 2 31)))))
+  (implies (and (< (logext size x) 0)
+                (posp size))
+           (equal (logext size x)
+                  (+ (bvchop (+ -1 size) x)
+                     (- (expt 2 (+ -1 size))))))
   :hints (("Goal" :in-theory (enable logext logapp))))
 
 (defthmd logext-when-negative-2
