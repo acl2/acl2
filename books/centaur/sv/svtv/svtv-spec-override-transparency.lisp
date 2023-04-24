@@ -340,7 +340,7 @@
                       (4vec-bit-index n then)
                     (4vec-bit-index n else)))
            :hints(("Goal" :in-theory (enable 4vec-bit-index
-                                             4vec-bit?!)))))
+                                             4vec-bit?! 4vec-bitmux 4vec-1mask b-ite)))))
 
   (defthmd 4vec-override-mux-<<=-implies-bit-index
     (implies (and (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref)

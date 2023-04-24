@@ -1644,7 +1644,7 @@
 (defthm 4vec-bit?!-when-test-empty
   (implies (equal (4vec-1mask test) 0)
            (equal (4vec-bit?! test then else) (4vec-fix else)))
-  :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-1mask)
+  :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-1mask 4vec-bitmux)
                                  (lognot logior)))))
 
 
@@ -1793,7 +1793,7 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
 
 (defthm 4vec-bit?!-same-then-else
   (equal (4vec-bit?! test then then) (4vec-fix then))
-  :hints(("Goal" :in-theory (enable 4vec-bit?!))
+  :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
          (bitops::logbitp-reasoning)))
 
 

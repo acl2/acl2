@@ -1151,7 +1151,7 @@
                        (4vec-<<= (4vec-bit?! spec-test spec-val other-val1)
                                  (4vec-bit?! impl-test impl-val other-val2)))
               :hints (("goal" :in-theory (enable 4vec-muxtest-subsetp
-                                                 4vec-bit?!-is-4vec-bitmux)))))
+                                                 4vec-bit?!)))))
 
      
 

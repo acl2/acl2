@@ -426,7 +426,8 @@
 (defthm 4vec-override-mux-agrees-of-same
   (4vec-override-mux-agrees test val test val spec-ref)
   :hints(("Goal" :in-theory (enable 4vec-override-mux-agrees
-                                    4vec-bit?!))
+                                    4vec-bit?!
+                                    4vec-bitmux))
          (acl2::logbitp-reasoning)))
 
 

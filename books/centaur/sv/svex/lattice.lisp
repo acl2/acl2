@@ -402,7 +402,7 @@ acl2::4v-monotonicity).</p>"
                   (4vec-<<= else1 else2))
              (4vec-<<= (4vec-bit?! test then1 else1)
                       (4vec-bit?! test then2 else2)))
-    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-<<=))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-<<= 4vec-bitmux))
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil)))))
@@ -410,7 +410,7 @@ acl2::4v-monotonicity).</p>"
   (defthm 4vec-bit?-<<=-bit?!
     (4vec-<<= (4vec-bit? test then else)
              (4vec-bit?! test then else))
-    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bit? 3vec-bit? 3vec-fix 4vec-<<=))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux 4vec-1mask 4vec-bit? 3vec-bit? 3vec-fix 4vec-<<=))
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil)))

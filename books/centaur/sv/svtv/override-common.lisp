@@ -252,8 +252,10 @@
   (local (defthm 4vec-bit?!-else-4vec-bit?!-same-test
            (equal (4vec-bit?! test then1 (4vec-bit?! test then2 else2))
                   (4vec-bit?! test then1 else2))
-           :hints(("Goal" :in-theory (enable 4vec-bit?!))
-                  (acl2::logbitp-reasoning))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
+                  (acl2::logbitp-reasoning)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-ite))))))
 
   (local (defthm logeqv-is-lognot-logxor
            (equal (logeqv x y)
@@ -266,7 +268,7 @@
                         (4vec-bit?! a b2 c1))
               (4vec-<<= (4vec-bit?! a b1 c2)
                         (4vec-bit?! a b2 c2)))
-     :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-<<=)
+     :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-<<= 4vec-bitmux)
                                     (logeqv
                                      bitops::logior-<-0-linear-2
                                      bitops::logand-natp-type-2
@@ -277,7 +279,7 @@
             (acl2::logbitp-reasoning
              :add-hints (:in-theory (enable* logbitp-case-splits)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable b-xor))))
+                 '(:in-theory (enable b-xor b-ite))))
      :otf-flg t))
 
 

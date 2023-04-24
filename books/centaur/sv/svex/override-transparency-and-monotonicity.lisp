@@ -103,7 +103,7 @@
                          (4vec-muxtest-subsetp spec-test impl-test))
                     (4vec-<<= (4vec-bit?! impl-test impl-val ref-val)
                               (4vec-bit?! spec-test spec-val ref-val)))
-           :hints(("Goal" :in-theory (enable 4vec-bit?!-is-4vec-bitmux
+           :hints(("Goal" :in-theory (enable 4vec-bit?!
                                              4vec-bitmux
                                              4vec-muxtest-subsetp
                                              4vec-override-mux-<<=
@@ -277,7 +277,7 @@
                                                           impl-val)
                                               spec-test spec-val ref-val))
            :hints(("Goal" :in-theory (enable 4vec-override-mux-agrees
-                                             4vec-bit?!-is-4vec-bitmux
+                                             4vec-bit?!
                                              4vec-bitmux
                                              4vec-muxtest-subsetp))
                   (acl2::logbitp-reasoning))))
@@ -289,7 +289,7 @@
                                                    (4vec-bit?! spec-test spec-val ref-val)
                                                    impl-val)))
            :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=
-                                             4vec-bit?!-is-4vec-bitmux
+                                             4vec-bit?!
                                              4vec-bitmux
                                              4vec-<<=
                                              4vec-muxtest-subsetp))

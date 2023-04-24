@@ -60,11 +60,16 @@
   (b* (((4vec x)))
     (int= (logand x.upper x.lower) 0))
   ///
+  (defthm 4vec-1mask-when-4vec-no-1s-p
+    (implies (4vec-no-1s-p x)
+             (equal (4vec-1mask x) 0))
+    :hints(("Goal" :in-theory (enable 4vec-1mask))))
+  
   (defthm bit?!-when-4vec-no-1s-p
     (implies (4vec-no-1s-p test)
              (equal (4vec-bit?! test override-val real-val)
                     (4vec-fix real-val)))
-    :hints(("Goal" :in-theory (enable 4vec-bit?!)))))
+    :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-bitmux) (4vec-no-1s-p))))))
 
 
 
@@ -76,15 +81,17 @@
  (defthm bit?!-when-branches-same
    (equal (4vec-bit?! test real-val real-val)
           (4vec-fix real-val))
-   :hints(("Goal" :in-theory (enable 4vec-bit?!))
+   :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
           (bitops::logbitp-reasoning))))
  
 (local (defthm equal-of-4vec-bit?!-by-example
          (implies (equal (4vec-bit?! test then1 else1) (4vec-bit?! test then2 else1))
                   (equal (equal (4vec-bit?! test then1 else2) (4vec-bit?! test then2 else2))
                          t))
-         :hints(("Goal" :in-theory (enable 4vec-bit?!))
-                (bitops::logbitp-reasoning))))
+         :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
+                (bitops::logbitp-reasoning)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable b-ite))))))
 
 (local (defthm equal-of-4vec-bit?!-implies-equal-else
          (implies (and (equal (4vec-bit?! test then1 else1) (4vec-bit?! test then2 else1))
@@ -1719,7 +1726,7 @@
   (local (defthm 4vec-<<=-of-bit?!
            (implies (4vec-<<= then1 then2)
                     (4vec-<<= (4vec-bit?! test then1 else) (4vec-bit?! test then2 else)))
-           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-<<=))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-<<= 4vec-bitmux))
                   (bitops::logbitp-reasoning))))
 
   (local (defthm svex-env-lookup-when-not-boundp
@@ -1986,14 +1993,18 @@
   (local (defthm bit?!-of-bit?!
            (equal (4vec-bit?! test (4vec-bit?! test then else1) else2)
                   (4vec-bit?! test then else2))
-           :hints(("Goal" :in-theory (enable 4vec-bit?!))
-                  (bitops::logbitp-reasoning))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
+                  (bitops::logbitp-reasoning)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-ite))))))
 
   (local (defthm bit?!-of-bit?!-2
            (equal (4vec-bit?! test then1 (4vec-bit?! test then2 else))
                   (4vec-bit?! test then1 else))
-           :hints(("Goal" :in-theory (enable 4vec-bit?!))
-                  (bitops::logbitp-reasoning))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
+                  (bitops::logbitp-reasoning)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-ite))))))
 
   (local (in-theory (disable bitops::logior-<-0-linear-2
                              bitops::logior-<-0-linear-1
@@ -2003,7 +2014,7 @@
   (local (defthm 4vec-<<=-of-bit?!-lemma
            (implies (4vec-<<= (4vec-bit?! test then1 else) (4vec-bit?! test then2 else))
                     (4vec-<<= then1 (4vec-bit?! test then2 then1)))
-           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-<<=))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-<<= 4vec-bitmux))
                   (bitops::logbitp-reasoning))))
   
   (defret svar-override-triplelist-env-ok-of-<fn>

@@ -1149,7 +1149,7 @@
                    (4vec-bit?! (4vec-rsh sh test)
                                (4vec-rsh sh x)
                                (4vec-rsh sh y))))
-   :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-bit?!)))))
+   :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-bit?! 4vec-bitmux 4vec-1mask)))))
 
 (local
  (defthm 4vec-rsh-of-2vec
@@ -1192,12 +1192,12 @@
    (defthm 4vec-bit?!-0
      (equal (4vec-bit?! 0 x y)
             (4vec-fix y))
-     :hints(("Goal" :in-theory (enable 4vec-bit?!))))
+     :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))))
 
    (defthm 4vec-bit?!-neg1
      (equal (4vec-bit?! -1 x y)
             (4vec-fix x))
-     :hints(("Goal" :in-theory (enable 4vec-bit?!))))
+     :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))))
 
 
    ;;  (defthm 4vec-bitand-of-2vec-logapp
@@ -1218,7 +1218,7 @@
             (4vec-concat (2vec (nfix w))
                          (4vec-bit?! (2vec x) then else)
                          (4vec-bit?! (2vec y) (4vec-rsh (2vec (nfix w)) then) (4vec-rsh (2vec (nfix w)) else))))
-     :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-concat 4vec-rsh 4vec-shift-core)
+     :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-concat 4vec-rsh 4vec-shift-core 4vec-bitmux 4vec-1mask logite)
                                     (acl2::commutativity-of-logand
                                      acl2::commutativity-of-logior)))))))
 
@@ -1262,7 +1262,7 @@
                                         (4vec-bit?! (4vec-rsh (2vec w) test)
                                                     y
                                                     (4vec-rsh (2vec w) z)))))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core 4vec-bit?!))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core 4vec-bit?! 4vec-bitmux 4vec-1mask))
                   (bitops::logbitp-reasoning))))
 
   (local (defthm 4vec-concat-of-4vec-bit?!-ash
@@ -1271,7 +1271,7 @@
                                         (4vec-bit?! (2vec (ash test w)) x y)
                                         z)
                            (4vec-concat (2vec w) y z)))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-bit?!))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-bit?! 4vec-bitmux 4vec-1mask))
                   (bitops::logbitp-reasoning))))
 
   ;; (local (defthm 4vec-rsh-of-x
@@ -1626,7 +1626,7 @@
            (implies (natp w)
                     (equal (4vec-concat (2vec w) (4vec-bit?! test (4vec-concat (2vec w) x y) z1) z2)
                            (4vec-concat (2vec w) (4vec-bit?! test x z1) z2)))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-bit?!)))))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-bit?! 4vec-bitmux 4vec-1mask logite)))))
 
   (local
    (defthm 4vec-rsh-of-4vec-bit?!-free
@@ -1890,15 +1890,19 @@
   (local (defthm 4vec-bit?!-of-4vec-bit?!-same
            (equal (4vec-bit?! mask (4vec-bit?! mask x y) z)
                   (4vec-bit?! mask x z))
-           :hints(("Goal" :in-theory (enable 4vec-bit?!))
-                  (bitops::logbitp-reasoning))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
+                  (bitops::logbitp-reasoning)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-ite))))))
 
 
   (local (defthm 4vec-bit?!-of-else-4vec-bit?!-same-thm
            (equal (4vec-bit?! (2vec test1) then (4vec-bit?! (2vec test2) then else))
                   (4vec-bit?! (2vec (logior test1 test2)) then else))
-           :hints(("Goal" :in-theory (enable 4vec-bit?!))
-                  (bitops::logbitp-reasoning))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux 4vec-1mask))
+                  (bitops::logbitp-reasoning)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-ite))))))
 
   (defret eval-<fn>-of-lookup
     (implies (and (not (svtv-name-lhs-map-selfcollide-p x))
