@@ -6438,7 +6438,7 @@ bitops::ihsext-recursive-redefs)
                 (integerp else))
            (integerp (sv::4vec-bit?! test then else)))
   :hints (("Goal"
-           :in-theory (e/d (sv::4vec-bit?!) ()))))
+           :in-theory (e/d (sv::4vec-bit?! sv::4vec-bitmux) ()))))
 
 (add-svex-simplify-rule integerp-of-4vec-bit?!)
 
@@ -6583,6 +6583,8 @@ lognot)
                        (;;bitops::ihsext-recursive-redefs
                         ;;   bitops::ihsext-inductions
                         sv::4vec-bit?!
+                        sv::4vec-bitmux
+                        sv::4vec-1mask
 ;SV::4VEC->LOWER
                         LOGand-OF-LOGAPP-2
                         ;;LOGior-OF-LOGAPP-2
@@ -6699,6 +6701,9 @@ lognot)
                               (test (logand (sv::4vec->upper test)
                                             (sv::4vec->lower test)))))
              :in-theory (e/d (sv::4vec-bit?!
+                              sv::4vec-bitmux
+                              sv::4vec-1mask
+                              acl2::logite
                               ;;sv::4vec->upper
                               4VEC-PART-SELECT
                               ;;sv::4vec->lower
@@ -6733,6 +6738,7 @@ lognot)
                              bitops::ihsext-recursive-redefs
                              bitops::ihsext-inductions
                              4VEC-SHIFT-CORE
+                             sv::4vec-bitmux
                              4VEC-CONCAT)
                             (4vec-bit?!-when-test-is-quoted
                              4vec)))))
@@ -6824,7 +6830,9 @@ lognot)
                                           (sv::4vec->upper test)))))
            :in-theory (e/d* (4vec-rsh
                              4vec-concat
-
+                             sv::4vec-bitmux
+                             sv::4vec-1mask
+                             acl2::logite
                              sv::4vec-shift-core
                              4vec-part-select
                              sv::4vec-bit?!
@@ -6880,7 +6888,9 @@ lognot)
                           (LOGHEAD SHIFT-AMOUNT (SV::4VEC->LOWER TEST))))
            :in-theory (e/d* (4vec-rsh
                              4vec-concat
-
+                             sv::4vec-bitmux
+                             sv::4vec-1mask
+                             acl2::logite
                              sv::4vec-shift-core
                              4vec-part-select
                              sv::4vec-bit?!

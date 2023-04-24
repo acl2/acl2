@@ -1160,6 +1160,8 @@
              :do-not-induct t
              :in-theory (e/d (4vec
                               sv::4vec-bit?!
+                              sv::4vec-bitmux
+                              acl2::logite
                               )
                              ()))))
 
@@ -1572,7 +1574,7 @@
             (equal (sv::4vec-bit?! test then else)
                    (sv::4vec-fix else)))
    :hints (("Goal"
-            :in-theory (e/d (sv::4vec-bit?!) ())))))
+            :in-theory (e/d (sv::4vec-bit?! sv::4vec-bitmux sV::4vec-1mask) ())))))
 
 (svex-eval-lemma-tmpl
  (local

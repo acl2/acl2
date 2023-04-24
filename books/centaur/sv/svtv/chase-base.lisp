@@ -1671,7 +1671,8 @@ What you can enter at the SVTV-CHASE prompt:
                                            open-input-channels
                                            put-global
                                            update-global-table)))))
-                
+
+(local (in-theory (disable put-global)))
 
 (define svtv-chase-repl (&key
                          ((moddb moddb-ok) 'moddb)

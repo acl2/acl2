@@ -116,15 +116,14 @@
                              (bit?!
                               (b* (((unless (eql (len x.args) 3))
                                     (svex-apply$ x.fn (svexlist-eval$ x.args env)))
-                                   (test (svex-eval$ (first x.args) env))
+                                   (test (4vec-1mask (svex-eval$ (first x.args) env)))
                                    ((when (eql test -1))
                                     (svex-eval$ (second x.args) env))
-                                   ((4vec test))
-                                   ((when (eql (logand test.upper test.lower) 0))
+                                   ((when (eql test 0))
                                     (svex-eval$ (third x.args) env)))
-                                (4vec-bit?! test
-                                            (svex-eval$ (second x.args) env)
-                                            (svex-eval$ (third x.args) env))))
+                                (4vec-bitmux test
+                                             (svex-eval$ (second x.args) env)
+                                             (svex-eval$ (third x.args) env))))
                              (bitand
                               (b* (((unless (eql (len x.args) 2))
                                     (svex-apply$ x.fn (svexlist-eval$ x.args env)))
@@ -187,16 +186,16 @@
            :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit?)))))
 
   (local (defthm 4vec-bit?!-cases
-           (and (implies (equal (logand (4vec->upper test)
-                                        (4vec->lower test))
-                                0)
-                         (equal (4vec-bit?! test then else)
+           (and (implies (equal test 0)
+                         (equal (4vec-bitmux test then else)
                                 (4vec-fix else)))
                 (implies (equal test -1)
-                         (equal (4vec-bit?! test then else)
+                         (equal (4vec-bitmux test then else)
                                 (4vec-fix then))))
-           :hints(("Goal" :in-theory (enable 4vec-bit?!)))))
+           :hints(("Goal" :in-theory (enable 4vec-bitmux logite)))))
 
+  (local (in-theory (enable 4vec-bit?!)))
+  
   (local (defthm 4vec-?*-cases
            (and (implies (equal (4vec->upper (3vec-fix test)) 0)
                          (equal (4vec-?* test then else)

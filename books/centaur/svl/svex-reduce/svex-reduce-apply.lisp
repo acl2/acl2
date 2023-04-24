@@ -775,6 +775,9 @@
                      (:free (x) (sv::svex-apply 'sv::bit? x)))
             :in-theory (e/d (svex-reduce-w/-env-apply-specials
                              4vec-?
+                             sv::4vec-bitmux
+                             sv::4vec-1mask
+                             acl2::logite
                              or*
                              svex-call->args
                              sv::4vec-bit?!
