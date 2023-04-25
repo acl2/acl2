@@ -235,32 +235,6 @@
            (assoc-equal key alist))
   :hints (("Goal" :in-theory (enable member-equal assoc-equal))))
 
-;get a known type (either the obvious type from looking at an expr, or a type from known-nodenum-type-alist)
-;returns nil if there's no known type
-;special version for nodenums?
-;; todo: compare to get-type-of-arg-safe
-(defund get-known-type (nodenum-or-quotep dag-array known-nodenum-type-alist)
-  (declare (xargs :guard (and (or (myquotep nodenum-or-quotep)
-                                  (and (natp nodenum-or-quotep)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep)))
-                                  ;; (and (natp nodenum-or-quotep)
-                                  ;;      (< nodenum-or-quotep (alen1 'dag-array dag-array)))
-                                  )
-                              (nodenum-type-alistp known-nodenum-type-alist))))
-  (if (quotep nodenum-or-quotep)
-      (maybe-get-type-of-val (unquote nodenum-or-quotep))
-    ;;it's a nodenum
-    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-      (if (atom expr)
-          ;;variable:
-          (lookup nodenum-or-quotep known-nodenum-type-alist)
-        (if (quotep expr)
-            ;;constant:
-            (maybe-get-type-of-val (unquote expr))
-          ;;function call:
-          (or (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr))
-              (lookup nodenum-or-quotep known-nodenum-type-alist)))))))
-
 ;; Here we attempt to assign bv/array/boolean types to non-pure nodes, given the information in the literals.  We seek literals of the form (not <foo>) where <foo> assigns a type to some non-pure node.  In such a case, it is sound to assume <foo> because if <foo> is false, then (not <foo>) is true, and the whole clause is true.  The kinds of <foo> that can assign a type to node <x> are:
 ;; (booleanp <x>)
 ;; (unsigned-byte-p <size> <x>)
@@ -330,20 +304,20 @@
 ;;                                                                                       nodenum-type-alist-acc)
 ;;                                                                           (remove nodenum-with-len-claim non-type-literal-nodenums-acc))))))))))))))
 
-(defund nodenum-of-an-unknown-type-thingp (nodenum-or-quotep dag-array)
-   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                              (and (natp nodenum-or-quotep)
-                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (and (atom nodenum-or-quotep) ;makes sure it's not a quotep
-       (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+(defund nodenum-of-an-unknown-type-thingp (arg dag-array)
+   (declare (xargs :guard (or (myquotep arg)
+                              (and (natp arg)
+                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 arg))))))
+  (and (atom arg) ;makes sure it's not a quotep
+       (let ((expr (aref1 'dag-array dag-array arg)))
          (or (atom expr) ;variable
              (if (quotep expr)
                  nil ; todo: what about a constant with unknown type?
                (not (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr))))))))
 
 (defthm nodenum-of-an-unknown-type-thingp-forward-to-not-consp
-  (implies (nodenum-of-an-unknown-type-thingp nodenum-or-quotep dag-array)
-           (not (consp nodenum-or-quotep)))
+  (implies (nodenum-of-an-unknown-type-thingp arg dag-array)
+           (not (consp arg)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable nodenum-of-an-unknown-type-thingp))))
 
@@ -503,6 +477,7 @@
                       (arg1 (first args))
                       (arg2 (second args))
 ;fixme call get-type-of-nodenum-safe?
+                      ;call get-type-of-arg-xxx?
                       (arg1type (if (quotep arg1)
                                     (get-type-of-val-safe (unquote arg1)) ;used to call get-type-of-val-checked, but that could crash!
                                   (get-type-of-nodenum-safe arg1 'dag-array dag-array known-nodenum-type-alist)))
@@ -1017,7 +992,7 @@
 ;; ;nil if we can't cut here (when would that be?) seems like if we can translate the parent we should be able to cut one of its children - unless maybe the parent is 'equal??
 ;; ;ffixme have this support booleans?
 ;; ;fixme consider if node X is used as both a bit vector and an array - maybe that's a case we can't translate (or split into cases based on what it is..)...
-;; ;fixme compare to get-type-of-nodenum
+;; ;fixme compare to get-type-of-nodenum-checked
 ;; (defun type-of-node-if-we-cut (nodenum nodenum-type-alist-from-literals dag-array dag-parent-array)
 ;;   ;;check whether another literal gives the node a type:
 ;;   (let ((match (lookup-eq nodenum nodenum-type-alist-from-literals)))
@@ -1128,8 +1103,8 @@
               )
          (let ((type (make-bv-array-type (unquote (first args)) (unquote (second args)))))
            ;; The types of the 'then' and 'else' branches must be exactly the type of the BV-ARRAY-IF:
-           (and (equal type (get-type-of-arg (fourth args) dag-array-name dag-array known-nodenum-type-alist))
-                (equal type (get-type-of-arg (fifth args) dag-array-name dag-array known-nodenum-type-alist)))) ;todo: what about implicit padding of constant arrays?
+           (and (equal type (get-type-of-arg-checked (fourth args) dag-array-name dag-array known-nodenum-type-alist))
+                (equal type (get-type-of-arg-checked (fifth args) dag-array-name dag-array known-nodenum-type-alist)))) ;todo: what about implicit padding of constant arrays?
        (prog2$ (and (eq :verbose print)
                     (cw "(WARNING: Not translating array expr ~x0 since the length and width are not known.)~%" (cons fn args)))
                nil)))
@@ -1257,7 +1232,7 @@
 
 ;this one takes the var-type-alist
 ;returns a type (bv type, array type, etc.)
-;similar to get-type-of-nodenum
+;similar to get-type-of-nodenum-checked
 (defun get-type-of-nodenum-during-cutting (n dag-array-name dag-array var-type-alist)
   (declare (xargs :guard (and (symbol-alistp var-type-alist)
                               (natp n)
@@ -1790,8 +1765,8 @@
                            (let* ((lhs (first args))   ; a nodenum or quotep
                                   (rhs (second args))  ; a nodenum or quotep
 ;these do not include types from cut-nodenum-alist -- it wouldn't be sound to use those types?
-                                  (lhs-type (get-known-type lhs dag-array known-nodenum-type-alist)) ;a type or nil for unknown
-                                  (rhs-type (get-known-type rhs dag-array known-nodenum-type-alist)) ;a type or nil for unknown
+                                  (lhs-type (maybe-get-type-of-arg lhs dag-array known-nodenum-type-alist)) ;a type or nil for unknown
+                                  (rhs-type (maybe-get-type-of-arg rhs dag-array known-nodenum-type-alist)) ;a type or nil for unknown
                                   )
                              (if (and lhs-type
                                       rhs-type
@@ -1826,7 +1801,7 @@
                                                                  nodenums-to-translate
                                                                  (acons nodenum (boolean-type) cut-nodenum-type-alist))
                              (let* ((arg (second args)) ;could this be a quotep?
-                                    (arg-type (get-known-type arg dag-array known-nodenum-type-alist)))
+                                    (arg-type (maybe-get-type-of-arg arg dag-array known-nodenum-type-alist)))
                                (if (and arg-type
                                         (bv-typep arg-type) ;error if not?
                                         )
@@ -1847,7 +1822,7 @@
                           ((and (eq 'not fn)
                                 (= 1 (len args)))
                            (let* ((arg (first args)) ;could this be a quotep?
-                                  (arg-type (get-known-type arg dag-array known-nodenum-type-alist)))
+                                  (arg-type (maybe-get-type-of-arg arg dag-array known-nodenum-type-alist)))
                              (if (and arg-type
                                       (boolean-typep arg-type) ;error if not?
                                       )

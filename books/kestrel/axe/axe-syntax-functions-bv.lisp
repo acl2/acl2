@@ -42,7 +42,7 @@
 ;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
 ;what if the number of arguments is wrong?
 ;; NOTE: Soundness depends on this since it is used in the STP translation.
-(defund get-type-of-bv-function-call (fn dargs)
+(defund maybe-get-type-of-bv-function-call (fn dargs)
   (declare (xargs :guard (and (true-listp dargs)
                               (all-dargp dargs))))
   ;; todo: use case here:
@@ -86,24 +86,24 @@
    ;; Unknown function, can't find a BV size:
    (t nil)))
 
-(defthm get-type-of-bv-function-call-type
-  (or (null (get-type-of-bv-function-call fn dargs))
-      (natp (get-type-of-bv-function-call fn dargs)))
+(defthm maybe-get-type-of-bv-function-call-type
+  (or (null (maybe-get-type-of-bv-function-call fn dargs))
+      (natp (maybe-get-type-of-bv-function-call fn dargs)))
   :rule-classes (:type-prescription)
-  :hints (("Goal" :in-theory (enable get-type-of-bv-function-call
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-bv-function-call
                                      <-of-0-and-make-bv-type))))
 
 ;; If it's not nil, it's a bv-type.
-(defthm bv-typep-of-get-type-of-bv-function-call
-  (implies (get-type-of-bv-function-call fn dargs)
-           (bv-typep (get-type-of-bv-function-call fn dargs)))
-  :hints (("Goal" :in-theory (enable get-type-of-bv-function-call))))
+(defthm bv-typep-of-maybe-get-type-of-bv-function-call
+  (implies (maybe-get-type-of-bv-function-call fn dargs)
+           (bv-typep (maybe-get-type-of-bv-function-call fn dargs)))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-bv-function-call))))
 
 ;; If it's not nil, it's an axe-type.
-(defthm axe-typep-of-get-type-of-bv-function-call
-  (implies (get-type-of-bv-function-call fn dargs)
-           (axe-typep (get-type-of-bv-function-call fn dargs)))
-  :hints (("Goal" :in-theory (enable get-type-of-bv-function-call))))
+(defthm axe-typep-of-maybe-get-type-of-bv-function-call
+  (implies (maybe-get-type-of-bv-function-call fn dargs)
+           (axe-typep (maybe-get-type-of-bv-function-call fn dargs)))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-bv-function-call))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,7 +134,7 @@
                       (acons (unquote quoted-varname) (list 'quote (integer-length val)) nil)
                     ;; failure (may be a constant array or a negative or something else):
                     nil))
-              (let ((type (get-type-of-bv-function-call fn (dargs expr))))
+              (let ((type (maybe-get-type-of-bv-function-call fn (dargs expr))))
                 (if type
                     (acons (unquote quoted-varname) (list 'quote (bv-type-width type)) nil) ;could often save this quote since in many operators the size is already quoted
                   ;;failure:
@@ -167,7 +167,7 @@
                ;;                    (and (eq 'bv-array-read (ffn-symb expr))
                ;;                         (quotep (darg4 expr)))
                )
-           (let ((type (get-type-of-bv-function-call (ffn-symb expr) (dargs expr))))
+           (let ((type (maybe-get-type-of-bv-function-call (ffn-symb expr) (dargs expr))))
              (and type
                   (< width (bv-type-width type))))))))
 
