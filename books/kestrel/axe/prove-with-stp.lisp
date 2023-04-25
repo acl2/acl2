@@ -224,7 +224,7 @@
            (pseudo-termp (mv-nth 1 (term-hyps-and-conc term))))
   :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
 
-(defthm plus-of-half-and-half
+(defthmd plus-of-half-and-half
   (implies (acl2-numberp x)
            (equal (+ (* 1/2 x) (* 1/2 x))
                   x)))
@@ -242,19 +242,19 @@
 
 ;instead of throwing an error when given a nodenum that has no type yet, this one may return (most-general-type)
 ;fixme combine with the non-safe version
-(defund get-type-of-nodenum-safe (arg ;a nodenum
+(defund get-type-of-nodenum-safe (nodenum
                                   dag-array-name
                                   dag-array
                                   nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
                                   )
-  (declare (xargs :guard (and (natp arg)
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               (nodenum-type-alistp nodenum-type-alist)
-                              (< arg (alen1 dag-array-name dag-array)))))
+                              (< nodenum (alen1 dag-array-name dag-array)))))
   ;;first check whether it is given a type in nodenum-type-alist (fffixme what if we could strengthen that type?):
-  (or (lookup arg nodenum-type-alist)
+  (or (lookup nodenum nodenum-type-alist)
       ;;otherwise, look up the expression at that nodenum:
-      (let ((expr (aref1 dag-array-name dag-array arg)))
+      (let ((expr (aref1 dag-array-name dag-array nodenum)))
         (if (variablep expr)
             (most-general-type)
           (let ((fn (car expr)))
@@ -266,10 +266,10 @@
               (or (get-type-of-expr fn (dargs expr))
                   (most-general-type))))))))
 
-(defthm axe-typep-of-GET-TYPE-OF-NODENUM-SAFE
+(defthm axe-typep-of-get-type-of-nodenum-safe
   (implies (nodenum-type-alistp nodenum-type-alist)
-           (axe-typep (GET-TYPE-OF-NODENUM-SAFE arg dag-array-name dag-array nodenum-type-alist)))
-  :hints (("Goal" :in-theory (enable GET-TYPE-OF-NODENUM-SAFE lookup-equal GET-TYPE-OF-CONSTANT-IF-POSSIBLE))))
+           (axe-typep (get-type-of-nodenum-safe nodenum dag-array-name dag-array nodenum-type-alist)))
+  :hints (("Goal" :in-theory (enable get-type-of-nodenum-safe lookup-equal get-type-of-constant-if-possible))))
 
 ;ffixme can crash if given a weird constant or a nodenum of a weird constant
 ;returns a type (bv type, array type, etc.).  if no type information can be concluded, this returns (most-general-type)
@@ -278,16 +278,40 @@
                               dag-array
                               nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
                               )
-  (declare (xargs :guard (and (nodenum-type-alistp nodenum-type-alist)
-                              (if (consp arg)
-                                  (myquotep arg)
-                                (and (natp arg)
-                                     (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
-                                     (< arg (alen1 dag-array-name dag-array)))))))
+  (declare (xargs :guard (and (or (myquotep arg)
+                                  (and (natp arg)
+                                       (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))))
+                              (nodenum-type-alistp nodenum-type-alist))))
   (if (consp arg) ;tests for quotep
       (or (get-type-of-constant-if-possible (unquote arg))
           (most-general-type))
     (get-type-of-nodenum-safe arg dag-array-name dag-array nodenum-type-alist)))
+
+;get a known type (either the obvious type from looking at an expr, or a type from known-nodenum-type-alist)
+;returns nil if there's no known type
+;special version for nodenums?
+;; todo: compare to get-type-of-arg-safe
+(defund get-known-type (nodenum-or-quotep dag-array known-nodenum-type-alist)
+  (declare (xargs :guard (and (or (myquotep nodenum-or-quotep)
+                                  (and (natp nodenum-or-quotep)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep)))
+                                  ;; (and (natp nodenum-or-quotep)
+                                  ;;      (< nodenum-or-quotep (alen1 'dag-array dag-array)))
+                                  )
+                              (nodenum-type-alistp known-nodenum-type-alist))))
+  (if (quotep nodenum-or-quotep)
+      (get-type-of-constant-if-possible (unquote nodenum-or-quotep))
+    ;;it's a nodenum
+    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+      (if (atom expr)
+          ;;variable:
+          (lookup nodenum-or-quotep known-nodenum-type-alist)
+        (if (quotep expr)
+            ;;constant:
+            (get-type-of-constant-if-possible (unquote expr))
+          ;;function call:
+          (or (get-type-of-expr (ffn-symb expr) (dargs expr))
+              (lookup nodenum-or-quotep known-nodenum-type-alist)))))))
 
 ;; Here we attempt to assign bv/array/boolean types to non-pure nodes, given the information in the literals.  We seek literals of the form (not <foo>) where <foo> assigns a type to some non-pure node.  In such a case, it is sound to assume <foo> because if <foo> is false, then (not <foo>) is true, and the whole clause is true.  The kinds of <foo> that can assign a type to node <x> are:
 ;; (booleanp <x>)
@@ -1277,32 +1301,6 @@
                 (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))
            (axe-typep (mv-nth 1 (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))))
   :hints (("Goal" :in-theory (enable type-for-cut-nodenum))))
-
-;get a known type (either the obvious type from looking at an expr, or a type from known-nodenum-type-alist)
-;returns nil if there's no known type
-;special version for nodenums?
-;fffixme compare to get-type-of-arg-safe
-(defund get-known-type (nodenum-or-quotep dag-array known-nodenum-type-alist)
-  (declare (xargs :guard (and (or (myquotep nodenum-or-quotep)
-                                  (and (natp nodenum-or-quotep)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep)))
-                                  ;; (and (natp nodenum-or-quotep)
-                                  ;;      (< nodenum-or-quotep (alen1 'dag-array dag-array)))
-                                  )
-                              (nodenum-type-alistp known-nodenum-type-alist))))
-  (if (quotep nodenum-or-quotep)
-      (get-type-of-constant-if-possible (unquote nodenum-or-quotep))
-    ;;it's a nodenum
-    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-      (if (atom expr)
-          ;;variable:
-          (lookup nodenum-or-quotep known-nodenum-type-alist)
-        (if (quotep expr)
-            ;;constant:
-            (get-type-of-constant-if-possible (unquote expr))
-          ;;function call:
-          (or (get-type-of-expr (ffn-symb expr) (dargs expr))
-              (lookup nodenum-or-quotep known-nodenum-type-alist)))))))
 
 (defun any-node-is-given-empty-typep (known-nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp known-nodenum-type-alist)))

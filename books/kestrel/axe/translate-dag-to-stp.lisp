@@ -473,6 +473,14 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bv-arg-okp))))
 
+;the nth-1 is to unquote
+(defthm bv-typep-of-get-type-of-constant-if-possible-of-nth-1
+  (implies (and (bv-arg-okp arg)
+                (consp arg) ;it's a quotep
+                )
+           (bv-typep (get-type-of-constant-if-possible (nth 1 arg))))
+  :hints (("Goal" :in-theory (enable get-type-of-constant-if-possible bv-arg-okp))))
+
 ;ARG is either a quotep or a nodenum
 ;Here the actual size of the arg is known
 ;BOZO throw an error if the arg is too big for the size (or chop it down?)
@@ -683,7 +691,7 @@
                               (symbolp dag-array-name)
                               (constant-array-infop constant-array-info))
                   :guard-hints (("Goal" :in-theory (e/d (GET-TYPE-OF-ARG ; causes lots of cases?
-                                                         GET-TYPE-OF-CONSTANT-IF-POSSIBLE
+                                                         get-type-of-constant-if-possible
                                                          )
                                                         ( ;;max
                                                          ;;BV-ARRAY-TYPEP ;for speed
@@ -960,14 +968,6 @@
                 (integerp y))
            (equal (natp (+ x (- y)))
                   (<= y x))))
-
-;the nth-1 is to unquote
-(defthm bv-typep-of-get-type-of-constant-if-possible-of-nth-1
-  (implies (and (bv-arg-okp arg)
-                (consp arg) ;it's a quotep
-                )
-           (bv-typep (get-type-of-constant-if-possible (nth 1 arg))))
-  :hints (("Goal" :in-theory (enable get-type-of-constant-if-possible bv-arg-okp))))
 
 ;; Returns (mv translated-expr constant-array-info) where translated-expr is a string-tree.
 ;FFIXME think hard about sizes and chops..
@@ -2730,7 +2730,7 @@
   (declare (xargs :guard (weak-dagp-aux dag)))
   (if (endp dag)
       t
-    (let* ((entry (car dag))
+    (let* ((entry (first dag))
            (expr (cdr entry)))
       (if (expr-is-purep expr)
           (dag-is-purep (rest dag))
