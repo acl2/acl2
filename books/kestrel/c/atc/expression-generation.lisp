@@ -874,6 +874,17 @@
                to make the branches of the same type."
               gin.fn then-term else-term then-type else-type)))
        (type then-type)
+       ((when (member-equal type (list (type-uchar)
+                                       (type-schar)
+                                       (type-ushort)
+                                       (type-sshort))))
+        (reterr
+         (msg "When generating C code for the function ~x0, ~
+               two branches the conditional term ~x1 ~
+               have type ~x2, which is disallowed; ~
+               use conversion operations, if needed, ~
+               to turn the branches into an integer type of higher rank."
+              gin.fn term type)))
        (expr (make-expr-cond :test test-expr
                              :then then-expr
                              :else else-expr))

@@ -1183,10 +1183,18 @@
        a call of @(tsee if) on
        (i) a test that is an expression term for @('fn') returning boolean and
        (ii) branches that are
-       pure expression terms for @('fn') returning @('T').
+       pure expression terms for @('fn') returning @('T'),
+       where @('T') is not
+       (@('signed') or @('unsigned')) @('char') or @('short').
        This represents a C @('?:') conditional expression
        whose test expression is represented by the test term
-       and whose branch expressions are represented by the branch terms."))
+       and whose branch expressions are represented by the branch terms.
+       The restriction that @('T') is the same for both branches
+       and that it is not (@('signed') or @('unsigned')) @('char') or @('short')
+       is so that the C @('?:') operator
+       does not perform conversions on the branches,
+       which would have to be represented explicitly
+       in the ACL2 code that represents the C code."))
 
     (xdoc::p
      "An <i>expression term for</i> @('fn') <i>returning boolean</i>,
