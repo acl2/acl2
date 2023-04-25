@@ -212,7 +212,16 @@
                   (implies (and (rules-ev (pseudo-term-fncall fn (list x y)) a)
                                 (rules-ev (pseudo-term-fncall fn (list y z)) a))
                            (rules-ev (pseudo-term-fncall fn (list x z)) a))))
-    :hints(("Goal" :in-theory (disable fgl-equivp)))))
+    :hints(("Goal" :in-theory (disable fgl-equivp))))
+
+  ;; Note: Ran into a case where cmr::ensure-equiv-relationp turned out to be
+  ;; very expensive.  There was a rule with a hyp (fgl::check-consp freevar x),
+  ;; which isn't an equiv relation but otherwise fits the criteria of
+  ;; check-equivbind-hyp and thus we were checking ensure-equiv-relationp over
+  ;; and over on it.  We clear the memoization table after exiting the
+  ;; interpreter in fgl-clause-proc-core, because it's unlikely we'll see the
+  ;; same world again.
+  (memoize 'fgl-equivp))
 
 
 (local (defthm equal-of-len
