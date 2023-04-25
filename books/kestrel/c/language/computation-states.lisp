@@ -908,7 +908,7 @@
        (("Goal"
          :expand (objdesign-of-var-aux var frame (scope-list-fix scopes)))))
 
-     (defrule objdesign-auto->scope-of-objdesign-of-var-aux-upper-bound ; move
+     (defrule objdesign-auto->scope-of-objdesign-of-var-aux-upper-bound
        (b* ((objdes (objdesign-of-var-aux var frame scopes)))
          (implies objdes
                   (< (objdesign-auto->scope objdes) (len scopes))))
