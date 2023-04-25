@@ -1037,11 +1037,9 @@
      (value-struct-read objdes.name obj)))
   :measure (objdesign-count objdes)
   :hints (("Goal" :in-theory (enable o< o-p o-finp)))
+  :verify-guards :after-returns
   :hooks (:fix)
-
-  :verify-guards nil ; done below
   ///
-  (verify-guards read-object)
 
   (defruled valuep-of-read-object-of-objdesign-of-var
     (b* ((objdes (objdesign-of-var var compst)))
