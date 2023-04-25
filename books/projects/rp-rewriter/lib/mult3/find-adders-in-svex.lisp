@@ -112,7 +112,7 @@
         `(defattach aggressive-find-adders-in-svex return-t)
       `(defattach aggressive-find-adders-in-svex return-nil)))
 
-  (enable-aggressive-find-adders-in-svex t))
+  (enable-aggressive-find-adders-in-svex nil))
 
 (progn
   (encapsulate
@@ -126,7 +126,7 @@
         `(defattach merge-fa-chains return-t)
       `(defattach merge-fa-chains return-nil)))
 
-  (enable-merge-fa-chains nil))
+  (enable-merge-fa-chains t))
 
 (defsection svex-pattern-matching-lemmas
   (defthm cdr-of-x-is-svexlist-p-when-kind-is-svex-fn-call
