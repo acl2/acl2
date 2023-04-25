@@ -235,54 +235,6 @@
            (assoc-equal key alist))
   :hints (("Goal" :in-theory (enable member-equal assoc-equal))))
 
-;; Returns an axe-type, possibly (most-general-type).
-;instead of throwing an error when given a nodenum that has no type yet, this one may return (most-general-type)
-;fixme combine with the non-safe version
-(defund get-type-of-nodenum-safe (nodenum
-                                  dag-array-name
-                                  dag-array
-                                  nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
-                                  )
-  (declare (xargs :guard (and (natp nodenum)
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
-                              (nodenum-type-alistp nodenum-type-alist)
-                              (< nodenum (alen1 dag-array-name dag-array)))))
-  ;;first check whether it is given a type in nodenum-type-alist (fffixme what if we could strengthen that type?):
-  (or (lookup nodenum nodenum-type-alist)
-      ;;otherwise, look up the expression at that nodenum:
-      (let ((expr (aref1 dag-array-name dag-array nodenum)))
-        (if (variablep expr)
-            (most-general-type)
-          (let ((fn (car expr)))
-            (if (eq 'quote fn)
-                (let ((type (get-type-of-constant-if-possible (unquote expr)))) ;used to call get-type-of-constant, but that could crash!
-                  (or type
-                      (most-general-type)))
-              ;;it's a regular function call:
-              (or (get-type-of-function-call fn (dargs expr))
-                  (most-general-type))))))))
-
-(defthm axe-typep-of-get-type-of-nodenum-safe
-  (implies (nodenum-type-alistp nodenum-type-alist)
-           (axe-typep (get-type-of-nodenum-safe nodenum dag-array-name dag-array nodenum-type-alist)))
-  :hints (("Goal" :in-theory (enable get-type-of-nodenum-safe lookup-equal get-type-of-constant-if-possible))))
-
-;ffixme can crash if given a weird constant or a nodenum of a weird constant
-;returns a type (bv type, array type, etc.).  if no type information can be concluded, this returns (most-general-type)
-(defund get-type-of-arg-safe (arg ;a nodenum or quotep
-                              dag-array-name
-                              dag-array
-                              nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
-                              )
-  (declare (xargs :guard (and (or (myquotep arg)
-                                  (and (natp arg)
-                                       (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))))
-                              (nodenum-type-alistp nodenum-type-alist))))
-  (if (consp arg) ;tests for quotep
-      (or (get-type-of-constant-if-possible (unquote arg))
-          (most-general-type))
-    (get-type-of-nodenum-safe arg dag-array-name dag-array nodenum-type-alist)))
-
 ;get a known type (either the obvious type from looking at an expr, or a type from known-nodenum-type-alist)
 ;returns nil if there's no known type
 ;special version for nodenums?
@@ -296,7 +248,7 @@
                                   )
                               (nodenum-type-alistp known-nodenum-type-alist))))
   (if (quotep nodenum-or-quotep)
-      (get-type-of-constant-if-possible (unquote nodenum-or-quotep))
+      (maybe-get-type-of-val (unquote nodenum-or-quotep))
     ;;it's a nodenum
     (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
       (if (atom expr)
@@ -304,9 +256,9 @@
           (lookup nodenum-or-quotep known-nodenum-type-alist)
         (if (quotep expr)
             ;;constant:
-            (get-type-of-constant-if-possible (unquote expr))
+            (maybe-get-type-of-val (unquote expr))
           ;;function call:
-          (or (get-type-of-function-call (ffn-symb expr) (dargs expr))
+          (or (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr))
               (lookup nodenum-or-quotep known-nodenum-type-alist)))))))
 
 ;; Here we attempt to assign bv/array/boolean types to non-pure nodes, given the information in the literals.  We seek literals of the form (not <foo>) where <foo> assigns a type to some non-pure node.  In such a case, it is sound to assume <foo> because if <foo> is false, then (not <foo>) is true, and the whole clause is true.  The kinds of <foo> that can assign a type to node <x> are:
@@ -386,8 +338,8 @@
        (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
          (or (atom expr) ;variable
              (if (quotep expr)
-                 nil
-               (not (get-type-of-function-call (ffn-symb expr) (dargs expr))))))))
+                 nil ; todo: what about a constant with unknown type?
+               (not (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr))))))))
 
 (defthm nodenum-of-an-unknown-type-thingp-forward-to-not-consp
   (implies (nodenum-of-an-unknown-type-thingp nodenum-or-quotep dag-array)
@@ -552,12 +504,10 @@
                       (arg2 (second args))
 ;fixme call get-type-of-nodenum-safe?
                       (arg1type (if (quotep arg1)
-                                    (or (get-type-of-constant-if-possible (unquote arg1)) ;used to call get-type-of-constant, but that could crash!
-                                        (most-general-type))
+                                    (get-type-of-val-safe (unquote arg1)) ;used to call get-type-of-val-checked, but that could crash!
                                   (get-type-of-nodenum-safe arg1 'dag-array dag-array known-nodenum-type-alist)))
                       (arg2type (if (quotep arg2)
-                                    (or (get-type-of-constant-if-possible (unquote arg2)) ;used to call get-type-of-constant, but that could crash!
-                                        (most-general-type))
+                                    (get-type-of-val-safe (unquote arg2)) ;used to call get-type-of-val-checked, but that could crash!
                                   (get-type-of-nodenum-safe arg2 'dag-array dag-array known-nodenum-type-alist)))
 ;ffixme handle incompatible types
                       (new-type (intersect-types-safe arg1type arg2type)))
@@ -1321,9 +1271,9 @@
           (hard-error 'get-type-of-nodenum-during-cutting "can't find type of var: ~x0" (acons #\0 expr nil)))
       (let ((fn (ffn-symb expr)))
         (if (eq 'quote fn)
-            (get-type-of-constant (unquote expr))
+            (get-type-of-val-checked (unquote expr))
           ;;it's a regular function call:
-          (or (get-type-of-function-call fn (dargs expr))
+          (or (maybe-get-type-of-function-call fn (dargs expr))
               (hard-error 'get-type-of-nodenum-during-cutting "couldn't find size for expr ~x0 at nodenum ~x1"
                           (acons #\0 expr (acons #\1 n nil)))))))))
 
@@ -1334,7 +1284,7 @@
                                        (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
                                        (< arg (alen1 dag-array-name dag-array)))))))
   (if (consp arg) ;tests for quotep
-      (get-type-of-constant (unquote arg))
+      (get-type-of-val-checked (unquote arg))
     (get-type-of-nodenum-during-cutting arg dag-array-name dag-array var-type-alist)))
 
 (local (in-theory (disable symbol-alistp)))
@@ -1444,7 +1394,7 @@
                   ;; cut out a bad call to BVIF: todo: can this happen?  isn't the miter pure?
                   (gather-nodes-to-translate-for-heuristically-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
                                                                          nodenums-to-translate ;don't translate
-                                                                         (acons-fast n (get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)
+                                                                         (acons-fast n (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)
                                                                          extra-asserts print var-type-alist)
                 (if needed-for-node1p
                     (if needed-for-node2p
@@ -1466,7 +1416,7 @@
                                            (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
                                            nodenums-to-translate ;don't translate
                                            ;;fixme will expr always have a known type? ;;FIXME think about arrays here?
-                                           (acons-fast n (get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)
+                                           (acons-fast n (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)
                                            extra-asserts print var-type-alist))))
                       ;;needed for node1 but not node2
                       ;; translate it and mark its children as being needed for node1
@@ -1602,7 +1552,7 @@
                                                   nodenums-to-translate)
                                                 (if translatep
                                                     cut-nodenum-type-alist
-                                                  (acons-fast n (get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)))))))
+                                                  (acons-fast n (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)))))))
         ;; not needed, so skip it
         (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))))
 
@@ -1684,9 +1634,9 @@
                                              ;;fixme what if a hyp gives expr its width/type?
                                              ;;do this in the other tagging function?
 ;fixme will expr always have a known type?
-                                             (acons-fast n
-                                                         (get-type-of-function-call-safe (ffn-symb expr)
-                                                                                (dargs expr))
+                                             (acons-fast n ; todo: do we need the checki<ng here?
+                                                         (get-type-of-function-call-checked (ffn-symb expr)
+                                                                                            (dargs expr))
                                                          cut-nodenum-type-alist)
                                              var-type-alist extra-asserts)))))))))))
 
@@ -1800,7 +1750,7 @@
                                                     cut-nodenum-type-alist)
                 (if (and depth-limit (< depth-limit (rfix (aref1 'depth-array depth-array nodenum)))) ;todo: drop the rfix (need to know that the depth-array contains numbers)
                     ;;node is too deep, so cut (if node is in the worklist, we must know its type):
-                    (b* ((obvious-type (get-type-of-function-call fn (dargs expr)))
+                    (b* ((obvious-type (maybe-get-type-of-function-call fn (dargs expr)))
                          ((mv erp type-for-cut-nodenum)
                           (if obvious-type
                               (mv (erp-nil) nil)
@@ -1814,7 +1764,7 @@
                                                           (acons nodenum type-for-cut-nodenum cut-nodenum-type-alist))))
                   ;;a function call:
                   (b* ((args (dargs expr))
-                       (type (get-type-of-function-call fn args)))
+                       (type (maybe-get-type-of-function-call fn args)))
                     (cond ((not type)
                            (b* (((mv erp type-for-cut-nodenum) (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))
                                 ((when erp) (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
@@ -2072,7 +2022,7 @@
                     (if (call-of 'quote expr)
                         (prog2$ (cw "Dropping a disjunct that is the constant ~x0.~%" expr)
                                 nil)
-                      (if (boolean-typep (get-type-of-function-call (ffn-symb expr) (dargs expr)))
+                      (if (boolean-typep (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
                           t
                         (prog2$ (cw "Dropping a disjunct (node ~x0, possibly after stripping a not) that is a call to ~x1 (not a known boolean).~%" disjunct-core (ffn-symb expr))
                                 nil)))))))))
