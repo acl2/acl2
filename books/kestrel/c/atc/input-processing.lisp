@@ -825,7 +825,7 @@
         (reterr (msg "The :DEPRECATED input must be ~
                       a non-empty list of keywords, ~
                       but it is NIL instead.")))
-       (allowed '(:arrays :structs))
+       (allowed '(:arrays))
        ((unless (subsetp-eq deprecated allowed))
         (reterr (msg "The allowed keywords for the :DEPRECATED input are ~&0, ~
                       but it includes ~&1 instead."
