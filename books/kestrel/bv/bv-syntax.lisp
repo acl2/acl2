@@ -1,7 +1,7 @@
 ; Syntactic utilities for bit-vector terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -60,7 +60,7 @@
           *non-trimmable-bv-operators*))
 
 ;TODO: Could make a faster version restricted to trimmable terms?
-;TODO: Compare to get-type-of-bv-expr-axe.
+;TODO: Compare to get-type-of-bv-function-call.
 ;; Returns a natural number, or nil.
 (defun bv-term-size (term)
   (declare (xargs :guard (pseudo-termp term)))

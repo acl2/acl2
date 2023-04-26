@@ -52,7 +52,6 @@
                                       (not-error-thm symbolp)
                                       (meminfo defstruct-member-infop)
                                       (names-to-avoid symbol-listp)
-                                      (deprecated keyword-listp)
                                       (wrld plist-worldp))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-read-thms symbol-listp)
@@ -100,9 +99,7 @@
        (length (defstruct-member-info->length meminfo))
        (reader (defstruct-member-info->reader meminfo))
        (reader-element (defstruct-member-info->reader-element meminfo))
-       (readers (defstruct-member-info->readers meminfo))
        (checker (defstruct-member-info->checker meminfo))
-       (checkers (defstruct-member-info->checkers meminfo))
        ((when (type-nonchar-integerp type))
         (b* ((thm-member-name (pack 'exec-member-read-when-
                                     recognizer
@@ -370,176 +367,10 @@
         (evmac-generate-defthm thm-memberp-name
                                :formula formula-memberp
                                :hints `(("Goal" :in-theory ',theory-memberp))
-                               :enable nil))
-       ((mv more-events
-            member-read-thms
-            names-to-avoid)
-        (atc-gen-tag-member-read-thms-aux tag
-                                          recognizer
-                                          fixer-recognizer-thm
-                                          memname
-                                          elemtype
-                                          *nonchar-integer-types*
-                                          (car readers)
-                                          (car checkers)
-                                          (cdr readers)
-                                          (cdr checkers)
-                                          length
-                                          thm-member-name
-                                          thm-memberp-name
-                                          names-to-avoid
-                                          wrld)))
-    (if (member-eq :structs deprecated)
-        (mv (list* event-member event-memberp more-events)
-            member-read-thms
-            names-to-avoid)
-      (mv (list event-member event-memberp)
-          (list thm-member-name thm-memberp-name)
-          names-to-avoid)))
-
-  :prepwork
-  ((define atc-gen-tag-member-read-thms-aux ((tag identp)
-                                             (recognizer symbolp)
-                                             (fixer-recognizer-thm symbolp)
-                                             (memname identp)
-                                             (elemtype typep)
-                                             (indextypes type-listp)
-                                             (reader-acl2int symbolp)
-                                             (checker-acl2int symbolp)
-                                             (readers symbol-listp)
-                                             (checkers symbol-listp)
-                                             (length symbolp)
-                                             (reader-member-thm symbolp)
-                                             (reader-memberp-thm symbolp)
-                                             (names-to-avoid symbol-listp)
-                                             (wrld plist-worldp))
-     :guard (and (type-nonchar-integerp elemtype)
-                 (type-nonchar-integer-listp indextypes))
-     :returns (mv (local-events pseudo-event-form-listp)
-                  (member-read-thms symbol-listp)
-                  (updated-names-to-avoid symbol-listp
-                                          :hyp (symbol-listp names-to-avoid)))
-     :parents nil
-     (b* (((when (endp indextypes)) (mv nil nil nil))
-          (indextype (car indextypes))
-          (reader (car readers))
-          (checker (car checkers))
-          (indexfixtype (integer-type-to-fixtype indextype))
-          (indextypep (pack indexfixtype 'p))
-          (thm-member-name (pack 'exec-member-read-when-
-                                 recognizer
-                                 '-and-
-                                 (ident->name memname)
-                                 '-
-                                 indexfixtype))
-          ((mv thm-member-name names-to-avoid)
-           (fresh-logical-name-with-$s-suffix thm-member-name
-                                              nil
-                                              names-to-avoid
-                                              wrld))
-          (thm-memberp-name (pack 'exec-memberp-read-when-
-                                  recognizer
-                                  '-and-
-                                  (ident->name memname)
-                                  '-
-                                  indexfixtype))
-          ((mv thm-memberp-name names-to-avoid)
-           (fresh-logical-name-with-$s-suffix thm-memberp-name
-                                              nil
-                                              names-to-avoid
-                                              wrld))
-          (check-hyp (if length
-                         `(,checker index struct)
-                       `(,checker index)))
-          (formula-member
-           `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'struct)
-                          (,recognizer struct)
-                          (,indextypep index)
-                          ,check-hyp
-                          (objdesignp objdes-struct)
-                          (equal (read-object objdes-struct compst) struct))
-                     (equal (exec-arrsub-of-member
-                             (expr-value struct objdes-struct)
-                             (ident ,(ident->name memname))
-                             (expr-value index objdes-index)
-                             compst)
-                            (expr-value (,reader index struct)
-                                        (objdesign-element
-                                         (objdesign-member
-                                          objdes-struct
-                                          (ident ,(ident->name memname)))
-                                         (value-integer->get index))))))
-          (formula-memberp
-           `(implies (and ,(atc-syntaxp-hyp-for-expr-pure 'ptr)
-                          (valuep ptr)
-                          (value-case ptr :pointer)
-                          (value-pointer-validp ptr)
-                          (equal (value-pointer->reftype ptr)
-                                 (type-struct (ident ,(ident->name tag))))
-                          (equal struct
-                                 (read-object (value-pointer->designator ptr)
-                                              compst))
-                          (,recognizer struct)
-                          (,indextypep index)
-                          ,check-hyp)
-                     (equal (exec-arrsub-of-memberp
-                             (expr-value ptr objdes-ptr)
-                             (ident ,(ident->name memname))
-                             (expr-value index objdes-index)
-                             compst)
-                            (expr-value (,reader index struct)
-                                        (objdesign-element
-                                         (objdesign-member
-                                          (value-pointer->designator ptr)
-                                          (ident ,(ident->name memname)))
-                                         (value-integer->get index))))))
-          (reader-alt-def (packn-pos (list reader '-alt-def) reader))
-          (checker-alt-def (packn-pos (list checker '-alt-def) checker))
-          (hints-member `(("Goal"
-                           :in-theory '(,reader-member-thm
-                                        ,reader-alt-def
-                                        ,checker-alt-def
-                                        cintegerp))))
-          (hints-memberp `(("Goal"
-                            :in-theory '(,reader-memberp-thm
-                                         ,reader-alt-def
-                                         ,checker-alt-def
-                                         cintegerp))))
-          ((mv event-member &)
-           (evmac-generate-defthm thm-member-name
-                                  :formula formula-member
-                                  :hints hints-member
-                                  :enable nil))
-          ((mv event-memberp &)
-           (evmac-generate-defthm thm-memberp-name
-                                  :formula formula-memberp
-                                  :hints hints-memberp
-                                  :enable nil))
-          ((mv events thm-names names-to-avoid)
-           (atc-gen-tag-member-read-thms-aux tag
-                                             recognizer
-                                             fixer-recognizer-thm
-                                             memname
-                                             elemtype
-                                             (cdr indextypes)
-                                             reader-acl2int
-                                             checker-acl2int
-                                             (cdr readers)
-                                             (cdr checkers)
-                                             length
-                                             reader-member-thm
-                                             reader-memberp-thm
-                                             names-to-avoid
-                                             wrld)))
-       (mv (append (and (not length)
-                        (list event-member))
-                   (list event-memberp)
-                   events)
-           (append (and (not length)
-                        (list thm-member-name))
-                   (list thm-memberp-name)
-                   thm-names)
-           names-to-avoid)))))
+                               :enable nil)))
+    (mv (list event-member event-memberp)
+        (list thm-member-name thm-memberp-name)
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -550,7 +381,6 @@
                                           (not-error-thm symbolp)
                                           (meminfos defstruct-member-info-listp)
                                           (names-to-avoid symbol-listp)
-                                          (deprecated keyword-listp)
                                           (wrld plist-worldp))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-read-thms symbol-listp)
@@ -572,7 +402,6 @@
                                       not-error-thm
                                       (car meminfos)
                                       names-to-avoid
-                                      deprecated
                                       wrld))
        ((mv more-events more-thms names-to-avoid)
         (atc-gen-tag-member-read-all-thms tag
@@ -582,7 +411,6 @@
                                           not-error-thm
                                           (cdr meminfos)
                                           names-to-avoid
-                                          deprecated
                                           wrld)))
     (mv (append events more-events)
         (append thms more-thms)
@@ -598,7 +426,6 @@
                                        (type-of-value-thm symbolp)
                                        (meminfo defstruct-member-infop)
                                        (names-to-avoid symbol-listp)
-                                       (deprecated keyword-listp)
                                        (wrld plist-worldp))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-write-thms symbol-listp)
@@ -646,9 +473,7 @@
        (reader (defstruct-member-info->reader meminfo))
        (writer (defstruct-member-info->writer meminfo))
        (writer-element (defstruct-member-info->writer-element meminfo))
-       (writers (defstruct-member-info->writers meminfo))
        (checker (defstruct-member-info->checker meminfo))
-       (checkers (defstruct-member-info->checkers meminfo))
        ((when (type-nonchar-integerp type))
         (b* ((thm-member-name (pack 'exec-member-write-when-
                                     recognizer
@@ -938,8 +763,6 @@
         (prog2$
          (raise "Internal error: array member element type ~x0." elemtype)
          (mv nil nil nil)))
-       (writer-return-thms (defstruct-member-info->writer-return-thms meminfo))
-       (writer-return-thm (car writer-return-thms))
        (thm-member-name (pack 'exec-member-write-when-
                               recognizer
                               '-and-
@@ -1247,219 +1070,10 @@
         (evmac-generate-defthm thm-memberp-name
                                :formula formula-memberp
                                :hints hints-memberp
-                               :enable nil))
-       ((mv more-events
-            member-write-thms
-            names-to-avoid)
-        (atc-gen-tag-member-write-thms-aux tag
-                                           recognizer
-                                           fixer-recognizer-thm
-                                           memname
-                                           elemtype
-                                           *nonchar-integer-types*
-                                           (car writers)
-                                           (car checkers)
-                                           (cdr writers)
-                                           (cdr checkers)
-                                           writer-return-thm
-                                           not-error-thm
-                                           type-of-value-thm
-                                           length
-                                           thm-member-name
-                                           thm-memberp-name
-                                           names-to-avoid
-                                           wrld)))
-    (if (member-eq :structs deprecated)
-        (mv (list* event-member event-memberp more-events)
-            member-write-thms
-            names-to-avoid)
-      (mv (list event-member event-memberp)
-          (list thm-member-name thm-memberp-name)
-          names-to-avoid)))
-
-  :prepwork
-  ((define atc-gen-tag-member-write-thms-aux ((tag identp)
-                                              (recognizer symbolp)
-                                              (fixer-recognizer-thm symbolp)
-                                              (memname identp)
-                                              (elemtype typep)
-                                              (indextypes type-listp)
-                                              (writer-acl2int symbolp)
-                                              (checker-acl2int symbolp)
-                                              (writers symbol-listp)
-                                              (checkers symbol-listp)
-                                              (writer-return-thm symbolp)
-                                              (not-error-thm symbolp)
-                                              (type-of-value-thm symbolp)
-                                              (length symbolp)
-                                              (writer-member-thm symbolp)
-                                              (writer-memberp-thm symbolp)
-                                              (names-to-avoid symbol-listp)
-                                              (wrld plist-worldp))
-     :guard (and (type-nonchar-integerp elemtype)
-                 (type-nonchar-integer-listp indextypes))
-     :returns (mv (local-events pseudo-event-form-listp)
-                  (member-write-thms symbol-listp)
-                  (updated-names-to-avoid symbol-listp
-                                          :hyp (symbol-listp names-to-avoid)))
-     :parents nil
-     (b* (((when (endp indextypes)) (mv nil nil nil))
-          (indextype (car indextypes))
-          (writer (car writers))
-          (checker (car checkers))
-          (indexfixtype (integer-type-to-fixtype indextype))
-          (elemfixtype (integer-type-to-fixtype elemtype))
-          (indextypep (pack indexfixtype 'p))
-          (elemtypep (pack elemfixtype 'p))
-          (thm-member-name (pack 'exec-member-write-when-
-                                 recognizer
-                                 '-and-
-                                 (ident->name memname)
-                                 '-
-                                 indexfixtype))
-          ((mv thm-member-name names-to-avoid)
-           (fresh-logical-name-with-$s-suffix thm-member-name
-                                              nil
-                                              names-to-avoid
-                                              wrld))
-          (thm-memberp-name (pack 'exec-memberp-write-when-
-                                  recognizer
-                                  '-and-
-                                  (ident->name memname)
-                                  '-
-                                  indexfixtype))
-          ((mv thm-memberp-name names-to-avoid)
-           (fresh-logical-name-with-$s-suffix thm-memberp-name
-                                              nil
-                                              names-to-avoid
-                                              wrld))
-          (check-hyp (if length
-                         `(,checker idx struct)
-                       `(,checker idx)))
-          (formula-member
-           `(implies (and (syntaxp (quotep e))
-                          (equal (expr-kind e) :binary)
-                          (equal (binop-kind (expr-binary->op e)) :asg)
-                          (equal left (expr-binary->arg1 e))
-                          (equal right (expr-binary->arg2 e))
-                          (equal (expr-kind left) :arrsub)
-                          (equal array (expr-arrsub->arr left))
-                          (equal index (expr-arrsub->sub left))
-                          (equal (expr-kind array) :member)
-                          (equal target (expr-member->target array))
-                          (equal member (expr-member->name array))
-                          (equal (expr-kind target) :ident)
-                          (equal member (ident ,(ident->name memname)))
-                          (not (zp limit))
-                          (equal var (expr-ident->get target))
-                          (equal struct (read-var var compst))
-                          (,recognizer struct)
-                          (equal eidx (exec-expr-pure index compst))
-                          (expr-valuep eidx)
-                          (equal eidx1 (apconvert-expr-value eidx))
-                          (expr-valuep eidx1)
-                          (equal idx (expr-value->value eidx1))
-                          (,indextypep idx)
-                          ,check-hyp
-                          (equal eval (exec-expr-pure right compst))
-                          (expr-valuep eval)
-                          (equal val (expr-value->value eval))
-                          (,elemtypep val))
-                     (equal (exec-expr-asg e compst fenv limit)
-                            (write-var var
-                                       (,writer idx val struct)
-                                       compst))))
-          (formula-memberp
-           `(implies (and (syntaxp (quotep e))
-                          (equal (expr-kind e) :binary)
-                          (equal (binop-kind (expr-binary->op e)) :asg)
-                          (equal left (expr-binary->arg1 e))
-                          (equal right (expr-binary->arg2 e))
-                          (equal (expr-kind left) :arrsub)
-                          (equal array (expr-arrsub->arr left))
-                          (equal index (expr-arrsub->sub left))
-                          (equal (expr-kind array) :memberp)
-                          (equal target (expr-memberp->target array))
-                          (equal member (expr-memberp->name array))
-                          (equal (expr-kind target) :ident)
-                          (equal member (ident ,(ident->name memname)))
-                          (not (zp limit))
-                          (equal ptr (read-var (expr-ident->get target)
-                                               compst))
-                          (valuep ptr)
-                          (value-case ptr :pointer)
-                          (value-pointer-validp ptr)
-                          (equal (value-pointer->reftype ptr)
-                                 (type-struct (ident ,(ident->name tag))))
-                          (equal struct
-                                 (read-object (value-pointer->designator ptr)
-                                              compst))
-                          (,recognizer struct)
-                          (equal eidx (exec-expr-pure index compst))
-                          (expr-valuep eidx)
-                          (equal eidx1 (apconvert-expr-value eidx))
-                          (expr-valuep eidx1)
-                          (equal idx (expr-value->value eidx1))
-                          (,indextypep idx)
-                          ,check-hyp
-                          (equal eval (exec-expr-pure right compst))
-                          (expr-valuep eval)
-                          (equal eval1 (apconvert-expr-value eval))
-                          (expr-valuep eval1)
-                          (equal val (expr-value->value eval1))
-                          (,elemtypep val))
-                     (equal (exec-expr-asg e compst fenv limit)
-                            (write-object (value-pointer->designator ptr)
-                                          (,writer idx val struct)
-                                          compst))))
-          (writer-alt-def (packn-pos (list writer '-alt-def) writer))
-          (checker-alt-def (packn-pos (list checker '-alt-def) checker))
-          (hints-member `(("Goal" :in-theory '(,writer-member-thm
-                                               ,writer-alt-def
-                                               ,checker-alt-def
-                                               cintegerp))))
-          (hints-memberp `(("Goal" :in-theory '(,writer-memberp-thm
-                                                ,writer-alt-def
-                                                ,checker-alt-def
-                                                cintegerp))))
-          ((mv event-member &)
-           (evmac-generate-defthm thm-member-name
-                                  :formula formula-member
-                                  :hints hints-member
-                                  :enable nil))
-          ((mv event-memberp &)
-           (evmac-generate-defthm thm-memberp-name
-                                  :formula formula-memberp
-                                  :hints hints-memberp
-                                  :enable nil))
-          ((mv events thm-names names-to-avoid)
-           (atc-gen-tag-member-write-thms-aux tag
-                                              recognizer
-                                              fixer-recognizer-thm
-                                              memname
-                                              elemtype
-                                              (cdr indextypes)
-                                              writer-acl2int
-                                              checker-acl2int
-                                              (cdr writers)
-                                              (cdr checkers)
-                                              writer-return-thm
-                                              not-error-thm
-                                              type-of-value-thm
-                                              length
-                                              writer-member-thm
-                                              writer-memberp-thm
-                                              names-to-avoid
-                                              wrld)))
-       (mv (append (and (not length)
-                        (list event-member))
-                   (list event-memberp)
-                   events)
-           (append (and (not length)
-                        (list thm-member-name))
-                   (list thm-memberp-name)
-                   thm-names)
-           names-to-avoid)))))
+                               :enable nil)))
+    (mv (list event-member event-memberp)
+        (list thm-member-name thm-memberp-name)
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1472,7 +1086,6 @@
    (type-of-value-thm symbolp)
    (meminfos defstruct-member-info-listp)
    (names-to-avoid symbol-listp)
-   (deprecated keyword-listp)
    (wrld plist-worldp))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-write-thms symbol-listp)
@@ -1497,7 +1110,6 @@
                                        type-of-value-thm
                                        (car meminfos)
                                        names-to-avoid
-                                       deprecated
                                        wrld))
        ((mv more-events more-thms names-to-avoid)
         (atc-gen-tag-member-write-all-thms tag
@@ -1508,7 +1120,6 @@
                                            type-of-value-thm
                                            (cdr meminfos)
                                            names-to-avoid
-                                           deprecated
                                            wrld)))
     (mv (append events more-events)
         (append thms more-thms)
@@ -1536,7 +1147,6 @@
                             (prec-tags atc-string-taginfo-alistp)
                             (proofs booleanp)
                             (names-to-avoid symbol-listp)
-                            (deprecated keyword-listp)
                             (wrld plist-worldp))
   :returns (mv (declon tag-declonp)
                (local-events pseudo-event-form-listp)
@@ -1567,7 +1177,6 @@
                                               not-error-thm
                                               meminfos
                                               names-to-avoid
-                                              deprecated
                                               wrld)
           (mv nil nil names-to-avoid)))
        ((mv write-thm-events write-thm-names names-to-avoid)
@@ -1580,7 +1189,6 @@
                                                type-of-value-thm
                                                meminfos
                                                names-to-avoid
-                                               deprecated
                                                wrld)
           (mv nil nil names-to-avoid)))
        (thm-events (append read-thm-events write-thm-events))

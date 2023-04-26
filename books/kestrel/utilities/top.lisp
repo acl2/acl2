@@ -17,6 +17,8 @@
 (include-book "bits-and-bytes-as-digits")
 (include-book "bits-and-ubyte11s-as-digits")
 (include-book "book-runes-alist")
+(include-book "brr-data-all")
+(include-book "brr-data-failures")
 (include-book "bytes-as-digits")
 (include-book "checkpoints")
 (include-book "copy-def")

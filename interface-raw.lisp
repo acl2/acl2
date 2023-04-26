@@ -7549,10 +7549,11 @@
 
            make-event
            make-apply$-prim-body-fn-raw
-           set-raw-mode
+           set-brr-data-attachments
            set-compile-fns
            set-ignore-ok
-           set-irrelevant-formals-ok)
+           set-irrelevant-formals-ok
+           set-raw-mode)
           nil)
          (t
           (error "Unexpected type of form, ~s.  See note-fns-in-form."
