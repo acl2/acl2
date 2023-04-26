@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../language/computation-states")
+(include-book "read-write-variables")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
