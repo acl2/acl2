@@ -641,7 +641,8 @@
    (xdoc::p
     "If the variable is not found, we return an error."))
   (b* ((pair (omap::in (ident-fix var) (compustate->static compst)))
-       ((when (not pair)) (error (list :var-not-found (ident-fix var)))))
+       ((when (not pair))
+        (error (list :static-var-not-found (ident-fix var)))))
     (cdr pair))
   :hooks (:fix))
 
@@ -996,7 +997,11 @@
      for the object designator."))
   (objdesign-case
    objdes
-   :static (read-static-var objdes.name compst)
+   :static
+   (b* ((var+val (omap::in objdes.name (compustate->static compst)))
+        ((when (not var+val))
+         (error (list :static-var-not-found objdes.name))))
+     (cdr var+val))
    :auto
    (b* ((rev-frames (rev (compustate->frames compst)))
         ((unless (< objdes.frame (len rev-frames)))
@@ -1049,8 +1054,7 @@
              read-object
              fix
              compustate-frames-number
-             top-frame
-             read-static-var)
+             top-frame)
     :use
     (:instance objdesign-of-var-aux-lemma
                (frame (+ -1 (len (compustate->frames compst))))
@@ -1197,7 +1201,6 @@
              write-object
              write-static-var
              read-object
-             read-static-var
              top-frame
              compustate-frames-number)
     :use
@@ -1277,6 +1280,7 @@
               read-object
               read-var
               read-auto-var
+              read-static-var
               objdesign-of-var-aux-iff-read-auto-var-aux))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

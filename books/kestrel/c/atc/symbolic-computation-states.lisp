@@ -1648,8 +1648,7 @@
                     (read-object objdes compst)))
     :enable (add-frame
              push-frame
-             read-object
-             read-static-var))
+             read-object))
 
   (defruled read-object-of-enter-scope
     (implies (equal (objdesign-kind objdes) :alloc)
@@ -1658,8 +1657,7 @@
     :enable (enter-scope
              push-frame
              pop-frame
-             read-object
-             read-static-var))
+             read-object))
 
   (defruled read-object-of-add-var
     (implies (equal (objdesign-kind objdes) :alloc)
@@ -1668,8 +1666,7 @@
     :enable (add-var
              push-frame
              pop-frame
-             read-object
-             read-static-var))
+             read-object))
 
   (defruled read-object-of-update-var
     (implies (equal (objdesign-kind objdes) :alloc)
@@ -1678,8 +1675,7 @@
     :enable (update-var
              push-frame
              pop-frame
-             read-object
-             read-static-var))
+             read-object))
 
   (defruled read-object-of-update-object-same
     (implies (equal (objdesign-kind objdes) :alloc)
@@ -1701,7 +1697,8 @@
   (defruled read-object-of-objdesign-static
     (equal (read-object (objdesign-static var) compst)
            (read-static-var var compst))
-    :enable read-object)
+    :enable (read-object
+             read-static-var))
 
   (defval *atc-read-object-rules*
     '(read-object-of-add-frame
