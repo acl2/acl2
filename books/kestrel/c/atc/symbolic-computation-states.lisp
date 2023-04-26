@@ -1584,7 +1584,8 @@
   (defruled write-object-of-objdesign-static
     (equal (write-object (objdesign-static var) val compst)
            (write-static-var var val compst))
-    :enable write-object)
+    :enable (write-object
+             write-static-var))
 
   (defval *atc-write-object-rules*
     '(write-object-to-update-object

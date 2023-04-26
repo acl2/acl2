@@ -793,10 +793,10 @@
      See @(tsee remove-flexible-array-member)."))
   (b* ((static (compustate->static compst))
        (pair (omap::in (ident-fix var) static))
-       ((when (not pair)) (error (list :var-not-found (ident-fix var))))
+       ((when (not pair)) (error (list :static-var-not-found (ident-fix var))))
        ((unless (equal (type-of-value (cdr pair))
                        (type-of-value val)))
-        (error (list :write-static-var-mistype (ident-fix var)
+        (error (list :static-var-mistype (ident-fix var)
                      :required (type-of-value (cdr pair))
                      :supplied (type-of-value val))))
        (new-static (omap::update (ident-fix var)
@@ -1094,12 +1094,24 @@
     "If the object designator is an address,
      we store the value without removing the flexible array member
      (see @(tsee remove-flexible-array-member)).
-     In all other cases, we remove it,
-     directly in the case of automated storage,
-     and indirectly via @(tsee write-static-var) in case of static storage."))
+     In all other cases, we remove it."))
   (objdesign-case
    objdes
-   :static (write-static-var objdes.name val compst)
+   :static
+   (b* ((static (compustate->static compst))
+        (var+val (omap::in objdes.name static))
+        ((when (not var+val))
+         (error (list :static-var-not-found objdes.name)))
+        ((unless (equal (type-of-value (cdr var+val))
+                        (type-of-value val)))
+         (error (list :static-var-mistype objdes.name
+                      :required (type-of-value (cdr var+val))
+                      :supplied (type-of-value val))))
+        (new-static (omap::update objdes.name
+                                  (remove-flexible-array-member val)
+                                  static))
+        (new-compst (change-compustate compst :static new-static)))
+     new-compst)
    :auto
    (b* ((rev-frames (rev (compustate->frames compst)))
         ((unless (< objdes.frame (len rev-frames)))
@@ -1172,24 +1184,18 @@
              (equal (compustate-frames-number new-compst)
                     (compustate-frames-number compst)))
     :hints (("Goal"
-             :in-theory (e/d (compustate-frames-number nfix max)
-                             (compustate-frames-number-of-write-static-var)))
-            '(:use (:instance compustate-frames-number-of-write-static-var
-                              (var (objdesign-static->name objdes))))))
+             :in-theory (enable compustate-frames-number nfix max))))
 
   (defret compustate-scopes-numbers-of-write-object
     (implies (compustatep new-compst)
              (equal (compustate-scopes-numbers new-compst)
                     (compustate-scopes-numbers compst)))
     :hints (("Goal"
-             :in-theory (e/d (compustate-scopes-numbers
-                              fix
-                              max
-                              acl2::nth-of-rev
-                              update-nth-of-rev)
-                             (compustate-scopes-numbers-of-write-static-var)))
-            '(:use (:instance compustate-scopes-numbers-of-write-static-var
-                              (var (objdesign-static->name objdes))))))
+             :in-theory (enable compustate-scopes-numbers
+                                fix
+                                max
+                                acl2::nth-of-rev
+                                update-nth-of-rev))))
 
   (defruled compustatep-of-write-object-of-objdesign-of-var
     (b* ((objdes (objdesign-of-var var compst)))
@@ -1199,7 +1205,6 @@
                              (type-of-value val)))))
     :enable (objdesign-of-var
              write-object
-             write-static-var
              read-object
              top-frame
              compustate-frames-number)
@@ -1392,6 +1397,7 @@
               write-object
               write-var
               write-auto-var
+              write-static-var
               push-frame
               pop-frame
               top-frame))))
