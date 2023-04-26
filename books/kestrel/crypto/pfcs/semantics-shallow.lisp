@@ -154,7 +154,7 @@
      we generate a @(tsee defun).
      Otherwise, we generate a @(tsee defun-sk)
      with those free variables existentially quantified.
-     (More precisely, we generate @(tsee defund) or @tsee defund-sk).")
+     (More precisely, we generate @(tsee defund) or @(tsee defund-sk).")
    (xdoc::p
     "The existential quantification is the right semantics
      for the free variables in a relation's definition,
