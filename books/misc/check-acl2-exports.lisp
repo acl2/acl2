@@ -211,6 +211,10 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    CW-GSTACK-FOR-SUBTERM
+    CW-GSTACK-FOR-SUBTERM*
+    CW-GSTACK-FOR-TERM
+    CW-GSTACK-FOR-TERM*
     WITH-BRR-DATA
   ))
 

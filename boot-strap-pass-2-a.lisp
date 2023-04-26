@@ -110,6 +110,8 @@
 (defstub finalize-event-user (* * state) => state)
 (defstub acl2x-expansion-alist (* state) => *)
 (defstub set-ld-history-entry-user-data (* * * state) => *)
+(defstub brkpt1-brr-data-entry (* * * state) => *)
+(defstub brkpt2-brr-data-entry (* * * state) => *)
 
 #+acl2-loop-only
 (partial-encapsulate
@@ -211,13 +213,20 @@
 (verify-termination-boot-strap warnings-as-errors-val) ; and guards
 
 (verify-termination-boot-strap brr-data-p) ; and guards
-(verify-termination-boot-strap update-brr-data) ; and guards
+(verify-termination-boot-strap brr-data-mirror) ; and guards
+(verify-termination-boot-strap brkpt1-brr-data-entry-builtin) ; and guards
+(verify-termination-boot-strap brkpt2-brr-data-entry-builtin) ; and guards
+(verify-termination-boot-strap update-brr-data-1-builtin) ; and guards
+(verify-termination-boot-strap update-brr-data-2-builtin) ; and guards
 (verify-termination-boot-strap set-wormhole-data-fast) ; and guards
+(set-brr-data-attachments)
+
 (defthm state-p1-read-acl2-oracle
     (implies (state-p1 state)
              (state-p1 (mv-nth 2 (read-acl2-oracle state))))
   :hints (("Goal" :in-theory (enable state-p1 read-acl2-oracle))))
 (verify-termination-boot-strap brr-data-lst) ; and guards
+
 ; The following has caused the following error with "make proofs".
 ; > Error: HARD ACL2 ERROR in EXECUTABLE-BADGE:  It is illegal to call this function
 ; >        during boot strapping because primitives have not yet been identified
