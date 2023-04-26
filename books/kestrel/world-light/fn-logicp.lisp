@@ -1,6 +1,6 @@
 ; A lightweight utility to test whether a function is in :logic mode
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,8 @@
 
 (in-package "ACL2")
 
-;; Like logicp but has a stricter guard
+;; Given a function, FN, in WRLD, determine whether it is in :logic mode.
+;; Like logicp but has a stricter guard.
 (defund fn-logicp (fn wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp wrld)

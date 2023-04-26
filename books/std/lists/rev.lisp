@@ -88,6 +88,10 @@ perform quite well thanks to @(see mbe).</p>"
                    (list a)))
     :hints(("Goal" :in-theory (enable rev))))
 
+  (defthm rev-of-append
+    (equal (rev (append x y))
+           (append (rev y) (rev x))))
+
 ; Commented out by Matt K., since deduced type-prescription rule for rev at
 ; definition time already provides this.
 ; (defthm true-listp-of-rev
@@ -126,10 +130,6 @@ perform quite well thanks to @(see mbe).</p>"
     (implies (true-listp x)
              (equal (reverse x)
                     (rev x))))
-
-  (defthm rev-of-append
-    (equal (rev (append x y))
-           (append (rev y) (rev x))))
 
   (encapsulate
     ()

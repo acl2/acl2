@@ -1,7 +1,7 @@
 ; A parser for Java class files (passed in as sequences of bytes)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -661,7 +661,7 @@
   :hints (("Goal" :in-theory (enable constant-pool-entryp))))
 
 ;; Introduces constant-poolp
-;; TODO: Also introduce an invaraint over the constant pool, saying that the information in it is well-typed.
+;; TODO: Also introduce an invariant over the constant pool, saying that the information in it is well-typed.
 (defstobj constant-pool
   (entries :type (array (satisfies constant-pool-entryp) (0)) ; initially empty
            :initially nil
@@ -2983,8 +2983,9 @@
   (b* ((info nil)
        ((mv erp magic bytes) (readu4 bytes))
        ((when erp) (mv erp nil constant-pool))
-       ((when (not (equal magic #xCAFEBABE)))
-        (er hard? 'parse-bytes-into-raw-parsed-class  "Incorrect magic number.  The file does not appear to be a valid class file.")
+       (expected-magic #xCAFEBABE)
+       ((when (not (= magic expected-magic)))
+        (er hard? 'parse-bytes-into-raw-parsed-class  "Incorrect magic number (got ~x0 but expected ~x1).  The file does not appear to be a valid class file." magic expected-magic)
         (mv t nil constant-pool))
        ((mv erp & ;minor_version
             bytes)
@@ -3074,7 +3075,7 @@
        ((when (not (superclass-and-interfaceness-okp this-class-name
                                                       superclass-name
                                                       interfacep)))
-        (mv :bad-class nil constant-pool)))
+        (mv `(:bad-class ,this-class-name) nil constant-pool)))
     (mv (erp-nil) info constant-pool)))
 
 (defthm raw-parsed-classp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class

@@ -70,5 +70,5 @@
 (include-book "read-and-parse-class-file")
 (include-book "events-for-class")
 (include-book "class-and-path-utils")
-(include-book "load-class")
-(include-book "load-class-from-hierarchy")
+(include-book "read-class")
+(include-book "read-class-from-hierarchy")

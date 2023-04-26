@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/jvm/load-class-from-hierarchy" :dir :system)
+(include-book "kestrel/jvm/read-class-from-hierarchy" :dir :system)
 ;(include-book "../jvm/gather-relevant-classes2")
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "unroll-java-code")
@@ -301,7 +301,7 @@
 ;;        (defconst-name (pack$ '*lifted-program- method-name '-*))
 ;;        )
 ;;     `(progn
-;;        (load-class ,class-name :root ,root-of-class-hierarchy) ;; done so that unroll-java-code can find it
+;;        (read-class ,class-name :root ,root-of-class-hierarchy) ;; done so that unroll-java-code can find it
 ;;        (unroll-java-code ,defconst-name ,method-designator-string
 ;;                          :chunkedp t)
 ;;        (prove-with-tactics ,defconst-name
@@ -485,7 +485,7 @@
        ;; TODO: Pull this out
        ;; TODO: Don't bother to submit this event, just add the class to an alist?
        (state ;(mv state constant-pool)
-        (submit-event-quiet `(load-class-from-hierarchy ,class-name :root ,root-of-class-hierarchy)
+        (submit-event-quiet `(read-class-from-hierarchy ,class-name :root ,root-of-class-hierarchy)
                             state))
        (output-indicator (if (eq variant :assert)
                              :all
@@ -713,13 +713,13 @@
        ;; TODO: Should we save these when we build the FUT executable?
        ;; TODO: Any way to track these dependencies?
        (state
-        (submit-event-quiet `(load-class-from-hierarchy "java.lang.Object" :root ,java-bootstrap-classes-root)
+        (submit-event-quiet `(read-class-from-hierarchy "java.lang.Object" :root ,java-bootstrap-classes-root)
                             state))
        (state
-        (submit-event-quiet `(load-class-from-hierarchy "java.lang.Class" :root ,java-bootstrap-classes-root)
+        (submit-event-quiet `(read-class-from-hierarchy "java.lang.Class" :root ,java-bootstrap-classes-root)
                             state))
        (state
-        (submit-event-quiet `(load-class-from-hierarchy "java.lang.Math" :root ,java-bootstrap-classes-root)
+        (submit-event-quiet `(read-class-from-hierarchy "java.lang.Math" :root ,java-bootstrap-classes-root)
                             state))
        (absolute-path-to-java-file
         (if (equal #\/ (char path-to-java-file 0))

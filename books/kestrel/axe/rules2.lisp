@@ -3384,7 +3384,8 @@
                   (UPDATE-NTH n val (UPDATE-SUBRANGE m (- n 1) (take (- n m) vals) lst))))
   :hints (("Goal" :in-theory (enable UPDATE-SUBRANGE-REWRITE CDR-OF-NTHCDR))))
 
-(theory-invariant (incompatible (:rewrite TAKE-EQUAL-LENGHTEN) (:rewrite NTHS-EQUAL-WHEN-TAKES-EQUAL)))
+;move?
+(theory-invariant (incompatible (:rewrite TAKE-EQUAL-LENGTHEN) (:rewrite NTHS-EQUAL-WHEN-TAKES-EQUAL)))
 
 (defthmd nths-equal-when-takes-equal
   (implies (and (equal (take n lst1) (take n lst2))
@@ -3402,9 +3403,9 @@
 ;;            (EQUAL (NTH m lst1)
 ;;                   (NTH m lst2))))
 
-
+;move
 ;maybe this doesn't loop like the other one does?
-(DEFTHM TAKE-EQUAL-LENGHTEN-cheap
+(DEFTHM TAKE-EQUAL-LENGTHEN-cheap
   (IMPLIES (AND (EQUAL (NTH N LST1) (NTH N LST2))
                 (< N (LEN LST1))
                 (< N (LEN LST2))

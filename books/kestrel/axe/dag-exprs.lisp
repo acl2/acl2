@@ -132,7 +132,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A expression that can appear at a DAG node must be a variable, quoted constant, or function symbol applied to nodenums/constants.
-;; Note that we do not allow simply the number of another node.  Also, note that lambdas applications are not allowed  (each function must be a symbol).
+;; Note that we do not allow simply the number of another node.  Also, note that lambdas applications are not allowed (each function must be a symbol).
 (defund dag-exprp (expr)
   (declare (xargs :guard t))
   (or (symbolp expr) ;a variable

@@ -96,6 +96,7 @@
   :hints (("Goal" :in-theory (enable open-input-channel-p1 channel-header-type)))))
 
 ;; Note that this doesn't assume state-p.
+;move?
 (defthm open-input-channel-p1-of-update-open-input-channels-of-open-input-channels-same
   (implies (open-input-channel-p1 channel typ state)
            (open-input-channel-p1 channel typ
@@ -112,7 +113,7 @@
   :hints (("Goal" :in-theory (enable read-byte$))))
 
 (defthm state-p-of-mv-nth-1-of-read-byte$
-  (implies (state-p1 state)
+  (implies (state-p state)
            (equal (state-p (mv-nth 1 (read-byte$ channel state)))
                   (if (assoc-equal channel (open-input-channels state)) t nil)))
   :hints (("Goal" :in-theory (enable state-p))))

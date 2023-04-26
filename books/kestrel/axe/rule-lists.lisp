@@ -1533,18 +1533,18 @@
     bvplus-trim-arg3-axe-all
     bvuminus-trim-axe-all
     bvnot-trim-axe-all
-    bvand-trim-arg1-dag-all
-    bvand-trim-arg2-dag-all
-    ;; bvand-trim-arg1-dag
-    ;; bvand-trim-arg2-dag
-    bvor-trim-arg1-dag
-    bvor-trim-arg2-dag
-    ;; bvor-trim-arg1-dag-all ; use instead?
-    ;; bvor-trim-arg2-dag-all ; use instead?
-    bvxor-trim-arg1-dag
-    bvxor-trim-arg2-dag
-    ;; bvxor-trim-arg1-dag-all ; use instead?
-    ;; bvxor-trim-arg2-dag-all ; use instead?
+    bvand-trim-arg1-axe-all
+    bvand-trim-arg2-axe-all
+    ;; bvand-trim-arg1-axe
+    ;; bvand-trim-arg2-axe
+    bvor-trim-arg1-axe
+    bvor-trim-arg2-axe
+    ;; bvor-trim-arg1-axe-all ; use instead?
+    ;; bvor-trim-arg2-axe-all ; use instead?
+    bvxor-trim-arg1-axe
+    bvxor-trim-arg2-axe
+    ;; bvxor-trim-arg1-axe-all ; use instead?
+    ;; bvxor-trim-arg2-axe-all ; use instead?
     bitnot-trim-axe-all
     bitxor-trim-arg1-dag-all
     bitxor-trim-arg2-dag-all
@@ -1556,10 +1556,10 @@
     bvcat-trim-arg2-axe-all
     ;; bvcat-trim-arg2-axe
     ;; bvcat-trim-arg4-axe
-    bvif-trim-arg1-dag
-    bvif-trim-arg2-dag
-    ;; bvif-trim-arg1-dag-all ; use instead?
-    ;; bvif-trim-arg2-dag-all ; use instead?
+    bvif-trim-arg1-axe
+    bvif-trim-arg2-axe
+    ;; bvif-trim-arg1-axe-all ; use instead?
+    ;; bvif-trim-arg2-axe-all ; use instead?
     leftrotate32-trim-arg1-axe-all))
 
 (defun trim-helper-rules ()
@@ -2215,8 +2215,8 @@
      bvlt-of-mod-hack
      equal-of-bvplus-and-bvplus-diff-sizes
      equal-of-bvplus-and-bvplus-diff-sizes-alt
-     bvif-trim-arg1-dag-all
-     bvif-trim-arg2-dag-all
+     bvif-trim-arg1-axe-all
+     bvif-trim-arg2-axe-all
      bvlt-of-bvplus-constants2
      equal-of-bvplus-and-bvplus-reduce-constants
 

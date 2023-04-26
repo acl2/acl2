@@ -46,7 +46,11 @@
                        mfc-rw-fn
                        mfc-rw-ttree
                        mfc-ts-fn
-                       mfc-ts-ttree)))
+                       mfc-ts-ttree
+                       brkpt1-brr-data-entry
+                       brkpt2-brr-data-entry
+                       update-brr-data-1
+                       update-brr-data-2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

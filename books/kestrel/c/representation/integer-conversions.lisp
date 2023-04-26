@@ -128,7 +128,7 @@
                            stype-string
                            " to "
                            dtype-string
-                           "').")
+                           ".")
          (,(if signedp
                <dtype>-from-integer
              <dtype>-from-integer-mod)

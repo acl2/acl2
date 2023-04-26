@@ -33,21 +33,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled true-listp-when-fe-listp
-  (implies (fe-listp x p)
-           (true-listp x))
-  :induct t)
-
 (defruled nat-listp-when-fe-listp
   (implies (fe-listp x p)
            (nat-listp x))
   :induct t
   :enable nat-listp)
 
-(defrule fe-listp-of-cons
-  (equal (fe-listp (cons x y) p)
-         (and (fep x p)
-              (fe-listp y p))))
-
-(defrule fe-listp-of-nil
-  (fe-listp nil p))

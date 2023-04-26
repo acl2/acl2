@@ -98,6 +98,12 @@
            (pseudo-term-listp (cdr term)))
   :enable pseudo-termp)
 
+(defrulel symbol-listp-when-keyword-listp
+  (implies (keyword-listp x)
+           (symbol-listp x))
+  :induct t
+  :enable keyword-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-function-and-loop-generation
@@ -871,7 +877,8 @@
                   *atc-pointed-integers-type-prescription-rules*
                   *atc-array-length-write-rules*
                   *atc-wrapper-rules*
-                  '(,fn
+                  '((:e tau-system)
+                    ,fn
                     ,@(atc-symbol-fninfo-alist-to-result-thms
                        prec-fns (all-fnnames (ubody+ fn wrld)))
                     ,@(atc-string-taginfo-alist-to-reader-return-thms prec-tags)
@@ -1480,6 +1487,7 @@
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
                                   (limit pseudo-termp)
+                                  (deprecated keyword-listp)
                                   state)
   :returns (mv (local-events pseudo-event-form-listp)
                (exported-events pseudo-event-form-listp)
@@ -1711,7 +1719,9 @@
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :in-theory (union-theories
-                             (theory 'atc-all-rules)
+                             (theory ',(if (member-eq :arrays deprecated)
+                                           'atc-all-rules-deprecated
+                                         'atc-all-rules))
                              '(not-errorp-when-expr-valuep
                                ,@not-error-thms
                                ,@valuep-thms
@@ -1735,7 +1745,9 @@
                  :expand (:lambdas))
                 (and stable-under-simplificationp
                      '(:in-theory (union-theories
-                                   (theory 'atc-all-rules)
+                                   (theory ',(if (member-eq :arrays deprecated)
+                                                 'atc-all-rules-deprecated
+                                               'atc-all-rules))
                                    '(,fn
                                      not-errorp-when-expr-valuep
                                      ,@not-error-thms
@@ -2582,6 +2594,7 @@
                         (init-fun-env-thm symbolp)
                         (fn-thms symbol-symbol-alistp)
                         (print evmac-input-print-p)
+                        (deprecated keyword-listp)
                         (names-to-avoid symbol-listp)
                         state)
   :guard (not (eq fn 'quote))
@@ -2703,7 +2716,8 @@
                        :thm-index 1
                        :names-to-avoid names-to-avoid
                        :proofs (and proofs
-                                    modular-proofs))
+                                    modular-proofs)
+                       :deprecated deprecated)
                       state))
        (names-to-avoid body.names-to-avoid)
        ((when (and (type-case body.type :void)
@@ -2804,6 +2818,7 @@
                                                     fn-thms
                                                     fn-fun-env-thm
                                                     limit
+                                                    deprecated
                                                     state)))
                       (mv local-events exported-events name names-to-avoid))))
                  (progress-start?
@@ -3360,6 +3375,7 @@
                                        (prec-tags atc-string-taginfo-alistp)
                                        (prec-objs atc-string-objinfo-alistp)
                                        (names-to-avoid symbol-listp)
+                                       (deprecated keyword-listp)
                                        state)
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-test-thm symbolp)
@@ -3428,7 +3444,9 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory 'atc-all-rules)
+                             (theory ',(if (member-eq :arrays deprecated)
+                                           'atc-all-rules-deprecated
+                                         'atc-all-rules))
                              '(not
                                not-errorp-when-expr-valuep
                                ,@not-error-thms
@@ -3533,6 +3551,7 @@
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
                                        (names-to-avoid symbol-listp)
+                                       (deprecated keyword-listp)
                                        state)
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-body-thm symbolp)
@@ -3620,7 +3639,9 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory 'atc-all-rules)
+                             (theory ',(if (member-eq :arrays deprecated)
+                                           'atc-all-rules-deprecated
+                                         'atc-all-rules))
                              '(,@not-error-thms
                                ,@valuep-thms
                                ,@value-kind-thms
@@ -3984,6 +4005,7 @@
                       (fn-appconds symbol-symbol-alistp)
                       (appcond-thms keyword-symbol-alistp)
                       (print evmac-input-print-p)
+                      (deprecated keyword-listp)
                       (names-to-avoid symbol-listp)
                       state)
   :guard (and (function-symbolp fn (w state))
@@ -4051,7 +4073,8 @@
                                            :prec-objs prec-objs
                                            :thm-index 1
                                            :names-to-avoid names-to-avoid
-                                           :proofs nil)
+                                           :proofs nil
+                                           :deprecated deprecated)
                            state))
        (names-to-avoid loop.names-to-avoid)
        ((erp local-events
@@ -4115,6 +4138,7 @@
                                                  prec-tags
                                                  prec-objs
                                                  names-to-avoid
+                                                 deprecated
                                                  state))
                  ((mv body-local-events
                       correct-body-thm
@@ -4132,6 +4156,7 @@
                                                  fn-thms
                                                  loop.limit-body
                                                  names-to-avoid
+                                                 deprecated
                                                  state))
                  ((mv correct-local-events
                       correct-exported-events

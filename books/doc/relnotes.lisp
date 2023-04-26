@@ -433,6 +433,12 @@
 
    (xdoc::h3 "Miscellaneous")
 
+   (xdoc::p
+    "The utilities @(tsee install-not-normalized) and @(tsee
+     install-not-normalized-event) have been tweaked to use the so-called
+     <i>unnormalized</i> body, which can avoid errors for functions that call
+     @(tsee wormhole-eval).")
+
    ))
 
 (defxdoc note-8-5-books
