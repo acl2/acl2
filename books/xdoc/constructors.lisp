@@ -26,7 +26,7 @@
 
 (defxdoc constructors
   :parents (xdoc)
-  :short "Utilities to costruct
+  :short "Utilities to construct
           well-formed <see topic='@(url xdoc)'>XDOC</see> strings."
   :long
   "<p>XDOC strings use <see topic='@(url markup)'>XML tags</see>,

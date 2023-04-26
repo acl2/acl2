@@ -1,7 +1,7 @@
 ; Utilities dealing with types that Axe knows about
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -70,6 +70,16 @@
 (defthm bv-typep-of-make-bv-type
   (equal (bv-typep (make-bv-type width))
          (natp width))
+  :hints (("Goal" :in-theory (enable make-bv-type))))
+
+(defthm natp-of-make-bv-type-type
+  (implies (natp width)
+           (natp (make-bv-type width)))
+  :rule-classes :type-prescription)
+
+(defthmd <-of-0-and-make-bv-type
+  (equal (< (make-bv-type width) 0)
+         (< width 0))
   :hints (("Goal" :in-theory (enable make-bv-type))))
 
 ;may change
@@ -182,6 +192,8 @@
 
 ;fixme consider what to do for arrays of all zeros..
 ;note that an array type is compatible with any wider array type.. (but not one with a different length)
+;; TODO: Can the element-width be 0?
+;; TODO: Can the len be 0?
 (defund make-bv-array-type (element-width len) ;ffixme these args aren't really types.. should they be?
   (declare (xargs :guard t))
   (make-list-type (make-bv-type element-width) (enquote len)))

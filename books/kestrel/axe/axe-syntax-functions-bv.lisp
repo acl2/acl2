@@ -1,7 +1,7 @@
 ; BV-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -31,7 +31,6 @@
                           equal-of-quote-and-nth-0-of-nth-when-all-dargp
                           symbolp-of-nth-0-when-dag-exprp)))
 
-;dup
 (defund unquote-if-possible (x)
   (declare (xargs :guard t))
   (if (and (quotep x)
@@ -43,9 +42,10 @@
 ;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
 ;what if the number of arguments is wrong?
 ;; NOTE: Soundness depends on this since it is used in the STP translation.
-(defund get-type-of-bv-expr-axe (fn dargs)
+(defund maybe-get-type-of-bv-function-call (fn dargs)
   (declare (xargs :guard (and (true-listp dargs)
                               (all-dargp dargs))))
+  ;; todo: use case here:
   (cond ;see unsigned-byte-p-1-of-bitxor, etc.:
    ((member-eq fn '(getbit bitxor bitand bitor bitnot bool-to-bit))
     (make-bv-type 1))
@@ -59,9 +59,7 @@
                     bvdiv bvmod
                     sbvdiv sbvrem
                     leftrotate rightrotate ;; see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
-                    bvif
-                    ;; bvnth ;drop?
-                    ))
+                    bvif))
     (and (consp dargs)
          (let ((width (first dargs)))
            (and (quoted-natp width)
@@ -70,6 +68,7 @@
    ;;see unsigned-byte-p-32-of-leftrotate32 and unsigned-byte-p-32-of-rightrotate32:
    ((member-eq fn '(leftrotate32 rightrotate32)) ;eventually drop?
     (make-bv-type 32))
+   ;; Slice:
    ((eq fn 'slice)
     (let ((high (unquote-if-possible (first dargs)))
           (low (unquote-if-possible (second dargs))))
@@ -77,6 +76,7 @@
            (natp low)
            (<= low high)
            (make-bv-type (+ 1 high (- low))))))
+   ;; Bvcat:
    ((eq fn 'bvcat)
     (let ((high-size (unquote-if-possible (first dargs)))
           (low-size (unquote-if-possible (third dargs))))
@@ -86,21 +86,24 @@
    ;; Unknown function, can't find a BV size:
    (t nil)))
 
-(defthm get-type-of-bv-expr-axe-type
-  (or (null (get-type-of-bv-expr-axe fn dargs))
-      (integerp (get-type-of-bv-expr-axe fn dargs))) ;strengthen to natp?
+(defthm maybe-get-type-of-bv-function-call-type
+  (or (null (maybe-get-type-of-bv-function-call fn dargs))
+      (natp (maybe-get-type-of-bv-function-call fn dargs)))
   :rule-classes (:type-prescription)
-  :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-bv-function-call
+                                     <-of-0-and-make-bv-type))))
 
-(defthm bv-typep-of-get-type-of-bv-expr-axe
-  (implies (get-type-of-bv-expr-axe fn dargs)
-           (bv-typep (get-type-of-bv-expr-axe fn dargs)))
-  :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
+;; If it's not nil, it's a bv-type.
+(defthm bv-typep-of-maybe-get-type-of-bv-function-call
+  (implies (maybe-get-type-of-bv-function-call fn dargs)
+           (bv-typep (maybe-get-type-of-bv-function-call fn dargs)))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-bv-function-call))))
 
-(defthm axe-typep-of-get-type-of-bv-expr-axe
-  (implies (get-type-of-bv-expr-axe fn dargs)
-           (axe-typep (get-type-of-bv-expr-axe fn dargs)))
-  :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
+;; If it's not nil, it's an axe-type.
+(defthm axe-typep-of-maybe-get-type-of-bv-function-call
+  (implies (maybe-get-type-of-bv-function-call fn dargs)
+           (axe-typep (maybe-get-type-of-bv-function-call fn dargs)))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-bv-function-call))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,7 +134,7 @@
                       (acons (unquote quoted-varname) (list 'quote (integer-length val)) nil)
                     ;; failure (may be a constant array or a negative or something else):
                     nil))
-              (let ((type (get-type-of-bv-expr-axe fn (dargs expr))))
+              (let ((type (maybe-get-type-of-bv-function-call fn (dargs expr))))
                 (if type
                     (acons (unquote quoted-varname) (list 'quote (bv-type-width type)) nil) ;could often save this quote since in many operators the size is already quoted
                   ;;failure:
@@ -164,7 +167,7 @@
                ;;                    (and (eq 'bv-array-read (ffn-symb expr))
                ;;                         (quotep (darg4 expr)))
                )
-           (let ((type (get-type-of-bv-expr-axe (ffn-symb expr) (dargs expr))))
+           (let ((type (maybe-get-type-of-bv-function-call (ffn-symb expr) (dargs expr))))
              (and type
                   (< width (bv-type-width type))))))))
 
@@ -476,7 +479,7 @@
 ;;       (let ((expr (aref1 'dag-array dag-array term)))
 ;;         (and (consp expr)
 ;;              (member-eq (car expr) *operators-whose-size-we-know*)
-;;              (< (unquote width) (get-type-of-expr expr)))))))
+;;              (< (unquote width) (get-type-of-function-call expr)))))))
 
 ;; (skip -proofs (verify-guards term-is-wider-than))
 
