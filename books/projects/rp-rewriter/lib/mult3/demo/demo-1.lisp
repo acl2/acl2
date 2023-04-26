@@ -43,20 +43,15 @@
 ; more stobjs.
 (set-waterfall-parallelism nil)
 
-(include-book "projects/rp-rewriter/lib/mult3/parse-design" :dir :system) ;; a big book; takes around 30 seconds
+(include-book "projects/rp-rewriter/lib/mult3/top" :dir :system) ;; a big book; takes around 30 seconds
 
 
 ;; should be parsed in around a second.
 (parse-and-create-svtv :file "DT_SB4_HC_64_64_multgen.sv"
                        :topmodule "DT_SB4_HC_64_64")
 
-
-;; takes around 1-1.5 seconds.
-(defthmrp-multiplier dt_sb4_hc_64_64-is-correct
-  (implies (dt_sb4_hc_64_64-autohyps)
-           (b* (((sv::assocs result)
-                 (sv::svtv-run (dt_sb4_hc_64_64)
-                               (dt_sb4_hc_64_64-autoins))))
-             (equal result
-                    (loghead 128 (* (logext 64 in1)
-                                    (logext 64 in2)))))))
+(verify-svtv-of-mult :topmodule "DT_SB4_HC_64_64"
+                     :concl (equal result
+                                   ;; specification:
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2)))))
