@@ -763,5 +763,4 @@
                 :name name
                 :args (expression-var-list para))))
     (constraint-satp constr defs asg p))
-  :guard-hints (("Goal" :in-theory (enable true-listp-when-fe-listp
-                                           nat-listp-when-fe-listp))))
+  :guard-hints (("Goal" :in-theory (enable nat-listp-when-fe-listp))))

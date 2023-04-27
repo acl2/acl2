@@ -213,6 +213,7 @@
                                   (appcond-thms keyword-symbol-alistp)
                                   (header booleanp)
                                   (print evmac-input-print-p)
+                                  (deprecated keyword-listp)
                                   (names-to-avoid symbol-listp)
                                   state)
   :returns (mv erp
@@ -277,7 +278,8 @@
                               (atc-gen-loop fn prec-fns prec-tags prec-objs
                                             proofs prog-const
                                             fn-thms fn-appconds appcond-thms
-                                            print names-to-avoid state)))
+                                            print deprecated
+                                            names-to-avoid state)))
                           (retok nil
                                  nil
                                  prec-fns
@@ -294,7 +296,8 @@
                                             proofs
                                             prog-const
                                             init-fun-env-thm fn-thms
-                                            print names-to-avoid state))
+                                            print deprecated
+                                            names-to-avoid state))
                            (ext (ext-declon-fundef fundef)))
                         (if header
                             (retok (list (ext-declon-fun-declon
@@ -377,7 +380,8 @@
                                   init-fun-env-thm fn-thms
                                   fn-appconds appcond-thms
                                   header
-                                  print names-to-avoid state)))
+                                  print deprecated
+                                  names-to-avoid state)))
     (retok (append exts-h more-exts-h)
            (append exts-c more-exts-c)
            (append local-events more-local-events)
@@ -540,6 +544,7 @@
                          (fn-thms symbol-symbol-alistp)
                          (header booleanp)
                          (print evmac-input-print-p)
+                         (deprecated keyword-listp)
                          (names-to-avoid symbol-listp)
                          state)
   :returns (mv erp
@@ -600,7 +605,8 @@
         (atc-gen-ext-declon-lists targets nil nil nil proofs
                                   prog-const init-fun-env-thm
                                   fn-thms fn-appconds appcond-thms
-                                  header print names-to-avoid state))
+                                  header print deprecated
+                                  names-to-avoid state))
        (file-h (and header (make-file :declons exts-h)))
        (file-c (make-file :declons exts-c))
        (fileset (make-fileset :path-wo-ext path-wo-ext
@@ -755,6 +761,7 @@
                             (wf-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
+                            (deprecated keyword-listp)
                             (call pseudo-event-formp)
                             state)
   :returns (mv erp
@@ -783,7 +790,7 @@
        ((erp fileset local-events exported-events &)
         (atc-gen-fileset targets path-wo-ext proofs
                          prog-const wf-thm fn-thms
-                         header print names-to-avoid state))
+                         header print deprecated names-to-avoid state))
        (fileset-gen-event (atc-gen-fileset-event fileset
                                                  file-name
                                                  pretty-printing

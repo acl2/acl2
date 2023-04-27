@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-;; Analogously to kestrel-acl2/jvm/load-class.lisp ,
+;; Analogously to kestrel-acl2/jvm/read-class.lisp ,
 ;; this file defines
 ;;   (load-circom-json <json-file> <prime-field-form>)
 ;; which makes an event containing a defconstant with the R1CS constraints

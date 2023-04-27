@@ -362,22 +362,25 @@
     :guard (and (type-nonchar-integer-listp atypes)
                 (type-nonchar-integer-listp itypes))
     :returns (mv (names symbol-listp)
+                 (names-deprecated symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
-    (b* (((when (endp atypes)) (mv nil nil))
+    (b* (((when (endp atypes)) (mv nil nil nil))
          ((mv name event) (atc-exec-expr-asg-arrsub-rules-gen-1 (car atypes)))
-         ((mv names events)
+         ((mv names-deprecated events)
           (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes (car atypes)
                                                           itypes
                                                           name))
-         ((mv more-names more-events)
+         ((mv more-names more-names-deprecated more-events)
           (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
-      (mv (append names more-names) (append (list event) events more-events))))
+      (mv (append (list name) more-names)
+          (append names-deprecated more-names-deprecated)
+          (append (list event) events more-events))))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-all ()
     :returns (event pseudo-event-formp)
     :parents nil
-    (b* (((mv names events)
+    (b* (((mv names names-deprecated events)
           (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes
            *nonchar-integer-types*
            *nonchar-integer-types*)))
@@ -388,6 +391,16 @@
            ,@events
            (defval *atc-exec-expr-asg-arrsub-rules*
              '(,@names
+               (:e expr-kind)
+               (:e expr-arrsub->arr)
+               (:e expr-arrsub->sub)
+               (:e expr-binary->op)
+               (:e expr-binary->arg1)
+               (:e expr-binary->arg2)
+               (:e expr-ident->get)
+               (:e binop-kind)))
+           (defval *atc-exec-expr-asg-arrsub-rules-deprecated*
+             '(,@names-deprecated
                (:e expr-kind)
                (:e expr-arrsub->arr)
                (:e expr-arrsub->sub)
@@ -409,4 +422,9 @@
   (defval *atc-exec-expr-asg-rules*
     (append *atc-exec-expr-asg-ident-rules*
             *atc-exec-expr-asg-indir-rules*
-            *atc-exec-expr-asg-arrsub-rules*)))
+            *atc-exec-expr-asg-arrsub-rules*))
+
+  (defval *atc-exec-expr-asg-rules-deprecated*
+    (append *atc-exec-expr-asg-ident-rules*
+            *atc-exec-expr-asg-indir-rules*
+            *atc-exec-expr-asg-arrsub-rules-deprecated*)))

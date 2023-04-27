@@ -3825,7 +3825,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         acl2_*1*_acl2::pairlis$
         acl2_*1*_acl2::close-input-channel
         acl2_*1*_acl2::warnings-as-errors-val
-        acl2_*1*_acl2::member-equal))
+        acl2_*1*_acl2::member-equal
+        acl2_*1*_acl2::brr-data-mirror))
 
 #-acl2-loop-only
 (defmacro ec-call1-raw (ign x)

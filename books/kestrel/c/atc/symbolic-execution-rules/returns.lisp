@@ -196,8 +196,19 @@
 (defval *atc-array-read-return-rewrite-rules*
   :short "List of rewrite rules for the return types of
           models of C array read operations."
-  (atc-array-read-return-names-loop-array-types *nonchar-integer-types*
-                                                *nonchar-integer-types*)
+  (append
+   '(ucharp-of-uchar-array-read
+     scharp-of-schar-array-read
+     ushortp-of-ushort-array-read
+     sshortp-of-sshort-array-read
+     uintp-of-uint-array-read
+     sintp-of-sint-array-read
+     ulongp-of-ulong-array-read
+     slongp-of-slong-array-read
+     ullongp-of-ullong-array-read
+     sllongp-of-sllong-array-read)
+   (atc-array-read-return-names-loop-array-types *nonchar-integer-types*
+                                                 *nonchar-integer-types*))
 
   :prepwork
 
@@ -235,9 +246,19 @@
 (defval *atc-array-write-return-rewrite-rules*
   :short "List of rewrite rules for the return types of
           models of C array write operations."
-  (atc-array-write-return-names-loop-array-types
-   *nonchar-integer-types*
-   *nonchar-integer-types*)
+  (append
+   '(uchar-arrayp-of-uchar-array-write
+     schar-arrayp-of-schar-array-write
+     ushort-arrayp-of-ushort-array-write
+     sshort-arrayp-of-sshort-array-write
+     uint-arrayp-of-uint-array-write
+     sint-arrayp-of-sint-array-write
+     ulong-arrayp-of-ulong-array-write
+     slong-arrayp-of-slong-array-write
+     ullong-arrayp-of-ullong-array-write
+     sllong-arrayp-of-sllong-array-write)
+   (atc-array-write-return-names-loop-array-types *nonchar-integer-types*
+                                                  *nonchar-integer-types*))
 
   :prepwork
 
@@ -440,9 +461,19 @@
 (defval *atc-array-read-type-prescription-rules*
   :short "List of type prescription rules for the
           models of C array read operations."
-  (atc-array-read-type-presc-rules-loop-array-types
-   *nonchar-integer-types*
-   *nonchar-integer-types*)
+  (append
+   '((:t uchar-array-read)
+     (:t schar-array-read)
+     (:t ushort-array-read)
+     (:t sshort-array-read)
+     (:t uint-array-read)
+     (:t sint-array-read)
+     (:t ulong-array-read)
+     (:t slong-array-read)
+     (:t ullong-array-read)
+     (:t sllong-array-read))
+   (atc-array-read-type-presc-rules-loop-array-types *nonchar-integer-types*
+                                                     *nonchar-integer-types*))
 
   :prepwork
 
@@ -479,9 +510,19 @@
 (defval *atc-array-write-type-prescription-rules*
   :short "List of type prescription rules for the
           models of C array write operations."
-  (atc-array-write-type-presc-rules-loop-array-types
-   *nonchar-integer-types*
-   *nonchar-integer-types*)
+  (append
+   '((:t uchar-array-write)
+     (:t schar-array-write)
+     (:t ushort-array-write)
+     (:t sshort-array-write)
+     (:t uint-array-write)
+     (:t sint-array-write)
+     (:t ulong-array-write)
+     (:t slong-array-write)
+     (:t ullong-array-write)
+     (:t sllong-array-write))
+   (atc-array-write-type-presc-rules-loop-array-types *nonchar-integer-types*
+                                                      *nonchar-integer-types*))
 
   :prepwork
 

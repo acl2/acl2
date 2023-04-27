@@ -893,3 +893,4 @@
 (assert-event (subsetp-eq (append *builtin-defaxiom-names*
                                   *builtin-defthm-names*)
                           *builtin-defaxiom/defthm-all*))
+

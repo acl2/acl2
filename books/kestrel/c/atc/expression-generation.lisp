@@ -54,7 +54,8 @@
    (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred pexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -873,6 +874,17 @@
                to make the branches of the same type."
               gin.fn then-term else-term then-type else-type)))
        (type then-type)
+       ((when (member-equal type (list (type-uchar)
+                                       (type-schar)
+                                       (type-ushort)
+                                       (type-sshort))))
+        (reterr
+         (msg "When generating C code for the function ~x0, ~
+               two branches the conditional term ~x1 ~
+               have type ~x2, which is disallowed; ~
+               use conversion operations, if needed, ~
+               to turn the branches into an integer type of higher rank."
+              gin.fn term type)))
        (expr (make-expr-cond :test test-expr
                              :then then-expr
                              :else else-expr))
@@ -1535,9 +1547,48 @@
                                        arg.thm-name
                                        gin
                                        state)))
-         ((mv okp arr-term sub-term in-type1 in-type2 out-type)
+         ((mv okp arr-term sub-term arr-type elem-type)
           (atc-check-array-read term))
          ((when okp)
+          (b* (((erp (pexpr-gout arr))
+                (atc-gen-expr-pure arr-term gin state))
+               ((erp (pexpr-gout sub))
+                (atc-gen-expr-pure sub-term
+                                   (change-pexpr-gin
+                                    gin
+                                    :thm-index arr.thm-index
+                                    :names-to-avoid arr.names-to-avoid)
+                                   state))
+               ((unless (and (type-case arr.type :array)
+                             (type-case arr-type :array)
+                             (equal (type-array->of arr.type)
+                                    (type-array->of arr-type))
+                             (or (equal (type-array->size arr.type)
+                                        (type-array->size arr-type))
+                                 (not (type-array->size arr.type))
+                                 (not (type-array->size arr-type)))
+                             (type-integerp sub.type)))
+                (reterr
+                 (msg "The reading of a ~x0 array is applied to ~
+                       an expression term ~x1 returning ~x2 ~
+                       and to an expression term ~x3 returning ~x4, ~
+                       but a ~x0 and an integer operand is expected. ~
+                       This is indicative of provably dead code, ~
+                       given that the code is guard-verified."
+                      arr-type arr-term arr.type sub-term sub.type))))
+            (retok (make-pexpr-gout
+                    :expr (make-expr-arrsub :arr arr.expr
+                                            :sub sub.expr)
+                    :type elem-type
+                    :term term
+                    :events (append arr.events sub.events)
+                    :thm-name nil
+                    :thm-index sub.thm-index
+                    :names-to-avoid sub.names-to-avoid
+                    :proofs nil))))
+         ((mv okp arr-term sub-term in-type1 in-type2 out-type)
+          (atc-check-array-read-deprecated term))
+         ((when (and okp (member-eq :arrays gin.deprecated)))
           (b* (((erp (pexpr-gout arr))
                 (atc-gen-expr-pure arr-term gin state))
                ((erp (pexpr-gout sub))
@@ -1617,24 +1668,23 @@
                            arg.type
                            (type-struct tag)
                            (type-pointer (type-struct tag))))))))
-         ((mv okp index-term struct-term tag member index-type elem-type)
+         ((mv okp index-term struct-term tag member elem-type)
           (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout index))
                 (atc-gen-expr-pure index-term gin state))
-               ((unless (equal index.type index-type))
+               ((unless (type-integerp index.type))
                 (reterr
                  (msg "The reading of ~x0 structure with member ~x1 ~
                        is applied to ~
-                       an expression term ~x2 returning ~x3, ~
-                       but a ~x4 operand is expected. ~
+                       an index expression term ~x2 returning ~x3, ~
+                       but a C integer operand is expected. ~
                        This is indicative of provably dead code, ~
                        given that the code is guard-verified."
                       (type-struct tag)
                       member
                       index-term
-                      index.type
-                      index-type)))
+                      index.type)))
                ((erp (pexpr-gout struct))
                 (atc-gen-expr-pure struct-term
                                    (change-pexpr-gin
@@ -1851,18 +1901,7 @@
          ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
-                (atc-gen-expr-pure arg-term
-                                   (make-pexpr-gin
-                                    :context gin.context
-                                    :inscope gin.inscope
-                                    :prec-tags gin.prec-tags
-                                    :fn gin.fn
-                                    :fn-guard gin.fn-guard
-                                    :compst-var gin.compst-var
-                                    :thm-index gin.thm-index
-                                    :names-to-avoid gin.names-to-avoid
-                                    :proofs gin.proofs)
-                                   state))
+                (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
                                       :names-to-avoid arg.names-to-avoid
@@ -1909,7 +1948,8 @@
    (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred pexprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1981,7 +2021,8 @@
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
-                            :proofs gin.proofs)
+                            :proofs gin.proofs
+                            :deprecated gin.deprecated)
                            state))
        ((erp (pexprs-gout rest))
         (atc-gen-expr-pure-list (cdr terms)
@@ -2024,7 +2065,8 @@
    (prec-tags atc-string-taginfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2109,7 +2151,8 @@
                                            :compst-var gin.compst-var
                                            :thm-index gin.thm-index
                                            :names-to-avoid gin.names-to-avoid
-                                           :proofs gin.proofs)
+                                           :proofs gin.proofs
+                                           :deprecated gin.deprecated)
                            state))
        (bound '(quote 1))
        ((when (not pure.proofs))
@@ -2249,7 +2292,8 @@
                                        :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
-                                       :proofs gin.proofs)
+                                       :proofs gin.proofs
+                                       :deprecated gin.deprecated)
                                       state))
              ((unless (equal args.types in-types))
               (reterr

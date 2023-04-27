@@ -99,7 +99,6 @@
 ;;                 (raise "Here: ~p0" message))))
 ;;     nil))
 
-
 (progn
   (encapsulate
     (((aggressive-find-adders-in-svex) => *))
@@ -112,7 +111,7 @@
         `(defattach aggressive-find-adders-in-svex return-t)
       `(defattach aggressive-find-adders-in-svex return-nil)))
 
-  (enable-aggressive-find-adders-in-svex t))
+  (enable-aggressive-find-adders-in-svex nil))
 
 (progn
   (encapsulate
@@ -126,7 +125,7 @@
         `(defattach merge-fa-chains return-t)
       `(defattach merge-fa-chains return-nil)))
 
-  (enable-merge-fa-chains nil))
+  (enable-merge-fa-chains t))
 
 (defsection svex-pattern-matching-lemmas
   (defthm cdr-of-x-is-svexlist-p-when-kind-is-svex-fn-call
@@ -5302,7 +5301,6 @@
                    t)))
             (t (mv 0 nil))))
 
-
     (define csel-simplify ((test sv::svex-p)
                            (then sv::Svex-p)
                            (else sv::svex-p)
@@ -6398,7 +6396,6 @@
        ((mv fa-c-arg2 &) (svl::bitand/bitor-cancel-repeated-aux fa-c-arg2 leaves 0))
        ((mv fa-c-arg3 &) (svl::bitand/bitor-cancel-repeated-aux fa-c-arg3 leaves 0)))
     (mv fa-c-arg1 fa-c-arg2 fa-c-arg3)))
-  
 
 (define ppx-simplify-mergeable-node ((svex sv::svex-p)
                                      &key
@@ -6433,9 +6430,9 @@
            ((unless found)
             (b* (;; if not found try simplifing first
                  #|((mv new-svex &) ;; NOTE: THIS MAY NEVER BE USEFUL.
-                  (simplify-to-find-fa-c-patterns-aux
-                   x 5 :strength 2
-                   :inside-out t))|#
+                 (simplify-to-find-fa-c-patterns-aux
+                 x 5 :strength 2
+                 :inside-out t))|#
                  (new-svex (svl::bitand/or/xor-cancel-repeated
                             'sv::bitor (first (cdr svex)) (second (cdr svex))
                             :leave-depth 5))
@@ -6494,13 +6491,13 @@
                                                                           other-arg
                                                                           remaining-bitand)))
            #|((mv shared-arg1 shared-arg2 new-inner-bitor)
-            (ppx-simplify-mergeable-node-simplify-args remaining-bitor shared-arg1 shared-arg2 new-inner-bitor))|#
-             
+           (ppx-simplify-mergeable-node-simplify-args remaining-bitor shared-arg1 shared-arg2 new-inner-bitor))|#
+
            (new-inner-bitor (ppx-simplify-mergeable-node new-inner-bitor))
 
            #|((mv shared-arg1 shared-arg2 new-inner-bitor)
-            (ppx-simplify-mergeable-node-simplify-args remaining-bitor shared-arg1 shared-arg2 new-inner-bitor))|#
-           
+           (ppx-simplify-mergeable-node-simplify-args remaining-bitor shared-arg1 shared-arg2 new-inner-bitor))|#
+
            (new-fa-c-chain (create-fa-c-chain-instance shared-arg1 shared-arg2 new-inner-bitor))
 
            ;; TODO:
@@ -6626,10 +6623,10 @@
                 ;; But this may help with the case where a constant 1 is propagated
                 ;; in the ppx adders...
                 #|(new-svex (if bitor-p
-                              (svl::bitand/or/xor-cancel-repeated
-                               'sv::bitor (first (cdr new-svex)) (second (cdr new-svex))
-                               :leave-depth 1)
-                            new-svex))|#)
+                (svl::bitand/or/xor-cancel-repeated
+                'sv::bitor (first (cdr new-svex)) (second (cdr new-svex))
+                :leave-depth 1)
+                new-svex))|#)
              (if bitor-p
                  (ppx-simplify-mergeable-node new-svex :limit 10000)
                new-svex))))
@@ -6910,7 +6907,7 @@ y))
 
   :prepwork
   ((defconst *find-f/h-adders-in-svex-alist-limit*
-     25)
+     50)
    (local
     (in-theory (disable fast-alist-clean))))
   :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p svex-alist))
@@ -7502,7 +7499,6 @@ pattern
                                     (equal svex.fn 'ha+1-c-chain)
                                     (equal svex.fn 'ha+1-s-chain))))
 
-
                 (collected (if ha-undergate?
                                ;; arguments should be ordered beforehand so not
                                ;; putting the args only one way.
@@ -7519,14 +7515,14 @@ pattern
                                                     ;; through these gates.
                                                     underadder
                                                     #|(member-equal
-                                                     svex.fn
-                                                     (list 'sv::bitand
-                                                           'sv::unfloat
-                                                           'sv::id 'sv::?* 'sv::?
-                                                           'sv::bitor
-                                                           'sv::uor
-                                                           'SV::uand
-                                                           'sv::bitxor))|#))
+                                                    svex.fn
+                                                    (list 'sv::bitand
+                                                    'sv::unfloat
+                                                    'sv::id 'sv::?* 'sv::?
+                                                    'sv::bitor
+                                                    'sv::uor
+                                                    'SV::uand
+                                                    'sv::bitxor))|#))
                                                (or (equal svex.fn 'sv::bitand)
                                                    (equal svex.fn 'sv::bitor)
                                                    (equal svex.fn 'sv::uor)
@@ -7583,7 +7579,85 @@ pattern
                                                :parsed-svexes parsed-svexes)))
         (mv collected parsed-svexes)))))
 
-(defines remove-unpaired-ha
+
+(define shuffle-gates-after-removing-ha-under-gates ((svex.fn sv::fnsym-p)
+                                                     (svex.args sv::svexlist-p)
+                                                     (orig-svex.args sv::svexlist-p))
+
+  ;; After an  half-adder is removed,  this function makes a  slight shuffle so  that we
+  ;; don't match the exact same adder right away and possibly let other variations to be matched
+  
+  :returns (res-svex sv::svex-p :hyp (and (sv::fnsym-p svex.fn)
+                                          (sv::svexlist-p svex.args)))
+  :guard-hints (("Goal"
+                 :expand ((sv::svex-kind (car svex.args))
+                          (sv::svex-kind (cadr svex.args)))
+                 :in-theory (e/d () (sv::svex-kind$inline))))
+  
+  (b* (((unless (or (equal svex.fn 'sv::bitxor)
+                    (equal svex.fn 'sv::bitand)))
+        (sv::Svex-call svex.fn svex.args))
+       ((unless (and*-exec (svl::equal-len svex.args 2)
+                           (svl::equal-len orig-svex.args 2)))
+        (sv::Svex-call svex.fn svex.args))
+       ((mv x1 x2) (mv (first svex.args) (second svex.args)))
+       ((mv o1 o2) (mv (first orig-svex.args) (second orig-svex.args)))
+
+       ((list x1.fn x1.args) (and*-exec (equal (sv::svex-kind x1) :call)
+                                        (list (sv::svex-call->fn x1)
+                                              (sv::svex-call->args x1))))
+       ((list x2.fn x2.args) (and*-exec (equal (sv::svex-kind x2) :call)
+                                        (list (sv::svex-call->fn x2)
+                                              (sv::svex-call->args x2))))
+       (o1.fn (and*-exec (equal (sv::svex-kind o1) :call)
+                         (sv::svex-call->fn o1)))
+       (o2.fn (and*-exec (equal (sv::svex-kind o2) :call)
+                         (sv::svex-call->fn o2)))
+
+       ((when (and*-exec (equal x1.fn o1.fn)
+                         (equal x2.fn o2.fn)))
+        (sv::Svex-call svex.fn svex.args)))
+    (cond ((and*-exec (not (equal x1.fn o1.fn))
+                      (equal x1.fn svex.fn)
+                      (svl::equal-len x1.args 2))
+           (sv::Svex-call svex.fn
+                          (hons-list (first x1.args)
+                                     (sv::Svex-call svex.fn
+                                                    (hons-list (second x1.args)
+                                                               x2)))))
+          ((and*-exec (not (equal x2.fn o2.fn))
+                      (equal x2.fn svex.fn)
+                      (svl::equal-len x2.args 2))
+           (sv::Svex-call svex.fn
+                          (hons-list (sv::Svex-call svex.fn
+                                                    (hons-list (second x2.args)
+                                                               x1))
+                                     (first x2.args))))
+          (t  (sv::Svex-call svex.fn svex.args))))
+
+  ///
+
+
+  (defret <fn>-is-correct
+    (implies t
+             (equal (sv::Svex-eval$ res-svex env)
+                    (sv::Svex-eval$ (sv::Svex-call svex.fn svex.args) env)))
+    :fn shuffle-gates-after-removing-ha-under-gates
+    :hints (("Goal"
+             :expand ((sv::svex-kind (car svex.args))
+                      (sv::svex-kind (cadr svex.args)))
+             :in-theory (e/d (sv::svex-apply)
+                             (sv::svex-kind$inline))))))  
+           
+;; (shuffle-gates-after-removing-ha-under-gates 'sv::bitand
+;;                                              (list 'z '(sv::bitand x y))
+;;                                              (list 'z '(ha-c-chain x y)))
+
+       
+       
+  
+
+(defines remove-ha-under-gates
   :verify-guards nil
   :hints (("Goal"
            :in-theory (e/d (sv::SVEX-COUNT
@@ -7591,10 +7665,10 @@ pattern
                             SV::SVEX-CALL->args)
                            ())))
 
-  (define remove-unpaired-ha ((svex sv::Svex-p)
-                              &key
-                              ((wrap-with-id booleanp) 'wrap-with-id)
-                              ((collected alistp) 'collected))
+  (define remove-ha-under-gates ((svex sv::Svex-p)
+                                 &key
+                                 ((wrap-with-id booleanp) 'wrap-with-id)
+                                 ((collected alistp) 'collected))
     :measure (sv::svex-count svex)
     :Returns (res-svex sv::svex-p :hyp (sv::svex-p svex))
 
@@ -7612,8 +7686,14 @@ pattern
                               (hons-get (cdr svex.args) collected)
                             (hons-get svex.args collected))))
           ((unless to-remove)
-           (sv::Svex-call svex.fn
-                          (remove-unpaired-ha-lst svex.args)))
+
+           (shuffle-gates-after-removing-ha-under-gates
+            svex.fn
+            (remove-ha-under-gates-lst svex.args)
+            svex.args)
+           
+           #|(sv::Svex-call svex.fn
+                          (remove-ha-under-gates-lst svex.args))|#)
           (res
            (cond
             ((ha-c-chain-self-pattern-p svex)
@@ -7621,13 +7701,13 @@ pattern
               svex
               (sv::Svex-call
                'sv::bitand
-               (hons-list (remove-unpaired-ha x)
-                          (remove-unpaired-ha y)))))
+               (hons-list (remove-ha-under-gates x)
+                          (remove-ha-under-gates y)))))
             ((ha-s-chain-self-pattern-p svex)
              (ha-s-chain-self-pattern-body
               svex
-              (sv::Svex-call 'sv::bitxor (hons-list (remove-unpaired-ha x)
-                                                    (remove-unpaired-ha y)))))
+              (sv::Svex-call 'sv::bitxor (hons-list (remove-ha-under-gates x)
+                                                    (remove-ha-under-gates y)))))
             ((ha+1-s-chain-self-pattern-p svex)
              (ha+1-s-chain-self-pattern-body
               svex
@@ -7637,52 +7717,52 @@ pattern
                  'sv::bitnot
                  (hons-list
                   (sv::svex-call 'sv::bitxor
-                                 (hons-list (remove-unpaired-ha x)
-                                            (remove-unpaired-ha y))))))
+                                 (hons-list (remove-ha-under-gates x)
+                                            (remove-ha-under-gates y))))))
                ((equal m 1)
                 (sv::Svex-call
                  'sv::bitxor
                  (hons-list
                   1
                   (sv::svex-call 'sv::bitxor
-                                 (hons-list (remove-unpaired-ha x)
-                                            (remove-unpaired-ha y))))))
+                                 (hons-list (remove-ha-under-gates x)
+                                            (remove-ha-under-gates y))))))
                ((equal m 10)
                 (sv::svex-call 'sv::bitxor
-                               (hons-list (remove-unpaired-ha x)
-                                          (remove-unpaired-ha y))))
+                               (hons-list (remove-ha-under-gates x)
+                                          (remove-ha-under-gates y))))
                (t
                 (sv::Svex-call svex.fn
-                               (remove-unpaired-ha-lst svex.args))))))
+                               (remove-ha-under-gates-lst svex.args))))))
             ((ha+1-c-chain-self-pattern-p svex)
              (ha+1-c-chain-self-pattern-body
               svex
-              (sv::Svex-call 'sv::bitor (hons-list (remove-unpaired-ha x)
-                                                   (remove-unpaired-ha y)))))
+              (sv::Svex-call 'sv::bitor (hons-list (remove-ha-under-gates x)
+                                                   (remove-ha-under-gates y)))))
             (t (sv::Svex-call svex.fn
-                              (remove-unpaired-ha-lst svex.args)) ;; should never come here..
+                              (remove-ha-under-gates-lst svex.args)) ;; should never come here..
                )))
           (res (if wrap-with-id (sv::svex-call 'sv::id (hons-list res)) res)))
        res)))
 
-  (define remove-unpaired-ha-lst ((lst sv::svexlist-p)
-                                  &key
-                                  ((wrap-with-id booleanp) 'wrap-with-id)
-                                  ((collected alistp) 'collected))
+  (define remove-ha-under-gates-lst ((lst sv::svexlist-p)
+                                     &key
+                                     ((wrap-with-id booleanp) 'wrap-with-id)
+                                     ((collected alistp) 'collected))
     :measure (sv::svexlist-count lst)
     :Returns (res-lst sv::svexlist-p :hyp (sv::svexlist-p lst))
     (if (atom lst)
         nil
-      (hons (remove-unpaired-ha (car lst))
-            (remove-unpaired-ha-lst (cdr lst)))))
+      (hons (remove-ha-under-gates (car lst))
+            (remove-ha-under-gates-lst (cdr lst)))))
   ///
 
-  (verify-guards remove-unpaired-ha-lst-fn
+  (verify-guards remove-ha-under-gates-lst-fn
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d () ()))))
 
-  (memoize 'remove-unpaired-ha
+  (memoize 'remove-ha-under-gates
            :condition '(eq (sv::svex-kind svex) :call))
 
   (defret-mutual correctness
@@ -7690,12 +7770,12 @@ pattern
       (implies (warrants-for-adder-pattern-match)
                (equal (sv::Svex-eval$ res-svex env)
                       (sv::Svex-eval$ svex env)))
-      :fn remove-unpaired-ha)
+      :fn remove-ha-under-gates)
     (defret <fn>-is-correct
       (implies (warrants-for-adder-pattern-match)
                (equal (sv::Svexlist-eval$ res-lst env)
                       (sv::Svexlist-eval$ lst env)))
-      :fn remove-unpaired-ha-lst)
+      :fn remove-ha-under-gates-lst)
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d (sv::svex-apply$
@@ -7708,16 +7788,16 @@ pattern
                               ha+1-c-chain)
                              ()))))
 
-  (define remove-unpaired-ha-alist ((lst sv::svex-alist-p)
-                                    &key
-                                    ((wrap-with-id booleanp) 'wrap-with-id)
-                                    ((collected alistp) 'collected))
+  (define remove-ha-under-gates-alist ((lst sv::svex-alist-p)
+                                       &key
+                                       ((wrap-with-id booleanp) 'wrap-with-id)
+                                       ((collected alistp) 'collected))
     :Returns (res sv::svex-alist-p :hyp (sv::svex-alist-p lst))
     (if (atom lst)
         nil
       (acons (caar lst)
-             (remove-unpaired-ha (cdar lst))
-             (remove-unpaired-ha-alist (cdr lst))))
+             (remove-ha-under-gates (cdar lst))
+             (remove-ha-under-gates-alist (cdr lst))))
     ///
     (defret <fn>-is-correct
       (implies (warrants-for-adder-pattern-match)
@@ -7740,7 +7820,7 @@ pattern
                 (fast-alist-free collected)
                 svex-alist))
        (- (cw "- Removing ~p0 half-adders that are suspected to be misidentified.~%" found-num))
-       (svex-alist (remove-unpaired-ha-alist svex-alist))
+       (svex-alist (remove-ha-under-gates-alist svex-alist))
        (- (fast-alist-free collected)))
     svex-alist)
   ///
@@ -7854,10 +7934,9 @@ pattern
     (implies (warrants-for-adder-pattern-match)
              (equal (sv::svex-alist-eval$ res env)
                     (sv::svex-alist-eval$ x env)))
-    :hints (("goal" 
+    :hints (("goal"
              :in-theory (e/d (SV::SVEX-ALIST-EVAL$)
                              ())))))
-
 
 (define remove-unpaired-fa-s-alist ((svex-alist sv::svex-alist-p))
   :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p svex-alist))
@@ -7870,7 +7949,7 @@ pattern
        (found-num (len pattern-alist))
        ((when (equal found-num 0))
         (progn$ (cw "- Could not find any unpaired full-adder.~%")
-                (fast-alist-free pattern-alist) 
+                (fast-alist-free pattern-alist)
                 svex-alist))
        (- (cw "- Removing ~p0 unpaired full-adder-s patterns.~%" found-num))
 

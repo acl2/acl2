@@ -17,16 +17,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Some examples to test code generation for structuress.
+; Some examples to test code generation for external objects.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun |f| (|x| |arr|)
   (declare (xargs :guard (and (c::sintp |x|)
                               (object-|arr|-p |arr|)
-                              (c::sint-array-sint-index-okp |arr| |x|))
+                              (c::sint-array-index-okp |arr| |x|))
                   :guard-hints (("Goal" :in-theory (enable object-|arr|-p)))))
-  (c::sint-array-read-sint |arr| |x|))
+  (c::sint-array-read |arr| |x|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,19 +37,19 @@
                               (<= 0 (c::integer-from-sint |i|))
                               (<= (c::integer-from-sint |i|) 8))
                   :guard-hints (("Goal"
-                                 :in-theory (enable c::add-sint-sint-okp
-                                                    c::add-sint-sint
-                                                    c::sint-integerp-alt-def
-                                                    c::ne-sint-sint
-                                                    c::uint-array-sint-index-okp
-                                                    c::uint-array-integer-index-okp
-                                                    object-|arr2|-p
-                                                    c::assign)))
+                                 :in-theory (enable
+                                             c::add-sint-sint-okp
+                                             c::add-sint-sint
+                                             c::sint-integerp-alt-def
+                                             c::ne-sint-sint
+                                             c::uint-array-index-okp
+                                             object-|arr2|-p
+                                             c::assign
+                                             c::integer-from-cinteger-alt-def)))
                   :measure (nfix (- 8 (c::integer-from-sint |i|)))
                   :hints (("Goal" :in-theory (enable c::ne-sint-sint
                                                      c::add-sint-sint
                                                      c::sint-from-boolean
-                                                     c::sint-integer-fix
                                                      c::sint-integerp-alt-def
                                                      c::assign)))))
   (if (mbt (and (<= 0 (c::integer-from-sint |i|))
@@ -58,7 +58,7 @@
           (let* ((|sum| (c::assign
                          (c::add-uint-uint
                           |sum|
-                          (c::uint-array-read-sint |arr2| |i|))))
+                          (c::uint-array-read |arr2| |i|))))
                  (|i| (c::assign (c::add-sint-sint |i| (c::sint-dec-const 1)))))
             (|g$loop| |i| |sum| |arr2|))
         (mv |i| |sum|))
@@ -78,9 +78,9 @@
 (defun |h| (|x| |arr|)
   (declare (xargs :guard (and (c::sintp |x|)
                               (object-|arr|-p |arr|)
-                              (c::sint-array-sint-index-okp |arr| |x|))
+                              (c::sint-array-index-okp |arr| |x|))
                   :guard-hints (("Goal" :in-theory (enable object-|arr|-p)))))
-  (let ((|arr| (c::sint-array-write-sint |arr| |x| (c::sint-dec-const 1))))
+  (let ((|arr| (c::sint-array-write |arr| |x| (c::sint-dec-const 1))))
     |arr|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,29 +91,29 @@
                               (<= 0 (c::integer-from-sint |idx|))
                               (<= (c::integer-from-sint |idx|) 8))
                   :guard-hints (("Goal"
-                                 :in-theory (enable c::add-sint-sint-okp
-                                                    c::add-sint-sint
-                                                    c::sint-integerp-alt-def
-                                                    c::ne-sint-sint
-                                                    c::uint-array-sint-index-okp
-                                                    c::uint-array-integer-index-okp
-                                                    object-|arr2|-p
-                                                    c::assign)))
+                                 :in-theory (enable
+                                             c::add-sint-sint-okp
+                                             c::add-sint-sint
+                                             c::sint-integerp-alt-def
+                                             c::ne-sint-sint
+                                             c::uint-array-index-okp
+                                             object-|arr2|-p
+                                             c::assign
+                                             c::integer-from-cinteger-alt-def)))
                   :measure (nfix (- 8 (c::integer-from-sint |idx|)))
                   :hints (("Goal" :in-theory (enable c::ne-sint-sint
                                                      c::add-sint-sint
                                                      c::sint-from-boolean
-                                                     c::sint-integer-fix
                                                      c::sint-integerp-alt-def
                                                      c::assign)))))
   (if (mbt (and (<= 0 (c::integer-from-sint |idx|))
                 (<= (c::integer-from-sint |idx|) 8)))
       (if (c::boolean-from-sint (c::ne-sint-sint |idx| (c::sint-dec-const 8)))
-          (let* ((|arr2| (c::uint-array-write-sint
+          (let* ((|arr2| (c::uint-array-write
                           |arr2|
                           |idx|
                           (c::add-uint-uint
-                           (c::uint-array-read-sint |arr2| |idx|)
+                           (c::uint-array-read |arr2| |idx|)
                            (c::uint-dec-const 1))))
                  (|idx| (c::assign
                          (c::add-sint-sint |idx| (c::sint-dec-const 1)))))

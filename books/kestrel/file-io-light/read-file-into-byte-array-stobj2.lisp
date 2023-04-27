@@ -25,6 +25,7 @@
                            read-file-into-string2
                            mv-nth)))
 
+;; Populates the byte-array-stobj using characters from the string STR.
 (defund write-string-chars-to-byte-array-stobj (index len str byte-array-stobj)
   (declare (xargs :guard (and (unsigned-byte-p 60 index)
                               (stringp str)

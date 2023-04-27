@@ -182,10 +182,12 @@
   :hints (("Goal" :in-theory (e/d (logior) (lognot-of-logand)))))
 
 (defthm logior-bound
-  (implies (and (natp i)
-                (natp j))
+  (implies (and (integerp i); (natp i)
+                (natp j) ; gen?
+                )
            (not (< (logior i j) i)))
   :hints (("Goal"
+           :cases ((< i 0))
            :use (:instance <=-of-logand-same-when-negative (i (+ -1 (- i)))
                            (j (+ -1 (- j))))
            :in-theory (e/d (logior lognot)
@@ -193,7 +195,7 @@
                             <=-of-logand-same-when-negative)))))
 
 (defthm logior-bound-linear
-  (implies (and (natp i)
+  (implies (and (integerp i)
                 (natp j))
            (<= i (logior i j)))
   :rule-classes :linear)

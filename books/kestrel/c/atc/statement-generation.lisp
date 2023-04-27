@@ -217,7 +217,8 @@
    (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred stmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -780,7 +781,8 @@
                                      :prec-tags gin.prec-tags
                                      :thm-index gin.thm-index
                                      :names-to-avoid gin.names-to-avoid
-                                     :proofs gin.proofs)
+                                     :proofs gin.proofs
+                                     :deprecated gin.deprecated)
                       state))
        ((unless (equal expr.affect must-affect))
         (reterr
@@ -1497,7 +1499,8 @@
                                   :compst-var gin.compst-var
                                   :thm-index gin.thm-index
                                   :names-to-avoid gin.names-to-avoid
-                                  :proofs gin.proofs)
+                                  :proofs gin.proofs
+                                  :deprecated gin.deprecated)
                                  state))
              ((erp (stmt-gout then) then-context)
               (b* (((reterr) (irr-stmt-gout) nil)
@@ -1659,7 +1662,8 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs gin.proofs
+                                   :deprecated gin.deprecated)
                                   state))
                    ((when (or (type-case init.type :pointer)
                               (type-case init.type :array)))
@@ -1753,7 +1757,8 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs gin.proofs
+                                   :deprecated gin.deprecated)
                                   state))
                    ((unless (equal prev-type rhs.type))
                     (reterr
@@ -1920,7 +1925,8 @@
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
+                                        :proofs gin.proofs
+                                        :deprecated gin.deprecated)
                                        state))
                    ((unless (equal ptr.type (type-pointer type)))
                     (reterr
@@ -1941,7 +1947,8 @@
                                         :compst-var gin.compst-var
                                         :thm-index ptr.thm-index
                                         :names-to-avoid ptr.names-to-avoid
-                                        :proofs ptr.proofs)
+                                        :proofs ptr.proofs
+                                        :deprecated gin.deprecated)
                                        state))
                    ((unless (equal int.type type))
                     (reterr
@@ -1984,7 +1991,7 @@
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
-             ((mv okp sub-term elem-term sub-type elem-type)
+             ((mv okp sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
@@ -2009,7 +2016,8 @@
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
+                                        :proofs gin.proofs
+                                        :deprecated gin.deprecated)
                                        state))
                    ((erp (pexpr-gout sub))
                     (atc-gen-expr-pure sub-term
@@ -2022,7 +2030,8 @@
                                         :compst-var gin.compst-var
                                         :thm-index arr.thm-index
                                         :names-to-avoid arr.names-to-avoid
-                                        :proofs arr.proofs)
+                                        :proofs arr.proofs
+                                        :deprecated gin.deprecated)
                                        state))
                    ((erp (pexpr-gout elem))
                     (atc-gen-expr-pure elem-term
@@ -2035,7 +2044,127 @@
                                         :compst-var gin.compst-var
                                         :thm-index sub.thm-index
                                         :names-to-avoid sub.names-to-avoid
-                                        :proofs sub.proofs)
+                                        :proofs sub.proofs
+                                        :deprecated gin.deprecated)
+                                       state))
+                   ((unless (and (type-case arr.type :array)
+                                 (equal (type-array->of arr.type)
+                                        elem-type)))
+                    (reterr
+                     (msg "The array ~x0 of type ~x1 ~
+                           does not have the expected array type of ~x2. ~
+                           This is indicative of ~
+                           unreachable code under the guards, ~
+                           given that the code is guard-verified."
+                          var arr.type elem-type)))
+                   ((unless (type-integerp sub.type))
+                    (reterr
+                     (msg "The array ~x0 of type ~x1 ~
+                           is being indexed with ~
+                           a subscript ~x2 of non-integer type ~x3, ~
+                           instead of integer type as expected.
+                           This is indicative of ~
+                           unreachable code under the guards, ~
+                           given that the code is guard-verified."
+                          var arr.type sub sub.type)))
+                   ((unless (equal elem.type elem-type))
+                    (reterr
+                     (msg "The array ~x0 of type ~x1 ~
+                           is being written to with ~
+                           an element ~x2 of type x3, ~
+                           instead of type ~x4 as expected.
+                           This is indicative of ~
+                           unreachable code under the guards, ~
+                           given that the code is guard-verified."
+                          var arr.type elem elem.type elem-type)))
+                   (asg (make-expr-binary
+                         :op (binop-asg)
+                         :arg1 (make-expr-arrsub :arr arr.expr
+                                                 :sub sub.expr)
+                         :arg2 elem.expr))
+                   (stmt (stmt-expr asg))
+                   (item (block-item-stmt stmt))
+                   ((erp (stmt-gout body))
+                    (atc-gen-stmt body-term
+                                  (change-stmt-gin
+                                   gin
+                                   :var-term-alist var-term-alist-body
+                                   :thm-index elem.thm-index
+                                   :names-to-avoid elem.names-to-avoid
+                                   :proofs nil)
+                                  state))
+                   (limit (pseudo-term-fncall 'binary-+
+                                              (list (pseudo-term-quote 4)
+                                                    body.limit))))
+                (retok (make-stmt-gout
+                        :items (cons item body.items)
+                        :type body.type
+                        :term term
+                        :context nil
+                        :limit limit
+                        :events (append arr.events
+                                        sub.events
+                                        elem.events
+                                        body.events)
+                        :thm-name nil
+                        :thm-index body.thm-index
+                        :names-to-avoid body.names-to-avoid
+                        :proofs nil))))
+             ((mv okp sub-term elem-term sub-type elem-type)
+              (atc-check-array-write-deprecated var val-term))
+             ((when (and okp (member-eq :arrays gin.deprecated)))
+              (b* (((unless (eq wrapper? nil))
+                    (reterr
+                     (msg "The array write term ~x0 to which ~x1 is bound ~
+                           has the ~x2 wrapper, which is disallowed."
+                          val-term var wrapper?)))
+                   ((unless (member-eq var gin.affect))
+                    (reterr
+                     (msg "The array ~x0 is being written to, ~
+                           but it is not among the variables ~x1 ~
+                           currently affected."
+                          var gin.affect)))
+                   ((erp (pexpr-gout arr))
+                    (atc-gen-expr-pure var
+                                       (make-pexpr-gin
+                                        :context gin.context
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn
+                                        :fn-guard gin.fn-guard
+                                        :compst-var gin.compst-var
+                                        :thm-index gin.thm-index
+                                        :names-to-avoid gin.names-to-avoid
+                                        :proofs gin.proofs
+                                        :deprecated gin.deprecated)
+                                       state))
+                   ((erp (pexpr-gout sub))
+                    (atc-gen-expr-pure sub-term
+                                       (make-pexpr-gin
+                                        :context gin.context
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn
+                                        :fn-guard gin.fn-guard
+                                        :compst-var gin.compst-var
+                                        :thm-index arr.thm-index
+                                        :names-to-avoid arr.names-to-avoid
+                                        :proofs arr.proofs
+                                        :deprecated gin.deprecated)
+                                       state))
+                   ((erp (pexpr-gout elem))
+                    (atc-gen-expr-pure elem-term
+                                       (make-pexpr-gin
+                                        :context gin.context
+                                        :inscope gin.inscope
+                                        :prec-tags gin.prec-tags
+                                        :fn gin.fn
+                                        :fn-guard gin.fn-guard
+                                        :compst-var gin.compst-var
+                                        :thm-index sub.thm-index
+                                        :names-to-avoid sub.names-to-avoid
+                                        :proofs sub.proofs
+                                        :deprecated gin.deprecated)
                                        state))
                    ((unless (and (type-case arr.type :array)
                                  (equal (type-array->of arr.type)
@@ -2120,7 +2249,8 @@
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
+                                        :proofs gin.proofs
+                                        :deprecated gin.deprecated)
                                        state))
                    ((erp pointerp)
                     (cond
@@ -2157,7 +2287,8 @@
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
-                                        :proofs struct.proofs)
+                                        :proofs struct.proofs
+                                        :deprecated gin.deprecated)
                                        state))
                    ((unless (equal member.type member-type))
                     (reterr
@@ -2204,7 +2335,7 @@
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
-             ((mv okp index-term elem-term tag member index-type elem-type)
+             ((mv okp index-term elem-term tag member elem-type)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
@@ -2224,7 +2355,8 @@
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
+                                        :proofs gin.proofs
+                                        :deprecated gin.deprecated)
                                        state))
                    ((erp pointerp)
                     (cond
@@ -2261,18 +2393,19 @@
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
-                                        :proofs struct.proofs)
+                                        :proofs struct.proofs
+                                        :deprecated gin.deprecated)
                                        state))
-                   ((unless (equal index.type index-type))
+                   ((unless (type-integerp index.type))
                     (reterr
                      (msg "The structure ~x0 of type ~x1 ~
                            is being written to with ~
                            an index ~x2 of type ~x3, ~
-                           instead of type ~x4 as expected. ~
+                           instead of a C integer type as expected. ~
                            This is indicative of ~
                            unreachable code under the guards, ~
                            given that the code is guard-verified."
-                          var struct.type index-term index.type index-type)))
+                          var struct.type index-term index.type)))
                    ((erp (pexpr-gout elem))
                     (atc-gen-expr-pure elem-term
                                        (make-pexpr-gin
@@ -2284,7 +2417,8 @@
                                         :compst-var gin.compst-var
                                         :thm-index index.thm-index
                                         :names-to-avoid index.names-to-avoid
-                                        :proofs index.proofs)
+                                        :proofs index.proofs
+                                        :deprecated gin.deprecated)
                                        state))
                    ((unless (equal elem.type elem-type))
                     (reterr
@@ -2372,7 +2506,8 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs gin.proofs
+                                   :deprecated gin.deprecated)
                                   state))
                    ((when (or (type-case init.type :pointer)
                               (type-case init.type :array)))
@@ -2473,7 +2608,8 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
+                                   :proofs gin.proofs
+                                   :deprecated gin.deprecated)
                                   state))
                    ((unless (equal prev-type rhs.type))
                     (reterr
@@ -2752,7 +2888,8 @@
                                        :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
-                                       :proofs gin.proofs)
+                                       :proofs gin.proofs
+                                       :deprecated gin.deprecated)
                                       state))
              ((unless (equal args.types in-types))
               (reterr
@@ -2837,7 +2974,8 @@
    (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool))
+   (proofs bool)
+   (deprecated symbol-list))
   :pred lstmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2971,7 +3109,8 @@
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
-                            :proofs gin.proofs)
+                            :proofs gin.proofs
+                            :deprecated gin.deprecated)
                            state))
        (formals (formals+ gin.fn wrld))
        ((mv okp affect)
@@ -3005,7 +3144,8 @@
                        :prec-objs gin.prec-objs
                        :thm-index test.thm-index
                        :names-to-avoid test.names-to-avoid
-                       :proofs test.proofs)
+                       :proofs test.proofs
+                       :deprecated gin.deprecated)
                       state))
        ((unless (type-case body.type :void))
         (reterr

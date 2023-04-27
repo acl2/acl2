@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/jvm/load-class" :dir :system)
+(include-book "kestrel/jvm/read-class" :dir :system)
 (include-book "kestrel/jvm/method-indicators" :dir :system)
 (include-book "rule-lists-jvm")
 (include-book "rules-in-rule-lists-jvm")

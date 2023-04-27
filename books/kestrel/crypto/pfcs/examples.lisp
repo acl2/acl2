@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,8 +10,7 @@
 
 (in-package "PFCS")
 
-(include-book "semantics-shallow")
-(include-book "proof-support")
+(include-book "lifting")
 
 (include-book "std/util/defrule" :dir :system)
 
@@ -21,16 +20,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; These are examples from Zcash (see :DOC ZCASH::ZCASH).
+; These are (simple) examples from Zcash (see :DOC ZCASH::ZCASH).
 ; They may be moved to the Zcash library at some point.
 
-; Each example defines a PFCS named relation
-; and proves its equivalence with an ACL2 specification,
-; using the PFCS shallowly embedded semantics.
-
-; These are simple examples for now,
-; but they should demonstrate how PFCSes can support
-; the modular verification of hierarchical gadgets.
+; Each example defines a (deeply embedded) PFCS named relation
+; and proves its equivalence with an ACL2 specification.
+; First the PFCS definition is lifted (automatically).
+; Then the lifted (shallowly embedded) definition
+; is proved equivalent to the specification.
+; Finally the original definition is proved equivalent to the specification,
+; by composing the liftin theorem with the manually proved theorem;
+; (this theorem composition could be automated).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,9 +49,7 @@
                   (expression-var 'b))
            :right (expression-const 0)))))
 
-(make-event (sesem-definition (make-rel-boolean) 'p))
-
-(make-event (sesem-definition-thm (make-rel-boolean) 'p))
+(lift (make-rel-boolean))
 
 (defruled rel-boolean-to-spec
   (implies (and (primep p)
@@ -90,9 +88,7 @@
                                   (expression-var 'c)))
            :right (expression-const 0)))))
 
-(make-event (sesem-definition (make-rel-condeq) 'p))
-
-(make-event (sesem-definition-thm (make-rel-condeq) 'p))
+(lift (make-rel-condeq))
 
 (defruled rel-condeq-to-spec
   (implies (and (primep p)
@@ -136,9 +132,7 @@
            :right (expression-sub (expression-var 'y)
                                   (expression-var 'z))))))
 
-(make-event (sesem-definition (make-rel-select) 'p))
-
-(make-event (sesem-definition-thm (make-rel-select) 'p))
+(lift (make-rel-select))
 
 (defruled rel-select-to-spec
   (implies (and (primep p)
@@ -187,9 +181,7 @@
                   (expression-var 'a))
            :right (expression-const 1)))))
 
-(make-event (sesem-definition (make-rel-nonzero) 'p))
-
-(make-event (sesem-definition-thm (make-rel-nonzero) 'p))
+(lift (make-rel-nonzero))
 
 (defruled rel-nonzero-to-spec
   (implies (and (primep p)
@@ -245,9 +237,7 @@
                                   (expression-sub (expression-var 'b)
                                                   (expression-var 'c)))))))
 
-(make-event (sesem-definition (make-rel-xor) 'p))
-
-(make-event (sesem-definition-thm (make-rel-xor) 'p))
+(lift (make-rel-xor))
 
 (defruled rel-xor-to-spec
   (implies (and (primep p)

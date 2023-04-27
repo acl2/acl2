@@ -1,6 +1,6 @@
 ; Kestrel Utilities
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020-2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,8 @@
 (include-book "bits-and-bytes-as-digits")
 (include-book "bits-and-ubyte11s-as-digits")
 (include-book "book-runes-alist")
+(include-book "brr-data-all")
+(include-book "brr-data-failures")
 (include-book "bytes-as-digits")
 (include-book "checkpoints")
 (include-book "copy-def")
@@ -41,6 +43,7 @@
 (include-book "integer-range-lists")
 (include-book "integers-from-to")
 (include-book "integers-from-to-as-set")
+(include-book "io/top")
 (include-book "keyword-value-lists")
 (include-book "lists/top")
 (include-book "magic-macroexpand")

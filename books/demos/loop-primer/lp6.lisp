@@ -123,7 +123,7 @@
 ;          when (and (arity (cadr rune) world)
 ;                    (> (arity (cadr rune) world) 9))
 ;          collect (cadr rune)))
-; (MEMOIZE-FORM SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1)
+; (UPDATE-BRR-DATA-1-BUILTIN MEMOIZE-FORM SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1)
 
 ; However, make-event can be used to create a suitable defthm.
 
@@ -139,7 +139,8 @@
    `(defthm lp6-8
       (equal
        ',names
-       '(MEMOIZE-FORM SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1))
+       '(UPDATE-BRR-DATA-1-BUILTIN MEMOIZE-FORM SEARCH-FN SEARCH-FN-GUARD
+                                   BUILD-STATE1))
       :rule-classes nil)))
 
 ; -----------------------------------------------------------------

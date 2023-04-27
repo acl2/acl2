@@ -1,7 +1,7 @@
 ; Creating STP queries from DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,6 +11,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; Ensures this book and all STP examples get rebuilt when the script changes:
+;; (depends-on "callstp.bash")
 
 ;; TODO: Use an array instead of nodenum-type-alist everywhere?
 
@@ -52,7 +55,7 @@
 (include-book "known-predicates")
 (include-book "stp-counterexamples")
 (include-book "call-axe-script")
-(include-book "axe-syntax-functions-bv") ;for get-type-of-bv-expr-axe, todo reduce
+(include-book "axe-syntax-functions-bv") ;for maybe-get-type-of-bv-function-call, todo reduce
 (include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
 (include-book "kestrel/bv/defs" :dir :system) ;todo: make sure this book includes the definitions of all functions it translates.
 (include-book "kestrel/bv/getbit-def" :dir :system)
@@ -85,6 +88,17 @@
                        ;; Avoid printing during proofs
                        ((:e fmt-to-comment-window)))))
 
+(defthm myquote-forward-to-equal-of-nth-0-and-quote
+  (implies (myquotep expr)
+           (equal 'quote (nth 0 expr)))
+  :rule-classes :forward-chaining)
+
+(defthm natp-of-+-of--
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (natp (+ x (- y)))
+                  (<= y x))))
+
 ;; (defthm equal-of-len-forward-to-cons
 ;;   (implies (and (equal k (len x))
 ;;                 (posp k))
@@ -99,13 +113,13 @@
 
 (in-theory (disable (:e nat-to-string))) ;to avoid errors being printed in proofs
 
-;dup
-(defund unquote-if-possible (x)
-  (declare (xargs :guard t))
-  (if (and (quotep x)
-           (consp (cdr x)))
-      (unquote x)
-    nil))
+;; ;dup
+;; (defund unquote-if-possible (x)
+;;   (declare (xargs :guard t))
+;;   (if (and (quotep x)
+;;            (consp (cdr x)))
+;;       (unquote x)
+;;     nil))
 
 ;(in-theory (disable string-append-lst)) ;move
 ;(in-theory (disable bounded-dag-exprp)) ;move?
@@ -149,11 +163,7 @@
       (string-append (subseq base-filename 0 199) "SHORTENED")
     base-filename))
 
-;drop? ;dup
-(defthm character-listp-of-reverse-list
-  (implies (character-listp l)
-           (character-listp (reverse-list l)))
-  :hints (("Goal" :in-theory (enable character-listp reverse-list))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;just use repeat?
 ;optimize?
@@ -175,7 +185,9 @@
   (implies (string-treep acc)
            (string-treep (n-close-parens n acc))))
 
-(in-theory (disable (:e nat-to-string)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;(in-theory (disable (:e nat-to-string))) ;why?
 
 ;; (defthm <-of-maxelem-of-cdr
 ;;   (implies (and (all-< items x)
@@ -205,52 +217,74 @@
            (all-integerp x))
   :rule-classes :forward-chaining)
 
-;fixme are there other functions like this to deprecate?
-;returns a type or nil (if we could not determine the type)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, or nil (if we could not determine the type).
 ;should some of the nil cases here be errors or warnings?
 ;fixme handle tuples?
 ;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
 ;fixme make sure all callers of this handle nil okay (would it ever be better to throw an error?)?
 ;what if the number of arguments is wrong?
 ;; TODO: Consider adding support for constant arrays
-;; TODO: Exclude FN from being 'QUOTE?
-(defund get-type-of-expr (fn args)
+;; TODO: Exclude FN from being 'QUOTE?  todo: but require it to be a symbol?
+;; TODO: Are there other functions like this to deprecate?
+(defund maybe-get-type-of-function-call (fn args)
   (declare (xargs :guard (and (true-listp args)
                               (all-dargp args))))
-  (or (get-type-of-bv-expr-axe fn args)
-      (cond ;see unsigned-byte-p-1-of-bitxor, etc.:
-       ((or (eq fn 'bv-array-write)
-            (eq fn 'bv-array-if))
-        (let ((second (unquote-if-possible (first args)))
-              (third (unquote-if-possible (second args))))
-          (if (and (natp second) (natp third))
-              (make-bv-array-type second third)    ;fixme what if the width is 0?
-            nil                                 ;error?
+  (or (maybe-get-type-of-bv-function-call fn args)
+      (cond
+       ;; Functions that return bv-arrays:
+       ((or (eq fn 'bv-array-write) ; (bv-array-write element-size len index val data)
+            (eq fn 'bv-array-if)) ; (bv-array-if element-size len test array1 array2)
+        (let ((element-size (unquote-if-possible (first args)))
+              (len (unquote-if-possible (second args))))
+          (if (and (natp element-size)
+                   (natp len))
+              (make-bv-array-type element-size len) ;fixme what if the width is 0?
+            nil                                     ;error?
             )))
+       ;; Functions that return booleans:
        ((member-eq fn *known-predicates-basic* ;;'(equal boolif booland boolor sbvlt bvlt bvle not unsigned-byte-p) ;TODO: Use the known-boolean stuff, in case we want to stub out a user-defined boolean function?
                    )
-        (boolean-type)) ;nil ;BBOZO make sure these are handled right downstream
-       (t nil ;should this be most-general-type or something like that?
+        (boolean-type)) ; TTODO: make sure these are handled right downstream
+       (t nil ; could redo things to return most-general-type here
           ))))
 
-(defthm axe-typep-of-get-type-of-expr
-  (implies (get-type-of-expr fn args)
-           (axe-typep (get-type-of-expr fn args)))
-  :hints (("Goal" :in-theory (enable get-type-of-expr))))
+;; If it's non-nil, it's an Axe type.
+(defthm axe-typep-of-maybe-get-type-of-function-call
+  (implies (maybe-get-type-of-function-call fn args)
+           (axe-typep (maybe-get-type-of-function-call fn args)))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-function-call))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;get rid of this?
-(defun get-type-of-expr-safe (fn args)
+(defund get-type-of-function-call-checked (fn args)
   (declare (xargs :guard (and (true-listp args)
                               (all-dargp args))))
-  (let ((type (get-type-of-expr fn args)))
-    (or type
-        (er hard? 'get-type-of-expr-safe "couldn't find type for call of ~x0 on args ~x1" fn args))))
+  (or (maybe-get-type-of-function-call fn args)
+      (er hard? 'get-type-of-function-call-checked "couldn't find type for call of ~x0 on args ~x1" fn args)))
 
-;fixme rename ...-safe and have this return most-general-type instead of nil..
-;use this more!?
-;returns a type or nil for unknown
-;val is the unquoted constant
-(defund get-type-of-constant-if-possible (val)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, possibly (most-general-type).
+(defund get-type-of-function-call-safe (fn args)
+  (declare (xargs :guard (and (true-listp args)
+                              (all-dargp args))))
+  (or (maybe-get-type-of-function-call fn args)
+      (most-general-type)))
+
+(defthm axe-typep-of-get-type-of-function-call-safe
+  (axe-typep (get-type-of-function-call-safe fn args))
+  :hints (("Goal" :in-theory (enable get-type-of-function-call-safe))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, or nil if no type can be determined.
+;; todo: make a variant that returns most-general-type instead of nil.
+;; use this more!?
+;; todo: ensure all callers can handle nil being returned.
+(defund maybe-get-type-of-val (val)
   (declare (xargs :guard t))
   (if (natp val)
       (make-bv-type (max 1 (integer-length val)))
@@ -261,62 +295,162 @@
                (nat-listp val))
           (make-bv-array-type (max 1 (width-of-widest-int val)) ;fixme if the values are all 0, we consider the width to be 1
                               (len val))
+        ;; Could not determine the type of the constant:
         nil))))
 
-(defthm axe-typep-of-get-type-of-constant-if-possible
-  (implies (get-type-of-constant-if-possible val)
-           (axe-typep (get-type-of-constant-if-possible val)))
-  :hints (("Goal" :in-theory (enable get-type-of-constant-if-possible))))
+(defthm axe-typep-of-maybe-get-type-of-val
+  (implies (maybe-get-type-of-val val)
+           (axe-typep (maybe-get-type-of-val val)))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-val))))
 
-(defun get-type-of-constant (val)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, or throws an error if no type can be determined.
+;; TODO: Can we avoid using this?
+(defund get-type-of-val-checked (val)
   (declare (xargs :guard t))
-  (let ((type (get-type-of-constant-if-possible val)))
-    (or type
+  (let ((maybe-type (maybe-get-type-of-val val)))
+    (or maybe-type
         (progn$ nil ;(break$)
-                (er hard? 'get-type-of-constant "Trying to get type of unrecognized constant: ~x0" val)))))
+                (er hard? 'get-type-of-val-checked "Trying to get type of unrecognized constant: ~x0" val)))))
 
-;returns a type (bv type, array type, etc.)
-;ffixme can crash if given a nodenum of a weird constant (can that happen?)
-(defund get-type-of-nodenum (arg ;a nodenum
-                             dag-array-name
-                             dag-array
-                             nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
-                             )
-  (declare (xargs :guard (and (nodenum-type-alistp nodenum-type-alist)
-                              (natp arg)
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
-                              (< arg (alen1 dag-array-name dag-array)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, possibly (most-general-type).
+(defund get-type-of-val-safe (val)
+  (declare (xargs :guard t))
+  (let ((maybe-type (maybe-get-type-of-val val)))
+    (or maybe-type
+        (most-general-type))))
+
+(defthm axe-typep-of-get-type-of-val-safe
+  (axe-typep (get-type-of-val-safe val))
+  :hints (("Goal" :in-theory (enable get-type-of-val-safe))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, or throws an error if no type can be determined.
+;; todo: ensure the error is appropdiate for all callers
+(defund get-type-of-nodenum-checked (nodenum
+                                     dag-array-name
+                                     dag-array
+                                     nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
+                                     )
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                              (nodenum-type-alistp nodenum-type-alist))))
   ;;first check whether it is given a type in nodenum-type-alist (fffixme what if we could strengthen that type?):
-  (or (lookup arg nodenum-type-alist)
+  (or (lookup nodenum nodenum-type-alist)
       ;;otherwise, look up the expression at that nodenum:
-      (let ((expr (aref1 dag-array-name dag-array arg)))
+      (let ((expr (aref1 dag-array-name dag-array nodenum)))
         (if (variablep expr)
             ;;(lookup-eq expr var-type-alist) ;fix up ranges?   <- huh?
-            (er hard? 'get-type-of-nodenum "can't find type of var ~x0." expr)
+            (er hard? 'get-type-of-nodenum-checked "can't find type of var ~x0." expr)
           (let ((fn (ffn-symb expr)))
-            (if (eq 'quote fn) ;;(myquotep expr) ;;was quotep.
-                (get-type-of-constant (unquote expr))
-              ;;it's a regular function call:
-              (or (get-type-of-expr fn (dargs expr))
-                  (er hard? 'get-type-of-nodenum "couldn't find size for expr ~x0 at nodenum ~x1" expr arg))))))))
+            (if (eq 'quote fn)
+                (get-type-of-val-checked (unquote expr))
+              ;; it's a function call:
+              (or (maybe-get-type-of-function-call fn (dargs expr))
+                  (er hard? 'get-type-of-nodenum-checked "couldn't find size for expr ~x0 at nodenum ~x1" expr nodenum))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, possibly (most-general-type).
+;instead of throwing an error when given a nodenum that has no type yet, this one may return (most-general-type)
+;fixme combine with the non-safe version
+(defund get-type-of-nodenum-safe (nodenum
+                                  dag-array-name
+                                  dag-array
+                                  nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
+                                  )
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                              (nodenum-type-alistp nodenum-type-alist))))
+  ;;first check whether it is given a type in nodenum-type-alist (fffixme what if we could strengthen that type?):
+  (or (lookup nodenum nodenum-type-alist)
+      ;;otherwise, look up the expression at that nodenum:
+      (let ((expr (aref1 dag-array-name dag-array nodenum)))
+        (if (variablep expr)
+            (most-general-type)
+          (let ((fn (car expr)))
+            (if (eq 'quote fn)
+                (get-type-of-val-safe (unquote expr)) ;used to call get-type-of-val-checked, but that could crash!
+              ;;it's a regular function call:
+              (get-type-of-function-call-safe fn (dargs expr))))))))
+
+(defthm axe-typep-of-get-type-of-nodenum-safe
+  (implies (nodenum-type-alistp nodenum-type-alist)
+           (axe-typep (get-type-of-nodenum-safe nodenum dag-array-name dag-array nodenum-type-alist)))
+  :hints (("Goal" :in-theory (enable get-type-of-nodenum-safe lookup-equal maybe-get-type-of-val))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;get a known type (either the obvious type from looking at an expr, or a type from known-nodenum-type-alist)
+;; Returns an axe-type, or nil if there's no known type.
+;special version for nodenums?
+;; todo: compare to get-type-of-arg-safe
+;; Requires the dag to be named 'dag-array.
+(defund maybe-get-type-of-arg (arg dag-array known-nodenum-type-alist)
+  (declare (xargs :guard (and (or (myquotep arg)
+                                  (and (natp arg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 arg))))
+                              (nodenum-type-alistp known-nodenum-type-alist))))
+  (if (consp arg) ; checks for quotep
+      (maybe-get-type-of-val (unquote arg))
+    ;; it's a nodenum
+    (let ((expr (aref1 'dag-array dag-array arg)))
+      (if (atom expr)
+          ;; variable:
+          (lookup arg known-nodenum-type-alist)
+        (if (quotep expr)
+            ;; constant:
+            (maybe-get-type-of-val (unquote expr))
+          ;; function call (todo: which do we prefer here? or intersect them?):
+          (or (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr))
+              (lookup arg known-nodenum-type-alist)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, or throws an error if no type can be determined.
 ;ffixme can crash if given a weird constant or a nodenum of a weird constant
-;returns a type (bv type, array type, etc.)
-(defund get-type-of-arg (arg ;a nodenum or quotep
-                         dag-array-name
-                         dag-array
-                         nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
-                         )
+;; todo: ensure all callers can handle nil being returned.
+(defund get-type-of-arg-checked (arg ;a nodenum or quotep
+                                 dag-array-name
+                                 dag-array
+                                 nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
+                                 )
   (declare (xargs :guard (and (or (myquotep arg)
                                   (and (natp arg)
                                        (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))))
                               (nodenum-type-alistp nodenum-type-alist))))
-  (if (consp arg) ;tests for quotep
-      (get-type-of-constant (unquote arg))
-    (get-type-of-nodenum arg dag-array-name dag-array nodenum-type-alist)))
+  (if (consp arg) ; tests for quotep
+      (get-type-of-val-checked (unquote arg))
+    (get-type-of-nodenum-checked arg dag-array-name dag-array nodenum-type-alist)))
 
-;;;
-;;; nat-to-string
+(defthm bv-array-type-len-of-get-type-of-arg-checked-when-bv-array-typep
+  (implies (and (consp x)
+                (bv-array-typep (get-type-of-arg-checked x dag-array-name dag-array cut-nodenum-type-alist)))
+           (equal (bv-array-type-len (get-type-of-arg-checked x dag-array-name dag-array cut-nodenum-type-alist))
+                  (len (unquote x))))
+  :hints (("Goal" :in-theory (enable get-type-of-arg-checked maybe-get-type-of-val get-type-of-val-checked))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, possibly (most-general-type).
+(defund get-type-of-arg-safe (arg ;a nodenum or quotep
+                              dag-array-name
+                              dag-array
+                              nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
+                              )
+  (declare (xargs :guard (and (or (myquotep arg)
+                                  (and (natp arg)
+                                       (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))))
+                              (nodenum-type-alistp nodenum-type-alist))))
+  (if (consp arg) ; tests for quotep
+      (get-type-of-val-safe (unquote arg))
+    (get-type-of-nodenum-safe arg dag-array-name dag-array nodenum-type-alist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;deprecate? ;make the guard require natp?
 ;make a version that returns a string-tree?
@@ -324,7 +458,7 @@
   (declare (xargs :guard t))
   (if (not (natp n))
       (progn$ (cw "error: called nat-to-string on non-natural ~x0." n)
-              (break$) ;(car 7) ;will crash and put us in the debugger
+              (break$) ; will put us in the debugger
               )
     (nat-to-string n)))
 
@@ -340,14 +474,12 @@
            (string-treep (nat-to-string-debug n)))
   :hints (("Goal" :in-theory (enable nat-to-string-debug))))
 
-;;;
-;;; makevarname
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a string-tree.
 (defund makevarname (n)
   (declare (type (integer 0 *) n))
-  (cons "NODE" (nat-to-string-debug n)))
+  (cons "NODE" (nat-to-string n)))
 
 (defthm string-treep-of-makevarname
   (string-treep (makevarname n))
@@ -451,14 +583,16 @@
   (string-treep (translate-bv-nodenum-and-pad nodenum desired-size actual-size))
   :hints (("Goal" :in-theory (enable translate-bv-nodenum-and-pad))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; todo: consider adding a size param
 ;; check that, if it is a constant, then it is a bv constant
 (defund bv-arg-okp (arg)
   (declare (xargs :guard (dargp arg)))
-  (if (consp arg)
+  (if (consp arg) ; checks for quotep
       (if (natp (unquote arg))
           t
-        (prog2$ (cw "Warning: Non-integer constant ~x0 detected in BV boolean context.~%" arg)
+        (prog2$ (cw "Warning: Non-BV constant ~x0 detected in BV context.~%" arg)
                 nil))
     ;; it's a nodenum, so no checking is needed here (we will cut at that node if needed):
     t))
@@ -469,6 +603,14 @@
            (natp (unquote arg)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bv-arg-okp))))
+
+;the nth-1 is to unquote
+(defthm bv-typep-of-maybe-get-type-of-val-of-nth-1
+  (implies (and (bv-arg-okp arg)
+                (consp arg) ;it's a quotep
+                )
+           (bv-typep (maybe-get-type-of-val (nth 1 arg))))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-val bv-arg-okp))))
 
 ;ARG is either a quotep or a nodenum
 ;Here the actual size of the arg is known
@@ -503,7 +645,7 @@
   (if (consp arg) ;tests for quotep
       (translate-bv-constant (unquote arg) desired-size)
     ;;arg is a nodenum:
-    (let ((type (get-type-of-nodenum arg dag-array-name dag-array nodenum-type-alist)))
+    (let ((type (get-type-of-nodenum-checked arg dag-array-name dag-array nodenum-type-alist)))
       (if (bv-typep type)
           (translate-bv-nodenum-and-pad arg desired-size (bv-type-width type))
         (er hard? 'translate-bv-arg "bad type: ~x0 for argument ~x1" type arg)))))
@@ -561,22 +703,6 @@
                 (string-treep rhs-string-tree))
            (string-treep (translate-array-equality-assertion n lhs-string-tree rhs-string-tree lhs-pad-bits rhs-pad-bits index-width acc)))
   :hints (("Goal" :in-theory (enable translate-array-equality-assertion))))
-
-
-;dup
-;; ;fixme this returns true on -1 (it's considered an empty list)
-;; (defun all-natp (lst)
-;;   (declare (xargs :guard t))
-;;   (if (atom lst)
-;;       t
-;;       (and (natp (car lst))
-;;            (all-natp (cdr lst)))))
-
-;; (defthm nodenum-or-consp-list-when-bounded-darg-listp
-;;   (implies (bounded-darg-listp items nodenum)
-;;            (nodenum-or-consp-list items))
-;;   :hints (("Goal" :in-theory (enable bounded-darg-listp nodenum-or-consp-list))))
-
 
 ;; ;slow?
 ;; (defthm consp-of-cdr-of-aref1
@@ -679,19 +805,14 @@
                               (nodenum-type-alistp nodenum-type-alist)
                               (symbolp dag-array-name)
                               (constant-array-infop constant-array-info))
-                  :guard-hints (("Goal" :in-theory (e/d (GET-TYPE-OF-ARG ; causes lots of cases?
-                                                         GET-TYPE-OF-CONSTANT-IF-POSSIBLE
-                                                         )
+                  :guard-hints (("Goal" :in-theory (e/d ()
                                                         ( ;;max
-                                                         ;;BV-ARRAY-TYPEP ;for speed
-                                                         ;;LIST-TYPEP
-                                                         ;;GET-TYPE-OF-ARG
                                                          natp))
                                  :do-not '(generalize eliminate-destructors))))
            (ignore dag-len) ; only used in the guard
            )
-  (let* ((lhs-type (get-type-of-arg lhs dag-array-name dag-array nodenum-type-alist))
-         (rhs-type (get-type-of-arg rhs dag-array-name dag-array nodenum-type-alist)))
+  (let* ((lhs-type (get-type-of-arg-checked lhs dag-array-name dag-array nodenum-type-alist))
+         (rhs-type (get-type-of-arg-checked rhs dag-array-name dag-array nodenum-type-alist)))
     (if (and (bv-array-typep lhs-type)
              (bv-array-typep rhs-type)
              ;;the lengths must be the same (fixme if not, could translate the equality as false?? and print a warning!)
@@ -799,17 +920,10 @@
                           lhs lhs-type rhs rhs-type)
                       constant-array-info)))))))
 
-(defthm bv-array-type-len-of-get-type-of-arg-when-bv-array-typep
-  (implies (and (consp x)
-                (bv-array-typep (get-type-of-arg x dag-array-name dag-array cut-nodenum-type-alist)))
-           (equal (bv-array-type-len (get-type-of-arg x dag-array-name dag-array cut-nodenum-type-alist))
-                  (len (unquote x))))
-  :hints (("Goal" :in-theory (enable get-type-of-arg get-type-of-constant-if-possible))))
-
 (defthm string-treep-of-mv-nth-0-of-translate-equality-to-stp
- (implies (constant-array-infop constant-array-info)
-          (string-treep (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info))))
- :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len BV-ARRAY-TYPE-ELEMENT-WIDTH)))))
+  (implies (constant-array-infop constant-array-info)
+           (string-treep (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info))))
+  :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len BV-ARRAY-TYPE-ELEMENT-WIDTH)))))
 
 (defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
   (implies (constant-array-infop constant-array-info)
@@ -837,7 +951,7 @@
                               (nodenum-type-alistp nodenum-type-alist)
                               (constant-array-infop constant-array-info))))
   ;;todo: maybe split into cases here at the start based on whether it's a constant?
-  (b* ((arg-type (get-type-of-arg arg dag-array-name dag-array nodenum-type-alist))
+  (b* ((arg-type (get-type-of-arg-checked arg dag-array-name dag-array nodenum-type-alist))
        ((when (not (bv-array-typep arg-type)))
         (mv (er hard? 'translate-array-arg "Tried to translate an argument, ~x0, of ~x1 that is not known to be an array." arg calling-fn)
             constant-array-info
@@ -878,7 +992,7 @@
                                                         calling-fn ;the function for which ARG is an argument
                                                         widths-must-matchp
                                                         constant-array-info))))
-  :hints (("Goal" :in-theory (enable TRANSLATE-ARRAY-ARG
+  :hints (("Goal" :in-theory (enable translate-array-arg
                                      constant-array-infop))))
 
 (defthm constant-array-infop-of-mv-nth-1-of-translate-array-arg
@@ -921,8 +1035,6 @@
 ;;   :hints (("Goal" :in-theory (enable translate-array-arg
 ;;                                      constant-array-infop))))
 
-
-
 ;; Returns (mv translated-expr-string constant-array-info).
 ;; (defun translate-dag-expr-bvplus (args dag-array-name dag-array constant-array-info cut-nodenum-type-alist)
 ;;   (declare (xargs :guard (and (array1p dag-array-name dag-array) ;;TODO: Instead, use pseudo-dag-arrayp.
@@ -947,25 +1059,6 @@
 ;;                          ":0]))")
 ;;         constant-array-info)))
 
-(defthm myquote-forward-to-equal-of-nth-0-and-quote
-  (implies (myquotep expr)
-           (equal 'quote (nth 0 expr)))
-  :rule-classes :forward-chaining)
-
-(defthm natp-of-+-of--
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (natp (+ x (- y)))
-                  (<= y x))))
-
-;the nth-1 is to unquote
-(defthm bv-typep-of-get-type-of-constant-if-possible-of-nth-1
-  (implies (and (bv-arg-okp arg)
-                (consp arg) ;it's a quotep
-                )
-           (bv-typep (get-type-of-constant-if-possible (nth 1 arg))))
-  :hints (("Goal" :in-theory (enable get-type-of-constant-if-possible bv-arg-okp))))
-
 ;; Returns (mv translated-expr constant-array-info) where translated-expr is a string-tree.
 ;FFIXME think hard about sizes and chops..
 ;add support for leftrotate (not just leftrotate32? width may need to be a power of 2?), etc.?
@@ -982,12 +1075,9 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (bounded-dag-exprp dag-len expr)
                               (consp expr)
-                              ;;(all-< .. (alen1 dag-array-name dag-array))
                               (nodenum-type-alistp cut-nodenum-type-alist)
-;(symbolp dag-array-name)
                               (constant-array-infop constant-array-info))
-                  :guard-hints (("Goal" :in-theory (e/d (get-type-of-arg
-                                                         car-becomes-nth-of-0
+                  :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
                                                          BOUNDED-DAG-EXPRP
                                                          dag-exprp
                                                          NATP-OF-+-OF-1)
@@ -1020,7 +1110,7 @@
              (b* ((width-arg (darg1 expr)) ;had better be quoted
                   (claimed-width (unquote width-arg))
                   (bv-arg (darg2 expr))
-                  (bv-arg-type (get-type-of-arg bv-arg dag-array-name dag-array cut-nodenum-type-alist))
+                  (bv-arg-type (get-type-of-arg-checked bv-arg dag-array-name dag-array cut-nodenum-type-alist))
                   ((when (not (bv-typep bv-arg-type)))
                    (er hard? 'translate-dag-expr "unsigned-byte-p claim applied to non bv ~x0." bv-arg)
                    (mv (erp-t) nil constant-array-info)) ;todo: allow this function to return an error
@@ -2198,10 +2288,8 @@
                               (booleanp counterexamplep))
                   :stobjs state))
   (b* ((counterexample-arg (if counterexamplep "y" "n"))
-       ((mv status state) (if max-conflicts
-                              (call-axe-script "callstplimited.bash" (list input-filename output-filename (nat-to-string max-conflicts) counterexample-arg) state)
-                            ;;don't time out:
-                            (call-axe-script "callstp.bash" (list input-filename output-filename counterexample-arg) state)))
+       (max-conflicts-string (if max-conflicts (nat-to-string max-conflicts) "-1")) ; -1 means no max
+       ((mv status state) (call-axe-script "callstp.bash" (list input-filename output-filename max-conflicts-string counterexample-arg) state))
        ;;(- (cw "STP exit status: ~x0~%" status))
        )
     ;;(prog2$ (cw "sys-call status: ~x0~%" status)
@@ -2729,7 +2817,7 @@
   (declare (xargs :guard (weak-dagp-aux dag)))
   (if (endp dag)
       t
-    (let* ((entry (car dag))
+    (let* ((entry (first dag))
            (expr (cdr entry)))
       (if (expr-is-purep expr)
           (dag-is-purep (rest dag))

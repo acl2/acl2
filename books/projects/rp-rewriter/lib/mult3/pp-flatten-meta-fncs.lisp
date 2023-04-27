@@ -721,10 +721,10 @@
     (defthm natp-of-pp-lists-limit
       (natp (pp-lists-limit))))
 
-  (define return-2000 ()
-    2000)
+  (define return-16000 ()
+    16000)
 
-  (defattach pp-lists-limit return-2000))
+  (defattach pp-lists-limit return-16000))
 
 (define pp-term-to-pp-e-list ((term pp-term-p)
                               (coef integerp)

@@ -1009,37 +1009,7 @@
        as the full expressions [C:6.8/4] of expression statements.
        Thus, we discard the value of the assignment
        (which is the value written to the variable);
-       this ACL2 function just returns an updated computation state.")
-     (xdoc::p
-      "For historical reasons,
-       namely that initially we only supported certain forms of assignments,
-       the definition of this ACL2 funcion is more complicated than needed.
-       It would be sufficient to have the initial code up to the @('case'),
-       and the code in the @('t') case of the @('case'):
-       the other cases of the @('case') are redundant,
-       in the sense that are covered by the last case.
-       (They may not be exactly equivalent,
-       but they are equivalent from the standpoint of
-       providing an appropriate model of C execution.)
-       But these cases are stil temporarily there
-       because ATC's symbolic execution rules are based on these cases.
-       We plan to eliminate these cases,
-       while leaving the ATC symbolic rules for assignments unchanged,
-       as we did for some special cases in @(tsee exec-expr-pure),
-       which are no longer there.")
-     (xdoc::p
-      "The special cases are those of a left-hand side consisting of
-       either a variable,
-       or an indirection operation whose argument is an integer variable,
-       or an array subscripting expression where the array is a variable,
-       or a structure member expression where the target is a variable,
-       or a structure pointer member expression where the target is a variable,
-       or an array subscripting expression
-       where the array is a structure member expression
-       where the target is a variable,
-       or an array subscripting expression
-       where the array is a structure pointer member expression
-       where the target is a variable."))
+       this ACL2 function just returns an updated computation state."))
     (b* (((when (zp limit)) (error :limit))
          ((unless (expr-case e :binary))
           (error (list :expr-asg-not-binary (expr-fix e))))
@@ -1047,139 +1017,23 @@
          (left (expr-binary->arg1 e))
          (right (expr-binary->arg2 e))
          ((unless (binop-case op :asg))
-          (error (list :expr-asg-not-asg op))))
-      (case (expr-kind left)
-        (:arrsub
-         (b* ((arr (expr-arrsub->arr left))
-              (sub (expr-arrsub->sub left)))
-           (cond ((expr-case arr :member)
-                  (b* ((str (expr-member->target arr))
-                       (mem (expr-member->name arr))
-                       ((unless (expr-case str :ident))
-                        (error (list :expr-asg-arrsub-member-not-supported
-                                     str)))
-                       (eval (exec-expr-pure str compst))
-                       ((when (errorp eval)) eval)
-                       (eval (apconvert-expr-value eval))
-                       ((when (errorp eval)) eval)
-                       (struct (expr-value->value eval))
-                       (objdes (expr-value->object eval))
-                       ((unless objdes) (error :impossible))
-                       ((unless (value-case struct :struct))
-                        (error (list :not-struct str (compustate-fix compst))))
-                       (array (value-struct-read mem struct))
-                       ((when (errorp array)) array)
-                       (objdes-mem
-                        (make-objdesign-member :super objdes :name mem))
-                       ((unless (value-case array :array))
-                        (error (list :not-array array)))
-                       (index (exec-expr-pure sub compst))
-                       ((when (errorp index)) index)
-                       (index (apconvert-expr-value index))
-                       ((when (errorp index)) index)
-                       (index (expr-value->value index))
-                       ((unless (value-integerp index))
-                        (error (list :mistype-struct-array-read
-                                     :required :integer
-                                     :supplied index)))
-                       (index (value-integer->get index))
-                       ((when (< index 0)) (error (list :negative-array-index
-                                                        :struct struct
-                                                        :array array
-                                                        :index index)))
-                       (eval (exec-expr-pure right compst))
-                       ((when (errorp eval)) eval)
-                       (eval (apconvert-expr-value eval))
-                       ((when (errorp eval)) eval)
-                       (val (expr-value->value eval))
-                       (objdes-mem-elem
-                        (make-objdesign-element :super objdes-mem
-                                                :index index)))
-                    (write-object objdes-mem-elem val compst)))
-                 ((expr-case arr :memberp)
-                  (b* ((str (expr-memberp->target arr))
-                       (mem (expr-memberp->name arr))
-                       ((unless (expr-case str :ident))
-                        (error (list :expr-asg-arrsub-memberp-not-supported
-                                     str)))
-                       (var (expr-ident->get str))
-                       (ptr (read-var var compst))
-                       ((when (errorp ptr)) ptr)
-                       ((unless (value-case ptr :pointer))
-                        (error (list :mistype-struct
-                                     :required :pointer
-                                     :supplied (type-of-value ptr))))
-                       ((unless (value-pointer-validp ptr))
-                        (error (list :invalid-pointer ptr)))
-                       (objdes (value-pointer->designator ptr))
-                       (reftype (value-pointer->reftype ptr))
-                       (struct (read-object objdes compst))
-                       ((when (errorp struct)) struct)
-                       ((unless (value-case struct :struct))
-                        (error (list :not-struct str (compustate-fix compst))))
-                       ((unless (equal reftype
-                                       (type-of-value struct)))
-                        (error (list :mistype-struct-read
-                                     :pointer reftype
-                                     :struct (type-of-value struct))))
-                       (array (value-struct-read mem struct))
-                       ((when (errorp array)) array)
-                       ((unless (value-case array :array))
-                        (error (list :not-array array)))
-                       (index (exec-expr-pure sub compst))
-                       ((when (errorp index)) index)
-                       (index (apconvert-expr-value index))
-                       ((when (errorp index)) index)
-                       (index (expr-value->value index))
-                       ((unless (value-integerp index))
-                        (error (list :mistype-struct-array-read
-                                     :required :integer
-                                     :supplied index)))
-                       (index (value-integer->get index))
-                       ((when (< index 0)) (error (list :negative-array-index
-                                                        :pointer ptr
-                                                        :array array
-                                                        :index index)))
-                       (eval (exec-expr-pure right compst))
-                       ((when (errorp eval)) eval)
-                       (eval (apconvert-expr-value eval))
-                       ((when (errorp eval)) eval)
-                       (val (expr-value->value eval))
-                       (new-array (value-array-write index val array))
-                       ((when (errorp new-array)) new-array)
-                       (new-struct (value-struct-write mem new-array struct))
-                       ((when (errorp new-struct)) new-struct))
-                    (write-object objdes new-struct compst)))
-                 ;; copy of the B* block at the end of this function
-                 ;; (temporary, until we remove the whole CASE block):
-                 (t (b* (((mv val? compst)
-                          (if (expr-case left :ident)
-                              (exec-expr-call-or-pure right compst fenv (1- limit))
-                            (b* ((eval (exec-expr-pure right compst))
-                                 ((when (errorp eval)) (mv eval compst)))
-                              (mv (expr-value->value eval) compst))))
-                         ((when (errorp val?)) val?)
-                         ((when (not val?)) (error (list :asg-void-expr right)))
-                         (val val?)
-                         (eval (exec-expr-pure left compst))
-                         ((when (errorp eval)) eval)
-                         (objdes (expr-value->object eval))
-                         ((unless objdes) (error (list :not-lvalue left))))
-                      (write-object objdes val compst))))))
-        (t (b* (((mv val? compst)
-                 (if (expr-case left :ident)
-                     (exec-expr-call-or-pure right compst fenv (1- limit))
-                   (b* ((eval (exec-expr-pure right compst))
-                        ((when (errorp eval)) (mv eval compst)))
-                     (mv (expr-value->value eval) compst))))
-                ((when (errorp val?)) val?)
-                ((when (not val?)) (error (list :asg-void-expr right)))
-                (val val?)
-                (eval (exec-expr-pure left compst))
-                ((when (errorp eval)) eval)
-                (objdes (expr-value->object eval))
-                ((unless objdes) (error (list :not-lvalue left))))
-             (write-object objdes val compst)))))
+          (error (list :expr-asg-not-asg op)))
+         ((mv val? compst)
+          (if (expr-case left :ident)
+              (exec-expr-call-or-pure right compst fenv (1- limit))
+            (b* ((eval (exec-expr-pure right compst))
+                 ((when (errorp eval)) (mv eval compst))
+                 (eval (apconvert-expr-value eval))
+                 ((when (errorp eval)) (mv eval compst)))
+              (mv (expr-value->value eval) compst))))
+         ((when (errorp val?)) val?)
+         ((when (not val?)) (error (list :asg-void-expr right)))
+         (val val?)
+         (eval (exec-expr-pure left compst))
+         ((when (errorp eval)) eval)
+         (objdes (expr-value->object eval))
+         ((unless objdes) (error (list :not-lvalue left))))
+      (write-object objdes val compst))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -9669,59 +9669,192 @@ its attachment is ignored during proofs"))))
         (t nil)))
 )
 
-(defun update-brr-data (flg x whs-data)
+(defproxy brkpt1-brr-data-entry (* * * state)
 
-; This function constructs the records described in (defrec brr-data ...), as
-; follows.  See that comment for relevant background.
+; The formals are those that are reasonable to query in both brkpt1 and its
+; balancing brkpt2, so that the calls truly balance.  Perhaps unify-subst and
+; type-alist could be added, but since they can change from brkpt1 to brkpt2,
+; we omit those.
 
-; Flg is nil for brkpt1 and t for brkpt2.  X is a brr-data-1 record if flg is
-; nil and a brr-data-2 record if flg is t.  Whs-data is the wormhole-data of
-; the current wormhole status, whose brr-data is of the form (r1 . r2), where
-; r1 is a list of complete brr-data-1 records -- we push a new one with each
-; brkpt1 call (when tracking with gstackp = :brr-data) -- and r2 is a list of
-; complete brr-data records, representing the top-level calls of brkpt1 that
-; have completed.
+  => *)
 
-  (declare (xargs :guard
-                  (and (consp whs-data)
-                       (brr-data-listp nil (car whs-data))
-                       (brr-data-listp t (cdr whs-data)))))
-  (let* ((pending (car whs-data))
-         (completed (cdr whs-data)))
-    (cond (flg             ; brkpt2; so we know (consp pending)
-           (cond ((null x) ; wonp = t, so pop
-                  (cons (cdr pending)
-                        completed))
-                 ((cdr pending)
+(defproxy brkpt2-brr-data-entry (* * * state)
+
+; See comments in brkpt1-brr-data-entry.
+
+  => *)
+
+(defstub update-brr-data-1 (lemma target unify-subst type-alist ancestors
+                                  initial-ttree gstack rcnst pot-lst whs-data)
+
+; This is called in brkpt1 to update the wormhole-data for the brr-data
+; wormhole.
+
+  t)
+
+(defstub update-brr-data-2 (wonp failure-reason unify-subst gstack brr-result
+                                 final-ttree rcnst ancestors whs-data)
+
+; This is called in brkpt2 to update the wormhole-data for the brr-data
+; wormhole.
+
+  t)
+
+(defun brkpt1-brr-data-entry-builtin (ancestors gstack rcnst state)
+
+; The -builtin version of brr-data restricts collection to top-level rewriter
+; calls (i.e., without ancestors).
+
+  (declare (xargs :stobjs state)
+           (ignore gstack rcnst state))
+  (null ancestors))
+
+(defun brkpt2-brr-data-entry-builtin (ancestors gstack rcnst state)
+
+; The -builtin version of brr-data restricts collection to top-level rewriter
+; calls (i.e., without ancestors).
+
+  (declare (xargs :stobjs state)
+           (ignore gstack rcnst state))
+  (null ancestors))
+
+(defun update-brr-data-1-builtin (lemma target unify-subst type-alist
+                                        ancestors initial-ttree gstack rcnst
+                                        pot-lst whs-data)
+
+; This function is the default attachment for update-brr-data-1, which brkpt1
+; may use to construct brr-data records.  See the description of those records
+; in (defrec brr-data ...) for relevant background.
+
+; The arguments other than whs-data are the arguments to brkpt1.  Whs-data is
+; the wormhole-data of the current wormhole status for the wormhole named
+; brr-data.  It is either nil or of the form (pending . completed), as follows.
+; Pending is a list of brr-data records as recognized by (brr-data-listp nil
+; pending); we push a new one with each brkpt1 call when tracking with gstackp
+; = :brr-data.  Completed is a list of complete brr-data records; i.e.,
+; (brr-data-listp t completed) holds.  Pending represents the top-level calls
+; of brkpt1 that have not yet been matched with corresponding brkpt2 calls, and
+; completed represents the result of "completing" previous such records using
+; matching brkpt2 calls: those calls fill in records previously in pending with
+; :post fields that are brr-data-2 records, by calling
+; update-brr-data-2-builtin.
+
+  (declare (xargs :guard t))
+  (let ((ctx 'update-brr-data-1-builtin))
+    (cond
+     ((listp whs-data)
+      (let* ((pending (car whs-data))
+             (completed (cdr whs-data)))
+        (cons (cons (make brr-data
+                          :pre (make brr-data-1
+                                     :lemma lemma
+                                     :target target
+                                     :unify-subst unify-subst
+                                     :type-alist type-alist
+                                     :ancestors ancestors
+                                     :initial-ttree initial-ttree
+                                     :gstack gstack
+                                     :rcnst rcnst
+                                     :pot-list pot-lst)
+                          :post nil
+                          :completed nil)
+                    pending)
+              completed)))
+     (t (er hard? ctx
+            "Implementation error: Found whs-data not a listp:~|~y0"
+            whs-data)))))
+
+(defun update-brr-data-2-builtin (wonp failure-reason unify-subst gstack
+                                       brr-result final-ttree rcnst ancestors
+                                       whs-data)
+
+; See update-brr-data-1-builtin for a description of that function and this
+; function.
+
+  (declare (xargs :guard t)
+           (ignore ancestors))
+  (let ((ctx 'update-brr-data-2-builtin))
+    (cond
+     ((listp whs-data)
+      (let* ((pending (car whs-data))
+             (completed (cdr whs-data)))
+        (cond
+         ((not (consp pending))
+          (er hard? ctx
+              "Implementation error: Found bad whs-data ((car pending) not a ~
+               cons):~|~y0"
+              whs-data))
+         ((null wonp) ; pop pending
+          (cons (cdr pending)
+                completed))
+         ((not (weak-brr-data-p (car pending)))
+          (er hard? ctx
+              "Implementation error: Found bad whs-data ((car pending) not a ~
+               brr-data record)):~|~y0"
+              whs-data))
+         (t
+          (let ((x (make brr-data-2
+                         :failure-reason failure-reason
+                         :unify-subst unify-subst
+                         :gstack gstack
+                         :brr-result brr-result
+                         :final-ttree final-ttree
+                         :rcnst rcnst)))
+            (cond
+             ((consp (cdr pending))
+              (cond
+               ((not (weak-brr-data-p (cadr pending)))
+                (er hard? ctx
+                    "Implementation error: Found whs-data (bad (cadr ~
+                     pending)):~|~y0"
+                    whs-data))
+               (t
 
 ; Pop pending, folding (car pending) into the :completed field of (cadr
 ; pending), filling in the :post field of (car pending).  There is no change to
 ; completed.
 
-                  (cons (cons (change brr-data (cadr pending)
-                                      :completed
-                                      (cons (change brr-data (car pending)
-                                                    :post x)
-                                            (access brr-data (cadr pending)
-                                                    :completed)))
-                              (cddr pending))
-                        completed))
-                 (t
+                (cons (cons (change brr-data (cadr pending)
+                                    :completed
+                                    (cons (change brr-data (car pending)
+                                                  :post x)
+                                          (access brr-data (cadr pending)
+                                                  :completed)))
+                            (cddr pending))
+                      completed))))
+             (t
 
 ; Pop pending, leaving an empty stack.  So, we set the :post field of (car
 ; pending) to x and then push the resulting record onto completed.
 
-                  (cons nil
-                        (cons (change brr-data (car pending)
-                                      :post x)
-                              completed)))))
-          (t ; brkpt1
-           (cons (cons (make brr-data
-                             :pre x
-                             :post nil
-                             :completed nil)
-                       pending)
-                 completed)))))
+              (cons nil
+                    (cons (change brr-data (car pending)
+                                  :post x)
+                          completed)))))))))
+     (t (er hard? ctx
+            "Implementation error: Found whs-data not a listp:~|~y0"
+            whs-data)))))
+
+(defmacro set-brr-data-attachments (&optional (suffix 'builtin))
+  (declare (xargs :guard (or (symbolp suffix)
+                             (stringp suffix))))
+  (let* ((suffix (cond ((symbolp suffix)
+                        (symbol-name suffix))
+                       (t suffix)))
+         (suffix (concatenate 'string "-" suffix))
+         (update-brr-data-1-suffix (add-suffix 'update-brr-data-1 suffix))
+         (update-brr-data-2-suffix (add-suffix 'update-brr-data-2 suffix))
+         (brkpt1-bde-suffix (add-suffix 'brkpt1-brr-data-entry suffix))
+         (brkpt2-bde-suffix (add-suffix 'brkpt2-brr-data-entry suffix)))
+    `(with-output :off :all
+       (progn (defattach (update-brr-data-1 ,update-brr-data-1-suffix)
+                :system-ok t)
+              (defattach (update-brr-data-2 ,update-brr-data-2-suffix)
+                :system-ok t)
+              (defattach (brkpt1-brr-data-entry ,brkpt1-bde-suffix)
+                :system-ok t)
+              (defattach (brkpt2-brr-data-entry ,brkpt2-bde-suffix)
+                :system-ok t)))))
 
 (defun set-wormhole-data-fast (whs data)
 
@@ -9733,24 +9866,46 @@ its attachment is ignored during proofs"))))
       (cons (car whs) data)
     (cons :enter data)))
 
+(defun brr-data-mirror (lst acc)
+
+; Lst is a list of brr-data records.  We accumulate the reverse of lst into
+; acc, similarly reversing all :completed fields within lst; see brr-data-lst.
+; The goal is for a left-to-right depth-first tree traversal to respect
+; suitably the order present in the proof attempt.
+
+  (declare (xargs :guard (and (brr-data-listp t lst)
+                              (true-listp acc))))
+  (cond ((endp lst)
+         acc)
+        (t (let* ((x1 (car lst))
+                  (c (access brr-data x1 :completed))
+                  (x2 (if (null c)
+                          x1
+                        (change brr-data x1
+                                :completed (brr-data-mirror c nil)))))
+             (brr-data-mirror (cdr lst)
+                              (cons x2 acc))))))
+
 (defun brr-data-lst (state)
+
+; The top-level rewrites have been accumulated into the wormhole by pushing
+; onto a stack.  We reverse that stack and the :completed entries within it to
+; respect the original order of rewrites, as a convenience to the user.
+
   (declare (xargs :stobjs state))
   (er-let* ((status (get-wormhole-status 'brr-data state)))
-    (value (let ((pair (wormhole-data status)))
-             (cond ((consp pair)
-                    (let ((data (cdr pair)))
-                      (if (consp data)
+    (value (let ((data (wormhole-data status)))
+             (cond ((consp data)
 
-; Data is of the form (brr-data-1-stack . brr-data-lst).  We expect stack to be
-; nil unless the proof was interrupted.
+; Data is nil or of the form (brr-data-list . brr-data-list).  We expect the
+; car to be nil unless the proof was interrupted.
 
-                          (cdr data)
+                    (ec-call (brr-data-mirror (cdr data) nil)))
 
 ; If data is not a cons then we haven't collected any data or we have run
 ; (clear-brr-data-lst).
 
-                        nil)))
-                   (t :none))))))
+                   (t nil))))))
 
 (defun clear-brr-data-lst ()
   (declare (xargs :guard t))
@@ -9760,29 +9915,44 @@ its attachment is ignored during proofs"))))
       (set-wormhole-data-fast whs nil))
    nil))
 
-(defmacro with-brr-data (form &optional brr-data-returned)
+(defmacro with-brr-data (form &key
+                              (global-var 'brr-data-lst)
+                              (brr-data-returned 'nil))
 
 ; Form, which needs to return a value-triple, is evaluated to obtain a result
-; (mv erp val state).
+; (mv erp val state), which is the error triple returned by the with-brr-data
+; call unless brr-data-returned is true, in which case (mv erp lst state) is
+; returned, where lst is the resulting list of brr-data records.  See :DOC
+; with-brr-data.
 
-; If optional argument brr-data-returned is nil, then that error triple is
-; returned.  Moreover, the 'brr-data wormhole modified so that the list of
-; brr-data resulting from form can subsequently be obtained as a value triple
-; by evaluating (brr-data-lst state).
-
-; If optional argument brr-data-returned is non-nil, then (mv erp lst state) is
-; returned, where lst is the resulting list of brr-data records.
-
-  (let ((form+ `(state-global-let* ((gstackp :brr-data))
-                                   ,form)))
+  (let* ((form1 `(state-global-let* ((gstackp :brr-data))
+                                    ,form))
+         (form2 (if global-var
+                    `(mv-let (erp val state)
+                       ,form1
+                       (er-progn (set-brr-data-lst ,global-var)
+                                 (mv erp val state)))
+                  form1))
+         (form3 (if brr-data-returned
+                    `(mv-let (erp val state)
+                       ,form2
+                       (declare (ignore val))
+                       ,(if global-var
+                            `(mv erp (@ ,global-var) state)
+                          `(er-let* ((x (brr-data-lst state)))
+                             (mv erp (reverse x) state))))
+                  form2))
+         (form4 `(cond
+                  #+acl2-par
+                  ((f-get-global 'waterfall-parallelism state)
+                   (er soft 'with-brr-data
+                       "~x0 is not supported in ACL2(p) with waterfall ~
+                       parallelism on.  See :DOC ~
+                       unsupported-waterfall-parallelism-features."
+                       'with-brr-data))
+                  (t ,form3))))
     `(prog2$ (clear-brr-data-lst)
-             ,(if brr-data-returned
-                  `(mv-let (erp val state)
-                     ,form+
-                     (declare (ignore val))
-                     (er-let* ((x (brr-data-lst state)))
-                       (mv erp x state)))
-                form+))))
+             ,form4)))
 
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
                      gstack rcnst simplify-clause-pot-lst state)
@@ -9814,24 +9984,18 @@ its attachment is ignored during proofs"))))
        (t
         (prog2$
          (and (eq gstackp :brr-data)
+              (brkpt1-brr-data-entry ancestors gstack rcnst state)
               (wormhole-eval 'brr-data
                              '(lambda (whs)
                                 (set-wormhole-data-fast
                                  whs
-                                 (update-brr-data
-                                  nil
-                                  (make brr-data-1
-                                        :lemma lemma
-                                        :target target
-                                        :unify-subst unify-subst
-                                        :type-alist type-alist
-                                        :pot-list simplify-clause-pot-lst
-                                        :ancestors ancestors
-                                        :rcnst rcnst
-                                        :initial-ttree initial-ttree
-                                        :gstack gstack)
+                                 (update-brr-data-1
+                                  lemma target unify-subst type-alist ancestors
+                                  initial-ttree gstack rcnst
+                                  simplify-clause-pot-lst
                                   (wormhole-data whs))))
-                             (list lemma target unify-subst type-alist
+                             (list :no-wormhole-lock
+                                   lemma target unify-subst type-alist
                                    simplify-clause-pot-lst ancestors rcnst
                                    initial-ttree gstack)))
          (brr-wormhole
@@ -9883,7 +10047,7 @@ its attachment is ignored during proofs"))))
           *brkpt1-aliases*))))))))
 
 (defun brkpt2 (wonp failure-reason unify-subst gstack brr-result final-ttree
-                    rcnst state)
+                    rcnst ancestors state)
 
 ; #+ACL2-PAR note: see brkpt1.
 
@@ -9996,24 +10160,427 @@ its attachment is ignored during proofs"))))
                    (value t)))))))
           *brkpt2-aliases*)
          (and (eq gstackp :brr-data)
+              (brkpt2-brr-data-entry ancestors gstack rcnst state)
               (wormhole-eval 'brr-data
                              '(lambda (whs)
                                 (set-wormhole-data-fast
                                  whs
-                                 (update-brr-data
-                                  t
-                                  (if wonp
-                                      nil
-                                    (make brr-data-2
-                                          :failure-reason failure-reason
-                                          :unify-subst unify-subst
-                                          :brr-result brr-result
-                                          :rcnst rcnst
-                                          :final-ttree final-ttree
-                                          :gstack gstack))
+                                 (update-brr-data-2
+                                  wonp failure-reason unify-subst gstack
+                                  brr-result final-ttree rcnst
+                                  nil ; ancestors is unused
                                   (wormhole-data whs))))
-                             (list wonp failure-reason unify-subst brr-result
-                                   rcnst final-ttree gstack))))))))))
+                             (list :no-wormhole-lock
+                                   wonp failure-reason unify-subst gstack
+                                   brr-result final-ttree rcnst))))))))))
+
+(defun show-brr-data-1 (x)
+  (declare (xargs :guard (weak-brr-data-1-p x)))
+  (list :target (access brr-data-1 x :target)
+        :unify-subst (alist-to-doublets
+                      (access brr-data-1 x :unify-subst))
+        :type-alist (alist-to-doublets
+                     (decode-type-alist (access brr-data-1 x :type-alist)))
+        :lemma (let ((lemma (access brr-data-1 x :lemma)))
+                 (and (consp lemma)
+                      (access-x-rule-rune (car lemma) lemma)))
+        :gstack (access brr-data-1 x :gstack)))
+
+(defun show-brr-data-2 (x)
+  (declare (xargs :guard (weak-brr-data-2-p x)))
+  (list* :brr-result (access brr-data-2 x :brr-result)
+         (let ((failure-reason (access brr-data-2 x :failure-reason)))
+           (and failure-reason
+                (list :failure-reason failure-reason)))))
+
+(mutual-recursion
+
+(defun show-brr-data (x)
+  (declare (xargs :guard (brr-data-p t x)))
+  (and (mbt (brr-data-p t x))
+       (append (show-brr-data-1 (access brr-data x :pre))
+               (show-brr-data-2 (access brr-data x :post))
+               (list :completed
+                     (show-brr-data-lst (access brr-data x :completed))))))
+
+(defun show-brr-data-lst (x)
+  (declare (xargs :guard (brr-data-listp t x)))
+  (cond ((endp x) nil)
+        (t (cons (show-brr-data (car x))
+                 (show-brr-data-lst (cdr x))))))
+)
+
+(mutual-recursion
+
+(defun brr-data-2-for-term-1 (subterm-p term brr-data)
+  (or (brr-data-2-for-term subterm-p
+                           term
+                           (access brr-data brr-data :completed))
+      (let* ((post (access brr-data brr-data :post))
+             (brr-result (access brr-data-2 post :brr-result)))
+        (and (if subterm-p
+                 (dumb-occur term brr-result)
+               (equal term brr-result))
+             post))))
+
+(defun brr-data-2-for-term (subterm-p term brr-data-lst)
+  (cond ((endp brr-data-lst) nil)
+        (t (or (brr-data-2-for-term-1 subterm-p term (car brr-data-lst))
+               (brr-data-2-for-term subterm-p term (cdr brr-data-lst))))))
+)
+
+(mutual-recursion
+
+(defun matching-subterm (pat term alist)
+
+; If pat/alist2 is a subterm of term for some extension of alist2 of alist,
+; then return that subterm.  Otherwise return nil.
+
+  (mv-let (flg alist2)
+    (one-way-unify1 pat term alist)
+    (declare (ignore alist2))
+    (cond (flg term)
+          ((or (variablep term)
+               (fquotep term))
+           nil)
+          (t (matching-subterm-lst pat (fargs term) alist)))))
+
+(defun matching-subterm-lst (pat lst alist)
+  (cond ((endp lst) nil)
+        (t (or (matching-subterm pat (car lst) alist)
+               (matching-subterm-lst pat (cdr lst) alist)))))
+)
+
+(mutual-recursion
+
+(defun cw-gstack-for-term-fn1-1 (subterm-p term brr-data alist)
+
+; This returns either (mv nil nil nil nil) or (mv term2 x d-2 rest), where d-2
+; is a brr-data-2 record, term2 is the brr-result for the bottom of the :gstack
+; of d-2, rest is a list of brr-data records, and x is either nil or a natural
+; number less than the length of the gstack of d-2.
+
+  (let* ((post (access brr-data brr-data :post))
+         (brr-result (access brr-data-2 post :brr-result))
+         (subterm 
+          (cond ((eq alist :none)
+                 (and (if subterm-p
+                          (dumb-occur term brr-result)
+                        (equal term brr-result))
+                      term))
+                (subterm-p
+                 (matching-subterm term brr-result alist))
+                (t (mv-let (flg alist2)
+                     (one-way-unify1 term brr-result alist)
+                     (declare (ignore alist2))
+                     (and flg brr-result))))))
+    (cond
+     (subterm
+      (let ((d-2 (brr-data-2-for-term
+                  subterm-p
+                  subterm
+                  (access brr-data brr-data :completed))))
+        (cond ((null d-2)
+               (mv nil post nil))
+              (t ; the :gstack of post is an initial segment of that of d-2
+               (mv post d-2 nil)))))
+     (t (cw-gstack-for-term-fn1 subterm-p
+                                term
+                                (access brr-data brr-data :completed)
+                                alist)))))
+
+(defun cw-gstack-for-term-fn1 (subterm-p term brr-data-lst alist)
+  (cond ((endp brr-data-lst) (mv nil nil nil))
+        (t (mv-let (earlier-d-2 d-2 rest)
+             (cw-gstack-for-term-fn1-1 subterm-p term (car brr-data-lst)
+                                       alist)
+             (cond (d-2 (mv earlier-d-2
+                            d-2
+                            (append rest (cdr brr-data-lst))))
+                   (t (cw-gstack-for-term-fn1 subterm-p
+                                              term
+                                              (cdr brr-data-lst)
+                                              alist)))))))
+)
+
+(defun symbol-name-lst (lst)
+  (declare (xargs :guard (symbol-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (symbol-name (car lst))
+                 (symbol-name-lst (cdr lst))))))
+
+(defun acl2-query-simulate-interaction (msg alist controlledp ans state)
+  (cond ((and (atom ans)
+              (or controlledp
+                  (and (not (f-get-global 'window-interfacep state))
+
+; If a special window is devoted to queries, then there is no way to
+; pretend to answer, so we don't.  We just go on.  Imagine that we
+; answered and the window disappeared so quickly you couldn't see the
+; answer.
+
+                       (not (eq (standard-co state) *standard-co*)))))
+         (pprogn
+          (fms msg alist (standard-co state) state (ld-evisc-tuple state))
+          (princ$ ans (standard-co state) state)
+          (newline (standard-co state) state)
+          state))
+        (t state)))
+
+(defun acl2-query1 (id qt alist state)
+
+; This is the function actually responsible for printing the query
+; and getting the answer, for the current level in the query tree qt.
+; See acl2-query for the context.
+
+  (let ((dv (cdr-assoc-query-id id (ld-query-control-alist state)))
+        (msg "ACL2 Query (~x0):  ~@1  (~*2):  ")
+        (alist1 (list (cons #\0 id)
+                      (cons #\1 (cons (car qt) alist))
+                      (cons #\2
+                            (list "" "~s*" "~s* or " "~s*, "
+                                  (symbol-name-lst (evens (cdr qt))))))))
+    (cond
+     ((null dv)
+      (pprogn
+       (io? query nil state
+            (alist1 msg)
+            (fms msg alist1 *standard-co* state (ld-evisc-tuple state)))
+       (er-let*
+        ((ans (with-infixp-nil
+               (read-object *standard-oi* state))))
+        (let ((temp (and (symbolp ans)
+                         (assoc-keyword
+                          (intern (symbol-name ans) "KEYWORD")
+                          (cdr qt)))))
+          (cond (temp
+                 (pprogn
+                  (acl2-query-simulate-interaction msg alist1 nil ans state)
+                  (value (cadr temp))))
+                (t (acl2-query1 id qt alist state)))))))
+     ((eq dv t)
+      (pprogn
+       (acl2-query-simulate-interaction msg alist1 t (cadr qt) state)
+       (value (caddr qt))))
+     (t (let ((temp (assoc-keyword (if (consp dv) (car dv) dv) (cdr qt))))
+          (cond
+           ((null temp)
+            (er soft 'acl2-query
+                "The default response, ~x0, supplied in ~
+                 ld-query-control-alist for the ~x1 query, is not one ~
+                 of the expected responses.  The ~x1 query ~
+                 is~%~%~@2~%~%Note the expected responses above.  See ~
+                 :DOC ld-query-control-alist."
+                (if (consp dv) (car dv) dv)
+                id
+                (cons msg alist1)))
+           (t
+            (pprogn
+             (acl2-query-simulate-interaction msg alist1 t dv state)
+             (value (cadr temp))))))))))
+
+(defun acl2-query (id qt alist state)
+
+; A query-tree qt is either an atom or a cons of the form
+;   (str :k1 qt1 ... :kn qtn)
+; where str is a string suitable for printing with ~@, each :ki is a
+; keyword, and each qti is a query tree.  If qt is an atom, it is
+; returned.  Otherwise, str is printed and the user is prompted for
+; one of the keys.  When ki is typed, we recur on the corresponding
+; qti.  Note that the user need not type a keyword, just a symbol
+; whose symbol-name is that of one of the keywords.
+
+; Thus, '("Do you want to redefine ~x0?" :y t :n nil) will print
+; the question and require a simple y or n answer, returning t or nil
+; as appropriate.
+
+; Warning: We don't always actually read an answer!  We sometimes
+; default.  Our behavior depends on the LD specials standard-co,
+; standard-oi, and ld-query-control-alist, as follows.
+
+; Let x be (cdr (assoc-eq id (ld-query-control-alist state))).  X must
+; be either nil, a keyword, or a singleton list containing a keyword.
+; If it is a keyword, then it must be one of the keys in (cdr qt) or
+; else we cause an error.  If x is a keyword or a one-element list
+; containing a keyword, we act as though we read that keyword as the
+; answer to our query.  If x is nil, we read *standard-oi* for an
+; answer.
+
+; Now what about printing?  Where does the query actually appear?  If
+; we get the answer from the control alist, then we print both the
+; query and the answer to standard-co, making it simulate an
+; interaction -- except, if the control alist gave us a singleton
+; list, then we do not do any printing.  If we get the answer from
+; *standard-oi* then we print the query to *standard-co*.  In
+; addition, if we get the answer from *standard-oi* but *standard-co*
+; is not standard-co, we simulate the interaction on standard-co.
+
+  (cond ((atom qt) (value qt))
+        ((not (and (or (stringp (car qt))
+                       (and (consp (car qt))
+                            (stringp (caar qt))))
+                   (consp (cdr qt))
+                   (keyword-value-listp (cdr qt))))
+         (er soft 'acl2-query
+             "The object ~x0 is not a query tree!  See the comment in ~
+              acl2-query."
+             qt))
+        (t
+         (er-let* ((qt1 (acl2-query1 id qt alist state)))
+                  (acl2-query id qt1 alist state)))))
+
+(defun brr-data-query (id state)
+  (acl2-query
+   id
+   '("Attempt to present another result?"
+     :y t :n nil
+     :? ("reply with y to continue, or with n to quit"
+         :y t :n nil))
+   nil
+   state))
+
+(defun cw-gstack-for-term-fn (id subterm-p multiple tterm brr-data-lst alist
+                                 state)
+
+; Multiple is nil if only one result is to be considered.  Otherwise multiple
+; is t at the top level and :more on recursive calls.
+
+  (cond
+   ((null brr-data-lst) (value (eq multiple :more)))
+   (t (mv-let (earlier-d2 d-2 rest)
+        (cw-gstack-for-term-fn1 subterm-p tterm brr-data-lst alist)
+        (cond
+         (d-2
+          (progn$ (cw-gstack1 1
+                              nil
+                              (reverse (access brr-data-2 d-2 :gstack))
+                              nil)
+                  (let ((brr-result (access brr-data-2 d-2 :brr-result))
+                        (earlier-brr-result (and earlier-d2
+                                                 (access brr-data-2 earlier-d2
+                                                         :brr-result))))
+                    (cw "The resulting (translated) term is~|  ~
+                         ~y0.~|~#1~[~/Note: The first lemma application above ~
+                         that provides a suitable result is at position ~x2, ~
+                         and ~#3~[it's the same result as above.~/that result ~
+                         is~|  ~y4.~]~]~|"
+                        brr-result
+                        (if earlier-d2 1 0)
+                        (and earlier-d2
+                             (length (access brr-data-2 earlier-d2 :gstack)))
+                        (if (equal brr-result earlier-brr-result) 0 1)
+                        earlier-brr-result))
+                  (cond
+                   ((not multiple) (value :quit))
+                   (t
+                    (er-let* ((action (if multiple
+                                          (brr-data-query id state)
+                                        (value nil))))
+                      (cond
+                       ((eq action t)
+                        (cw-gstack-for-term-fn id subterm-p :more tterm rest
+                                               alist state))
+                       (t (value :quit))))))))
+         (t (assert$ (null rest)
+                     (value (eq multiple :more)))))))))
+
+(defun cw-gstack-for-term*-fn (id subterm-p multiple uterm+ brr-data-lst state)
+  (mv-let (vars uterm freep)
+    (case-match uterm+
+      ((':free vars uterm)
+       (mv vars uterm t))
+      (& (mv nil uterm+ nil)))
+    (er-let* ((tterm (cond
+                      ((and (consp uterm)
+                            (eq (car uterm) :free))
+                       (er soft id
+                           "An input of the form (:FREE ..) must be of the ~
+                            form (:FREE vars x).  The input ~x0 is thus ~
+                            illegal.  See :DOC cw-gstack-for-term."
+                           uterm))
+                      (t (translate uterm t nil nil id (w state) state))))
+              (alist (cond
+                      ((not (arglistp vars))
+                       (er soft id
+                           "The first argument of :FREE must be a list of ~
+                            distinct variables, but ~f0 is not.  See :DOC ~
+                            cw-gstack-for-term."
+                           vars))
+                      ((not freep) (value :none))
+                      (t (let ((all-vars (all-vars tterm)))
+                           (cond
+                            ((subsetp-eq vars all-vars)
+                             (let ((bound-vars (set-difference-eq all-vars
+                                                                  vars)))
+                               (value (pairlis$ bound-vars bound-vars))))
+                            (t (er soft id
+                                   "For a :FREE expression, each specified ~
+                                    variable must occur in the specified ~
+                                    term.  But ~&0 ~#0~[does~/do~] not occur ~
+                                    in the term, ~x1.  See :DOC ~
+                                    cw-gstack-for-term."
+                                   (set-difference-eq vars all-vars)
+                                   tterm)))))))
+              (ans (cw-gstack-for-term-fn id subterm-p multiple tterm
+                                          brr-data-lst alist state)))
+      (prog2$ (cond ((eq ans t)
+                     (cw "There are no more results.~|"))
+                    ((eq ans nil)
+                     (cw "There are no results.~|"))
+                    (t ; (eq ans :quit)
+                     nil))
+              (value :invisible)))))
+
+(defmacro cw-gstack-for-term* (uterm+ &key
+                                      (global-var 'brr-data-lst))
+  `(cw-gstack-for-term*-fn 'cw-gstack-for-term* nil t ',uterm+ (@ ,global-var)
+                           state))
+
+(defmacro cw-gstack-for-subterm* (uterm+ &key
+                                         (global-var 'brr-data-lst))
+  `(cw-gstack-for-term*-fn 'cw-gstack-for-subterm* t t ',uterm+ (@ ,global-var)
+                           state))
+
+(defmacro cw-gstack-for-term (uterm+ &key
+                                     (global-var 'brr-data-lst))
+  `(cw-gstack-for-term*-fn 'cw-gstack-for-term nil nil ',uterm+ (@ ,global-var)
+                           state))
+
+(defmacro cw-gstack-for-subterm (uterm+ &key
+                                        (global-var 'brr-data-lst))
+  `(cw-gstack-for-term*-fn 'cw-gstack-for-subterm t nil ',uterm+ (@ ,global-var)
+                           state))
+
+(defmacro set-brr-data-lst (global-var &optional (action ':observation))
+
+; This sets the indicated global-var to the accumulated (and suitably reversed)
+; list of accumulated brr-data records.
+
+  (declare (xargs :guard (and (member-eq action '(:observation :error :silent))
+                              global-var
+                              (symbolp global-var))))
+  `(er-let* ((x (brr-data-lst state))
+             (y
+              (cond
+               ((null x)
+                (case ,action
+                  (:observation
+                   (pprogn (observation nil
+                                        "There is no brr-data available.")
+                           (value nil)))
+                  (:error
+                   (er soft nil
+                       "There is no brr-data available."))
+                  (otherwise (value nil))))
+               (t (value x)))))
+     (pprogn (f-put-global ',global-var y state)
+             (case ,action
+               (:observation (observation nil
+                                          "~x0 = ~x1"
+                                          '(length (@ ,global-var))
+                                          (len y)))
+               (otherwise state))
+             (value :invisible))))
 
 ; We now develop some of the code for an implementation of an idea put
 ; forward by Diederik Verkest, namely, that patterns should be allowed
@@ -17100,7 +17667,7 @@ its attachment is ignored during proofs"))))
                           (prog2$
                            (brkpt2 nil 'loop-stopper
                                    unify-subst gstack nil nil
-                                   rcnst state)
+                                   rcnst ancestors state)
                            (mv step-limit nil term ttree)))
                          (t
                           (with-accumulated-persistence
@@ -17153,7 +17720,7 @@ its attachment is ignored during proofs"))))
                                 (access rewrite-rule lemma :hyps))
                                (prog2$
                                 (brkpt2 t nil unify-subst gstack rewritten-rhs
-                                        ttree rcnst state)
+                                        ttree rcnst ancestors state)
                                 (mv step-limit t rewritten-rhs
                                     (push-lemma
                                      (geneqv-refinementp
@@ -17168,7 +17735,7 @@ its attachment is ignored during proofs"))))
                              (t (prog2$
                                  (brkpt2 nil failure-reason
                                          unify-subst gstack nil nil
-                                         rcnst state)
+                                         rcnst ancestors state)
                                  (mv step-limit nil term ttree)))))))))
                        (t (mv step-limit nil term ttree))))))
            (t (mv step-limit nil term ttree))))))
@@ -17366,7 +17933,7 @@ its attachment is ignored during proofs"))))
 
                     (prog2$
                      (brkpt2 nil 'too-many-ifs-pre-rewrite unify-subst gstack
-                             :rewriten-rhs-avoided ttree rcnst state)
+                             :rewriten-rhs-avoided ttree rcnst ancestors state)
                      (prepend-step-limit
                       2
                       (rewrite-solidify term type-alist obj geneqv
@@ -17435,7 +18002,7 @@ its attachment is ignored during proofs"))))
                                (prog2$
                                 (brkpt2 nil 'too-many-ifs-post-rewrite
                                         unify-subst gstack rewritten-body
-                                        ttree1 rcnst state)
+                                        ttree1 rcnst ancestors state)
                                 (prepend-step-limit
                                  2
                                  (rewrite-solidify
@@ -17448,7 +18015,8 @@ its attachment is ignored during proofs"))))
                                   (access rewrite-constant rcnst :pt)))))
                               (t (prog2$
                                   (brkpt2 t nil unify-subst gstack
-                                          rewritten-body ttree1 rcnst state)
+                                          rewritten-body ttree1 rcnst ancestors
+                                          state)
                                   (mv step-limit
                                       rewritten-body
                                       (push-lemma+ rune ttree1 rcnst ancestors
@@ -17495,7 +18063,7 @@ its attachment is ignored during proofs"))))
 
 ;                            (prog2$
 ;                             (brkpt2 t nil unify-subst gstack rewritten-body
-;                                     ttree1 rcnst state)
+;                                     ttree1 rcnst ancestors state)
 ;                             (mv rewritten-body
 ;                                 (push-lemma rune ttree1))))
 
@@ -17555,14 +18123,14 @@ its attachment is ignored during proofs"))))
                                          (prog2$
                                           (brkpt2 t nil unify-subst gstack
                                                   rewritten-body ttree2 rcnst
-                                                  state)
+                                                  ancestors state)
                                           (mv step-limit
                                               rewritten-body
                                               ttree2)))))
                               (t
                                (prog2$
                                 (brkpt2 t nil unify-subst gstack rewritten-body
-                                        ttree1 rcnst state)
+                                        ttree1 rcnst ancestors state)
                                 (mv step-limit
                                     rewritten-body
                                     (push-lemma+ rune ttree1 rcnst
@@ -17571,7 +18139,8 @@ its attachment is ignored during proofs"))))
                                                  rewritten-body))))))
                             (t (prog2$
                                 (brkpt2 nil 'rewrite-fncallp unify-subst gstack
-                                        rewritten-body ttree1 rcnst state)
+                                        rewritten-body ttree1 rcnst ancestors
+                                        state)
                                 (prepend-step-limit
                                  2
                                  (rewrite-solidify
@@ -17587,7 +18156,7 @@ its attachment is ignored during proofs"))))
                         (access rewrite-rule rule :hyps)))
                       (t (prog2$
                           (brkpt2 nil failure-reason unify-subst gstack nil
-                                  nil rcnst state)
+                                  nil rcnst ancestors state)
                           (prepend-step-limit
                            2
                            (rewrite-solidify term type-alist obj geneqv
@@ -18114,7 +18683,7 @@ its attachment is ignored during proofs"))))
                     (prog2$ (brkpt2 t nil unify-subst gstack
                                     brr-result
                                     nil ; ttree, not used (see brkpt2)
-                                    rcnst state)
+                                    rcnst ancestors state)
                             (mv step-limit contradictionp nil)))
                    (t
                     (mv-let
@@ -18223,24 +18792,24 @@ its attachment is ignored during proofs"))))
                             (prog2$ (brkpt2 t nil unify-subst gstack
                                             brr-result
                                             nil ; ttree, not used (see brkpt2)
-                                            rcnst state)
+                                            rcnst ancestors state)
                                     (mv step-limit contradictionp nil)))
                            (failure-reason
                             (prog2$ (brkpt2 nil failure-reason unify-subst gstack
                                             brr-result
                                             nil ; ttree, not used (see brkpt2)
-                                            rcnst state)
+                                            rcnst ancestors state)
                                     (mv step-limit nil new-pot-lst)))
                            (t
                             (prog2$ (brkpt2 t nil unify-subst gstack
                                             brr-result
                                             nil ; ttree, not used (see brkpt2)
-                                            rcnst state)
+                                            rcnst ancestors state)
                                     (mv step-limit nil new-pot-lst)))))))))))
              (t (prog2$
                  (brkpt2 nil failure-reason
                          unify-subst gstack nil nil
-                         rcnst state)
+                         rcnst ancestors state)
                  (mv step-limit nil simplify-clause-pot-lst))))))))
        (t (mv step-limit nil simplify-clause-pot-lst)))))))
 
@@ -20683,7 +21252,7 @@ its attachment is ignored during proofs"))))
                     (prog2$
                      (brkpt2 nil 'loop-stopper
                              unify-subst gstack nil nil
-                             rcnst state)
+                             rcnst ancestors state)
                      (mv step-limit nil term ttree)))
                    (t
                     (with-accumulated-persistence
@@ -20742,7 +21311,7 @@ its attachment is ignored during proofs"))))
                                (eql n 3))
                            (prog2$
                             (brkpt2 t nil unify-subst gstack rewritten-rhs
-                                    ttree rcnst state)
+                                    ttree rcnst ancestors state)
                             (mv step-limit
                                 t
                                 rewritten-rhs
@@ -20766,12 +21335,12 @@ its attachment is ignored during proofs"))))
                                        (sublis-var unify-subst rhs)
                                        rewritten-rhs)
                                       unify-subst gstack nil nil
-                                      rcnst state)
+                                      rcnst ancestors state)
                               (mv step-limit nil term ttree))))))
                        (t (prog2$
                            (brkpt2 nil failure-reason
                                    unify-subst gstack nil nil
-                                   rcnst state)
+                                   rcnst ancestors state)
                            (mv step-limit nil term ttree)))))))))
                  (t (mv step-limit nil term ttree))))))))))
 
