@@ -306,11 +306,11 @@
              ((mv new-thm names-to-avoid)
               (fresh-logical-name-with-$s-suffix new-thm nil names-to-avoid wrld))
              (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
-                                               compst)
+                                               ,compst-var)
                              (equal (read-object
                                      (objdesign-of-var (ident ,(symbol-name var))
-                                                       compst)
-                                     compst)
+                                                       ,compst-var)
+                                     ,compst-var)
                                     ,var)
                              (equal (read-var (ident ,(symbol-name var))
                                               ,compst-var)
@@ -450,8 +450,13 @@
                                            wrld))
        (type-pred (type-to-recognizer type wrld))
        (var-in-scope-formula1
-        `(equal (read-var (ident ,(symbol-name var)) ,compst-var)
-                ,var))
+        `(and (objdesign-of-var (ident ,(symbol-name var)) ,compst-var)
+              (equal (read-object (objdesign-of-var (ident ,(symbol-name var))
+                                                    ,compst-var)
+                                  ,compst-var)
+                     ,var)
+              (equal (read-var (ident ,(symbol-name var)) ,compst-var)
+                     ,var)))
        (var-in-scope-formula1
         (atc-contextualize var-in-scope-formula1 new-context fn fn-guard
                            compst-var nil nil wrld))
@@ -465,7 +470,9 @@
        (not-flexible-array-member-p-when-type-pred
         (pack 'not-flexible-array-member-p-when- type-pred))
        (var-in-scope-hints
-        `(("Goal" :in-theory '(read-var-of-add-var
+        `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
+                               read-object-of-objdesign-of-var-to-read-var
+                               read-var-of-add-var
                                ident-fix-when-identp
                                identp-of-ident
                                equal-of-ident-and-ident
