@@ -18,9 +18,11 @@
 (defxdoc stp
   :short "An SMT solver used by the Axe toolkit"
   :parents (axe)
-  :long "STP is an SMT solver available <a href='https://github.com/stp/stp'>here</a>.
+  :long (xdoc::topparas "STP is an SMT solver available <a href='https://github.com/stp/stp'>here</a>.
   It is used by several tools in the @(see Axe) toolkit.  See @(see build::cert_param) for
-information on suppressing attempts to use STP during builds.")
+information on suppressing attempts to use STP during builds.
+
+Different versions of STP support different option syntax, especially for the max conflicts option, so you might need to set the environment variable @('ACL2_STP_VARIETY')  The default (equivalent to a setting of \"2\") should work with the latest STP and with other versions that use the option @('--max-num-confl') (note the dashes).  For older versions that use the option @('--max_num_confl') (note the underscores), set @('ACL2_STP_VARIETY') to \"1\".  For very old versions that only support the use of @('-g') for the max conflicts option, set @('ACL2_STP_VARIETY') to 0."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
