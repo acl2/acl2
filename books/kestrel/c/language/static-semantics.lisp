@@ -1809,7 +1809,7 @@
                         (vartab var-tablep)
                         (tagenv tag-envp))
   :returns (wf? wellformed-resultp)
-  :short "Check an expression that must be an assignment exrpression."
+  :short "Check an expression that must be an assignment expression."
   :long
   (xdoc::topstring
    (xdoc::p
