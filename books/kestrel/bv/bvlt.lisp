@@ -74,7 +74,7 @@
   (implies (bvlt freesize y x)
            (not (equal x y))))
 
-;replace with general trim rule?
+;rename
 (defthm bvlt-trim-constant-arg2
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -85,7 +85,7 @@
                   (bvlt size x (bvchop size k))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-;replace with general trim rule?
+;rename
 (defthm bvlt-trim-constant-arg1
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))

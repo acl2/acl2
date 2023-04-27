@@ -5165,7 +5165,6 @@
                                                     '(IF-BECOMES-MYIF
                                                       MYIF-BECOMES-BOOLIF-AXE
                                                       UBP-LONGER-BETTER
-                                                      SBVLT-TRIM-CONSTANT-RIGHT
                                                       sbvlt-of-bvplus-of-minus-1-and-minus-1
                                                       sbvlt-of-bvminus-of-1-and-minus-1
                                                       sbvlt-of-bvplus-of-minus-1-and-1

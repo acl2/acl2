@@ -1,7 +1,7 @@
 ; Signed bit-vector "less than" comparison
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -358,10 +358,12 @@
   :hints (("Goal" ;:cases ((posp size))
            :in-theory (enable sbvlt))))
 
+;rename
 (defthm size-of--1-and-0
   (sbvlt size -1 0)
   :hints (("Goal" :in-theory (enable sbvlt))))
 
+;rename
 (defthm sbvlt-trim-constant-right
   (implies (and (syntaxp (and (quotep k) (quotep size)))
                 (not (unsigned-byte-p size k))
@@ -371,6 +373,7 @@
   :hints (("Goal" :in-theory (e/d (sbvlt) nil)
            :cases ((natp size)))))
 
+;rename
 (defthm sbvlt-trim-constant-left
   (implies (and (syntaxp (and (quotep k) (quotep size)))
                 (not (unsigned-byte-p size k))
