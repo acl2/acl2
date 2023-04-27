@@ -53,6 +53,17 @@
 (add-known-boolean sbvle)
 (add-known-boolean unsigned-byte-p-forced)
 
+(defthmd <-of-constant-when-unsigned-byte-p
+  (implies (and (syntaxp (quotep k))
+                (unsigned-byte-p size x) ; size is a free var
+                (syntaxp (quotep size))
+                (<= (expt 2 size) k))
+           (< x k)))
+
+(defthmd not-<-of-0-when-unsigned-byte-p
+  (implies (unsigned-byte-p size x) ; size is a free var
+           (not (< x 0))))
+
 (defthmd floor-of-expt2-becomes-slice-when-bv-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (natp n)
