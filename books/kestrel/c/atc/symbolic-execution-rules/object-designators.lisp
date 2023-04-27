@@ -37,6 +37,8 @@
     "The second and third rules are used in the @(tsee defstruct)-specific
      theorems generated for symbolic execution of array member accesses.")
    (xdoc::p
+    "The fourth rule is used in the modular proofs.")
+   (xdoc::p
     "The constant that collects the rules also includes
      some rules proved elsewhere."))
 
@@ -69,6 +71,20 @@
                     (value-struct-read mem (read-object objdes compst))))
     :do-not-induct t
     :expand (read-object (objdesign-member objdes mem) compst))
+
+  (defruled objdesign-of-var-of-add-var-iff
+    (iff (objdesign-of-var var (add-var var2 val compst))
+         (or (equal (ident-fix var)
+                    (ident-fix var2))
+             (objdesign-of-var var compst)))
+    :enable (objdesign-of-var
+             objdesign-of-var-aux
+             add-var
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             len))
 
   (defval *atc-object-designator-rules*
     '(objdesign-of-var-when-static
