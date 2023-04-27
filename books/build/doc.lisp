@@ -1078,6 +1078,55 @@ around a dozen images to certify various directories of files.</p>
 
 <h3>Image Creation</h3>
 
+<p>Currently there are two supported methods of managing image creation. Both
+currently only allow images to be stored in one user-configured directory. In
+the first method, cert.pl can manage the building of images and their
+dependencies seamlessly, but requires the source files used for building the
+images to be all placed in one user-configured directory, and places some
+restrictions on the forms of the source files used to build the images.  In the
+second method, cert.pl doesn't manage the building of images; instead, you need
+to wrap the cert.pl call inside a Makefile and add extra dependencies there.</p>
+
+<h4>Method 1 -- cert.pl native</h4>
+
+<p>In this method you must designate a directory where extended ACL2 images
+should be placed, given by the --bin command-line option or the ACL2_IMAGES
+environment variable; and additionally a directory for the source files used
+for building such images, given by the --image-sources option or
+ACL2_IMAGE_SRC_DIR environment variable. For each image file 'myimage' to be
+created, there must be a file 'myimage.lsp' in the image source file directory
+which contains the ACL2 commands to issue before saving the image.  The last
+form in the file should be a local defconst of @('acl2::*acl2-image-message*')
+giving a \"modification notice\" message to be printed when the image starts.</p>
+
+<p>Here is an example such .lsp file:</p>
+@({
+ (include-book \"centaur/fgl/portcullis\" :dir :system)
+ (include-book \"centaur/aignet/portcullis\" :dir :system)
+ (local (include-book \"centaur/fgl/top\" :dir :system))
+ (local (include-book \"centaur/aignet/transforms\" :dir :system))
+
+ (local (defconst *acl2-image-message*
+          \"This includes FGL books.  You'll need to include the ipasir-backend book separately.\"))
+ })
+
+<p>The items in the file don't always need to all be local events.  Calls of LD
+and non embedded-event forms are allowed.  Any nonlocal events will be in the
+portcullis of any books certified with the image.  The file (and any others
+read using LD, etc.) will be scanned by the build system to determine the
+dependencies of the saved image.</p>
+
+<p>The build system additionally defines another local constant in each image,
+@('acl2::*acl2-image-name*').  It is a good idea to put an assert-event at the
+top each book that uses an extended image to make sure that when run
+interactively, the book is loaded into the right starting image:</p>
+
+@({
+ (assert-event (equal acl2::*acl2-image-name* \"my-extended-image\"))
+ })
+
+
+<h4>Method 2 -- makefile integrated</h4>
 <p>Suppose you want to use @(see save-exec) to create an extended ACL2 image
 using the following script:</p>
 
@@ -1089,11 +1138,9 @@ using the following script:</p>
      (save-exec \"extended-acl2\" \"Supporting libraries pre-loaded.\")
 })
 
-<p>While @('cert.pl') does have good support for using the resulting image to
-certify particular books, there is currently no way to directly tell
-@('cert.pl') that it needs to run this script to create the @('extended-acl2')
-image.  Instead, if you want to use extended ACL2 images, you will probably
-need to put together a @('Makefile').  See @(see static-makefiles) for
+<p>In method 2, instead of letting cert.pl handle the dependencies and creation
+of saved images, we instead create a Makefile that wraps around the one cert.pl will create.
+See @(see static-makefiles) for
 information about how to use @('cert.pl') to do the dependency scanning for
 your @('Makefile').</p>
 
@@ -1121,19 +1168,25 @@ indicate which directory will contain images.</p>
 
 <h3>Specifying the Image for each Book</h3>
 
-<p>To decide what image to use to certify @('foo.lisp'), @('cert.pl') will
-first look for a file named @('foo.image').  This file should contain a single
-line that just gives the name of the ACL2 image to use.  For instance, if we
-want to certify @('foo.lisp') using @('extended-acl2'), then @('foo.image')
-should simply contain:</p>
+<p>To decide what image to use to certify @('foo.lisp'), @('cert.pl')
+scans for comments such as:</p>
+@({
+; cert-param: (acl2-image=myfancyimage)
+ })
+<p>Such a comment can either be in the book itself, its .acl2 file, or the
+directory's cert.acl2 file.</p>
+
+
+<p>Alternatively, cert.pl will also look for files named @('foo.image') for a
+book named foo, or @('cert.image') for any book in the given directory. This
+file should contain a single line that just gives the name of the ACL2 image to
+use.  For instance, if we want to certify @('foo.lisp') using
+@('extended-acl2'), then @('foo.image') should simply contain:</p>
 
 @({
      extended-acl2
 })
-
-<p>You can also write a @('cert.image') file to indicate a directory-wide
-default image to use.  (This is exactly analogous to how @('cert.pl') looks for
-@('.acl2') files for @(see pre-certify-book-commands).)</p>")
+")
 
 
 (defxdoc distributed-builds ; Step 8
