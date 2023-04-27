@@ -1,0 +1,39 @@
+; Utilities for printing rational numbers readably
+;
+; Copyright (C) 2022-2023 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ACL2")
+
+(defund round-to-integer (x)
+  (declare (xargs :guard (and (rationalp x)
+                              (<= 0 x))))
+  (let* ((integer-part (floor x 1))
+         (fraction-part (- x integer-part)))
+    (if (>= fraction-part 1/2)
+        (+ 1 integer-part)
+      integer-part)))
+
+(defund round-to-hundredths (x)
+  (declare (xargs :guard (and (rationalp x)
+                              (<= 0 x))))
+  (/ (round-to-integer (* 100 x)) 100))
+
+;; Prints VAL, rounded to the hundredths place.
+;; Returns nil.
+(defund print-to-hundredths (val)
+  (declare (xargs :guard (and (rationalp val)
+                              (<= 0 val))))
+  (let* ((val (round-to-hundredths val))
+         (integer-part (floor val 1))
+         (fraction-part (- val integer-part))
+         (tenths (floor (* fraction-part 10) 1))
+         (fraction-part-no-tenths (- fraction-part (/ tenths 10)))
+         (hundredths (floor (* fraction-part-no-tenths 100) 1)))
+    ;; Hoping that using ~c here prevents any newlines:
+    (cw "~c0.~c1~c2" (cons integer-part (integer-length integer-part)) (cons tenths 1) (cons hundredths 1))))
