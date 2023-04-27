@@ -2337,9 +2337,15 @@
           (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
            (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-          (formula1 `(equal (read-var (ident ,(symbol-name var))
-                                      ,compst-var)
-                            ,var))
+          (formula1 `(and (objdesign-of-var (ident ,(symbol-name var)) compst)
+                          (equal (read-object (objdesign-of-var
+                                               (ident ,(symbol-name var))
+                                               compst)
+                                              compst)
+                                 ,var)
+                          (equal (read-var (ident ,(symbol-name var))
+                                           ,compst-var)
+                                 ,var)))
           (formula1 (atc-contextualize formula1
                                        context
                                        fn
@@ -2362,7 +2368,9 @@
            (pack 'not-flexible-array-member-p-when- type-pred))
           (valuep-when-type-pred (pack 'valuep-when- type-pred))
           (hints
-           `(("Goal" :in-theory '(read-var-of-add-var
+           `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
+                                  read-object-of-objdesign-of-var-to-read-var
+                                  read-var-of-add-var
                                   ,var-thm
                                   ident-fix-when-identp
                                   identp-of-ident
