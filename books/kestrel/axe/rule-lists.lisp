@@ -317,7 +317,12 @@
     bitor-of-constant-chop-arg1
     bitor-of-constant-chop-arg2
     bitxor-of-constant-chop-arg1
-    bitxor-of-constant-chop-arg2))
+    bitxor-of-constant-chop-arg2
+    ;; todo: more like this?
+    bvlt-trim-constant-arg1
+    bvlt-trim-constant-arg2
+    sbvlt-trim-constant-left
+    sbvlt-trim-constant-right))
 
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
