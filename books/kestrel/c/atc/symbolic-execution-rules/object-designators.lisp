@@ -37,7 +37,8 @@
     "The second and third rules are used in the @(tsee defstruct)-specific
      theorems generated for symbolic execution of array member accesses.")
    (xdoc::p
-    "The fourth rule is used in the modular proofs.")
+    "The fourth and fifth rules are used in the modular proofs
+     aboud variables in symbol tables.")
    (xdoc::p
     "The constant that collects the rules also includes
      some rules proved elsewhere."))
@@ -80,6 +81,19 @@
     :enable (objdesign-of-var
              objdesign-of-var-aux
              add-var
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             len))
+
+  (defruled objdesign-of-var-of-enter-scope-iff
+    (implies (> (compustate-frames-number compst) 0)
+             (iff (objdesign-of-var var (enter-scope compst))
+                  (objdesign-of-var var compst)))
+    :enable (objdesign-of-var
+             objdesign-of-var-aux
+             enter-scope
              push-frame
              pop-frame
              top-frame
