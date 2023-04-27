@@ -1049,7 +1049,10 @@ corresponding update.</p>")
   :short "(Advanced) how to get @(see cert.pl) to use @(see save-exec) images
 to certify parts of your project."
 
-  :long "<p>In most ACL2 projects, each book uses @(see include-book) to load
+  :long
+  (concatenate
+   'string
+   "<p>In most ACL2 projects, each book uses @(see include-book) to load
 all of its dependencies, and the same, \"stock\" ACL2 executable is used to
 certify every book.  This generally works well and certainly keeps things
 simple.</p>
@@ -1171,7 +1174,10 @@ indicate which directory will contain images.</p>
 <p>To decide what image to use to certify @('foo.lisp'), @('cert.pl')
 scans for comments such as:</p>
 @({
-; cert-param: (acl2-image=myfancyimage)
+; cert-param: "
+   ;; note line break in order to prevent the build system from
+   ;; thinking this book should itself be built with a saved image
+   "(acl2-image=myfancyimage)
  })
 <p>Such a comment can either be in the book itself, its .acl2 file, or the
 directory's cert.acl2 file.</p>
@@ -1186,7 +1192,7 @@ use.  For instance, if we want to certify @('foo.lisp') using
 @({
      extended-acl2
 })
-")
+"))
 
 
 (defxdoc distributed-builds ; Step 8
