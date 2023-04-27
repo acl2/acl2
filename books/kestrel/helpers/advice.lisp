@@ -79,6 +79,7 @@
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/included-books-in-world" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "kestrel/hints/combine-hints" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
@@ -1138,26 +1139,12 @@
   (book-mapp (mv-nth 1 (parse-book-map book-map state)))
   :hints (("Goal" :in-theory (enable parse-book-map))))
 
-(defund round-to-integer (x)
-  (declare (xargs :guard (and (rationalp x)
-                              (<= 0 x))))
-  (let* ((integer-part (floor x 1))
-         (fraction-part (- x integer-part)))
-    (if (>= fraction-part 1/2)
-        (+ 1 integer-part)
-      integer-part)))
-
-(defund round-to-hundredths (x)
-  (declare (xargs :guard (and (rationalp x)
-                              (<= 0 x))))
-  (/ (round-to-integer (* 100 x)) 100))
-
 (defthm confidence-percentp-of-round-to-hundredths
   (implies (confidence-percentp x)
-           (confidence-percentp (round-to-hundredths x)))
+           (confidence-percentp (acl2::round-to-hundredths x)))
   :hints (("Goal" :in-theory (enable confidence-percentp
-                                     round-to-hundredths
-                                     round-to-integer))))
+                                     acl2::round-to-hundredths
+                                     acl2::round-to-integer))))
 
 (local
  (defthm confidence-percentp-of-*-of-100
@@ -1166,20 +1153,6 @@
                  (rationalp x))
             (confidence-percentp (* 100 x)))
    :hints (("Goal" :in-theory (enable confidence-percentp)))))
-
-;; Prints VAL, rounded to the hundredths place.
-;; Returns nil.
-(defund print-to-hundredths (val)
-  (declare (xargs :guard (and (rationalp val)
-                              (<= 0 val))))
-  (let* ((val (round-to-hundredths val))
-         (integer-part (floor val 1))
-         (fraction-part (- val integer-part))
-         (tenths (floor (* fraction-part 10) 1))
-         (fraction-part-no-tenths (- fraction-part (/ tenths 10)))
-         (hundredths (floor (* fraction-part-no-tenths 100) 1)))
-    ;; Hoping that using ~c here prevents any newlines:
-    (cw "~c0.~c1~c2" (cons integer-part (integer-length integer-part)) (cons tenths 1) (cons hundredths 1))))
 
 ;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
 (defund parse-recommendation (rec rec-num source state)
@@ -1206,7 +1179,7 @@
                     (< 1 confidence)))
           (er hard? 'parse-recommendation "Bad confidence: ~x0." confidence)
           (mv :bad-confidence nil state))
-         (confidence-percent (round-to-hundredths (* 100 confidence)))
+         (confidence-percent (acl2::round-to-hundredths (* 100 confidence)))
          (res (assoc-equal type *rec-to-symbol-alist*))
          ((when (not res))
           (er hard? 'parse-recommendation "Unknown recommendation type: ~x0." type)
@@ -1314,7 +1287,7 @@
        (recs-to-return ;; todo: how to choose when we can't return them all?:
         (acl2::firstn num-recs (make-enable-recs-aux fns-to-try-enabling 1)))
        ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (- (and print-timep (prog2$ (print-to-hundredths (- done-time start-time))
+       (- (and print-timep (prog2$ (acl2::print-to-hundredths (- done-time start-time))
                                    (cw "s~%") ; s = seconds
                                    ))))
     (mv nil recs-to-return state)))
@@ -1417,7 +1390,7 @@
         (acl2::top-level-defthms-in-world (w state)))
        (recs (make-recs-from-history-events num-recs events))
        ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (- (and print-timep (prog2$ (print-to-hundredths (- done-time start-time))
+       (- (and print-timep (prog2$ (acl2::print-to-hundredths (- done-time start-time))
                                    (cw "s~%") ; s = seconds
                                    ))))
     (mv nil recs state)))
@@ -3291,7 +3264,7 @@
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
                ((mv server-done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-               (- (and print-timep (prog2$ (print-to-hundredths (- server-done-time server-start-time))
+               (- (and print-timep (prog2$ (acl2::print-to-hundredths (- server-done-time server-start-time))
                                            (cw "s~%") ; s = seconds
                                            )))
                ((when erp)

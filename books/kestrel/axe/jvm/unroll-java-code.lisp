@@ -26,6 +26,7 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/check-boolean" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "../make-term-into-dag-basic")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in rewriter-basic
@@ -443,6 +444,8 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
+       ;; Record the start time:
+       ((mv start-time state) (acl2::get-real-time state))
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
@@ -499,13 +502,20 @@
        (items-created (append (list defconst-name)
                               (if produce-function (list function-name) nil)
                               (if produce-theorem (list theorem-name) nil)))
-       (- (cw "Unrolling finished.~%"))
-       ;; (- (cw "Info on unrolled DAG:~%"))
+       ((mv end-time state) (acl2::get-real-time state))
+       (- (if (= 1 (len items-created))
+              (cw "Created ~x0.~%~%" (first items-created))
+            (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
        (- (print-dag-info dag defconst-name nil)) ; maybe suppress with print arg?
-       (- (cw ")~%")))
+       (- (progn$ (cw "~%BYTECODE UNROLLING FINISHED (")
+                  (acl2::print-to-hundredths (- end-time start-time))
+                  (cw "s).") ; s = seconds
+                  ))
+       (- (cw ")~%~%")))
     (mv (erp-nil)
         (extend-progn (extend-progn event `(with-output :off :all (table unroll-java-code-table ',whole-form ',event)))
-                      `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
+                      ;; `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
+                      '(value-triple :invisible)
                       )
         state)))
 
