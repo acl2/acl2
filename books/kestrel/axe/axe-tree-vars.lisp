@@ -97,3 +97,10 @@
            (equal (axe-tree-vars tree)
                   (list tree)))
   :hints (("Goal" :in-theory (enable axe-tree-vars))))
+
+(defthm axe-tree-vars-of-cons
+  (equal (axe-tree-vars (cons fn args))
+         (if (equal 'quote fn)
+             nil
+           (axe-tree-vars-lst args)))
+  :hints (("Goal" :in-theory (enable axe-tree-vars))))
