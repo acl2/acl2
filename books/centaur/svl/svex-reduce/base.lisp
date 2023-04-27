@@ -200,7 +200,7 @@
     (and (pseudo-termp x)
          (subsetp-equal
           (acl2::all-fnnames x)
-          '(if equal safe-max safe-min nth))
+          '(if equal safe-max safe-min nth > < not))
          (subsetp-equal
           (acl2::all-vars x)
           '(widths args)))
@@ -286,6 +286,16 @@
                (('equal x y)
                 (equal (width-of-svex-extn-formula-eval x args widths)
                        (width-of-svex-extn-formula-eval y args widths)))
+               (('< x y)
+                (b* ((x (width-of-svex-extn-formula-eval x args widths))
+                     (y (width-of-svex-extn-formula-eval y args widths)))
+                (and (rationalp x) (rationalp y) (< x y))))
+               (('> x y)
+                (b* ((x (width-of-svex-extn-formula-eval x args widths))
+                     (y (width-of-svex-extn-formula-eval y args widths)))
+                (and (rationalp x) (rationalp y) (> x y))))
+               (('not x)
+                (not (width-of-svex-extn-formula-eval x args widths)))
                (&
                 (acl2::raise
                  "Formula is in unsupported format: ~p0" formula))

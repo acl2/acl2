@@ -33,9 +33,11 @@
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "centaur/misc/u32-listp" :dir :system)
 (include-book "centaur/misc/s32-listp" :dir :system)
+(include-book "std/alists/alist-keys" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
+(local (include-book "std/lists/sets" :dir :system))
 (local (in-theory (disable nth update-nth)))
 (local (include-book "centaur/fty/fixequiv" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -227,6 +229,107 @@
              (node-head n classes)))
     :hints(("Goal" :in-theory (enable node-head)))))
 
+
+(define class-list ((n natp) classes)
+  :guard (and (< n (classes-size classes))
+              (classes-wellformed classes))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  (b* ((n (lnfix n))
+       (next (node-next n classes))
+       ((when (and (mbt (and (< n (classes-size classes))
+                             (classes-wellformed classes)))
+                   (< n next)))
+        (cons n (class-list next classes))))
+    (list n)))
+
+
+(define class-consistent ((n natp) (head natp) classes)
+  :guard (and (< n (classes-size classes))
+              (classes-wellformed classes))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  (and (or (eql (node-head n classes) (lnfix head))
+           (cw "~x0 was expected to have head ~x1 but instead its head was ~x2~%"
+               n head (node-head n classes)))
+       (b* ((next (node-next n classes)))
+         (if (and (mbt (and (< (nfix n) (classes-size classes))
+                            (classes-wellformed classes)))
+                  (< (lnfix n) next))
+             (class-consistent next head classes)
+           (and (or (eql (node-head head classes) (lnfix n))
+                    (cw "head node ~x0 was expected to have head (tail) ~x1 but instead it was ~x2~%"
+                        head n (node-head head classes)))
+                ;; (or (eql next (lnfix n))
+                ;;     (cw "next node of tail node ~x0 was expected to be itself but instead was ~x1~%"
+                ;;         n next))
+                )))))
+
+(define classes-check-consistency ((n natp) classes)
+  :guard (and (<= n (classes-size classes))
+              (classes-wellformed classes))
+  (b* (((when (zp n)) t)
+       (n (1- n))
+       (head (node-head n classes))
+       ((when (<= head n))
+        (and (or (<= n (node-head head classes))
+                 (cw "Node ~x0's head node ~x1 has head (tail) node ~x2, which is less than that node~%"
+                     n head (node-head head classes)))
+             (classes-check-consistency n classes))))
+    (and (or (class-consistent (node-next n classes) n classes)
+             (cw "inconsistent class: head ~x0 next ~x1 tail ~x2~%"
+                 n (node-next n classes) (node-head n classes)))
+         (classes-check-consistency n classes))))
+       
+    
+
+(defsection classes-consistent
+  (defun-sk classes-consistent (classes)
+    (forall n
+            (implies (and (natp n)
+                          (< n (classes-size classes)))
+                     (and (implies (<= (node-head n classes) n)
+                                   ;; n is not a head or is a singleton head
+                                   (and (member-equal n (class-list (node-head n classes) classes))
+                                        (<= n (node-head (node-head n classes) classes))))
+                          (implies (<= n (node-head n classes))
+                                   (member-equal (node-head n classes)
+                                                 (class-list n classes))))))
+    :rewrite :direct)
+  
+  (in-theory (disable classes-consistent
+                      classes-consistent-necc))
+
+  (defthm classes-consistent-implies-member-class-list-of-head
+    (implies (and (classes-consistent classes)
+                  (equal n2 (nfix n))
+                  (< n2 (classes-size classes))
+                  (<= (node-head n classes) n2))
+             (member-equal n2 (class-list (node-head n classes) classes)))
+    :hints (("goal" :use ((:instance classes-consistent-necc
+                           (n (nfix n))))
+             :in-theory (disable classes-consistent-necc))))
+
+  (defthm classes-consistent-implies-node-head-of-node-head-gte
+    (implies (and (classes-consistent classes)
+                  (< (nfix n) (classes-size classes))
+                  (<= (node-head n classes) (nfix n)))
+             (<= (nfix n) (node-head (node-head n classes) classes)))
+    :hints (("goal" :use ((:instance classes-consistent-necc
+                           (n (nfix n))))
+             :in-theory (disable classes-consistent-necc)))
+    :rule-classes :linear)
+
+  (defthm classes-consistent-implies-head-node-head-in-class
+    (implies (and (classes-consistent classes)
+                  (< (nfix n) (classes-size classes))
+                  (<= (nfix n) (node-head n classes)))
+             (member-equal (node-head n classes) (class-list n classes)))
+    :hints (("goal" :use ((:instance classes-consistent-necc
+                           (n (nfix n))))
+             :in-theory (disable classes-consistent-necc)))))
+
+
+
+
 (define classes-init-aux ((n natp) classes)
   :guard (<= n (classes-size classes))
   :returns (new-classes)
@@ -240,6 +343,20 @@
   ;; (std::defret classes-sized-of-classes-init-aux
   ;;   (implies (classes-sized size classes)
   ;;            (classes-sized size new-classes)))
+
+  (defretd node-next-of-<fn>
+    (equal (node-next m new-classes)
+           (if (< (nfix m) (nfix n))
+               (+ 1 (nfix m))
+             (node-next m classes))))
+
+  (defretd node-head-of-<fn>
+    (equal (node-head m new-classes)
+           (if (< (nfix m) (nfix n))
+               0
+             (node-head m classes))))
+
+  
   
   (std::defret classes-size-of-classes-init-aux
     (<= (classes-size classes)
@@ -309,7 +426,53 @@
     :hints((and stable-under-simplificationp
                 '(:in-theory (enable classes-wellformed)
                   :expand ((:free (foo) (classes-wellformed-aux size foo))
-                           (:free (foo) (classes-wellformed-aux 0 foo))))))))
+                           (:free (foo) (classes-wellformed-aux 0 foo)))))))
+
+  (defretd node-next-of-<fn>
+    (implies (< (nfix n) (nfix size))
+             (equal (node-next n new-classes)
+                    (if (eql (nfix n) (1- (nfix size)))
+                        (nfix n)
+                      (+ 1 (nfix n)))))
+    :hints(("Goal" :in-theory (enable node-next-of-classes-init-aux))))
+
+  (defretd node-head-of-<fn>
+    (implies (< (nfix n) (nfix size))
+             (equal (node-head n new-classes)
+                    (if (zp n)
+                        (1- (nfix size))
+                      0)))
+    :hints(("Goal" :in-theory (enable node-head-of-classes-init-aux))))
+
+  
+  (local (defun count-down (n)
+           (if (zp n)
+               n
+             (count-down (1- n)))))
+
+  (local (defun count-up (n k)
+           (declare (xargs :measure (nfix (- (nfix k) (nfix n)))))
+           (if (>= (nfix n) (nfix k))
+               (list n k)
+             (count-up (1+ (nfix n)) k))))
+
+  (defretd class-list-of-classes-init
+    (implies (and (integerp k)
+                  (<= (nfix m) k)
+                  (< k (nfix size)))
+             (member-equal k (class-list m new-classes)))
+    :hints (("goal" :induct (count-up m k)
+             :in-theory (e/d (node-head-of-<fn>
+                              node-next-of-<fn>)
+                             (<fn>))
+             :expand ((:free (classes) (class-list m classes))))))
+
+  (defretd classes-consistent-of-<fn>
+    (classes-consistent new-classes)
+    :hints (("goal" :in-theory (e/d (classes-consistent
+                                     class-list-of-classes-init
+                                     node-head-of-<fn>)
+                                    (<fn>))))))
 
 
 
@@ -645,9 +808,25 @@
 
 (define classes-hash-rem-lst ((rem-hash-lst u32-list-p)
                               (classhash))
+  :returns (new-classhash)
   (if (endp rem-hash-lst) classhash
     (b* ((classhash (classhash-table-rem (first rem-hash-lst) classhash)))
-      (classes-hash-rem-lst (rest rem-hash-lst) classhash))))
+      (classes-hash-rem-lst (rest rem-hash-lst) classhash)))
+  ///
+
+  (local (defthm subsetp-remove-equal
+           (implies (subsetp x y)
+                    (subsetp (remove-equal (car y) x) (cdr y)))))
+  
+  (local (defthm alist-keys-of-hons-remove-assoc
+           (equal (alist-keys (acl2::hons-remove-assoc key al))
+                  (remove-equal key (alist-keys al)))
+           :hints(("Goal" :in-theory (enable alist-keys acl2::hons-remove-assoc remove-equal)))))
+
+  (std::defret classhash-keys-subset-of-remhash-implies-empty-of-<fn>
+    (implies (subsetp-equal (alist-keys (nth *classhash-table-get* classhash))
+                            rem-hash-lst)
+             (equal (alist-keys (nth *classhash-table-get* new-classhash)) nil))))
 
 (define classes-refine-class-aux ((prev natp)
                                   (node natp)
@@ -730,7 +909,18 @@
 
   (std::defret classes-wellformed-of-classes-refine-class-aux
     (implies (classes-wellformed classes)
-             (classes-wellformed new-classes))))
+             (classes-wellformed new-classes)))
+
+  (std::defret classhash-keys-subset-of-remhash-implies-empty-of-<fn>
+    (implies (subsetp-equal (alist-keys (nth *classhash-table-get* classhash))
+                            rem-hash-lst)
+             (equal (alist-keys (nth *classhash-table-get* new-classhash)) nil))
+    :hints(("Goal" :in-theory (enable classes-hash-add))))
+
+  
+
+
+  )
 
 (define classhash-table-clear-prof (classhash)
   :enabled t
@@ -830,6 +1020,9 @@
                (nclasses-refined-out natp :rule-classes :type-prescription))
   (b* (((when (mbe :logic (zp node)
                    :exec (int= node 0)))
+        ;; (or (classes-check-consistency (classes-size classes) classes)
+        ;;     (cw "Became inconsistent after refine~%")
+        ;;     (break$))
         (mv classhash classes (lnfix nclass-lits-refined) (lnfix nconst-lits-refined) (lnfix nclasses-refined)))
        (node (the (integer 0 *)
                   (+ -1 (the (integer 0 *) node))))
@@ -922,4 +1115,56 @@
                (nconst-lits natp :rule-classes :type-prescription)
                (nclass-lits natp :rule-classes :type-prescription))
   (classes-counts-aux start-node (classes-size classes) 0 0 0 classes))
+
+
+
+
+(define classes-delete-class-aux ((node natp) (nremoved natp) (classes))
+  :guard (and (< node (classes-size classes))
+              (classes-wellformed classes))
+  :measure (nfix (- (classes-size classes) (nfix node)))
+  :returns (mv new-classes (nremoved natp :rule-classes :type-prescription))
+  (b* ((node (lnfix node))
+       (nremoved (lnfix nremoved))
+       (next (node-next node classes))
+       ((unless (mbt (and (< node (classes-size classes))
+                          (classes-wellformed classes))))
+        (mv classes nremoved))
+       (classes (node-set-next node node classes))
+       (classes (node-set-head node node classes))
+       (nremoved (1+ nremoved))
+       ((unless (< node next))
+        ;; (or (classes-check-consistency (classes-size classes) classes)
+        ;;     (cw "Became inconsistent after delete~%")
+        ;;     (break$))
+        (mv classes nremoved)))
+    (classes-delete-class-aux next nremoved classes))
+  ///
+  (std::defret classes-size-of-<fn>
+    (equal (classes-size new-classes) (classes-size classes)))
+
+  (std::defret classes-wellformed-of-<fn>
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes))))
+
+
+(define classes-delete-class ((node natp) (classes))
+  :guard (and (< node (classes-size classes))
+              (classes-wellformed classes))
+  :returns (mv new-classes (nremoved natp :rule-classes :type-prescription))
+  (b* ((head (node-head node classes))
+       ((when (eql head 0))
+        ;; refuse to delete the constant class...
+        (mv classes 0)))
+    (classes-delete-class-aux head 0 classes))
+  ///
+  (std::defret classes-size-of-<fn>
+    (equal (classes-size new-classes) (classes-size classes)))
+
+  (std::defret classes-wellformed-of-<fn>
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes))))
+
+
+
 

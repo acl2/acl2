@@ -603,6 +603,7 @@
                       (outs true-list-listp)
                       (internals true-list-listp)
                       (design design-p)
+                      (labels symbol-listp)
                       (simplify)
                       (pre-simplify)
                       (initial-state-vars)
@@ -752,6 +753,7 @@
                    :expanded-ins       ins
                    :expanded-overrides overrides
                    :nphases        nphases
+                   :labels         labels
                    :form           form)
         moddb aliases)))
 
@@ -916,7 +918,6 @@
 
 (define defsvtv-events ((svtv svtv-p)
                         (design-const symbolp)
-                        labels
                         define-macros
                         define-mod
                         parents short long)
@@ -925,10 +926,8 @@
   (b* (((svtv svtv))
        (name svtv.name)
                     
-       (?labels      (if (symbol-listp labels)
-                        labels
-                      (raise ":labels need to be a symbol-listp.")))
-
+       (labels      svtv.labels)
+       
        (want-xdoc-p (or parents short long))
        (short       (cond ((stringp short) short)
                           ((not short)     "")
@@ -1233,7 +1232,7 @@ defined with @(see sv::defsvtv).</p>"
                     (internals true-list-listp)
                     (design design-p)
                     (design-const symbolp)
-                    labels
+                    (labels symbol-listp)
                     simplify
                     pre-simplify
                     state-machine
@@ -1247,13 +1246,13 @@ defined with @(see sv::defsvtv).</p>"
   :irrelevant-formals-ok t
   :hooks nil
   ;; much of this copied from defstv
-  (b* ((svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify
+  (b* ((svtv (defsvtv-main name ins overrides outs internals design labels simplify pre-simplify
                (or state-machine initial-state-vars)
                (or state-machine keep-final-state)
                keep-all-states form))
        ((unless svtv)
         (raise "failed to generate svtv")))
-    (defsvtv-events svtv design-const labels define-macros define-mod parents short long)))
+    (defsvtv-events svtv design-const define-macros define-mod parents short long)))
 
 (defmacro defsvtv (&whole form
                           name &key design mod
@@ -1951,7 +1950,7 @@ helps symbolic execution speed, but can cause an error like:</p>
 
 <h3>Decomposition Proofs</h3>
 
-<p>See @(see svtv-decomposition) and in particular @(see
+<p>See @(see svex-decomposition-methodology) and in particular @(see
 def-svtv-generalized-thm) for the recommended method for doing proofs by
 decomposition on SVTVs.</p>
 

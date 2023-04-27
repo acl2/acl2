@@ -66,6 +66,8 @@
  :parents (acl2::hardware-verification)
  :short "A framework to simulate Verilog designs with retained design hiearchy"
  :long "
+
+
 <p>Similar to @(see sv::svtv), SVL semantics is converted from @(see acl2::sv)
  to simulate Verilog designs but it can retain design hierarchy by not
  flattening and composing selected modules. It supports combinational and
@@ -81,5 +83,10 @@ designs. For combinational submodules, you can have a rewrite rule replacing
 @(see svl-run-phase-wog) instance of that submodule with its specification, and
 that rule can be applied when rewriting the main module. See @(see
 rp::multiplier-verification) for a use case. </p> 
+
+
+<p><b> DISCLAIMER: SVL IS NOT MAINTAINED ANYMORE AND WAS ONLY AN EXPERIMENTAL
+ LIBRARY. </b></p> 
+
 "
  )

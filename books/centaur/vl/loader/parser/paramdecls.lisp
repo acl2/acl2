@@ -279,15 +279,16 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
   :fails gracefully
   :count strong
   (seq tokstream
-        (id := (vl-match-token :vl-idtoken))
-        (:= (vl-match-token :vl-equalsign))
-        (type := (vl-parse-datatype))
-        (return (make-vl-paramdecl
-                 :loc  (vl-token->loc id)
-                 :name (vl-idtoken->name id)
-                 :atts atts
-                 :localp localp
-                 :type (make-vl-typeparam :default type)))))
+       (id := (vl-match-token :vl-idtoken))
+       (when (vl-is-token? :vl-equalsign)
+         (:= (vl-match))
+         (type := (vl-parse-datatype)))
+       (return (make-vl-paramdecl
+                :loc  (vl-token->loc id)
+                :name (vl-idtoken->name id)
+                :atts atts
+                :localp localp
+                :type (make-vl-typeparam :default type)))))
 
 (defparser vl-parse-list-of-type-assignments (atts localp)
   ;; SystemVerilog-2012 Only.

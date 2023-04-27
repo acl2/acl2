@@ -35,6 +35,7 @@
 (include-book "check-primitives")
 (include-book "svex")
 (include-book "member-equal")
+(include-book "member-int-list")
 (include-book "enums")
 (include-book "transform")
 (include-book "simplify")

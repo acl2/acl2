@@ -2,11 +2,6 @@
 ; Copyright (C) 2012-2015 Centaur Technology
 ; Copyright (C) 2022 Intel Corporation
 ;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
-;
 ; License: (An MIT/X11-style license)
 ;
 ;   Permission is hereby granted, free of charge, to any person obtaining a
@@ -61,10 +56,11 @@
 (include-book "std/util/defconsts" :dir :system)
 (include-book "oslib/ls" :dir :system)
 (include-book "centaur/fgl/def-fgl-thm" :dir :system)
+(include-book "booth-support")
 (local (include-book "centaur/fgl/top" :dir :system))
 (local (include-book "centaur/aignet/transforms" :dir :system))
 
-;; (local (include-book "centaur/esim/stv/stv-decomp-proofs-even-better" :dir :system))
+
 ; (depends-on "boothpipe.v")
 ; cert_param: (uses-glucose)
 (value-triple (acl2::set-max-mem (* 3 (expt 2 30))))
@@ -79,12 +75,12 @@
      (er-progn (set-waterfall-parallelism nil)
                (value '(value-triple nil)))
    (value '(value-triple nil))))
+
 (local (include-book "booth-support"))
 
 ; Setup.  This should be familiar if you've looked at, e.g., the alu16
 ; tutorial.
 
-(include-book "../svtv/debug")
 (local (include-book "centaur/vl/loader/top" :dir :system))
 
 (defconsts (*boothpipe* state)
@@ -100,7 +96,7 @@
     (mv svdesign state)))
 
 (def-saved-event boothpipe-run
-  (defsvtv$-phasewise boothpipe-run
+  (defsvtv$ boothpipe-run
     ;; Set up our run of the module.
     :design *boothpipe*
     :cycle-phases (list (sv::make-svtv-cyclephase :constants '(("clk" . 0))
@@ -117,23 +113,14 @@
               (("minusb"          minusb)))
              (:label c2
               :overrides
-              (("pp01_c2[35:18]"  (pp0 pp0-ovr))
-               ("pp01_c2[17:0]"   (pp1 pp1-ovr))
-               ("pp23_c2[35:18]"  (pp2 pp2-ovr))
-               ("pp23_c2[17:0]"   (pp3 pp3-ovr))
-               ("pp45_c2[35:18]"  (pp4 pp4-ovr))
-               ("pp45_c2[17:0]"   (pp5 pp5-ovr))
-               ("pp67_c2[35:18]"  (pp6 pp6-ovr))
-               ("pp67_c2[17:0]"   (pp7 pp7-ovr)))
-              :outputs
-              (("pp01_c2[35:18]"  pp0)
-               ("pp01_c2[17:0]"   pp1)
-               ("pp23_c2[35:18]"  pp2)
-               ("pp23_c2[17:0]"   pp3)
-               ("pp45_c2[35:18]"  pp4)
-               ("pp45_c2[17:0]"   pp5)
-               ("pp67_c2[35:18]"  pp6)
-               ("pp67_c2[17:0]"   pp7)))
+              (("pp01_c2[35:18]" pp0 :cond pp0-ovr :output pp0)
+               ("pp01_c2[17:0]"  pp1 :cond pp1-ovr :output pp1)
+               ("pp23_c2[35:18]" pp2 :cond pp2-ovr :output pp2)
+               ("pp23_c2[17:0]"  pp3 :cond pp3-ovr :output pp3)
+               ("pp45_c2[35:18]" pp4 :cond pp4-ovr :output pp4)
+               ("pp45_c2[17:0]"  pp5 :cond pp5-ovr :output pp5)
+               ("pp67_c2[35:18]" pp6 :cond pp6-ovr :output pp6)
+               ("pp67_c2[17:0]"  pp7 :cond pp7-ovr :output pp7)))
              (:label c3
               :outputs
               (("o"              o))))
@@ -143,13 +130,14 @@
 (def-saved-event boothpipe-data
   (def-svtv-data-export boothpipe-data))
 
-(def-saved-event boothpipe-run-override-thms
-  (defsection boothpipe-run-override-thms
-    (local (include-book "centaur/sv/svtv/svtv-fsm-override-fgl-theory" :dir :system))
-    (def-svtv-override-thms boothpipe-run boothpipe-data)))
+(def-saved-event boothpipe-run-refinement
+  (def-svtv-refinement boothpipe-run boothpipe-data))
 
-;; (def-saved-event boothpipe-pipeline-thm
-;;   (def-pipeline-thm boothpipe-direct))
+;; (def-saved-event boothpipe-run-ideal
+;;   (def-svtv-refinement boothpipe-run boothpipe-data :ideal boothpipe-run-ideal))
+
+;; (def-saved-event boothpipe-run-spec
+;;   (def-svtv-refinement boothpipe-run boothpipe-data :svtv-spec boothpipe-spec))
 
 
 
@@ -163,13 +151,22 @@
        (result    (cdr (assoc 'o out-alist))))
     (equal result 15))))
 
+;; (local
+;;  (assert!
+;;   ;; Make sure boothpipe-ideal-exec produces the same answer.
+;;   (b* ((in-alist  (list (cons 'a 3)
+;;                         (cons 'b 5)
+;;                         (cons 'en 1)))
+;;        (out-alist (boothpipe-ideal-exec in-alist '(o)))
+;;        (result    (cdr (assoc 'o out-alist))))
+;;     (equal result 15))))
+
 #||
 (svtv-debug (boothpipe-direct)
             (list (cons 'a 3)
                   (cons 'b 5)
                   (cons 'en 1)))
 ||#
-
 
 
 ; You could now try to directly prove that this circuit multiplies, using
@@ -229,45 +226,24 @@
 ; The basic way to perform this "cut" of the circuit is to use the :overrides
 ; feature of an STV.
 ;
-;
-; BUT THERE IS A VERY IMPORTANT MODELING NOTE!!!
-;
-; Overrides work by basically rewriting the E module into a new E module.  So
-; this new stv, boothpipe-decomp, does not necessarily have any well-founded
-; connection to the actual, original Verilog module.
-;
-; In other words, anything we prove about boothpipe-decomp is a proof about this
-; new, cut module.  So we don't want this boothpipe-decomp STV to have any part
-; in our final theorem.  Instead, we want to prove something that is only in
-; terms of our original circuit, boothpipe-run!
-;
-; However, boothpipe-decomp will be very useful for getting to this final
-; theorem, as we'll now see.
-;
-;
-; To emphasize that our final theorem has nothing to do with boothpipe-decomp,
-; we make the whole STV local.
-
-;; (local (gl::gl-satlink-mode))
-
-;; (local
-;;  (fgl::def-fgl-rewrite svex-env-lookup-gl
-;;    (equal (svex-env-lookup x env)
-;;           (4vec-fix (cdr (hons-get (svar-fix x) (make-fast-alist env)))))
-;;    :hints(("Goal" :in-theory (enable svex-env-lookup)))))
 
 
-(local
+; We'll now prove, separately, our two main lemmas, about the decomposed
+; circuit.
+
+(def-saved-event svtv-generalized-thm-defaults
+  (progn (local (table sv::svtv-generalized-thm-defaults :svtv 'boothpipe-run))
+         (local (table sv::svtv-generalized-thm-defaults :unsigned-byte-hyps t))
+         (local (table sv::svtv-generalized-thm-defaults :input-var-bindings '((en 1))))))
+
+
+
+(def-saved-event boothpipe-pp-correct
    ;; Main Lemma 1.  Partial Products Part is Correct.
    ;; This is a very easy proof for Glucose, taking about 1.5 seconds.
-   ;; The stuff done with the output alist is confusing but is what we want for composition.
  (def-svtv-generalized-thm boothpipe-pp-correct
-   :svtv boothpipe-run
    :input-vars (a b)
-   :input-var-bindings ((en 1))
    :output-vars (pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7)
-   :hyp (and (unsigned-byte-p 16 a)
-             (unsigned-byte-p 16 b))
    :concl (and (equal pp0 (boothpipe-pp-spec 16 0 a b))
                (equal pp1 (boothpipe-pp-spec 16 1 a b))
                (equal pp2 (boothpipe-pp-spec 16 2 a b))
@@ -278,29 +254,39 @@
                (equal pp7 (boothpipe-pp-spec 16 7 a b)))))
 
 
+(defun find-form (start-of-form x)
+  (if (atom x)
+      nil
+    (if (prefixp start-of-form x)
+        x
+      (or (find-form start-of-form (car x))
+          (find-form start-of-form (cdr x))))))
 
-; We'll now prove, separately, our two main lemmas, about the decomposed
-; circuit.  We'll attack these using SAT.  This should be familiar if you've
-; already seen sat.lsp.
-
+(make-event
+ ;; Save the def-fgl-thm and final defthm forms from boothpipe-pp-correct.
+ (b* (((er make-event)
+       (acl2::macroexpand1 (cdr (assoc 'boothpipe-pp-correct (table-alist 'saved-forms-table (w state))))
+                           'find-boothpipe-pp-correct-fgl
+                           state))
+      (form (cadr make-event))
+      (- (cw "form: ~x0~%" form))
+      ((er (cons ?stobjs-out (list ?eval-err form ?replaced-state)))
+       (trans-eval-default-warning form 'find-boothpipe-pp-correct-fgl state t))
+      ((when eval-err)
+       (er soft 'find-boothpipe-pp-correct-fgl "~@0" eval-err))
+      (- (cw "form: ~x0~%" form))
+      (fgl-form (find-form '(fgl::def-fgl-thm boothpipe-pp-correct-override-lemma) form))
+      (final-thm-form (find-form '(defthm boothpipe-pp-correct) form)))
+   (value `(progn (table saved-forms-table 'boothpipe-pp-correct-fgl ',fgl-form)
+                  (table saved-forms-table 'boothpipe-pp-correct-final-thm ',final-thm-form)))))
 
 
 ;; Main Lemma 2.  Addition Part is Correct.
 
-(local
+(def-saved-event boothpipe-sum-correct
  (def-svtv-generalized-thm boothpipe-sum-correct
-   :svtv boothpipe-run
-   :input-var-bindings ((en 1))
    :override-vars (pp0 pp1 pp2 pp3 pp4 pp5 pp6 pp7)
    :output-vars (o)
-   :hyp (and (unsigned-byte-p 18 pp0)
-             (unsigned-byte-p 18 pp1)
-             (unsigned-byte-p 18 pp2)
-             (unsigned-byte-p 18 pp3)
-             (unsigned-byte-p 18 pp4)
-             (unsigned-byte-p 18 pp5)
-             (unsigned-byte-p 18 pp6)
-             (unsigned-byte-p 18 pp7))
    :concl (b* ((- (cw "o: ~s0~%" (str::hexify o)))
                (res (loghead 32
                              (+ (ash (logext 18 pp0) #x0)
@@ -313,6 +299,24 @@
                                 (ash (logext 18 pp7) #xe))))
                (- (cw "res: ~s0~%" (str::hexify res))))
             (equal o res))))
+
+(make-event
+ ;; Save the def-fgl-thm and final defthm forms from boothpipe-sum-correct.
+ (b* (((er make-event)
+       (acl2::macroexpand1 (cdr (assoc 'boothpipe-sum-correct (table-alist 'saved-forms-table (w state))))
+                           'find-boothpipe-sum-correct-fgl
+                           state))
+      (form (cadr make-event))
+      ((er (cons ?stobjs-out (list ?eval-err form ?replaced-state)))
+       (trans-eval-default-warning form 'find-boothpipe-sum-correct-fgl state t))
+      ((when eval-err)
+       (er soft 'find-boothpipe-sum-correct-fgl "~@0" eval-err))
+      (fgl-form (find-form '(fgl::def-fgl-thm boothpipe-sum-correct-override-lemma) form))
+      (final-thm-form (find-form '(defthm boothpipe-sum-correct) form)))
+   (value `(progn (table saved-forms-table 'boothpipe-sum-correct-fgl ',fgl-form)
+                  (table saved-forms-table 'boothpipe-sum-correct-final-thm ',final-thm-form)))))
+
+
 
 ; Now we'll use an ordinary ACL2 proof to show that these ACL2 "specifications"
 ; for the partial-products and sum can be chained together to actually carry
@@ -346,12 +350,10 @@
                                        A B SZ))))
          :hints(("Goal" :in-theory (e/d (booth-sum-impl))))))
 
-(local
+(def-saved-event booth-sum-of-products-correct
  (defthm booth-sum-of-products-correct
-   (implies (AND (NATP A)
-                 (NATP B)
-                 (< A (EXPT 2 16))
-                 (< B (EXPT 2 16)))
+   (implies (AND (unsigned-byte-p 16 a)
+                 (unsigned-byte-p 16 b))
             (let ((pp0 (boothpipe-pp-spec 16 #x0 a b))
                   (pp1 (boothpipe-pp-spec 16 #x1 a b))
                   (pp2 (boothpipe-pp-spec 16 #x2 a b))
@@ -393,157 +395,75 @@
                                          logbitp))))))
 
 
-; So far, we have lemmas that show our decomposed circuit computes the right
-; things, and that these two computations actually carry out a multiply.  But
-; we don't WANT a theorem about our decomposed circuit; we want a theorem about
-; our original circuit.
-;
-; So now we're going to show that, properly wired up, our decomposed circuit is
-; just doing what the original circuit does.  It's easiest to explain this with
-; a picture.  Recall the picture of our decomposed circuit:
-;
-;         __________________________
-;        |                  ___     |
-;  pp0 --+---------------->|add|    |
-;  ... --+---------------->|   |----+---> O
-;  pp7 --+---------------->|   |    |
-;        |    ___          |___|    |
-;   A ---+-->|pps|------------------+---> pp0
-;        |   |   |------------------+---> ...
-;   B ---+-->|   |------------------+---> pp7
-;        |   |___|                  |
-;        |__________________________|
-;
-; We're now going to show that if we wire the "cut" back together like this:
-;
-;    +==================================================+
-;    ||+----------------------------------------------+||
-;    |||                                              |||
-;    |||         __________________________           |||
-;    |||        |                  ___     |          |||
-;    ||+- pp0 --+---------------->|add|    |          |||
-;    |+-- ... --+---------------->|   |----+---> O    |||
-;    +--- pp7 --+---------------->|   |    |          |||
-;               |    ___          |___|    |          |||
-;          A ---+-->|pps|------------------+---> pp0 -+||
-;               |   |   |------------------+---> ... --+|
-;          B ---+-->|   |------------------+---> pp7 ---+
-;               |   |___|                  |
-;               |__________________________|
-;
-; Then what you end up with is the original circuit,
-;
-;         __________________________
-;        |    ___           ___     |
-;   A ---+-->|pps|-- pp0 ->|add|    |
-;        |   |   |-- ... ->|   |----+---> O            Original Circuit
-;   B ---+-->|   |-- pp7 ->|   |    |
-;        |   |___|         |___|    |
-;        |__________________________|
-;
-; We used to do this using GL, but we now use a specialized theory for
-; performing these sorts of proofs, developed in the book
-; stv-decomp-proofs.lisp. (See above include-book for file location.)
-
-
-; Deciding whether to use GL or the specialized theory to perform the
-; composition proof is a judgement call.  Sometimes using GL takes too much
-; time, even though the two circuits being compared "should" be almost the
-; same.  In this case, the specialized theory should likely be used.  However,
-; if the decomposition/rewiring is such that the 4v-sexpr representations of
-; the circuits are completely different, but they still happen to be logically
-; equivalent, then GL should be used.  GL is necessary in this case, because
-; GL does not depend on the circuits being equal after sexpr rewriting.
-
-;; (defthm assoc-in-svex-alist-eval
-;;   (implies k
-;;            (equal (assoc k (svex-alist-eval al env))
-;;                   (and (assoc k  (svex-alist-fix al))
-;;                        (cons k (svex-eval (cdr (assoc k  (svex-alist-fix al))) env)))))
-;;   :hints(("Goal" :in-theory (enable svex-alist-eval
-;;                                     svex-alist-fix))))
-
-
-#|
-
-; BOZO: Using specific inputs instead of the autoins macros causes a 15-way
-; case-split.  Using specific hyps insteada of autohyps furthers that case
-; split to be 272-way.  Also, the proof doesn't go through.
-
-; If you are using the approach found in this book in your own proofs, you
-; should probably just use autoins and autohyps (or fix the cause).
-
-
-|#
-
 
 ;; (local (in-theory (disable boothpipe-decomp-is-boothpipe-via-GL)))
 
-; All that remains is to chain the above facts together.
-;
-;   1. By this last GL lemma, we know how to express the result of
-;      boothpipe-run in terms of the two-phase computation that
-;      boothpipe-decomp carries out.
-;
-;   2. By our two main GL lemmas about boothpipe-decomp, we have ugly
-;      ACL2 definitions of the partial-product/sum computations that
-;      the decomposed module can do.
-;
-;   3. By our ACL2 lemma booth-sum-of-products-correct, we know that
-;      together these ACL2 computations are just a multiply.
-;
-; Hence the whole thing does a multiply.  This chaining-together is just an
-; ordinary (non-GL) ACL2 theorem:
-
-;; (local (defthm boothpipe-run-autohyps-implies-step1-autohyps
-;;          (implies (boothpipe-run-autohyps)
-;;                   (boothpipe-step1-autohyps))
-;;          :hints(("Goal" :in-theory (enable boothpipe-run-autohyps
-;;                                            boothpipe-step1-autohyps)))))
-
-;; (local
-;;  (make-event
-;;   `(defthm svex-env-boundp-of-step1
-;;      (equal (svex-env-boundp key (svtv-run (boothpipe-step1) env
-;;                                            :skip nil :include nil
-;;                                            :boolvars t :simplify nil :quiet nil :readable t :allvars nil))
-;;             (consp (member-equal (svar-fix key) ',(svex-alist-keys (svtv->outexprs (boothpipe-step1))))))
-;;      :hints(("Goal" :in-theory (enable (boothpipe-step1) svex-env-boundp svtv-run))))))
+; All that remains is to chain the above facts together.  Fortunately, the
+; theorem resulting from each def-svtv-generalized-thm form is one that can
+; easily be composed with other such theorems.  Boothpipe-pp-correct shows that
+; the partial products are computed correctly; boothpipe-sum-correct shows that
+; the partial products are correctly summed, and booth-sum-of-products-correct
+; shows that the composition of the partial product computation and summing
+; produces the signed 16-bit multiply.  The composition of these is just an
+; ordinary ACL2 theorem (by rewriting), but we can write it succinctly as
+; another def-svtv-generalized-thm form (using the :no-lemmas option to skip the
+; FGL step.)
 
 (in-theory (disable loghead logext unsigned-byte-p))
 
 ;; This is the most general form of the theorem. Note the ugly hyp #4 -- really
 ;; this just says that the PP override test variables should be unbound, or set to 0 or X.
-(defthm boothpipe-correct-gen
-  (b* (((svassocs a b en) in-alist)
-       (out-alist (svtv-run (boothpipe-run) in-alist))
-       (o (svex-env-lookup 'o out-alist)))
-    (implies (and (unsigned-byte-p 16 a)
-                  (unsigned-byte-p 16 b)
-                  (equal en 1)
-                  (svex-env-keys-no-1s-p
-                   (svar-override-triplelist->testvars (boothpipe-run-pipeline-override-triples))
-                   in-alist))
-             (equal o (loghead 32 (* (logext 16 a)
-                                     (logext 16 b))))))
-  :hints(("Goal" :in-theory (e/d () ((boothpipe-run-pipeline-override-triples))))))
+(def-saved-event boothpipe-correct-gen
+  (def-svtv-generalized-thm boothpipe-correct-gen
+    :input-vars (a b)
+    :output-vars (o)
+    :concl (equal o (loghead 32 (* (logext 16 a)
+                                   (logext 16 b))))
+    :no-lemmas t))
+
+(make-event
+ ;; Save the final defthm form from boothpipe-correct-gen.
+ (b* (((er make-event)
+       (acl2::macroexpand1 (cdr (assoc 'boothpipe-correct-gen (table-alist 'saved-forms-table (w state))))
+                           'find-boothpipe-correct-gen-final
+                           state))
+      (form (cadr make-event))
+      ((er (cons ?stobjs-out (list ?eval-err form ?replaced-state)))
+       (trans-eval-default-warning form 'find-boothpipe-correct-gen-final state t))
+      ((when eval-err)
+       (er soft 'find-boothpipe-correct-gen-final "~@0" eval-err))
+      (final-thm-form (find-form '(defthm boothpipe-correct-gen) form)))
+   (value `(table saved-forms-table 'boothpipe-correct-gen-final-thm ',final-thm-form))))
 
 
 ;; A maybe clearer but less general form:
-(defthm boothpipe-correct
-  (implies (and (unsigned-byte-p 16 a)
-                (unsigned-byte-p 16 b))
-           (b* ((in-alist `((a . ,a) (b . ,b) (en . 1)))
-                (out-alist (svtv-run (boothpipe-run) in-alist))
-                (o         (svex-env-lookup 'o out-alist)))
-             (equal o (loghead 32 (* (logext 16 a) (logext 16 b))))))
-  :hints(("Goal" :in-theory (e/d (svex-env-lookup-of-cons
-                                  4vec-p-when-integerp
-                                  svex-env-lookup-use-exec
-                                  svex-env-keys-no-1s-p-of-variable-free-term
-                                  hons-intersection-force-execute
-                                  svex-env-keys-no-1s-p-of-cons)
-                                 ((svex-env-lookup)
-                                  (boothpipe-run-pipeline-override-triples))))))
+(def-saved-event boothpipe-correct
+  (defthm boothpipe-correct
+    (implies (and (unsigned-byte-p 16 a)
+                  (unsigned-byte-p 16 b))
+             (b* ((in-alist (list `(a . ,a)
+                                  `(b . ,b)
+                                  `(en . 1)))
+                  (out-alist (svtv-run (boothpipe-run) in-alist))
+                  (o         (svex-env-lookup 'o out-alist)))
+               (equal o (loghead 32 (* (logext 16 a) (logext 16 b))))))
+    :hints(("Goal" :in-theory (e/d (svex-env-lookup-of-cons
+                                    4vec-p-when-integerp)
+                                   ((svex-env-lookup)))))))
 
 
+(def-saved-event boothpipe-run-spec
+  (def-svtv-refinement boothpipe-run boothpipe-data :svtv-spec boothpipe-spec))
+
+
+(def-saved-event boothpipe-correct
+  (def-saved-event boothpipe-correct-gen-spec
+    (def-svtv-generalized-thm boothpipe-correct-gen-spec
+      :input-vars (a b)
+      :output-vars (o)
+      :svtv-spec boothpipe-spec
+      :concl (equal o (loghead 32 (* (logext 16 a)
+                                     (logext 16 b))))
+      :lemma-defthm defthm
+      :lemma-args (:hints (("goal" :in-theory (enable svex-env-lookup-of-cons
+                                                      4vec-p-when-integerp)))))))

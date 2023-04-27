@@ -224,6 +224,7 @@
    (expanded-ins         svtv-lines-p)
    (expanded-overrides   svtv-lines-p)
    (nphases        natp)
+   (labels         symbol-listp)
    (form           "Original form defining the defsvtv"))
   :layout :list)
 

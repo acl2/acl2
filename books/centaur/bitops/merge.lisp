@@ -333,6 +333,8 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 (def-merge-n-bits 4)
 (def-merge-n-bits 8)
 (def-merge-n-bits 16)
+(def-merge-n-bits 32)
+(def-merge-n-bits 64)
 
 
 

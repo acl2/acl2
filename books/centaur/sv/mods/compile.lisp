@@ -1146,11 +1146,8 @@ svex-assigns-compose)).</li>
   ///
   (deffixequiv svex-normalize-assigns)
 
-  (defthm svexlist-vars-of-svex-alist-vals
-    (equal (svexlist-vars (svex-alist-vals x))
-           (svex-alist-vars x))
-    :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-vars svexlist-vars))))
-
+  (local (in-theory (enable svexlist-vars-of-svex-alist-vals)))
+  
   (verify-guards svex-normalize-assigns
     :guard-debug t
     :hints (("goal" :do-not-induct t

@@ -402,7 +402,7 @@ acl2::4v-monotonicity).</p>"
                   (4vec-<<= else1 else2))
              (4vec-<<= (4vec-bit?! test then1 else1)
                       (4vec-bit?! test then2 else2)))
-    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-<<=))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-<<= 4vec-bitmux))
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil)))))
@@ -410,7 +410,7 @@ acl2::4v-monotonicity).</p>"
   (defthm 4vec-bit?-<<=-bit?!
     (4vec-<<= (4vec-bit? test then else)
              (4vec-bit?! test then else))
-    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bit? 3vec-bit? 3vec-fix 4vec-<<=))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux 4vec-1mask 4vec-bit? 3vec-bit? 3vec-fix 4vec-<<=))
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil)))
@@ -630,6 +630,11 @@ an approximation of its value in @('y')?"
     :rewrite :direct))
 
 
+(defthmd svex-monotonic-p-of-const
+  (implies (svex-case x :quote)
+           (svex-monotonic-p x))
+  :hints(("Goal" :in-theory (enable svex-monotonic-p))))
+
 (defines svex-check-monotonic
   (define svex-check-monotonic ((x svex-p))
     :measure (svex-count x)
@@ -694,7 +699,15 @@ an approximation of its value in @('y')?"
   (verify-guards svex-check-monotonic
     :hints(("Goal" :expand ((nth 1 (svex-call->args x))))))
 
-  (memoize 'svex-check-monotonic :condition '(svex-case x :call)))
+  (fty::deffixequiv-mutual svex-check-monotonic)
+  
+  (memoize 'svex-check-monotonic :condition '(svex-case x :call))
+
+  
+  (defthm svex-monotonic-p-when-svex-check-monotonic
+    (implies (svex-check-monotonic x)
+             (svex-monotonic-p x))
+    :hints(("Goal" :in-theory (enable svex-monotonic-p)))))
 
 
 

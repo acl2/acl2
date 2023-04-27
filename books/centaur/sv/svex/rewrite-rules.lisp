@@ -586,7 +586,7 @@
     (implies (and (3vec-p x)
                   (3vec-p y))
              (3vec-p (4vec-bit?! c x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-bit?! 3vec-fix))
+    :hints (("goal" :in-theory (enable 3vec-p 4vec-bit?! 3vec-fix 4vec-bitmux))
             (bitops::logbitp-reasoning)
             (and stable-under-simplificationp
                  '(:bdd (:vars nil)))))
@@ -1079,7 +1079,7 @@
 (def-svex-rewrite bit?!-of-unfloat
   :lhs (bit?! (unfloat x) y z)
   :rhs (bit?! x y z)
-  :hints(("Goal" :in-theory (enable 4vec-bit?! svex-apply svexlist-eval 3vec-fix))))
+  :hints(("Goal" :in-theory (enable 4vec-bit?! svex-apply svexlist-eval 3vec-fix 4vec-bitmux 4vec-1mask))))
 
 (def-svex-rewrite uand-of-unfloat
   :lhs (uand (unfloat x))
@@ -2560,7 +2560,7 @@
              (not (sparseint-test-bitandc2 mask (int-to-sparseint (4vec->upper (svex-quote->val c)))))
              (not (sparseint-test-bitandc2 mask (int-to-sparseint (4vec->lower (svex-quote->val c))))))
     :rhs x
-    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask))
+    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask 4vec-bitmux 4vec-1mask))
            (bitops::logbitp-reasoning
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
@@ -2574,7 +2574,7 @@
                                                (int-to-sparseint (4vec->upper (svex-quote->val c)))
                                                (int-to-sparseint (4vec->lower (svex-quote->val c)))))))
     :rhs y
-    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask))
+    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask 4vec-bitmux 4vec-1mask))
            (bitops::logbitp-reasoning
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
@@ -2587,7 +2587,7 @@
              (not (sparseint-test-bitandc2 mask (s4vec->upper cval)))
              (not (sparseint-test-bitandc2 mask (s4vec->lower cval))))
     :rhs x
-    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask))
+    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask 4vec-bitmux 4vec-1mask))
            (bitops::logbitp-reasoning
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
@@ -2601,7 +2601,7 @@
              ;; so we just need to check that the upper under the mask is 0.
              (not (sparseint-test-bitand mask (s4vec->upper cval))))
     :rhs y
-    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask))
+    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask 4vec-bitmux 4vec-1mask))
            (bitops::logbitp-reasoning
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
