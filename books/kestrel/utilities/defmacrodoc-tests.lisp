@@ -15,13 +15,15 @@
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 (defxdoc-for-macro bar
-  (required-arg &optional o1 &key (key1 'nil) (key2 ':auto))
-  (myparent)
-  "Short desc"
+  :macro-args (required-arg &optional o1 &key (key1 'nil) (key2 ':auto))
+  :parents (myparent)
+  :short "Short desc"
+  :arg-descriptions
   ((required-arg "the arg")
    (o1 "the optional arg")
    (key1 "the first keyword arg")
    (key2 (concatenate 'string "the second" " keyword arg")))
+  :description
   (concatenate 'string "Description " "Description2"))
 
 ;; A simple test. We define a macro called FOO and add xdoc to it, including
@@ -81,26 +83,28 @@
   ;; Wrong args
   (must-fail
    (defxdoc-for-macro plus
-     (x)
-     (myparent)
-     "Add 2 numbers"
-     ((x "first number to add"))
-     "Returns the sum of X and Y."))
+     :macro-args (x)
+     :parents (myparent)
+     :short "Add 2 numbers"
+     :arg-descriptions ((x "first number to add"))
+     :description "Returns the sum of X and Y."))
 
   ;; Missing description for y
   (must-fail
    (defxdoc-for-macro plus
-     (x y)
-     (myparent)
-     "Add 2 numbers"
-     ((x "first number to add"))
-     "Returns the sum of X and Y."))
+     :macro-args (x y)
+     :parents (myparent)
+     :short "Add 2 numbers"
+     :arg-descriptions ((x "first number to add"))
+     :description "Returns the sum of X and Y."))
 
   ;;Ok
   (defxdoc-for-macro plus
-    (x y)
-    (myparent)
-    "Add 2 numbers"
+    :macro-args (x y)
+    :parents (myparent)
+    :short "Add 2 numbers"
+    :arg-descriptions
     ((x "first number to add")
      (y "second number to add"))
+    :description
     "Returns the sum of X and Y."))
