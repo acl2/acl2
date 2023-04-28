@@ -36,6 +36,7 @@
 (include-book "htclient/top")
 (include-book "isar/top")
 (include-book "java/top")
+(include-book "jvm/doc")
 (include-book "json/top")
 (include-book "lists-light/doc")
 (include-book "number-theory/top")
