@@ -615,6 +615,8 @@
        ((mv ans-interp interp-st state)
         (time$ (fgl-interp-test goal interp-st state)
                :msg "FGL interpreter completed: ~st sec, ~sa bytes~%"))
+       (- ;; Clear memoization tables that depend on e.g. the current world
+        (clear-memoize-table 'fgl-equivp))
        ((acl2::hintcontext-bind ((interp-interp-st interp-st)
                                  (interp-state state))))
        (- (and (interp-st-prof-enabledp interp-st)

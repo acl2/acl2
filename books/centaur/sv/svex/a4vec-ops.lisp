@@ -1968,7 +1968,6 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                 '(:bdd (:vars nil))))))
 
 
-
 (define a4vec-bit?! ((x a4vec-p)
                      (y a4vec-p)
                      y3p
@@ -2013,7 +2012,7 @@ are no Z bits, we can avoid building AIGs to do unfloating.</p>"
                     (4vec-bit?! (a4vec-eval x env)
                                (a4vec-eval y env)
                                (a4vec-eval z env))))
-    :hints(("Goal" :in-theory (enable 4vec-bit?! 3vec-p))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux 4vec-1mask 3vec-p))
            (bitops::logbitp-reasoning)
            (and stable-under-simplificationp
                 '(:bdd (:vars nil))))))

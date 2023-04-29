@@ -794,7 +794,7 @@ for confirmation."
 
 (defun acl2-doc-go-new-buffer (name)
 
-  "Go to the specified topic; performs completion."
+  "Go to the specified topic in a new buffer; performs completion."
 
   (interactive (acl2-doc-completing-read "Go to topic (new buffer)" nil))
   (acl2-doc-display name nil t))

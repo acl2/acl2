@@ -27434,20 +27434,20 @@
        ((and soft-bound-p
              (not (posp soft-bound)))
         (er soft ctx
-            "The :SOFT-BOUND argument of SET-IPRINT must be a positive integer, ~
-           but ~x0 is not."
+            "The :SOFT-BOUND argument of SET-IPRINT must be a positive ~
+             integer, but ~x0 is not."
             soft-bound))
        ((and hard-bound-p
              (not (posp hard-bound)))
         (er soft ctx
-            "The :HARD-BOUND argument of SET-IPRINT must be a positive integer, ~
-           but ~x0 is not."
+            "The :HARD-BOUND argument of SET-IPRINT must be a positive ~
+             integer, but ~x0 is not."
             hard-bound))
        (t (pprogn (cond ((not (eq action action0))
                          (warning$ 'set-iprint "Iprint"
                                    "Converting SET-IPRINT action from ~x0 to ~
-                                  ~x1, as required by use of keyword :SHARE ~
-                                  or :HARD-BOUND.  See :DOC set-iprint."
+                                    ~x1, as required by use of keyword :SHARE ~
+                                    or :HARD-BOUND.  See :DOC set-iprint."
                                    action0 action))
                         (t state))
                   (pprogn (cond
@@ -31023,6 +31023,32 @@
                                   nil)
                         nil)))))
 
+(defun block-iprint-ar (state)
+
+; This is like disable-iprint-ar, except that it signifies that eviscerate-top
+; and eviscerate-stobjs-top should not update first from iprint modifications
+; made in a wormhole.  This is important for avoiding a safe-mode violation due
+; to using raw code (namely, via iprint-oracle-updates) in fmt-to-string and
+; the like.
+
+; See comments in the related function, disable-iprint-ar.
+
+  (let* ((iprint-ar (f-get-global 'iprint-ar state))
+         (elt-0 (aref1 'iprint-ar iprint-ar 0)))
+    (pprogn (f-put-global 'iprint-ar
+                          (compress1 'iprint-ar
+                                     (acons 0
+                                            (if (integerp elt-0)
+                                                (cons elt-0 t)
+                                              (if (cdr elt-0)
+                                                  elt-0
+                                                (cons (car elt-0) t)))
+                                            (if (eql (caar iprint-ar) 0)
+                                                (cdr iprint-ar)
+                                              iprint-ar)))
+                          state)
+            (mv t state))))
+
 (defmacro channel-to-string (form channel-var
                                   &optional
                                   extra-var fmt-controls
@@ -31125,7 +31151,7 @@
             `(unwind-protect
                  (state-free-global-let*
                   ,(fmt-control-bindings fmt-controls t)
-                  (progn (disable-iprint-ar state)
+                  (progn (block-iprint-ar state)
                          ,body0))
                (when (open-output-channel-p ,channel-var :character state)
                  (close-output-channel ,channel-var state))))
@@ -31139,7 +31165,7 @@
               (state-global-let*
                ,(fmt-control-bindings fmt-controls nil)
                (pprogn (mv-let (result state)
-                         (disable-iprint-ar state)
+                         (block-iprint-ar state)
                          (declare (ignore result))
                          state)
                        ,body0))

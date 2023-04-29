@@ -369,6 +369,32 @@ be a string or message identifying the particular SAT check.</p>"
              (stack-extract stack)
              stk))
 
+(defmacro save-fgl-stack (&key (to ':stack)
+                               (interp-st 'interp-st))
+  `(f-put-global ',to (interp-st-extract-stack ,interp-st) state))
+
+(defxdoc save-fgl-stack
+  :parents (fgl-debugging)
+  :short "Save the FGL stack to a state global for easy inspection."
+  :long "<p>Saves the stack from the @(see fgl-interpreter-state) into an ACL2
+state global, @(':stack') by default and otherwise controlled by the @(':to')
+keyword argument. Examples of usage:</p>
+
+@({
+ (fgl::save-fgl-stack)               ;; accessed via (@ :stack)
+ (fgl::save-fgl-stack :to :my-stack) ;; accessed via (@ :my-stack)
+ (fgl::save-fgl-stack :to a-stack)   ;; accessed via (@ a-stack)
+
+ ;; if somehow you need to access the stack in an
+ ;; interpreter state other than @('fgl::interp-st'):
+ (fgl::save-fgl-stack :to :my-stack :interp-st my-interp-st)
+
+ ;; inspect the bottom 20 frames of the stack:
+ (nthcdr (- (len (@ :stack)) 20) (@ :stack))
+ })
+
+")
+
 (defines fgl-minor-frame-subterm-index->term
   :ruler-extenders :all
   (define fgl-minor-frame-subterm-index->term ((n natp) (x pseudo-termp))

@@ -235,3 +235,35 @@
          (svtv-probealist-extract probes envs))
   :hints(("Goal" :in-theory (enable svtv-probealist-outvars svtv-probealist-extract))))
 
+
+
+(define svtv-cyclephaselist-keys ((x svtv-cyclephaselist-p))
+  :returns (keys svarlist-p)
+  :prepwork ((local (defthm svarlist-p-alist-keys
+                      (implies (svex-env-p x)
+                               (svarlist-p (alist-keys x)))
+                      :hints (("goal" :in-theory (enable alist-keys))))))
+  (if (atom x)
+      nil
+    (append (alist-keys (svtv-cyclephase->constants (car x)))
+            (svtv-cyclephaselist-keys (cdr x)))))
+
+
+(define svtv-cyclephaselist-no-i/o-phase ((phases svtv-cyclephaselist-p))
+  (if (atom phases)
+      t
+    (and (b* (((svtv-cyclephase ph1) (car phases)))
+           (and (not ph1.inputs-free)
+                (not ph1.outputs-captured)))
+         (svtv-cyclephaselist-no-i/o-phase (cdr phases)))))
+
+(define svtv-cyclephaselist-unique-i/o-phase ((phases svtv-cyclephaselist-p))
+  (if (atom phases)
+      nil
+    (b* (((svtv-cyclephase ph1) (car phases)))
+      (or (and (not ph1.inputs-free)
+               (not ph1.outputs-captured)
+               (svtv-cyclephaselist-unique-i/o-phase (cdr phases)))
+          (and ph1.inputs-free
+               ph1.outputs-captured
+               (svtv-cyclephaselist-no-i/o-phase (cdr phases)))))))

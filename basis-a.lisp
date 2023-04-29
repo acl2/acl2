@@ -939,10 +939,28 @@
 ; which might be highly confusing.  So we make the above restriction on indices
 ; when iprint sharing is on, as documented in :doc set-iprint.
 
-; We need to be sure that the global iprint-ar is installed as an ACL2 array, in
-; order to avoid slow-array-warnings.  See the comment in
-; push-wormhole-undo-formi for how we deal with this issue in the presence of
-; wormholes.
+; We ensure that the global iprint-ar is installed as an ACL2 array, in order
+; to avoid slow-array-warnings.
+
+; Wormholes present a potential problem, because information about iprinting is
+; kept in state globals, but those are reverted when exiting a wormhole.  For
+; example, if #@3# is printed inside a wormhole as an abbreviation for a value
+; V, it would be unfortunate if an input of #@3# after exiting that wormhole
+; causes an error or, perhaps worse yet, refers to a different value than V.
+; We have implemented a two-step solution to this problem.  Step 1 takes
+; advantage of the use of push-wormhole-undo-formi, which is mainly for
+; restoring state globals when exiting a wormhole, by having that function save
+; iprinting state globals from the wormhole into corresponding Lisp specials;
+; for example, the value of state global iprint-ar is saved into special
+; variable *wormhole-iprint-ar*.  Step 2 is to insert calls of
+; iprint-oracle-updates, which magically -- using the acl2-oracle field of the
+; state -- transfers those values back to the state, e.g., assigns state global
+; iprint-ar the (compressed) value of special variable *wormhole-iprint-ar*.
+; Calls of iprint-oracle-updates might be needed only at the entry points to
+; eviscerating using iprinting, namely, eviscerate-top and
+; eviscerate-stobjs-top; but as of this writing (April 2023) we continue to
+; play it safe by calling iprint-oracle-updates in a few other places as well.
+; We might eliminate those other calls in the future.
 
 ; End of Essay on Iprinting
 
@@ -1281,6 +1299,14 @@
 (defun iprint-enabledp (state)
   (natp (aref1 'iprint-ar (f-get-global 'iprint-ar state) 0)))
 
+(defun iprint-blockedp (state)
+
+; Check for the effect off block-iprint-ar.
+
+  (let ((x (aref1 'iprint-ar (f-get-global 'iprint-ar state) 0)))
+    (and (consp x)
+         (cdr x))))
+
 (defun iprint-ar-aref1 (index state)
 
 ; We do not try to determine if the index is appropriate, other than to avoid a
@@ -1511,6 +1537,8 @@
 
 ; Warning: Keep in sync with iprint-oracle-updates.
 
+; See the discussion of wormholes in the Essay on Iprinting.
+
   (let* ((ar *wormhole-iprint-ar*))
     (when ar
       (f-put-global 'iprint-ar (compress1 'iprint-ar ar) state)
@@ -1518,6 +1546,11 @@
       (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
       (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
       (setq *wormhole-iprint-ar* nil))
+
+; We are presumably not in the middle of a read, from the standpoing of
+; reading, we are at the top level.  So it is fine to set *iprint-read-state*
+; to t or nil.
+
     (setq *iprint-read-state*
           (if (f-get-global 'iprint-fal state)
               t
@@ -1527,6 +1560,8 @@
 (defun iprint-oracle-updates (state)
 
 ; Warning: Keep in sync with iprint-oracle-updates-raw.
+
+; See the discussion of wormholes in the Essay on Iprinting.
 
   #-acl2-loop-only
   (when (live-state-p state)
@@ -1563,15 +1598,20 @@
 (defun iprint-oracle-updates? (state)
 
 ; This is like iprint-oracle-updates, except that it returns state unchanged if
-; iprinting is off.  Since iprinting isn't turned on in the middle of
-; eviscerate-top or eviscerate-stobjs-top, we can use it there and thus avoid
-; calling iprint-oracle-updates from fmt-to-string etc.  That, in turn, let us
-; use fmt-to-string etc. in safe-mode, hence in defconst forms, without getting
-; a program-only error.
+; iprinting is blocked.  As of this writing, that would be due to a call of
+; iprint-blockedp from channel-to-string on behalf of fmt-to-string or the
+; like.  We use this notion of "blocked" to avoid calling iprint-oracle-updates
+; from fmt-to-string etc., so that such utilities can be used in macros and
+; defconst forms, where otherwise safe-mode would cause a program-only error,
+; as in the following example.
 
-  (cond ((iprint-enabledp state)
-         (iprint-oracle-updates state))
-        (t state)))
+;   (defconst *c*
+;     (fms-to-string "~x0"
+;                    (list (cons #\0 (make-list 10)))
+;                    :evisc-tuple (evisc-tuple 5 6 nil nil)))
+
+  (cond ((iprint-blockedp state) state)
+        (t (iprint-oracle-updates state))))
 
 (defun eviscerate-top (x print-level print-length alist evisc-table hiding-cars
                          state)

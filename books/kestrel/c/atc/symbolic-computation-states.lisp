@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "../language/computation-states")
+(include-book "read-write-variables")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-symbolic-computation-states
-  :parents (atc-execution)
+  :parents (atc-event-and-code-generation)
   :short "Canonical representation of
           the computation states for the symbolic execution."
   :long
@@ -1584,7 +1584,8 @@
   (defruled write-object-of-objdesign-static
     (equal (write-object (objdesign-static var) val compst)
            (write-static-var var val compst))
-    :enable write-object)
+    :enable (write-object
+             write-static-var))
 
   (defval *atc-write-object-rules*
     '(write-object-to-update-object
@@ -1648,8 +1649,7 @@
                     (read-object objdes compst)))
     :enable (add-frame
              push-frame
-             read-object
-             read-static-var))
+             read-object))
 
   (defruled read-object-of-enter-scope
     (implies (equal (objdesign-kind objdes) :alloc)
@@ -1658,8 +1658,7 @@
     :enable (enter-scope
              push-frame
              pop-frame
-             read-object
-             read-static-var))
+             read-object))
 
   (defruled read-object-of-add-var
     (implies (equal (objdesign-kind objdes) :alloc)
@@ -1668,8 +1667,7 @@
     :enable (add-var
              push-frame
              pop-frame
-             read-object
-             read-static-var))
+             read-object))
 
   (defruled read-object-of-update-var
     (implies (equal (objdesign-kind objdes) :alloc)
@@ -1678,8 +1676,7 @@
     :enable (update-var
              push-frame
              pop-frame
-             read-object
-             read-static-var))
+             read-object))
 
   (defruled read-object-of-update-object-same
     (implies (equal (objdesign-kind objdes) :alloc)
@@ -1701,7 +1698,8 @@
   (defruled read-object-of-objdesign-static
     (equal (read-object (objdesign-static var) compst)
            (read-static-var var compst))
-    :enable read-object)
+    :enable (read-object
+             read-static-var))
 
   (defval *atc-read-object-rules*
     '(read-object-of-add-frame
