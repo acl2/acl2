@@ -19,6 +19,7 @@
 (include-book "rule-lists")
 (include-book "choose-rules")
 (include-book "dag-to-term")
+(include-book "pure-dags")
 (include-book "dag-size-fast") ; for dag-or-quotep-size-less-thanp
 (include-book "dag-to-term-with-lets")
 (include-book "rules-in-rule-lists")
@@ -285,6 +286,8 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
             (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
        ;; (- (cw "Info on unrolled spec DAG:~%"))
        (- (print-dag-info dag defconst-name nil))
+       (- (and (not (dag-is-purep dag)) ; prints one non-pure node
+               (cw "WARNING: ~x0 is not a pure dag!" defconst-name)))
        (- (progn$ (cw "~%SPEC UNROLLING FINISHED (")
                   (acl2::print-to-hundredths (- end-time start-time))
                   (cw "s).") ; s = seconds
