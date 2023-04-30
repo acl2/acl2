@@ -5825,8 +5825,6 @@
     (UPDATE-USER-STOBJ-ALIST     (NIL STATE)     (STATE))
 ; Do not add entry for READ-USER-STOBJ-ALIST, which is in *stobjs-out-invalid*.
     (WRITE-USER-STOBJ-ALIST      (NIL NIL STATE) (STATE))
-    (BIG-CLOCK-NEGATIVE-P        (STATE)         (NIL))
-    (DECREMENT-BIG-CLOCK         (STATE)         (STATE))
     (STATE-P                     (STATE)         (NIL))
     (OPEN-INPUT-CHANNEL-P        (NIL NIL STATE) (NIL))
     (OPEN-OUTPUT-CHANNEL-P       (NIL NIL STATE) (NIL))
@@ -8341,9 +8339,9 @@
 
 ; One might use stobjs-out '(nil) below, if one felt uneasy about measures
 ; changing state.  But we know no logical justification for this feeling, nor
-; do we ever expect to execute the measures in Common Lisp.  In fact we find it
-; useful to be able to pass state into a measure even when its argument
-; position isn't "state"; consider for example the function big-clock-entry.
+; do we ever expect to execute the measures in Common Lisp.  In fact it could
+; be useful to be able to pass state into a measure even when its argument
+; position isn't "state".
 
                                 t ; stobjs-out
                                 logic-modep t ctx wrld state))))

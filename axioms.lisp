@@ -13849,61 +13849,53 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (true-listp st)))
   (update-nth 2 x st))
 
-(defun big-clock-entry (st)
+(defun idates (st)
   (declare (xargs :guard (true-listp st)))
   (nth 3 st))
 
-(defun update-big-clock-entry (x st)
+(defun update-idates (x st)
   (declare (xargs :guard (true-listp st)))
   (update-nth 3 x st))
 
-(defun idates (st)
+(defun acl2-oracle (st)
   (declare (xargs :guard (true-listp st)))
   (nth 4 st))
 
-(defun update-idates (x st)
+(defun update-acl2-oracle (x st)
   (declare (xargs :guard (true-listp st)))
   (update-nth 4 x st))
 
-(defun acl2-oracle (st)
+(defun file-clock (st)
   (declare (xargs :guard (true-listp st)))
   (nth 5 st))
 
-(defun update-acl2-oracle (x st)
+(defun update-file-clock (x st)
   (declare (xargs :guard (true-listp st)))
   (update-nth 5 x st))
 
-(defun file-clock (st)
+(defun readable-files (st)
   (declare (xargs :guard (true-listp st)))
   (nth 6 st))
 
-(defun update-file-clock (x st)
-  (declare (xargs :guard (true-listp st)))
-  (update-nth 6 x st))
-
-(defun readable-files (st)
+(defun written-files (st)
   (declare (xargs :guard (true-listp st)))
   (nth 7 st))
 
-(defun written-files (st)
-  (declare (xargs :guard (true-listp st)))
-  (nth 8 st))
-
 (defun update-written-files (x st)
   (declare (xargs :guard (true-listp st)))
-  (update-nth 8 x st))
+  (update-nth 7 x st))
 
 (defun read-files (st)
   (declare (xargs :guard (true-listp st)))
-  (nth 9 st))
+  (nth 8 st))
 
 (defun update-read-files (x st)
   (declare (xargs :guard (true-listp st)))
-  (update-nth 9 x st))
+  (update-nth 8 x st))
 
 (defun writeable-files (st)
   (declare (xargs :guard (true-listp st)))
-  (nth 10 st))
+  (nth 9 st))
 
 ; We use the name ``user-stobj-alist1'' below so that we can reserve the
 ; name ``user-stobj-alist'' for the same function but which is known to
@@ -13911,11 +13903,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun user-stobj-alist1 (st)
   (declare (xargs :guard (true-listp st)))
-  (nth 11 st))
+  (nth 10 st))
 
 (defun update-user-stobj-alist1 (x st)
   (declare (xargs :guard (true-listp st)))
-  (update-nth 11 x st))
+  (update-nth 10 x st))
 
 (defconst *initial-checkpoint-processors*
 
@@ -14126,11 +14118,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; we go ahead and include them, just to be safe.
 
     user-stobj-alist read-acl2-oracle read-acl2-oracle@par
-    update-user-stobj-alist decrement-big-clock put-global close-input-channel
+    update-user-stobj-alist put-global close-input-channel
     makunbound-global open-input-channel open-input-channel-p1 boundp-global1
     global-table-cars1 close-output-channel write-byte$ get-global read-char$
     open-output-channel open-output-channel-p1 princ$ read-object
-    big-clock-negative-p peek-char$ read-run-time read-byte$ read-idate
+    peek-char$ read-run-time read-byte$ read-idate
     print-object$-fn get-output-stream-string$-fn
 
     mv-list return-last
@@ -14279,7 +14271,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-body comp set-bogus-defun-hints-ok
     dmr-stop defpkg set-measure-function
     set-inhibit-warnings! set-inhibit-er! defthm mv
-    f-big-clock-negative-p reset-prehistory
+    reset-prehistory
     mutual-recursion set-rewrite-stack-limit set-prover-step-limit
     add-match-free-override
     set-match-free-default
@@ -14290,7 +14282,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     rewrite-entry skip-proofs f-boundp-global
     make-event set-verify-guards-eagerness
     wormhole verify-termination-boot-strap start-proof-tree
-    f-decrement-big-clock defabsstobj defstobj defund defttag
+    defabsstobj defstobj defund defttag
     push-gframe defthmd f-get-global
 
 ; Most of the following were discovered after we included macros defined in
@@ -15186,7 +15178,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((live-state-p x)
          (return-from state-p1 t)))
   (and (true-listp x)
-       (equal (length x) 12)
+       (equal (length x) 11)
        (open-channels-p (open-input-channels x))
        (open-channels-p (open-output-channels x))
        (ordered-symbol-alistp (global-table x))
@@ -15200,7 +15192,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (known-package-alistp
         (getpropc 'known-package-alist 'global-value nil
                   (cdr (assoc 'current-acl2-world (global-table x)))))
-       (integerp (big-clock-entry x))
        (integer-listp (idates x))
        (true-listp (acl2-oracle x))
        (file-clock-p (file-clock x))
@@ -15214,7 +15205,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (implies (state-p1 x)
            (and
             (true-listp x)
-            (equal (length x) 12)
+            (equal (length x) 11)
             (open-channels-p (nth 0 x))
             (open-channels-p (nth 1 x))
             (ordered-symbol-alistp (nth 2 x))
@@ -15228,15 +15219,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (known-package-alistp
              (getpropc 'known-package-alist 'global-value nil
                        (cdr (assoc 'current-acl2-world (nth 2 x)))))
-            (integerp (nth 3 x))
-            (integer-listp (nth 4 x))
-            (true-listp (nth 5 x))
-            (file-clock-p (nth 6 x))
-            (readable-files-p (nth 7 x))
-            (written-files-p (nth 8 x))
-            (read-files-p (nth 9 x))
-            (writeable-files-p (nth 10 x))
-            (symbol-alistp (nth 11 x))))
+            (integer-listp (nth 3 x))
+            (true-listp (nth 4 x))
+            (file-clock-p (nth 5 x))
+            (readable-files-p (nth 6 x))
+            (written-files-p (nth 7 x))
+            (read-files-p (nth 8 x))
+            (writeable-files-p (nth 9 x))
+            (symbol-alistp (nth 10 x))))
   :rule-classes :forward-chaining
   ;; The hints can speed us up from over 40 seconds to less than 2.
   :hints (("Goal" :in-theory
@@ -15274,8 +15264,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; keeping a giant list of all characters printed this year or code to
 ; recover the logical value of written-files (which shows the times at
 ; which channels to files were opened and closed) from the actual file
-; system.  In other cases, such as big-clock-entry, the cost of
-; support would have been intuitively equivalent to infinite: no ACL2.
+; system.  In other cases, the cost of support would have been
+; intuitively equivalent to infinite: no ACL2.
 
 ; The user should be grateful that he can even indirectly access these
 ; fields at all in executable code, and should expect to study the
@@ -15353,7 +15343,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro build-state
   (&key open-input-channels open-output-channels global-table
-        (big-clock '4000000) idates acl2-oracle
+        idates acl2-oracle
         (file-clock '1) readable-files written-files
         read-files writeable-files user-stobj-alist)
   (list 'build-state1
@@ -15361,7 +15351,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote open-output-channels)
         (list 'quote (or global-table
                          *initial-global-table*))
-        (list 'quote big-clock)
         (list 'quote idates)
         (list 'quote acl2-oracle)
         (list 'quote file-clock)
@@ -15377,11 +15366,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         4000000 nil nil 1 nil nil nil nil nil))
 
 (defun build-state1 (open-input-channels
-   open-output-channels global-table big-clock
+   open-output-channels global-table
    idates acl2-oracle file-clock readable-files written-files
    read-files writeable-files user-stobj-alist)
   (declare (xargs :guard (state-p1 (list open-input-channels
-   open-output-channels global-table big-clock
+   open-output-channels global-table
    idates acl2-oracle file-clock readable-files written-files
    read-files writeable-files user-stobj-alist))))
 
@@ -15390,7 +15379,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (let ((s
          (list open-input-channels open-output-channels global-table
-               big-clock idates acl2-oracle
+               idates acl2-oracle
                file-clock readable-files written-files
                read-files writeable-files user-stobj-alist)))
     (cond ((state-p1 s)
@@ -20131,79 +20120,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  str0)))))
         (otherwise (os-er os 'pathname-unix-to-os))))))
 
-(defmacro f-big-clock-negative-p (st)
-  #-acl2-loop-only
-  (let ((s (gensym)))
-    `(let ((,s ,st))
-       (cond ((live-state-p ,s) nil)
-             (t (big-clock-negative-p ,s)))))
-  #+acl2-loop-only
-  (list 'big-clock-negative-p st))
-
-(defmacro f-decrement-big-clock (st)
-  #-acl2-loop-only
-  (let ((s (gensym)))
-    `(let ((,s ,st))
-       (cond ((live-state-p ,s)
-
-; Because there is no way to get the big-clock-entry for
-; *the-live-state* we do not have to prevent the field from changing
-; when *wormholep* is true.
-
-              *the-live-state*)
-             (t (decrement-big-clock ,s)))))
-  #+acl2-loop-only
-  (list 'decrement-big-clock st))
-
-; ??? (v. 1.8) I think it would be simpler to check for "zero-ness" rather
-; than negativity, using zp.  For now I won't touch the following or
-; related functions.
-
-(defun big-clock-negative-p (state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-; big-clock-negative-p plays a crucial role in the termination of ev,
-; translate1, and rewrite.  The justification for big-clock-negative-p
-; never returning t when given *the-live-state* be found in a comment
-; on ld, where it is explained that a (constructive) existential
-; quantifier is used in semantics of a top-level interaction with ld.
-; Any ld interaction that completes will have called
-; big-clock-decrement at most a finite number of times.  The number of
-; these calls will provide an appropriate value for the
-; big-clock-entry for that interaction.
-
-  (declare (xargs :guard (state-p1 state-state)))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (return-from big-clock-negative-p nil)))
-  (< (big-clock-entry state-state) 0))
-
-(defun decrement-big-clock (state-state)
-
-; Wart: We use state-state instead of state because of a bootstrap problem.
-
-; decrement-big-clock is the one function which is permitted to
-; violate the rule that any function which is passed a state and
-; modifies it must return it.  A function that is passed state may
-; pass one down the result of apply decrement-big-clock to the given
-; state.  decrement-big-clock is exempted from the requirement because
-; there are means internal or external to ACL2 for perceiving the
-; current big-clock value.
-
-  (declare (xargs :guard (state-p1 state-state)))
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-
-; Because there is no way to get the big-clock-entry for
-; *the-live-state* we do not have to prevent the field from changing
-; when *wormholep* is true.
-
-         (return-from decrement-big-clock *the-live-state*)))
-  (update-big-clock-entry
-   (1- (big-clock-entry state-state))
-   state-state))
-
 (defun user-stobj-alist (state-state)
   (declare (xargs :guard (state-p1 state-state)))
 
@@ -23395,7 +23311,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (sort ans (function (lambda (x y)
                                       (symbol< (car x) (car y)))))))
         (list :global-table (global-table-cars *the-live-state*))
-        (list :big-clock '?)
         (list :idates '?)
         (list :acl2-oracle '?)
         (list :file-clock *file-clock*)
@@ -23460,9 +23375,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (build-state . build-state1)
          (f-boundp-global . boundp-global)
          (f-get-global . get-global)
-         (f-put-global . put-global)
-         (f-big-clock-negative-p . big-clock-negative-p)
-         (f-decrement-big-clock . decrement-big-clock))
+         (f-put-global . put-global))
        :clear)
 
 (defun macro-aliases (wrld)

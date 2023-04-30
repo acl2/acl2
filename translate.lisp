@@ -1787,11 +1787,11 @@
 ; evaluating the remove-untouchable form above and then :set-guard-checking
 ; nil; but now we get a hard ACL2 error about program-only functions.
 
-; (ev '(ev 'a '((a . 1)) '(nil nil nil nil nil 0) 'nil 'nil 't)
+; (ev '(ev 'a '((a . 1)) '(nil nil nil nil nil) 'nil 'nil 't)
 ;     nil state nil nil t)
 
-; The 0, above, is the big-clock-entry and must be a non-negative integer.  The
-; result, when we could compute a result, was (NIL (NIL 1 NIL) NIL).
+; The result of something like this, when we could compute a result, was (NIL
+; (NIL 1 NIL) NIL).
 
 ; Finally, the example below shows the inner ev running a function,
 ; foo, defined in the dummy world.  It doesn't matter if foo is
@@ -15393,8 +15393,7 @@
 
 ; When in doubt, comment it out!
 
-  '(f-decrement-big-clock  ; we leave these two in oneified code because they
-    f-big-clock-negative-p ; are handled by our raw lisp
+  '(
 ;   make-list
 ;   ; Must omit f-put-global, f-get-global, and f-boundp-global, in order to
 ;   ; avoid calling global-table in raw Lisp.
@@ -25038,18 +25037,6 @@
                       nil)
                     (car stobjs-out))
                 (trans-value (car lst)))
-
-; The following case is checked to allow our use of big-clock-entry to control
-; recursion, a violation of our normal rule that state-producing forms are not
-; allowed where STATE is expected (except when binding STATE).  We have to look
-; for the unexpanded form of the macro f-decrement-big-clock as well.
-
-               ((and (eq (car stobjs-out) 'state)
-                     (or (equal (car lst)
-                                '(decrement-big-clock state))
-                         (equal (car lst)
-                                '(f-decrement-big-clock state))))
-                (trans-value '(decrement-big-clock state)))
                ((eq (car lst) (car stobjs-out))
 
 ; In this case, we failed because (car lst) is not considered a stobj even
@@ -26321,11 +26308,14 @@
 ; function manipulating operations of Lisp in ACL2.  All these
 ; operations depend upon the function trans-eval.  These functions are
 ; at the moment not very efficient because they involve a runtime call
-; to translate.  Furthermore, proving interesting theorems about these
-; functions would not be easy because they are tied up with the
-; ``big-clock'' story which makes our evaluator primitive recursive.
-; But nevertheless it is worth pointing out that this capability at
-; least exists in ACL2.
+; to translate.
+; [Historical Comment before the removal of big-clock-entry from state:
+;   Furthermore, proving interesting theorems about these
+;   functions would not be easy because they are tied up with the
+;   ``big-clock'' story which makes our evaluator primitive recursive.
+;   But nevertheless it is worth pointing out that this capability at
+;   least exists in ACL2.
+;  End of Historical Comment.]
 
 (defun mapcar$ (fn l state)
 
