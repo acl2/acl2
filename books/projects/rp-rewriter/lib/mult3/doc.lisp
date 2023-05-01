@@ -74,8 +74,8 @@ href=\"http://doi.org/10.34727/2021/isbn.978-3-85448-046-4_13\">
 http://doi.org/10.34727/2021/isbn.978-3-85448-046-4_13</a>). This method is also
 described in Mertcan Temel's (<a
 href=\"https://repositories.lib.utexas.edu/handle/2152/88056\">
-Ph.D. thesis</a>) from University of Texas at Austin. There is another
-follow-up paper coming soon.   </p>
+Ph.D. thesis</a>) from University of Texas at Austin. There might be more work
+coming soon.   </p>
 
 <p> Our framework currently supports  (System) Verilog. In one of our schemes,
 we use @(see sv::defsvtv$) (also see @(see sv::sv-tutorial)) to simulate
@@ -92,7 +92,40 @@ enabling/disabling    these   heuristics,    you    can    check   out    @(see
 Multiplier-Verification-Heuristics). Enabling/disabling these heuristics might
 help a proof attempt to go through, and in some cases, it may cause them to fail. </p>
 
-<p>  We  deliver  various demos  that  show  how  this  tool  can be  used  in  new
+<h3>Quick Start</h3>
+
+<p> If you have a combinational multiplier design you need to verify, you can
+follow these steps. </p>
+
+<ol>
+<li> Install ACL2. </li>
+<li> Start ACL2 and submit:
+<code> @('(include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)')
+</code>
+</li>
+
+<li> Parse the Verilog file you'd like. For example: 
+<code> @('
+(parse-and-create-svtv :file \"DT_SB4_HC_64_64_multgen.sv\"
+                       :topmodule \"DT_SB4_HC_64_64\"
+                       :name my-multiplier-example)
+')
+</code>
+</li>
+<li> Verify that design:
+<code> @('
+(verify-svtv-of-mult :name my-multiplier-example
+                     :concl (equal result ;; output signal name
+                                   ;; specification:
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2)))))
+')
+</code>
+</li>
+</ol>
+
+
+<p>  We  deliver  various demos in more detail to  show  how  this  tool  can be  used  in  new
 designs. For the SVL system: @(see Multiplier-Verification-demo-1) shows  a very basic verification
 case  on  a  stand-alone  64x64-bit  Booth  Encoded  Dadda  multiplier.   @(see
 Multiplier-Verification-demo-2) shows  how this tool  can be used on  much more
@@ -101,9 +134,26 @@ for various operations  such as MAC dot-product and  merged multiplication. It
 also shows a simple verification case on a sequential circuit.  </p>
 
 
+<h3>Calling SAT Solver after rewriting is done </h3>
+
 <p> This library can be used to quickly generate counterexamples using an
 external SAT solver, or help finish proofs with a SAT solver when our library
-fails to finish the job. You may include the book
+fails to finish the job.</p>
+
+<p> If you are using macros from Quick Start above, then \":then-fgl t\" argument as shown below will be enough to
+call a SAT solver after we finish with out rewriting:
+<code> @('
+(verify-svtv-of-mult :name my-multiplier-example
+                     :then-fgl t
+                     :concl (equal result ;; output signal name
+                                   ;; specification:
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2)))))
+')
+</code>
+</p>
+
+<p> In other cases: you may include the book
 projects/rp-rewriter/lib/mult3/fgl, @(see FGL::FGL) book and use
 pass \":then-fgl t\" argument to rp::defthmrp-multiplier when proving
 conjectures.  This macro will use RP-Rewriter first to simplify conjectures and if the
@@ -272,7 +322,7 @@ you  wish, you  can skip  to @(see  Multiplier-Verification-demo-2) for  a more
 complex arithmetic module.  </p>
 
 
-<p>   The   exact   events   given   in   this   page   are   also   given   in
+<p>   A shortened version of this demo   is      given   in
 @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/demo-1.lisp')
 </p>
 

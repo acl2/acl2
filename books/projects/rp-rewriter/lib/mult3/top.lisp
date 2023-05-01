@@ -41,7 +41,7 @@
 (include-book "projects/rp-rewriter/lib/mult3/fgl" :dir :system)
 (include-book "projects/rp-rewriter/lib/mult3/doc" :dir :system)
 
-(defmacro parse-and-create-svtv (&key file topmodule)
+(defmacro parse-and-create-svtv (&key file topmodule name)
   `(with-output
      :off :all
      :on (summary error)
@@ -49,10 +49,10 @@
      (make-event
       (b* ((file ',file)
            (topmodule ',topmodule)
-           (topmodule-sym (intern$ (string-upcase topmodule) "RP"))
-           (vl-design (intern$ (str::cat "*" (string-upcase topmodule) "-VL-DESIGN*")
+           (name ',(or name (intern$ (string-upcase topmodule) "RP"))) 
+           (vl-design (intern$ (str::cat "*" (symbol-name name) "-VL-DESIGN*")
                                "RP"))
-           (sv-design (intern$ (str::cat "*" (string-upcase topmodule) "-SV-DESIGN*")
+           (sv-design (intern$ (str::cat "*" (symbol-name name) "-SV-DESIGN*")
                                "RP")))
         `(encapsulate
            nil
@@ -89,15 +89,16 @@
                   ))))
 
            (make-event
-            `(sv::defsvtv$ ,',topmodule-sym
+            `(sv::defsvtv$ ,',name
                :mod ,',sv-design
                :inputs ',(loop$ for x in *ins* collect
                                 `(,x ,(intern$ (string-upcase x) "RP")))
                :outputs ',(loop$ for x in *outs* collect
-                                 `(,x ,(intern$ (string-upcase x) "RP")))))
+                                 `(,x ,(intern$ (string-upcase x) "RP")))
+               :simplify nil))
 
-           (rp::add-rp-rule ,(intern$ (str::cat (string-upcase topmodule) "-AUTOHYPS") "RP"))
-           (rp::add-rp-rule ,(intern$ (str::cat (string-upcase topmodule) "-AUTOINS") "RP"))
+           (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOHYPS") "RP"))
+           (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOINS") "RP"))
 
            (value-triple (clear-memoize-tables))
            (value-triple (hons-clear t))
@@ -105,7 +106,7 @@
            )))))
 
 
-(defmacro verify-svtv-of-mult (&key topmodule
+(defmacro verify-svtv-of-mult (&key name
                                     concl
                                     (then-fgl 'nil)
                                     (pkg '"RP"))
@@ -151,8 +152,8 @@
             `(progn (value-triple (acl2::tshell-ensure))
                     ,event)
           event))))
-   :atom-alist `((<mult> . ,(intern$ (string-upcase topmodule) pkg)))
-   :str-alist `(("<MULT>" . ,(string-upcase topmodule)))
+   :atom-alist `((<mult> . ,name))
+   :str-alist `(("<MULT>" . ,(symbol-name name)))
    :pkg-sym (pkg-witness pkg)))
 
 
