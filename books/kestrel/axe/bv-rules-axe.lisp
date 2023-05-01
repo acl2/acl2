@@ -57,7 +57,8 @@
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p size x) ; size is a free var
                 (syntaxp (quotep size))
-                (<= (expt 2 size) k))
+                (<= (expt 2 size) k) ; gets computed
+                )
            (< x k)))
 
 (defthmd not-<-of-0-when-unsigned-byte-p
