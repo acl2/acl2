@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/jvm/read-class" :dir :system)
 (include-book "kestrel/jvm/method-indicators" :dir :system)
 (include-book "rule-lists-jvm")
 (include-book "rules-in-rule-lists-jvm")
@@ -28,6 +27,8 @@
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
+(include-book "kestrel/jvm/read-class" :dir :system) ; convenient to have, if not strictly needed
+(include-book "kestrel/jvm/read-jar" :dir :system) ; convenient to have, if not strictly needed
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
 (local (in-theory (enable member-equal-becomes-memberp))) ;todo
