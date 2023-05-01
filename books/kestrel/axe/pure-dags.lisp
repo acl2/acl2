@@ -73,3 +73,11 @@
 (defund dag-is-purep (dag)
   (declare (xargs :guard (weak-dagp-aux dag)))
   (dag-is-purep-aux dag :first t))
+
+;; ;; Checks whether everything in the DAG is something we can translate to STP
+;; (defund dag-or-quotep-is-purep (dag-or-quotep)
+;;   (declare (xargs :guard (or (quotep dag)
+;;                              (weak-dagp-aux dag))))
+;;   (if (quotep dag)
+;;       t ;todo: check more?
+;;     (dag-is-purep-aux dag :first t)))
