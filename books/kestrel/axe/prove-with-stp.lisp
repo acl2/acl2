@@ -1614,7 +1614,6 @@
 
 
 (local (in-theory (disable quoted-posp
-                           boolean-typep
                            ;; natp
                            )))
 
@@ -1650,7 +1649,7 @@
   (implies (bv-array-typep x)
            (not (boolean-typep x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bv-array-typep LIST-TYPEP boolean-typep))))
+  :hints (("Goal" :in-theory (enable bv-array-typep list-typep boolean-typep))))
 
 ;returns (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array) ;the accumulators are extended
 ;fixme look for type mismatches..

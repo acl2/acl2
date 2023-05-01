@@ -115,7 +115,9 @@
 ;; todo: or call these Arguments?  But other xdoc uses "Inputs".
 (defconst *xdoc-inputs-header* "<h3>Inputs:</h3>")
 (defconst *xdoc-inputs-header-with-spacing*
-  (n-string-append *xdoc-inputs-header*
+  (n-string-append (newline-string)
+                   (newline-string)
+                   *xdoc-inputs-header*
                    (newline-string)
                    (newline-string)))
 
@@ -308,8 +310,8 @@
 (defconst *open-blockquote-and-newline*
   (concatenate 'string "<blockquote>" (newline-string)))
 
-(defconst *close-blockquote-and-newline*
-  (concatenate 'string "</blockquote>" (newline-string)))
+(defconst *close-blockquote-and-two-newlines*
+  (concatenate 'string "</blockquote>" (newline-string) (newline-string)))
 
 (defconst *close-p-and-newline*
   (concatenate 'string "</p>" (newline-string)))
@@ -322,12 +324,12 @@
       (er hard 'xdoc-for-macro-required-arg "Required macro arg ~x0 is not a symbol." macro-arg)
     (let ((name (string-downcase-gen (symbol-name macro-arg)))
           (description-forms (lookup-eq macro-arg arg-descriptions)))
-      `("<p>@('" ,name "') &mdash; (required)</p>" (newline-string)
-        (newline-string)
+      `("<p>@('" ,name "') &mdash; (required)</p>
+
+"
         ,*open-blockquote-and-newline*
         ,@(xdoc-make-paragraphs description-forms)
-        ,*close-blockquote-and-newline*
-        (newline-string)))))
+        ,*close-blockquote-and-two-newlines*))))
 
 ;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-required-args (macro-args arg-descriptions)
@@ -350,12 +352,12 @@
        ;; add the brackets, since this is an optional arg:
        (name (n-string-append "[" (string-downcase-gen (symbol-name name)) "]"))
        (default-form `(string-downcase-gen (object-to-string ,default ,package))))
-    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>" (newline-string)
-      (newline-string)
+    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>
+
+"
       ,*open-blockquote-and-newline*
       ,@(xdoc-make-paragraphs description-strings)
-      ,*close-blockquote-and-newline*
-      (newline-string))))
+      ,*close-blockquote-and-two-newlines*)))
 
 ;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-optional-args (macro-args arg-descriptions package)
@@ -379,12 +381,12 @@
        ;; add the colon, since this is a keyword arg:
        (name (string-append ":" (string-downcase-gen (symbol-name name))))
        (default-form `(string-downcase-gen (object-to-string ,default ,package))))
-    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>" (newline-string)
-      (newline-string)
+    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>
+
+"
       ,*open-blockquote-and-newline*
       ,@(xdoc-make-paragraphs description-strings)
-      ,*close-blockquote-and-newline*
-      (newline-string))))
+      ,*close-blockquote-and-two-newlines*)))
 
 ;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-keyword-args (macro-args arg-descriptions package)
@@ -452,7 +454,7 @@
     `(defxdoc ,name
        ,@(and short `(:short ,short))
        ,@(and parents `(:parents ,parents))
-       :long (n-string-append
+       :long (n-string-append ; todo: can we evaluate this statically?
               ;; Shows the general form of a call (all args and defaults):
               ,(xdoc-for-macro-general-form name macro-args package)
               ,*xdoc-inputs-header-with-spacing*
