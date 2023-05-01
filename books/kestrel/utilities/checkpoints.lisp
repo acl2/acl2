@@ -26,9 +26,11 @@
                                   (weak-gag-state-p
                                    (f-get-global 'gag-state-saved state))))))
   (let ((gag-state (f-get-global 'gag-state-saved state)))
-    (cond ((null gag-state) :unavailable)
-          (top-p (access gag-state gag-state :top-stack))
-          (t (access gag-state gag-state :sub-stack)))))
+    (cond
+     ((null gag-state) :unavailable)
+     (top-p (or (abort-info-stack (access gag-state gag-state :abort-info))
+                (access gag-state gag-state :top-stack)))
+     (t (access gag-state gag-state :sub-stack)))))
 
 (defun checkpoints-forcep (state)
 
@@ -190,10 +192,23 @@
      (t
       (let* ((top-stack (access gag-state gag-state :top-stack))
              (sub-stack (access gag-state gag-state :sub-stack))
+             (abort-info (access gag-state gag-state :abort-info))
+             (abort-stack (abort-info-stack abort-info))
+             (abort-cause (abort-info-cause abort-info))
              (standard-co (standard-co state)))
-        (pprogn (fms "++++++ Top-level checkpoint list: ++++++~%"
-                     nil standard-co state nil)
-                (show-gag-stack top-stack prettyify state)
+        (pprogn (fms "++++++ Top-level checkpoint list~#0~[~t1~/:~] ++++++~%~@2"
+                     (list (cons #\0
+                                 (if abort-stack
+                                     0
+                                   1))
+                           (cons #\1 48)
+                           (cons #\2
+                                 (if abort-stack
+                                     "++++++ (before reverting to proof by ~
+                                      induction): ++++++~%"
+                                   "")))
+                     standard-co state nil)
+                (show-gag-stack (or abort-stack top-stack) prettyify state)
                 (fms "++++++ Non-top-level checkpoint list: ++++++~%"
                      nil standard-co state nil)
                 (show-gag-stack sub-stack prettyify state)
@@ -204,16 +219,15 @@
                                    "No")))
                      standard-co state nil)
                 (fms "++++++ Abort?: ~@0 ++++++~|"
-                     (let ((cause (access gag-state gag-state :abort-stack)))
 
 ; A non-nil value is a symbol giving the cause for aborting the proof, if any,
 ; which could be do-not-induct, empty-clause, or induction-depth-limit-exceeded
 ; (these have the obvious meanings).
 
-                       (list (cons #\0
-                                   (if (and cause (symbolp cause))
-                                       (msg "Yes, ~s0" cause)
-                                     "No"))))
+                     (list (cons #\0
+                                 (if abort-cause
+                                     (msg "Yes, ~s0" abort-cause)
+                                   "No")))
                      standard-co state nil)))))))
 
 (defmacro show-checkpoint-list (&optional prettyify)

@@ -7,16 +7,6 @@
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc checkpoint-list
-
-; A wart, documented below, is that we get <GOAL> when aborting the proof to
-; use induction on the original goal.  That's because this tool is built on the
-; same code base that prints during proof attempts.  One might consider a
-; variant of this tool that takes the original input as an argument, and if it
-; finds <GOAL> (in the ACL2 package) in the top-stack, that is changed to the
-; input (suitably translated or not).  But it might make more sense to store
-; the original goal in the ACL2 gag-state structure, which would require a
-; change to ACL2.
-
    :parents (kestrel-utilities output-controls)
    :short "Return prover key checkpoint clauses programmatically."
    :long "<p>Recall the key checkpoints printed at the end of a failed proof
@@ -57,21 +47,6 @@
 
  <li>Each forcing round (see @(see forcing-round)) is considered a new proof
  attempt for purposes of this tool.</li>
-
- <li>Suppose a proof attempt is aborted in favor of proving the original goal
- by induction, as typically indicated with the following prover output.
-
- @({
- We therefore abandon our previous work on this conjecture and
- reassign the name *1 to the original conjecture.
- })
-
- In that case, the unique top-level checkpoint is @('(<GOAL>)'), so the list of
- top-level checkpoints is @('((<GOAL>))').  Moreover, all information stored
- for the proof attempt is based on the part of the attempt starting after
- returning to prove the original goal by induction; all checkpoints produced
- before that happens will be lost.  If that isn't what you want, consider using
- @(':')@(tsee otf-flg).</li>
 
  <li>The notion of ``most recent proof attempt'' includes proof attempts made
  during @(tsee make-event) expansion.</li>
@@ -116,12 +91,6 @@
  <li>Unlike functions @('checkpoint-list') and @('checkpoint-info-list'), which
  are @(see guard)-verified @(see logic)-mode functions,
  @('checkpoint-list-pretty') is a @(see program)-mode function.</li>
-
- <li>As with @('checkpoint-list'), there is a special case when a proof attempt
- is aborted in favor of proving the original goal by induction.  With
- @('checkpoint-list-pretty') you will see @('(<GOAL>)') to represent the list
- of checkpoints as a list of terms: it shows that there is a single checkpoint
- that is the original goal.</li>
 
  </ul>")
 

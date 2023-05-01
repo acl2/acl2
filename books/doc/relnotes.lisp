@@ -263,6 +263,11 @@
     "Added utility @(tsee show-books), which returns a tree representing the
      @(see books) included in the current ACL2 session.")
 
+   (xdoc::p
+    "The utility @(tsee checkpoint-list) and related utilities now show
+     top-level checkpoints even in the case of reverting to prove the original
+     goal by induction, and label them accordingly.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))

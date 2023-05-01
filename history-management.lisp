@@ -2129,7 +2129,7 @@
 
 (defun print-gag-stack-rev (lst limit orig-limit msg chan state)
 
-; Lst is the reverse of the :abort-stack, :top-stack, or :sub-stack field of a
+; Lst is the reverse of the abort-stack, :top-stack, or :sub-stack of a
 ; gag-state.
 
   (cond ((endp lst) state)
@@ -2166,11 +2166,11 @@
         (t (reverse-gag-stack (cdr stack)
                               (cons (car stack) acc)))))
 
-(defun print-gag-state-abort-stack-msg (abort-stack)
+(defun print-abort-info-cause-msg (abort-cause)
 
 ; See print-gag-state.
 
-  (case abort-stack
+  (case abort-cause
     (empty-clause
      (msg "~|    before generating a goal of ~x0 (see :DOC nil-goal)"
           'nil))
@@ -2186,15 +2186,16 @@
     state)
    (gag-state
     (let* ((chan (proofs-co state))
-           (abort-stack
-            (access gag-state gag-state :abort-stack))
+           (abort-info (access gag-state gag-state :abort-info))
+           (abort-stack (abort-info-stack abort-info))
+           (abort-cause (abort-info-cause abort-info))
            (top-stack0 (access gag-state gag-state :top-stack))
-           (top-stack (if (consp abort-stack) abort-stack top-stack0))
+           (top-stack (or abort-stack top-stack0))
            (sub-stack (access gag-state gag-state :sub-stack))
            (some-stack (or sub-stack
 
 ; We use top-stack0 here instead of top-stack because if the only non-empty
-; stack is the :abort-stack, then presumably the proof completed modulo :by
+; stack is the abort-stack, then presumably the proof completed modulo :by
 ; hints that generated :bye tags in the ttree.
 
                            top-stack0))
@@ -2234,8 +2235,8 @@
                               (cons #\1 (if (consp abort-stack) 0 1))
                               (cons #\2 (if sub-stack
                                             ""
-                                          (print-gag-state-abort-stack-msg
-                                           abort-stack))))
+                                          (print-abort-info-cause-msg
+                                           abort-cause))))
                         chan state nil)
                    (newline chan state)
                    (print-gag-stack-rev
@@ -2251,8 +2252,8 @@
                    (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
                          induction~@1: ***"
                         (list (cons #\0 sub-stack)
-                              (cons #\1 (print-gag-state-abort-stack-msg
-                                         abort-stack)))
+                              (cons #\1 (print-abort-info-cause-msg
+                                         abort-cause)))
                         chan state nil)
                    (newline chan state)
                    (print-gag-stack-rev
