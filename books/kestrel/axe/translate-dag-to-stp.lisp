@@ -159,7 +159,7 @@
 
 (defund maybe-shorten-filename (base-filename)
   (declare (xargs :guard (stringp base-filename)))
-  (if (< 200 (length base-filename)) ;fixme could increase the 200
+  (if (< 200 (length base-filename)) ;; todo: could increase the 200
       ;;shorten the filename if it would be too long:
       (string-append (subseq base-filename 0 199) "SHORTENED")
     base-filename))
@@ -2061,7 +2061,7 @@
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
                                  :in-theory (e/d (axe-typep empty-typep list-typep most-general-typep)
-                                                 (boolean-typep))))))
+                                                 ())))))
   (if (endp nodenum-type-alist)
       nil
     (let* ((entry (first nodenum-type-alist))

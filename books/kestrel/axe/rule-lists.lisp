@@ -533,7 +533,10 @@
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
 
      bvplus-of-bvplus-of-bvuminus
+
      natp-when-unsigned-byte-p ;uses the dag assumptions, has a free var so should be cheap? (put last of the natp rules?) moved from yet-more-rules
+     not-<-of-0-when-unsigned-byte-p
+     <-of-constant-when-unsigned-byte-p ; causes problems for md5-loop-one-case (todo: why?)
 
      equal-of-bvmod-and-mod ;where should these go?
      equal-of-mod-and-bvmod
