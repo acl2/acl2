@@ -221,7 +221,7 @@
                              normalize-xors
                              (w state)))
        ((when erp) (mv erp nil state))
-       ((when (quotep dag))
+       ((when (quotep dag)) ;; TODO: Should we allow this?
         (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
         (mv :unexpected-quotep nil state))
        ;; Make a theorem if the term is small enough.  We must use skip-proofs
