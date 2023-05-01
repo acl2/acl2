@@ -1,7 +1,7 @@
 ; Parsing counterexamples from STP
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -464,7 +464,7 @@
 
 ;(local (in-theory (disable LIST-TYPEP BV-ARRAY-TYPEP)))
 
-;(local (in-theory (disable bv-array-typep bv-typep boolean-typep BV-ARRAY-TYPE-LEN MOST-GENERAL-TYPEP)))
+;(local (in-theory (disable bv-array-typep bv-typep BV-ARRAY-TYPE-LEN MOST-GENERAL-TYPEP)))
 
 ;; Returns (mv erp counterexample).  Builds an alist that assigns a value to
 ;; each nodenum in cut-nodenum-type-alist.  For arrays, harvests values of
@@ -546,7 +546,7 @@
                                    counterexamplep acons
                                    nodenum-type-alistp
                                    natp-of-lookup-equal-when-raw-counterexamplep)
-                                  (BOOLEAN-TYPEP bv-typep BV-ARRAY-TYPEP BV-ARRAY-TYPE-LEN)))))
+                                  (boolean-typep bv-typep bv-array-typep bv-array-type-len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

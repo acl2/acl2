@@ -41,13 +41,12 @@
 
 ;; The boolean type
 
-;why the list wrapper? use :boolean?
-;rename make-boolean-type..
-(defmacro boolean-type () ''(boolean))
+;rename make-boolean-type?
+(defund-inline boolean-type () (declare (xargs :guard t)) :boolean)
 
 (defund boolean-typep (type)
   (declare (xargs :guard t))
-  (equal type (boolean-type)))
+  (eq type (boolean-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
