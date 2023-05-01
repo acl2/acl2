@@ -52,13 +52,24 @@
       (pure-fn-call-exprp expr)))
 
 ;; Checks whether everything in the DAG is something we can translate to STP
-(defund dag-is-purep (dag)
-  (declare (xargs :guard (weak-dagp-aux dag)))
+(defund dag-is-purep-aux (dag print pure-so-farp)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (member-eq print '(nil :first :all)))))
   (if (endp dag)
-      t
+      pure-so-farp
     (let* ((entry (first dag))
            (expr (cdr entry)))
       (if (expr-is-purep expr)
-          (dag-is-purep (rest dag))
-        (prog2$ (cw "Non-pure expression in DAG: ~x0.~%" expr)
-                nil)))))
+          (dag-is-purep-aux (rest dag) print pure-so-farp)
+        ;; EXPR is not pure:
+        (if (not print)
+            nil
+          (prog2$ (cw "Non-pure expression in DAG: ~x0.~%" expr)
+                  (if (eq print :first)
+                      nil
+                    (dag-is-purep-aux (rest dag) print nil))))))))
+
+;; Checks whether everything in the DAG is something we can translate to STP
+(defund dag-is-purep (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (dag-is-purep-aux dag :first t))

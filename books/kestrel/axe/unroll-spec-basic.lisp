@@ -286,8 +286,9 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
             (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
        ;; (- (cw "Info on unrolled spec DAG:~%"))
        (- (print-dag-info dag defconst-name nil))
-       (- (and (not (dag-is-purep dag)) ; prints one non-pure node
-               (cw "WARNING: ~x0 is not a pure dag!" defconst-name)))
+       (- (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
+              (cw "~x0 is a pure dag.~%" defconst-name)
+            (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name)))
        (- (progn$ (cw "~%SPEC UNROLLING FINISHED (")
                   (acl2::print-to-hundredths (- end-time start-time))
                   (cw "s).") ; s = seconds
