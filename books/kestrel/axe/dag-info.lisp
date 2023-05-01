@@ -162,12 +162,13 @@
   (tabulate-dag-fns-aux dag nil))
 
 (defun print-dag-info (dag name print-size)
-  (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (len dag) 2147483647)
+  (declare (xargs :guard (and (or (myquotep dag)
+                                  (and (pseudo-dagp dag)
+                                       (< (len dag) 2147483647)))
                               (or (symbolp name)
                                   (null name))
                               (booleanp print-size))))
-  (if (quotep dag) ; not possible, given the guard
+  (if (quotep dag) ; factor out, or rename this function
       (b* ((- (if name
                   (cw "The entire DAG ~x0 is: ~x1.~%" name dag)
                 (cw "The entire DAG is: ~x0.~%" dag))))

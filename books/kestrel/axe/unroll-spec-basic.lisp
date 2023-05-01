@@ -19,6 +19,7 @@
 (include-book "rule-lists")
 (include-book "choose-rules")
 (include-book "dag-to-term")
+(include-book "pure-dags")
 (include-book "dag-size-fast") ; for dag-or-quotep-size-less-thanp
 (include-book "dag-to-term-with-lets")
 (include-book "rules-in-rule-lists")
@@ -31,6 +32,7 @@
 (include-book "kestrel/utilities/system/fresh-names" :dir :system) ;drop?
 (include-book "kestrel/utilities/supporting-functions" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "dag-info")
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
@@ -133,6 +135,7 @@
                    disable-function))
         (er hard? 'unroll-spec-basic-fn ":disable-function should not be true if :produce-function is nil.")
         (mv (erp-t) nil state))
+       ((mv start-time state) (acl2::get-real-time state))
        (- (cw "~%(Unrolling spec:~%"))
        (term (translate-term term 'unroll-spec-basic-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-basic-fn (w state)))
@@ -218,7 +221,7 @@
                              normalize-xors
                              (w state)))
        ((when erp) (mv erp nil state))
-       ((when (quotep dag))
+       ((when (quotep dag)) ;; TODO: Should we allow this?
         (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
         (mv :unexpected-quotep nil state))
        ;; Make a theorem if the term is small enough.  We must use skip-proofs
@@ -277,10 +280,20 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               (if produce-function (list function-name) nil)
                               (if produce-theorem (list theorem-name) nil)))
        (defun-variant (if disable-function 'defund 'defun))
-       (- (cw "Unrolling finished.~%"))
+       ((mv end-time state) (acl2::get-real-time state))
+       (- (if (= 1 (len items-created))
+              (cw "Created ~x0.~%~%" (first items-created))
+            (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
        ;; (- (cw "Info on unrolled spec DAG:~%"))
        (- (print-dag-info dag defconst-name nil))
-       (- (cw ")~%")))
+       (- (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
+              (cw "~x0 is a pure dag.~%" defconst-name)
+            (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name)))
+       (- (progn$ (cw "~%SPEC UNROLLING FINISHED (")
+                  (acl2::print-to-hundredths (- end-time start-time))
+                  (cw "s).") ; s = seconds
+                  ))
+       (- (cw ")~%~%")))
     (mv (erp-nil)
         ;; If dag is a quoted constant, then it gets doubly quoted here.  This
         ;; makes sense: You unquote this thing and either get a DAG or a quoted
@@ -289,7 +302,8 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
                 (with-output :off :all (table unroll-spec-basic-table ',whole-form ':fake))
-                (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
+                (value-triple :invisible)
+                ;; (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                 )
         state)))
 
