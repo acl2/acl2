@@ -3,14 +3,14 @@ This directory relies on a specific old version of the Java libraries
 
 To obtain it, go to:
 
-http://download.oracle.com/otn-pub/java/jdk/7u80-b15/jdk-7u80-linux-x64.tar.gz
+https://www.oracle.com/java/technologies/javase/javase7-archive-downloads.html
 
 and download the file:
 
 jdk-7u80-linux-x64.tar.gz
 
-To do this, I had to create an Oracle account and sign a license agreement. I
-retrieved this on 4/20/23.
+To do this, I had to create an Oracle account and accept a license. I retrieved
+this on 4/20/23.
 
 The sha1sum and md5sum of jdk-7u80-linux-x64.tar.gz are as follows:
 21e5e18c3511def01590994e926a4350c0509f01  jdk-7u80-linux-x64.tar.gz
