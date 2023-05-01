@@ -610,7 +610,14 @@ descriptions.</li>
         ;; we want to add nothing but warnings to the parse state.  That means
         ;; unwinding and restoring the pstate-backup that we had.
         (b* ((new-warnings (vl-parsestate->warnings pstate))
-             (st           (change-vl-loadstate st :pstate pstate-backup))
+             (st           (change-vl-loadstate st
+                                                :pstate pstate-backup
+                                                ;; Keep the old defines from
+                                                ;; before preprocessing, but
+                                                ;; remake the fast alist
+                                                ;; because it may have gotten
+                                                ;; stolen
+                                                :defines (make-fast-alist st.defines)))
              (st           (vl-loadstate-set-warnings new-warnings))
              (st           (vl-loadstate-fatal :type :vl-parse-failed
                                                :msg "Parsing failed for ~s0."
