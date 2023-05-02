@@ -174,23 +174,22 @@
                    ((mv opener-events opener-rule-names)
                     (opener-rules-for-fns defined-supporting-fns t '-for-unroll-spec-basic nil nil state))
                    (- (cw "Will use the following ~x0 additional opener rules: ~X12~%" (len opener-rule-names) opener-rule-names nil))
-                   ;; todo: name this rule set?:  what else should go in it
-                   ;; try to use unroll-spec-basic-rules here
                    ;; todo: could loop with the openers (e.g., )?
-                   (rule-names (append '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
-                                         ;car-cons
-                                         ;cdr-cons
-                                         )
-                                       (bv-array-rules-simple)
-                                       (list-to-bv-array-rules)
-                                       (type-rules) ; give us type facts about bv ops
-                                       (set-difference-eq (core-rules-bv)
-                                                          ;; these are kind of like trim rules, and can make the result worse:
-                                                          '(;BVCHOP-OF-BVPLUS
-                                                            BVCHOP-OF-bvuminus
-                                                            ))
-                                       (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
-                                       (unsigned-byte-p-forced-rules)
+                   (rule-names (append (unroll-spec-basic-rules)
+                                       ;; '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
+                                       ;;   ;car-cons
+                                       ;;   ;cdr-cons
+                                       ;;   )
+                                       ;; (bv-array-rules-simple)
+                                       ;; (list-to-bv-array-rules)
+                                       ;; (type-rules) ; give us type facts about bv ops
+                                       ;; (set-difference-eq (core-rules-bv)
+                                       ;;                    ;; these are kind of like trim rules, and can make the result worse:
+                                       ;;                    '(;BVCHOP-OF-BVPLUS
+                                       ;;                      BVCHOP-OF-bvuminus
+                                       ;;                      ))
+                                       ;; (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
+                                       ;; (unsigned-byte-p-forced-rules)
                                        opener-rule-names)))
                 (mv opener-events rule-names))
             ;; rules is an explicit list of rules:
