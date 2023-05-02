@@ -432,7 +432,9 @@
                   :stobjs (byte-array-stobj state)))
   (b* (;; Read in the whole file (TODO: Can we read in less?):
        ((mv erp byte-array-stobj state) (read-file-into-byte-array-stobj filename byte-array-stobj state))
-       ((when erp) (mv :error-reading-file-into-stobj nil byte-array-stobj state))
+       ((when erp)
+        (er hard? 'read-file-and-locate-end-of-central-directory-record "Failed to read file ~x0." filename)
+        (mv :error-reading-file-into-stobj nil byte-array-stobj state))
        (len (bytes-length byte-array-stobj))
        ((when (< len 22))
         (mv :not-enough-bytes nil byte-array-stobj state))
