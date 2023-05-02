@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvcat
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1520,10 +1520,10 @@
            (bvcat highsize2 highval lowsize lowval))))
 
 (defthmd bvcat-of-if-arg2
-  (equal (bvcat higsize (if test highval1 highval2) lowsize lowval)
+  (equal (bvcat highsize (if test highval1 highval2) lowsize lowval)
          (if test
-             (bvcat higsize highval1 lowsize lowval)
-           (bvcat higsize highval2 lowsize lowval))))
+             (bvcat highsize highval1 lowsize lowval)
+           (bvcat highsize highval2 lowsize lowval))))
 
 (defthmd bvcat-of-if2-arg3
   (equal (bvcat highsize highval (if test lowsize1 lowsize2) lowval)
@@ -1532,7 +1532,7 @@
            (bvcat highsize highval lowsize2 lowval))))
 
 (defthmd bvcat-of-if-arg4
-  (equal (bvcat higsize highval lowsize (if test lowval1 lowval2))
+  (equal (bvcat highsize highval lowsize (if test lowval1 lowval2))
          (if test
-             (bvcat higsize highval lowsize lowval1)
-           (bvcat higsize highval lowsize lowval2))))
+             (bvcat highsize highval lowsize lowval1)
+           (bvcat highsize highval lowsize lowval2))))
