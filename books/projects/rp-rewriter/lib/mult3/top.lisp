@@ -41,7 +41,9 @@
 (include-book "projects/rp-rewriter/lib/mult3/fgl" :dir :system)
 (include-book "projects/rp-rewriter/lib/mult3/doc" :dir :system)
 
-(defmacro parse-and-create-svtv (&key file topmodule)
+(include-book "centaur/fgl/top" :dir :system)
+
+(defmacro parse-and-create-svtv (&key file topmodule name)
   `(with-output
      :off :all
      :on (summary error)
@@ -49,10 +51,10 @@
      (make-event
       (b* ((file ',file)
            (topmodule ',topmodule)
-           (topmodule-sym (intern$ (string-upcase topmodule) "RP"))
-           (vl-design (intern$ (str::cat "*" (string-upcase topmodule) "-VL-DESIGN*")
+           (name ',(or name (intern$ (string-upcase topmodule) "RP"))) 
+           (vl-design (intern$ (str::cat "*" (symbol-name name) "-VL-DESIGN*")
                                "RP"))
-           (sv-design (intern$ (str::cat "*" (string-upcase topmodule) "-SV-DESIGN*")
+           (sv-design (intern$ (str::cat "*" (symbol-name name) "-SV-DESIGN*")
                                "RP")))
         `(encapsulate
            nil
@@ -89,15 +91,16 @@
                   ))))
 
            (make-event
-            `(sv::defsvtv$ ,',topmodule-sym
+            `(sv::defsvtv$ ,',name
                :mod ,',sv-design
                :inputs ',(loop$ for x in *ins* collect
                                 `(,x ,(intern$ (string-upcase x) "RP")))
                :outputs ',(loop$ for x in *outs* collect
-                                 `(,x ,(intern$ (string-upcase x) "RP")))))
+                                 `(,x ,(intern$ (string-upcase x) "RP")))
+               :simplify nil))
 
-           (rp::add-rp-rule ,(intern$ (str::cat (string-upcase topmodule) "-AUTOHYPS") "RP"))
-           (rp::add-rp-rule ,(intern$ (str::cat (string-upcase topmodule) "-AUTOINS") "RP"))
+           (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOHYPS") "RP"))
+           (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOINS") "RP"))
 
            (value-triple (clear-memoize-tables))
            (value-triple (hons-clear t))
@@ -105,13 +108,15 @@
            )))))
 
 
-(defmacro verify-svtv-of-mult (&key topmodule
+(defmacro verify-svtv-of-mult (&key name
                                     concl
                                     (then-fgl 'nil)
+                                    (cases 'nil)
                                     (pkg '"RP"))
   (acl2::template-subst
    `(make-event
-     (b* ((ins (strip-cars (strip-cdrs (sv::svtv->orig-ins (<mult>)))))
+     (b* ((cases ',cases)
+          (ins (strip-cars (strip-cdrs (sv::svtv->orig-ins (<mult>)))))
           (outs (strip-cars (strip-cdrs (sv::svtv->orig-outs (<mult>)))))
           ((acl2::er translated-concl)
            (acl2::translate ',concl t t nil
@@ -135,24 +140,27 @@
                               (b* (((sv::svassocs ,@ignorable-outs)
                                     (sv::svtv-run (<mult>)
                                                   (<mult>-autoins))))
-                                ,',concl)))
+                                ,',concl))
+                     ,@(and cases `(:cases ,cases)))
                    (value-triple
-                    (if ',free-vars
-                        (hard-error 'verify-svtv-of-mult
-                                    "THE GIVEN CONCL CONTAINS THESE FREE VARIABLES: ~p0.~%Available inputs are ~p1.~%Available outputs are ~p2~%"
-                                    (list (cons #\0 ',free-vars)
-                                          (cons #\1 ',ins)
-                                          (cons #\2 ',outs)))
-                      (hard-error 'verify-svtv-of-mult
-                                  "The proof failed. You can generate counterexamples by
-                                    passing \":then-fgl t\" as an argument." nil))))))
+                    (cond (',free-vars
+                           (hard-error 'verify-svtv-of-mult
+                                       "THE GIVEN CONCL CONTAINS THESE FREE VARIABLES: ~p0.~%Available inputs are ~p1.~%Available outputs are ~p2~%"
+                                       (list (cons #\0 ',free-vars)
+                                             (cons #\1 ',ins)
+                                             (cons #\2 ',outs))))
+                          ((not ,',then-fgl)
+                           (hard-error 'verify-svtv-of-mult
+                                       "THE PROOF FAILED. YOU CAN GENERATE COUNTEREXAMPLES BY ~
+                                    PASSING \":THEN-FGL T\" AS AN ARGUMENT." nil))
+                          (t nil))))))
        (value
         (if ,then-fgl
             `(progn (value-triple (acl2::tshell-ensure))
-                    ,event)
+                    (make-event ',event))
           event))))
-   :atom-alist `((<mult> . ,(intern$ (string-upcase topmodule) pkg)))
-   :str-alist `(("<MULT>" . ,(string-upcase topmodule)))
+   :atom-alist `((<mult> . ,name))
+   :str-alist `(("<MULT>" . ,(symbol-name name)))
    :pkg-sym (pkg-witness pkg)))
 
 
