@@ -80,6 +80,7 @@
 (defvar *acl2-doc-manual-name* ; key into *acl2-doc-manual-alist*
   'combined)
 (defvar *acl2-doc-manual-name-previous* nil)
+(defvar *acl2-doc-short-new-buffer-names* nil)
 
 (defun acl2-doc-manual-alist-entry (pathname top printname url
                                              main-tags-file-name
@@ -147,7 +148,7 @@
 
 (defmacro acl2-doc-init-vars (first-time)
   `(progn
-     (defv *acl2-doc-buffer-name*
+     (defv *acl2-doc-buffer-name* ; This is a constant.
        "acl2-doc")
      (defv *acl2-doc-index-buffer-name*
        "acl2-doc-index")
@@ -547,10 +548,14 @@ then restart the ACL2-Doc browser to view that manual."
 (if (not (assoc "\\.acl2-doc\\'" auto-mode-alist))
     (push '("\\.acl2-doc\\'" . acl2-doc-mode) auto-mode-alist))
 
+(defvar *acl2-doc-buffer-name-pattern* ; a constant
+  (concat "^" *acl2-doc-buffer-name* "\\(<.+>\\|\\)$"))
+
 (defun acl2-doc-buffer-p (buffer)
-  (string-match-p
-   (concat "^" *acl2-doc-buffer-name* "\\(<[0-9]*>\\|\\)$")
-   (buffer-name buffer)))
+  (and (string-match-p *acl2-doc-buffer-name-pattern*
+		       (buffer-name buffer))
+       (with-current-buffer buffer
+	 (equal major-mode 'acl2-doc-mode))))
 
 (defun current-acl2-buffer ()
   (let ((buf nil)
@@ -566,9 +571,15 @@ then restart the ACL2-Doc browser to view that manual."
 	(pop lst)))
     buf))
 
-(defun switch-to-acl2-doc-buffer (&optional new-buffer-p)
-  (if new-buffer-p
-      (let ((buf (generate-new-buffer-name *acl2-doc-buffer-name*)))
+(defun switch-to-acl2-doc-buffer (&optional new-buffer-name)
+  (if new-buffer-name
+      (let ((buf (generate-new-buffer-name
+		  (if *acl2-doc-short-new-buffer-names*
+		      *acl2-doc-buffer-name*
+		    (concat *acl2-doc-buffer-name*
+			    "<"
+			    (symbol-name new-buffer-name)
+			    ">")))))
         (if pop-up-windows ; t by default; with nil, want single window
             (switch-to-buffer-other-window buf)
           (switch-to-buffer buf)))
@@ -797,7 +808,7 @@ for confirmation."
   "Go to the specified topic in a new buffer; performs completion."
 
   (interactive (acl2-doc-completing-read "Go to topic (new buffer)" nil))
-  (acl2-doc-display name nil t))
+  (acl2-doc-display name nil name))
 
 (defun acl2-doc-go-from-anywhere (name)
 
@@ -822,7 +833,7 @@ for confirmation."
 ;;; This code is a bit inefficient: the assoc above is done again by
 ;;; acl2-doc-display.  But I like the simplicity of this code.
 
-           (when new-buffer-p (switch-to-acl2-doc-buffer t))
+           (when new-buffer-p (switch-to-acl2-doc-buffer name))
            (acl2-doc-display name))
           ((acl2-doc-tagp (symbol-name name))
            (when new-buffer-p
