@@ -1707,20 +1707,25 @@
     bv-array-read-of-bvmult-discard-vals
     bv-array-read-of-bvplus-of-bvmult-discard-vals))
 
+(defun bvplus-rules ()
+  (declare (xargs :guard t))
+  '(
+            ;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
+    bvplus-commutative-axe
+    bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
+    bvplus-associative))
+
 ; despite the name, this also includes bv-array-rules and list rules!
 ;; TODO: Remove non-bv stuff from this:
 (defun amazing-rules-bv ()
   (declare (xargs :guard t))
-  (append ;; todo: a lot of cruft in here:
+  (append (bvplus-rules) ; todo: maybe drop, as these are bad for md5, for example
+          ;; todo: a lot of cruft in here:
           '(;bvand-of-constant-tighten-dag-version ; warning: can change the size of the bvand
 
             max-constants-lemma ;bozo more like this?
             myif-not-myif-same  ;bozo more like this?
 
-            ;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
-            bvplus-commutative-axe
-            bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
-            bvplus-associative
 
             bvuminus-1 ; introduces getbit
             bvuminus-of-bvplus
