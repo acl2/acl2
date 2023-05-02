@@ -324,6 +324,80 @@
     sbvlt-trim-constant-left
     sbvlt-trim-constant-right))
 
+;; Keep this in sync with unsigned-byte-p-forced-rules below.
+;todo: Should any of these be generalized?
+;todo: what about shift operators?  we need an official list of BV ops
+(defun unsigned-byte-p-rules ()
+  (declare (xargs :guard t))
+  '( ;; todo: add more?
+    unsigned-byte-p-of-bvchop
+    unsigned-byte-p-of-bvcat-all-cases ;todo name
+    unsigned-byte-p-of-bvcat ;todo drop?
+    unsigned-byte-p-of-slice-gen
+    unsigned-byte-p-of-getbit
+    unsigned-byte-p-of-bvif-gen ;todo name
+    unsigned-byte-p-of-bvand
+    unsigned-byte-p-of-bvor-gen ;improve name
+    unsigned-byte-p-of-bvxor-gen ;improve name
+    unsigned-byte-p-of-bvnot
+    unsigned-byte-p-of-bitand
+    unsigned-byte-p-of-bitor
+    unsigned-byte-p-of-bitxor
+    unsigned-byte-p-of-bitnot
+    unsigned-byte-p-of-bvplus
+    unsigned-byte-p-of-bvminus-gen-better ;todo name
+    unsigned-byte-p-of-bvuminus
+    unsigned-byte-p-of-bvmult
+    unsigned-byte-p-of-bvdiv
+    unsigned-byte-p-of-bvmod-gen ;todo name
+    unsigned-byte-p-of-sbvrem
+    unsigned-byte-p-of-sbvdiv
+    unsigned-byte-p-of-bvsx
+    unsigned-byte-p-of-repeatbit
+    unsigned-byte-p-of-leftrotate
+    unsigned-byte-p-of-leftrotate32
+    unsigned-byte-p-of-rightrotate
+    unsigned-byte-p-of-rightrotate32
+    unsigned-byte-p-of-bv-array-read-gen ;todo name
+    ))
+
+;; Keep this in sync with unsigned-byte-p-rules above.
+(defun unsigned-byte-p-forced-rules ()
+  (declare (xargs :guard t))
+  '(unsigned-byte-p-forced-of-bvchop
+    unsigned-byte-p-forced-of-bvcat
+    unsigned-byte-p-forced-of-slice
+    unsigned-byte-p-forced-of-getbit
+    unsigned-byte-p-forced-of-bvif
+    unsigned-byte-p-forced-of-bvand
+    unsigned-byte-p-forced-of-bvor
+    unsigned-byte-p-forced-of-bvxor
+    unsigned-byte-p-forced-of-bvnot
+    unsigned-byte-p-forced-of-bitand
+    unsigned-byte-p-forced-of-bitor
+    unsigned-byte-p-forced-of-bitxor
+    unsigned-byte-p-forced-of-bitnot
+    unsigned-byte-p-forced-of-bvplus
+    unsigned-byte-p-forced-of-bvminus
+    unsigned-byte-p-forced-of-bvuminus
+    unsigned-byte-p-forced-of-bvmult
+    unsigned-byte-p-forced-of-bvdiv
+    unsigned-byte-p-forced-of-bvmod
+    unsigned-byte-p-forced-of-sbvrem
+    unsigned-byte-p-forced-of-sbvdiv
+    unsigned-byte-p-forced-of-bvsx
+    unsigned-byte-p-forced-of-leftrotate
+    unsigned-byte-p-forced-of-rightrotate
+    unsigned-byte-p-forced-of-leftrotate32
+    unsigned-byte-p-forced-of-rightrotate32
+    unsigned-byte-p-forced-of-repeatbit
+    unsigned-byte-p-forced-of-bool-to-bit
+    ;;todo bvshl
+    ;;todo bvshr
+    ;;todo bvashr
+    unsigned-byte-p-forced-of-bv-array-read
+    ))
+
 (defun if-becomes-bvif-rules ()
   '(bvchop-of-if-becomes-bvchop-of-bvif
     slice-of-if-becomes-slice-of-bvif
@@ -372,6 +446,7 @@
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
+   (unsigned-byte-p-rules)
    (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
    (safe-trim-rules) ;in case trimming is disabled
@@ -1211,81 +1286,6 @@
     bvif-equal-1-usb1
     bvif-when-true
     bvif-when-false))
-
-;; Keep this in sync with unsigned-byte-p-forced-rules below
-;todo: Should any of these be generalized?
-;todo: what about shift operators?  we need an official list of BV ops
-;add to core-rules-bv?
-(defun unsigned-byte-p-rules ()
-  (declare (xargs :guard t))
-  '( ;fffixme add more usb rules?
-    unsigned-byte-p-of-bvchop
-    unsigned-byte-p-of-bvcat-all-cases ;todo name
-    unsigned-byte-p-of-bvcat ;todo drop?
-    unsigned-byte-p-of-slice-gen
-    unsigned-byte-p-of-getbit
-    unsigned-byte-p-of-bvif-gen ;todo name
-    unsigned-byte-p-of-bvand
-    unsigned-byte-p-of-bvor-gen ;improve name
-    unsigned-byte-p-of-bvxor-gen ;improve name
-    unsigned-byte-p-of-bvnot
-    unsigned-byte-p-of-bitand
-    unsigned-byte-p-of-bitor
-    unsigned-byte-p-of-bitxor
-    unsigned-byte-p-of-bitnot
-    unsigned-byte-p-of-bvplus
-    unsigned-byte-p-of-bvminus-gen-better ;todo name
-    unsigned-byte-p-of-bvuminus
-    unsigned-byte-p-of-bvmult
-    unsigned-byte-p-of-bvdiv
-    unsigned-byte-p-of-bvmod-gen ;todo name
-    unsigned-byte-p-of-sbvrem
-    unsigned-byte-p-of-sbvdiv
-    unsigned-byte-p-of-bvsx
-    unsigned-byte-p-of-repeatbit
-    unsigned-byte-p-of-leftrotate
-    unsigned-byte-p-of-leftrotate32
-    unsigned-byte-p-of-rightrotate
-    unsigned-byte-p-of-rightrotate32
-    unsigned-byte-p-of-bv-array-read-gen ;todo name
-    ))
-
-;; Keep this in sync with unsigned-byte-p-rules above
-(defun unsigned-byte-p-forced-rules ()
-  (declare (xargs :guard t))
-  '(unsigned-byte-p-forced-of-bvchop
-    unsigned-byte-p-forced-of-bvcat
-    unsigned-byte-p-forced-of-slice
-    unsigned-byte-p-forced-of-getbit
-    unsigned-byte-p-forced-of-bvif
-    unsigned-byte-p-forced-of-bvand
-    unsigned-byte-p-forced-of-bvor
-    unsigned-byte-p-forced-of-bvxor
-    unsigned-byte-p-forced-of-bvnot
-    unsigned-byte-p-forced-of-bitand
-    unsigned-byte-p-forced-of-bitor
-    unsigned-byte-p-forced-of-bitxor
-    unsigned-byte-p-forced-of-bitnot
-    unsigned-byte-p-forced-of-bvplus
-    unsigned-byte-p-forced-of-bvminus
-    unsigned-byte-p-forced-of-bvuminus
-    unsigned-byte-p-forced-of-bvmult
-    unsigned-byte-p-forced-of-bvdiv
-    unsigned-byte-p-forced-of-bvmod
-    unsigned-byte-p-forced-of-sbvrem
-    unsigned-byte-p-forced-of-sbvdiv
-    unsigned-byte-p-forced-of-bvsx
-    unsigned-byte-p-forced-of-leftrotate
-    unsigned-byte-p-forced-of-rightrotate
-    unsigned-byte-p-forced-of-leftrotate32
-    unsigned-byte-p-forced-of-rightrotate32
-    unsigned-byte-p-forced-of-repeatbit
-    unsigned-byte-p-forced-of-bool-to-bit
-    ;;todo bvshl
-    ;;todo bvshr
-    ;;todo bvashr
-    unsigned-byte-p-forced-of-bv-array-read
-    ))
 
 (defun bvchop-list-rules ()
   (declare (xargs :guard t))
