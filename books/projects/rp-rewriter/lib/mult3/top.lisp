@@ -41,6 +41,8 @@
 (include-book "projects/rp-rewriter/lib/mult3/fgl" :dir :system)
 (include-book "projects/rp-rewriter/lib/mult3/doc" :dir :system)
 
+(include-book "centaur/fgl/top" :dir :system)
+
 (defmacro parse-and-create-svtv (&key file topmodule name)
   `(with-output
      :off :all
@@ -109,10 +111,12 @@
 (defmacro verify-svtv-of-mult (&key name
                                     concl
                                     (then-fgl 'nil)
+                                    (cases 'nil)
                                     (pkg '"RP"))
   (acl2::template-subst
    `(make-event
-     (b* ((ins (strip-cars (strip-cdrs (sv::svtv->orig-ins (<mult>)))))
+     (b* ((cases ',cases)
+          (ins (strip-cars (strip-cdrs (sv::svtv->orig-ins (<mult>)))))
           (outs (strip-cars (strip-cdrs (sv::svtv->orig-outs (<mult>)))))
           ((acl2::er translated-concl)
            (acl2::translate ',concl t t nil
@@ -136,21 +140,24 @@
                               (b* (((sv::svassocs ,@ignorable-outs)
                                     (sv::svtv-run (<mult>)
                                                   (<mult>-autoins))))
-                                ,',concl)))
+                                ,',concl))
+                     ,@(and cases `(:cases ,cases)))
                    (value-triple
-                    (if ',free-vars
-                        (hard-error 'verify-svtv-of-mult
-                                    "THE GIVEN CONCL CONTAINS THESE FREE VARIABLES: ~p0.~%Available inputs are ~p1.~%Available outputs are ~p2~%"
-                                    (list (cons #\0 ',free-vars)
-                                          (cons #\1 ',ins)
-                                          (cons #\2 ',outs)))
-                      (hard-error 'verify-svtv-of-mult
-                                  "The proof failed. You can generate counterexamples by
-                                    passing \":then-fgl t\" as an argument." nil))))))
+                    (cond (',free-vars
+                           (hard-error 'verify-svtv-of-mult
+                                       "THE GIVEN CONCL CONTAINS THESE FREE VARIABLES: ~p0.~%Available inputs are ~p1.~%Available outputs are ~p2~%"
+                                       (list (cons #\0 ',free-vars)
+                                             (cons #\1 ',ins)
+                                             (cons #\2 ',outs))))
+                          ((not ,',then-fgl)
+                           (hard-error 'verify-svtv-of-mult
+                                       "THE PROOF FAILED. YOU CAN GENERATE COUNTEREXAMPLES BY ~
+                                    PASSING \":THEN-FGL T\" AS AN ARGUMENT." nil))
+                          (t nil))))))
        (value
         (if ,then-fgl
             `(progn (value-triple (acl2::tshell-ensure))
-                    ,event)
+                    (make-event ',event))
           event))))
    :atom-alist `((<mult> . ,name))
    :str-alist `(("<MULT>" . ,(symbol-name name)))
