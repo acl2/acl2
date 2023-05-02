@@ -791,14 +791,6 @@
 ;;            :expand ((hide (dag-val2-no-array dag alist))
 ;;                     (eval-dag2-no-array dag alist)))))
 
-;todo: rename to sound less general (make-alist-for-quoted-vars?)
-(defund make-acons-nest (vars)
-  (declare (xargs :guard (symbol-listp vars)))
-  (if (endp vars)
-      *nil*
-    `(acons ',(car vars) ,(car vars)
-            ,(make-acons-nest (cdr vars)))))
-
 (defthm equal-of-true-list-fix-and-list-of-car
   (equal (equal (true-list-fix l)
                 (list (car l)))
