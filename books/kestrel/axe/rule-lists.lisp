@@ -324,7 +324,7 @@
     sbvlt-trim-constant-left
     sbvlt-trim-constant-right))
 
-;; Keep this in sync with unsigned-byte-p-forced-rules below
+;; Keep this in sync with unsigned-byte-p-forced-rules below.
 ;todo: Should any of these be generalized?
 ;todo: what about shift operators?  we need an official list of BV ops
 (defun unsigned-byte-p-rules ()
@@ -361,7 +361,7 @@
     unsigned-byte-p-of-bv-array-read-gen ;todo name
     ))
 
-;; Keep this in sync with unsigned-byte-p-rules above
+;; Keep this in sync with unsigned-byte-p-rules above.
 (defun unsigned-byte-p-forced-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-forced-of-bvchop
@@ -397,6 +397,50 @@
     ;;todo bvashr
     unsigned-byte-p-forced-of-bv-array-read
     ))
+
+(defun if-becomes-bvif-rules ()
+  '(bvchop-of-if-becomes-bvchop-of-bvif
+    slice-of-if-becomes-slice-of-bvif
+    bvcat-of-if-becomes-bvcat-of-bvif-arg2
+    bvcat-of-if-becomes-bvcat-of-bvif-arg4
+    getbit-of-if-becomes-getbit-of-bvif
+    bitand-of-if-becomes-bitand-of-bvif-arg1
+    bitand-of-if-becomes-bitand-of-bvif-arg2
+    bitor-of-if-becomes-bitor-of-bvif-arg1
+    bitor-of-if-becomes-bitor-of-bvif-arg2
+    bitxor-of-if-becomes-bitxor-of-bvif-arg1
+    bitxor-of-if-becomes-bitxor-of-bvif-arg2
+    bitnot-of-if-becomes-bitnot-of-bvif
+    bvand-of-if-becomes-bvand-of-bvif-arg2
+    bvand-of-if-becomes-bvand-of-bvif-arg3
+    bvor-of-if-becomes-bvor-of-bvif-arg2
+    bvor-of-if-becomes-bvor-of-bvif-arg3
+    bvxor-of-if-becomes-bvxor-of-bvif-arg2
+    bvxor-of-if-becomes-bvxor-of-bvif-arg3
+    bvnot-of-if-becomes-bvnot-of-bvif
+    bvuminus-of-if-becomes-bvuminus-of-bvif
+    bvplus-of-if-becomes-bvplus-of-bvif-arg2
+    bvplus-of-if-becomes-bvplus-of-bvif-arg3
+    bvminus-of-if-becomes-bvminus-of-bvif-arg2
+    bvminus-of-if-becomes-bvminus-of-bvif-arg3
+    bvmult-of-if-becomes-bvmult-of-bvif-arg2
+    bvmult-of-if-becomes-bvmult-of-bvif-arg3
+    bvdiv-of-if-becomes-bvdiv-of-bvif-arg2
+    bvdiv-of-if-becomes-bvdiv-of-bvif-arg3
+    bvmod-of-if-becomes-bvmod-of-bvif-arg2
+    bvmod-of-if-becomes-bvmod-of-bvif-arg3
+    sbvdiv-of-if-becomes-sbvdiv-of-bvif-arg2
+    sbvdiv-of-if-becomes-sbvdiv-of-bvif-arg3
+    sbvrem-of-if-becomes-sbvrem-of-bvif-arg2
+    sbvrem-of-if-becomes-sbvrem-of-bvif-arg3
+    bvlt-of-if-becomes-bvlt-of-bvif-arg2
+    bvlt-of-if-becomes-bvlt-of-bvif-arg3
+    sbvlt-of-if-becomes-sbvlt-of-bvif-arg2
+    sbvlt-of-if-becomes-sbvlt-of-bvif-arg3
+    bvif-of-if-becomes-bvif-of-bvif-arg3
+    bvif-of-if-becomes-bvif-of-bvif-arg4
+    bvsx-of-if-becomes-bvsx-of-bvif-arg3
+    repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()

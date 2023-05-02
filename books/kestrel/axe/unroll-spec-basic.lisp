@@ -44,6 +44,7 @@
           (list-rules)
           ;; (introduce-bv-array-rules)
           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
+          (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
           ))
 
 (ensure-rules-known (unroll-spec-basic-rules))
