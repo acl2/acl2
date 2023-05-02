@@ -8237,6 +8237,205 @@ pattern
     nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try to add ha-c-chain for shifted outputs
+
+(defines add-ha-c-for-shifted-search
+  :verify-guards nil
+  (define add-ha-c-for-shifted-search ((x sv::svex-p)
+                                       (under-adder))
+    :returns (mv (collected true-listp)
+                 (good-args integerp))
+    :measure (sv::Svex-count x)
+    (sv::svex-case
+     x
+     :var (mv nil 1)
+     :quote (mv nil 1)
+     :call
+     (cond ((or* (equal x.fn 'ha-c-chain)
+                 (equal x.fn 'ha-s-chain)
+                 (equal x.fn 'fa-c-chain)
+                 (equal x.fn 'fa-s-chain)
+                 (equal x.fn 'ha+1-s-chain)
+                 (equal x.fn 'ha+1-c-chain))
+            (b* (((mv collected &)
+                  (add-ha-c-for-shifted-search-lst x.args t)))
+              (mv collected 3)))
+           ((and* (svl::equal-len x.args 2)
+                  (equal x.fn 'sv::bitand))
+            (b* (((mv collected good-args)
+                  (add-ha-c-for-shifted-search-lst x.args under-adder))
+                 ((when (and under-adder
+                             (equal good-args 3)))
+                  (mv (cons x collected) 3)))
+              (mv collected 0)))
+           ((or* (equal x.fn 'sv::?*)
+                 (equal x.fn 'sv::?))
+            (mv nil 3))
+           (t (add-ha-c-for-shifted-search-lst x.args nil)))))
+
+  (define add-ha-c-for-shifted-search-lst ((lst sv::Svexlist-p)
+                                           (under-adder))
+    :returns (mv (collected true-listp)
+                 (good-args integerp))
+    :measure (sv::Svexlist-count lst)
+    (if (atom lst)
+        (mv nil 0)
+      (b* (((mv c1 g1) (add-ha-c-for-shifted-search (car lst)
+                                                    under-adder))
+           ((mv c2 g2) (add-ha-c-for-shifted-search-lst (cdr lst)
+                                                        under-adder)))
+        (mv (append c1 c2)
+            (logior g1 g2)))))
+  ///
+  (verify-guards add-ha-c-for-shifted-search)
+  (memoize 'add-ha-c-for-shifted-search
+           :condition '(eq (sv::svex-kind x) :call))
+  ;; no need to verify anything. 
+  
+
+  (define add-ha-c-for-shifted-search-main ((x sv::svex-p))
+    :Returns (collected-lst true-listp)
+    (case-match x
+      (('sv::concat size a &)
+       (cond ((not (natp size))
+              nil)
+             ((= size 1)
+              (b* (((mv c &)
+                    (add-ha-c-for-shifted-search a nil)))
+                ;; ((Unless c) nil)
+                ;; (c (make-fast-alist (pairlis$ c nil)))
+                ;; (c (fast-alist-clean c)))
+                c))
+             ((> size 1)
+              (add-ha-c-for-shifted-search-main a))
+             (t nil)))
+      (& nil)))
+
+
+  (define add-ha-c-for-shifted-search-alist ((x sv::svex-alist-p))
+    :Returns (collected-lst true-listp)
+    (if (atom x)
+        nil
+      (append (add-ha-c-for-shifted-search-main (cdar x))
+              (add-ha-c-for-shifted-search-alist (cdr x))))))
+
+(defines add-ha-c-for-shifted
+  :verify-guards nil
+  (define add-ha-c-for-shifted  ((x sv::svex-p)
+                                 (collected))
+    :returns (res-svex sv::svex-p :hyp (sv::svex-p x))
+    :measure (sv::Svex-count x)
+    (sv::svex-case
+     x
+     :var x
+     :quote x
+     :call
+     (cond ((and*-exec
+             (equal x.fn 'sv::bitand)
+             (svl::equal-len x.args 2)
+             (hons-get x collected))
+            (sv::Svex-call 'ha-c-chain
+                           (add-ha-c-for-shifted-lst x.args collected)))
+           (t (sv::Svex-call x.fn
+                             (add-ha-c-for-shifted-lst x.args collected))))))
+
+  (define add-ha-c-for-shifted-lst ((lst sv::Svexlist-p)
+                                           (collected))
+    :returns (res-lst sv::svexlist-p :hyp (sv::svexlist-p lst))
+    :measure (sv::Svexlist-count lst)
+    (if (atom lst)
+        nil
+      (hons (add-ha-c-for-shifted (car lst) collected)
+            (add-ha-c-for-shifted-lst (cdr lst) collected))))
+  ///
+  (verify-guards add-ha-c-for-shifted)
+  (memoize 'add-ha-c-for-shifted
+           :condition '(eq (sv::svex-kind x) :call))
+
+  (defret-mutual <fn>-is-correct
+    (defret <fn>-is-correct
+      (implies (warrants-for-adder-pattern-match)
+               (equal (sv::svex-eval$ res-svex env)
+                      (sv::svex-eval$ x env)))
+      :fn add-ha-c-for-shifted)
+    (defret <fn>-is-correct
+      (implies (warrants-for-adder-pattern-match)
+               (equal (sv::svexlist-eval$ res-lst env)
+                      (sv::svexlist-eval$ lst env)))
+      :fn add-ha-c-for-shifted-lst)
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ()
+             :in-theory (e/d (sv::svex-apply$
+                              sv::svex-apply
+                              ha-c-chain)
+                             ()))))
+
+  (define add-ha-c-for-shifted-alist ((x sv::Svex-alist-p)
+                                      (collected))
+    :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p x))
+    (if (atom x)
+        nil
+      (acons (caar x)
+             (add-ha-c-for-shifted (cdar x) collected)
+             (add-ha-c-for-shifted-alist (cdr x) collected)))
+    ///
+    (defret <fn>-is-correct
+      (implies (warrants-for-adder-pattern-match)
+               (equal (sv::svex-alist-eval$ res env)
+                      (sv::svex-alist-eval$ x env)))
+      :hints (("Goal"
+               :in-theory (e/d (sv::svex-alist-eval$
+                                sv::svex-alist-eval)
+                               ()))))))
+
+(define search-and-add-ha-c-for-shifted ((x sv::Svex-alist-p))
+  :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p x))
+  :prepwork
+  ((encapsulate
+     (((search-and-add-ha-c-for-shifted-enabled) => *))
+     (local
+      (defun search-and-add-ha-c-for-shifted-enabled ()
+        nil)))
+
+   (defmacro enable-search-and-add-ha-c-for-shifted (enable)
+     (if enable
+         `(defattach search-and-add-ha-c-for-shifted-enabled return-t)
+       `(defattach search-and-add-ha-c-for-shifted-enabled return-nil)))
+
+   (enable-search-and-add-ha-c-for-shifted t))
+  
+  (b* (((unless (search-and-add-ha-c-for-shifted-enabled))
+        x)
+       (collected-lst (add-ha-c-for-shifted-search-alist x))
+       ((Unless collected-lst) x)
+       (c (make-fast-alist (pairlis$ collected-lst nil)))
+       (c (fast-alist-clean c))
+       (- (and c
+               (cw "- Marking ~p0 half-adder carry patterns that are suspected to ~
+        come from a shifted data output result. If the proof fails and this is ~
+        not a shifted multiplier/adder, then try disabling this heuristic by ~
+        calling: ~p1~%~%" (len c) '(enable-search-and-add-ha-c-for-shifted
+                                    nil))))
+       ((Unless c) x)
+       (x (add-ha-c-for-shifted-alist x c))
+       (- (fast-alist-free c)))
+    x)
+  ///
+  (defret <fn>-is-correct
+    (implies (warrants-for-adder-pattern-match)
+             (equal (sv::svex-alist-eval$ res env)
+                    (sv::svex-alist-eval$ x env)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::svex-alist-eval$
+                              sv::svex-alist-eval)
+                             ())))))
+       
+        
+  
+    
+      
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (progn
   (encapsulate
     (((keep-missing-env-vars-in-svex) => *))
@@ -8434,6 +8633,8 @@ was ~st seconds."))
           ;; I have seen a case (32X32_UBP_AR_VCSkA) where simplifying before removing ha-pairs helps
           (svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist))
           (svex-alist (fix-order-of-fa/ha-chain-args-alist svex-alist))
+
+          (svex-alist (search-and-add-ha-c-for-shifted svex-alist))
 
           ;;(- (design_res-broken svex-alist "before remove-ha-pairs-under-gates-alist"))
 
