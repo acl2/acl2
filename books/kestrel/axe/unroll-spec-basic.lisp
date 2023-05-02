@@ -38,14 +38,17 @@
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 
 (defun unroll-spec-basic-rules ()
-  (append (base-rules)
-          (amazing-rules-bv)
-          (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
-          (list-rules)
-          ;; (introduce-bv-array-rules)
-          ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
-          (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
-          ))
+  (set-difference-eq
+   (append (base-rules)
+           (amazing-rules-bv)
+           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
+           (list-rules)
+           ;; (introduce-bv-array-rules)
+           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
+           (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
+           )
+   ;; can lead to blowup in lifting md5:
+   (bvplus-rules)))
 
 (ensure-rules-known (unroll-spec-basic-rules))
 
