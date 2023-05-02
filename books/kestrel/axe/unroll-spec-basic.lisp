@@ -308,7 +308,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         ;; If dag is a quoted constant, then it gets doubly quoted here.  This
         ;; makes sense: You unquote this thing and either get a DAG or a quoted
         ;; constant, as usual:
-        `(progn ,@(and evaluator-neededp '((include-book "evaluator"))) ; has skip-proofs, so only included if needed
+        `(progn ,@(and evaluator-neededp '((include-book "kestrel/axe/evaluator" :dir :system))) ; has skip-proofs, so only included if needed
                 (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
