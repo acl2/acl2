@@ -4287,15 +4287,15 @@ specialization of @(tsee r1cs::verify-r1cs).")
 
  <h4>Quadratic Reciprocity</h4>
 
- <p>In @('projects/numbers/'), certain include-books, namely
+ <p>In @('projects/quadratic-reciprocity/'), certain include-books, namely
  those that bring in books from @('support/'), have been made local.  This follows
  the standard pattern of putting all proof work in separate \"support books\"
  which are included only locally in the main files.  (The main files simply
  re-iterate, redundantly, the events to be exported.)  If this change causes
  proof failures, and your development includes books such as
- @('projects/numbers/fermat'), consider now also including the
+ @('projects/quadratic-reciprocity/fermat'), consider now also including the
  corresponding support books (e.g.,
- @('projects/numbers/support/fermat')).  (Actually, to get
+ @('projects/quadratic-reciprocity/support/fermat')).  (Actually, to get
  broken proofs working again, it may suffice to include simpler books that were
  previously brought in via the support books, such as
  @('rtl/rel11/support/basic') or @('rtl/rel11/support/util').)</p>
@@ -8042,7 +8042,7 @@ found in the change log.</p>")
      No        leftist-trees            projects/leftist-trees
      No        symbolic                 projects/symbolic
      No        translators              projects/translators
-     No        numbers                  projects/numbers
+     No        quadratic-reciprocity    projects/quadratic-reciprocity
 
      No        parallel                 misc/ or, for some books,
                                         demos/parallel or system/parallel
