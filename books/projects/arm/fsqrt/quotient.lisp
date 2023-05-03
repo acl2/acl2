@@ -1465,7 +1465,7 @@
                   :use (fnum-vals stk-9 x-bounds
 		        (:instance qsqrt-sqrt (x (x)) (n (1+ (* 2 (n)))))))))
 
-(local (include-book "projects/quadratic-reciprocity/euclid" :dir :system))
+(local (include-book "projects/numbers/euclid" :dir :system))
 
 (local-defthmd stk-11
   (implies (and (integerp a)

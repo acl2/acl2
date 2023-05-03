@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
-(include-book "projects/quadratic-reciprocity/portcullis" :dir :system)
+(include-book "projects/numbers/portcullis" :dir :system)
 
 (defpkg "PRIMES"
   (append '(dm::primep ; this and other things were in the RTL package

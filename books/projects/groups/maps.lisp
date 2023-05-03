@@ -601,7 +601,7 @@
                 (isomorphismp map2 h k))
 	   (isomorphismp (compose-maps map2 map1) g k)))
      
-;; An automorphism of is an isomorphism from a group to itself:
+;; An automorphism is an isomorphism from a group to itself:
 
 (defund automorphismp (map g)
   (isomorphismp map g g))

@@ -277,7 +277,7 @@
 ;;                     (order (intersect-groups h k g))))))
 
 ;; Given a list l of elements of (lcosets (group-intersection h k g) h), convert it to a list of elements of 
-;; a list of elements of (lcosets k g) by replacing each member c of l with (lcoset (car c) k g):
+;; (lcosets k g) by replacing each member c of l with (lcoset (car c) k g):
 
 (defun lift-cosets-aux (l k g)
   (if (consp l)
@@ -318,7 +318,7 @@
 	          (/ (* (order h) (order k))
 		     (order (group-intersection h k g))))))
 
-;; It is easy to show that (lift-cosets h k g)) is a sublist of (products h k g):
+;; It is easy to show that each member of (lift-cosets h k g) is a sublist of (products h k g):
 
 (defthm sublistp-lift-cosets-product
   (implies (and (subgroupp h g)

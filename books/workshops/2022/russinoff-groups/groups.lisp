@@ -2,7 +2,7 @@
 
 (include-book "rtl/rel11/lib/top" :dir :system)
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 
 (local (include-book "support"))
 
@@ -996,7 +996,7 @@
 			(:instance mod-mod-times (b x) (a (* y z)))
 			(:instance mod-mod-times (b z) (a (* x y)))))))
 
-;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
+;; The definition of z*-inv is based on the following lemma from books/projects/numbers/euclid.lisp"
 
 (defthm gcd-linear-combination
     (implies (and (integerp x)

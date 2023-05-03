@@ -10,7 +10,7 @@
 
 (in-package "PRIMES")
 
-(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in divides
+(include-book "../../projects/numbers/euclid") ;brings in divides
 (local (include-book "../arithmetic-light/times"))
 
 ;; when x > y, x usually doesn't divide y.

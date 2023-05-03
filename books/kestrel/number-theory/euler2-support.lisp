@@ -16,7 +16,7 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 
 ;; Thanks to David Russinoff for the proof of Euler's Criterion
-(include-book "projects/quadratic-reciprocity/support/euler" :dir :system)
+(include-book "projects/numbers/support/euler" :dir :system)
 
 (local (in-theory (disable acl2::floor-mod-elim acl2::mod-theorem-one-b)))
 
