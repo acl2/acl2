@@ -728,9 +728,9 @@
 
 (acl2::defopeners REVAPPEND)
 
-;for axe
-(defthm not-stringp-of-cons
-  (not (stringp (cons a b))))
+;; ;for axe
+;; (defthm not-stringp-of-cons
+;;   (not (stringp (cons a b))))
 
 ;remove theorems about memi once we use read-byte more?
 
