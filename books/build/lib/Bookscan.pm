@@ -501,6 +501,7 @@ sub scan_src_run {
 		# just whitespace so skip, in particular don't remove $islocal or $acl2devel
 	    } else {
 		my $event = scan_include_book($fname, $the_line)
+		    || scan_cert_param($fname, $the_line)
 		    || scan_max_mem($fname, $the_line)
 		    || scan_max_time($fname, $the_line)
 		    || scan_ifdef($fname, $the_line)

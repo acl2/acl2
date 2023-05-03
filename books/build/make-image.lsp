@@ -1,13 +1,4 @@
-<!-- Common Header -->
-
-<!--
-; VL Verilog Toolkit
-; Copyright (C) 2008-2014 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -29,21 +20,23 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Jared Davis <jared@centtech.com>
--->
+; Original author: Sol Swords <sol.swords@intel.com>
 
-<link rel="icon" type="image/vnd.microsoft.icon" href="images/favicon.ico"/>
 
-<link rel="stylesheet" href="style.css"/>
-<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Noto+Serif">
-<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Lato">
-<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Source+Code+Pro">
-<link rel="stylesheet" href="lib/jquery.powertip.css"/>
+(er-let* ((name (getenv$ "ACL2_IMAGE_NAME" state)))
+  (ld (concatenate 'string name ".lsp")))
 
-<script src="lib/jquery-3.6.4.min.js"></script>
-<script src="lib/jquery.powertip.min.js"></script>
-<script src="lib/typeahead-bundle/typeahead.jquery.min.js"></script>
-<script src="lib/typeahead-bundle/bloodhound.min.js"></script>
-<script src="utils.js"></script>
+(make-event
+ (er-let* ((name (getenv$ "ACL2_IMAGE_NAME" state)))
+   (value `(local (defconst *acl2-image-name* ,name)))))
 
-<!-- End of Common Header -->
+
+(value :q)
+
+(er-let* ((dir1 (getenv$ "ACL2_IMAGES" acl2::*the-live-state*))
+          (dir2 (getenv$ "CERT_PL_BIN_DIR" acl2::*the-live-state*)))
+  (let* ((dir (or dir1 dir2))
+         (file (our-merge-pathnames dir *acl2-image-name*)))
+    (prog2$ (cw "file to write: ~s0~%" file)
+            (save-exec file *acl2-image-message*))))
+
