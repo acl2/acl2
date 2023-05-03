@@ -37,8 +37,8 @@
 
 ;; Unroll the spec:
 (unroll-spec-basic *aes-128-encrypt-spec-dag*
-                   `(list-to-bv-array '8 (aes::aes-128-encrypt ,(make-bit-blasted-cons-nest-for-vars 16 'in)
-                                                               ,(make-bit-blasted-cons-nest-for-vars *key-byte-count* 'key)))
+                   `(list-to-bv-array '8 (aes::aes-128-encrypt ,(bit-blasted-symbolic-byte-list 'in 16)
+                                                               ,(bit-blasted-symbolic-byte-list 'key *key-byte-count*)))
                    :rules :auto
                    :extra-rules (introduce-bv-array-rules) ; turns nth into bv-array-read
                    )

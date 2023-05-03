@@ -50,20 +50,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; BV types (types of BV expressions ,currently just naturals representing the
+;; BV types (types of BV expressions, currently just naturals representing the
 ;; width).
 
-;; todo: make these macros?
-
 ;may change
+;a BV type is (now) an positive integer representing the width (maybe 0 is allowed too?)
 (defund bv-typep (type)
   (declare (xargs :guard t))
   (natp type))
 
-;a BV type is (now) an positive integer representing the width (maybe 0 is allowed too?)
 ;may change
 (defund-inline make-bv-type (width)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (natp width)))
   width)
 
 (defthm bv-typep-of-make-bv-type
@@ -81,7 +79,8 @@
          (< width 0))
   :hints (("Goal" :in-theory (enable make-bv-type))))
 
-;may change
+;; Extract the width from a bv-type (currently a no-op but
+;; may change).
 (defund-inline bv-type-width (type)
   (declare (xargs :guard t))
   type)
@@ -107,6 +106,7 @@
 ;; The :list type:  (:list element-type len-type)
 ;; TODO: Restrict the element type and length type (this should be mutually recursive with axe-typep?)
 ;; TODO: Disallow the empty list, so that nil is not both a list and a boolean?
+;; TODO: Redo the bv-array type and move this elsewhere.
 (defund list-typep (type)
   (declare (xargs :guard t))
   (and (true-listp type)
@@ -196,7 +196,8 @@
 ;; TODO: Can the element-width be 0?
 ;; TODO: Can the len be 0?
 (defund make-bv-array-type (element-width len) ;ffixme these args aren't really types.. should they be?
-  (declare (xargs :guard t))
+  (declare (xargs :guard (natp element-width) ; todo: strengthn to posp
+                  ))
   (make-list-type (make-bv-type element-width) (enquote len)))
 
 (defthm list-typep-of-make-bv-array-type
