@@ -25,10 +25,10 @@
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (include-book "kestrel/arithmetic-light/mod-expt-fast" :dir :system)
 (include-book "kestrel/number-theory/quadratic-residue" :dir :system)
-(local (include-book "projects/quadratic-reciprocity/eisenstein" :dir :system))
+(local (include-book "projects/numbers/eisenstein" :dir :system))
 (local (include-book "kestrel/number-theory/mod-expt-fast" :dir :system))
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;primep
+(include-book "projects/numbers/euclid" :dir :system) ;primep
 
 
 (in-theory (disable acl2::mod-expt-fast))

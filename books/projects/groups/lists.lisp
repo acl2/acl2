@@ -4,7 +4,7 @@
 
 (in-package "DM")
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 (local (include-book "support/lists"))
 (local (include-book "support/perms"))
 
@@ -460,7 +460,7 @@
   (implies (permutationp l m)
 	   (permutationp m l)))
 
-(defthmd permutationp-transitice
+(defthmd permutationp-transitive
   (implies (and (permutationp l m)
 	        (permutationp m n))
 	   (permutationp l n)))

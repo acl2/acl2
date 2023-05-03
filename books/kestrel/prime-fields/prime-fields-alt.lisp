@@ -550,7 +550,7 @@
 ;;Obtain an instance of Fermat's little theorem for the prime (prime).
 (encapsulate
   ()
-  (local (include-book "../../projects/quadratic-reciprocity/fermat"))
+  (local (include-book "../../projects/numbers/fermat"))
   (local (include-book "../../arithmetic-3/top"))
 
   (defthm my-fermat-little

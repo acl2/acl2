@@ -21,7 +21,7 @@
 ;; of the operations.  See also prime-fields-alt.lisp, which uses a constrained
 ;; function for the prime.
 
-;(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in dm::primep
+;(include-book "../../projects/numbers/euclid") ;brings in dm::primep
 (include-book "../utilities/pos-fix")
 (include-book "fep")
 (include-book "minus1")

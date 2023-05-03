@@ -6091,10 +6091,15 @@ The key checkpoint goals, below, may help you to debug this failure.
 See :DOC failure and see :DOC set-checkpoint-summary-limit.
 ---
 
-*** Key checkpoint at the top level: ***
+*** Key checkpoints before reverting to proof by induction: ***
 
-Goal
-<GOAL>
+Subgoal 2
+(IMPLIES (NOT (MEMBER-EQUAL E (TWINS X)))
+         (NOT (EQUAL (HOW-MANY E X) 2)))
+
+Subgoal 1
+(IMPLIES (MEMBER-EQUAL E (TWINS X))
+         (EQUAL (HOW-MANY E X) 2))
 
 *** Key checkpoints under a top-level induction
     before generating a goal of NIL (see :DOC nil-goal): ***
@@ -8957,10 +8962,15 @@ The key checkpoint goals, below, may help you to debug this failure.
 See :DOC failure and see :DOC set-checkpoint-summary-limit.
 ---
 
-*** Key checkpoint at the top level: ***
+*** Key checkpoints before reverting to proof by induction: ***
 
-Goal
-<GOAL>
+Subgoal 2'
+(IMPLIES (EQUAL (HOW-MANY E (TWINS X)) 0)
+         (NOT (EQUAL (HOW-MANY E X) 2)))
+
+Subgoal 1
+(IMPLIES (< 0 (HOW-MANY E (TWINS X)))
+         (EQUAL (HOW-MANY E X) 2))
 
 *** Key checkpoints under a top-level induction
     before generating a goal of NIL (see :DOC nil-goal): ***
@@ -10111,10 +10121,15 @@ The key checkpoint goals, below, may help you to debug this failure.
 See :DOC failure and see :DOC set-checkpoint-summary-limit.
 ---
 
-*** Key checkpoint at the top level: ***
+*** Key checkpoints before reverting to proof by induction: ***
 
-Goal
-<GOAL>
+Subgoal 2'
+(IMPLIES (EQUAL (HOW-MANY E (TWINS X)) 0)
+         (NOT (EQUAL (HOW-MANY E X) 2)))
+
+Subgoal 1
+(IMPLIES (< 0 (HOW-MANY E (TWINS X)))
+         (EQUAL (HOW-MANY E X) 2))
 
 *** Key checkpoints under a top-level induction
     before generating a goal of NIL (see :DOC nil-goal): ***

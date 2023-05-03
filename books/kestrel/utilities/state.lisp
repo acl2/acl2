@@ -29,7 +29,6 @@
   '(open-input-channels
     open-output-channels
     global-table
-    big-clock-entry
     idates
     acl2-oracle
     file-clock
@@ -44,7 +43,6 @@
   '(update-open-input-channels
     update-open-output-channels
     update-global-table
-    update-big-clock-entry
     update-idates
     update-acl2-oracle
     update-file-clock
@@ -228,22 +226,6 @@
     (equal (readable-files (update-global-table x st))
            (readable-files st)))
 
-  (defthm big-clock-entry-of-update-open-input-channels
-    (equal (big-clock-entry (update-open-input-channels x st))
-           (big-clock-entry st)))
-
-  (defthm big-clock-entry-of-update-open-output-channels
-    (equal (big-clock-entry (update-open-output-channels x st))
-           (big-clock-entry st)))
-
-  (defthm big-clock-entry-of-update-file-clock
-    (equal (big-clock-entry (update-file-clock x st))
-           (big-clock-entry st)))
-
-  (defthm big-clock-entry-of-update-global-table
-    (equal (big-clock-entry (update-global-table x st))
-           (big-clock-entry st)))
-
   (defthm writeable-files-of-update-open-input-channels
     (equal (writeable-files (update-open-input-channels x st))
            (writeable-files st)))
@@ -393,10 +375,6 @@
     (equal (readable-files (update-read-files x st))
            (readable-files st)))
 
-  (defthm big-clock-entry-of-update-read-files
-    (equal (big-clock-entry (update-read-files x st))
-           (big-clock-entry st)))
-
   (defthm writeable-files-of-update-read-files
     (equal (writeable-files (update-read-files x st))
            (writeable-files st)))
@@ -412,10 +390,6 @@
   (defthm readable-files-of-update-written-files
     (equal (readable-files (update-written-files x st))
            (readable-files st)))
-
-  (defthm big-clock-entry-of-update-written-files
-    (equal (big-clock-entry (update-written-files x st))
-           (big-clock-entry st)))
 
   (defthm writeable-files-of-update-written-files
     (equal (writeable-files (update-written-files x st))

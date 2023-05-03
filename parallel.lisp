@@ -734,7 +734,7 @@
 ; ; (mv rewritten-args ttree).
 ;
 ;   (declare (type (unsigned-byte 29) rdepth))
-;   (cond ((f-big-clock-negative-p state)
+;   (cond ((f-big-clock-negative-p state) ; (obsolete: no big-clock after 4/2023)
 ;          (cons (sublis-var-lst alist args)
 ;                ttree))
 ;         ((null args)

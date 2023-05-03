@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "projects/quadratic-reciprocity/portcullis" :dir :system)
+(include-book "projects/numbers/portcullis" :dir :system)
 
 (defpkg "PFIELD"
   (append '(dm::primep

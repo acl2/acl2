@@ -1,7 +1,7 @@
 (in-package "PFIELD")
 
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
-(local (include-book "projects/quadratic-reciprocity/euclid" :dir :system))
+(local (include-book "projects/numbers/euclid" :dir :system))
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (defund all-powers-aux (x i p)

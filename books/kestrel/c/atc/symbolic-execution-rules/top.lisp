@@ -63,7 +63,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-symbolic-execution-rules
-  :parents (atc-execution)
+  :parents (atc-event-and-code-generation)
   :short "Symbolic execution rules for ATC."
   :long
   (xdoc::topstring

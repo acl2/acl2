@@ -807,7 +807,7 @@
 
 (defund z*-op (x y n) (mod (* x y) n))
 
-;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
+;; The definition of z*-inv is based on the following lemma from books/projects/numbers/euclid.lisp"
 
 (defthm gcd-linear-combination
     (implies (and (integerp x)

@@ -31,8 +31,7 @@
 ;;---------------------------------------------------------------------------------------------------
 
 ;; Let h be a normal subgroup of g.  If x is in h, then (conjs x g) is a sublist of (elts h).  We define
-;; (select-conjs (non-trivial-conjs g) h) to be a list of all non-trivial conjugacy classes that are
-;; included in h:
+;; (select-conjs (conjs-list g) h) to be a list of all non-trivial conjugacy classes that are included in h:
 
 (defun select-conjs (l h)
   (if (consp l)
@@ -41,8 +40,8 @@
 	(select-conjs (cdr l) h))
     ()))
 
-;; Thus, if we append the elements of that list and throw in the center, we have a permutation of
-;; the elements of h.  In the case of interest the center happens to be trivial:
+;; Thus, if we append the elements of that list and throw in the elements of h that belong to the center, 
+;; we have a permutation of the elements of h.  In the case of interest the center happens to be trivial:
 
 (defthmd permp-select-conjs
   (implies (and (normalp h g)
@@ -111,7 +110,7 @@
   (equal (lens (conjs-list-fast (alt 5)))
          '(20 12 12 15)))
 
-;; Clearly, no sublist of this list has a sum that is 1 less than a dividor of 60.  To prove this, we shall 
+;; Clearly, no sublist of this list has a sum that is 1 less than a divisor of 60.  To prove this, we shall 
 ;; compute a list of numbers that contains (len (append-list s)) for every sublist s of (conjs-list (alt 5)).
 
 ;; A list of the sublists of a list:

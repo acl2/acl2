@@ -19,9 +19,13 @@
 (include-book "rule-lists")
 (include-book "choose-rules")
 (include-book "dag-to-term")
+(include-book "pure-dags")
 (include-book "dag-size-fast") ; for dag-or-quotep-size-less-thanp
 (include-book "dag-to-term-with-lets")
 (include-book "rules-in-rule-lists")
+(include-book "interpreted-function-alists")
+(include-book "make-evaluator") ; for make-acons-nest (todo: reduce)
+;; for get-non-built-in-supporting-fns-list (todo: reduce):
 (include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
@@ -31,22 +35,28 @@
 (include-book "kestrel/utilities/system/fresh-names" :dir :system) ;drop?
 (include-book "kestrel/utilities/supporting-functions" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "dag-info")
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 
 (defun unroll-spec-basic-rules ()
-  (append (base-rules)
-          (amazing-rules-bv)
-          (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
-          (list-rules)
-          ;; (introduce-bv-array-rules)
-          ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
-          ))
+  (set-difference-eq
+   (append (base-rules)
+           (amazing-rules-bv)
+           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
+           (list-rules)
+           ;; (introduce-bv-array-rules)
+           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
+           (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
+           )
+   ;; can lead to blowup in lifting md5:
+   (bvplus-rules)))
 
 (ensure-rules-known (unroll-spec-basic-rules))
 
 ;dup
+;; todo: add sbvdiv sbvrem bvdiv bvmod ?  also excludes repeatbit
 (defconst *bv-and-array-fns-we-can-translate*
   '(equal getbit bvchop ;$inline
           slice
@@ -133,6 +143,7 @@
                    disable-function))
         (er hard? 'unroll-spec-basic-fn ":disable-function should not be true if :produce-function is nil.")
         (mv (erp-t) nil state))
+       ((mv start-time state) (acl2::get-real-time state))
        (- (cw "~%(Unrolling spec:~%"))
        (term (translate-term term 'unroll-spec-basic-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-basic-fn (w state)))
@@ -163,23 +174,22 @@
                    ((mv opener-events opener-rule-names)
                     (opener-rules-for-fns defined-supporting-fns t '-for-unroll-spec-basic nil nil state))
                    (- (cw "Will use the following ~x0 additional opener rules: ~X12~%" (len opener-rule-names) opener-rule-names nil))
-                   ;; todo: name this rule set?:  what else should go in it
-                   ;; try to use unroll-spec-basic-rules here
                    ;; todo: could loop with the openers (e.g., )?
-                   (rule-names (append '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
-                                         ;car-cons
-                                         ;cdr-cons
-                                         )
-                                       (bv-array-rules-simple)
-                                       (list-to-bv-array-rules)
-                                       (type-rules) ; give us type facts about bv ops
-                                       (set-difference-eq (core-rules-bv)
-                                                          ;; these are kind of like trim rules, and can make the result worse:
-                                                          '(;BVCHOP-OF-BVPLUS
-                                                            BVCHOP-OF-bvuminus
-                                                            ))
-                                       (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
-                                       (unsigned-byte-p-forced-rules)
+                   (rule-names (append (unroll-spec-basic-rules)
+                                       ;; '(;consp-of-cons  ; about primitives ; todo: when else might be needed?
+                                       ;;   ;car-cons
+                                       ;;   ;cdr-cons
+                                       ;;   )
+                                       ;; (bv-array-rules-simple)
+                                       ;; (list-to-bv-array-rules)
+                                       ;; (type-rules) ; give us type facts about bv ops
+                                       ;; (set-difference-eq (core-rules-bv)
+                                       ;;                    ;; these are kind of like trim rules, and can make the result worse:
+                                       ;;                    '(;BVCHOP-OF-BVPLUS
+                                       ;;                      BVCHOP-OF-bvuminus
+                                       ;;                      ))
+                                       ;; (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
+                                       ;; (unsigned-byte-p-forced-rules)
                                        opener-rule-names)))
                 (mv opener-events rule-names))
             ;; rules is an explicit list of rules:
@@ -218,7 +228,7 @@
                              normalize-xors
                              (w state)))
        ((when erp) (mv erp nil state))
-       ((when (quotep dag))
+       ((when (quotep dag)) ;; TODO: Should we allow this?
         (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
         (mv :unexpected-quotep nil state))
        ;; Make a theorem if the term is small enough.  We must use skip-proofs
@@ -251,16 +261,19 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               :term
                             :embedded-dag)
                         function-type))
-       (function-body (if (eq :term function-type)
-                          (dag-to-term dag)
-                        (if (eq :embedded-dag function-type)
-                            `(dag-val-with-axe-evaluator ,defconst-name
-                                                         ,(make-acons-nest dag-vars)
-                                                         ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
-                                                         '0 ;array depth (not very important)
-                                                         )
-                          ;; function-type must be :lets:
-                          (dag-to-term-with-lets dag))))
+       (function-body (and produce-function
+                           (if (eq :term function-type)
+                               (dag-to-term dag)
+                             (if (eq :embedded-dag function-type)
+                                 `(dag-val-with-axe-evaluator ,defconst-name
+                                                              ,(make-acons-nest dag-vars)
+                                                              ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
+                                                              '0 ;array depth (not very important)
+                                                              )
+                               ;; function-type must be :lets:
+                               (dag-to-term-with-lets dag)))))
+       (evaluator-neededp (and produce-function
+                               (eq :embedded-dag function-type)))
        (new-term (and produce-theorem (dag-to-term dag)))
        (defconst-name-string (symbol-name defconst-name))
        (theorem-name (and produce-theorem (pack$ (subseq defconst-name-string 1 (- (length defconst-name-string) 1)) '-unroll-spec-basic-theorem)))
@@ -277,19 +290,31 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               (if produce-function (list function-name) nil)
                               (if produce-theorem (list theorem-name) nil)))
        (defun-variant (if disable-function 'defund 'defun))
-       (- (cw "Unrolling finished.~%"))
+       ((mv end-time state) (acl2::get-real-time state))
+       (- (if (= 1 (len items-created))
+              (cw "Created ~x0.~%~%" (first items-created))
+            (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
        ;; (- (cw "Info on unrolled spec DAG:~%"))
        (- (print-dag-info dag defconst-name nil))
-       (- (cw ")~%")))
+       (- (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
+              (cw "~x0 is a pure dag.~%" defconst-name)
+            (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name)))
+       (- (progn$ (cw "~%SPEC UNROLLING FINISHED (")
+                  (acl2::print-to-hundredths (- end-time start-time))
+                  (cw "s).") ; s = seconds
+                  ))
+       (- (cw ")~%~%")))
     (mv (erp-nil)
         ;; If dag is a quoted constant, then it gets doubly quoted here.  This
         ;; makes sense: You unquote this thing and either get a DAG or a quoted
         ;; constant, as usual:
-        `(progn (defconst ,defconst-name ',dag)
+        `(progn ,@(and evaluator-neededp '((include-book "kestrel/axe/evaluator" :dir :system))) ; has skip-proofs, so only included if needed
+                (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
                 (with-output :off :all (table unroll-spec-basic-table ',whole-form ':fake))
-                (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
+                (value-triple :invisible)
+                ;; (value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
                 )
         state)))
 

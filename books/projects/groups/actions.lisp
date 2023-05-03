@@ -505,7 +505,7 @@
 	   (equal (conjs x g)
 		  (orbit x (conjugacy g) g))))
 
-;; Since (center g) consists of all orbits of length 1 and (conjs-list g) consists of all obits of
+;; Since (center g) consists of all orbits of length 1 and (conjs-list g) consists of all orbits of
 ;; length > 1, the class equation could be derived from append-list orbits and conjs-orbit:
 
 ;; (defthmd class-equation
@@ -653,9 +653,7 @@
 ;; (defthm len-conjs-cosets
 ;;   (implies (and (groupp g) (in x g))
 ;;            (equal (len (conjs x g))
-;; 	          (subgroup-index (centralizer x g) g))))
-
-;; Furthermore, the class equation could be derived from 
+;; 	             (subgroup-index (centralizer x g) g))))
 
 
 ;;---------------------------------------------------------------------------------------------------
@@ -1097,7 +1095,7 @@
 
 ;; Proof: Let k = (kernel (act-sym (act-cosets h g) g) (sym (subgroup-index h g)) g).
 ;; We have shown that k is normal in g.
-;; By endomorphism-quotient-map, (quotient g k) is isomorphic to a subgroup of (sym p),
+;; By endomorphismp-quotient-map, (quotient g k) is isomorphic to a subgroup of (sym p),
 ;; and therefore (subgroup-index k g) divides p!, which implies (subgroup-index k h) divides (p-1)!.
 ;; If (subgroup-index k h) > 1, then (subgroup-index k g) has a prime divisor q.  Since q divides (p-1)!,
 ;; q < p. (This may be proved by induction on p as a consequence of euclid.)

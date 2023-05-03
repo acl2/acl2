@@ -586,13 +586,13 @@
                                   t
                                   nil))
                   ((mv rest-block
-                       rest-jexrps
+                       rest-jexprs
                        jvar-value-index)
                    (atj-gen-values (cdr values)
                                    jvar-value-base
                                    jvar-value-index)))
                (mv (append first-block rest-block)
-                   (cons first-expr rest-jexrps)
+                   (cons first-expr rest-jexprs)
                    jvar-value-index))))
     :measure (two-nats-measure (acl2-count values) 0))
 

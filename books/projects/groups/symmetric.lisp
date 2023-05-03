@@ -108,7 +108,7 @@
            (equal (nth k (comp-perm x y n))
 	          (nth (nth k y) x))))
 
-;;; Product of a list of permutations:
+;; Product of a list of permutations:
 
 (defun comp-perm-list (l n)
   (if (consp l)
@@ -572,7 +572,8 @@
 (defthm evenp-ninit
   (even-perm-p (ninit n) n))
   
-;; A permutation and its inverse have the same parity:
+;; If p inverts i and j, then its (inv-perm p n) inverts (nth j p) and (nth i p).  It follows that
+;; p and (inv-perm p n) have the same number of inversions and therefore the same parity:
 
 (defthmd parity-inv
   (implies (and (posp n) (in p (sym n)))

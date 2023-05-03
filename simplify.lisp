@@ -8334,8 +8334,34 @@
    (active-cl-id            ; for active key checkpoint if any, else nil
     . active-printed-p)     ; true when active key checkpoint has been printed
    forcep                   ; true after next forcing round has been announced
-   . abort-stack)           ; top-stack when reverting; non-nil symbol on abort
+   . abort-info)            ; see abort-info-stack and abort-info-cause:
+                            ; top-stack when reverting, push symbol upon abort
   t)
+
+(defun abort-info-stack (abort-info)
+  (declare (xargs :guard t :mode :logic))
+  (and (consp abort-info)
+       (if (symbolp (car abort-info))
+           (cdr abort-info)
+         abort-info)))
+
+(defun abort-info-cause (abort-info)
+  (declare (xargs :guard t :mode :logic))
+  (if (consp abort-info)
+      (and (symbolp (car abort-info))
+           (car abort-info))
+    abort-info))
+
+(defun update-gag-info-for-abort (abort-cause gag-state)
+  (let ((abort-info (access gag-state gag-state :abort-info)))
+    (change gag-state gag-state
+            :abort-info
+            (cond ((consp abort-info)
+                   (assert$
+                    (not (symbolp (car abort-info))) ; surely not two causes!
+                    (cons abort-cause abort-info)))
+                  (t (assert$ (null abort-info) ; surely not two causes!
+                              abort-cause))))))
 
 (defconst *initial-gag-state*
   (make gag-state

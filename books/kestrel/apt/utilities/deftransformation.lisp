@@ -115,12 +115,15 @@
        (xdoc-forms
         (and some-xdoc-arg-given
              (not suppress-xdoc)
-             (list `(defxdoc-for-macro ,name ,macro-args
-                      ,parents
-                      ,short
+             (list `(defxdoc-for-macro ,name
+                      :macro-args ,macro-args
+                      :parents ,parents
+                      :short ,short
+                      :arg-descriptions
                       ,(append arg-descriptions
                                '((show-only "Whether to simply show the result, without actually creating it.")
                                  (print "How much detail to print, an @(tsee apt::print-specifier).")))
+                      :description
                       ,description)))))
 
     `(progn

@@ -37,6 +37,7 @@
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/bv/rules6" :dir :system)
+(include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
 (include-book "kestrel/lists-light/update-nth" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
 (include-book "kestrel/lists-light/true-list-fix" :dir :system)

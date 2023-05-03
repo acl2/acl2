@@ -726,7 +726,7 @@
    (xdoc::p
     "The concrete syntax of Yul objects is described in
      [Yul: Specification of Yul Object].
-     That description refers to the old grammar (see (@see concrete-syntax));
+     That description refers to the old grammar (see @(see concrete-syntax));
      the new grammar does not include Yul objects.")
    (xdoc::p
     "Here we formalize an abstract syntax version of Yul objects.

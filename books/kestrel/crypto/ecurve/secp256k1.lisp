@@ -293,7 +293,7 @@ h = 01
 ;; Euler's Criterion
 ;; lets us know that "a" has a square root mod p if
 ;; a^((p-1)/2) = 1 mod p.
-;; See acl2/books/projects/quadratic-reciprocity/support/euler.lisp
+;; See acl2/books/projects/numbers/support/euler.lisp
 ;; for a proof of Euler's Criterion.
 ;;
 ;; Note, many references define "a is a quadratic residue of p"

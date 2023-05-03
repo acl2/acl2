@@ -26,6 +26,7 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/check-boolean" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "../make-term-into-dag-basic")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in rewriter-basic
@@ -443,11 +444,13 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
+       ;; Record the start time:
+       ((mv start-time state) (acl2::get-real-time state))
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
-       ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
+       ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
         (unroll-java-code-fn-aux method-designator-string
                                  maybe-nice-output-indicator
                                  array-length-alist
@@ -473,22 +476,26 @@
                                  t ;error on incomplete runs
                                  state))
        ((when erp) (mv erp nil state))
+       (- (and (quotep dag-or-quotep)
+               (cw "Warning: Code unexpectedly rewrote to the constant ~x0." dag-or-quotep)))
        ;; build the function:
        (function-name (intern-in-package-of-symbol
                        ;;todo: why is the re-interning needed here?
                        (symbol-name (FRESH-NAME-IN-WORLD-WITH-$S (strip-stars-from-name defconst-name) nil (w state)))
                        defconst-name))
-       (dag-vars (dag-vars dag)) ;todo: check these (what should be allowed)?
-       (dag-vars (sort-vars-with-guidance dag-vars parameter-names))
-       (function-body (if (dag-or-quotep-size-less-thanp dag 1000)
-                          (dag-to-term dag)
+       (dag-vars (if (quotep dag-or-quotep)
+                     nil
+                   ;;todo: check these (what should be allowed)?
+                   (sort-vars-with-guidance (dag-vars dag-or-quotep) parameter-names)))
+       (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
+                          (dag-to-term dag-or-quotep)
                         `(dag-val-with-axe-evaluator ,defconst-name
                                                      ,(make-acons-nest dag-vars)
                                                      ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
                                                      '0 ;array depth (not very important)
                                                      )))
        (theorem-name (pack$ function-name '-correct)) ;not always used
-       (event `(progn (defconst ,defconst-name ',dag)
+       (event `(progn (defconst ,defconst-name ',dag-or-quotep)
                       ,@(and produce-function `((defun ,function-name ,dag-vars ,function-body)))
                       ,@(and produce-theorem
                              `((skip-proofs
@@ -499,13 +506,25 @@
        (items-created (append (list defconst-name)
                               (if produce-function (list function-name) nil)
                               (if produce-theorem (list theorem-name) nil)))
-       (- (cw "Unrolling finished.~%"))
-       ;; (- (cw "Info on unrolled DAG:~%"))
-       (- (print-dag-info dag defconst-name nil)) ; maybe suppress with print arg?
-       (- (cw ")~%")))
+       ((mv end-time state) (acl2::get-real-time state))
+       (- (if (= 1 (len items-created))
+              (cw "Created ~x0.~%~%" (first items-created))
+            (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
+       (- (print-dag-info dag-or-quotep defconst-name nil)) ; maybe suppress with print arg?
+       (- (if (quotep dag-or-quotep)
+              nil
+            (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
+                (cw "~x0 is a pure dag.~%" defconst-name)
+              (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
+       (- (progn$ (cw "~%BYTECODE UNROLLING FINISHED (")
+                  (acl2::print-to-hundredths (- end-time start-time))
+                  (cw "s).") ; s = seconds
+                  ))
+       (- (cw ")~%~%")))
     (mv (erp-nil)
         (extend-progn (extend-progn event `(with-output :off :all (table unroll-java-code-table ',whole-form ',event)))
-                      `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
+                      ;; `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
+                      '(value-triple :invisible)
                       )
         state)))
 
@@ -620,8 +639,8 @@
          (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
          (produce-function "Whether to produce a defun in addition to a DAG, a boolean.")
          (local "Whether to make the result of @('unroll-java-code') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-java-code') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-java-code') is not included by other books."))
-  :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
-                "This event creates a @(see defconst) whose name is @('defconst-name')."
+  :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
+                "This event creates a @(see defconst) whose name is given by the @('defconst-name') argument."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
 
 ;; Ensure all the rules needed by the unroller are included:
