@@ -18,7 +18,7 @@
 
 (make-axe-syntaxp-evaluator 'basic '(not-quotep ;drop?
                                      heavier-dag-term
-                                     bv-term-syntaxp
+                                     ;; bv-term-syntaxp
                                      is-a-myif
                                      not-is-a-myif ;drop?
                                      syntactic-booleanp

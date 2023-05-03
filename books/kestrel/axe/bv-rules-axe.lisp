@@ -2090,11 +2090,11 @@
   :hints (("Goal" :use (:instance sbvlt-of-0-when-shorter2)
            :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-of-0-when-shorter2)))))
 
-(defthmd turn-equal-around-axe3
-  (implies (and (axe-syntaxp (bv-term-syntaxp x dag-array))
-                (axe-syntaxp (not (bv-term-syntaxp y dag-array))))
-           (equal (equal y x)
-                  (equal x y))))
+;; (defthmd turn-equal-around-axe3
+;;   (implies (and (axe-syntaxp (bv-term-syntaxp x dag-array))
+;;                 (axe-syntaxp (not (bv-term-syntaxp y dag-array))))
+;;            (equal (equal y x)
+;;                   (equal x y))))
 
 (defthmd turn-equal-around-axe4
   (implies (axe-syntaxp (should-reverse-equality x y dag-array))

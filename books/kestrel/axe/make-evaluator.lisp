@@ -634,3 +634,12 @@
 
 ;(make-event (add-tracing-to-evaluator 'len-evaluator nil))
 ;(apply-len-evaluator-with-tracing 'len '((a b c)) (make-interpreted-function-alist '(len) (w state)))
+
+;todo: rename to sound less general (make-alist-for-quoted-vars?)
+;; todo: where should this go?
+(defund make-acons-nest (vars)
+  (declare (xargs :guard (symbol-listp vars)))
+  (if (endp vars)
+      *nil*
+    `(acons ',(car vars) ,(car vars)
+            ,(make-acons-nest (cdr vars)))))
