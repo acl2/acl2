@@ -24,6 +24,7 @@
 ;; Create a list of symbols, from <base-name>0 through <base-name>(count-1);
 ;; Example: (in0 in1 in2 in3) = (in0 in1 in2 in3)
 ;the numbering starts at 0
+;; TODO: Compare to make-var-names.
 (defund var-names (base-name count)
   (declare (xargs :guard (and (symbolp base-name)
                               (natp count))))
@@ -31,31 +32,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun cons-nest-of-vars (name var-count)
-  (declare (xargs :guard (and (symbolp name)
-                              (natp var-count))))
-  (make-cons-nest (make-var-names-aux name 0 (+ -1 var-count))))
-
-(defthmd pseudo-termp-of-cons-nest-of-vars
-  (pseudo-termp (cons-nest-of-vars name var-count)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Make a symbolic list term (a cons nest) containing the variables base-name0
-;; through base-name(len-1).  Can be useful when unrolling specs.
+;; Make a symbolic list term (a cons nest) containing the variables <base-name>0
+;; through <base-name>(len-1).  Can be useful when unrolling specs.
 (defun symbolic-list (base-name len)
   (declare (xargs :guard (and (symbolp base-name)
                               (natp len))))
-  (cons-nest-of-vars base-name len))
+  (make-cons-nest (make-var-names-aux base-name 0 (+ -1 len))))
 
-;; A version of symbolic-list that makes clear by its name that the vars are
-;; intended to be bytes (that fact should actually get enforced by additional
-;; assumptions).
-;; TODO: Deprecate
-(defun symbolic-bytes (base-name len)
-  (declare (xargs :guard (and (symbolp base-name)
-                              (natp len))))
-  (symbolic-list base-name len))
+(defthmd pseudo-termp-of-symbolic-list
+  (pseudo-termp (symbolic-list base-name len)))
 
 ;; A version of symbolic-list that makes clear by its name that the vars are
 ;; intended to be bytes (that fact should actually get enforced by additional
@@ -271,16 +256,12 @@
     (cons (make-bit-blasted-expression 7 (car byte-name-lst))
           (bit-blast-byte-names (cdr byte-name-lst)))))
 
-;; todo: deprecate
-(defun make-bit-blasted-cons-nest-for-vars (num-vars base-name)
+(defun bit-blasted-symbolic-byte-list (base-name num-vars)
   ;; todo: omit the _, making names like in0_0 ?
   (let* ((byte-var-names (make-var-names-aux (pack$ base-name '_) 0 (+ -1 num-vars)))
          ;; this is a list of bvcat terms:
          (bit-blasted-byte-var-names (bit-blast-byte-names byte-var-names)))
     (make-cons-nest bit-blasted-byte-var-names)))
-
-(defun bit-blasted-symbolic-byte-list (base-name num-vars)
-  (make-bit-blasted-cons-nest-for-vars num-vars base-name))
 
 (defun append-numbers (n name)
   (declare (xargs :measure (nfix (+ 1 n))))
