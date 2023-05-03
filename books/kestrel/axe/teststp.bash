@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Test script for STP solver
 #
 # Copyright (C) 2023 Kestrel Institute
@@ -7,8 +9,6 @@
 # Author: Eric Smith (eric.smith@kestrel.edu)
 
 ################################################################################
-
-#!/bin/bash
 
 # Run this script while standing in the [books]/kestrel/axe/ directory.
 # It should print "Valid."

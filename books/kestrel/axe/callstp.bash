@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # A script to call the STP solver.
 #
 # Copyright (C) 2008-2011 Eric Smith and Stanford University
@@ -8,8 +10,6 @@
 # Author: Eric Smith (eric.smith@kestrel.edu)
 
 ################################################################################
-
-#!/bin/bash
 
 set -e # Exit immediately on errors
 
