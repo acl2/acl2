@@ -1737,7 +1737,7 @@
                         (:instance sig-lower-bound (x (b)))
                         (:instance leastk-int (n 0))))))
 
-(local (include-book "projects/quadratic-reciprocity/euclid" :dir :system))
+(local (include-book "projects/numbers/euclid" :dir :system))
 
 (local-defthmd stk-11
   (implies (and (integerp a)

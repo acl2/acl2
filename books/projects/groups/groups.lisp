@@ -7,7 +7,7 @@
 (local (include-book "support/groups"))
 (include-book "lists")
 (include-book "rtl/rel11/lib/util" :dir :system)
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 
 ;;---------------------------------------------------------------------------------------------------
 ;; Fimite Groups
@@ -901,7 +901,7 @@
 
 (defund z*-op (x y n) (mod (* x y) n))
 
-;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
+;; The definition of z*-inv is based on the following lemma from books/projects/numbers/euclid.lisp"
 
 (defthm gcd-linear-combination
     (implies (and (integerp x)

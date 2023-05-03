@@ -1,7 +1,7 @@
 (in-package "DM")
 
 (include-book "lists")
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 (local (include-book "rtl/rel11/lib/top" :dir :system))
 
 ;; perms constructs a list of all permutations of a dlist:
@@ -660,7 +660,7 @@
   :hints (("Goal" :use ((:instance hits-diff-diff (x (hits-cex m l)))
 			(:instance hits-diff-diff (l m) (m l))))))
 
-(defthmd permutationp-transitice
+(defthmd permutationp-transitive
   (implies (and (permutationp l m)
 	        (permutationp m n))
 	   (permutationp l n))

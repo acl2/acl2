@@ -2,7 +2,7 @@
 
 (include-book "order")
 (include-book "pfield-polynomial")
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (defund relatively-primep (a b)

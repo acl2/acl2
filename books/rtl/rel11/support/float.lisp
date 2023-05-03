@@ -6,7 +6,7 @@
 
 (local (include-book "basic"))
 (include-book "definitions")
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 
 (defrule abs-type
   (implies (real/rationalp x)

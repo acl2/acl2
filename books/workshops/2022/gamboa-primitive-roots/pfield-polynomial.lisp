@@ -4,7 +4,7 @@
 (local (include-book "nonstd/polynomials/polynomial-lemmas" :dir :system))
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (local (include-book "kestrel/prime-fields/rules2" :dir :system))
-(local (include-book "projects/quadratic-reciprocity/euclid" :dir :system))
+(local (include-book "projects/numbers/euclid" :dir :system))
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (defund non-trivial-pfield-polynomial-p (poly p)

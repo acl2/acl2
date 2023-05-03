@@ -22,7 +22,7 @@
 
 ;; The primality of p is proved here:
 
-(include-book "projects/quadratic-reciprocity/pratt" :dir :system)
+(include-book "projects/numbers/pratt" :dir :system)
 
 (defthm primep-p
   (primep (p)))
@@ -46,7 +46,7 @@
   (mod-expt n e (p)))
 
 ;; Multiplicative inverse, based on Fermat's theorem, w2hich is proved
-;; in "projects/quadratic-reciprocity/fermat.lisp":
+;; in "projects/numbers/fermat.lisp":
 
 (defund frcp (n)
   (fexpt n (- (p) 2)))

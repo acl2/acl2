@@ -18,7 +18,7 @@
 
 ;; TODO: Add xdoc.
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for primep
+(include-book "projects/numbers/euclid" :dir :system) ;for primep
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/strings-light/downcase" :dir :system)
@@ -94,7 +94,7 @@
     `(encapsulate ()
 
        ,@(and (not existing-prime-name)
-              '((local (include-book "projects/quadratic-reciprocity/pratt" :dir :system))))
+              '((local (include-book "projects/numbers/pratt" :dir :system))))
 
        ;; Prevent very expensive calls to primep.
        (local (in-theory (disable (:e primep))))
