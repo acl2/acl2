@@ -54,10 +54,11 @@
 
 ;keep this up-to-date!
 ;fixme are these only bv operators?
-;rename to *bv-operatros*
-(defconst *operators-whose-size-we-know*
-  (append *trimmable-operators*
-          *non-trimmable-bv-operators*))
+;rename to *bv-operators* ?
+;; todo: this is missing the following: getbit bitor bitand bitxor bitnot leftrotate32
+;; (defconst *operators-whose-size-we-know*
+;;   (append *trimmable-operators*
+;;           *non-trimmable-bv-operators*))
 
 ;TODO: Could make a faster version restricted to trimmable terms?
 ;TODO: Compare to get-type-of-bv-function-call.

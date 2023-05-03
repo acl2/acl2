@@ -23,6 +23,9 @@
 (include-book "dag-size-fast") ; for dag-or-quotep-size-less-thanp
 (include-book "dag-to-term-with-lets")
 (include-book "rules-in-rule-lists")
+(include-book "interpreted-function-alists")
+(include-book "make-evaluator") ; for make-acons-nest (todo: reduce)
+;; for get-non-built-in-supporting-fns-list (todo: reduce):
 (include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
@@ -53,6 +56,7 @@
 (ensure-rules-known (unroll-spec-basic-rules))
 
 ;dup
+;; todo: add sbvdiv sbvrem bvdiv bvmod ?  also excludes repeatbit
 (defconst *bv-and-array-fns-we-can-translate*
   '(equal getbit bvchop ;$inline
           slice
@@ -257,16 +261,19 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               :term
                             :embedded-dag)
                         function-type))
-       (function-body (if (eq :term function-type)
-                          (dag-to-term dag)
-                        (if (eq :embedded-dag function-type)
-                            `(dag-val-with-axe-evaluator ,defconst-name
-                                                         ,(make-acons-nest dag-vars)
-                                                         ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
-                                                         '0 ;array depth (not very important)
-                                                         )
-                          ;; function-type must be :lets:
-                          (dag-to-term-with-lets dag))))
+       (function-body (and produce-function
+                           (if (eq :term function-type)
+                               (dag-to-term dag)
+                             (if (eq :embedded-dag function-type)
+                                 `(dag-val-with-axe-evaluator ,defconst-name
+                                                              ,(make-acons-nest dag-vars)
+                                                              ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
+                                                              '0 ;array depth (not very important)
+                                                              )
+                               ;; function-type must be :lets:
+                               (dag-to-term-with-lets dag)))))
+       (evaluator-neededp (and produce-function
+                               (eq :embedded-dag function-type)))
        (new-term (and produce-theorem (dag-to-term dag)))
        (defconst-name-string (symbol-name defconst-name))
        (theorem-name (and produce-theorem (pack$ (subseq defconst-name-string 1 (- (length defconst-name-string) 1)) '-unroll-spec-basic-theorem)))
@@ -301,7 +308,8 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         ;; If dag is a quoted constant, then it gets doubly quoted here.  This
         ;; makes sense: You unquote this thing and either get a DAG or a quoted
         ;; constant, as usual:
-        `(progn (defconst ,defconst-name ',dag)
+        `(progn ,@(and evaluator-neededp '((include-book "kestrel/axe/evaluator" :dir :system))) ; has skip-proofs, so only included if needed
+                (defconst ,defconst-name ',dag)
                 ,@(and produce-function `((,defun-variant ,function-name ,function-params ,function-body)))
                 ,@(and produce-theorem (list theorem))
                 (with-output :off :all (table unroll-spec-basic-table ',whole-form ':fake))
