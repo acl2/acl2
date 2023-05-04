@@ -47,6 +47,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund bv-array-write-nest-for-vars-aux (current-index len element-size var-name)
+  (declare (xargs :measure (nfix (+ 1 (- len current-index)))
+                  :guard (and (natp current-index)
+                              (natp len)
+                              (posp element-size)
+                              (symbolp var-name))))
+  (if (or (<= len current-index)
+          (not (natp len))
+          (not (natp current-index)))
+      (list 'quote (repeat len '0))
+    `(bv-array-write ',element-size
+                     ',len
+                     ',current-index
+                     ,(pack$ var-name (nat-to-string current-index))
+                     ,(bv-array-write-nest-for-vars-aux (+ 1 current-index) len element-size var-name))))
+
+(defthm pseudo-termp-of-bv-array-write-nest-for-vars-aux
+  (implies (and (natp current-index)
+                (natp len)
+                (posp element-size)
+                (symbolp var-name))
+           (pseudo-termp (bv-array-write-nest-for-vars-aux current-index len element-size var-name)))
+  :hints (("Goal" :in-theory (enable bv-array-write-nest-for-vars-aux))))
+
+(defund bv-array-write-nest-for-vars (var-name var-count element-size)
+  (declare (xargs :guard (and (symbolp var-name)
+                              (natp var-count)
+                              (posp element-size))))
+  (bv-array-write-nest-for-vars-aux 0 var-count element-size var-name))
+
+(defthm pseudo-termp-of-bv-array-write-nest-for-vars
+  (implies (and (symbolp var-name)
+                (natp var-count)
+                (posp element-size))
+           (pseudo-termp (bv-array-write-nest-for-vars var-name var-count element-size)))
+  :hints (("Goal" :in-theory (enable bv-array-write-nest-for-vars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;total-size should be (* item-size (len items)))
 ;we pass in total-size to avoid calling (len items) over and over
 (defund bvcat-nest-for-items-aux (items item-size total-size)
@@ -126,45 +165,6 @@
                 (posp element-size))
            (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars var-name var-count element-size)))
   :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund bv-array-write-nest-for-vars-aux (current-index len element-size var-name)
-  (declare (xargs :measure (nfix (+ 1 (- len current-index)))
-                  :guard (and (natp current-index)
-                              (natp len)
-                              (posp element-size)
-                              (symbolp var-name))))
-  (if (or (<= len current-index)
-          (not (natp len))
-          (not (natp current-index)))
-      (list 'quote (repeat len '0))
-    `(bv-array-write ',element-size
-                     ',len
-                     ',current-index
-                     ,(PACK$ var-name (NAT-TO-STRING current-index))
-                     ,(bv-array-write-nest-for-vars-aux (+ 1 current-index) len element-size var-name))))
-
-(defthm pseudo-termp-of-bv-array-write-nest-for-vars-aux
-  (implies (and (natp current-index)
-                (natp len)
-                (posp element-size)
-                (symbolp var-name))
-           (pseudo-termp (bv-array-write-nest-for-vars-aux current-index len element-size var-name)))
-  :hints (("Goal" :in-theory (enable bv-array-write-nest-for-vars-aux))))
-
-(defund bv-array-write-nest-for-vars (var-name var-count element-size)
-  (declare (xargs :guard (and (symbolp var-name)
-                              (natp var-count)
-                              (posp element-size))))
-  (bv-array-write-nest-for-vars-aux 0 var-count element-size var-name))
-
-(defthm pseudo-termp-of-bv-array-write-nest-for-vars
-  (implies (and (symbolp var-name)
-                (natp var-count)
-                (posp element-size))
-           (pseudo-termp (bv-array-write-nest-for-vars var-name var-count element-size)))
-  :hints (("Goal" :in-theory (enable bv-array-write-nest-for-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
