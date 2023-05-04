@@ -247,12 +247,12 @@
 (defund symbolic-byte-assumptions (base-name count)
   (declare (xargs :guard (and (symbolp base-name)
                               (natp count))))
-  (byte-hyps (make-var-names count base-name)))
+  (byte-hyps (make-var-names base-name count)))
 
 (defund symbolic-int-assumptions (base-name count)
   (declare (xargs :guard (and (symbolp base-name)
                               (natp count))))
-  (int-hyps (make-var-names count base-name)))
+  (int-hyps (make-var-names base-name count)))
 
 ;dups?
 (defun make-bit-blasted-expression (bit-index name)
