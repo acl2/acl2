@@ -22,7 +22,7 @@
 ;; TODO: When creating numbered vars consider using 00, 01, etc. instead of 0, 1, etc (assuming 2 digit numbers).
 
 ;; Create a list of symbols, from <base-name>0 through <base-name>(count-1);
-;; Example: (in0 in1 in2 in3) = (in0 in1 in2 in3)
+;; Example: (var-names 'in 4) = (in0 in1 in2 in3).
 ;the numbering starts at 0
 ;; TODO: Compare to make-var-names.
 (defund var-names (base-name count)
