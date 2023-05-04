@@ -16,7 +16,9 @@
 (include-book "kestrel/lists-light/repeat" :dir :system) ;(local (include-book "kestrel/lists-light/repeat" :dir :system))
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; TODO: For these functions, should the count or the base name come first?  Be consistent.
 ;; TODO: When creating numbered vars consider using 00, 01, etc. instead of 0, 1, etc (assuming 2 digit numbers).
@@ -45,24 +47,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;fixme pass in a size
-(defund bvcat-nest-for-vars (index size base-name)
-  (declare (xargs :guard (and (natp index)
-                              (natp size)
-                              (symbolp base-name))))
-  (if (zp index)
-      (pack$ base-name (nat-to-string index))
-    `(bvcat ',size
-            ,(pack$ base-name (nat-to-string index))
-            ',(* index size)
-            ,(bvcat-nest-for-vars (+ -1 index) size base-name))))
+;total-size should be (* item-size (len items)))
+;we pass in total-size to avoid calling (len items) over and over
+(defund bvcat-nest-for-items-aux (items item-size total-size)
+  (declare (xargs :guard (and (true-listp items)
+                              (<= 1 (len items))
+                              (natp item-size)
+                              (equal total-size (* item-size (len items))))))
+  (if (endp items)
+      (er hard? 'error-in-bvcat-nest-for-items-aux "Unexpected case: no items.")
+    (if (endp (rest items))
+        (first items)
+      (let ((size-of-rest (- total-size item-size)))
+        `(bvcat ',item-size
+                ,(first items)
+                ',size-of-rest
+                ,(bvcat-nest-for-items-aux (rest items) item-size size-of-rest))))))
 
-(defthm pseudo-termp-of-bvcat-nest-for-vars
-  (implies (and (natp index)
-                (natp size)
-                (symbolp base-name))
-           (pseudo-termp (bvcat-nest-for-vars index size base-name)))
-  :hints (("Goal" :in-theory (enable bvcat-nest-for-vars))))
+(defthm pseudo-termp-of-bvcat-nest-for-items-aux
+  (implies (pseudo-term-listp items)
+           (pseudo-termp (bvcat-nest-for-items-aux items item-size total-size)))
+  :hints (("Goal" :in-theory (enable bvcat-nest-for-items-aux))))
+
+;; The first item becomes the most significant part of the resulting term.
+(defund bvcat-nest-for-items (items item-size)
+  (declare (xargs :guard (and (true-listp items)
+                              (<= 2 (len items))
+                              (natp item-size))))
+  (bvcat-nest-for-items-aux items item-size (* item-size (len items))))
+
+(defthm pseudo-termp-of-bvcat-nest-for-items
+  (implies (pseudo-term-listp items)
+           (pseudo-termp (bvcat-nest-for-items items item-size)))
+  :hints (("Goal" :in-theory (enable bvcat-nest-for-items))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,8 +87,11 @@
   (declare (xargs :measure (nfix (+ 1 (- len current-index)))
                   :guard (and (natp current-index)
                               (natp len)
-                              (posp element-size)
-                              (symbolp var-name))))
+                              (integerp element-size)
+                              (<= 2 element-size) ; or else we don't need a bvcat for each element
+                              (symbolp var-name))
+;                  :guard-hints (("Goal" :in-theory (enable pseudo-term-listp-when-symbol-listp)))
+                  ))
   (if (or (<= len current-index)
           (not (natp len))
           (not (natp current-index)))
@@ -79,7 +99,7 @@
     `(bv-array-write ',element-size
                      ',len
                      ',current-index
-                     ,(bvcat-nest-for-vars (+ -1 element-size) 1 (pack$ var-name "_" current-index "_"))
+                     ,(bvcat-nest-for-items (reverse (make-var-names (pack$ var-name "_" current-index "_") element-size)) 1)
                      ,(bit-blasted-bv-array-write-nest-for-vars-aux (+ 1 current-index) len element-size var-name))))
 
 (defthm pseudo-termp-of-bit-blasted-bv-array-write-nest-for-vars-aux
@@ -88,13 +108,16 @@
                 (posp element-size)
                 (symbolp var-name))
            (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars-aux current-index len element-size var-name)))
-  :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars-aux))))
+  :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars-aux
+                                     pseudo-term-listp-when-symbol-listp))))
 
 ;is var-count really element-count?
 (defund bit-blasted-bv-array-write-nest-for-vars (var-name var-count element-size)
   (declare (xargs :guard (and (symbolp var-name)
                               (natp var-count)
-                              (posp element-size))))
+                              (integerp element-size)
+                              (<= 2 element-size) ; or else we don't need a bvcat for each element
+                              )))
   (bit-blasted-bv-array-write-nest-for-vars-aux 0 var-count element-size var-name))
 
 (defthm pseudo-termp-of-bit-blasted-bv-array-write-nest-for-vars
@@ -145,23 +168,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;items should have length at least 2?
-;total-size should be (* item-size (len items)))
-;we pass in total-size to avoid calling (len items) over and over
-(defun bvcat-nest-for-items-aux (items total-size item-size)
-  (if (endp items)
-      'error-in-bvcat-nest-for-items-aux
-    (if (endp (cdr items))
-        (car items)
-      `(bvcat ',item-size
-              ,(car items)
-              ',(- total-size item-size)
-              ,(bvcat-nest-for-items-aux (cdr items) (- total-size item-size) item-size)))))
-
-;bozo use this more?
-(defun bvcat-nest-for-items (items item-size)
-  (bvcat-nest-for-items-aux items (* item-size (len items)) item-size))
-
 (defun bv-array-write-nest-for-bit-vars-aux (current-index len element-size base-var-name)
   (declare (xargs :measure (nfix (+ 1 (- len current-index)))))
   (if (or (<= len current-index)
@@ -191,14 +197,6 @@
            (size (cdr entry)))
       (cons `(unsigned-byte-p ',size ,var-name)
             (unsigned-byte-p-hyps (cdr var-size-alist))))))
-
-;used in lots of axe examples
-(defun pairlis$-safe (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (if (equal (len x) (len y))
-      (pairlis$ x y)
-    (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))
 
 (defmacro bit-hyps (names)
   `(unsigned-byte-p-hyps (pairlis$ ,names
@@ -314,7 +312,8 @@
 (defund bit-blasted-symbolic-array (name length element-width)
   (declare (xargs :guard (and (symbolp name)
                               (natp length)
-                              (posp element-width))))
+                              (integerp element-width)
+                              (<= 2 element-width))))
   (bit-blasted-bv-array-write-nest-for-vars name length element-width))
 
 (defthm pseudo-termp-of-bit-blasted-symbolic-array
@@ -323,3 +322,13 @@
                 (posp element-width))
            (pseudo-termp (bit-blasted-symbolic-array name length element-width)))
   :hints (("Goal" :in-theory (enable bit-blasted-symbolic-array))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;used in lots of axe examples
+(defun pairlis$-safe (x y)
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y))))
+  (if (equal (len x) (len y))
+      (pairlis$ x y)
+    (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))

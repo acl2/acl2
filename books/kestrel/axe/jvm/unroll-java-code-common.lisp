@@ -177,7 +177,11 @@
                                           (append (if vars-for-array-elements ;fixme: what about arrays of floats and doubles!
                                                       `((equal ,contents-term
                                                                ,(if (eq :bits vars-for-array-elements) ;todo: what if the element type is not blastable?
-                                                                    (bit-blasted-symbolic-array parameter-name maybe-len (jvm::size-of-array-element component-type))
+                                                                    (let ((element-size (jvm::size-of-array-element component-type)))
+                                                                      (if (= 1 element-size)
+                                                                          ;; todo: think about this case?  how are the booleans stored?
+                                                                          (symbolic-array parameter-name maybe-len element-size)
+                                                                        (bit-blasted-symbolic-array parameter-name maybe-len element-size)))
                                                                   (symbolic-array parameter-name maybe-len (jvm::size-of-array-element component-type)))))
                                                     ;; Don't put in individual vars for array elements:
                                                     `((equal ,contents-term
