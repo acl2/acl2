@@ -21,17 +21,6 @@
 ;; TODO: For these functions, should the count or the base name come first?  Be consistent.
 ;; TODO: When creating numbered vars consider using 00, 01, etc. instead of 0, 1, etc (assuming 2 digit numbers).
 
-;; Create a list of symbols, from <base-name>0 through <base-name>(count-1);
-;; Example: (var-names 'in 4) = (in0 in1 in2 in3).
-;the numbering starts at 0
-;; TODO: Compare to make-var-names.
-(defund var-names (base-name count)
-  (declare (xargs :guard (and (symbolp base-name)
-                              (natp count))))
-  (make-var-names-aux base-name 0 (+ -1 count)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Make a symbolic list term (a cons nest) containing the variables <base-name>0
 ;; through <base-name>(len-1).  Can be useful when unrolling specs.
 (defun symbolic-list (base-name len)
@@ -49,6 +38,10 @@
   (declare (xargs :guard (and (symbolp base-name)
                               (natp len))))
   (symbolic-list base-name len))
+
+(defthmd pseudo-termp-of-symbolic-byte-list
+  (pseudo-termp (symbolic-byte-list base-name len))
+  :hints (("Goal" :in-theory (enable symbolic-byte-list))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -185,29 +178,6 @@
 ;swap the params?
 (defun bv-array-write-nest-for-bit-vars (base-name element-count element-size)
   (bv-array-write-nest-for-bit-vars-aux 0 element-count element-size base-name))
-
-
-;needs at least 2 symbols
-(defun bvcat-nest-for-bits-aux (symbols count)
-  (if (endp symbols)
-      'error
-    (if (endp (cdr symbols))
-        `,(car symbols)
-      `(bvcat '1
-              ,(car symbols)
-              ',(+ -1 count)
-              ,(bvcat-nest-for-bits-aux (cdr symbols) (+ -1 count))))))
-
-;high bits come first
-(defun bvcat-nest-for-bits (symbols)
-  (if (endp symbols)
-      ''0
-    (if (endp (cdr symbols))
-        `(getbit '0 ,(car symbols))
-      (bvcat-nest-for-bits-aux symbols (len symbols)))))
-
-(defun bvcat-nest-for-input-nodes (base-name start-num end-num)
-  (bvcat-nest-for-bits (reverse (make-var-names-aux base-name start-num end-num))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

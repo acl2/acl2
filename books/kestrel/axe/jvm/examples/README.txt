@@ -1,3 +1,13 @@
+This directory contains a growing set of Axe proofs of crypto code.  In general, each
+.lisp file contains a complete Axe proof.
+
+Files to look at include:
+
+aes-128-encrypt-light-and-spec.lisp - proof of bouncycastle's light AES implementation
+aes-128-encrypt-regular-and-spec.lisp - proof of another bouncycastle AES implementation
+
+Notes:
+
 The proofs in this directory need access to a specific old version of the Java
 libraries (specifically, the rt.jar file).  There is no need to install it or
 replace the version of Java on your system.
