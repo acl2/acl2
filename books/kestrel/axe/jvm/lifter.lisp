@@ -4612,7 +4612,7 @@
                                          ;; (farg1 type)))
                                          parameter-name))
                         (input-vars (if len
-                                        (list parameter-name) ;(make-var-names len parameter-name) ;TODO: what about clashes
+                                        (list parameter-name) ;(make-var-names parameter-name len) ;TODO: what about clashes
                                       (list parameter-name)))
                         (len-claims (if len
                                         `((equal (len ,contents-term) ',len))
