@@ -68,6 +68,7 @@
 ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
 ;; added to it.  The result contains symbols from BASE-SYMBOL with a suffix of
 ;; 0 through BASE-SYMBOL with a suffix of COUNT minus 1.
+;; Example: (make-var-names 'in 4) = (in0 in1 in2 in3).
 (defund make-var-names (base-name count)
   (declare (xargs :guard (and (natp count)
                               (symbolp base-name))))
