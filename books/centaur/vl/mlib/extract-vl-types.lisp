@@ -309,13 +309,18 @@
               nil))
          ((vl-literal x) (car values))
 
-         ((unless (equal (vl-value-kind x.val) :vl-constint))
-          (mv (raise "(equal (vl-value-kind x.val) :vl-constint) failed for x=~p0~%" x)
-              nil))
+         ((when (equal (vl-value-kind x.val) :vl-weirdint))
+          ;; Do not recognize weird-int cases. This will keep it more conservative.
+          (progn$
+           (cw "Warning: A weird-int case is detected when parsing an ENUM type. Generated functions may not have all the enum type entries. This happened for this entry: ~p0~%" x)
+           (mv string-to-int-cases int-to-string-cases)))
 
          ((unless (equal (vl-value-kind x.val) :vl-constint))
-          (mv (raise "(equal (vl-value-kind x.val) :vl-constint) failed for x=~p0~%" x)
+          (mv (raise "~p1 failed for x=~p0~%" x
+                     '(equal (vl-value-kind x.val) :vl-constint))
               nil))
+
+         
          (value (vl-constint->value x.val))
          ((vl-enumitem cur) (car items))
          ((unless (equal cur.range nil))
@@ -925,7 +930,8 @@
                    :short ,(str::cat "Accessor function for the extracted " name " VL enum type. ")
                    :long ,(str::cat
                            (if (assoc-equal name orig-def-alist) (cdr (assoc-equal name orig-def-alist)) "")
-                           "<p>For this type, 2 ACL2 functions/macros are created for users. An accessor: @({(|" name "| value-int-or-string),})</p> <p>And a debug function to print all the fields: @({(|"name"|-debug value).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions.</p>")
+                           "<p>For this type, 2 ACL2 functions/macros are created for users. An accessor: @({(|" name "| value-int-or-string),})</p> <p>And a debug function to print all the fields: @({(|"name"|-debug value).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions.</p>"
+                           "<p> Definition of the accessor function: </p>@(def |" (symbol-name accessor-macro-name) "|)")
 
                    (define ,ranges-fn-name ((start natp) (args true-listp))
                      ;;:short ,(str::cat "Calculate the bit locations that a certain field is stored for @(see |" name "|) VL enum type. Not intended to be called by users.")
