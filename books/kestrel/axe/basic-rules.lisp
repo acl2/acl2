@@ -193,3 +193,7 @@
   (implies x
            (equal (force x)
                   x)))
+
+;; Can help when opening up reverse
+(defthmd not-stringp-of-cons
+  (not (stringp (cons x y))))
