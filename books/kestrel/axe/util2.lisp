@@ -98,14 +98,23 @@
   :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars-aux))))
 
 ;is var-count really element-count?
-(defun bit-blasted-bv-array-write-nest-for-vars (var-name var-count element-size)
+(defund bit-blasted-bv-array-write-nest-for-vars (var-name var-count element-size)
   (declare (xargs :guard (and (symbolp var-name)
                               (natp var-count)
                               (posp element-size))))
   (bit-blasted-bv-array-write-nest-for-vars-aux 0 var-count element-size var-name))
 
+(defthm pseudo-termp-of-bit-blasted-bv-array-write-nest-for-vars
+  (implies (and (symbolp var-name)
+                (natp var-count)
+                (posp element-size))
+           (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars var-name var-count element-size)))
+  :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund bv-array-write-nest-for-vars-aux (current-index len element-size var-name)
-  (DECLARE (XARGS :measure (nfix (+ 1 (- len current-index)))
+  (declare (xargs :measure (nfix (+ 1 (- len current-index)))
                   :guard (and (natp current-index)
                               (natp len)
                               (posp element-size)
@@ -140,6 +149,8 @@
                 (posp element-size))
            (pseudo-termp (bv-array-write-nest-for-vars var-name var-count element-size)))
   :hints (("Goal" :in-theory (enable bv-array-write-nest-for-vars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;items should have length at least 2?
 ;total-size should be (* item-size (len items)))
