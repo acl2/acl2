@@ -31154,7 +31154,10 @@
                   (progn (block-iprint-ar state)
                          ,body0))
                (when (open-output-channel-p ,channel-var :character state)
-                 (close-output-channel ,channel-var state))))
+                 (close-output-channel ,channel-var state))
+               (f-put-global 'iprint-ar
+                             (compress1 'iprint-ar (f-get-global 'iprint-ar state))
+                             state)))
            (t
             `(acl2-unwind-protect
 
@@ -31169,10 +31172,18 @@
                          (declare (ignore result))
                          state)
                        ,body0))
-              (cond ((open-output-channel-p ,channel-var :character state)
-                     (close-output-channel ,channel-var state))
-                    (t state))
-              state))))
+              (pprogn
+               (f-put-global 'iprint-ar
+                             (compress1 'iprint-ar
+                                        (f-get-global 'iprint-ar state))
+                             state)
+               (cond ((open-output-channel-p ,channel-var :character state)
+                      (close-output-channel ,channel-var state))
+                     (t state)))
+              (f-put-global 'iprint-ar
+                            (compress1 'iprint-ar
+                                       (f-get-global 'iprint-ar state))
+                            state)))))
          (body ; open a string output channel and then evaluate body1
           `(mv-let
             (,channel-var state)
