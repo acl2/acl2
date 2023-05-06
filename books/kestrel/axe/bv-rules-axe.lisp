@@ -53,6 +53,18 @@
 (add-known-boolean sbvle)
 (add-known-boolean unsigned-byte-p-forced)
 
+(defthmd <-of-constant-when-unsigned-byte-p
+  (implies (and (syntaxp (quotep k))
+                (unsigned-byte-p size x) ; size is a free var
+                (syntaxp (quotep size))
+                (<= (expt 2 size) k) ; gets computed
+                )
+           (< x k)))
+
+(defthmd not-<-of-0-when-unsigned-byte-p
+  (implies (unsigned-byte-p size x) ; size is a free var
+           (not (< x 0))))
+
 (defthmd floor-of-expt2-becomes-slice-when-bv-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (natp n)
@@ -2078,11 +2090,11 @@
   :hints (("Goal" :use (:instance sbvlt-of-0-when-shorter2)
            :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-of-0-when-shorter2)))))
 
-(defthmd turn-equal-around-axe3
-  (implies (and (axe-syntaxp (bv-term-syntaxp x dag-array))
-                (axe-syntaxp (not (bv-term-syntaxp y dag-array))))
-           (equal (equal y x)
-                  (equal x y))))
+;; (defthmd turn-equal-around-axe3
+;;   (implies (and (axe-syntaxp (bv-term-syntaxp x dag-array))
+;;                 (axe-syntaxp (not (bv-term-syntaxp y dag-array))))
+;;            (equal (equal y x)
+;;                   (equal x y))))
 
 (defthmd turn-equal-around-axe4
   (implies (axe-syntaxp (should-reverse-equality x y dag-array))

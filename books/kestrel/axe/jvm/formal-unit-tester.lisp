@@ -1,7 +1,7 @@
 ; The formal unit testing tool
 ;
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,7 +33,7 @@
 ;; Program must be in a single, self-contained file (more general support
 ;; coming soon).
 ;; No use of assertions (may be coming soon).
-;; The tester will test any method whose name starts with "test".
+;; The tester will test any method whose name starts with "test" or "fail_test".
 
 ;; The tool supports two methods of specifying correct behavior: having the
 ;; test method return a boolean or using asserts. In either case, encode
@@ -346,13 +346,15 @@
 ;;; Testing an entire file
 ;;;
 
-;; Decide which methods to test (default: all whose names start with "test").  TODO: What if not boolean?
-(defun select-method-ids-to-test (method-info-alist methods-to-test)
+;; Decides which methods to test (default: all whose names start with "test" or "fail_test").
+;; TODO: Check that every method to test returns a boolean.
+(defun select-method-ids-to-test (method-info-alist
+                                  methods-to-test ; either :auto, or a list of names (need to be elaborated to method-ids)
+                                  )
   (declare (xargs :guard (and (jvm::method-info-alistp method-info-alist)
                               (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test)))
-                  :guard-hints (("Goal" :in-theory (enable JVM::METHOD-INFO-ALISTP)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable jvm::method-info-alistp)))))
   (if (endp method-info-alist)
       nil
     (let* ((entry (first method-info-alist))
@@ -361,8 +363,10 @@
            ;;(signature (cdr method-id))
            (testp (if (eq :auto methods-to-test)
                       ;; todo: abstract this pattern as string-starts-with:
-                      (prefixp (explode-atom "test" 10)
-                               (explode-atom name 10))
+                      (or (prefixp (explode-atom "test" 10)
+                                   (explode-atom name 10))
+                          (prefixp (explode-atom "fail_test" 10)
+                                   (explode-atom name 10)))
                     (member-equal name methods-to-test))))
       (if testp
           (cons method-id (select-method-ids-to-test (rest method-info-alist) methods-to-test))
@@ -452,10 +456,25 @@
                       initial-heap)
            "java.lang.Class")))
 
+(defun method-should-failp (method-name methods-expected-to-fail)
+  (declare (xargs :guard (and (stringp method-name)
+                              (or (eq :auto methods-expected-to-fail)
+                                  (string-listp methods-expected-to-fail)))))
+  (if (eq :auto methods-expected-to-fail)
+      ;; Look at the name to decide whether the method should fail:
+      (prefixp (explode-atom "fail_test" 10)
+               (explode-atom method-name 10))
+    ;; We have an explicit list of the names of methds that should fail:
+    (member-equal method-name methods-expected-to-fail)))
+
 ;; Returns (mv erp failedp state)
-(defun run-formal-test-on-method (method-id methods-expected-to-fail method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules monitor state)
+(defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules monitor state)
   (declare (xargs :stobjs (state)
                   :guard (and (jvm::method-idp method-id)
+                              (or (eq :any methods-expected-to-fail)
+                                  (eq :auto methods-expected-to-fail)
+                                  (string-listp methods-expected-to-fail))
+                              (booleanp error-on-unexpectedp)
                               (jvm::method-info-alistp method-info-alist)
                               (jvm::class-namep class-name)
                               ;; TODO: translate the assumptions!
@@ -615,15 +634,19 @@
     (if (eq *valid* result)
         (progn$ (cw "PASSED test for method ~x0.)~%" method-designator-string)
                 (and (not (eq :any methods-expected-to-fail))
-                     (member-equal method-name methods-expected-to-fail)
-                     (er hard? 'run-formal-test-on-method "Method ~x0 was expected to fail but actually passed." method-name))
+                     (method-should-failp method-name methods-expected-to-fail)
+                     (if error-on-unexpectedp
+                         (er hard? 'run-formal-test-on-method "Method ~x0 was expected to fail but actually passed." method-name)
+                       (cw "ERROR: Method ~x0 was expected to fail but actually passed." method-name)))
                 (mv (erp-nil)
                     nil ;no failure
                     state))
       (progn$ (cw "FAILED test for method ~x0.)~%" method-designator-string)
               (and (not (eq :any methods-expected-to-fail))
-                   (not (member-equal method-name methods-expected-to-fail))
-                   (er hard? 'run-formal-test-on-method "Method ~x0 was expected to pass but actually failed." method-name))
+                   (not (method-should-failp method-name methods-expected-to-fail))
+                   (if error-on-unexpectedp
+                       (er hard? 'run-formal-test-on-method "Method ~x0 was expected to pass but actually failed." method-name)
+                     (cw "ERROR: Method ~x0 was expected to pass but actually failed." method-name)))
               (mv (erp-nil)
                   t ;failed
                   state)))))
@@ -643,28 +666,34 @@
          (fut-result-listp (rest results)))))
 
 ;; Returns (mv erp results state).
-(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules monitor results-acc state)
-  (declare (xargs :stobjs (state)
+(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules monitor results-acc state)
+  (declare (xargs :guard ;; todo: flesh out:
+                  (and
+                   (or (eq :any methods-expected-to-fail)
+                       (eq :auto methods-expected-to-fail)
+                       (string-listp methods-expected-to-fail))
+                   (booleanp  error-on-unexpectedp))
+                  :stobjs (state)
                   :mode :program))
   (if (endp method-ids)
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
       (mv-let (erp failedp state)
-        (run-formal-test-on-method method-id methods-expected-to-fail method-info-alist class-name nil root-of-class-hierarchy print extra-rules remove-rules monitor state)
+        (run-formal-test-on-method method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name nil root-of-class-hierarchy print extra-rules remove-rules monitor state)
         (if erp
             (mv erp nil state)
           (run-formal-tests-on-methods (rest method-ids)
-                                       methods-expected-to-fail method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules monitor
+                                       methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules monitor
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
 (defun print-test-results (results methods-expected-to-fail)
   (declare (xargs :guard (and (fut-result-listp results)
                               (or (eq :any methods-expected-to-fail)
+                                  (eq :auto methods-expected-to-fail)
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
                                   ))
-                  :guard-hints (("Goal" :in-theory (enable jvm::stringp-when-method-namep)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable jvm::stringp-when-method-namep)))))
   (if (endp results)
       nil
     (let* ((result (first results))
@@ -679,9 +708,10 @@
                   ;; We don't know if the failure was expected, so just print the result:
                   (cw " ~s0.~%" res)
                 ;; Print the result and whether it is as expected:
-                (if (equal res (if (member-equal method-name methods-expected-to-fail) "FAILED" "PASSED"))
-                    (cw " ~s0, as expected.~%" res)
-                  (cw " ~s0 -- UNEXPECTED!~%" res)))
+                (let ((expected-res (if (method-should-failp method-name methods-expected-to-fail) "FAILED" "PASSED")))
+                  (if (equal res expected-res)
+                      (cw " ~s0, as expected.~%" res)
+                    (cw " ~s0 -- UNEXPECTED!~%" res))))
               (print-test-results (rest results) methods-expected-to-fail)))))
 
 ;; Returns (mv erp event state constant-pool), but the event is always an
@@ -689,6 +719,7 @@
 (defun test-file-fn (path-to-java-file ;; we prepend the cbd if this is not an absolute path (TODO: Perhaps instead just take the name of the class and use the classpath to find it?)
                      methods-to-test
                      methods-expected-to-fail ;todo: check that these are all methods in the class
+                     error-on-unexpectedp
                      ;;assumptions
                      print
                      extra-rules
@@ -701,9 +732,11 @@
                   :guard (and (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test) ;these are just bare names, for now
                                   )
-                              (or (eq :any methods-expected-to-fail)
+                              (or (eq :any methods-expected-to-fail) ; no checking of whether methods that should fail actually do
+                                  (eq :auto methods-expected-to-fail) ; methods whose names start with "fail_test" should fail
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
-                                  ))))
+                                  )
+                              (booleanp error-on-unexpectedp))))
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
@@ -743,7 +776,7 @@
                           class-name)))
         (er hard? 'test-file-fn "Class-name mismatch: ~x0 vs ~x1." class-name class-name-from-class-file)
         (mv :class-name-mismatch nil state constant-pool))
-       ;; We'll test any method whose name starts with "test":
+       ;; We'll test any method whose name starts with "test" or "fail_test": ;; todo: update all docs to mention "fail_test"
        (method-info-alist (jvm::class-decl-methods class-info))
        (test-method-ids (select-method-ids-to-test method-info-alist methods-to-test))
        ((when (endp test-method-ids))
@@ -765,7 +798,7 @@
        ;; (- (cw ")~%"))
        ;; Run the tests:
        ((mv erp results state)
-        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail method-info-alist class-name root-of-user-class-hierarchy print extra-rules remove-rules monitor
+        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy print extra-rules remove-rules monitor
                       nil ;empty accumulator
                       state))
        ((when erp) (mv erp nil state constant-pool))
@@ -779,12 +812,14 @@
        )
     (mv (erp-nil) '(progn) state constant-pool)))
 
-;; Test all methods in the given file whose names start with "test".  This
-;; variant of the tool should be called from within the ACL2 loop.
+;; Test all methods in the given file whose names start with "test" or
+;; "fail_test".  This variant of the tool should be called from within the ACL2
+;; loop, or in a book.
 (defmacro test-file (path-to-java-file &key
                                        ;;(assumptions 'nil)
-                                       (methods ':auto) ;;which methods to test (default is ones whose names start with "test")
-                                       (expected-failures 'nil)
+                                       (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
+                                       (expected-failures ':auto)
+                                       (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
                                        (extra-rules 'nil)
                                        (remove-rules 'nil)
                                        (monitor 'nil)
@@ -793,6 +828,7 @@
                                    ;;',assumptions
                                    ,methods
                                    ,expected-failures
+                                   ,error-on-unexpectedp
                                    ,print
                                    ,extra-rules
                                    ,remove-rules
@@ -800,14 +836,14 @@
                                    state
                                    constant-pool)))
 
-;; Test all methods in the given file whose names start with "test".  This
+;; Test all methods in the given file whose names start with "test" or "fail_test".  This
 ;; variant of the tool should be called from the shell or from an IDE.  This
 ;; does not check whether the tests get the right answers (it allows any of the
 ;; tests to fail). By contrast, test-file lets you indicate which tests should
 ;; fail (and thus which tests must not fail).
 (defmacro test-file-and-exit (path-to-java-file &key
                                                 ;;(assumptions 'nil)
-                                                (methods ':auto) ;;which methods to test (default is ones whose names start with "test")
+                                                (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
                                                 (extra-rules 'nil)
                                                 (remove-rules 'nil)
                                                 (monitor 'nil)
@@ -817,7 +853,8 @@
      (test-file-fn ,path-to-java-file
                    ;;',assumptions
                    ,methods
-                   :any
+                   :auto ; methods-expected-to-fail
+                   nil ; error-on-unexpectedp, don't cause hard error on unexpected result
                    ,print
                    ,extra-rules
                    ,remove-rules

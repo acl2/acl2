@@ -1,6 +1,6 @@
 (in-package "DM")
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 (include-book "sym")
 
 (defun permute (l p)

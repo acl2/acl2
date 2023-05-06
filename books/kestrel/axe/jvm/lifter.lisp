@@ -4612,7 +4612,7 @@
                                          ;; (farg1 type)))
                                          parameter-name))
                         (input-vars (if len
-                                        (list parameter-name) ;(make-var-names len parameter-name) ;TODO: what about clashes
+                                        (list parameter-name) ;(make-var-names parameter-name len) ;TODO: what about clashes
                                       (list parameter-name)))
                         (len-claims (if len
                                         `((equal (len ,contents-term) ',len))
@@ -5165,7 +5165,6 @@
                                                     '(IF-BECOMES-MYIF
                                                       MYIF-BECOMES-BOOLIF-AXE
                                                       UBP-LONGER-BETTER
-                                                      SBVLT-TRIM-CONSTANT-RIGHT
                                                       sbvlt-of-bvplus-of-minus-1-and-minus-1
                                                       sbvlt-of-bvminus-of-1-and-minus-1
                                                       sbvlt-of-bvplus-of-minus-1-and-1

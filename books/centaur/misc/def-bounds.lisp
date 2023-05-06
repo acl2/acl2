@@ -174,7 +174,7 @@
          (lower-str (hexify-rational lower-bound-adj))
          (margin (min (nfix (and (boundp-global 'fmt-hard-right-margin state)
                                  (f-get-global 'fmt-hard-right-margin state)))
-                      90)))
+                      120)))
        (cw "Lower bound: ~t0~s1~%" (- margin (length lower-str)) lower-str)
        (cw "Upper bound: ~t0~s1~%" (- margin (length upper-str)) upper-str))))
   ///
@@ -183,7 +183,7 @@
 (define simplify-and-bound-case (term simp-hints case-conjunct hyp skip-lower skip-upper state)
   :mode :program
   (b* (((er trans-conjunct) (bounds-translate-casesplit case-conjunct state))
-       
+
        (full-hyp `(and ,@trans-conjunct ,hyp))
        ((mv err simp-term state) (easy-simplify-sequence term simp-hints :hyp full-hyp))
        ((when err)
@@ -413,7 +413,7 @@
     ;; Assumption (default t)
     :hyp (foo-input-p x)
 
-    
+
     ;; Simplification steps, each a hint keyword-value list
     :simp-hints
      ((:in-theory (enable foo-cancel))

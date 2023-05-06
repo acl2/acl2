@@ -1071,10 +1071,10 @@ of the current s-expression in the enclosing list"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Support for Dynamic Monitoring of Rewrites (dmr)
-(load (concat (acl2-sources-dir) "emacs/monitor.el"))
+(load (concat (acl2-sources-dir) "books/emacs/monitor.el"))
 
 ; Support for ACL2-Doc browser
-(load (concat (acl2-sources-dir) "emacs/acl2-doc.el"))
+(load (concat (acl2-sources-dir) "books/emacs/acl2-doc.el"))
 
 ; Support for xdoc-link-mode, used by acl2+books XDOC manual
 (let ((xdoc-el-file (concat (acl2-sources-dir) "books/xdoc/xdoc.el")))

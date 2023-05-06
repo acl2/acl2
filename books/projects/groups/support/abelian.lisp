@@ -206,7 +206,7 @@
 
 ;; Let a be an element of maximal ord p^k in a non-cyclic group g of order p^n, and let g1 = (cyclic a g):
 
-(defund g1$ (a g)
+(defund g1 (a g)
   (cyclic a g))
 
 ;; Our objective is to construct a subgroup g2 of g such that
@@ -224,51 +224,51 @@
 
 ;; By Cauchy's Theorem, for some x in g, (lcoset x h g) has ord p in (quotient g h):
 
-(local-defthmd order-g1$
+(local-defthmd order-g1
   (implies (phyp a p g)
-	   (and (normalp (g1$ a g) g)
-	        (cyclicp (g1$ a g))
-	        (p-groupp (g1$ a g) p)
-		(divides p (order (g1$ a g)))
-	        (>= (order (g1$ a g)) p)
-	        (< (order (g1$ a g)) (order g))))
-  :hints (("Goal" :in-theory (enable p-groupp g1$ phyp)
+	   (and (normalp (g1 a g) g)
+	        (cyclicp (g1 a g))
+	        (p-groupp (g1 a g) p)
+		(divides p (order (g1 a g)))
+	        (>= (order (g1 a g)) p)
+	        (< (order (g1 a g)) (order g))))
+  :hints (("Goal" :in-theory (enable p-groupp g1 phyp)
                   :use (max-ord-bounds
-		        (:instance abelianp-normalp (h (g1$ a g)))
+		        (:instance abelianp-normalp (h (g1 a g)))
 			(:instance lagrange (h (cyclic a g)))
-			(:instance powerp-divides (n (order g)) (m (order (g1$ a g))))
-			(:instance p-divides-power-p (n (subgroup-index (g1$ a g) g)))))))
+			(:instance powerp-divides (n (order g)) (m (order (g1 a g))))
+			(:instance p-divides-power-p (n (subgroup-index (g1 a g) g)))))))
 
 (local-defthmd elt-of-ord-p-quotient-1
   (implies (phyp a p g)
-	   (let ((q (quotient g (g1$ a g))))
-	     (and (normalp (g1$ a g) g)
+	   (let ((q (quotient g (g1 a g))))
+	     (and (normalp (g1 a g) g)
 	          (p-groupp q p)
 		  (> (order q) 1)
 	          (< (order q) (order g)))))
   :hints (("Goal" :in-theory (enable p-groupp order-quotient phyp)
-                  :use (order-g1$
-			(:instance lagrange (h (g1$ a g)))
-			(:instance powerp-divides (n (order g)) (m (subgroup-index (g1$ a g) g)))
-			(:instance p-divides-power-p (n (subgroup-index (g1$ a g) g)))))))
+                  :use (order-g1
+			(:instance lagrange (h (g1 a g)))
+			(:instance powerp-divides (n (order g)) (m (subgroup-index (g1 a g) g)))
+			(:instance p-divides-power-p (n (subgroup-index (g1 a g) g)))))))
 
 (local-defthmd elt-of-ord-p-quotient
   (implies (phyp a p g)
-	   (let ((q (quotient g (g1$ a g))))
-	     (and (normalp (g1$ a g) g)
+	   (let ((q (quotient g (g1 a g))))
+	     (and (normalp (g1 a g) g)
 	          (p-groupp q p)
 		  (> (order q) 1)
 	          (< (order q) (order g))
 		  (elt-of-ord p q))))
   :hints (("Goal" :in-theory (enable p-groupp phyp)
                   :use (elt-of-ord-p-quotient-1
-			(:instance p-divides-power-p (n (order (quotient g (g1$ a g)))))
-			(:instance cauchy (g (quotient g (g1$ a g))))))))
+			(:instance p-divides-power-p (n (order (quotient g (g1 a g)))))
+			(:instance cauchy (g (quotient g (g1 a g))))))))
 
 (defund x$ (a p g)
-  (car (elt-of-ord p (quotient g (g1$ a g)))))
+  (car (elt-of-ord p (quotient g (g1 a g)))))
 
-;; Thus, x is not in g1 but x^p is in g1$, which implies x^p = a^i, where i = (index (power x p g) (powers a g)).
+;; Thus, x is not in g1 but x^p is in g1, which implies x^p = a^i, where i = (index (power x p g) (powers a g)).
 ;; It follows that i is divisible by p, for otherwise a^i has ord p^k and
 ;;   x^(p^k) = (x^p)^(p^(k-1)) = (a^i)^p^(k-1) != e,
 ;; contradicting the maximality of the ord of a.  Let j = i/p and y =  a^(-j)x.  Then y is not in g1 and
@@ -291,66 +291,66 @@
 
 (local-defthmd elt-of-ord-p-quotient-ord
   (implies (phyp a p g)
-	   (and (in (elt-of-ord p (quotient g (g1$ a g)))
-	            (quotient g (g1$ a g)))
+	   (and (in (elt-of-ord p (quotient g (g1 a g)))
+	            (quotient g (g1 a g)))
 	        (and (primep p)
-		     (not (equal (elt-of-ord p (quotient g (g1$ a g)))
-		                 (lcoset (e g) (g1$ a g) g)))
-		     (equal (ord (elt-of-ord p (quotient g (g1$ a g)))
-		                 (quotient g (g1$ a g)))
+		     (not (equal (elt-of-ord p (quotient g (g1 a g)))
+		                 (lcoset (e g) (g1 a g) g)))
+		     (equal (ord (elt-of-ord p (quotient g (g1 a g)))
+		                 (quotient g (g1 a g)))
 		            p))))
   :hints (("Goal" :in-theory (enable p-groupp phyp)
                   :use (elt-of-ord-p-quotient
-		        (:instance ord>1 (a (elt-of-ord p (quotient g (g1$ a g)))) (g (quotient g (g1$ a g))))
-                        (:instance elt-of-ord-ord (n p) (g (quotient g (g1$ a g))))))))
+		        (:instance ord>1 (a (elt-of-ord p (quotient g (g1 a g)))) (g (quotient g (g1 a g))))
+                        (:instance elt-of-ord-ord (n p) (g (quotient g (g1 a g))))))))
 
-(local-defthmd x$-not-in-g1$
+(local-defthmd x$-not-in-g1
   (implies (phyp a p g)
-	   (not (in (x$ a p g) (g1$ a g))))
+	   (not (in (x$ a p g) (g1 a g))))
   :hints (("Goal" :in-theory (enable x$ p-groupp phyp)
                   :use (elt-of-ord-p-quotient elt-of-ord-p-quotient-ord
-		        (:instance ord>1 (a (elt-of-ord p (quotient g (g1$ a g)))) (g (quotient g (g1$ a g))))
-			(:instance member-lcoset-iff (x (e g)) (y (x$ a p g)) (h (g1$ a g)))
-			(:instance equal-lcoset (x (e g)) (y (x$ a p g)) (h (g1$ a g)))
-			(:instance lcosets-cars (c (elt-of-ord p (quotient g (g1$ a g)))) (h (g1$ a g)))
-			(:instance member-lcoset-qlist-iff (x (elt-of-ord p (quotient g (g1$ a g)))) (h (g1$ a g)))
-                        (:instance elt-of-ord-ord (n p) (g (quotient g (g1$ a g))))))))
+		        (:instance ord>1 (a (elt-of-ord p (quotient g (g1 a g)))) (g (quotient g (g1 a g))))
+			(:instance member-lcoset-iff (x (e g)) (y (x$ a p g)) (h (g1 a g)))
+			(:instance equal-lcoset (x (e g)) (y (x$ a p g)) (h (g1 a g)))
+			(:instance lcosets-cars (c (elt-of-ord p (quotient g (g1 a g)))) (h (g1 a g)))
+			(:instance member-lcoset-qlist-iff (x (elt-of-ord p (quotient g (g1 a g)))) (h (g1 a g)))
+                        (:instance elt-of-ord-ord (n p) (g (quotient g (g1 a g))))))))
 
 (local-defthmd x$-in-g
   (implies (phyp a p g)
 	   (in (x$ a p g) g))
   :hints (("Goal" :in-theory (enable x$ p-groupp phyp)
                   :use (elt-of-ord-p-quotient elt-of-ord-p-quotient-ord
-		        (:instance ord>1 (a (elt-of-ord p (quotient g (g1$ a g)))) (g (quotient g (g1$ a g))))
-			(:instance member-lcoset-iff (x (e g)) (y (x$ a p g)) (h (g1$ a g)))
-			(:instance equal-lcoset (x (e g)) (y (x$ a p g)) (h (g1$ a g)))
-			(:instance lcosets-cars (c (elt-of-ord p (quotient g (g1$ a g)))) (h (g1$ a g)))
-			(:instance member-lcoset-qlist-iff (x (elt-of-ord p (quotient g (g1$ a g)))) (h (g1$ a g)))
-                        (:instance elt-of-ord-ord (n p) (g (quotient g (g1$ a g))))))))
+		        (:instance ord>1 (a (elt-of-ord p (quotient g (g1 a g)))) (g (quotient g (g1 a g))))
+			(:instance member-lcoset-iff (x (e g)) (y (x$ a p g)) (h (g1 a g)))
+			(:instance equal-lcoset (x (e g)) (y (x$ a p g)) (h (g1 a g)))
+			(:instance lcosets-cars (c (elt-of-ord p (quotient g (g1 a g)))) (h (g1 a g)))
+			(:instance member-lcoset-qlist-iff (x (elt-of-ord p (quotient g (g1 a g)))) (h (g1 a g)))
+                        (:instance elt-of-ord-ord (n p) (g (quotient g (g1 a g))))))))
 
-(local-defthmd x$-p-in-g1$
+(local-defthmd x$-p-in-g1
   (implies (phyp a p g)
 	   (in (power (x$ a p g) p g)
-	       (g1$ a g)))
+	       (g1 a g)))
   :hints (("Goal" :in-theory (enable x$ p-groupp phyp)
                   :use (elt-of-ord-p-quotient elt-of-ord-p-quotient-ord
-		        (:instance ord>1 (a (elt-of-ord p (quotient g (g1$ a g)))) (g (quotient g (g1$ a g))))
-			(:instance member-lcoset-iff (x (e g)) (y (power (x$ a p g) p g)) (h (g1$ a g)))
-			(:instance equal-lcoset (x (e g)) (y (x$ a p g)) (h (g1$ a g)))
-			(:instance lcosets-cars (c (elt-of-ord p (quotient g (g1$ a g)))) (h (g1$ a g)))
-			(:instance member-lcoset-qlist-iff (x (elt-of-ord p (quotient g (g1$ a g)))) (h (g1$ a g)))
-			(:instance power-lcoset (a (x$ a p g)) (x (elt-of-ord p (quotient g (g1$ a g)))) (n p) (h (g1$ a g)))
-			(:instance ord-power (a (elt-of-ord p (quotient g (g1$ a g)))) (g (quotient g (g1$ a g))))
-			(:instance member-self-lcoset (x (power (x$ a p g) p g)) (h (g1$ a g)))
-                        (:instance elt-of-ord-ord (n p) (g (quotient g (g1$ a g))))))))
+		        (:instance ord>1 (a (elt-of-ord p (quotient g (g1 a g)))) (g (quotient g (g1 a g))))
+			(:instance member-lcoset-iff (x (e g)) (y (power (x$ a p g) p g)) (h (g1 a g)))
+			(:instance equal-lcoset (x (e g)) (y (x$ a p g)) (h (g1 a g)))
+			(:instance lcosets-cars (c (elt-of-ord p (quotient g (g1 a g)))) (h (g1 a g)))
+			(:instance member-lcoset-qlist-iff (x (elt-of-ord p (quotient g (g1 a g)))) (h (g1 a g)))
+			(:instance power-lcoset (a (x$ a p g)) (x (elt-of-ord p (quotient g (g1 a g)))) (n p) (h (g1 a g)))
+			(:instance ord-power (a (elt-of-ord p (quotient g (g1 a g)))) (g (quotient g (g1 a g))))
+			(:instance member-self-lcoset (x (power (x$ a p g) p g)) (h (g1 a g)))
+                        (:instance elt-of-ord-ord (n p) (g (quotient g (g1 a g))))))))
 
 (local-defthmd x$-p-power-a
   (implies (phyp a p g)
            (and (natp (i$ a p g))
 	        (equal (power (x$ a p g) p g)
 	               (power a (i$ a p g) g))))
-  :hints (("Goal" :in-theory (enable phyp i$ g1$)
-                  :use (x$-in-g x$-p-in-g1$ x$-not-in-g1$
+  :hints (("Goal" :in-theory (enable phyp i$ g1)
+                  :use (x$-in-g x$-p-in-g1 x$-not-in-g1
 		        (:instance power-member (a (x$ a p g)) (n (ord (x$ a p g) g)))
 		        (:instance power-member (a (x$ a p g)) (n (i$ a n g)))
 			(:instance ord-power (a (x$ a p g)))
@@ -385,7 +385,7 @@
                   :use (x$-in-g
 			(:instance power-in-g (a (inv a g)) (n (j$ a p g)))))))
 
-(local-defthmd y$-not-in-g1$-1
+(local-defthmd y$-not-in-g1-1
   (implies (phyp a p g)
            (equal (op (power a (j$ a p g) g) (y$ a p g) g)
 	          (x$ a p g)))
@@ -396,35 +396,35 @@
 			(:instance group-assoc (x (power (inv a g) (j$ a p g) g)) (y (power a (j$ a p g) g)) (z (y$ a p g)))
 			(:instance power-in-g (n (j$ a p g)))))))
 
-(local-defthmd in-a-g1$
+(local-defthmd in-a-g1
   (implies (phyp a p g)
-           (in a (g1$ a g)))
-  :hints (("Goal" :in-theory (e/d (phyp g1$) (power-member))
+           (in a (g1 a g)))
+  :hints (("Goal" :in-theory (e/d (phyp g1) (power-member))
                   :expand ((power a 1 g))
                   :use ((:instance power-member (n 1))))))
 
-(local-defthmd in-a-j$-g1$
+(local-defthmd in-a-j$-g1
   (implies (phyp a p g)
-           (in (power a (j$ a p g) g) (g1$ a g)))
+           (in (power a (j$ a p g) g) (g1 a g)))
   :hints (("Goal" :in-theory (e/d (phyp p-groupp j$) (power-in-g))
-                  :use (elt-of-ord-p-quotient in-a-g1$ divides-p-i$
-		        (:instance power-in-g (g (g1$ a g)) (n (j$ a p g)))))))
+                  :use (elt-of-ord-p-quotient in-a-g1 divides-p-i$
+		        (:instance power-in-g (g (g1 a g)) (n (j$ a p g)))))))
 
-(local-defthmd y$-not-in-g1$
+(local-defthmd y$-not-in-g1
   (implies (phyp a p g)
-           (not (in (y$ a p g) (g1$ a g))))
+           (not (in (y$ a p g) (g1 a g))))
   :hints (("Goal" :in-theory (e/d (phyp j$) (group-closure subgroup-op))
-                  :use (in-a-j$-g1$ in-a-g1$ y$-not-in-g1$-1 x$-in-g x$-not-in-g1$ elt-of-ord-p-quotient
-		        (:instance subgroup-op (h (g1$ a g)) (x (y$ a p g)) (y (power a (j$ a p g) g)))
-		        (:instance group-closure (g (g1$ a g)) (x (y$ a p g)) (y (power a (j$ a p g) g)))))))
+                  :use (in-a-j$-g1 in-a-g1 y$-not-in-g1-1 x$-in-g x$-not-in-g1 elt-of-ord-p-quotient
+		        (:instance subgroup-op (h (g1 a g)) (x (y$ a p g)) (y (power a (j$ a p g) g)))
+		        (:instance group-closure (g (g1 a g)) (x (y$ a p g)) (y (power a (j$ a p g) g)))))))
 
 (local-defthmd y$-not-e
   (implies (phyp a p g)
            (not (equal (y$ a p g) (e g))))
   :hints (("Goal" :in-theory (e/d (phyp j$ y$) (subgroup-e in-e-g))
-                  :use (y$-not-in-g1$ elt-of-ord-p-quotient
-			(:instance subgroup-e (h (g1$ a g)))
-			(:instance in-e-g (g (g1$ a g)))))))
+                  :use (y$-not-in-g1 elt-of-ord-p-quotient
+			(:instance subgroup-e (h (g1 a g)))
+			(:instance in-e-g (g (g1 a g)))))))
 
 (local-defthmd ord-y$
   (implies (phyp a p g)
@@ -449,7 +449,7 @@
 			(:instance lagrange (h (c$ a p g)))
 			(:instance abelianp-normalp (h (c$ a p g)))))))
 
-;; Then g1$ and c intersect trivially.  The ord of (lcoset a c g) is p^k, for otherwise a^(p^(k-1)) is in c,
+;; Then g1 and c intersect trivially.  The ord of (lcoset a c g) is p^k, for otherwise a^(p^(k-1)) is in c,
 ;; implying a^(p^(k-1)) = e.  Thus, (lcoset a c g) has maximal ord in (quotient g c).
 
 (local-defthmd subgroup-equal-order
@@ -471,25 +471,25 @@
            (primep p))
   :hints (("Goal" :in-theory (enable phyp p-groupp))))	   
 
-(local-defthmd g1$-int-c$-1
+(local-defthmd g1-int-c$-1
   (implies (phyp a p g)
-           (not (equal (order (group-intersection (g1$ a g) (c$ a p g) g))
+           (not (equal (order (group-intersection (g1 a g) (c$ a p g) g))
 	               (order (c$ a p g)))))
   :hints (("Goal" :in-theory (e/d (phyp p-groupp subgroupp permp) (member-sublist))
-                  :use (y$-in-g y$-not-in-g1$ in-y$-c$ elt-of-ord-p-quotient
+                  :use (y$-in-g y$-not-in-g1 in-y$-c$ elt-of-ord-p-quotient
 		        (:instance member-sublist (x (y$ a p g))
 			                          (l (elts (c$ a p g)))
-						  (m (elts (group-intersection (g1$ a g) (c$ a p g) g))))
-		        (:instance subgroup-equal-order (g (c$ a p g)) (h (group-intersection (g1$ a g) (c$ a p g) g)))))))		        
+						  (m (elts (group-intersection (g1 a g) (c$ a p g) g))))
+		        (:instance subgroup-equal-order (g (c$ a p g)) (h (group-intersection (g1 a g) (c$ a p g) g)))))))		        
 
-(defthmd g1$-int-c$
+(defthmd g1-int-c$
   (implies (phyp a p g)
-           (equal (group-intersection (g1$ a g) (c$ a p g) g)
+           (equal (group-intersection (g1 a g) (c$ a p g) g)
 	          (trivial-subgroup g)))
-  :hints (("Goal" :use (g1$-int-c$-1 order-quotient-c$ elt-of-ord-p-quotient
-                        (:instance primep-no-divisor (d (order (group-intersection (g1$ a g) (c$ a p g) g))))
-			(:instance order-1-trivial (h (group-intersection (g1$ a g) (c$ a p g) g)))
-			(:instance order-subgroup-divides (h (group-intersection (g1$ a g) (c$ a p g) g)) (g (c$ a p g)))))))
+  :hints (("Goal" :use (g1-int-c$-1 order-quotient-c$ elt-of-ord-p-quotient
+                        (:instance primep-no-divisor (d (order (group-intersection (g1 a g) (c$ a p g) g))))
+			(:instance order-1-trivial (h (group-intersection (g1 a g) (c$ a p g) g)))
+			(:instance order-subgroup-divides (h (group-intersection (g1 a g) (c$ a p g) g)) (g (c$ a p g)))))))
 
 ;; Let g' = (quotient g c) and a' = (lcoset a c g).  
 ;; The ord of a' in g' is p^k, for otherwise a^(p^(k-1)) is in c, implying a^(p^(k-1)) = e.
@@ -501,16 +501,16 @@
 ;;    (order g2') = (/ (order g') (order g1')) = p^(n-1)/p^k = p^(n-k-1).
 ;; Let g2 = (lift g2' c g).
 
-(defun gp (a p g)
+(defun g* (a p g)
   (quotient g (c$ a p g)))
 
-(defun ap (a p g)
+(defun a* (a p g)
   (lcoset a (c$ a p g) g))
 
 (local-defthmd power-coset-max-ord
   (implies (and (phyp a p g)
-                (in x (gp a p g)))
-	   (equal (power x (max-ord g) (gp a p g))
+                (in x (g* a p g)))
+	   (equal (power x (max-ord g) (g* a p g))
 	          (lcoset (e g) (c$ a p g) g)))
   :hints (("Goal" :in-theory (enable power-max-ord-e phyp)
                   :use (order-quotient-c$
@@ -520,105 +520,105 @@
 
 (local-defthmd divides-ord-lcoset-max-ord
   (implies (and (phyp a p g)
-                (in x (gp a p g)))
-	   (divides (ord x (gp a p g))
+                (in x (g* a p g)))
+	   (divides (ord x (g* a p g))
 	            (max-ord g)))
   :hints (("Goal" :in-theory (enable phyp)
                   :use (power-coset-max-ord order-quotient-c$
-                        (:instance divides-ord (a x) (n (max-ord g)) (g (gp a p g)))))))
+                        (:instance divides-ord (a x) (n (max-ord g)) (g (g* a p g)))))))
 
 (local-defthmd power-a-in-c$
   (implies (phyp a p g)
-           (in (power a (ord (ap a p g) (gp a p g)) g)
+           (in (power a (ord (a* a p g) (g* a p g)) g)
 	       (c$ a p g)))
   :hints (("Goal" :in-theory (e/d (phyp) (power-in-g))
                   :use (order-quotient-c$
-		        (:instance power-lcoset (x (ap a p g))
-			                        (n (ord (ap a p g) (gp a p g)))
+		        (:instance power-lcoset (x (a* a p g))
+			                        (n (ord (a* a p g) (g* a p g)))
 						(h (c$ a p g)))
 		        (:instance member-self-lcoset (x a) (h (c$ a p g)))
-			(:instance power-in-g (n (ord (ap a p g) (gp a p g))))
-			(:instance member-lcoset-iff (y (power a (ord (ap a p g) (gp a p g)) g))
+			(:instance power-in-g (n (ord (a* a p g) (g* a p g))))
+			(:instance member-lcoset-iff (y (power a (ord (a* a p g) (g* a p g)) g))
 			                             (x (e g))
 			                             (h (c$ a p g)))))))
 
-(local-defthmd power-a-in-g1$
+(local-defthmd power-a-in-g1
   (implies (phyp a p g)
-           (in (power a (ord (ap a p g) (gp a p g)) g)
-	       (g1$ a g)))
+           (in (power a (ord (a* a p g) (g* a p g)) g)
+	       (g1 a g)))
   :hints (("Goal" :in-theory (e/d (phyp p-groupp) (subgroup-e power-in-g))
-                  :use (elt-of-ord-p-quotient in-a-g1$
-		        (:instance subgroup-e (h (g1$ a g)))
-		        (:instance power-subgroup (x a) (h (g1$ a g)) (n (ord (ap a p g) (gp a p g))))))))
+                  :use (elt-of-ord-p-quotient in-a-g1
+		        (:instance subgroup-e (h (g1 a g)))
+		        (:instance power-subgroup (x a) (h (g1 a g)) (n (ord (a* a p g) (g* a p g))))))))
 
 (local-defthmd power-a-in-int
   (implies (phyp a p g)
-           (in (power a (ord (ap a p g) (gp a p g)) g)
-	       (group-intersection (g1$ a g) (c$ a p g) g)))
-  :hints (("Goal" :use (power-a-in-g1$ power-a-in-c$ elt-of-ord-p-quotient order-quotient-c$))))
+           (in (power a (ord (a* a p g) (g* a p g)) g)
+	       (group-intersection (g1 a g) (c$ a p g) g)))
+  :hints (("Goal" :use (power-a-in-g1 power-a-in-c$ elt-of-ord-p-quotient order-quotient-c$))))
 
 (local-defthmd power-a-e
   (implies (phyp a p g)
-           (equal (power a (ord (ap a p g) (gp a p g)) g)
+           (equal (power a (ord (a* a p g) (g* a p g)) g)
 	          (e g)))
   :hints (("Goal" :in-theory (enable phyp)
-                  :use (g1$-int-c$ power-a-in-int))))
+                  :use (g1-int-c$ power-a-in-int))))
 
 (defthmd ord-lcoset-a
   (implies (phyp a p g)
-           (equal (ord (ap a p g)
-	               (gp a p g))
+           (equal (ord (a* a p g)
+	               (g* a p g))
 	          (max-ord g)))
   :hints (("Goal" :in-theory (enable phyp)
                   :use (power-a-e order-quotient-c$ elt-of-ord-p-quotient
-		        (:instance divides-leq (x (ord (ap a p g) (gp a p g)))
+		        (:instance divides-leq (x (ord (a* a p g) (g* a p g)))
 			                       (y (max-ord g)))
-		        (:instance divides-leq (y (ord (ap a p g) (gp a p g)))
+		        (:instance divides-leq (y (ord (a* a p g) (g* a p g)))
 			                       (x (max-ord g)))
-                        (:instance divides-ord-lcoset-max-ord (x (ap a p g)))
-			(:instance member-lcoset-qlist-iff (x (ap a p g)) (h (c$ a p g)))
+                        (:instance divides-ord-lcoset-max-ord (x (a* a p g)))
+			(:instance member-lcoset-qlist-iff (x (a* a p g)) (h (c$ a p g)))
 			(:instance member-lcoset-cosets (x a) (h (c$ a p g)))))))
 
 (defthmd max-ord-quotient
   (implies (phyp a p g)
-           (equal (max-ord (gp a p g))
+           (equal (max-ord (g* a p g))
 	          (max-ord g)))
   :hints (("Goal" :in-theory (enable phyp)
                   :use (order-quotient-c$ elt-of-ord-p-quotient ord-lcoset-a
-		        (:instance elt-of-ord-max-ord (g (gp a p g)) (x (ap a p g)))
-			(:instance elt-of-ord-ord (n (max-ord (gp a p g))) (g (gp a p g)))
-			(:instance divides-ord-lcoset-max-ord (x (elt-of-ord (max-ord (gp a p g)) (gp a p g))))
-			(:instance divides-leq (x (max-ord (gp a p g))) (y (max-ord g)))))))
+		        (:instance elt-of-ord-max-ord (g (g* a p g)) (x (a* a p g)))
+			(:instance elt-of-ord-ord (n (max-ord (g* a p g))) (g (g* a p g)))
+			(:instance divides-ord-lcoset-max-ord (x (elt-of-ord (max-ord (g* a p g)) (g* a p g))))
+			(:instance divides-leq (x (max-ord (g* a p g))) (y (max-ord g)))))))
 
 (local-defthmd quotient-c$-smaller
   (implies (phyp a p g)
            (and (natp (order g))
-                (natp (order (gp a p g)))
-	        (< (order (gp a p g))
+                (natp (order (g* a p g)))
+	        (< (order (g* a p g))
 	           (order g))))
   :hints (("Goal" :in-theory (enable phyp)
                   :use (elt-of-ord-p-quotient order-quotient-c$ primep-p))))
 
-(defund g2$ (a p g)
+(defund g2 (a p g)
   (declare (xargs :measure (order g) :hints (("Goal" :use (quotient-c$-smaller)))))
   (if (phyp a p g)
-      (if (cyclicp (gp a p g))
+      (if (cyclicp (g* a p g))
           (c$ a p g)
-        (lift (g2$ (ap a p g)
+        (lift (g2 (a* a p g)
                    p
-	           (gp a p g))
+	           (g* a p g))
               (c$ a p g)
    	      g))
     ()))
 
-(defund desired-properties (g g1$ g2$)
-  (and (subgroupp g1$ g)
-       (cyclicp g1$)
-       (subgroupp g2$ g)
-       ;(<= (max-ord g2$) (order g1$))
-       (equal (* (order g1$) (order g2$))
+(defund desired-properties (g g1 g2)
+  (and (subgroupp g1 g)
+       (cyclicp g1)
+       (subgroupp g2 g)
+       ;(<= (max-ord g2) (order g1))
+       (equal (* (order g1) (order g2))
               (order g))
-       (equal (group-intersection g1$ g2$ g)
+       (equal (group-intersection g1 g2 g)
               (trivial-subgroup g))))
 	      
 ;; Then g2 is easily shown to satisfy the requirements of the lemma:
@@ -628,81 +628,81 @@
 
 (local-defthmd factor-p-group-base-case
   (implies (and (phyp a p g)
-                (cyclicp (gp a p g)))
-	   (desired-properties g (g1$ a g) (g2$ a p g)))
-  :hints (("Goal" :in-theory (enable desired-properties g1$ g2$ phyp)
-                  :use (order-quotient-c$ order-g1$ g1$-int-c$ max-ord-quotient p-divides-max-ord
+                (cyclicp (g* a p g)))
+	   (desired-properties g (g1 a g) (g2 a p g)))
+  :hints (("Goal" :in-theory (enable desired-properties g1 g2 phyp)
+                  :use (order-quotient-c$ order-g1 g1-int-c$ max-ord-quotient p-divides-max-ord
 		        (:instance divides-leq (x p) (y (max-ord g)))
-		        (:instance max-ord<=order (g (g2$ a p g)))
-			(:instance max-ord-cyclicp (g (gp a p g)))
-			(:instance max-ord-cyclicp (g (g1$ a g)))))))
+		        (:instance max-ord<=order (g (g2 a p g)))
+			(:instance max-ord-cyclicp (g (g* a p g)))
+			(:instance max-ord-cyclicp (g (g1 a g)))))))
 
 (local-defthmd factor-p-group-induction-case-1
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g))))
-	   (phyp (ap a p g) p (gp a p g)))
+                (not (cyclicp (g* a p g))))
+	   (phyp (a* a p g) p (g* a p g)))
   :hints (("Goal" :in-theory (enable p-groupp phyp)
                   :use (order-quotient-c$ ord-lcoset-a max-ord-quotient
-		        (:instance powerp-divides (m (order (gp a p g))) (n (order g)))))))
+		        (:instance powerp-divides (m (order (g* a p g))) (n (order g)))))))
 
 (local-defthmd factor-p-group-induction-case-2
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-	        (desired-properties (gp a p g)
-                                    (g1$ (ap a p g) (gp a p g))
-				    (g2$ (ap a p g) p (gp a p g))))
-	   (and (subgroupp (g1$ a g) g)
-	        (cyclicp (g1$ a g))
-		(subgroupp (g2$ a p g) g)))
-  :hints (("Goal" :in-theory (enable phyp g1$ g2$ desired-properties)
+                (not (cyclicp (g* a p g)))
+	        (desired-properties (g* a p g)
+                                    (g1 (a* a p g) (g* a p g))
+				    (g2 (a* a p g) p (g* a p g))))
+	   (and (subgroupp (g1 a g) g)
+	        (cyclicp (g1 a g))
+		(subgroupp (g2 a p g) g)))
+  :hints (("Goal" :in-theory (enable phyp g1 g2 desired-properties)
                   :use (elt-of-ord-p-quotient order-quotient-c$))))
 
 (local-defthmd factor-p-group-induction-case-3
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-	        (desired-properties (gp a p g)
-                                    (g1$ (ap a p g) (gp a p g))
-				    (g2$ (ap a p g) p (gp a p g))))
-           (equal (order (g1$ (ap a p g) (gp a p g)))
-	          (order (g1$ a g))))
-  :hints (("Goal" :in-theory (enable desired-properties phyp g1$)
+                (not (cyclicp (g* a p g)))
+	        (desired-properties (g* a p g)
+                                    (g1 (a* a p g) (g* a p g))
+				    (g2 (a* a p g) p (g* a p g))))
+           (equal (order (g1 (a* a p g) (g* a p g)))
+	          (order (g1 a g))))
+  :hints (("Goal" :in-theory (enable desired-properties phyp g1)
                   :use (factor-p-group-induction-case-1 max-ord-quotient
-		        (:instance max-ord-cyclicp (g (g1$ a g)))
-		        (:instance max-ord-cyclicp (g (g1$ (ap a p g) (gp a p g))))))))
+		        (:instance max-ord-cyclicp (g (g1 a g)))
+		        (:instance max-ord-cyclicp (g (g1 (a* a p g) (g* a p g))))))))
 
 (local-defthmd factor-p-group-induction-case-4
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-	        (desired-properties (gp a p g)
-                                    (g1$ (ap a p g) (gp a p g))
-				    (g2$ (ap a p g) p (gp a p g))))
-           (equal (* (order (g1$ a g)) (order (g2$ a p g)))
+                (not (cyclicp (g* a p g)))
+	        (desired-properties (g* a p g)
+                                    (g1 (a* a p g) (g* a p g))
+				    (g2 (a* a p g) p (g* a p g))))
+           (equal (* (order (g1 a g)) (order (g2 a p g)))
 	          (order g)))
-  :hints (("Goal" :in-theory (enable phyp g1$ g2$ desired-properties)
+  :hints (("Goal" :in-theory (enable phyp g1 g2 desired-properties)
                   :use (order-quotient-c$ factor-p-group-induction-case-3 primep-p
-		        (:instance lift-order (h (g2$ (ap a p g) p (gp a p g)))
+		        (:instance lift-order (h (g2 (a* a p g) p (g* a p g)))
 			                      (n (c$ a p g)))))))
 
 (local-defthmd factor-p-group-induction-case-5
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-		(desired-properties (gp a p g)
-                                    (g1$ (ap a p g) (gp a p g))
-				    (g2$ (ap a p g) p (gp a p g)))
+                (not (cyclicp (g* a p g)))
+		(desired-properties (g* a p g)
+                                    (g1 (a* a p g) (g* a p g))
+				    (g2 (a* a p g) p (g* a p g)))
 	        (in x g))
-	   (iff (in x (g2$ a p g))
-	        (in (lcoset x (c$ a p g) g) (g2$ (ap a p g) p (gp a p g)))))
-  :hints (("Goal" :in-theory (enable desired-properties g2$ phyp)
+	   (iff (in x (g2 a p g))
+	        (in (lcoset x (c$ a p g) g) (g2 (a* a p g) p (g* a p g)))))
+  :hints (("Goal" :in-theory (enable desired-properties g2 phyp)
                   :use (factor-p-group-induction-case-1 order-quotient-c$
-		        (:instance in-lift-subgroup-iff (n (c$ a p g)) (h (g2$ (ap a p g) p (gp a p g))))))))
+		        (:instance in-lift-subgroup-iff (n (c$ a p g)) (h (g2 (a* a p g) p (g* a p g))))))))
 
 (local-defthmd factor-p-group-induction-case-6
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-		(in x (g1$ a g)))
-	   (equal (power (lcoset a (c$ a p g) g) (index x (powers a g)) (gp a p g))
+                (not (cyclicp (g* a p g)))
+		(in x (g1 a g)))
+	   (equal (power (lcoset a (c$ a p g) g) (index x (powers a g)) (g* a p g))
 	          (lcoset x (c$ a p g) g)))
-  :hints (("Goal" :in-theory (enable g1$ phyp)
+  :hints (("Goal" :in-theory (enable g1 phyp)
                   :use (member-powers-power order-quotient-c$
 		        (:instance member-lcoset-qlist-iff (x (lcoset x (c$ a p g) g)) (h (c$ a p g)))
 			(:instance member-lcoset-cosets (h (c$ a p g)))
@@ -713,40 +713,40 @@
 
 (local-defthmd factor-p-group-induction-case-7
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-		(in x (g1$ a g)))
+                (not (cyclicp (g* a p g)))
+		(in x (g1 a g)))
 	   (in (lcoset x (c$ a p g) g)
-	       (g1$ (ap a p g) (gp a p g))))
-  :hints (("Goal" :in-theory (enable g1$ phyp)
+	       (g1 (a* a p g) (g* a p g))))
+  :hints (("Goal" :in-theory (enable g1 phyp)
                   :use (factor-p-group-induction-case-6 order-quotient-c$))))
 
 (local-defthmd factor-p-group-induction-case-8
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-		(desired-properties (gp a p g)
-                                    (g1$ (ap a p g) (gp a p g))
-				    (g2$ (ap a p g) p (gp a p g)))
-		(SUBGROUPP (G1$ (LCOSET A (CYCLIC (Y$ A P G) G) G)
+                (not (cyclicp (g* a p g)))
+		(desired-properties (g* a p g)
+                                    (g1 (a* a p g) (g* a p g))
+				    (g2 (a* a p g) p (g* a p g)))
+		(SUBGROUPP (G1 (LCOSET A (CYCLIC (Y$ A P G) G) G)
                                 (QUOTIENT G (CYCLIC (Y$ A P G) G)))
                            (QUOTIENT G (CYCLIC (Y$ A P G) G)))
-		(SUBGROUPP (G2$ (LCOSET A (CYCLIC (Y$ A P G) G) G)
+		(SUBGROUPP (G2 (LCOSET A (CYCLIC (Y$ A P G) G) G)
                                 P (QUOTIENT G (CYCLIC (Y$ A P G) G)))
                            (QUOTIENT G (CYCLIC (Y$ A P G) G)))
-	        (in x (group-intersection (g1$ a g) (g2$ a p g) g)))
+	        (in x (group-intersection (g1 a g) (g2 a p g) g)))
 	   (in (lcoset x (c$ a p g) g)
-	       (group-intersection (g1$ (ap a p g) (gp a p g))
-	                           (g2$ (ap a p g) p (gp a p g))
-				   (gp a p g))))
+	       (group-intersection (g1 (a* a p g) (g* a p g))
+	                           (g2 (a* a p g) p (g* a p g))
+				   (g* a p g))))
   :hints (("Goal" :in-theory (enable phyp)
                   :use ( factor-p-group-induction-case-2 factor-p-group-induction-case-5 factor-p-group-induction-case-7))))
 
 (local-defthmd factor-p-group-induction-case-9
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-		(desired-properties (gp a p g)
-                                    (g1$ (ap a p g) (gp a p g))
-				    (g2$ (ap a p g) p (gp a p g)))
-	        (in x (group-intersection (g1$ a g) (g2$ a p g) g)))
+                (not (cyclicp (g* a p g)))
+		(desired-properties (g* a p g)
+                                    (g1 (a* a p g) (g* a p g))
+				    (g2 (a* a p g) p (g* a p g)))
+	        (in x (group-intersection (g1 a g) (g2 a p g) g)))
 	   (equal (lcoset x (c$ a p g) g)
 	          (lcoset (e g) (c$ a p g) g)))
   :hints (("Goal" :in-theory (enable phyp quotient-e desired-properties)
@@ -754,95 +754,95 @@
 
 (local-defthmd factor-p-group-induction-case-10
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-		(desired-properties (gp a p g)
-                                    (g1$ (ap a p g) (gp a p g))
-				    (g2$ (ap a p g) p (gp a p g)))
-	        (in x (group-intersection (g1$ a g) (g2$ a p g) g)))
-	   (in x (group-intersection (g1$ a g) (c$ a p g) g)))
+                (not (cyclicp (g* a p g)))
+		(desired-properties (g* a p g)
+                                    (g1 (a* a p g) (g* a p g))
+				    (g2 (a* a p g) p (g* a p g)))
+	        (in x (group-intersection (g1 a g) (g2 a p g) g)))
+	   (in x (group-intersection (g1 a g) (c$ a p g) g)))
   :hints (("Goal" :in-theory (enable phyp)
                   :use (order-quotient-c$ factor-p-group-induction-case-2 factor-p-group-induction-case-9
 		        (:instance equal-lcoset-lcoset-e (h (c$ a p g)))))))
 
 (local-defthmd factor-p-group-induction-case-11
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-		(desired-properties (gp a p g)
-                                    (g1$ (ap a p g) (gp a p g))
-				    (g2$ (ap a p g) p (gp a p g)))
-	        (in x (group-intersection (g1$ a g) (g2$ a p g) g)))
+                (not (cyclicp (g* a p g)))
+		(desired-properties (g* a p g)
+                                    (g1 (a* a p g) (g* a p g))
+				    (g2 (a* a p g) p (g* a p g)))
+	        (in x (group-intersection (g1 a g) (g2 a p g) g)))
 	   (equal (e g) x))
   :hints (("Goal" :in-theory (enable phyp)
-                  :use (g1$-int-c$ order-quotient-c$ factor-p-group-induction-case-2 factor-p-group-induction-case-10))))
+                  :use (g1-int-c$ order-quotient-c$ factor-p-group-induction-case-2 factor-p-group-induction-case-10))))
 
 (local-defthmd factor-p-group-induction-case-12
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g)))
-		(desired-properties (gp a p g)
-                                    (g1$ (ap a p g) (gp a p g))
-				    (g2$ (ap a p g) p (gp a p g))))
-	   (equal (group-intersection (g1$ a g) (g2$ a p g) g)
+                (not (cyclicp (g* a p g)))
+		(desired-properties (g* a p g)
+                                    (g1 (a* a p g) (g* a p g))
+				    (g2 (a* a p g) p (g* a p g))))
+	   (equal (group-intersection (g1 a g) (g2 a p g) g)
 	          (trivial-subgroup g)))
   :hints (("Goal" :in-theory (enable phyp)
-                  :use (g1$-int-c$ order-quotient-c$ factor-p-group-induction-case-2
-		        (:instance factor-p-group-induction-case-11 (x (cadr (elts (group-intersection (g1$ a g) (g2$ a p g) g)))))
-			(:instance not-trivial-elt (h (group-intersection (g1$ a g) (g2$ a p g) g)))))))
+                  :use (g1-int-c$ order-quotient-c$ factor-p-group-induction-case-2
+		        (:instance factor-p-group-induction-case-11 (x (cadr (elts (group-intersection (g1 a g) (g2 a p g) g)))))
+			(:instance not-trivial-elt (h (group-intersection (g1 a g) (g2 a p g) g)))))))
 
 (local-defthmd factor-p-group-induction-case
   (implies (and (phyp a p g)
-                (not (cyclicp (gp a p g))))
-	   (and (phyp (ap a p g) p (gp a p g))
-	        (implies (desired-properties (gp a p g) (g1$ (ap a p g) (gp a p g)) (g2$ (ap a p g) p (gp a p g)))
-	                 (desired-properties g (g1$ a g) (g2$ a p g)))))
-  :hints (("Goal" :expand ((desired-properties g (g1$ a g) (g2$ a p g)))
+                (not (cyclicp (g* a p g))))
+	   (and (phyp (a* a p g) p (g* a p g))
+	        (implies (desired-properties (g* a p g) (g1 (a* a p g) (g* a p g)) (g2 (a* a p g) p (g* a p g)))
+	                 (desired-properties g (g1 a g) (g2 a p g)))))
+  :hints (("Goal" :expand ((desired-properties g (g1 a g) (g2 a p g)))
                   :use (factor-p-group-induction-case-1 factor-p-group-induction-case-2 factor-p-group-induction-case-4
 		        factor-p-group-induction-case-12))))
 
 (defthmd factor-p-group
   (implies (phyp a p g)
-	   (desired-properties g (g1$ a g) (g2$ a p g)))
-  :hints (("Goal" :in-theory (enable g2$)
-                  :induct (g2$ a p g))
+	   (desired-properties g (g1 a g) (g2 a p g)))
+  :hints (("Goal" :in-theory (enable g2)
+                  :induct (g2 a p g))
           ("Subgoal *1/2" :use (factor-p-group-induction-case))
           ("Subgoal *1/1" :use (factor-p-group-base-case))))
 
 ;; Applying factor-p-group recursively, we can represent an abelian p-group as an internal direct product
 ;; of a list of cyclic subgroups:
 
-(local-defthmd g2$-smaller-1
+(local-defthmd g2-smaller-1
   (implies (phyp a p g)
            (and (natp (order g))
-	        (natp (order (g2$ a p g)))
-		(> (order (g2$ a p g)) 1)
-	        (< (order (g2$ a p g)) (order g))))
+	        (natp (order (g2 a p g)))
+		(> (order (g2 a p g)) 1)
+	        (< (order (g2 a p g)) (order g))))
   :hints (("Goal" :in-theory (enable phyp desired-properties)
-                  :use (primep-p order-g1$ factor-p-group))))
+                  :use (primep-p order-g1 factor-p-group))))
 
-(local-defthmd g2$-smaller-2
+(local-defthmd g2-smaller-2
   (implies (and (p-groupp g p) (abelianp g) (> (order g) 1) (not (cyclicp g)))
            (phyp (elt-of-ord (max-ord g) g) p g))
   :hints (("Goal" :in-theory (enable phyp)
                   :use (elt-of-ord-max-ord
 		        (:instance elt-of-ord-ord (n (max-ord g)))))))
 
-(local-defthmd g2$-smaller
+(local-defthmd g2-smaller
   (implies (and (p-groupp g p) (abelianp g) (> (order g) 1) (not (cyclicp g)))
            (let ((a (elt-of-ord (max-ord g) g)))
              (and (natp (order g))
-	          (natp (order (g2$ a p g)))
-		  (> (order (g2$ a p g)) 1)
-	          (< (order (g2$ a p g)) (order g)))))
-  :hints (("Goal" :use (g2$-smaller-2
-                        (:instance g2$-smaller-1 (a (elt-of-ord (max-ord g) g)))))))
+	          (natp (order (g2 a p g)))
+		  (> (order (g2 a p g)) 1)
+	          (< (order (g2 a p g)) (order g)))))
+  :hints (("Goal" :use (g2-smaller-2
+                        (:instance g2-smaller-1 (a (elt-of-ord (max-ord g) g)))))))
 
 (defun cyclic-p-subgroup-list (p g)
-  (declare (xargs :measure (order g) :hints (("Goal" :use (g2$-smaller)))))
+  (declare (xargs :measure (order g) :hints (("Goal" :use (g2-smaller)))))
   (if (and (p-groupp g p) (abelianp g) (> (order g) 1))
       (if (cyclicp g)
           (list g)
         (let ((a (elt-of-ord (max-ord g) g)))
-          (cons (g1$ a g)
-                (cyclic-p-subgroup-list p (g2$ a p g)))))
+          (cons (g1 a g)
+                (cyclic-p-subgroup-list p (g2 a p g)))))
     ()))
 
 (defund cyclic-p-group-p (g)
@@ -956,11 +956,11 @@
 (local-defthm p-group-factorization-induction-case-1
   (let ((a (elt-of-ord (max-ord g) g)))
     (implies (and (p-groupp g p) (abelianp g) (> (order g) 1) (not (cyclicp g)))
-	     (cyclic-p-group-p (g1$ a g))))
+	     (cyclic-p-group-p (g1 a g))))
   :hints (("Goal" :in-theory (enable p-groupp cyclic-p-group-p)
-                  :use (g2$-smaller-2 primep-p
-		        (:instance least-prime-divisor-powerp (n (order (g1$ (elt-of-ord (max-ord g) g) g))))
-			(:instance order-g1$ (a (elt-of-ord (max-ord g) g)))))))
+                  :use (g2-smaller-2 primep-p
+		        (:instance least-prime-divisor-powerp (n (order (g1 (elt-of-ord (max-ord g) g) g))))
+			(:instance order-g1 (a (elt-of-ord (max-ord g) g)))))))
 
 (local-defthmd p-group-factorization-induction-case-3
   (implies (and (abelianp g)
@@ -972,26 +972,26 @@
 
 (local-defthmd p-group-factorization-induction-case-4
   (let ((l (cyclic-p-subgroup-list p g))
-        (g2 (g2$ (elt-of-ord (max-ord g) g) p g)))
+        (g2 (g2 (elt-of-ord (max-ord g) g) p g)))
     (implies (and (p-groupp g p) (abelianp g) (> (order g) 1) (not (cyclicp g))
 	          (internal-direct-product-p (cdr l) g2))
 	     (internal-direct-product-p l g)))
   :hints (("Goal" :in-theory (enable desired-properties)
-                  :use (g2$-smaller-2
+                  :use (g2-smaller-2
 		        (:instance factor-p-group (a (elt-of-ord (max-ord g) g)))
 		        (:instance internal-direct-product-subgroup (l (cdr (cyclic-p-subgroup-list p g)))
-			                                            (h (g2$ (elt-of-ord (max-ord g) g) p g)))
-			(:instance p-group-factorization-induction-case-3 (h (g2$ (ELT-OF-ORD (MAX-ORD G) G) P G))
+			                                            (h (g2 (elt-of-ord (max-ord g) g) p g)))
+			(:instance p-group-factorization-induction-case-3 (h (g2 (ELT-OF-ORD (MAX-ORD G) G) P G))
 			                                                  (l (cdr (cyclic-p-subgroup-list p g))))
 			(:instance internal-direct-product-subgroup-3
 			  (h g)
-			  (k0 (G1$ (ELT-OF-ORD (MAX-ORD G) G) G))
-			  (k1 (G2$ (ELT-OF-ORD (MAX-ORD G) G) P G))
-			  (k2 (PRODUCT-GROUP-LIST (CYCLIC-P-SUBGROUP-LIST P (G2$ (ELT-OF-ORD (MAX-ORD G) G) P G)) G)))))))
+			  (k0 (G1 (ELT-OF-ORD (MAX-ORD G) G) G))
+			  (k1 (G2 (ELT-OF-ORD (MAX-ORD G) G) P G))
+			  (k2 (PRODUCT-GROUP-LIST (CYCLIC-P-SUBGROUP-LIST P (G2 (ELT-OF-ORD (MAX-ORD G) G) P G)) G)))))))
 
 (local-defthmd p-group-factorization-induction-case-5
   (let ((l (cyclic-p-subgroup-list p g))
-        (g2 (g2$ (elt-of-ord (max-ord g) g) p g)))
+        (g2 (g2 (elt-of-ord (max-ord g) g) p g)))
     (implies (and (p-groupp g p) (abelianp g) (> (order g) 1) (not (cyclicp g))
 	          (consp (cdr l))
 	          (cyclic-p-group-list-p (cdr l))
@@ -999,12 +999,12 @@
 		  (equal (order g2) (product-orders (cdr l))))
 	     (equal (order g) (product-orders l))))
   :hints (("Goal" :in-theory (enable desired-properties)
-                  :use (g2$-smaller-2
+                  :use (g2-smaller-2
 		        (:instance factor-p-group (a (elt-of-ord (max-ord g) g)))))))
 
 (local-defthmd p-group-factorization-induction-case
   (let ((l (cyclic-p-subgroup-list p g))
-        (g2 (g2$ (elt-of-ord (max-ord g) g) p g)))
+        (g2 (g2 (elt-of-ord (max-ord g) g) p g)))
     (implies (and (p-groupp g p) (abelianp g) (> (order g) 1) (not (cyclicp g))
 	          (consp (cdr l))
 	          (cyclic-p-group-list-p (cdr l))
@@ -1026,8 +1026,8 @@
 	          (internal-direct-product-p l g)
 		  (equal (order g) (product-orders l)))))
   :hints (("Subgoal *1/2" :in-theory (enable p-groupp desired-properties)
-                          :use (g2$-smaller-2 g2$-smaller p-group-factorization-induction-case
-			        (:instance powerp-divides (m (order (g2$ (elt-of-ord (max-ord g) g) p g))) (n (order g)))
+                          :use (g2-smaller-2 g2-smaller p-group-factorization-induction-case
+			        (:instance powerp-divides (m (order (g2 (elt-of-ord (max-ord g) g) p g))) (n (order g)))
 		                (:instance factor-p-group (a (elt-of-ord (max-ord g) g)))))
 	  ("Subgoal *1/1" :use (p-group-factorization-base-case))))
 
@@ -1483,8 +1483,8 @@
 			(:instance divides-leq (x (order (subgroup-ord-dividing m g))) (y m))
 			(:instance divides-leq (x (order (subgroup-ord-dividing n g))) (y n))))))
 
-;; The existence claim of the Fundamental Theorem is proved by combining idp-rel-prime-factors with
-;; p-group-factorization:
+;; The existence claim of the Fundamental Theorem is proved by combining The following is proved by induction, applying
+;; internal-direct-product-append and p-group-factorization.
 
 (defun max-power-dividing (p n)
   (if (and (primep p) (posp n))

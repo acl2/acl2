@@ -150,7 +150,6 @@
   (list nil ;; open-input-channels
         nil ;; open-output-channels
         *initial-global-table* ;; global-table
-        0   ;; big-clock-entry
         nil ;; idates
         nil ;; acl2-oracle
         0   ;; file-clock

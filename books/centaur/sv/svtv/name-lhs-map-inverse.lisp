@@ -29,8 +29,10 @@
 (set-waterfall-parallelism nil)
 
 (include-book "fsm-obj")
+(include-book "../svex/override-types")
 (include-book "../svex/env-ops")
 (include-book "centaur/bitops/part-install" :Dir :system)
+(include-book "std/alists/alist-defuns" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -1147,7 +1149,7 @@
                    (4vec-bit?! (4vec-rsh sh test)
                                (4vec-rsh sh x)
                                (4vec-rsh sh y))))
-   :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-bit?!)))))
+   :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-bit?! 4vec-bitmux 4vec-1mask)))))
 
 (local
  (defthm 4vec-rsh-of-2vec
@@ -1190,12 +1192,12 @@
    (defthm 4vec-bit?!-0
      (equal (4vec-bit?! 0 x y)
             (4vec-fix y))
-     :hints(("Goal" :in-theory (enable 4vec-bit?!))))
+     :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))))
 
    (defthm 4vec-bit?!-neg1
      (equal (4vec-bit?! -1 x y)
             (4vec-fix x))
-     :hints(("Goal" :in-theory (enable 4vec-bit?!))))
+     :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))))
 
 
    ;;  (defthm 4vec-bitand-of-2vec-logapp
@@ -1216,7 +1218,7 @@
             (4vec-concat (2vec (nfix w))
                          (4vec-bit?! (2vec x) then else)
                          (4vec-bit?! (2vec y) (4vec-rsh (2vec (nfix w)) then) (4vec-rsh (2vec (nfix w)) else))))
-     :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-concat 4vec-rsh 4vec-shift-core)
+     :hints(("Goal" :in-theory (e/d (4vec-bit?! 4vec-concat 4vec-rsh 4vec-shift-core 4vec-bitmux 4vec-1mask logite)
                                     (acl2::commutativity-of-logand
                                      acl2::commutativity-of-logior)))))))
 
@@ -1260,7 +1262,7 @@
                                         (4vec-bit?! (4vec-rsh (2vec w) test)
                                                     y
                                                     (4vec-rsh (2vec w) z)))))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core 4vec-bit?!))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-rsh 4vec-shift-core 4vec-bit?! 4vec-bitmux 4vec-1mask))
                   (bitops::logbitp-reasoning))))
 
   (local (defthm 4vec-concat-of-4vec-bit?!-ash
@@ -1269,7 +1271,7 @@
                                         (4vec-bit?! (2vec (ash test w)) x y)
                                         z)
                            (4vec-concat (2vec w) y z)))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-bit?!))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-bit?! 4vec-bitmux 4vec-1mask))
                   (bitops::logbitp-reasoning))))
 
   ;; (local (defthm 4vec-rsh-of-x
@@ -1624,7 +1626,7 @@
            (implies (natp w)
                     (equal (4vec-concat (2vec w) (4vec-bit?! test (4vec-concat (2vec w) x y) z1) z2)
                            (4vec-concat (2vec w) (4vec-bit?! test x z1) z2)))
-           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-bit?!)))))
+           :hints(("Goal" :in-theory (enable 4vec-concat 4vec-bit?! 4vec-bitmux 4vec-1mask logite)))))
 
   (local
    (defthm 4vec-rsh-of-4vec-bit?!-free
@@ -1888,15 +1890,19 @@
   (local (defthm 4vec-bit?!-of-4vec-bit?!-same
            (equal (4vec-bit?! mask (4vec-bit?! mask x y) z)
                   (4vec-bit?! mask x z))
-           :hints(("Goal" :in-theory (enable 4vec-bit?!))
-                  (bitops::logbitp-reasoning))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
+                  (bitops::logbitp-reasoning)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-ite))))))
 
 
   (local (defthm 4vec-bit?!-of-else-4vec-bit?!-same-thm
            (equal (4vec-bit?! (2vec test1) then (4vec-bit?! (2vec test2) then else))
                   (4vec-bit?! (2vec (logior test1 test2)) then else))
-           :hints(("Goal" :in-theory (enable 4vec-bit?!))
-                  (bitops::logbitp-reasoning))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux 4vec-1mask))
+                  (bitops::logbitp-reasoning)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-ite))))))
 
   (defret eval-<fn>-of-lookup
     (implies (and (not (svtv-name-lhs-map-selfcollide-p x))
@@ -2226,68 +2232,6 @@
 ;; For now we'll build in the assumption that lhs-eval-zero is what we're
 ;; using; if we need others they can be added later.
 
-(defenum svar-overridetype-p
-  (:val :test nil))
-
-
-(defthm svar-overridetype-fix-possibilities
-  (or (equal (svar-overridetype-fix x) :val)
-      (equal (svar-overridetype-fix x) :test)
-      (equal (svar-overridetype-fix x) nil))
-  :hints(("Goal" :in-theory (enable svar-overridetype-fix)))
-  :rule-classes ((:forward-chaining :trigger-terms ((svar-overridetype-fix x)))))
-
-
-(define svar-override-p ((x svar-p)
-                         (type svar-overridetype-p))
-  (b* (((svar x)))
-    (case (svar-overridetype-fix type)
-      (:val (and x.override-val (not x.override-test)))
-      (:test (and x.override-test (not x.override-val)))
-      (t (and (not x.override-test) (not x.override-val))))))
-
-(define svarlist-override-p ((x svarlist-p)
-                             (type svar-overridetype-p))
-  (if (atom x)
-      t
-    (and (svar-override-p (car x) type)
-         (svarlist-override-p (cdr x) type)))
-  ///
-  (defthm svarlist-override-p-of-append
-    (iff (svarlist-override-p (append x y) type)
-         (and (svarlist-override-p x type)
-              (svarlist-override-p y type)))))
-
-(define svar-change-override ((x svar-p)
-                              (type svar-overridetype-p))
-  :returns (new-x svar-p)
-  (b* ((type (svar-overridetype-fix type)))
-    (change-svar x :override-test (eq type :test) :override-val (eq type :val)))
-  ///
-  (defret svar-override-p-of-<fn>
-    (iff (svar-override-p new-x other-type)
-         (svar-overridetype-equiv other-type type))
-    :hints(("Goal" :in-theory (enable svar-override-p))))
-
-  (defthmd equal-of-svar-change-override
-    (implies (syntaxp (not (and (equal type ''nil))))
-             (equal (equal v1 (svar-change-override v2 type))
-                    (and (svar-p v1)
-                         (svar-override-p v1 type)
-                         (equal (svar-change-override v1 nil)
-                                (svar-change-override v2 nil)))))
-    :hints(("Goal" :in-theory (enable svar-change-override
-                                      svar-override-p))))
-
-  (defthm svar-change-override-of-svar-change-override
-    (equal (svar-change-override (svar-change-override x type1) type2)
-           (svar-change-override x type2)))
-
-  (defthm svar-change-override-when-svar-override-p
-    (implies (svar-override-p x type)
-             (equal (svar-change-override x type)
-                    (svar-fix x)))
-    :hints(("Goal" :in-theory (enable svar-override-p)))))
 
 
 (define svtv-name-lhs-map-keys-change-override ((map svtv-name-lhs-map-p)
@@ -2429,3 +2373,16 @@
 
 
 
+(defsection svtv-name-lhs-map-p-of-fal-extract
+  (local (defthm lookup-when-not-svar-p-of-svtv-name-lhs-map
+           (implies (and (svtv-name-lhs-map-p x)
+                         (not (svar-p k)))
+                    (not (hons-assoc-equal k x)))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal)))))
+  (local (defthm car-of-hons-assoc-equal
+           (equal (car (hons-assoc-equal k x))
+                  (and (hons-assoc-equal k x) k))))
+  (defthm svtv-name-lhs-map-p-of-fal-extract
+    (implies (svtv-name-lhs-map-p x)
+             (svtv-name-lhs-map-p (fal-extract keys x)))
+    :hints(("Goal" :in-theory (enable fal-extract svtv-name-lhs-map-p)))))

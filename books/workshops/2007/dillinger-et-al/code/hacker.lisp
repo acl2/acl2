@@ -720,10 +720,6 @@
     acl2::read-object
     acl2::prin1-with-slashes
     acl2::may-need-slashes
-    acl2::f-big-clock-negative-p
-    acl2::f-decrement-big-clock
-    acl2::big-clock-negative-p
-    acl2::decrement-big-clock
     acl2::user-stobj-alist
     acl2::update-user-stobj-alist
     acl2::read-idate

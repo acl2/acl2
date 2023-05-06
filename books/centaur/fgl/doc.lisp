@@ -69,14 +69,16 @@ point.</li>
 and hons-AIG modes are not complete.  Shape specifiers don't exist yet.  Many
 of the usual ways of doing things in GL are done differently in FGL.</p>
 
-<p>To get started with FGL in the default configuration:</p>
-@({
+<p>To get started with FGL in the default configuration, first set up a <see
+topic='@(url satlink::sat-solver-options)'>SAT solver</see>; the default for
+FGL is glucose.  To use a different SAT solver, see @(see fgl-solving).</p>
+
+ @({
  ;; include FGL
  (include-book \"centaur/fgl/top\" :dir :system)
- ;; attach to an incremental SAT backend library.
- ;; Note: must have environment variable IPASIR_SHARED_LIBRARY set to the path to 
- ;; an IPASIR-compliant shared library
- (include-book \"centaur/ipasir/ipasir-backend\" :dir :system)
+
+ ;; start an external shell from which the SAT solver can be called
+ (value-triple (acl2::tshell-ensure))
 
  ;; test a proof 
  (fgl::fgl-thm
@@ -749,11 +751,25 @@ pertains to the usual situation where its attachment is
 
 <p>When FGL calls SAT automatically on the result of symbolically executing a
 theorem, the @(see fgl-sat-config) object that is used is the result of calling
-the attachable stub function @('fgl-toplevel-sat-check-config').  When FGL
-rewrite rules or top-level theorems call SAT using @(see fgl-sat-check), the
-configuration object is provided as an argument to that function.  FGL also
-checks vacuity of hypotheses by default, and the default configuration for this
-uses another attachable stub function @('fgl-toplevel-vacuity-check-config').</p>
+the attachable stub function @('fgl-toplevel-sat-check-config'). The default
+attachment produces a config object that calls an external SAT solver through
+SATLINK, and delegates the configuration of SATLINK to another attachable
+function, @('fgl-satlink-config').  So the easiest way to change the SAT solver
+used by FGL is to change this attachment as follows (see @(see satlink::config)):</p>
+
+@({
+ (define my-fgl-satlink-config ()
+   :returns (config satlink::config-p)
+   (satlink::change-config satlink::*default-config* :cmdline \"kissat \"))
+
+ (defattach fgl::fgl-satlink-config my-fgl-satlink-config)
+ })
+
+<p>When FGL rewrite rules or top-level theorems call
+SAT using @(see fgl-sat-check), the configuration object is provided as an
+argument to that function.  FGL also checks vacuity of hypotheses by default,
+and the default configuration for this uses another attachable stub function
+@('fgl-toplevel-vacuity-check-config').</p>
 
 <p>An @(see fgl-sat-config) object is either an @(see
 fgl-satlink-monolithic-sat-config), an @(see fgl-ipasir-config), or an @(see fgl-exhaustive-test-config)
@@ -1342,6 +1358,9 @@ from the ACL2 loop or within the raw Lisp break:</p>
  (defconsts *my-stack* (fgl::interp-st-extract-stack fgl::interp-st))
  ;; Or put it in a state global, accessed as (@ :my-stack):
  (f-put-global ':my-stack (fgl::interp-st-extract-stack fgl::interp-st) state)
+ ;; The following macro does the same as the call above:
+ (fgl::save-fgl-stack :to :my-stack)
+
 
  ;; From within a raw Lisp break, save the stack as a defparameter:
  (defparameter *my-stack* (fgl::interp-st-extract-stack (cdr (assoc 'fgl::interp-st *user-stobj-alist*)))

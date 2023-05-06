@@ -117,7 +117,10 @@
     (b* ((entry (first alist))
          (fn (car entry))
          (count (cdr entry))
-         (- (cw "  ~x0: ~t1~c2~%" fn 50 (cons count 10))))
+         (- (cw "  ~x0: ~t1~c2" fn 50 (cons count 10)))
+         (- (if (endp (rest alist))
+                nil ; don't print newline for last entry (puts the following paren on the same line)
+              (cw "~%"))))
       (print-function-counts (rest alist)))))
 
 ;res is an alist mapping functions in the dag to their occurrence counts
@@ -159,12 +162,13 @@
   (tabulate-dag-fns-aux dag nil))
 
 (defun print-dag-info (dag name print-size)
-  (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (len dag) 2147483647)
+  (declare (xargs :guard (and (or (myquotep dag)
+                                  (and (pseudo-dagp dag)
+                                       (< (len dag) 2147483647)))
                               (or (symbolp name)
                                   (null name))
                               (booleanp print-size))))
-  (if (quotep dag) ; not possible, given the guard
+  (if (quotep dag) ; factor out, or rename this function
       (b* ((- (if name
                   (cw "The entire DAG ~x0 is: ~x1.~%" name dag)
                 (cw "The entire DAG is: ~x0.~%" dag))))
@@ -182,10 +186,11 @@
          (vars (merge-sort-symbol< (dag-vars dag)))
          (- (cw " ~x0 Variables:~%" (len vars)))
          (- (print-symbols-4-per-line vars))
-         (fns (dag-fns dag))
-         (- (cw " ~x0 Functions:~%" (len fns)))
-         (- (print-symbols-4-per-line fns))
-         (- (cw " Function counts:~%"))
+         ;; Don't need to print these, as we print their counts below:
+         ;; (fns (dag-fns dag))
+         ;; (- (cw " ~x0 Functions:~%" (len fns)))
+         ;; (- (print-symbols-4-per-line fns))
+         (- (cw " Functions and counts:~%"))
          (fn-counts (merge-sort-cdr-< (tabulate-dag-fns dag)))
          (- (print-function-counts fn-counts))
          (- (cw ")~%")))

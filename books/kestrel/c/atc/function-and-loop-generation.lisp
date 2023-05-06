@@ -2277,24 +2277,12 @@
    (xdoc::p
     "This is like the typed formals alist,
      except that the theorem stored in each variable information
-     says that the @(tsee read-var) of the variable
+     says that reading the variable from the computation state
      yields the variable itself,
      and also that the variable has the applicable type.
      In contrast, the theorem stored
      in each variable information in the typed formals alist
      only talks about the variable (i.e. formal parameter).")
-   (xdoc::p
-    "As we expand our modular proof generation to cover more constructs,
-     we expect to generate similar theorems about @(tsee read-var)
-     when we update the variable table.
-     In those theorems, the right side of the equality
-     may be a more general shallowly embedded C expression,
-     instead of being just a variable.
-     In general, the idea is that the theorem stored
-     in the variable information of a variable in the variable table
-     captures the relevant facts about the variable in scope;
-     these facts are used for proofs about expressions
-     that reference the variable.")
    (xdoc::p
     "This ACL2 function goes throught the typed formals,
      and generates a corresponding variable table.
@@ -2337,9 +2325,15 @@
           (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
            (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-          (formula1 `(equal (read-var (ident ,(symbol-name var))
-                                      ,compst-var)
-                            ,var))
+          (formula1 `(and (objdesign-of-var (ident ,(symbol-name var)) compst)
+                          (equal (read-object (objdesign-of-var
+                                               (ident ,(symbol-name var))
+                                               compst)
+                                              compst)
+                                 ,var)
+                          (equal (read-var (ident ,(symbol-name var))
+                                           ,compst-var)
+                                 ,var)))
           (formula1 (atc-contextualize formula1
                                        context
                                        fn
@@ -2362,7 +2356,9 @@
            (pack 'not-flexible-array-member-p-when- type-pred))
           (valuep-when-type-pred (pack 'valuep-when- type-pred))
           (hints
-           `(("Goal" :in-theory '(read-var-of-add-var
+           `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
+                                  read-object-of-objdesign-of-var-to-read-var
+                                  read-var-of-add-var
                                   ,var-thm
                                   ident-fix-when-identp
                                   identp-of-ident

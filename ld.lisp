@@ -2598,6 +2598,11 @@
 
 ;           The Tall Texas Tale about  BIG-CLOCK
 
+; PREFACE.  The big-clock-entry field of the state is no longer present after
+; 4/2023.  We have left the essay below unchanged when removing that field;
+; think of changes to the acl2-oracle field of state as taking the place of
+; changes to the big-clock-entry field of state.  End of PREFACE.
+
 ; Like any Lisp system, it may be said, loosely speaking, that ACL2
 ; typically reads a form, evaluates it in the current state, and
 ; prints the result.  This read-eval-print activity in ACL2 is done by
@@ -2857,7 +2862,6 @@
    (sweep-acl2-oracle 0 deceased-packages state))
 
 ; The remaining fields contain no ``static'' objects.  The fields are:
-; big-clock
 ; idates
 ; file-clock
 ; readable-files

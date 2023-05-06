@@ -105,6 +105,7 @@ my $include_excludes = 0;
 my $debug_up_to_date = 0;
 my $force_up_to_date;
 my $force_out_of_date;
+my $imagefile_src_dir = 0;
 # sub cert_bookdeps {
 #     my ($cert, $depdb) = @_;
 #     my $certinfo = $depdb->certdeps->{$cert};
@@ -172,6 +173,7 @@ sub certlib_set_opts {
     $debug_up_to_date = $opts->{"debug_up_to_date"};
     $force_up_to_date = $opts->{"force_up_to_date"};
     $force_out_of_date = $opts->{"force_out_of_date"};
+    $imagefile_src_dir = $opts->{"imagefile_src_dir"};
 }
 
 
@@ -929,9 +931,12 @@ sub find_deps {
 	print_lst($certinfo->otherdeps);
     }
 
-    my $image;
-
     if ($certifiable) {
+	# Look for something indicating what saved image to use for building this file.
+	# First look for an acl2-image certparam.
+	my $paramimage = $certinfo->params->{"acl2-image"};
+
+	my $imagefileimage;
 	# If there is an .image file corresponding to this file or a
 	# cert.image in this file's directory, add a dependency on the
 	# ACL2 image specified in that file and the .image file itself.
@@ -959,8 +964,20 @@ sub find_deps {
 	    } else {
 		print STDERR "Warning: find_deps: Could not open image file $imagefile: $!\n";
 	    }
-	    $certinfo->image($line);
+	    $imagefileimage = $line;
 	}
+	if ($paramimage || $imagefileimage) {
+	    if ($paramimage && $imagefileimage && ! ($paramimage eq $imagefileimage)) {
+		print STDERR "Warning: find_deps: different acl2 images for $lispfile given by acl2-image cert-param and .image file.\n";
+		print STDERR " - cert-param:  $paramimage\n";
+		print STDERR " - .image file: $imagefileimage\n";
+		print STDERR "Arbitrarily using .image file image.\n";
+	    }
+	    $certinfo->image($imagefileimage || $paramimage);
+	}
+    }
+    if ($certinfo->image) {
+	add_image_deps($certinfo->image, $depdb, $lispfile);
     }
 
     return $certinfo;
@@ -1458,6 +1475,121 @@ sub add_deps {
     # }
 
 }
+
+
+
+sub add_image_deps {
+    my ($target, $depdb, $parent) = @_;
+    if ($target eq "acl2") {
+	return;
+    }
+
+    print "add_image_deps (check) $target\n" if $debugging;
+    my $targetimage = ${target} . ".image";
+
+    if (exists $depdb->certdeps->{$targetimage}) {
+	# We've already calculated this file's dependencies, or we're in a self-loop.
+	if ($depdb->certdeps->{$targetimage} == 0) {
+	    print STDERR "Dependency loop on $target!\n";
+	    print STDERR "Current stack:\n";
+	    foreach my $book (@{$depdb->stack}) {
+		print STDERR "   $book\n";
+	    }
+	}
+	print "depdb entry exists\n" if $debugging;
+	return;
+    }
+
+    if (excludep($target)) {
+	print "excludep\n" if $debugging;
+    	return;
+    }
+
+    $depdb->certdeps->{$targetimage} = 0;
+
+    print "add_image_deps $target\n" if $debugging;
+
+    if (! $imagefile_src_dir) {
+	print STDERR "Can't get dependencies of saved image $target because --image-sources/ACL2_IMAGE_SRC_DIR isn't set.\n";
+	
+    }
+    # We need to somehow map from the image name to the location of
+    # the source file. For now, we're just going to use a configured
+    # path for all images; will need to revisit this later.
+    my $lspfile = canonical_path(File::Spec->catfile($imagefile_src_dir, $target . ".lsp"));
+
+    # What should we do when cleaning?  Delete images?  Leave it for now
+    # clean_generated_files($base) if ($clean_certs);
+
+
+    push (@{$depdb->stack}, $targetimage);
+
+    my $certinfo = find_deps($lspfile, $depdb, $parent);
+
+    my $topstack = pop(@{$depdb->stack});
+    if (! ($topstack eq $targetimage) ) {
+	print STDERR "Stack discipline failed on $targetimage! was $topstack\n";
+    }
+
+    $depdb->certdeps->{$targetimage} = $certinfo ;
+
+    if ($print_deps) {
+        print "Dependencies for $target:\n";
+        print "book:\n";
+        foreach my $dep (@{$certinfo->bookdeps}) {
+            print "$dep\n";
+        }
+        print "src:\n";
+        foreach my $dep (@{$certinfo->srcdeps}) {
+            print "$dep\n";
+        }
+        print "other:\n";
+        foreach my $dep (@{$certinfo->otherdeps}) {
+            print "$dep\n";
+        }
+        print "image: " . $certinfo->image . "\n" if $certinfo->image;
+        if ($certinfo->params) {
+            print "params:\n";
+            while (my ($key, $value) = each %{$certinfo->params}) {
+                print "$key = $value\n";
+            }
+            print "\n";
+        }
+        print "\n";
+    }
+
+    # # Accumulate the set of sources.  We haven't checked yet if they exist.
+    # foreach my $dep (@$srcdeps) {
+    # 	$sources->{$dep} = 1;
+    # }
+
+    # # Accumulate the set of non-source/cert deps..
+    # foreach my $dep (@$otherdeps) {
+    # 	$others->{$dep} = 1;
+    # }
+
+
+    # # Run the recursive add_deps on each dependency.
+    # foreach my $dep  (@$bookdeps, @$portdeps, @$recdeps) {
+    # 	add_deps($dep, $cache, $depdb, $sources, $others, $tscache, $target);
+    # }
+
+    # # Collect the recursive dependencies of @$recdeps and add them to srcdeps.
+    # if (@$recdeps) {
+    # 	my $recsrcs = [];
+    # 	my $reccerts = [];
+    # 	my $recothers = [];
+    # 	my $visited = {};
+    # 	foreach my $dep (@$recdeps) {
+    # 	    deps_dfs($dep, $depdb, $visited, $recsrcs, $reccerts, $recothers);
+    # 	}
+
+    # 	push(@{$depdb->{$target}->[2]}, @$recsrcs);
+    # }
+
+}
+
+
 
 sub read_targets {
     my ($fname,$targets) = @_;

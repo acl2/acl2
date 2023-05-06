@@ -2190,9 +2190,8 @@
 ; (defun show-gag-state (cl-id gag-state state)
 ;   (let* ((top-stack (access gag-state gag-state :top-stack))
 ;          (sub-stack (access gag-state gag-state :sub-stack))
-;          (clause-id (access gag-state gag-state :active-cl-id))
-;          (printed-p (access gag-state gag-state
-;                             :active-printed-p)))
+;          (abort-stack (abort-info-stack (access gag-state gag-state :abort-info)))
+;          (clause-id (access gag-state gag-state :active-cl-id)))
 ;     (pprogn (fms "********** Gag state from handling ~@0 (active ~
 ;                   clause id: ~#1~[<none>~/~@2~])~%"
 ;                  (list (cons #\0 (tilde-@-clause-id-phrase cl-id))
@@ -2204,6 +2203,8 @@
 ;             (show-gag-stack top-stack state)
 ;             (fms "****** Sub-stack:~%" nil *standard-co* state nil)
 ;             (show-gag-stack sub-stack state)
+;             (fms "****** Abort-stack:~%" nil *standard-co* state nil)
+;             (show-gag-stack abort-stack state)
 ;             (fms "****** Active-printed-p: ~x0"
 ;                  (list (cons #\0 (access gag-state gag-state
 ;                                          :active-printed-p)))
@@ -2211,6 +2212,9 @@
 ;             (fms "****** Forcep: ~x0"
 ;                  (list (cons #\0 (access gag-state gag-state
 ;                                          :forcep)))
+;                  *standard-co* state nil)
+;             (fms "****** Abort-cause: ~x0"
+;                  (list (cons #\0 (abort-info-cause gag-state)))
 ;                  *standard-co* state nil)
 ;             (fms "******************************~|" nil *standard-co* state
 ;                  nil))))
@@ -2329,18 +2333,18 @@
          (abort-p
           (mv (cond ((equal (tagged-objects 'abort-cause ttree)
                             '(revert))
-                     (change gag-state gagst :abort-stack new-stack))
+                     (change gag-state gagst :abort-info new-stack))
                     ((equal (tagged-objects 'abort-cause ttree)
                             '(empty-clause))
-                     (change gag-state gagst :abort-stack 'empty-clause))
+                     (update-gag-info-for-abort 'empty-clause gagst))
                     ((member-equal (tagged-objects 'abort-cause ttree)
                                    '((do-not-induct)
                                      (do-not-induct-otf-flg-override)))
-                     (change gag-state gagst :abort-stack 'do-not-induct))
+                     (update-gag-info-for-abort 'do-not-induct gagst))
                     ((equal (tagged-objects 'abort-cause ttree)
                             '(induction-depth-limit-exceeded))
-                     (change gag-state gagst :abort-stack
-                             'induction-depth-limit-exceeded))
+                     (update-gag-info-for-abort 'induction-depth-limit-exceeded
+                                                gagst))
                     (t gagst))
               (and msg-p
                    (msg "~@0~@1"

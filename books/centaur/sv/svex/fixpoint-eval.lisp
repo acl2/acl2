@@ -538,34 +538,7 @@ iterations of our algorithms is @('<<= w'), and therefore @('v <<= w').</p>
   :hints(("Goal" :expand ((svex-env-<<= (svex-env-extract vars env1)
                                         (svex-env-extract vars env2))))))
 
-(defsection svex-envs-agree-except-by-removekeys
-  
-  (defthmd svex-envs-agree-except-when-removekeys-similar
-    (implies (svex-envs-similar (svex-env-removekeys vars x)
-                                (svex-env-removekeys vars y))
-             (svex-envs-agree-except vars x y))
-    :hints(("Goal" :in-theory (e/d (svex-envs-agree-except-by-witness)
-                                   (svex-envs-similar-necc
-                                    svex-envs-similar-implies-equal-svex-env-lookup-2))
-            :use ((:instance svex-envs-similar-necc
-                   (k (svex-envs-agree-except-witness vars x y))
-                   (x (svex-env-removekeys vars x))
-                   (y (svex-env-removekeys vars y)))))))
 
-  (defthmd svex-envs-agree-except-implies-removekeys-similar
-    (implies (svex-envs-agree-except vars x y)
-             (svex-envs-similar (svex-env-removekeys vars x)
-                                (svex-env-removekeys vars y)))
-    :hints(("Goal" :in-theory (e/d (svex-envs-similar
-                                    svex-envs-agree-except-implies)))))
-
-  (defthmd svex-envs-agree-except-by-removekeys
-    (equal (svex-envs-agree-except vars x y)
-           (svex-envs-similar (svex-env-removekeys vars x)
-                              (svex-env-removekeys vars y)))
-    :hints (("goal" :in-theory (enable svex-envs-agree-except-implies-removekeys-similar
-                                       svex-envs-agree-except-when-removekeys-similar)
-             :cases ((svex-envs-agree-except vars x y))))))
 
 (define svex-alist-eval-fixpoint-step ((x svex-alist-p)
                                   (env svex-env-p)

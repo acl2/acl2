@@ -42,7 +42,6 @@
   '(open-input-channels
     open-output-channels
     global-table
-    big-clock-entry
     idates
     acl2-oracle
     file-clock
@@ -78,8 +77,6 @@
                (open-output-channels state))
         (equal (global-table (update-open-input-channels updates state))
                (global-table state))
-        (equal (big-clock-entry (update-open-input-channels updates state))
-               (big-clock-entry state))
         (equal (idates (update-open-input-channels updates state))
                (idates state))
         (equal (acl2-oracle (update-open-input-channels updates state))
@@ -111,7 +108,7 @@
 
 (local (defthm len-state
   (implies (state-p1 state)
-           (equal (len state) 12))
+           (equal (len state) 11))
   :hints(("Goal" :expand (state-p1 state)))))
 
 
@@ -128,8 +125,6 @@
                updates)
         (equal (global-table (update-open-output-channels updates state))
                (global-table state))
-        (equal (big-clock-entry (update-open-output-channels updates state))
-               (big-clock-entry state))
         (equal (idates (update-open-output-channels updates state))
                (idates state))
         (equal (acl2-oracle (update-open-output-channels updates state))
@@ -172,8 +167,6 @@
                (open-output-channels state))
         (equal (global-table (update-global-table updates state))
                updates)
-        (equal (big-clock-entry (update-global-table updates state))
-               (big-clock-entry state))
         (equal (idates (update-global-table updates state))
                (idates state))
         (equal (acl2-oracle (update-global-table updates state))
@@ -191,50 +184,6 @@
         (equal (user-stobj-alist1 (update-global-table updates state))
                (user-stobj-alist1 state)))))
 
-
-(defthm update-big-clock-entry-state-lemmas
-  (implies
-   (state-p1 state)
-   (and (true-listp (update-big-clock-entry updates state))
-        (equal (len (update-big-clock-entry updates state))
-               (len state))
-        (equal (open-input-channels (update-big-clock-entry updates state))
-               (open-input-channels state))
-        (equal (open-output-channels (update-big-clock-entry updates state))
-               (open-output-channels state))
-        (equal (global-table (update-big-clock-entry updates state))
-               (global-table state))
-        (equal (big-clock-entry (update-big-clock-entry updates state))
-               updates)
-        (equal (idates (update-big-clock-entry updates state))
-               (idates state))
-        (equal (acl2-oracle (update-big-clock-entry updates state))
-               (acl2-oracle state))
-        (equal (file-clock (update-big-clock-entry updates state))
-               (file-clock state))
-        (equal (readable-files (update-big-clock-entry updates state))
-               (readable-files state))
-        (equal (written-files (update-big-clock-entry updates state))
-               (written-files state))
-        (equal (read-files (update-big-clock-entry updates state))
-               (read-files state))
-        (equal (writeable-files (update-big-clock-entry updates state))
-               (writeable-files state))
-        (equal (user-stobj-alist1 (update-big-clock-entry updates state))
-               (user-stobj-alist1 state)))))
-
-(defthm update-big-clock-entry-preserves-state-p1
-  (implies (state-p1 state)
-           (equal (state-p1 (update-big-clock-entry updates state))
-                  (integerp updates)))
-  :hints(("Goal" :in-theory (disable update-big-clock-entry
-                                     statep-functions)
-          :use ((:instance state-p1
-                           (x state))
-                (:instance state-p1
-                           (x (update-big-clock-entry updates state)))))))
-
-
 (defthm update-idates-state-lemmas
   (implies
    (state-p1 state)
@@ -247,8 +196,6 @@
                (open-output-channels state))
         (equal (global-table (update-idates updates state))
                (global-table state))
-        (equal (big-clock-entry (update-idates updates state))
-               (big-clock-entry state))
         (equal (idates (update-idates updates state))
                updates)
         (equal (acl2-oracle (update-idates updates state))
@@ -290,8 +237,6 @@
                (open-output-channels state))
         (equal (global-table (update-acl2-oracle updates state))
                (global-table state))
-        (equal (big-clock-entry (update-acl2-oracle updates state))
-               (big-clock-entry state))
         (equal (idates (update-acl2-oracle updates state))
                (idates state))
         (equal (acl2-oracle (update-acl2-oracle updates state))
@@ -347,8 +292,6 @@
                (open-output-channels state))
         (equal (global-table (update-file-clock updates state))
                (global-table state))
-        (equal (big-clock-entry (update-file-clock updates state))
-               (big-clock-entry state))
         (equal (idates (update-file-clock updates state))
                (idates state))
         (equal (acl2-oracle (update-file-clock updates state))
@@ -391,8 +334,6 @@
                (open-output-channels state))
         (equal (global-table (update-written-files updates state))
                (global-table state))
-        (equal (big-clock-entry (update-written-files updates state))
-               (big-clock-entry state))
         (equal (idates (update-written-files updates state))
                (idates state))
         (equal (acl2-oracle (update-written-files updates state))
@@ -432,8 +373,6 @@
                (open-output-channels state))
         (equal (global-table (update-read-files updates state))
                (global-table state))
-        (equal (big-clock-entry (update-read-files updates state))
-               (big-clock-entry state))
         (equal (idates (update-read-files updates state))
                (idates state))
         (equal (acl2-oracle (update-read-files updates state))
@@ -475,8 +414,6 @@
                (open-output-channels state))
         (equal (global-table (update-user-stobj-alist1 updates state))
                (global-table state))
-        (equal (big-clock-entry (update-user-stobj-alist1 updates state))
-               (big-clock-entry state))
         (equal (idates (update-user-stobj-alist1 updates state))
                (idates state))
         (equal (acl2-oracle (update-user-stobj-alist1 updates state))
@@ -507,7 +444,6 @@
 (in-theory (disable update-open-input-channels
                     update-open-output-channels
                     update-global-table
-                    update-big-clock-entry
                     update-idates
                     update-acl2-oracle
                     update-file-clock

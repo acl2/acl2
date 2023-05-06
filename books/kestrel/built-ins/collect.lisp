@@ -19,6 +19,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "build/ground-zero-theory.certdep" :dir :system)
+
 ; First, we go through the ACL2 world
 ; and collect all the names introduced by events.
 ; The world is a list of triples, in reverse chronological order.
@@ -893,4 +895,3 @@
 (assert-event (subsetp-eq (append *builtin-defaxiom-names*
                                   *builtin-defthm-names*)
                           *builtin-defaxiom/defthm-all*))
-

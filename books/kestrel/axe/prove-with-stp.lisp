@@ -321,7 +321,7 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable nodenum-of-an-unknown-type-thingp))))
 
-;now just prints a message incompatible types and returns (empty-type)
+;now just prints a message for incompatible types and returns (empty-type)
 ;Returns (mv nodenum-type-alist changep)
 (defund improve-type (nodenum new-type nodenum-type-alist)
   (declare (xargs :guard (and (natp nodenum)
@@ -397,8 +397,6 @@
                                                   ;LIST::LEN-OF-CDR-BETTER
                                                   posp
                                                   ;;NODENUM-OF-AN-UNKNOWN-TYPE-THINGP
-                                                  axe-tree-vars
-                                                  axe-tree-vars-lst
                                                   )
                                                  (myquotep
                                                   dargp
@@ -473,27 +471,26 @@
 ;fixme add more tests for this case!
               ((and (eq 'equal fn)
                     (eql 2 (len (dargs expr))))
-               (let* ((args (dargs expr))
-                      (arg1 (first args))
-                      (arg2 (second args))
-;fixme call get-type-of-nodenum-safe?
-                      ;call get-type-of-arg-xxx?
-                      (arg1type (if (quotep arg1)
-                                    (get-type-of-val-safe (unquote arg1)) ;used to call get-type-of-val-checked, but that could crash!
-                                  (get-type-of-nodenum-safe arg1 'dag-array dag-array known-nodenum-type-alist)))
-                      (arg2type (if (quotep arg2)
-                                    (get-type-of-val-safe (unquote arg2)) ;used to call get-type-of-val-checked, but that could crash!
-                                  (get-type-of-nodenum-safe arg2 'dag-array dag-array known-nodenum-type-alist)))
-;ffixme handle incompatible types
-                      (new-type (intersect-types-safe arg1type arg2type)))
-                 (if (and (not (equal new-type arg1type))
-                          (natp arg1)) ;make sure it's a nodenum
-                     (improve-type arg1 new-type known-nodenum-type-alist)
-                   (if (and (not (equal new-type arg2type))
-                            (natp arg2)) ;make sure it's a nodenum
-                       (improve-type arg2 new-type known-nodenum-type-alist)
-                     (mv known-nodenum-type-alist
-                         nil)))))
+               (let* ((dargs (dargs expr))
+                      (lhs (first dargs))
+                      (rhs (second dargs))
+                      ;call get-type-of-arg-safe?
+                      (lhs-type (if (consp lhs) ; tests for quotep
+                                    (get-type-of-val-safe (unquote lhs)) ;used to call get-type-of-val-checked, but that could crash!
+                                  (get-type-of-nodenum-safe lhs 'dag-array dag-array known-nodenum-type-alist)))
+                      (rhs-type (if (consp rhs) ; tests for quotep
+                                    (get-type-of-val-safe (unquote rhs)) ;used to call get-type-of-val-checked, but that could crash!
+                                  (get-type-of-nodenum-safe rhs 'dag-array dag-array known-nodenum-type-alist)))
+                      ;;ffixme handle incompatible types
+                      (new-type (intersect-types-safe lhs-type rhs-type)))
+                 (if (and (not (equal new-type lhs-type))
+                          (natp lhs)) ;make sure it's a nodenum
+                     (improve-type lhs new-type known-nodenum-type-alist)
+                   (if (and (not (equal new-type rhs-type))
+                            (natp rhs)) ;make sure it's a nodenum
+                       (improve-type rhs new-type known-nodenum-type-alist)
+                     ;; Could we ever improve both types?
+                     (mv known-nodenum-type-alist nil)))))
               (t (mv known-nodenum-type-alist
                      nil)))))))
 
@@ -1617,7 +1614,6 @@
 
 
 (local (in-theory (disable quoted-posp
-                           boolean-typep
                            ;; natp
                            )))
 
@@ -1653,7 +1649,7 @@
   (implies (bv-array-typep x)
            (not (boolean-typep x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bv-array-typep LIST-TYPEP boolean-typep))))
+  :hints (("Goal" :in-theory (enable bv-array-typep list-typep boolean-typep))))
 
 ;returns (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array) ;the accumulators are extended
 ;fixme look for type mismatches..

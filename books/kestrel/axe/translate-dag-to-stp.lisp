@@ -55,6 +55,7 @@
 (include-book "known-predicates")
 (include-book "stp-counterexamples")
 (include-book "call-axe-script")
+(include-book "pure-dags")
 (include-book "axe-syntax-functions-bv") ;for maybe-get-type-of-bv-function-call, todo reduce
 (include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
 (include-book "kestrel/bv/defs" :dir :system) ;todo: make sure this book includes the definitions of all functions it translates.
@@ -158,7 +159,7 @@
 
 (defund maybe-shorten-filename (base-filename)
   (declare (xargs :guard (stringp base-filename)))
-  (if (< 200 (length base-filename)) ;fixme could increase the 200
+  (if (< 200 (length base-filename)) ;; todo: could increase the 200
       ;;shorten the filename if it would be too long:
       (string-append (subseq base-filename 0 199) "SHORTENED")
     base-filename))
@@ -2060,7 +2061,7 @@
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
                                  :in-theory (e/d (axe-typep empty-typep list-typep most-general-typep)
-                                                 (boolean-typep))))))
+                                                 ())))))
   (if (endp nodenum-type-alist)
       nil
     (let* ((entry (first nodenum-type-alist))
@@ -2775,51 +2776,3 @@
   :hints (("Goal" :in-theory (enable translate-disjunction))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;inline?
-;check this - is it anything missing?
-;fixme check in this that the sizes are not 0 -- and print a warning (or even halt?) if they are?
-;does this function handle everything in *bv-and-array-fns-we-can-translate* ?
-;the quotep checks on arguments could be consp checks?
-;fixme compare to can-always-translate-expr-to-stp?
-(defun pure-fn-call-exprp (expr)
-  (declare (xargs :guard (dag-function-call-exprp expr)
-                  :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))
-  (let ((fn (ffn-symb expr)))
-    ;;(member-eq fn *bv-and-array-fns-we-can-translate*)
-    ;;maybe we should check that operands are of the right type?
-    (case fn
-          ;;((myif) t) ;check more? we no longer translate myif, only bvif?
-          ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere
-          ((boolor booland boolif not bitnot bitxor bitor bitand) t)
-          ((bv-array-write bv-array-read bvsx slice)
-           (and (consp (rest (dargs expr)))
-                (quotep (darg1 expr))
-                (quotep (darg2 expr))))
-          ((bvnot bvand bvor bvxor bvmult bvminus bvuminus bvplus bvdiv bvmod sbvdiv sbvrem bvchop ;$inline
-                  getbit sbvlt bvlt bvle bvif leftrotate32)
-           (and (consp (dargs expr))
-                (quotep (darg1 expr)))) ;fixme make sure the value is okay?
-          (bvcat (and (consp (rest (rest (dargs expr))))
-                      (quotep (darg1 expr))
-                      (quotep (darg3 expr))))
-          (otherwise nil))))
-
-(defund expr-is-purep (expr)
-  (declare (xargs :guard (dag-exprp expr)))
-  ;; (declare (xargs :guard t))
-  (or (variablep expr) ;check more?
-      (fquotep expr)   ;check more?
-      (pure-fn-call-exprp expr)))
-
-;; Checks whether everything in the DAG is something we can translate to STP
-(defund dag-is-purep (dag)
-  (declare (xargs :guard (weak-dagp-aux dag)))
-  (if (endp dag)
-      t
-    (let* ((entry (first dag))
-           (expr (cdr entry)))
-      (if (expr-is-purep expr)
-          (dag-is-purep (rest dag))
-        (prog2$ (cw "Non-pure expression in DAG: ~x0.~%" expr)
-                nil)))))

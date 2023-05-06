@@ -11,5 +11,5 @@
 ;; load the user's acl2-customization.lsp, if any
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (include-book "rtl/rel11/portcullis" :dir :system)
-(include-book "projects/quadratic-reciprocity/portcullis" :dir :system)
+(include-book "projects/numbers/portcullis" :dir :system)
 (in-package "DM")

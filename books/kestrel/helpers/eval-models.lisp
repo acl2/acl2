@@ -557,7 +557,7 @@
                                       print
                                       debug
                                       step-limit time-limit
-                                      (cons (list model (len recs) first-working-rec-num-or-nil (help::round-to-hundredths (- end-time start-time)))
+                                      (cons (list model (len recs) first-working-rec-num-or-nil (acl2::round-to-hundredths (- end-time start-time)))
                                             model-results-acc)
                                       state))))
 

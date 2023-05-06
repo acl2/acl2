@@ -41,30 +41,27 @@
 
 ;; The boolean type
 
-;why the list wrapper? use :boolean?
-;rename make-boolean-type..
-(defmacro boolean-type () ''(boolean))
+;rename make-boolean-type?
+(defund-inline boolean-type () (declare (xargs :guard t)) :boolean)
 
 (defund boolean-typep (type)
   (declare (xargs :guard t))
-  (equal type (boolean-type)))
+  (eq type (boolean-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; BV types (types of BV expressions ,currently just naturals representing the
+;; BV types (types of BV expressions, currently just naturals representing the
 ;; width).
 
-;; todo: make these macros?
-
 ;may change
+;a BV type is (now) an positive integer representing the width (maybe 0 is allowed too?)
 (defund bv-typep (type)
   (declare (xargs :guard t))
   (natp type))
 
-;a BV type is (now) an positive integer representing the width (maybe 0 is allowed too?)
 ;may change
 (defund-inline make-bv-type (width)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (natp width)))
   width)
 
 (defthm bv-typep-of-make-bv-type
@@ -82,7 +79,8 @@
          (< width 0))
   :hints (("Goal" :in-theory (enable make-bv-type))))
 
-;may change
+;; Extract the width from a bv-type (currently a no-op but
+;; may change).
 (defund-inline bv-type-width (type)
   (declare (xargs :guard t))
   type)
@@ -105,8 +103,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The :list type: ;; TODO: Restrict the element type and length type (this should be mutually recursive with axe-typep?)
-
+;; The :list type:  (:list element-type len-type)
+;; TODO: Restrict the element type and length type (this should be mutually recursive with axe-typep?)
+;; TODO: Disallow the empty list, so that nil is not both a list and a boolean?
+;; TODO: Redo the bv-array type and move this elsewhere.
 (defund list-typep (type)
   (declare (xargs :guard t))
   (and (true-listp type)
@@ -142,7 +142,7 @@
          element-type)
   :hints (("Goal" :in-theory (enable list-type-element-type make-list-type))))
 
-;todo
+;todo, but it can also be a quoted constant
 ;; (thm
 ;;  (implies (list-typep type)
 ;;           (axe-typep (list-type-len-type type)))
@@ -157,7 +157,7 @@
 (defund axe-typep (type)
   (declare (xargs :guard t))
   (or (bv-typep type)
-      (list-typep type)
+      (list-typep type) ; todo: disallow this here (used only for test case generation?)
       ;(bv-array-typep type) a subtype of the list-type
       (boolean-typep type)
       (most-general-typep type)
@@ -182,6 +182,7 @@
   (and (list-typep type)
        (bv-typep (list-type-element-type type))
        (myquotep (list-type-len-type type))
+       ;; todo: exclude 0-length arrays, so that nil is not a bv-array?:
        (natp (unquote (list-type-len-type type)))))
 
 (defthm bv-array-typep-forward-to-list-typep
@@ -195,7 +196,8 @@
 ;; TODO: Can the element-width be 0?
 ;; TODO: Can the len be 0?
 (defund make-bv-array-type (element-width len) ;ffixme these args aren't really types.. should they be?
-  (declare (xargs :guard t))
+  (declare (xargs :guard (natp element-width) ; todo: strengthn to posp
+                  ))
   (make-list-type (make-bv-type element-width) (enquote len)))
 
 (defthm list-typep-of-make-bv-array-type
@@ -366,14 +368,15 @@
         ;;ffixme make sure this is sound:
         ((and (bv-array-typep type1)
               (bv-array-typep type2))
-         (if (equal (bv-array-type-len type1)
-                    (bv-array-type-len type2))
-             (make-bv-array-type (min (bv-array-type-element-width type1)
-                                      (bv-array-type-element-width type2))
-                                 (bv-array-type-len type1))
-           (prog2$ (hard-error 'intersect-types "Array length mismatch." nil)
-                   (empty-type))))
-        (t (hard-error 'intersect-types "Type mismatch." nil)))) ;improve message!
+         (let ((len1 (bv-array-type-len type1))
+               (len2 (bv-array-type-len type2)))
+           (if (equal len1 len2)
+               (make-bv-array-type (min (bv-array-type-element-width type1)
+                                        (bv-array-type-element-width type2))
+                                   len1)
+             (prog2$ (er hard? 'intersect-types "Array length mismatch: ~x0 and ~x1." len1 len2)
+                     (empty-type)))))
+        (t (er hard? 'intersect-types "Type mismatch: ~x0 and ~x1." type1 type2))))
 
 (defund intersect-types-safe (type1 type2)
   (declare (xargs :guard t))

@@ -1,6 +1,6 @@
 ; Top level book for JVM model
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -72,3 +72,4 @@
 (include-book "class-and-path-utils")
 (include-book "read-class")
 (include-book "read-class-from-hierarchy")
+(include-book "read-jar") ; requires a ttag for quicklisp

@@ -141,25 +141,48 @@ my %certlib_opts = ( "debugging" => 0,
                      "pcert_all" => 0,
                      "debug_up_to_date" => 0,
                      "force_up_to_date" => {},
-                     "force_out_of_date" => {});
+                     "force_out_of_date" => {},
+                     "imagefile_src_dir" => 0 );
 my $target_ext = "cert";
 my $cache_file = 0;
 my $cache_read_only = 0;
 my $cache_write_only = 0;
 my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
+my $images_dir = $ENV{'ACL2_IMAGES'};
+my $image_src_dir = $ENV{'ACL2_IMAGE_SRC_DIR'};
 my $params_file = 0;
 my $print_relocs = 0;
 
 my $write_timestamps = 0;
 my $read_timestamps = 0;
 
-# Remove trailing slash from and canonicalize bin_dir
+if ($images_dir) {
+    if ($bin_dir && ! ($bin_dir eq $images_dir)) {
+	STDERR->print("ACL2_IMAGES: ${images_dir}\n");
+	STDERR->print("CERT_PL_BIN_DIR: ${bin_dir}\n");
+	
+	die("Environment vars ACL2_IMAGES and CERT_PL_BIN_DIR must both be set to the same value if they are both set");
+    }
+    $bin_dir = $images_dir;
+}
+
+
+# Remove trailing slash from and canonicalize bin_dir and $image_src_dir
 if ($bin_dir) {
     my $cbin_dir = canonical_path(remove_trailing_slash($bin_dir));
     if (! $cbin_dir) {
         die("Fatal: bad path in environment var CERT_PL_BIN_DIR=$bin_dir");
     }
     $bin_dir = $cbin_dir;
+}
+
+if ($image_src_dir) {
+    my $cimage_src_dir = canonical_path(remove_trailing_slash($image_src_dir));
+    if (! $cimage_src_dir) {
+        die("Fatal: bad path in environment var ACL2_IMAGE_SRC_DIR=$image_src_dir");
+    }
+    $image_src_dir = $cimage_src_dir;
+    $certlib_opts{"imagefile_src_dir"} = $image_src_dir;
 }
 
 my $write_sources=0;
@@ -491,7 +514,6 @@ COMMAND LINE OPTIONS
            as "--make-args -k".
 
    --bin <directory>
-
           Sets the location for ACL2 image files.  Cert.pl supports
           the use of different ACL2 images to certify different books.
           If for a book named foo.lisp either a file foo.image or
@@ -503,7 +525,19 @@ COMMAND LINE OPTIONS
           <bin_dir>/<image_name>, and uses <bin_dir>/<image_name> to
           certify the book.  Otherwise, no additional dependency is
           set, and at certification time we look for the image in the
-          user\'s PATH.
+          user\'s PATH.  This can also be set via environment variables
+          CERT_PL_BIN_DIR or ACL2_IMAGES (the --bin argument
+          overrides these, and these must be the same if both are set).
+
+   --image-sources <directory>
+
+          Sets the directory for source files from which to build ACL2
+          saved images.  For an ACL2 image to be named myimage (in the
+          images directory -- see the --bin argument above), the
+          source file must be myimage.lsp in the image sources
+          directory.  This may also be set via environment variable
+          ACL2_IMAGE_SRC_DIR (the --image-sources argument overrides
+          this).
 
    --params <filename>
           Specifies a file that contains lines like:
@@ -597,6 +631,10 @@ USEFUL ENVIRONMENT VARIABLES
          certification instructions) and .cert.out files.  Note that this
          does not affect .cert.time files.
 
+    CERT_PL_BIN_DIR or ACL2_IMAGES
+         Should be set to the directory in which saved ACL2 images are deposited,
+         if using saved images.  
+
     STARTJOB (default: "bash")
          Can be set to the name of a command to use instead of bash
          when launching a subprocess that will run ACL2.  The command
@@ -674,6 +712,14 @@ GetOptions ("help|h"               => sub {
                 $bin_dir = canonical_path(remove_trailing_slash($arg));
                 if (!$bin_dir) {
                     die("Fatal: bad path in directive --bin $arg\n");
+                }
+            },
+            "image-sources=s"                => sub {
+                shift;
+                my $arg = shift;
+                $certlib_opts{"imagefile_src_dir"} = canonical_path(remove_trailing_slash($arg));
+                if (!$certlib_opts{"imagefile_src_dir"}) {
+                    die("Fatal: bad path in directive --image-sources $arg\n");
                 }
             },
             "include|i=s"          => sub {shift;
@@ -1156,6 +1202,11 @@ unless ($no_makefile) {
 
     # write out the dependencies
     foreach my $cert (@certs) {
+	my $cert_is_image = $cert =~ /\.image$/;
+	if ($cert_is_image && ! $certlib_opts{"imagefile_src_dir"}) {
+	    # Don't write image dependencies if imagefile_src_dir isn't set.
+	    next;
+	}
         my $certdeps = $depdb->cert_deps($cert);
         my $srcdeps = $depdb->cert_srcdeps($cert);
         my $otherdeps = $depdb->cert_otherdeps($cert);
@@ -1165,17 +1216,38 @@ unless ($no_makefile) {
         my $pcert_ok = ( ! $useacl2x && ($depdb->cert_get_param($cert, "pcert") || $pcert_all)) || 0;
         my $acl2xskip = $depdb->cert_get_param($cert, "acl2xskip") || 0;
 
-        print $mf make_encode($cert) . " : acl2x = $useacl2x\n";
-        print $mf make_encode($cert) . " : pcert = $pcert_ok\n";
+	if ($cert_is_image && !@$srcdeps) {
+	    # If srcdeps is empty, we don't have any dependency info
+	    # and the recipe for building the image won't work because
+	    # we need the main source listed first.
+	    next;
+	}
+
+	
+	my $maketarget;
+	if ($cert_is_image) {
+	    (my $barename = $cert) =~ s/\.image$//;
+	    my $imagepath = canonical_path(File::Spec->catfile($bin_dir, $barename));
+	    $maketarget = make_encode($imagepath);
+	} else {
+	    $maketarget = make_encode($cert);
+	}
+	
+        print $mf $maketarget . " : acl2x = $useacl2x\n";
+        print $mf $maketarget . " : pcert = $pcert_ok\n";
         # print $mf "#$cert params: ";
         # my $params = cert_get_params($cert, $depdb);
         # while (my ($key, $val) = each %$params) {
         #     print $mf "$key = $val ";
         # }
         print $mf "\n";
-        print $mf make_encode($cert) . " :";
-        $ysmf and print $smf " (\"" . make_encode($cert) . "\"";
-        foreach my $dep (@$certdeps, @$srcdeps, @$otherdeps) {
+        print $mf $maketarget . " :";
+        $ysmf and print $smf " (\"" . $maketarget . "\"";
+	# Note: reverse srcdeps and put it first because the make_cert
+	# recipe for building an image requires the first dependency
+	# to be the main source .lsp file, which is the first one
+	# added as a srcdep and therefore the last in the list.
+        foreach my $dep (reverse(@$srcdeps), @$certdeps, @$otherdeps) {
             print $mf " \\\n     " . make_encode($dep);
             $ysmf and print $smf "\n    \"" . make_encode($dep) . "\"";
         }
@@ -1194,8 +1266,15 @@ unless ($no_makefile) {
         print $mf "\n";
         $ysmf and print $smf ")\n";
 
+	# One newline after the dependency list, if the target is an
+	# image, insert the recipe for building the image, which in
+	# this case is just the make variable $(SAVED_IMAGE_RECIPE).
+	if ($cert_is_image) {
+	    print $mf "\t\$(SAVED_IMAGE_RECIPE)\n";
+	}
+
         # $smf is not yet writing out the order-only prerequisites to smf
-        if ($useacl2x) {
+        if ($useacl2x && ! $cert_is_image) {
             my $acl2xfile = cert_to_acl2x($cert);
 #     This would be a nice way to do things, but unfortunately the "private"
 #     keyword for target-specific variables was introduced in GNU Make 3.82,
@@ -1203,7 +1282,7 @@ unless ($no_makefile) {
 #           print $mf "$cert : private TWO_PASS := 1\n";
 #     Instead, sadly, we'll individually set the TWO_PASS variable for
 #     each target instead.  (Note the ELSE case below.)
-            print $mf make_encode($cert) . " : |";   # order-only prerequisite
+            print $mf $maketarget . " : |";   # order-only prerequisite
             print $mf " \\\n     " . make_encode($acl2xfile);
             print $mf "\n\n";
             print $mf make_encode($acl2xfile) . " : acl2xskip = $acl2xskip\n";
@@ -1241,6 +1320,11 @@ unless ($no_makefile) {
     # $smf is not yet capturing acl2x or pcert dependencies here
 
     foreach my $cert (@certs) {
+	my $cert_is_image = $cert =~ /\.image$/;
+	if ($cert_is_image) {
+	    next;
+	}
+	
         my $useacl2x = $depdb->cert_get_param($cert, "acl2x") || 0;
         # BOZO acl2x implies no pcert
         my $pcert_ok = (! $useacl2x && ($depdb->cert_get_param($cert, "pcert") || $pcert_all)) || 0;

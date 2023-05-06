@@ -255,10 +255,15 @@ The key checkpoint goals, below, may help you to debug this failure.
 See :DOC failure and see :DOC set-checkpoint-summary-limit.
 ---
 
-*** Key checkpoint at the top level: ***
+*** Key checkpoints before reverting to proof by induction: ***
 
-Goal
-<GOAL>
+Subgoal 2'
+(EQUAL (APPEND (APPEND X Y) X)
+       (APPEND X Y X))
+
+Subgoal 1'
+(EQUAL (APPEND (APPEND Z Y) X)
+       (APPEND X Y X))
 
 *** Key checkpoints under a top-level induction
     before generating a goal of NIL (see :DOC nil-goal): ***
@@ -293,7 +298,10 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST T STATE):
 
-((<GOAL>))
+(((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+         (BINARY-APPEND X (BINARY-APPEND Y X))))
+ ((EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+         (BINARY-APPEND X (BINARY-APPEND Y X)))))
 ----------
 
 
@@ -328,7 +336,10 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST-PRETTY T STATE):
 
-(<GOAL>)
+((EQUAL (APPEND (APPEND X Y) X)
+        (APPEND X Y X))
+ (EQUAL (APPEND (APPEND Z Y) X)
+        (APPEND X Y X)))
 ----------
 
 
@@ -357,7 +368,14 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-INFO-LIST T STATE):
 
-(((:CLAUSE-ID (0) NIL . 0) (:CLAUSE <GOAL>) (:PUSHED (((0) NIL . 0) 1))))
+(((:CLAUSE-ID (0) (2) . 1)
+  (:CLAUSE (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+                  (BINARY-APPEND X (BINARY-APPEND Y X))))
+  (:PUSHED (((0) (2) . 1) 1)))
+ ((:CLAUSE-ID (0) (1) . 1)
+  (:CLAUSE (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+                  (BINARY-APPEND X (BINARY-APPEND Y X))))
+  (:PUSHED)))
 ----------
 
 
@@ -404,10 +422,16 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (SHOW-CHECKPOINT-LIST):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-(<GOAL>)
+Subgoal 2':
+((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+        (BINARY-APPEND X (BINARY-APPEND Y X))))
+
+Subgoal 1':
+((EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+        (BINARY-APPEND X (BINARY-APPEND Y X))))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -450,10 +474,16 @@ Subgoal *1/1.1':
 ----------
 (SHOW-CHECKPOINT-LIST T):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-<GOAL>
+Subgoal 2':
+(EQUAL (APPEND (APPEND X Y) X)
+       (APPEND X Y X))
+
+Subgoal 1':
+(EQUAL (APPEND (APPEND Z Y) X)
+       (APPEND X Y X))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -1146,7 +1176,7 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST T STATE):
 
-((<GOAL>))
+(((EQUAL (CAR X) X)))
 ----------
 
 
@@ -1160,7 +1190,7 @@ NIL
 ----------
 (CHECKPOINT-LIST-PRETTY T STATE):
 
-(<GOAL>)
+((EQUAL (CAR X) X))
 ----------
 
 
@@ -1174,7 +1204,7 @@ NIL
 ----------
 (CHECKPOINT-INFO-LIST T STATE):
 
-(((:CLAUSE-ID (0) NIL . 0) (:CLAUSE <GOAL>) (:PUSHED (((0) NIL . 0) 1))))
+(((:CLAUSE-ID (0) (1) . 0) (:CLAUSE (EQUAL (CAR X) X)) (:PUSHED)))
 ----------
 
 
@@ -1188,10 +1218,11 @@ NIL
 ----------
 (SHOW-CHECKPOINT-LIST):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-(<GOAL>)
+Subgoal 1:
+((EQUAL (CAR X) X))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -1206,10 +1237,11 @@ Goal:
 ----------
 (SHOW-CHECKPOINT-LIST T):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-<GOAL>
+Subgoal 1:
+(EQUAL (CAR X) X)
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -1434,7 +1466,10 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST T STATE):
 
-((<GOAL>))
+(((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+         (BINARY-APPEND X (BINARY-APPEND Y X))))
+ ((EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+         (BINARY-APPEND X (BINARY-APPEND Y X)))))
 ----------
 
 
@@ -1469,7 +1504,10 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST-PRETTY T STATE):
 
-(<GOAL>)
+((EQUAL (APPEND (APPEND X Y) X)
+        (APPEND X Y X))
+ (EQUAL (APPEND (APPEND Z Y) X)
+        (APPEND X Y X)))
 ----------
 
 
@@ -1498,7 +1536,14 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-INFO-LIST T STATE):
 
-(((:CLAUSE-ID (0) NIL . 0) (:CLAUSE <GOAL>) (:PUSHED (((0) NIL . 0) 1))))
+(((:CLAUSE-ID (0) (2) . 1)
+  (:CLAUSE (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+                  (BINARY-APPEND X (BINARY-APPEND Y X))))
+  (:PUSHED (((0) (2) . 1) 1)))
+ ((:CLAUSE-ID (0) (1) . 1)
+  (:CLAUSE (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+                  (BINARY-APPEND X (BINARY-APPEND Y X))))
+  (:PUSHED)))
 ----------
 
 
@@ -1545,10 +1590,16 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (SHOW-CHECKPOINT-LIST):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-(<GOAL>)
+Subgoal 2':
+((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+        (BINARY-APPEND X (BINARY-APPEND Y X))))
+
+Subgoal 1':
+((EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+        (BINARY-APPEND X (BINARY-APPEND Y X))))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -1591,10 +1642,16 @@ Subgoal *1/1.1':
 ----------
 (SHOW-CHECKPOINT-LIST T):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-<GOAL>
+Subgoal 2':
+(EQUAL (APPEND (APPEND X Y) X)
+       (APPEND X Y X))
+
+Subgoal 1':
+(EQUAL (APPEND (APPEND Z Y) X)
+       (APPEND X Y X))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -1793,7 +1850,8 @@ CHECKPOINT-LIST-BOTH is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN CHECKPOINT-LIST-BOTH ...)
-Rules: ((:DEFINITION BOUNDP-GLOBAL)
+Rules: ((:DEFINITION ABORT-INFO-STACK)
+        (:DEFINITION BOUNDP-GLOBAL)
         (:DEFINITION BOUNDP-GLOBAL1)
         (:DEFINITION CHECKPOINT-LIST)
         (:DEFINITION CHECKPOINT-LIST-GUARD)
@@ -1812,6 +1870,7 @@ Rules: ((:DEFINITION BOUNDP-GLOBAL)
         (:FORWARD-CHAINING STATE-P1-FORWARD)
         (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
         (:TYPE-PRESCRIPTION ALISTP)
+        (:TYPE-PRESCRIPTION CHECKPOINT-LIST-REC)
         (:TYPE-PRESCRIPTION EQLABLE-ALISTP)
         (:TYPE-PRESCRIPTION ORDERED-SYMBOL-ALISTP)
         (:TYPE-PRESCRIPTION STATE-P1)

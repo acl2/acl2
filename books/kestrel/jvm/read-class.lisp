@@ -68,13 +68,3 @@
                              &key
                              (dir 'nil))
   `(make-event-quiet (read-class-fn ,class-file ',dir ',whole-form state constant-pool)))
-
-;; TODO: Deprecate.
-;; Reads in the indicated Java bytecode .class file and creates a defconst
-;; containing the parsed contents of the class.  Also adds the class to the
-;; global-class-table.
-(defmacro load-class (&whole whole-form
-                             class-file
-                             &key
-                             (dir 'nil))
-  `(make-event-quiet (read-class-fn ,class-file ',dir ',whole-form state constant-pool)))

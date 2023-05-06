@@ -14,7 +14,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "projects/quadratic-reciprocity/euclid" :dir :system))
+(local (include-book "projects/numbers/euclid" :dir :system))
 
 ; cert_param: (uses-acl2r)
 

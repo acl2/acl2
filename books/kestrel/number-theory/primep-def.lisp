@@ -1,10 +1,10 @@
 (in-package "DM")
 
 ;; This book just cherry-picks the definition of primep (and two supporting
-;; functions) from books/projects/quadratic-reciprocity/support/euclid.lisp.
+;; functions) from books/projects/numbers/support/euclid.lisp.
 ;; See the copyright in that book.
 
-(local (include-book "projects/quadratic-reciprocity/support/euclid" :dir :system))
+(local (include-book "projects/numbers/support/euclid" :dir :system))
 
 (defn divides (x y)
   (and (acl2-numberp x)

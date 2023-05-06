@@ -12,6 +12,7 @@
 
 ;; STATUS: INCOMPLETE (also need to bring in theorems used by the tool)
 
+(include-book "kestrel/jvm/read-jar" :dir :system) ; involves raw lisp code
 (include-book "tools/with-supporters" :dir :system)
 
 (with-supporters

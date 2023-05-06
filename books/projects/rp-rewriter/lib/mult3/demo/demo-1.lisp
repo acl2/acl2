@@ -39,57 +39,20 @@
 
 (in-package "RP")
 
-;; To load the verilog designs:
-(include-book "centaur/sv/top" :dir :system) ;; a big book; takes around 30 seconds
-(include-book "centaur/vl/loader/top" :dir :system) ;; takes around 10 seconds
-(include-book "oslib/ls" :dir :system)
-
-(value-triple (acl2::set-max-mem (* 10 (expt 2 30))))
-
-;; for correctness proof
-(include-book "projects/rp-rewriter/lib/mult3/svtv-top" :dir :system)
-
-;; load VL design for the modules in DT_SB4_HC_64_64_multgen.sv
-;; this is a 64x64 Signed, Booth radix-4 encoded, Dadda Tree integer multiplier
-(acl2::defconsts
-  (*vl-design* state)
-  (b* (((mv loadresult state)
-        (vl::vl-load (vl::make-vl-loadconfig
-                      :start-files '("DT_SB4_HC_64_64_multgen.sv")))))
-    (mv (vl::vl-loadresult->design loadresult) state)))
-
-;; Load SV design
-(acl2::defconsts
-  (*sv-design*
-   *simplified-good*
-   *simplified-bad*)
-  (b* (((mv errmsg sv-design good bad)
-        (vl::vl-design->sv-design "DT_SB4_HC_64_64"
-                                  *vl-design* (vl::make-vl-simpconfig))))
-    (and errmsg
-         (acl2::raise "~@0~%" errmsg))
-    (mv sv-design good bad)))
-
-;; Get the svtv so the design can be simulated.
-(sv::defsvtv mult-run
-  :mod *sv-design*
-  :inputs '(("IN1" a)
-            ("IN2" b))
-  :outputs
-  '(("result" res)))
-
 ; Matt K. mod: Avoid ACL2(p) error from a clause-processor that returns one or
 ; more stobjs.
 (set-waterfall-parallelism nil)
 
-;; takes around 1-1.5 seconds.
-(defthmrp-multiplier multiplier-correct
-  (implies (and (integerp a)
-                (integerp b))
-           (b* (((sv::assocs res)
-                 (sv::svtv-run (mult-run)
-                               `((a . ,a)
-                                 (b . ,b)))))
-             (equal res
-                    (loghead 128 (* (logext 64 a)
-                                    (logext 64 b)))))))
+(include-book "projects/rp-rewriter/lib/mult3/top" :dir :system) ;; a big book; takes around 30 seconds
+
+
+;; should be parsed in around a second.
+(parse-and-create-svtv :file "DT_SB4_HC_64_64_multgen.sv"
+                       :topmodule "DT_SB4_HC_64_64"
+                       :name my-multiplier-example)
+
+(verify-svtv-of-mult :name my-multiplier-example
+                     :concl (equal result ;; output signal name
+                                   ;; specification:
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2)))))

@@ -456,16 +456,16 @@
                                                        1000000 ;is term a nodenum?  can we use it here?
                                                        )))
 
-(defund bv-term-syntaxp (nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (natp nodenum-or-quotep)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (if (consp nodenum-or-quotep)
-      (natp (unquote nodenum-or-quotep))
-    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-      (and (consp expr)
-           (member-eq (ffn-symb expr)
-                      *operators-whose-size-we-know*)))))
+;; (defund bv-term-syntaxp (nodenum-or-quotep dag-array)
+;;   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
+;;                              (and (natp nodenum-or-quotep)
+;;                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
+;;   (if (consp nodenum-or-quotep)
+;;       (natp (unquote nodenum-or-quotep))
+;;     (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+;;       (and (consp expr)
+;;            (member-eq (ffn-symb expr)
+;;                       *operators-whose-size-we-know*)))))
 
 ;; ;bbbozo use this all over the place
 ;; ;term should be a nodenum or quoted constant (is this always the case for the da-syntaxp fns?)

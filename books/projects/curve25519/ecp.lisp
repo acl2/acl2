@@ -1,10 +1,10 @@
 (in-package "DM")
 
-(include-book "projects/quadratic-reciprocity/pratt" :dir :system)
-(local (include-book "projects/quadratic-reciprocity/support/pratt" :dir :system))
+(include-book "projects/numbers/pratt" :dir :system)
+(local (include-book "projects/numbers/support/pratt" :dir :system))
 (include-book "rtl/rel11/support/util" :dir :system) ;for local-defthmd
 (local (include-book "rtl/rel11/support/basic" :dir :system))
-(include-book "projects/quadratic-reciprocity/euler" :dir :system) ;for residue
+(include-book "projects/numbers/euler" :dir :system) ;for residue
 
 (include-book "arithmetic-5/top" :dir :system)
 

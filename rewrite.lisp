@@ -10167,8 +10167,7 @@ its attachment is ignored during proofs"))))
                                  whs
                                  (update-brr-data-2
                                   wonp failure-reason unify-subst gstack
-                                  brr-result final-ttree rcnst
-                                  nil ; ancestors is unused
+                                  brr-result final-ttree rcnst ancestors
                                   (wormhole-data whs))))
                              (list :no-wormhole-lock
                                    wonp failure-reason unify-subst gstack
@@ -10231,24 +10230,27 @@ its attachment is ignored during proofs"))))
 
 (mutual-recursion
 
-(defun matching-subterm (pat term alist)
+(defun matching-subterm (pat term alist target)
 
-; If pat/alist2 is a subterm of term for some extension of alist2 of alist,
-; then return that subterm.  Otherwise return nil.
+; If pat/alist2 is a subterm s of term for some extension of alist2 of alist
+; such that s does not occur in target, then return that subterm.  Otherwise
+; return nil.
 
   (mv-let (flg alist2)
     (one-way-unify1 pat term alist)
     (declare (ignore alist2))
-    (cond (flg term)
+    (cond ((and flg
+                (not (dumb-occur term target)))
+           term)
           ((or (variablep term)
                (fquotep term))
            nil)
-          (t (matching-subterm-lst pat (fargs term) alist)))))
+          (t (matching-subterm-lst pat (fargs term) alist target)))))
 
-(defun matching-subterm-lst (pat lst alist)
+(defun matching-subterm-lst (pat lst alist target)
   (cond ((endp lst) nil)
-        (t (or (matching-subterm pat (car lst) alist)
-               (matching-subterm-lst pat (cdr lst) alist)))))
+        (t (or (matching-subterm pat (car lst) alist target)
+               (matching-subterm-lst pat (cdr lst) alist target)))))
 )
 
 (mutual-recursion
@@ -10260,20 +10262,25 @@ its attachment is ignored during proofs"))))
 ; of d-2, rest is a list of brr-data records, and x is either nil or a natural
 ; number less than the length of the gstack of d-2.
 
-  (let* ((post (access brr-data brr-data :post))
+  (let* ((pre (access brr-data brr-data :pre))
+         (target (access brr-data-1 pre :target))
+         (post (access brr-data brr-data :post))
          (brr-result (access brr-data-2 post :brr-result))
-         (subterm 
+         (subterm
           (cond ((eq alist :none)
-                 (and (if subterm-p
+                 (and (not (dumb-occur term target))
+                      (if subterm-p
                           (dumb-occur term brr-result)
                         (equal term brr-result))
                       term))
                 (subterm-p
-                 (matching-subterm term brr-result alist))
+                 (matching-subterm term brr-result alist target))
                 (t (mv-let (flg alist2)
                      (one-way-unify1 term brr-result alist)
                      (declare (ignore alist2))
-                     (and flg brr-result))))))
+                     (and flg
+                          (not (dumb-occur brr-result target))
+                          brr-result))))))
     (cond
      (subterm
       (let ((d-2 (brr-data-2-for-term
@@ -10461,8 +10468,8 @@ its attachment is ignored during proofs"))))
                                                          :brr-result))))
                     (cw "The resulting (translated) term is~|  ~
                          ~y0.~|~#1~[~/Note: The first lemma application above ~
-                         that provides a suitable result is at position ~x2, ~
-                         and ~#3~[it's the same result as above.~/that result ~
+                         that provides a suitable result is at frame ~x2, and ~
+                         ~#3~[it's the same result as above.~/that result ~
                          is~|  ~y4.~]~]~|"
                         brr-result
                         (if earlier-d2 1 0)

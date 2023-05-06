@@ -26,9 +26,9 @@
   :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 (defthm len-when-bv-arrayp
-  (implies (bv-arrayp bytesize numcols item1)
-           (equal (len item1)
-                  numcols))
+  (implies (bv-arrayp element-width length val)
+           (equal (len val)
+                  length))
   :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 (defthm true-listp-when-bv-arrayp
@@ -73,3 +73,12 @@
                 (< n freelen))
            (<= 0 (nth n val)))
   :hints (("Goal" :in-theory (enable acl2::bv-arrayp))))
+
+;; Do not remove: helps justify the correctness of intersect-types in Axe.
+(defthm bv-arrayp-when-bv-arrayp-narrower
+  (implies (and (bv-arrayp small-element-width length val)
+                (<= small-element-width element-width)
+                (natp small-element-width)
+                (natp element-width))
+           (bv-arrayp element-width length val))
+  :hints (("Goal" :in-theory (enable bv-arrayp))))

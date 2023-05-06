@@ -1,9 +1,9 @@
 (in-package "DM")
 
 (include-book "rtl/rel11/lib/top" :dir :system)
-(include-book "projects/quadratic-reciprocity/portcullis" :dir :system)
+(include-book "projects/numbers/portcullis" :dir :system)
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 
 ;;---------------------------------------------------------------------------------------------------
 ;; Properties of Lists
@@ -1564,7 +1564,7 @@
 			(:instance rtl::mod-mod-times (b x) (a (* y z)) (n n))
 			(:instance rtl::mod-mod-times (b z) (a (* x y)) (n n))))))
 
-;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
+;; The definition of z*-inv is based on the following lemma from books/projects/numbers/euclid.lisp"
 
 (defthm gcd-linear-combination
     (implies (and (integerp x)

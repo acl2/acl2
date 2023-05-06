@@ -257,11 +257,35 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Group Theory Library")
+
+   (xdoc::p
+    "Added seven books to @('projects/groups/') on the topics of homomorphisms,
+     direct products, the Fundamental Theorem of Finite Abelian Groups,
+     symmetric groups, group actions, the Sylow theorems, and simple groups.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
 
    (xdoc::p
     "Added utility @(tsee show-books), which returns a tree representing the
      @(see books) included in the current ACL2 session.")
+
+   (xdoc::p
+    "The utility @(tsee checkpoint-list) and related utilities now show
+     top-level checkpoints even in the case of reverting to prove the original
+     goal by induction, and label them accordingly.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Number Theory Library")
+
+   (xdoc::p
+    "The library @('projects/quadratic-reciprocity/'), which was originally
+     dedicated to a proof of the theorem of that name, is being extended with
+     a variety of number-theoretic results.  Therefore, the path to the
+     directory has been changed to @('projects/numbers/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

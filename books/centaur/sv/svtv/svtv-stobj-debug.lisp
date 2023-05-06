@@ -286,6 +286,16 @@
                  (svtv-chase-repl))
                (mv svtv-chase-data state))))
 
+(define svtv-override-alist ((assigns svex-alist-p)
+                             (config phase-fsm-config-p))
+  :returns (override-alist svex-alist-p)
+  (make-fast-alist
+   (svarlist-to-override-alist
+    (svtv-assigns-override-vars
+     assigns (phase-fsm-config->override-config config))))
+  ///
+  (memoize 'svtv-override-alist))
+
 
 (define svtv-data-chase-phase-fsm ((ins svex-envlist-p)
                                    (initst svex-env-p)
@@ -315,7 +325,9 @@
        (svtv-chase-data (set-svtv-chase-data->evaldata evaldata svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->updates (make-fast-alist fsm.values) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->delays (make-fast-alist flatnorm.delays) svtv-chase-data))
-       (svtv-chase-data (set-svtv-chase-data->assigns (make-fast-alist flatnorm.assigns) svtv-chase-data)))
+       (svtv-chase-data (set-svtv-chase-data->assigns (make-fast-alist flatnorm.assigns) svtv-chase-data))
+       (override-alist (svtv-override-alist flatnorm.assigns (svtv-data->phase-fsm-setup svtv-data)))
+       (svtv-chase-data (set-svtv-chase-data->override-alist (make-fast-alist override-alist) svtv-chase-data)))
     (svtv-chase$-repl)))
 
 
@@ -900,6 +912,9 @@
                       :wires (list (make-wire :name "in"
                                               :width 5
                                               :low-idx 0)
+                                   (make-wire :name "mid"
+                                              :width 5
+                                              :low-idx 0)
                                    (make-wire :name "out"
                                               :width 5
                                               :low-idx 0))
@@ -909,6 +924,15 @@
                                              :atom
                                              (make-lhatom-var
                                               :name "out"
+                                              :rsh 0)))
+                                      (make-driver
+                                       :value (svcall zerox 5 "mid")))
+                                     (cons
+                                      (list (make-lhrange
+                                             :w 5
+                                             :atom
+                                             (make-lhatom-var
+                                              :name "mid"
                                               :rsh 0)))
                                       (make-driver
                                        :value (svcall bitnot
@@ -975,9 +999,57 @@
             nil state svtv-data)))
     (mv nil '(value-triple :ok) state svtv-data))))
 
- 
+
+
 
 #||
+
+(local
+ (defconst *my-design3*
+   (make-design
+    :top "my-mod"
+    :modalist (list
+               (cons "my-mod"
+                     (make-module
+                      :wires (list (make-wire :name "in"
+                                              :width 5
+                                              :low-idx 0)
+                                   (make-wire :name "mid"
+                                              :width 5
+                                              :low-idx 0)
+                                   (make-wire :name "out"
+                                              :width 5
+                                              :low-idx 0))
+                      :assigns (list (cons
+                                      (list (make-lhrange
+                                             :w 5
+                                             :atom
+                                             (make-lhatom-var
+                                              :name "out"
+                                              :rsh 0)))
+                                      (make-driver
+                                       :value (svcall zerox 5 (svex-var (make-svar :name "mid" :delay 1)))))
+                                     (cons
+                                      (list (make-lhrange
+                                             :w 5
+                                             :atom
+                                             (make-lhatom-var
+                                              :name "mid"
+                                              :rsh 0)))
+                                      (make-driver
+                                       :value (svcall bitnot
+                                                      (svcall zerox 5 "in")))))))))))
+(sv::svtv-chase-defsvtv$
+  (defsvtv$ my-svtv
+           :design *my-design3*
+           :phases
+           '((:label the-phase
+              :inputs (("in" in))
+              :overrides (("mid" mid :cond mid-ovr)))
+             (:label next-phase
+              :outputs (("out" out)))))
+  :env '((in . #x9) (mid . #xf) (mid-ovr . #xc)))
+
 
 (defconst *my-design2*
   (make-design

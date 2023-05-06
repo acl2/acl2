@@ -12,10 +12,10 @@
 (in-package "ECURVE")
 
 ; for primep definition
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 
 ; for fermat's little theorem
-(include-book "projects/quadratic-reciprocity/fermat" :dir :system)
+(include-book "projects/numbers/fermat" :dir :system)
 
 (include-book "kestrel/utilities/integer-arithmetic/top" :dir :system)
 
@@ -472,7 +472,7 @@
            :in-theory (enable =p modp)
            :use (:instance dm::fermat (m m) (p (prime))))))
 
-; the whole identity is shown in "projects/quadratic-reciprocity/euler"
+; the whole identity is shown in "projects/numbers/euler"
 (defthmd weak-euler-criterion
   (implies (and (integerp sqrt{a})
                 (integerp a)

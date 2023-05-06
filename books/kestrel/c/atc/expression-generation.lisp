@@ -880,7 +880,7 @@
                                        (type-sshort))))
         (reterr
          (msg "When generating C code for the function ~x0, ~
-               two branches the conditional term ~x1 ~
+               two branches of the conditional term ~x1 ~
                have type ~x2, which is disallowed; ~
                use conversion operations, if needed, ~
                to turn the branches into an integer type of higher rank."

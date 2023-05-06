@@ -289,7 +289,7 @@
 (encapsulate
   ()
 
-  (local (include-book "projects/quadratic-reciprocity/euclid" :dir :system))
+  (local (include-book "projects/numbers/euclid" :dir :system))
   (local (include-book "arithmetic-5/top" :dir :system))
 
   (local
