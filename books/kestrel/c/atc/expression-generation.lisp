@@ -104,7 +104,6 @@
     "An ACL2 variable is translated to a C variable.
      Its information is looked up in the symbol table."))
   (b* (((pexpr-gin gin) gin)
-       (wrld (w state))
        (info (atc-get-var var gin.inscope))
        ((when (not info))
         (raise "Internal error: the variable ~x0 in function ~x1 ~
@@ -124,23 +123,14 @@
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
        (hints
-        (b* ((type-pred (type-to-recognizer type wrld))
-             (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
-             (valuep-when-type-pred (pack 'valuep-when- type-pred)))
-          `(("Goal" :in-theory '(,var-thm
-                                 exec-expr-pure-when-ident
-                                 expr-valuep-of-expr-value
-                                 expr-value->value-of-expr-value
-                                 ,valuep-when-type-pred
-                                 value-fix-when-valuep
-                                 (:e expr-kind)
-                                 (:e expr-ident->get)
-                                 exec-ident-open
-                                 read-var-of-const-identifier
-                                 (:e identp)
-                                 (:e ident->name)
-                                 ,value-kind-when-type-pred
-                                 objdesign-of-var-of-const-identifier)))))
+        `(("Goal" :in-theory '(,var-thm
+                               exec-expr-pure-when-ident
+                               (:e expr-kind)
+                               (:e expr-ident->get)
+                               exec-ident-open-via-object
+                               (:e identp)
+                               (:e ident->name)
+                               objdesign-of-var-of-const-identifier))))
        (objdes `(objdesign-of-var (ident ',(symbol-name var)) ,gin.compst-var))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
