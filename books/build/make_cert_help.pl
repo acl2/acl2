@@ -297,6 +297,7 @@ sub scan_source_file
     my $events = scan_src_run($filename);
     my $max_mem = 0;
     my $max_time = 0;
+    my $image = 0;
     my @includes = ();
     my @pbs = ();
     my $ifdef_level = 0;
@@ -335,11 +336,18 @@ sub scan_source_file
 		}
 	    } elsif ($type eq pbs_event) {
 		push @pbs, $event->[0];
+	    } elsif ($type eq cert_param_event) {
+		my $pairs = $event->[0];
+		foreach my $pair (@$pairs) {
+		    if ($pair->[0] eq "acl2-image") {
+			$image = $pair->[1];
+		    }
+		}
 	    }
 	}
     }
 
-     return ( $max_mem, $max_time, \@includes, \@pbs );
+     return ( $max_mem, $max_time, \@includes, \@pbs, $image );
 }
 
 
@@ -567,9 +575,18 @@ remove_file_if_exists($outfile);
 write_whole_file($outfile, $HEADER);
 
 
+# --- Scan the source file for includes (to collect the portculli) and resource limits ----
+my ($max_mem, $max_time, $includes, $book_pbs, $book_image) = scan_source_file("$file.lisp");
+$max_mem = $max_mem ? ($max_mem + 3) : 4;
+$max_time = $max_time || 240;
+
+$ENV{"CERT_MAX_MEM"} = $max_mem;
+$ENV{"CERT_MAX_TIME"} = $max_time;
+$ENV{"CERT_GOALFILE"} = $goal;
 
 # Override ACL2 per the image file, as appropriate.
-my $acl2 = read_whole_file_if_exists("$file.image");
+my $acl2 = $book_image;
+$acl2 = read_whole_file_if_exists("$file.image") if !$acl2;
 $acl2 = read_whole_file_if_exists("cert.image") if !$acl2;
 $acl2 = $default_acl2 if !$acl2;
 $acl2 = trim($acl2);
@@ -610,14 +627,6 @@ $instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
 $instrs .= "$INHIBIT\n" if ($INHIBIT);
 $instrs .= "\n";
 
-# --- Scan the source file for includes (to collect the portculli) and resource limits ----
-my ($max_mem, $max_time, $includes, $book_pbs) = scan_source_file("$file.lisp");
-$max_mem = $max_mem ? ($max_mem + 3) : 4;
-$max_time = $max_time || 240;
-
-$ENV{"CERT_MAX_MEM"} = $max_mem;
-$ENV{"CERT_MAX_TIME"} = $max_time;
-$ENV{"CERT_GOALFILE"} = $goal;
 
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.

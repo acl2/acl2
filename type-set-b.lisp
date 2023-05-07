@@ -1451,7 +1451,7 @@
     (& nil)))
 
 (defrec certify-book-info
-  (include-book-phase cert-op . full-book-name)
+  (cert-op . full-book-name)
   nil) ; could replace with t sometime
 
 (defrec useless-runes

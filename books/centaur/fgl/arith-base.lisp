@@ -303,8 +303,7 @@ sign bit, which we must implicitly extend out to infinity.</p>"
   (local (defun fgl-toplevel-vacuity-check-config () nil)))
 
 
-(define fgl-sat-check ((params "Parameters for the SAT check -- depending on the
-                                attachment for the pluggable checker.")
+(define fgl-sat-check ((params "Parameters for the SAT check -- typically of type @(see fgl-sat-config).")
                        (x "Object to check for satisfiability."))
   :parents (fgl-solving)
   :short "Checking satisfiability of intermediate terms during FGL interpretation."

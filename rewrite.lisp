@@ -10167,8 +10167,7 @@ its attachment is ignored during proofs"))))
                                  whs
                                  (update-brr-data-2
                                   wonp failure-reason unify-subst gstack
-                                  brr-result final-ttree rcnst
-                                  nil ; ancestors is unused
+                                  brr-result final-ttree rcnst ancestors
                                   (wormhole-data whs))))
                              (list :no-wormhole-lock
                                    wonp failure-reason unify-subst gstack
@@ -10267,7 +10266,7 @@ its attachment is ignored during proofs"))))
          (target (access brr-data-1 pre :target))
          (post (access brr-data brr-data :post))
          (brr-result (access brr-data-2 post :brr-result))
-         (subterm 
+         (subterm
           (cond ((eq alist :none)
                  (and (not (dumb-occur term target))
                       (if subterm-p
@@ -10469,8 +10468,8 @@ its attachment is ignored during proofs"))))
                                                          :brr-result))))
                     (cw "The resulting (translated) term is~|  ~
                          ~y0.~|~#1~[~/Note: The first lemma application above ~
-                         that provides a suitable result is at position ~x2, ~
-                         and ~#3~[it's the same result as above.~/that result ~
+                         that provides a suitable result is at frame ~x2, and ~
+                         ~#3~[it's the same result as above.~/that result ~
                          is~|  ~y4.~]~]~|"
                         brr-result
                         (if earlier-d2 1 0)
