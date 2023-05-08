@@ -4162,13 +4162,23 @@
                                  step-limit)
             (mv@par step-limit signal clauses ttree new-pspv state)))))
    (pprogn@par
+    (serial-first-form-parallel-second-form@par
 
 ; Since wormholes (in particular, brr wormholes) don't change the global values
-; of the iprint structures, we make such changes here so that iprinting done
-; in brr is reflected in the global state.
+; of the iprint structures, we formerly called iprint-oracle-updates as shown
+; just below so that iprinting done in brr is reflected in the global state.
+; However, we see now that this is not necessary: printing with evisceration
+; always goes through eviscerate-top or eviscerate-stobjs-top, and these invoke
+; iprint-oracle-updates when necessary, so the only other reason for such an
+; update here would be if we were to read forms #@n# printed in the brr
+; wormhole.  But such reads would presumably take place interactively by way of
+; read-object, which has its own call of iprint-oracle-updates.
 
-    (serial-first-form-parallel-second-form@par
-     (iprint-oracle-updates state)
+; We leave such code for ACL(p), however; perhaps it could be omitted too, at
+; least when waterfall-parallelism is not enabled, but we haven't thought that
+; through.
+
+     state ; formerly (iprint-oracle-updates state); see above
      (iprint-oracle-updates@par))
     (cond
      (erp ; from out-of-time or clause-processor fail; treat as 'error signal

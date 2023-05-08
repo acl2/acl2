@@ -6584,7 +6584,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :rule-classes :forward-chaining)
 
 (defun throw-nonexec-error (fn actuals)
-  (declare (xargs :guard
+  (declare (xargs :mode :logic
+                  :guard
 
 ; An appropriate guard would seem to be the following.
 
@@ -6597,8 +6598,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; guard-checking has been set to :none.  A simple fix is to replace the actuals
 ; if they are ill-formed, and that is what we do.
 
-                  t
-                  :verify-guards nil)
+                  t)
            #+acl2-loop-only
            (ignore fn actuals))
   #-acl2-loop-only
@@ -14036,7 +14036,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     certify-book-finish-complete
     chk-absstobj-invariants
     get-stobj-creator
-    iprint-oracle-updates
     iprint-oracle-updates@par
     ld-fix-command
     update-enabled-structure-array
@@ -14242,6 +14241,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     #-acl2-devel apply$-lambda
     #-acl2-devel apply$-prim
     #-acl2-devel ilks-plist-worldp
+    iprint-oracle-updates
   ))
 
 (defconst *initial-macros-with-raw-code*
@@ -19248,6 +19248,114 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (boundp-global 'acl2-raw-mode-p state))))
   (f-get-global 'acl2-raw-mode-p state))
 
+#-acl2-loop-only
+(defparameter *next-acl2-oracle-value* nil)
+
+(defun read-acl2-oracle (state-state)
+
+; Keep in sync with #+acl2-par read-acl2-oracle@par.
+
+  (declare (xargs :guard (state-p1 state-state)))
+
+;   Wart: We use state-state instead of state because of a bootstrap problem.
+
+; See also read-run-time.
+
+  #-acl2-loop-only
+  (cond ((live-state-p state-state)
+         (return-from read-acl2-oracle
+                      (let ((val *next-acl2-oracle-value*))
+                        (setq *next-acl2-oracle-value* nil)
+                        (mv nil val state-state)))))
+  (mv (null (acl2-oracle state-state))
+      (car (acl2-oracle state-state))
+      (update-acl2-oracle (cdr (acl2-oracle state-state)) state-state)))
+
+; We thank Jared Davis for permission to adapt his function true-list-fix (and
+; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for
+; further credits and explanation.
+
+(defun true-list-fix-exec (x)
+  (declare (xargs :guard t :mode :logic))
+  (if (consp x)
+      (cons (car x)
+            (true-list-fix-exec (cdr x)))
+    nil))
+
+(defun true-list-fix (x)
+  (declare (xargs :guard t
+                  :mode :logic
+                  :verify-guards nil))
+  (mbe :logic
+       (if (consp x)
+           (cons (car x)
+                 (true-list-fix (cdr x)))
+         nil)
+       :exec
+       (if (true-listp x)
+           x
+         (true-list-fix-exec x))))
+
+(defmacro fix-true-list (x) `(true-list-fix ,x))
+
+(encapsulate
+  ()
+
+  (local (defthm true-list-fix-true-listp
+           (implies (true-listp x)
+                    (equal (true-list-fix x) x))
+           :hints (("Goal" :expand ((true-list-fix x))))))
+
+  (local (defthm true-list-fix-exec-removal
+           (equal (true-list-fix-exec x)
+                  (true-list-fix x))
+           :hints(("Goal" :in-theory (enable true-list-fix)))))
+
+  (verify-guards true-list-fix
+    :hints (("Goal" :expand ((true-list-fix x)))))
+  )
+
+(in-theory (disable true-list-fix-exec))
+
+(defthm pairlis$-true-list-fix
+  (equal (pairlis$ x (true-list-fix y))
+         (pairlis$ x y)))
+
+(defun iprint-oracle-updates (state)
+
+; Warning: Keep in sync with iprint-oracle-updates-raw.
+
+; See the discussion of wormholes in the Essay on Iprinting.  Also see
+; comments at the call of iprint-oracle-updates in read-object.
+
+  (declare (xargs :stobjs state))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from iprint-oracle-updates
+                 (iprint-oracle-updates-raw state)))
+  (mv-let (erp val state)
+    (read-acl2-oracle state)
+    (declare (ignore erp))
+
+; If we intend to reason about this function, then we might want to check that
+; val is a reasonable value.  But that seems not to be important, since very
+; little reasoning would be possible anyhow for this function.
+
+    (let ((val (true-list-fix val)))
+      (pprogn (f-put-global 'iprint-ar
+                            (nth 0 val)
+                            state)
+              (f-put-global 'iprint-hard-bound
+                            (nfix (nth 1 val))
+                            state)
+              (f-put-global 'iprint-soft-bound
+                            (nfix (nth 2 val))
+                            state)
+              (f-put-global 'iprint-fal
+                            (nth 3 val)
+                            state)
+              state))))
+
 (defun read-object (channel state-state)
 
 ; Read-object is somewhat like read.  It returns an mv-list of three
@@ -19265,15 +19373,55 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (open-input-channel-p1
                                channel :object state-state))))
 
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (cond ((and *wormholep*
-                     (not (eq channel *standard-oi*)))
-                (wormhole-er 'read-object (list channel))))
-         (return-from
-          read-object
-          (let* ((*read-object-comma-count* 0)
-                 (read-object-eof
+  (let ((state-state ; avoid pprogn here because of the use of state-state
+
+; The following call of iprint-oracle-updates is necessary even with the calls
+; of iprint-oracle-updates? in eviscerate-top and eviscerate-stobjs-top.  To
+; see why, consider the following example.
+
+;   (set-iprint t)
+;   (monitor! 'nth t)
+;   (thm (equal (nth n (cons x y)) z))
+;   (fmx "~X01~%" (make-list 10) (evisc-tuple 3 4 nil nil))
+;   (a!)
+;   (quote #@1#)
+
+; The fmx call is made in the brr wormhole, and it prints #@1#.  Without the
+; following call of iprint-oracle-updates, the final form results in the error,
+; "Out-of-bounds index in #@1#."
+
+; The following example is perhaps even more persuasive of the need to call
+; iprint-oracle-updates.
+
+;   (set-iprint t)
+;   (prog2$ (cw "~X01~|" (make-list 10) (evisc-tuple 2 3 nil nil))
+;           (read-standard-oi state))
+
+; The cw output is (NIL NIL NIL . #@1#), and then we are prompted for input.
+; Input of #@1# will yield the expected object, (NIL NIL NIL NIL NIL NIL NIL);
+; but what is the logical explanation?  Iprint-oracle-updates supplies logical
+; updates to the iprint structures that explain the ability to read #@1#.
+
+         #-acl2-loop-only
+         (iprint-oracle-updates state-state)
+         #+acl2-loop-only
+
+; In the logic, iprint-oracle-updates takes state; but state is not a parameter
+; here (see *super-defun-wart-table* and relevant comments).  Since we don't
+; expect to execute the #+acl2-loop-only code, it seems appropriate to solve
+; that problem by using non-exec here.
+
+         (non-exec (iprint-oracle-updates state-state))))
+
+    #-acl2-loop-only
+    (cond ((live-state-p state-state)
+           (cond ((and *wormholep*
+                       (not (eq channel *standard-oi*)))
+                  (wormhole-er 'read-object (list channel))))
+           (return-from
+            read-object
+            (let* ((*read-object-comma-count* 0)
+                   (read-object-eof
 
 ; Suggestion from Bob Boyer: By using dynamic-extent [see declaration below],
 ; we make the cons more 'secret' or 'new'.  (Added August 2009: the
@@ -19281,34 +19429,34 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; comfortable continuing to use a let-bound local here, since the extra cons
 ; seems trivial.)
 
-                  (cons nil nil))
-                 (*package* (find-package-fast
-                             (current-package *the-live-state*)))
-                 (*readtable* *acl2-readtable*)
-                 #+cltl2 (*read-eval* t)
-                 (*read-suppress* *acl2-read-suppress*)
-                 (*read-base* 10)
-                 #+gcl (si:*notify-gbc* ; no gbc messages while typing
-                        (if (or (eq channel *standard-oi*)
-                                (eq channel *standard-ci*))
-                            nil
-                          si:*notify-gbc*))
-                 #+acl2-infix
-                 (infixp (f-get-global 'infixp state-state))
-                 (stream (get-input-stream-from-channel channel))
-                 (obj
-                  (cond
+                    (cons nil nil))
+                   (*package* (find-package-fast
+                               (current-package *the-live-state*)))
+                   (*readtable* *acl2-readtable*)
+                   #+cltl2 (*read-eval* t)
+                   (*read-suppress* *acl2-read-suppress*)
+                   (*read-base* 10)
+                   #+gcl (si:*notify-gbc* ; no gbc messages while typing
+                          (if (or (eq channel *standard-oi*)
+                                  (eq channel *standard-ci*))
+                              nil
+                            si:*notify-gbc*))
                    #+acl2-infix
-                   ((and (or (eq infixp t) (eq infixp :in))
-                         (eq stream (get-input-stream-from-channel  *standard-ci*)))
-                    (let ((obj (parse-infix-from-terminal read-object-eof)))
-                      (cond ((eq obj read-object-eof)
-                             read-object-eof)
-                            (t (chk-bad-lisp-object obj)
-                               obj))))
-                   #+(and mcl (not ccl))
-                   ((eq channel *standard-oi*)
-                    (ccl::toplevel-read))
+                   (infixp (f-get-global 'infixp state-state))
+                   (stream (get-input-stream-from-channel channel))
+                   (obj
+                    (cond
+                     #+acl2-infix
+                     ((and (or (eq infixp t) (eq infixp :in))
+                           (eq stream (get-input-stream-from-channel  *standard-ci*)))
+                      (let ((obj (parse-infix-from-terminal read-object-eof)))
+                        (cond ((eq obj read-object-eof)
+                               read-object-eof)
+                              (t (chk-bad-lisp-object obj)
+                                 obj))))
+                     #+(and mcl (not ccl))
+                     ((eq channel *standard-oi*)
+                      (ccl::toplevel-read))
 
 ; We formerly called a function hons-read here when (f-get-global 'hons-read-p
 ; *the-live-state*) was true (in ACL2 versions that supported hons).  That had
@@ -19317,8 +19465,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the addition of source files serialize[-raw].lisp, contributed by Jared
 ; Davis.
 
-                   (t
-                    (read stream nil read-object-eof nil)))))
+                     (t
+                      (read stream nil read-object-eof nil)))))
 
 ; The following dynamic-extent declaration looks fine.  There were spurious
 ; ill-formed certificate and checksum problems with Allegro CL for a few months
@@ -19328,24 +19476,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; seems rather trivial, but the space improvement can be substantial; so I'll
 ; include it.
 
-            #+cltl2
-            (declare (dynamic-extent read-object-eof))
+              #+cltl2
+              (declare (dynamic-extent read-object-eof))
 
-            (cond ((eq obj read-object-eof)
-                   (mv t nil state-state))
-                  (t (or (raw-mode-p state-state)
-                         (chk-bad-lisp-object obj))
-                     (mv nil obj state-state)))))))
-  (let ((entry (cdr (assoc-eq channel (open-input-channels state-state)))))
-    (cond ((cdr entry)
-           (mv nil
-               (car (cdr entry))
-               (update-open-input-channels
-                (add-pair channel
-                          (cons (car entry) (cdr (cdr entry)))
-                          (open-input-channels state-state))
-                state-state)))
-          (t (mv t nil state-state)))))
+              (cond ((eq obj read-object-eof)
+                     (mv t nil state-state))
+                    (t (or (raw-mode-p state-state)
+                           (chk-bad-lisp-object obj))
+                       (mv nil obj state-state)))))))
+    (let ((entry (cdr (assoc-eq channel (open-input-channels state-state)))))
+      (cond ((cdr entry)
+             (mv nil
+                 (car (cdr entry))
+                 (update-open-input-channels
+                  (add-pair channel
+                            (cons (car entry) (cdr (cdr entry)))
+                            (open-input-channels state-state))
+                  state-state)))
+            (t (mv t nil state-state))))))
 
 (defun read-object-with-case (channel mode state)
   (declare (xargs :guard
@@ -20227,29 +20375,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (not (rationalp (car (acl2-oracle state-state)))))
              0)
             (t (car (acl2-oracle state-state))))
-      (update-acl2-oracle (cdr (acl2-oracle state-state)) state-state)))
-
-#-acl2-loop-only
-(defparameter *next-acl2-oracle-value* nil)
-
-(defun read-acl2-oracle (state-state)
-
-; Keep in sync with #+acl2-par read-acl2-oracle@par.
-
-  (declare (xargs :guard (state-p1 state-state)))
-
-;   Wart: We use state-state instead of state because of a bootstrap problem.
-
-; See also read-run-time.
-
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (return-from read-acl2-oracle
-                      (let ((val *next-acl2-oracle-value*))
-                        (setq *next-acl2-oracle-value* nil)
-                        (mv nil val state-state)))))
-  (mv (null (acl2-oracle state-state))
-      (car (acl2-oracle state-state))
       (update-acl2-oracle (cdr (acl2-oracle state-state)) state-state)))
 
 #+acl2-par
@@ -23389,6 +23514,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  #+:non-standard-analysis realp
                  #-:non-standard-analysis rationalp)
 
+(add-macro-alias fix-true-list true-list-fix)
 (add-macro-alias member-eq member-equal)
 (add-macro-alias member member-equal)
 (add-macro-alias assoc-eq assoc-equal)
@@ -23850,58 +23976,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro set-induction-depth-limit (val)
   `(local (set-induction-depth-limit! ,val)))
-
-; We thank Jared Davis for permission to adapt his function true-list-fix (and
-; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for
-; further credits and explanation.
-
-(defun true-list-fix-exec (x)
-  (declare (xargs :guard t :mode :logic))
-  (if (consp x)
-      (cons (car x)
-            (true-list-fix-exec (cdr x)))
-    nil))
-
-(defun true-list-fix (x)
-  (declare (xargs :guard t
-                  :mode :logic
-                  :verify-guards nil))
-  (mbe :logic
-       (if (consp x)
-           (cons (car x)
-                 (true-list-fix (cdr x)))
-         nil)
-       :exec
-       (if (true-listp x)
-           x
-         (true-list-fix-exec x))))
-
-(encapsulate
-  ()
-
-  (local (defthm true-list-fix-true-listp
-           (implies (true-listp x)
-                    (equal (true-list-fix x) x))
-           :hints (("Goal" :expand ((true-list-fix x))))))
-
-  (local (defthm true-list-fix-exec-removal
-           (equal (true-list-fix-exec x)
-                  (true-list-fix x))
-           :hints(("Goal" :in-theory (enable true-list-fix)))))
-
-  (verify-guards true-list-fix
-    :hints (("Goal" :expand ((true-list-fix x)))))
-  )
-
-(in-theory (disable true-list-fix-exec))
-
-(defmacro fix-true-list (x) `(true-list-fix ,x))
-
-(table macro-aliases-table 'fix-true-list 'true-list-fix)
-
-(defthm pairlis$-true-list-fix
-  (equal (pairlis$ x (true-list-fix y))
-         (pairlis$ x y)))
 
 (defun boolean-listp (lst)
 
@@ -26901,7 +26975,6 @@ Lisp definition."
     (equal (true-listp (revappend x y))
            (true-listp y))))
 
- (verify-guards throw-nonexec-error)
  (verify-guards defun-nx-form)
  (verify-guards defun-nx-fn)
  (verify-guards update-mutual-recursion-for-defun-nx-1)
