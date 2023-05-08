@@ -4695,10 +4695,10 @@ x5)))||#
            (and (equal (and-eval-for-cross-product-lst-pp
                         single-s/c-lst res-e-lst a)
                        (and-list hash (rp-evlt-lst e-lst a)))
-                (implies (equal (len single-s/c-lst) 1)
+                #|(implies (equal (len single-s/c-lst) 1)
                          (equal (and-eval-for-cross-product-pp
                                  (car single-s/c-lst) res-e-lst a)
-                                (and-list hash (rp-evlt-lst e-lst a))))
+                                (and-list hash (rp-evlt-lst e-lst a))))|#
                 (bit-listp (rp-evlt-lst single-s/c-lst a))))
   :fn cross-product-pp-aux-precollect
   :hints (("Goal"
@@ -5676,6 +5676,54 @@ regular-rp-evl-of_s_when_mult-formula-checks)
            (rp-termp (car lst)))
   :rule-classes :rewrite))
 
+
+(defret cross-product-pp-aux--mid-large-merge-correct
+  (implies (and valid
+                (valid-sc-subterms single-s-lst a)
+                (rp-term-listp single-s-lst)
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (bit-listp (rp-evlt-lst single-s-lst a)))
+           (and
+            (equal (rp-evlt res a)
+                   (and-list 0
+                             (rp-evlt-lst single-s-lst a)))
+            (equal (and-eval-for-cross-product-pp res e-lst a)
+                   (and-eval-for-cross-product-lst-pp single-s-lst e-lst a))))
+  :Fn cross-product-pp-aux--mid-large-merge
+  :hints (("Goal"
+           :expand ((LEN (CDDR SINGLE-S-LST))
+                    (LEN (CDR SINGLE-S-LST))
+                    (LEN SINGLE-S-LST))
+           :in-theory (e/d (BIT-LISTP
+                            AND-EVAL-FOR-CROSS-PRODUCT-LST-PP
+                            AND-EVAL-FOR-CROSS-PRODUCT-PP
+                            len
+                            cross-product-pp-aux--mid-large-merge)
+                           (+-IS-SUM)))))
+
+(defret cross-product-pp-aux--mid-large-merge-valid-sc
+  (implies (and valid
+                (valid-sc-subterms single-s-lst a)
+                (rp-term-listp single-s-lst)
+                (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (bit-listp (rp-evlt-lst single-s-lst a)))
+           (valid-sc res a))
+  :Fn cross-product-pp-aux--mid-large-merge
+  :hints (("Goal"
+           :expand ((LEN (CDDR SINGLE-S-LST))
+                    (LEN (CDR SINGLE-S-LST))
+                    (LEN SINGLE-S-LST))
+           :in-theory (e/d (BIT-LISTP
+                            AND-EVAL-FOR-CROSS-PRODUCT-LST-PP
+                            AND-EVAL-FOR-CROSS-PRODUCT-PP
+                            len
+                            cross-product-pp-aux--mid-large-merge)
+                           (+-IS-SUM)))))
+           
+                
+
 (defret cross-product-pp-aux-correct
   (implies (and valid
                 (valid-sc single-pp a)
@@ -5689,6 +5737,7 @@ regular-rp-evl-of_s_when_mult-formula-checks)
                 (integerp (rp-evlt single-pp a))))
   :fn cross-product-pp-aux
   :hints (("Goal"
+          
            ;; :use ((:instance cross-product-pp-aux-precollect2-correct
            ;;                  (single-pp (cadr single-pp)))
 

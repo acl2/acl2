@@ -311,9 +311,6 @@
                                      (objdesign-of-var (ident ,(symbol-name var))
                                                        ,compst-var)
                                      ,compst-var)
-                                    ,var)
-                             (equal (read-var (ident ,(symbol-name var))
-                                              ,compst-var)
                                     ,var)))
              (formula1 (atc-contextualize formula1 new-context fn fn-guard
                                           compst-var nil nil wrld))
@@ -366,8 +363,8 @@
      and then we add a new empty scope to it.")
    (xdoc::p
     "The theorems for the new symbol table are proved from the old ones
-     using the rule that reduces @(tsee read-var) of @(tsee enter-scope)
-     to just @(tsee read-var).
+     using the rule that reduces @(tsee read-object) of @(tsee enter-scope)
+     to just @(tsee read-object).
      The hypothesis of that rule saying that there are frames
      is discharged via the rules in
      @(see atc-compustate-frames-number-rules):
@@ -381,8 +378,7 @@
        (new-context (append context (list premise)))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 objdesign-of-var-of-add-var-iff
-                read-object-of-objdesign-of-var-to-read-var
-                read-var-of-enter-scope
+                read-object-of-objdesign-of-var-of-enter-scope
                 compustate-frames-number-of-add-frame-not-zero
                 compustate-frames-number-of-enter-scope-not-zero
                 compustate-frames-number-of-add-var-not-zero))
@@ -432,8 +428,8 @@
        (new-context (append context (list var-premise cs-premise)))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 objdesign-of-var-of-add-var-iff
-                read-object-of-objdesign-of-var-to-read-var
-                read-var-of-add-var
+                read-object-of-objdesign-of-var-of-add-var
+                read-object-of-objdesign-of-var-of-enter-scope
                 ident-fix-when-identp
                 identp-of-ident
                 equal-of-ident-and-ident
@@ -454,8 +450,6 @@
               (equal (read-object (objdesign-of-var (ident ,(symbol-name var))
                                                     ,compst-var)
                                   ,compst-var)
-                     ,var)
-              (equal (read-var (ident ,(symbol-name var)) ,compst-var)
                      ,var)))
        (var-in-scope-formula1
         (atc-contextualize var-in-scope-formula1 new-context fn fn-guard
@@ -471,8 +465,7 @@
         (pack 'not-flexible-array-member-p-when- type-pred))
        (var-in-scope-hints
         `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
-                               read-object-of-objdesign-of-var-to-read-var
-                               read-var-of-add-var
+                               read-object-of-objdesign-of-var-of-add-var
                                ident-fix-when-identp
                                identp-of-ident
                                equal-of-ident-and-ident
