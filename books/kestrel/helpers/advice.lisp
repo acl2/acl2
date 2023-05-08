@@ -3253,23 +3253,27 @@
                            model
                            (len checkpoint-clauses)
                            (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint"))))
-               (post-data (acons "use-group" model-string
+               ;; Assemble the data to send with the POST request (an alist):
+               (post-data (acons "use-group" model-string ; the name of the model to use (often a group of models, one for each action type)
                                  (acons "n" (acl2::nat-to-string num-recs)
                                         (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
+               ;; Turn off certain recommendation types (TODO: Could a generative model return something like :exact-hints?):
                (post-data (acons-all-to-val (ml-rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types))
                                             "off"
                                             post-data))
                (print-timep (acl2::print-level-at-least-tp print))
                ((mv server-start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+               ;; Send POST requqest to server and parse the response:
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
+               ((when erp)
+                ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
+                (mv erp nil state))
+               ;; Print the elapsed time:
                ((mv server-done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
                (- (and print-timep (prog2$ (acl2::print-to-hundredths (- server-done-time server-start-time))
                                            (cw "s~%") ; s = seconds
                                            )))
-               ((when erp)
-                ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
-                (mv erp nil state))
                ((when (not (acl2::parsed-json-arrayp parsed-response)))
                 (er hard? 'get-recs-from-ml-model "Error: Response from server is not a JSON array: ~x0." parsed-response)
                 (mv :bad-server-response nil state)))
@@ -3297,6 +3301,7 @@
                               (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              ;; theorem-body is an untranslated-term
                               (stringp server-url)
                               (booleanp debug)
                               (acl2::print-levelp print))
