@@ -54,6 +54,7 @@
     booland
     bool-fix$inline
     true-listp
+    true-list-listp
     (denominator denominator-unguarded) ; primitive
     (numerator numerator-unguarded) ; primitive
     (coerce coerce-unguarded) ; primitive
