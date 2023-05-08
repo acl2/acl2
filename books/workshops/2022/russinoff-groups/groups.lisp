@@ -1001,12 +1001,12 @@
 (defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r-int x y) x)
-		   (* (s-int x y) y))
+	     (= (+ (* (r x y) x)
+		   (* (s x y) y))
 		(gcd x y)))
     :rule-classes ())
 
-(defun z*-inv (x n) (mod (r-int x n) n))
+(defun z*-inv (x n) (mod (r x n) n))
 
 (defthm z*-inverse
   (implies (and (posp n) (> n 1)
