@@ -79,12 +79,12 @@
   :hints (("Goal" :in-theory (enable mod))))
 
 (defthm mod-of-1-arg1
-  (implies (and (integerp j)
-                (<= 0 j) ;gen
+  (implies (and (integerp y)
+                (<= 0 y) ;gen
                 )
-           (equal (mod 1 j)
-                  ;;(if (<= 0 j)
-                  (if (equal 1 j)
+           (equal (mod 1 y)
+                  ;;(if (<= 0 y)
+                  (if (equal 1 y)
                       0
                     1)
                   ;;-1)
@@ -345,20 +345,20 @@
 ;gen
 (defthm mod-of-*-of-mod
   (implies (and (integerp x)
-                (integerp y)
+                (integerp x1)
                 (integerp z)
                 )
-           (equal (mod (* x (mod y z)) z)
-                  (mod (* x y) z))))
+           (equal (mod (* x (mod x1 z)) z)
+                  (mod (* x x1) z))))
 
 ;gen
 (defthm mod-of-*-of-mod-2
   (implies (and (integerp x)
-                (integerp y)
+                (integerp x1)
                 (integerp z)
                 )
-           (equal (mod (* (mod y z) x) z)
-                  (mod (* y x) z))))
+           (equal (mod (* (mod x1 z) x) z)
+                  (mod (* x1 x) z))))
 
 ;rename
 (defthm mod-mult-lemma
@@ -453,63 +453,62 @@
 
 (defthm equal-of-mod-of-+-and-mod-of-+-cancel
   (implies (and (rationalp x)
-                (rationalp y)
-                (rationalp z)
-                (integerp p)
-                (< 0 p))
-           (equal (equal (mod (+ x y) p)
-                         (mod (+ x z) p))
-                  (equal (mod y p) (mod z p))))
+                (rationalp x1)
+                (rationalp x2)
+                (integerp y)
+                (< 0 y))
+           (equal (equal (mod (+ x x1) y)
+                         (mod (+ x x2) y))
+                  (equal (mod x1 y) (mod x2 y))))
   :hints (("Goal" :in-theory (enable mod-sum-cases))))
 
 (defthm equal-of-mod-of-+-and-mod-cancel
   (implies (and (rationalp x)
-                (rationalp z)
-                (integerp p)
-                (< 0 p))
-           (equal (equal (mod x p)
-                         (mod (+ x z) p))
-                  (equal 0 (mod z p))))
+                (rationalp x1)
+                (integerp y)
+                (< 0 y))
+           (equal (equal (mod x y)
+                         (mod (+ x x1) y))
+                  (equal 0 (mod x1 y))))
   :hints (("Goal" :in-theory (enable mod-sum-cases))))
 
 (defthm equal-of-mod-of-+-cancel
   (implies (and (rationalp x)
-                (rationalp z)
-                (integerp p)
-                (< 0 p))
-           (equal (equal x (mod (+ x z) p))
-                  (and (< x p)
+                (rationalp x1)
+                (integerp y)
+                (< 0 y))
+           (equal (equal x (mod (+ x x1) y))
+                  (and (< x y)
                        (<= 0 x)
-                       (equal 0 (mod z p)))))
+                       (equal 0 (mod x1 y)))))
   :hints (("Goal" :in-theory (enable mod-sum-cases))))
 
 ;enable?
 (defthmd mod-of-*-subst-arg2
-  (implies (and (equal (mod y p)
+  (implies (and (equal (mod x1 p)
                        (mod free p))
-                (syntaxp (not (term-order y free)))
+                (syntaxp (not (term-order x1 free)))
                 (integerp x)
                 (integerp free)
                 (integerp p))
-           (equal (mod (* x y) p)
+           (equal (mod (* x x1) p)
                   (mod (* x free) p)))
   :hints (("Goal" :use ((:instance mod-of-*-of-mod
-                                  (z p)
-                                  (y y))
+                                  (z p))
                         (:instance mod-of-*-of-mod
                                   (z p)
-                                  (y free)))
+                                  (x1 free)))
            :in-theory (disable mod-of-*-of-mod))))
 
 ;enable?
 (defthmd mod-of-*-subst-arg1
-  (implies (and (equal (mod y p)
+  (implies (and (equal (mod x1 p)
                        (mod free p))
-                (syntaxp (not (term-order y free)))
+                (syntaxp (not (term-order x1 free)))
                 (integerp x)
                 (integerp free)
                 (integerp p))
-           (equal (mod (* y x) p)
+           (equal (mod (* x1 x) p)
                   (mod (* free x) p)))
   :hints (("Goal" :use (:instance mod-of-*-subst-arg2)
            :in-theory (disable mod-of-*-subst-arg2))))
@@ -834,7 +833,7 @@
    :hints (("Goal" :use (:instance acl2::mod-of-*-of-mod
                                    (z p)
                                    (x (* x y))
-                                   (y z))
+                                   (x1 z))
             :in-theory (disable acl2::mod-of-*-of-mod))))
 
 ;; Disabled by default for speed
