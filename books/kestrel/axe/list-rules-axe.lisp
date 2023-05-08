@@ -16,6 +16,7 @@
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
+(include-book "kestrel/lists-light/nth-to-unroll" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
@@ -117,3 +118,18 @@
                   (and (consp k)
                        (equal x (car k))
                        (equal y (cdr k))))))
+
+;; We don't usually unroll NTH (preferring to turn it into BV-ARRAY-READ), but
+;; we do when the list is a 2-D array, since we have no suppported operators for
+;; 2-D arrays.
+;; TODO: If N is a BVCAT term, we could split the list in half for each bit.
+(defthmd nth-becomes-nth-to-unroll-for-2d-array
+  (implies (and (syntaxp (quotep l))
+                (true-list-listp l) ; not just an array of numbers
+                (natp n)
+                (< n (len l)))
+           (equal (nth n l)
+                  (nth-to-unroll n 0 (+ -1 (len l)) l)))
+  :hints (("Goal" :use (:instance nth-becomes-nth-to-unroll-helper
+                                  (low 0)
+                                  (high (+ -1 (len l)))))))
