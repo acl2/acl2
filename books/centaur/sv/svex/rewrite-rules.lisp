@@ -4296,6 +4296,37 @@
                                       3vec-? 3vec-fix
                                       4vec-mask
                                       svex-apply))
+           (svex-generalize-lookups)))
+
+  (local (defthm logior-lower-upper-when-3vec-p
+           (implies (3vec-p x)
+                    (equal (logior (4vec->lower x)
+                                   (4vec->upper x))
+                           (4vec->upper x)))
+           :hints(("Goal" :in-theory (enable 3vec-p))
+                  (logbitp-reasoning))))
+
+  (local (defthm logand-lower-upper-when-3vec-p
+           (implies (3vec-p x)
+                    (equal (logand (4vec->lower x)
+                                   (4vec->upper x))
+                           (4vec->lower x)))
+           :hints(("Goal" :in-theory (enable 3vec-p))
+                  (logbitp-reasoning))))
+  
+  (def-svex-rewrite ?-of-same
+    :lhs (? test x x)
+    ;; Unfortunately this isn't unconditionally either x or (unfloat x) -- if
+    ;; test is all-0 or has a 1, then it's x, else (a mix of 0s and Xs/Zs) it's
+    ;; (unfloat x).  But for 3valued x it's all the same.
+    :checks ((3valued-syntaxp x))
+    :rhs x
+    :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                      3vec-reduction-or
+                                      4vec-?
+                                      3vec-? 3vec-fix
+                                      4vec-mask
+                                      svex-apply))
            (svex-generalize-lookups))))
 
 

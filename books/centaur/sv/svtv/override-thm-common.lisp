@@ -618,18 +618,28 @@
          svtv
          ideal
          svtv-spec
+         ;; Each of the bindings and vars get two versions so that one can be
+         ;; set in the table and additional ones can be set in the args.
          spec-override-var-bindings
+         more-spec-override-var-bindings
          spec-override-vars
+         more-spec-override-vars
          override-var-bindings
+         more-override-var-bindings
          override-vars
+         more-override-vars
          input-vars
-         output-vars
-         output-parts
+         more-input-vars
          input-var-bindings
+         more-input-var-bindings
+         output-vars
+         more-output-vars
+         output-parts
          enable
          unsigned-byte-hyps
          env-val-widths-hyp
          (hyp 't)
+         (more-hyp 't)
          concl
          (run-before-concl 'nil)
          (lemma-defthm 'fgl::def-fgl-thm)
@@ -662,7 +672,13 @@
        (triple-val-alist (svtv-override-triplelist-val-alist triplelist))
        ((acl2::with-fast triple-val-alist))
 
-
+       (spec-override-var-bindings (append spec-override-var-bindings more-spec-override-var-bindings))
+       (spec-override-vars (append spec-override-vars more-spec-override-vars))
+       (override-var-bindings (append override-var-bindings more-override-var-bindings))
+       (override-vars (append override-vars more-override-vars))
+       (output-vars (append output-vars more-output-vars))
+       
+       (input-var-bindings (append input-var-bindings more-input-var-bindings))
        (input-vars (if (equal input-vars :all)
                        (b* ((all-ins (svtv->ins svtv-val))
                             (triplelist (svtv-override-triplemaplist-to-triplelist triplemaplist-val))
@@ -677,7 +693,7 @@
                             (all-ins (acl2::hons-set-diff all-ins (append ovr-controls ovr-signals
                                                                           (alist-keys input-var-bindings)))))
                          all-ins)
-                     input-vars))
+                     (append input-vars more-input-vars)))
        (dupes (acl2::hons-duplicates (append input-vars (alist-keys input-var-bindings)
                                              override-vars (alist-keys override-var-bindings)
                                              spec-override-vars (alist-keys spec-override-var-bindings))))
@@ -727,7 +743,7 @@
        :output-part-vars output-part-vars
        :input-var-bindings input-var-bindings
        :enable enable
-       :hyp hyp
+       :hyp (svtv-genthm-conjoin-hyps hyp more-hyp)
        :lemma-hyp lemma-hyp
        :final-hyp final-hyp
        :concl concl

@@ -272,11 +272,12 @@ typical positive-edge-triggered flip-flops):
        (make-svtv-cyclephase :constants '((\"clock\" . 1))))
  })
 
-In this case, the phases of the provided timing diagram refer to the clock
-cycles of the design rather than individual clock phases.
+In this case, the entries in the @(':stages') argument or the columns in the
+timing diagram refer to the clock cycles of the design rather than individual
+clock phases.
 @({})
 The default, when the @(':cycle-phases') argument is not provided, is for
-all clock phases to be explicitly represented in the timing diagram; this
+all clock phases to be explicitly represented in stages or timing diagram; this
 corresponds to the following cycle-phases value:
 @({
  :cycle-phases
@@ -365,12 +366,12 @@ can force this with
 <p>The @(':stages') (or @(':phases')) argument may either be evaluated or not.
 The decision to evaluate or not is done by checking the @('caar') of the
 argument: if it is a keyword symbol, then this is consistent with the format of
-a literal phases list but not consistent with any untranslated term, so then it
+a literal stages list but not consistent with any untranslated term, so then it
 will not be evaluated; otherwise it will.  The following description of the
 argument format pertains to the result of evaluating the argument, or the
 literal form if not evaluated.</p>
 
-<p>The following example shows the main features of the @(':phases') argument
+<p>The following example shows the main features of the @(':stages') argument
 format:</p>
 
 @({
@@ -381,7 +382,7 @@ format:</p>
               (\"start\" 1)))
 
     ;; Phase 4:
-    (:delay 4 ;; number of phases since last one listed
+    (:delay 4 ;; number of stages since last one listed
      :label q
      :inputs ((\"cntl\" cntl4 :hold t)) ;; will hold this value until end or until reassigned
      :overrides ((\"inst.subinst.internalsig\" internal4)
@@ -403,7 +404,7 @@ format:</p>
      :outputs ((\"inst.subinst.interesting\" interesting8))))
  })
 
-<p>The format of this argument is a list of individual phases, which are
+<p>The format of this argument is a list of individual stages, which are
 keyword-value lists with the following keywords recognized:</p>
 
 
@@ -433,7 +434,7 @@ design and variable-name is a symbol.</p>
 
 <p>The format for @(':inputs') is a list of entries of the form:</p>
 @({
- (signal-name setting [ :hold t-or-nil | :toggle nphases ])
+ (signal-name setting [ :hold boolean-or-posp | :toggle nphases ])
  })
 <p>Setting can be one of:</p>
 <ul>
@@ -442,8 +443,11 @@ design and variable-name is a symbol.</p>
 <li>a variable, i.e. any other non-Boolean, non-keyword symbol.</li>
 </ul>
 
-<p>The @(':hold') keyword, if set to t, indicates that this assignment is
-valid for all subsequent phases until the same signal is set again.</p>
+<p>The @(':hold') keyword, if set to t, indicates that this assignment is valid
+for all subsequent phases until the same signal is set again.  Alternatively,
+it may be set to a positive integer in which case the given value is repeated
+for that many stages (unless superseded by a subsequent setting) -- the default
+value is 1, meaning the assignment is only for the current stage.</p>
 
 <p>The @(':toggle') keyword, if set to t or a positive integer @('nphases'),
 indicates that the signal will be held and toggled every @('nphases') phases,
