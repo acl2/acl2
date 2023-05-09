@@ -941,13 +941,18 @@ sub find_deps {
 	# cert.image in this file's directory, add a dependency on the
 	# ACL2 image specified in that file and the .image file itself.
 	my $imagefile = $base . ".image";
+	my $directory_imagefile;
 	if (! -e $imagefile) {
 	    # was:
 	    # $imagefile = rel_path(dirname($base), "cert.image");
 	    $imagefile = File::Spec->catfile(dirname($base), "cert.image");
 	    if (! -e $imagefile) {
 		$imagefile = 0;
+	    } else {
+		$directory_imagefile = 1;
 	    }
+	} else {
+	    $directory_imagefile = 0;
 	}
 
 	if ($imagefile) {
@@ -967,13 +972,12 @@ sub find_deps {
 	    $imagefileimage = $line;
 	}
 	if ($paramimage || $imagefileimage) {
-	    if ($paramimage && $imagefileimage && ! ($paramimage eq $imagefileimage)) {
+	    if ($paramimage && $imagefileimage && ! ($paramimage eq $imagefileimage && !$directory_imagefile)) {
 		print STDERR "Warning: find_deps: different acl2 images for $lispfile given by acl2-image cert-param and .image file.\n";
-		print STDERR " - cert-param:  $paramimage\n";
-		print STDERR " - .image file: $imagefileimage\n";
-		print STDERR "Arbitrarily using .image file image.\n";
+		print STDERR " Using image given by cert-param:     $paramimage\n";
+		print STDERR " Ignoring image from .image file:     $imagefileimage\n";
 	    }
-	    $certinfo->image($imagefileimage || $paramimage);
+	    $certinfo->image($paramimage || $imagefileimage);
 	}
     }
     if ($certinfo->image) {
