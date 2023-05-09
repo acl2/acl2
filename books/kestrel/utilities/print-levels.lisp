@@ -1,6 +1,6 @@
 ; Print verbosity levels
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,3 +45,20 @@
 ;; (defund-inline print-level-at-least-verbose!p (print-level)
 ;;   (declare (xargs :guard (print-levelp (print-level))))
 ;;   (eq print-level ':verbose!))
+
+(defund reduce-print-level (print-level)
+  (declare (xargs :guard (print-levelp print-level)
+                  :guard-hints (("Goal" :in-theory (enable print-levelp)))))
+  (cond
+    ((eq nil print-level) nil)
+    ((eq :brief print-level) nil)
+    ((eq t print-level) :brief)
+    ((eq :verbose print-level) t)
+    ((eq :verbose! print-level) :verbose)
+    (t (er hard 'reduce-print-level "Bad print level: ~x0." print-level))))
+
+(defthm print-levelp-of-reduce-print-level
+  (implies (print-levelp print-level)
+           (print-levelp (reduce-print-level print-level)))
+  :hints (("Goal" :in-theory (enable reduce-print-level
+                                     print-levelp))))
