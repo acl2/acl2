@@ -1382,7 +1382,10 @@ What you can enter at the SVTV-CHASE prompt:
 (local (defthm w-of-read-object
          (equal (w (mv-nth 2 (read-object channel state)))
                 (w state))
-         :hints(("Goal" :in-theory (enable w read-object)))))
+         :hints(("Goal" :in-theory (enable w read-object
+                                           ;; Matt K. addition for 5/8/2023 change to
+                                           ;; read-object to call iprint-oracle-updates:
+                                           read-acl2-oracle update-acl2-oracle)))))
 
 (define svtv-chase-rep (&key
                         ((moddb moddb-ok) 'moddb)

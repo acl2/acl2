@@ -105,6 +105,13 @@ executed on the real ACL2 @(see state).</p>"
              (equal (file-measure channel (mv-nth 1 (read-char$ channel state)))
                     (1- (file-measure channel state)))))
 
+; Matt K. mod 5/8/2024: Due to adding a call of iprint-oracle-updates in the
+; definition of read-object, then for the proof of
+; file-measure-of-read-object-weak below, we locally enable put-global,
+; read-acl2-oracle, and update-acl2-oracle.
+
+  (local (in-theory (enable read-acl2-oracle update-acl2-oracle put-global)))
+
   (defthm file-measure-of-read-object-weak
     (<= (file-measure channel (mv-nth 2 (read-object channel state)))
         (file-measure channel state))

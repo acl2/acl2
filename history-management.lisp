@@ -7217,9 +7217,11 @@
              (er soft ctx
                  "The function ~x0 must remain in :PROGRAM mode, because it ~
                   has been marked as a function that has special raw Lisp ~
-                  code.  To avoid this error, see :DOC ~
-                  verify-termination-on-raw-program-okp."
-                 name))
+                  code.  To avoid this error, ~#1~[see :DOC ~
+                  verify-termination-on-raw-program-okp~/consider removing ~
+                  ~x0 from *initial-program-fns-with-raw-code*~]."
+                 name
+                 (if (f-get-global 'boot-strap-flg state) 1 0)))
             (t (value :reclassifying-overwrite))))
      ((and attachment-alist
            (not (eq (car attachment-alist) :ATTACHMENT-DISALLOWED))
