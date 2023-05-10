@@ -8805,7 +8805,7 @@ was ~st seconds."))
 
           (- (clear-memoize-table 'replace-adder-patterns-in-svex))
 
-          (- (hons-clear t))
+          (& (hons-clear t))
           )
        (mv `(svl::svexl-alist-eval$ ',svexl-alist ,env-orig)
            `(nil t t))))
