@@ -1,4 +1,4 @@
-; Top file for building all Axe JVM examples.
+; Cert flags for files in this directory
 ;
 ; Copyright (C) 2023 Kestrel Institute
 ;
@@ -8,9 +8,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
-
-(include-book "aes-128-encrypt-light-and-spec")
-(include-book "aes-128-encrypt-regular-and-spec")
-
-(include-book "formal-unit-tester/top")
+; cert-flags: ? T :TTAGS :ALL :SKIP-PROOFS-OKP T
