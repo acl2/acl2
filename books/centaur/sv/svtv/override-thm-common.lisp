@@ -691,7 +691,8 @@
                                                  (alist-keys override-var-bindings)
                                                  conditional-ovr-signals))
                             (all-ins (acl2::hons-set-diff all-ins (append ovr-controls ovr-signals
-                                                                          (alist-keys input-var-bindings)))))
+                                                                          (alist-keys input-var-bindings))))
+                            (all-ins (remove-duplicates-equal all-ins)))
                          all-ins)
                      (append input-vars more-input-vars)))
        (dupes (acl2::hons-duplicates (append input-vars (alist-keys input-var-bindings)

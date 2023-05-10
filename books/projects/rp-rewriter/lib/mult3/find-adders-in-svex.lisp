@@ -1206,7 +1206,7 @@
                                              ;;(look-for-fa-c-chain-pattern-4a svex)
                                              (look-for-fa-c-chain-pattern-4b svex)
 
-                                             (look-for-fa-c-chain-pattern-6 svex)
+                                             ;;(look-for-fa-c-chain-pattern-6 svex)
                                              (look-for-fa-c-chain-itself-pattern svex)
                                              )
                                :warrant-hyps ((apply$-warrant-fa-c-chain))
@@ -1337,8 +1337,13 @@
                                                     :fn 'ha-c-chain
                                                     :rule nil
                                                     :new-p nil
-                                                    :args (acl2::merge-sort-lexorder (list x y)))))))
-                               :warrant-hyps ((apply$-warrant-ha-c-chain))))
+                                                    :args (acl2::merge-sort-lexorder (list x y))))))
+
+                                       ;; Putting this here because when this is applied at fa search stage, it is messing up with things. This way, this will have a less priority....
+                                       (look-for-fa-c-chain-pattern-6 svex)
+                                       )
+                               :warrant-hyps ((apply$-warrant-ha-c-chain)
+                                              (apply$-warrant-fa-c-chain))))
 
 (defsection ha+1-c-chain
   (define ha+1-c-chain  (x y)
