@@ -19,9 +19,13 @@
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-object))
 
-(local (in-theory (e/d (consp-of-cdr) (open-input-channels
-                                       member-equal
-                                       open-input-channel-p1))))
+(local (in-theory (e/d (consp-of-cdr
+                        ;; Matt K. addition for 5/8/2023 change to
+                        ;; read-object to call iprint-oracle-updates:
+                        read-acl2-oracle)
+                       (open-input-channels
+                        member-equal
+                        open-input-channel-p1))))
 
 (local
  (defthmd assoc-equal-when-not-symbolp-and-open-channels-p
