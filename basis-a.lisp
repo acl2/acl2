@@ -2065,9 +2065,9 @@
     (mv-let . 2)
     (table . 1)))
 
-(table ppr-special-syms nil nil
-       :guard (and (symbolp key)
-                   (natp val)))
+(set-table-guard ppr-special-syms
+                 (and (symbolp key)
+                      (natp val)))
 
 (table ppr-special-syms nil *ppr-special-syms* :clear)
 
