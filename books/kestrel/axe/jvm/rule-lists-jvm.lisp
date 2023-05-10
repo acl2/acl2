@@ -177,7 +177,8 @@
   '(run-until-return ;opens to run-until-return-from-stack-height
     ;;these are used when we have a single make-state, not a myif-nest of states:
     run-until-return-from-stack-height-opener-fast-axe ;this goes straight to do-inst
-    run-until-return-from-stack-height-base-axe))
+    run-until-return-from-stack-height-base-axe
+    step-state-with-pc-and-call-stack-height-of-obtain-and-throw-exception))
 
 ;; These really split the execution when a branch is encountered. ;; Always
 ;; push run-until-return-from-stack-height into myif branches.
@@ -254,7 +255,8 @@
     jvm::locals-constant-opener
     jvm::stack-constant-opener
     jvm::method-info-constant-opener
-    jvm::method-designator-constant-opener))
+    jvm::method-designator-constant-opener
+    jvm::exception-handler-targets-constant-opener))
 
 ;; Rules for executing JVM instructions and model methods (but not for
 ;; simplifying JVM expressions/states -- those are separate).
