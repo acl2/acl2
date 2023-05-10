@@ -1898,3 +1898,48 @@
   (equal (jvm::initialized-classes (myif test s1 s2))
          (myif test (jvm::initialized-classes s1) (jvm::initialized-classes s2)))
   :hints (("Goal" :in-theory (enable myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;See also myif-equal-lemma.
+(defthm equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg2
+  (implies (and (not (equal n n2))
+                (posp n)
+                (posp n2))
+           (equal (equal (nth-new-ad n ads) (myif test (nth-new-ad n2 ads) ad))
+                  (if test
+                      nil
+                    (equal (nth-new-ad n ads) ad))))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; commutes the lhs
+(defthmd equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg2-alt
+  (implies (and (not (equal n n2))
+                (posp n)
+                (posp n2))
+           (equal (equal (myif test (nth-new-ad n2 ads) ad) (nth-new-ad n ads))
+                  (if test
+                      nil
+                    (equal (nth-new-ad n ads) ad))))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg3
+  (implies (and (not (equal n n2))
+                (posp n)
+                (posp n2))
+           (equal (equal (nth-new-ad n ads) (myif test ad (nth-new-ad n2 ads)))
+                  (if test
+                      (equal (nth-new-ad n ads) ad)
+                    nil)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; commutes the lhs
+(defthmd equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg3-alt
+  (implies (and (not (equal n n2))
+                (posp n)
+                (posp n2))
+           (equal (equal (myif test ad (nth-new-ad n2 ads)) (nth-new-ad n ads))
+                  (if test
+                      (equal (nth-new-ad n ads) ad)
+                    nil)))
+  :hints (("Goal" :in-theory (enable myif))))

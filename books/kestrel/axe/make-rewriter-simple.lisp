@@ -1842,8 +1842,7 @@
                 (len trees))
          :hints (("Goal" :expand ((:free (count) ,call-of-simplify-trees-and-add-to-dag))
                   :induct (simplify-trees-and-add-to-dag-induct trees count)
-                  :in-theory (e/d ((:i len)) ( ;LEN-OF-CDR
-                                              )))))
+                  :in-theory (enable (:i len)))))
 
        ;; Everything returns an info-world:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
