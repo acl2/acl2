@@ -44,9 +44,9 @@ public class Prefix {
 
     // Test: A non-empty array is not a prefix of an empty array.
     public static boolean test_empty2 (int [] x) {
-        if (x.length == 20) { // restrict to a concrete length, todo: generalize to <=
+        if (x.length <= 100) { // make the test unrollable
             int[] empty = {};
-            return !isPrefix(x,empty); // since x has length 20
+            return implies (x.length > 0, !isPrefix(x,empty));
         }
         else
             return true; // skip the test
@@ -55,20 +55,24 @@ public class Prefix {
     // Test (Transitivity): If x is a prefix of y, and y is a prefix of
     // z, then x is a prefix of z.
     public static boolean test_transitivity (int [] x, int [] y, int [] z) {
-        if (!(x.length == 10 && y.length == 20 && z.length == 30))
+        if (!(x.length <= 2 && y.length <= 4 && z.length == 6))
             return true; // skip the test
         return implies(isPrefix(x,y) && isPrefix(y,z), isPrefix(x,z));
     }
 
     // Test: If each of two arrays is a prefix of the other, they must be equal.
     public static boolean test_antisymmetry (int [] x, int [] y) {
-        if (!(x.length == 20 && y.length == 20)) // limit to arrays of size 20
+        if (!(x.length == 20 && y.length == 20)) // limit array sizes // TODO: Generalize
             return true; // skip the test
         // Test whether the arrays are equal:
         boolean equal = true;
-        for (int i = 0 ; i < x.length ; i++ )
-            if (y[i] != x[i])
-                equal = false;
+        if (x.length == y.length) {
+            for (int i = 0 ; i < x.length ; i++ )
+                if (y[i] != x[i])
+                    equal = false;
+        }
+        else
+            equal = false;
         return implies(isPrefix(x,y) && isPrefix(y,x), equal);
     }
 
