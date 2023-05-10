@@ -192,3 +192,33 @@
            (equal (step-state-with-pc-and-call-stack-height pc call-stack-height s)
                   s))
   :hints (("Goal" :in-theory (enable step-state-with-pc-and-call-stack-height))))
+
+;; show that call-stack-size of throw exception is <=
+(defthmd <=-of-call-stack-size-of-binding-of-thread-table-of-throw-exception
+  (<= (jvm::call-stack-size (jvm::binding th (jvm::thread-table (jvm::throw-exception objectref objectref-class th s))))
+      (jvm::call-stack-size (jvm::binding th (jvm::thread-table s))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (e/d (jvm::throw-exception) (jvm::step-opener)))))
+
+(defthm step-state-with-pc-and-call-stack-height-of-throw-exception
+  (implies (and (equal call-stack-height (jvm::call-stack-size (jvm::binding (th) (jvm::thread-table s))))
+                (< 0 call-stack-height)
+                (not (member-equal pc (jvm::exception-handler-targets (lookup-equal :exception-table (jvm::method-info (jvm::top-frame (jvm::binding (th)
+                                                                                                                                                     (jvm::thread-table s)))))))))
+           (equal (step-state-with-pc-and-call-stack-height pc call-stack-height (jvm::throw-exception objectref objectref-class (th) s))
+                  (jvm::throw-exception objectref objectref-class (th) s)))
+  :hints (("Goal" :in-theory (e/d (jvm::throw-exception step-state-with-pc-and-call-stack-height <=-of-call-stack-size-of-binding-of-thread-table-of-throw-exception)
+                                  (true-listp jvm::thread-owns-monitorp jvm::step-opener)))))
+
+;; Helps prevent large nests of step-state-with-pc-and-call-stack-height around exception states.
+(defthm step-state-with-pc-and-call-stack-height-of-obtain-and-throw-exception
+  (implies (and (equal call-stack-height (jvm::call-stack-size (jvm::binding (th) (jvm::thread-table s)))) ; gen?
+                (< 0 call-stack-height)
+                ;; should be easy to resolve:
+                (not (member-equal pc (jvm::exception-handler-targets (lookup-equal :exception-table (jvm::method-info (jvm::top-frame (jvm::binding (th)
+                                                                                                                                                     (jvm::thread-table s))))))))
+                (jvm::class-namep exception-class-name) ; drop?
+                )
+           (equal (step-state-with-pc-and-call-stack-height pc call-stack-height (jvm::obtain-and-throw-exception exception-class-name debug-info (th) s))
+                  (jvm::obtain-and-throw-exception exception-class-name debug-info (th) s)))
+  :hints (("Goal" :in-theory (enable jvm::obtain-and-throw-exception))))

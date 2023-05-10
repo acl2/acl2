@@ -374,6 +374,8 @@
 (def-constant-opener jvm::get-array-component-type)
 (def-constant-opener gen-init-bindings-for-class)
 
+(def-constant-opener jvm::exception-handler-targets)
+
 (def-constant-opener alistp)
 
 (def-constant-opener new-ad)

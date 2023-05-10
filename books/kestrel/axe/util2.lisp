@@ -264,19 +264,20 @@
 
 ;(local (in-theory (disable ORDINAL-TRICHOTOMY))) ;looped before i added the (not (natp x)) stuff below
 
-(defun make-bit-blasted-array-expression-aux (index length name)
-  (declare (xargs :measure (+ 1 (nfix (- length index)))))
-  (if (or (<= length index)
-          (not (natp length))
-          (not (natp index)))
-      'nil
-    `(cons ,(make-bit-blasted-expression 7 (pack$ name "_" index))
-           ,(make-bit-blasted-array-expression-aux (+ 1 index) length name))))
+;; (defun make-bit-blasted-array-expression-aux (index length name)
+;;   (declare (xargs :measure (+ 1 (nfix (- length index)))))
+;;   (if (or (<= length index)
+;;           (not (natp length))
+;;           (not (natp index)))
+;;       'nil
+;;     `(cons ,(make-bit-blasted-expression 7 (pack$ name "_" index))
+;;            ,(make-bit-blasted-array-expression-aux (+ 1 index) length name))))
 
-(defun make-bit-blasted-array-expression (length name)
-;;   (declare (xargs :guard (and (symbolp name)
-;;                               (natp length))))
-  (make-bit-blasted-array-expression-aux 0 length name))
+;; (defun make-bit-blasted-array-expression (length name)
+;; ;;   (declare (xargs :guard (and (symbolp name)
+;; ;;                               (natp length))))
+;;   (make-bit-blasted-array-expression-aux 0 length name))b
+
 
 
 ;BBOZO this largely duplicates the above?
