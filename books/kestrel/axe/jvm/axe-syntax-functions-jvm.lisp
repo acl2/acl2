@@ -399,7 +399,12 @@
                            ((when (eq :error left-status)) (mv :error nil nil))
                            ((mv right-status right-sh right-pc)
                             (get-stack-height-and-pc-to-step-from-myif-nest-helper else-branch base-stack dag-array))
-                           ((when (eq :error right-status)) (mv :error nil nil)))
+                           ((when (eq :error right-status)) (mv :error nil nil))
+                           ;; There is a :step-present, so there is an unsimplified step around a make-state!
+                           ;; TODO: How can this happen?
+                           ((when (or (eq :step-present left-status) (eq :step-present right-status)))
+                            (mv :step-present nil nil))
+                           )
                         (if (eq :ready left-status)
                             (if (eq :ready right-status)
                                 ;; First compare the stack heights (preferring to
@@ -419,7 +424,7 @@
                           (if (eq :ready right-status)
                               ;; Only right is ready:
                               (mv :ready right-sh right-pc)
-                            ;; Neither is ready:
+                            ;; Neither is ready: ;; todo: this is now already checked above
                             (if (or (eq :step-present left-status) (eq :step-present right-status))
                                 (mv :step-present nil nil)
                               (mv :finished nil nil)))))))
