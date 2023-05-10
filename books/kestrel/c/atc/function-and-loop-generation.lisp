@@ -2330,9 +2330,6 @@
                                                (ident ,(symbol-name var))
                                                compst)
                                               compst)
-                                 ,var)
-                          (equal (read-var (ident ,(symbol-name var))
-                                           ,compst-var)
                                  ,var)))
           (formula1 (atc-contextualize formula1
                                        context
@@ -2357,8 +2354,7 @@
           (valuep-when-type-pred (pack 'valuep-when- type-pred))
           (hints
            `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
-                                  read-object-of-objdesign-of-var-to-read-var
-                                  read-var-of-add-var
+                                  read-object-of-objdesign-of-var-of-add-var
                                   ,var-thm
                                   ident-fix-when-identp
                                   identp-of-ident

@@ -447,9 +447,7 @@
 
 ; Listp is true when val is a list of terms, false when val is a term.
 
-  (and (let ((info (f-get-global 'certify-book-info state)))
-         (and info
-              (not (access certify-book-info info :include-book-phase))))
+  (and (f-get-global 'certify-book-info state)
        (not (f-get-global 'in-local-flg state))
        (not ; not inside include-book
         (global-val 'include-book-path wrld))

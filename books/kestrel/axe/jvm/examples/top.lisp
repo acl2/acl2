@@ -12,3 +12,5 @@
 
 (include-book "aes-128-encrypt-light-and-spec")
 (include-book "aes-128-encrypt-regular-and-spec")
+
+(include-book "formal-unit-tester/top")

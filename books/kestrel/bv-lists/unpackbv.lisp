@@ -1,7 +1,7 @@
 ; BV Lists Library: Theorems about unpackbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "unpackbv-def")
 (include-book "all-unsigned-byte-p")
+(include-book "unsigned-byte-listp-def")
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
 (local (include-book "../bv/bvcat"))
 (local (include-book "../../ihs/ihs-lemmas")) ;why?
@@ -175,3 +176,9 @@
 (defthm byte-listp-of-unpackbv
   (byte-listp (unpackbv num 8 bv))
   :hints (("Goal" :in-theory (enable unpackbv byte-listp))))
+
+(defthm unsigned-byte-listp-of-unpackbv
+  (implies (natp size)
+           (unsigned-byte-listp size (unpackbv num size bv)))
+  :hints (("Goal" :in-theory (enable unpackbv
+                                     unsigned-byte-listp))))

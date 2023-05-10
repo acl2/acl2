@@ -956,11 +956,10 @@
 ; iprint-oracle-updates, which magically -- using the acl2-oracle field of the
 ; state -- transfers those values back to the state, e.g., assigns state global
 ; iprint-ar the (compressed) value of special variable *wormhole-iprint-ar*.
-; Calls of iprint-oracle-updates might be needed only at the entry points to
-; eviscerating using iprinting, namely, eviscerate-top and
-; eviscerate-stobjs-top; but as of this writing (April 2023) we continue to
-; play it safe by calling iprint-oracle-updates in a few other places as well.
-; We might eliminate those other calls in the future.
+; Calls of iprint-oracle-updates are needed at the entry points to eviscerating
+; using iprinting, namely, eviscerate-top and eviscerate-stobjs-top, and also
+; in the top-level loop (see read-object) so that #@n# expressions printed in a
+; wormhole or by cw can be read at the top level.
 
 ; End of Essay on Iprinting
 
@@ -1556,39 +1555,6 @@
               t
             nil)))
   state)
-
-(defun iprint-oracle-updates (state)
-
-; Warning: Keep in sync with iprint-oracle-updates-raw.
-
-; See the discussion of wormholes in the Essay on Iprinting.
-
-  #-acl2-loop-only
-  (when (live-state-p state)
-    (return-from iprint-oracle-updates
-                 (iprint-oracle-updates-raw state)))
-  (mv-let (erp val state)
-    (read-acl2-oracle state)
-    (declare (ignore erp))
-
-; If we intend to reason about this function, then we might want to check that
-; val is a reasonable value.  But that seems not to be important, since very
-; little reasoning would be possible anyhow for this function.
-
-    (let ((val (fix-true-list val)))
-      (pprogn (f-put-global 'iprint-ar
-                            (nth 0 val)
-                            state)
-              (f-put-global 'iprint-hard-bound
-                            (nfix (nth 1 val))
-                            state)
-              (f-put-global 'iprint-soft-bound
-                            (nfix (nth 2 val))
-                            state)
-              (f-put-global 'iprint-fal
-                            (nth 3 val)
-                            state)
-              state))))
 
 (defun iprint-oracle-updates@par ()
   #-acl2-loop-only

@@ -37,7 +37,7 @@
     "The second and third rules are used in the @(tsee defstruct)-specific
      theorems generated for symbolic execution of array member accesses.")
    (xdoc::p
-    "The fourth and fifth rules are used in the modular proofs
+    "The remaining rules are used in the modular proofs
      aboud variables in symbol tables.")
    (xdoc::p
     "The constant that collects the rules also includes
@@ -99,6 +99,28 @@
              top-frame
              compustate-frames-number
              len))
+
+  (defruled read-object-of-objdesign-of-var-of-add-var
+    (implies (objdesign-of-var var (add-var var2 val compst))
+             (equal (read-object (objdesign-of-var var (add-var var2 val compst))
+                                 (add-var var2 val compst))
+                    (if (equal (ident-fix var2)
+                               (ident-fix var))
+                        (remove-flexible-array-member val)
+                      (read-object (objdesign-of-var var compst) compst))))
+    :enable (read-object-of-objdesign-of-var-to-read-var
+             read-var-of-add-var
+             objdesign-of-var-of-add-var-iff))
+
+  (defruled read-object-of-objdesign-of-var-of-enter-scope
+    (implies (and (> (compustate-frames-number compst) 0)
+                  (objdesign-of-var var (enter-scope compst)))
+             (equal (read-object (objdesign-of-var var (enter-scope compst))
+                                 (enter-scope compst))
+                    (read-object (objdesign-of-var var compst) compst)))
+    :enable (read-object-of-objdesign-of-var-to-read-var
+             read-var-of-enter-scope
+             objdesign-of-var-of-enter-scope-iff))
 
   (defval *atc-object-designator-rules*
     '(objdesign-of-var-when-static

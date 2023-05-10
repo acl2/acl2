@@ -16634,8 +16634,7 @@
                          (certify-book-info-0
                           (value (make certify-book-info
                                        :full-book-name full-book-name
-                                       :cert-op cert-op
-                                       :include-book-phase nil))))
+                                       :cert-op cert-op))))
                  (state-global-let*
                   ((compiler-enabled (f-get-global 'compiler-enabled state))
                    (port-file-enabled (f-get-global 'port-file-enabled state))
@@ -32619,14 +32618,7 @@
        (revert-world-on-error
         (let* ((make-event-debug (f-get-global 'make-event-debug state))
                (new-debug-depth (1+ (f-get-global 'make-event-debug-depth state)))
-               (wrld (w state))
-               (include-book-phase-p
-                (let ((info (f-get-global 'certify-book-info state)))
-                  (and info
-                       (access certify-book-info info :include-book-phase))))
-               (skip-check-expansion
-                (and (consp check-expansion)
-                     include-book-phase-p)))
+               (wrld (w state)))
           (er-let*
               ((expansion0/new-kpa/new-ttags-seen
                 (pprogn
@@ -32639,8 +32631,7 @@
                   (cond
                    ((and expansion?
                          (eq (ld-skip-proofsp state) 'include-book)
-                         (or (not (f-get-global 'including-uncertified-p state))
-                             include-book-phase-p)
+                         (not (f-get-global 'including-uncertified-p state))
 
 ; Even if expansion? is specified, we do not assume it's right if
 ; check-expansion is t.
@@ -32653,8 +32644,6 @@
                                        (eq check-expansion t))
                                   (not (eq check-expansion t))))
                     (value (list* expansion? nil nil)))
-                   (skip-check-expansion
-                    (value (list* check-expansion nil nil)))
                    (t
                     (do-proofs?
                      (or check-expansion

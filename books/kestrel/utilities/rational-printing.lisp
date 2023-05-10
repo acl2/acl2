@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+
 (defund round-to-integer (x)
   (declare (xargs :guard (and (rationalp x)
                               (<= 0 x))))
@@ -19,10 +22,30 @@
         (+ 1 integer-part)
       integer-part)))
 
+(defthm <=-of-0-and-round-to-integer-type
+  (implies (<= 0 val)
+           (<= 0 (round-to-integer val)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable round-to-integer))))
+
 (defund round-to-hundredths (x)
   (declare (xargs :guard (and (rationalp x)
                               (<= 0 x))))
   (/ (round-to-integer (* 100 x)) 100))
+
+(defthm <=-of-0-and-round-to-hundredths-type
+  (implies (<= 0 val)
+           (<= 0 (round-to-hundredths val)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable round-to-hundredths))))
+
+(defund natural-length-decimal (n)
+  (declare (xargs :guard (natp n)))
+  (if (or (not (mbt (natp n)))
+          (< n 10))
+      1 ; 0-9 have length 1
+    (+ 1 (natural-length-decimal (floor n 10)))))
+
 
 ;; Prints VAL, rounded to the hundredths place.
 ;; Returns nil.
@@ -36,4 +59,4 @@
          (fraction-part-no-tenths (- fraction-part (/ tenths 10)))
          (hundredths (floor (* fraction-part-no-tenths 100) 1)))
     ;; Hoping that using ~c here prevents any newlines:
-    (cw "~c0.~c1~c2" (cons integer-part (integer-length integer-part)) (cons tenths 1) (cons hundredths 1))))
+    (cw "~c0.~c1~c2" (cons integer-part (natural-length-decimal integer-part)) (cons tenths 1) (cons hundredths 1))))
