@@ -142,7 +142,11 @@
     ;; do we need these?:
     car-of-new-ads-slice
     cdr-of-new-ads-slice
-    ))
+
+    equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg3
+    equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg3-alt
+    equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg2
+    equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg2-alt))
 
 (defun address-rules ()
   (declare (xargs :guard t))
