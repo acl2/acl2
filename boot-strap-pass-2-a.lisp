@@ -220,11 +220,6 @@
 (verify-termination-boot-strap update-brr-data-2-builtin) ; and guards
 (verify-termination-boot-strap set-wormhole-data-fast) ; and guards
 (set-brr-data-attachments)
-
-(defthm state-p1-read-acl2-oracle
-    (implies (state-p1 state)
-             (state-p1 (mv-nth 2 (read-acl2-oracle state))))
-  :hints (("Goal" :in-theory (enable state-p1 read-acl2-oracle))))
 (verify-termination-boot-strap brr-data-lst) ; and guards
 
 ; The following has caused the following error with "make proofs".

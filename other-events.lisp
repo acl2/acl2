@@ -2991,8 +2991,9 @@
          (and (termp tterm world)
               (subsetp-eq (all-vars tterm) '(ens state))))))
 
-(table theory-invariant-table nil nil
-       :guard (theory-invariant-table-guard val world))
+(set-table-guard theory-invariant-table
+                 (theory-invariant-table-guard val world)
+                 :topic theory-invariant)
 
 (defun theory-invariant-fn (term state key error event-form)
   (when-logic
@@ -4543,6 +4544,9 @@
          (list 'record-expansion event expansion))))))
 
 (table acl2-system-table nil nil
+
+; Since there isn't any documentation particularlly relevant to this table, we
+; avoid using set-table-guard here.
 
 ; This table is used when we need to lay down an event marker.  We may find
 ; other uses for it in the future, in which we will support other keys.  Users
@@ -30834,6 +30838,9 @@
 
 (defun chk-return-last-entry (key val wrld)
 
+; Warning: If you change this, consider whether also to change
+; chk-return-last-entry-coda.
+
 ; Key is a symbol such as prog2$ that has a macro definition in raw Lisp that
 ; takes two arguments.  Val is either nil, denoting that key is not in the
 ; table; the name of a macro known to ACL2; or (list m), where m is the name of
@@ -30851,48 +30858,65 @@
                        (symbolp (car val))
                        (car val)
                        (null (cdr val))))
-              (or (not (member-eq key '(progn mbe1-raw ec-call1-raw
-                                              with-guard-checking1-raw)))
+              (not (member-eq key '(progn mbe1-raw ec-call1-raw
+                                          with-guard-checking1-raw)))
+              (or (null val)
+                  (let ((val2 (if (symbolp val) val (car val))))
+                    (getpropc val2 'macro-body nil wrld)))
+              #-acl2-loop-only
+              (fboundp key) ; holds for functions, macros, and special ops
+              t))
+        (t nil)))
+
+(defun chk-return-last-entry-coda (key val wrld)
+
+; See chk-return-last-entry.
+
+  (declare (xargs :guard (plist-worldp wrld)
+                  :mode :program))
+  (cond ((or (ttag wrld)
+             (global-val 'boot-strap-flg wrld))
+         (cond ((member-eq key '(progn mbe1-raw ec-call1-raw
+                                       with-guard-checking1-raw))
 
 ; Keep the list above in sync with the comment about these macros in
 ; *initial-return-last-table* and with return-last-lookup.
 
-                  (er hard! 'chk-return-last-entry
-                      "The proposed key ~x0 for ~x1 is illegal because it is ~
-                       given special treatment.  See :DOC return-last."
-                      key 'return-last-table))
-              (or (null val)
-                  (let ((val2 (if (symbolp val) val (car val))))
-                    (or
-                     (getpropc val2 'macro-body nil wrld)
-                     (er hard! 'chk-return-last-entry
-                         "The proposed value ~x0 for key ~x1 in ~x2 is ~
-                          illegal because ~x3 is not the name of a macro ~
-                          known to ACL2.  See :DOC return-last and (for the ~
-                          above point made explicitly) see :DOC ~
-                          return-last-table."
-                         val key 'return-last-table val2))))
-              #-acl2-loop-only
-              (or (fboundp key)
+                (msg
+                 "Note that the proposed key ~x0 for ~x1 is illegal because ~
+                  it is given special treatment."
+                 key 'return-last-table))
+               ((and val
+                     (let ((val2 (if (symbolp val) val (car val))))
+                       (and
+                        (not (getpropc val2 'macro-body nil wrld))
+                        (msg "~|Note that the proposed value ~x0 for key ~x1 ~
+                              in ~x2 is illegal because ~x3 is not the name ~
+                              of a macro known to ACL2.  See :DOC return-last ~
+                              and (for the above point made explicitly) see ~
+                              :DOC return-last-table."
+                             val key 'return-last-table val2)))))
+               #-acl2-loop-only
+               ((not (fboundp key))
 
 ; Note that fboundp holds for functions, macros, and special operators.
 
-                  (er hard! 'chk-return-last-entry
-                      "The proposed key ~x0 for ~x1 is illegal because it is ~
-                       does not have a Common Lisp definition.    See :DOC ~
-                       return-last and (for the above point made explicitly) ~
-                       see :DOC return-last-table."
-                      key 'return-last-table))
-              t))
-        (t (er hard! 'chk-return-last-entry
-               "It is illegal to modify the table, ~x0, unless there is an ~
-                active trust tag.  See :DOC return-last and see :DOC ~
-                return-last-table."
-               'return-last-table))))
+                (msg "~|Note that the proposed key ~x0 for ~x1 is illegal ~
+                      because it is does not have a Common Lisp definition.  ~
+                      See :DOC return-last and (for the above point made ~
+                      explicitly) see :DOC return-last-table."
+                     key 'return-last-table))
+               (t nil)))
+        (t (msg "~|The error is simply that it is illegal to modify the ~
+                 table, ~x0, unless there is an active trust tag.  See :DOC ~
+                 return-last and see :DOC return-last-table."
+                'return-last-table))))
 
-(table return-last-table nil nil
-       :guard
-       (chk-return-last-entry key val world))
+(set-table-guard return-last-table
+                 (chk-return-last-entry key val world)
+                 :topic return-last
+                 :show t
+                 :coda (chk-return-last-entry-coda key val world))
 
 (defmacro defmacro-last (fn &key raw (top-level-ok 't))
   (declare (xargs :guard (and (symbolp fn)

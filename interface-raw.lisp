@@ -7553,7 +7553,9 @@
            set-compile-fns
            set-ignore-ok
            set-irrelevant-formals-ok
-           set-raw-mode)
+           set-raw-mode
+           set-table-guard
+           set-table-guard-doc)
           nil)
          (t
           (error "Unexpected type of form, ~s.  See note-fns-in-form."
