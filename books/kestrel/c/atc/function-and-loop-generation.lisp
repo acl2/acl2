@@ -288,22 +288,26 @@
      the type recognizer from the shallow embedding (e.g. @(tsee sintp)).
      This property is used in proofs that build on this theorem.")
    (xdoc::p
-    "For now we only support integer types
-     for formals that are not external objects.
-     If we encounter a different kind of type,
-     we return @('nil') as the name and a dummy event;
-     the caller checks that the returned name is not @('nil')
-     before using the event."))
-  (b* (((unless (and (type-integerp type)
-                     (not defobj-pred)))
-        (mv '(_) nil names-to-avoid))
-       (name (pack fn '- formal))
+    "The theorem is proved in the theory that consists of just
+     the guard function,
+     the @(tsee star) wrapper,
+     and the @(tsee defobject) predicate
+     if the formal refers to an external object.
+     This is because the recognizer predicate is
+     either directly in a conjunct in the guard,
+     possibly wrapped by @(tsee star),
+     or in the definition of the @(tsee defobject) predicate
+     that is in a conjunct of the guard."))
+  (b* ((name (pack fn '- formal))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (pred (type-to-recognizer type wrld))
        (formula `(implies (,fn-guard ,@fn-formals)
                           (,pred ,formal)))
-       (hints `(("Goal" :in-theory '(,fn-guard))))
+       (hints `(("Goal" :in-theory '(,fn-guard
+                                     star
+                                     ,@(and defobj-pred
+                                            (list defobj-pred))))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -450,9 +454,7 @@
                (atc-gen-formal-thm fn fn-guard formals arg type defobj-pred
                                    names-to-avoid wrld)
              (mv '(_) nil names-to-avoid)))
-          (events (if name
-                      (cons event events)
-                    events))
+          (events (cons event events))
           (proofs (and name proofs))
           (externalp
            (b* ((info? (cdr (assoc-equal (symbol-name arg) prec-objs))))
@@ -1971,13 +1973,15 @@
      and @('<symbol') is the symbol that is the corresponding ACL2 formal.")
    (xdoc::p
     "We also return a flag saying whether
-     the formals all have integer types or not."))
+     the formals all have integer types and are not external object,
+     or not."))
   (b* (((when (endp typed-formals)) (mv nil t))
        ((cons var info) (car typed-formals))
        ((mv omap-rest all-intp)
         (atc-gen-omap-update-formals (cdr typed-formals))))
     (mv `(omap::update (ident ',(symbol-name var)) ,var ,omap-rest)
         (and (type-integerp (atc-var-info->type info))
+             (not (atc-var-info->externalp info))
              all-intp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
