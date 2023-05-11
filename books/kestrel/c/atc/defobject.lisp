@@ -255,7 +255,7 @@
                            op arg type in-type))))
           (retok (make-expr-unary :op op :arg arg-expr)
                  out-type)))
-       ((mv okp op arg1 arg2 in-type1 in-type2 out-type)
+       ((mv okp & arg1 arg2 in-type1 in-type2 out-type op)
         (atc-check-binop term))
        ((when okp)
         (b* (((erp arg1-expr type1) (defobject-term-to-expr arg1))

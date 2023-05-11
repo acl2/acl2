@@ -1487,7 +1487,7 @@
                                 arg.events arg.thm-name
                                 in-type out-type op
                                 gin state)))
-         ((mv okp op arg1-term arg2-term in1-type in2-type out-type)
+         ((mv okp & arg1-term arg2-term in1-type in2-type out-type op)
           (atc-check-binop term))
          ((when okp)
           (b* (((erp (pexpr-gout arg1))
