@@ -118,7 +118,7 @@
                                   (prec-tags atc-string-taginfo-alistp)
                                   (prec-objs atc-string-objinfo-alistp))
   :returns (mv (type type-optionp)
-               (externalp booleanp)
+               (defobj-pred symbolp)
                (arg symbolp))
   :short "C type and argument derived from a guard conjunct, if any."
   :long
@@ -150,8 +150,8 @@
      in this case, the @(tsee star) wrapper is disallowed,
      and the type is the one of the object.
      In this last case,
-     we return a flag indicating that the formal represents an external object;
-     in all other cases, the flag is @('nil').")
+     we also return the @('object-<name>-p') name;
+     in all other cases, this result is @('nil').")
    (xdoc::p
     "If the recognizer does not have any of the above forms,
      we return @('nil') as all results.
@@ -180,7 +180,7 @@
           (mv t nil fn arg)))
        ((when (not okp)) (mv nil nil nil))
        ((unless (symbolp arg)) (mv nil nil nil))
-       ((mv type externalp)
+       ((mv type defobj-pred)
         (b* (((when (eq recog 'scharp)) (mv (type-schar) nil))
              ((when (eq recog 'ucharp)) (mv (type-uchar) nil))
              ((when (eq recog 'sshortp)) (mv (type-sshort) nil))
@@ -249,7 +249,8 @@
                    (info (atc-obj-info->defobject info))
                    ((unless (eq recog (defobject-info->recognizer info)))
                     (mv nil nil)))
-                (mv (defobject-info->type info) t))))
+                (mv (defobject-info->type info)
+                    (defobject-info->recognizer info)))))
           (mv nil nil)))
        ((unless type) (mv nil nil nil))
        ((when (and pointerp
@@ -258,7 +259,7 @@
        (type (if pointerp
                  (type-pointer type)
                type)))
-    (mv type externalp arg))
+    (mv type defobj-pred arg))
   :guard-hints
   (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-rewrite
                               iff-consp-when-true-listp
@@ -272,7 +273,7 @@
                             (fn-formals symbol-listp)
                             (formal symbolp)
                             (type typep)
-                            (externalp booleanp)
+                            (defobj-pred symbolp)
                             (names-to-avoid symbol-listp)
                             (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
@@ -294,7 +295,7 @@
      the caller checks that the returned name is not @('nil')
      before using the event."))
   (b* (((unless (and (type-integerp type)
-                     (not externalp)))
+                     (not defobj-pred)))
         (mv '(_) nil names-to-avoid))
        (name (pack fn '- formal))
        ((mv name names-to-avoid)
@@ -400,9 +401,9 @@
      (b* (((reterr) nil nil nil nil)
           ((when (endp guard-conjuncts)) (retok nil nil proofs names-to-avoid))
           (conjunct (car guard-conjuncts))
-          ((mv type externalp arg) (atc-check-guard-conjunct conjunct
-                                                             prec-tags
-                                                             prec-objs))
+          ((mv type defobj-pred arg) (atc-check-guard-conjunct conjunct
+                                                               prec-tags
+                                                               prec-objs))
           ((unless type)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
@@ -446,7 +447,7 @@
                         guard fn arg)))
           ((mv event name names-to-avoid)
            (if proofs
-               (atc-gen-formal-thm fn fn-guard formals arg type externalp
+               (atc-gen-formal-thm fn fn-guard formals arg type defobj-pred
                                    names-to-avoid wrld)
              (mv '(_) nil names-to-avoid)))
           (events (if name
