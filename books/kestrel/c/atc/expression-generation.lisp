@@ -406,14 +406,14 @@
                              (arg2-events pseudo-event-form-listp)
                              (arg1-thm symbolp)
                              (arg2-thm symbolp)
-                             (in1-type typep)
-                             (in2-type typep)
+                             (in-type1 typep)
+                             (in-type2 typep)
                              (out-type typep)
                              (op binopp)
                              (gin pexpr-ginp)
                              state)
-  :guard (and (type-nonchar-integerp in1-type)
-              (type-nonchar-integerp in2-type)
+  :guard (and (type-nonchar-integerp in-type1)
+              (type-nonchar-integerp in-type2)
               (type-nonchar-integerp out-type))
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression and theorem from an ACL2 term
@@ -429,8 +429,8 @@
   (b* (((reterr) (irr-pexpr-gout))
        (wrld (w state))
        ((pexpr-gin gin) gin)
-       ((unless (and (equal arg1-type in1-type)
-                     (equal arg2-type in2-type)))
+       ((unless (and (equal arg1-type in-type1)
+                     (equal arg2-type in-type2)))
         (reterr
          (msg "The binary operator ~x0 is applied ~
                to an expression term ~x1 returning ~x2 ~
@@ -438,7 +438,7 @@
                but a ~x5 operand and a ~x6 operand are expected. ~
                This is indicative of provably dead code, ~
                given that the code is guard-verified."
-              op arg1-term arg1-type arg2-term arg2-type in1-type in2-type)))
+              op arg1-term arg1-type arg2-term arg2-type in-type1 in-type2)))
        (expr (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))
        ((when (eq fn 'quote))
         (reterr (raise "Internal error: function symbol is QUOTE.")))
@@ -1482,7 +1482,7 @@
                                 arg.events arg.thm-name
                                 in-type out-type op
                                 gin state)))
-         ((erp okp fn arg1-term arg2-term in1-type in2-type out-type op)
+         ((erp okp fn arg1-term arg2-term in-type1 in-type2 out-type op)
           (atc-check-binop term))
          ((when okp)
           (b* (((erp (pexpr-gout arg1))
@@ -1503,7 +1503,7 @@
                                  arg1.type arg2.type
                                  arg1.events arg2.events
                                  arg1.thm-name arg2.thm-name
-                                 in1-type in2-type out-type
+                                 in-type1 in-type2 out-type
                                  op
                                  gin
                                  state)))
