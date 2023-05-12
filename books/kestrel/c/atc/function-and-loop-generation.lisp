@@ -339,10 +339,7 @@
      We ensure that there is exactly one such term for each formal.")
    (xdoc::p
     "We also generate theorems about the formals,
-     unless the input flag @('proofs') is @('nil').
-     For now this is only for formals with certain types:
-     if we encounter a type for which we do not generate a theorem,
-     we set the output flag @('updated-proofs') to @('nil').")
+     unless the input flag @('proofs') is @('nil').")
    (xdoc::p
     "If we find types for all the formals,
      we return an alist from the formals to their variable information.
