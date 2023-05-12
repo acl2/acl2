@@ -1,6 +1,6 @@
 ; Pruning irrelevant IF-branches in a DAG
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -76,9 +76,9 @@
 
 ;; When the test of an IF or MYIF can be resolved, the IF/MYIF can be replaced
 ;; by a call of ID around either its then-branch or its else-branch.  This
-;; ensures the resulting DAG is still legal and had no changes in node
-;; numbering.  The calls to ID can be removed by a sequent call of the
-;; rewriter.
+;; ensures the resulting DAG is still legal and has no changes in node
+;; numbering.  The calls to ID can be removed by a subsequent call of the
+;; rewriter.  TODO: Do better?
 (defun id (x) x)
 
 ;; Returns (mv erp result state), where result is :true (meaning non-nil), :false, or :unknown.

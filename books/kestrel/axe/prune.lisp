@@ -1,7 +1,7 @@
 ; Pruning irrelevant IF-branches
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -106,7 +106,7 @@
 
 ;; Fixup assumption when it will obviously loop when used as a directed equality.
 ;; could check for (equal <constant> <x>) here too, but Axe may be smart enough to reorient that
-;; Returns a possibly-empty list
+;; Returns a possibly-empty list.
 (defund fixup-assumption (assumption)
   (declare (xargs :guard (pseudo-termp assumption)))
   (if (not (and (consp assumption)
