@@ -327,17 +327,15 @@
                      term.fn)))
        ((unless (list-lenp 1 term.args))
         (reterr (raise "Internal error: ~x0 not applied to 1 argument." term)))
-       (arg (first term.args)))
-    (case op
-      (plus
-       (retok t term.fn arg in-type (promote-type in-type) (unop-plus)))
-      (minus
-       (retok t term.fn arg in-type (promote-type in-type) (unop-minus)))
-      (bitnot
-       (retok t term.fn arg in-type (promote-type in-type) (unop-bitnot)))
-      (lognot
-       (retok t term.fn arg in-type (type-sint) (unop-lognot)))
-      (t (reterr (impossible)))))
+       (arg (first term.args))
+       ((mv out-type unop)
+        (case op
+          (plus (mv (promote-type in-type) (unop-plus)))
+          (minus (mv (promote-type in-type) (unop-minus)))
+          (bitnot (mv (promote-type in-type) (unop-bitnot)))
+          (lognot (mv (type-sint) (unop-lognot)))
+          (t (prog2$ (impossible) (mv (irr-type) (irr-unop)))))))
+    (retok t term.fn arg in-type out-type unop))
   ///
 
   (defret pseudo-term-count-of-atc-check-unop-arg
