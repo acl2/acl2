@@ -395,11 +395,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-binary ((term pseudo-termp)
-                             (op binopp)
-                             (in1-type typep)
-                             (in2-type typep)
-                             (out-type typep)
+(define atc-gen-expr-binary ((fn symbolp)
                              (arg1-term pseudo-termp)
                              (arg2-term pseudo-termp)
                              (arg1-expr exprp)
@@ -410,6 +406,10 @@
                              (arg2-events pseudo-event-form-listp)
                              (arg1-thm symbolp)
                              (arg2-thm symbolp)
+                             (in1-type typep)
+                             (in2-type typep)
+                             (out-type typep)
+                             (op binopp)
                              (gin pexpr-ginp)
                              state)
   :returns (mv erp (gout pexpr-goutp))
@@ -437,6 +437,9 @@
                given that the code is guard-verified."
               op arg1-term arg1-type arg2-term arg2-type in1-type in2-type)))
        (expr (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))
+       ((when (eq fn 'quote))
+        (reterr (raise "Internal error: function symbol is QUOTE.")))
+       (term `(,fn ,arg1-term ,arg2-term))
        ((when (not gin.proofs))
         (retok
          (make-pexpr-gout :expr expr
@@ -450,21 +453,17 @@
        (op-name (pack (binop-kind op)))
        ((unless (type-nonchar-integerp arg1-type))
         (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
-       (arg1-fixtype (integer-type-to-fixtype arg1-type))
        ((unless (type-nonchar-integerp arg2-type))
         (reterr (raise "Internal error: non-integer type ~x0." arg2-type)))
-       (arg2-fixtype (integer-type-to-fixtype arg2-type))
-       (op-arg1-type-arg2-type (pack op-name '- arg1-fixtype '- arg2-fixtype))
-       (op-arg1-type-arg2-type-okp
-        (and (or (member-eq (binop-kind op) '(:div :rem :shl :shr))
-                 (and (member-eq (binop-kind op) '(:add :sub :mul))
-                      (type-signed-integerp out-type)))
-             (pack op-arg1-type-arg2-type '-okp)))
+       (fn-okp (and (or (member-eq (binop-kind op) '(:div :rem :shl :shr))
+                        (and (member-eq (binop-kind op) '(:add :sub :mul))
+                             (type-signed-integerp out-type)))
+                    (pack fn '-okp)))
        ((mv okp-lemma-event?
             okp-lemma-name
             thm-index
             names-to-avoid)
-        (if op-arg1-type-arg2-type-okp
+        (if fn-okp
             (b* ((okp-lemma-name
                   (pack gin.fn '-expr- gin.thm-index '-okp-lemma))
                  ((mv okp-lemma-name names-to-avoid)
@@ -474,8 +473,7 @@
                                                      wrld))
                  (arg1-uterm (untranslate$ arg1-term nil state))
                  (arg2-uterm (untranslate$ arg2-term nil state))
-                 (okp-lemma-formula `(,op-arg1-type-arg2-type-okp ,arg1-uterm
-                                                                  ,arg2-uterm))
+                 (okp-lemma-formula `(,fn-okp ,arg1-uterm ,arg2-uterm))
                  (okp-lemma-formula
                   (atc-contextualize okp-lemma-formula
                                      gin.context
@@ -511,12 +509,13 @@
              (exec-binary-strict-pure-when-op
               (pack 'exec-binary-strict-pure-when- op-name))
              (type-pred (type-to-recognizer out-type wrld))
-             (op-values-when-arg2-type
+             (arg1-fixtype (integer-type-to-fixtype arg1-type))
+             (arg2-fixtype (integer-type-to-fixtype arg2-type))
+             (op-values-when-arg1-type
               (pack op-name '-values-when- arg1-fixtype))
              (op-arg1-type-and-value-when-arg2-type
               (pack op-name '- arg1-fixtype '-and-value-when- arg2-fixtype))
-             (type-pred-of-op-arg1-type-arg2-type
-              (pack type-pred '-of- op-arg1-type-arg2-type))
+             (type-pred-of-fn (pack type-pred '-of- fn))
              (valuep-when-type-pred (pack 'valuep-when- type-pred)))
           `(("Goal" :in-theory '(exec-expr-pure-when-strict-pure-binary
                                  (:e expr-kind)
@@ -531,10 +530,10 @@
                                  ,valuep-when-arg2-type-pred
                                  ,exec-binary-strict-pure-when-op
                                  (:e ,(pack 'binop- op-name))
-                                 ,op-values-when-arg2-type
+                                 ,op-values-when-arg1-type
                                  ,op-arg1-type-and-value-when-arg2-type
-                                 ,type-pred-of-op-arg1-type-arg2-type
-                                 ,@(and op-arg1-type-arg2-type-okp
+                                 ,type-pred-of-fn
+                                 ,@(and fn-okp
                                         (list okp-lemma-name))
                                  expr-valuep-of-expr-value
                                  expr-value->value-of-expr-value
@@ -542,16 +541,13 @@
                                  ,valuep-when-type-pred
                                  ,value-kind-when-arg1-type-pred
                                  ,value-kind-when-arg2-type-pred)))))
-       ((when (eq op-arg1-type-arg2-type 'quote))
-        (reterr (raise "Internal error: function symbol is QUOTE.")))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
                                        gin.context
                                        expr
                                        out-type
-                                       `(,op-arg1-type-arg2-type ,arg1-term
-                                                                 ,arg2-term)
+                                       term
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
@@ -562,7 +558,7 @@
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
-                      :term `(,op-arg1-type-arg2-type ,arg1-term ,arg2-term)
+                      :term term
                       :events (append arg1-events
                                       arg2-events
                                       okp-lemma-event?
@@ -1487,7 +1483,7 @@
                                 arg.events arg.thm-name
                                 in-type out-type op
                                 gin state)))
-         ((erp okp & arg1-term arg2-term in1-type in2-type out-type op)
+         ((erp okp fn arg1-term arg2-term in1-type in2-type out-type op)
           (atc-check-binop term))
          ((when okp)
           (b* (((erp (pexpr-gout arg1))
@@ -1502,13 +1498,16 @@
                                       :thm-index arg2.thm-index
                                       :names-to-avoid arg2.names-to-avoid
                                       :proofs arg2.proofs)))
-            (atc-gen-expr-binary term op in1-type in2-type out-type
+            (atc-gen-expr-binary fn
                                  arg1.term arg2.term
                                  arg1.expr arg2.expr
                                  arg1.type arg2.type
                                  arg1.events arg2.events
                                  arg1.thm-name arg2.thm-name
-                                 gin state)))
+                                 in1-type in2-type out-type
+                                 op
+                                 gin
+                                 state)))
          ((mv okp tyname arg-term in-type out-type) (atc-check-conv term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))

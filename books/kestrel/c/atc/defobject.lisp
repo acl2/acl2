@@ -240,8 +240,7 @@
     "In essence, this generates C code for
      a term used in the initializer of the external object."))
   (b* (((reterr) (irr-expr) (irr-type))
-       ((mv erp okp & out-type const) (atc-check-iconst term))
-       ((when erp) (reterr (msg "~@0" erp)))
+       ((erp okp & out-type const) (atc-check-iconst term))
        ((when okp)
         (retok (expr-const (const-int const))
                out-type))
