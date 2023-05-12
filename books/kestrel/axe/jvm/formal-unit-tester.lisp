@@ -206,20 +206,24 @@
     (param-var-assumptions-aux first-param-slot parameter-types param-slot-to-name-alist ; array-length-alist
                                )))
 
+(defun sbvlt-of-bvif-rules ()
+  (declare (xargs :guard t))
+  '(sbvlt-of-bvif-when-sbvlt-arg3
+    sbvlt-of-bvif-when-sbvlt-arg4
+    sbvlt-of-bvif-when-not-sbvlt-arg3
+    sbvlt-of-bvif-when-not-sbvlt-arg4
+    sbvlt-of-bvif-when-sbvlt-arg3-alt
+    sbvlt-of-bvif-when-sbvlt-arg4-alt
+    sbvlt-of-bvif-when-not-sbvlt-arg3-alt
+    sbvlt-of-bvif-when-not-sbvlt-arg4-alt))
+
 ;; Used during lifting and after
 (defun formal-unit-testing-extra-simplification-rules ()
   (declare (xargs :guard t))
-  (append '(bv-array-read-of-bv-array-write
+  (append (sbvlt-of-bvif-rules)
+          '(bv-array-read-of-bv-array-write
             ;;todo: when prove-with-tactics sees a not applied to a boolor, it should try to prove both cases
             ;;boolor  ;might have a loop
-            sbvlt-of-bvif-when-sbvlt-arg3
-            sbvlt-of-bvif-when-sbvlt-arg4
-            sbvlt-of-bvif-when-not-sbvlt-arg3
-            sbvlt-of-bvif-when-not-sbvlt-arg4
-            sbvlt-of-bvif-when-sbvlt-arg3-alt
-            sbvlt-of-bvif-when-sbvlt-arg4-alt
-            sbvlt-of-bvif-when-not-sbvlt-arg3-alt
-            sbvlt-of-bvif-when-not-sbvlt-arg4-alt
             equal-of-bvif
             equal-of-bvif-alt
             bvplus-of-bvif-arg2 ;perhaps restrict to the case when the duplicated term is a constant
