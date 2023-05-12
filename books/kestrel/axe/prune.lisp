@@ -217,7 +217,7 @@
        (- (cw "(Attempting to prove test true with STP:~%"))
        ((mv true-result state)
         (prove-implication-with-stp simplified-test-term
-                                    assumptions ;todo: this caused problems with an rlp example: (append assumptions equality-assumptions)
+                                    (append assumptions equality-assumptions)
                                     nil         ;counterexamplep
                                     (if (natp call-stp) call-stp *default-stp-max-conflicts*)
                                     nil                ;print
