@@ -432,7 +432,19 @@
     (implies yes/no
              (< (pseudo-term-count arg2)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-binop-in-type1
+    (implies yes/no
+             (type-nonchar-integerp in-type1)))
+
+  (defret type-nonchar-integerp-of-atc-check-binop-in-type2
+    (implies yes/no
+             (type-nonchar-integerp in-type2)))
+
+  (defret type-nonchar-integerp-of-atc-check-binop-out-type
+    (implies yes/no
+             (type-nonchar-integerp out-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
