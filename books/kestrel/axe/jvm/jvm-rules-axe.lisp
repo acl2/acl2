@@ -397,3 +397,19 @@
 
 (defthm booleanp-of-array-ref-listp
   (booleanp (array-ref-listp ads dims element-type heap)))
+
+(defthm <-of-constant-and-call-stack-size-when-negative
+  (implies (and (syntaxp (quotep k))
+                (< k 0))
+           (< k (jvm::call-stack-size call-stack))))
+
+(defthm integerp-of-call-stack-size
+  (integerp (jvm::call-stack-size call-stack)))
+
+;move
+(defthmd posp-of-+-of-constant
+  (implies (and (syntaxp (quotep k))
+                (integerp k)
+                (integerp x))
+           (equal (posp (+ k x))
+                  (< (- k) x))))
