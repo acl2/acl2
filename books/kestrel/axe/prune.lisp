@@ -277,16 +277,14 @@
            (pseudo-termp (make-bvchop size x)))
   :hints (("Goal" :in-theory (enable make-bvchop))))
 
-
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Thread through a print option
 (mutual-recursion
  ;; Returns (mv erp result-term state) where RESULT-TERM is equal
- ;; to TERM. Tries to rewrite each if/myif test using context from all overarching
+ ;; to TERM. Tries to rewrite each if/myif/boolif/bvif test using context from all overarching
  ;; tests (and any given assumptions).
-;TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
+ ;; TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
  ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
  (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
    (declare (xargs :guard (and (pseudo-termp term)
@@ -630,6 +628,7 @@
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp dag-or-quotep state).
 ;; TODO: This makes the rule-alist each time it is called.
+;; TODO: Consider first pruning with approximate contexts.
 (defund prune-dag-precisely (dag assumptions rules interpreted-fns monitored-rules call-stp state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)

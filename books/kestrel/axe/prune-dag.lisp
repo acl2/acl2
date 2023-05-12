@@ -82,7 +82,7 @@
 (defun id (x) x)
 
 ;; Returns (mv erp result state), where result is :true (meaning non-nil), :false, or :unknown.
-;; TODO: Also use rewriting?  See try-to-resolve-node.
+;; TODO: Also use rewriting?  See also try-to-resolve-test.
 (defund try-to-resolve-node-with-stp (nodenum-or-quotep
                                       assumptions
                                       ;; rule-alist interpreted-function-alist monitored-rules call-stp
