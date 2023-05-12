@@ -615,19 +615,29 @@ foo
 <p>Defines @('*foo*') as the symbol @('vl::foo'), instead of
 @('acl2::foo').</p>"
 
-  (defthm state-p1-of-read-object
-    (implies (and (state-p1 state)
-                  (symbolp channel)
-                  (open-input-channel-p1 channel :object state))
-             (state-p1 (mv-nth 2 (read-object channel state))))
-    :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
+  ;; Matt K. additions for 5/8/2023 change to read-object to call
+  ;; iprint-oracle-updates: include a book to prove (a stronger version of)
+  ;; state-p1-of-read-object.
+
+  (encapsulate
+    ()
+
+    (local (include-book "kestrel/file-io-light/read-object" :dir :system))
+
+    (defthm state-p1-of-read-object
+      (implies (state-p1 state)
+               (state-p1 (mv-nth 2 (read-object channel state))))))
 
   (defthm open-input-channel-p1-of-read-object
     (implies
      (and (state-p1 state)
           (open-input-channel-p1 channel :object state))
      (open-input-channel-p1 channel :object
-                            (mv-nth 2 (read-object channel state))))))
+                            (mv-nth 2 (read-object channel state))))
+    ;; Matt K. addition for 5/8/2023 change to read-object to call
+    ;; iprint-oracle-updates:
+    :hints (("Goal" :in-theory (enable put-global read-acl2-oracle
+                                       update-acl2-oracle)))))
 
 (defsection state-preserved-after-eof
 
@@ -680,6 +690,9 @@ foo
                      state))
      :hints(("Goal" :in-theory (e/d (read-byte$ state-p1))))))
 
+; Matt K. mod: The following is no longer true after the 5/8/2023 change to
+; read-object to call iprint-oracle-updates.
+#|
  (defsection object
    :extension std/io/read-object
    (defthm state-preserved-by-read-object-when-eof
@@ -688,7 +701,10 @@ foo
                    (open-input-channel-p1 channel :object state))
               (equal (mv-nth 2 (read-object channel state))
                      state))
-     :hints(("Goal" :in-theory (e/d (read-object state-p1)))))))
+     :hints(("Goal" :in-theory (e/d (read-object state-p1))))))
+|#
+
+ )
 
 (defsection std/io/read-file-into-string
   :parents (std/io read-file-into-string)

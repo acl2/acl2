@@ -488,8 +488,8 @@
      (implies (and (natp x)
                    (posp z)
                    (relatively-primep x z))
-              (= (+ (* (dm::r-int x z) x)
-                    (* (dm::s-int x z) z))
+              (= (+ (* (dm::r x z) x)
+                    (* (dm::s x z) z))
                  1))
      :rule-classes nil
      :hints (("Goal"
@@ -504,15 +504,15 @@
                    (integerp z)
                    (< 1 z)
                    (relatively-primep x z))
-              (= (mod (* (dm::r-int x z) x) z)
+              (= (mod (* (dm::r x z) x) z)
                  1))
      :rule-classes nil
      :hints (("Goal"
               :use ((:instance lemma-1)
                     (:instance acl2::mod-mult
-                               (acl2::m (* (dm::r-int x z) x))
+                               (acl2::m (* (dm::r x z) x))
                                (acl2::n z)
-                               (acl2::a (dm::s-int x z)))
+                               (acl2::a (dm::s x z)))
                     )
               ))))
 
@@ -524,12 +524,12 @@
                    (< 1 z)
                    (= (mod (* x y) z) 0)
                    (relatively-primep x z))
-              (= (mod (* (dm::r-int x z) x y) z)
+              (= (mod (* (dm::r x z) x y) z)
                  0))
      :rule-classes nil
      :hints (("Goal"
               :use ((:instance mod-*
-                               (x (dm::r-int x z))
+                               (x (dm::r x z))
                                (y (* x y))
                                (n z))
                     )
@@ -551,7 +551,7 @@
               :use ((:instance lemma-2)
                     (:instance lemma-3)
                     (:instance mod-*
-                               (x (* (dm::r-int x z) x))
+                               (x (* (dm::r x z) x))
                                (y y)
                                (n z))
                     )

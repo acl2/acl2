@@ -1786,7 +1786,7 @@
 
             boolif-boolif-lift-same
             myif-myif-lift-same
-            myif-equal-lemma
+            myif-equal-lemma ; move? ;rename ;make alt versions
 
             my-right-cancellation-for-+
 

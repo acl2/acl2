@@ -118,7 +118,7 @@
                                   (prec-tags atc-string-taginfo-alistp)
                                   (prec-objs atc-string-objinfo-alistp))
   :returns (mv (type type-optionp)
-               (externalp booleanp)
+               (defobj-pred symbolp)
                (arg symbolp))
   :short "C type and argument derived from a guard conjunct, if any."
   :long
@@ -150,8 +150,8 @@
      in this case, the @(tsee star) wrapper is disallowed,
      and the type is the one of the object.
      In this last case,
-     we return a flag indicating that the formal represents an external object;
-     in all other cases, the flag is @('nil').")
+     we also return the @('object-<name>-p') name;
+     in all other cases, this result is @('nil').")
    (xdoc::p
     "If the recognizer does not have any of the above forms,
      we return @('nil') as all results.
@@ -180,7 +180,7 @@
           (mv t nil fn arg)))
        ((when (not okp)) (mv nil nil nil))
        ((unless (symbolp arg)) (mv nil nil nil))
-       ((mv type externalp)
+       ((mv type defobj-pred)
         (b* (((when (eq recog 'scharp)) (mv (type-schar) nil))
              ((when (eq recog 'ucharp)) (mv (type-uchar) nil))
              ((when (eq recog 'sshortp)) (mv (type-sshort) nil))
@@ -249,7 +249,8 @@
                    (info (atc-obj-info->defobject info))
                    ((unless (eq recog (defobject-info->recognizer info)))
                     (mv nil nil)))
-                (mv (defobject-info->type info) t))))
+                (mv (defobject-info->type info)
+                    (defobject-info->recognizer info)))))
           (mv nil nil)))
        ((unless type) (mv nil nil nil))
        ((when (and pointerp
@@ -258,7 +259,7 @@
        (type (if pointerp
                  (type-pointer type)
                type)))
-    (mv type externalp arg))
+    (mv type defobj-pred arg))
   :guard-hints
   (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-rewrite
                               iff-consp-when-true-listp
@@ -272,7 +273,7 @@
                             (fn-formals symbol-listp)
                             (formal symbolp)
                             (type typep)
-                            (externalp booleanp)
+                            (defobj-pred symbolp)
                             (names-to-avoid symbol-listp)
                             (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
@@ -287,22 +288,26 @@
      the type recognizer from the shallow embedding (e.g. @(tsee sintp)).
      This property is used in proofs that build on this theorem.")
    (xdoc::p
-    "For now we only support integer types
-     for formals that are not external objects.
-     If we encounter a different kind of type,
-     we return @('nil') as the name and a dummy event;
-     the caller checks that the returned name is not @('nil')
-     before using the event."))
-  (b* (((unless (and (type-integerp type)
-                     (not externalp)))
-        (mv '(_) nil names-to-avoid))
-       (name (pack fn '- formal))
+    "The theorem is proved in the theory that consists of just
+     the guard function,
+     the @(tsee star) wrapper,
+     and the @(tsee defobject) predicate
+     if the formal refers to an external object.
+     This is because the recognizer predicate is
+     either directly in a conjunct in the guard,
+     possibly wrapped by @(tsee star),
+     or in the definition of the @(tsee defobject) predicate
+     that is in a conjunct of the guard."))
+  (b* ((name (pack fn '- formal))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (pred (type-to-recognizer type wrld))
        (formula `(implies (,fn-guard ,@fn-formals)
                           (,pred ,formal)))
-       (hints `(("Goal" :in-theory '(,fn-guard))))
+       (hints `(("Goal" :in-theory '(,fn-guard
+                                     star
+                                     ,@(and defobj-pred
+                                            (list defobj-pred))))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -400,9 +405,9 @@
      (b* (((reterr) nil nil nil nil)
           ((when (endp guard-conjuncts)) (retok nil nil proofs names-to-avoid))
           (conjunct (car guard-conjuncts))
-          ((mv type externalp arg) (atc-check-guard-conjunct conjunct
-                                                             prec-tags
-                                                             prec-objs))
+          ((mv type defobj-pred arg) (atc-check-guard-conjunct conjunct
+                                                               prec-tags
+                                                               prec-objs))
           ((unless type)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
@@ -446,12 +451,10 @@
                         guard fn arg)))
           ((mv event name names-to-avoid)
            (if proofs
-               (atc-gen-formal-thm fn fn-guard formals arg type externalp
+               (atc-gen-formal-thm fn fn-guard formals arg type defobj-pred
                                    names-to-avoid wrld)
              (mv '(_) nil names-to-avoid)))
-          (events (if name
-                      (cons event events)
-                    events))
+          (events (cons event events))
           (proofs (and name proofs))
           (externalp
            (b* ((info? (cdr (assoc-equal (symbol-name arg) prec-objs))))
@@ -1970,13 +1973,15 @@
      and @('<symbol') is the symbol that is the corresponding ACL2 formal.")
    (xdoc::p
     "We also return a flag saying whether
-     the formals all have integer types or not."))
+     the formals all have integer types and are not external object,
+     or not."))
   (b* (((when (endp typed-formals)) (mv nil t))
        ((cons var info) (car typed-formals))
        ((mv omap-rest all-intp)
         (atc-gen-omap-update-formals (cdr typed-formals))))
     (mv `(omap::update (ident ',(symbol-name var)) ,var ,omap-rest)
         (and (type-integerp (atc-var-info->type info))
+             (not (atc-var-info->externalp info))
              all-intp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

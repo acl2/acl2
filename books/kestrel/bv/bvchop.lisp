@@ -479,8 +479,8 @@
            (equal (bvchop m (* (bvchop n x) y))
                   (bvchop m (* x y))))
   :hints (("Goal" :in-theory (e/d (bvchop) (mod-of-*-of-mod))
-           :use ((:instance mod-of-*-of-mod (z (expt 2 m)) (x y) (y x))
-                 (:instance mod-of-*-of-mod (z (expt 2 m)) (x y) (y (mod x (expt 2 n))))))))
+           :use ((:instance mod-of-*-of-mod (z (expt 2 m)) (x y) (x1 x))
+                 (:instance mod-of-*-of-mod (z (expt 2 m)) (x y) (x1 (mod x (expt 2 n))))))))
 
 ;rename
 (defthm bvchop-times-cancel-better-alt

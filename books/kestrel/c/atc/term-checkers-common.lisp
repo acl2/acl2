@@ -291,7 +291,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-unop ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (fn symbolp)
                (arg pseudo-termp)
                (in-type typep)
@@ -309,21 +310,34 @@
    (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type) (irr-unop)))
+  (b* (((reterr) nil nil nil (irr-type) (irr-type) (irr-unop))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type) (irr-type) (irr-unop)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype) (atc-check-symbol-2part term.fn))
-       ((when (not okp)) (no))
        (in-type (fixtype-to-integer-type fixtype))
-       ((when (not in-type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
+       ((unless (and okp
+                     (member-eq op '(plus minus bitnot lognot))
+                     in-type))
+        (no))
+       ((unless (equal (symbol-package-name term.fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an integer unary operation function, ~
+                      but it is not in the \"C\" package."
+                     term.fn)))
+       ((unless (list-lenp 1 term.args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." term)))
        (arg (first term.args)))
     (case op
-      (plus (mv t term.fn arg in-type (promote-type in-type) (unop-plus)))
-      (minus (mv t term.fn arg in-type (promote-type in-type) (unop-minus)))
-      (bitnot (mv t term.fn arg in-type (promote-type in-type) (unop-bitnot)))
-      (lognot (mv t term.fn arg in-type (type-sint) (unop-lognot)))
-      (t (no))))
+      (plus
+       (retok t term.fn arg in-type (promote-type in-type) (unop-plus)))
+      (minus
+       (retok t term.fn arg in-type (promote-type in-type) (unop-minus)))
+      (bitnot
+       (retok t term.fn arg in-type (promote-type in-type) (unop-bitnot)))
+      (lognot
+       (retok t term.fn arg in-type (type-sint) (unop-lognot)))
+      (t (reterr (impossible)))))
   ///
 
   (defret pseudo-term-count-of-atc-check-unop-arg

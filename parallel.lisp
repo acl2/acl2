@@ -414,16 +414,9 @@
 (defmacro set-waterfall-printing (val)
   `(set-waterfall-printing-fn ,val 'set-waterfall-printing state))
 
-(defun set-waterfall-parallelism-hacks-enabled-guard (wrld)
-  (or (ttag wrld)
-      (er hard nil
-          "Using waterfall parallelism hacks requires an active trust-tag. ~
-           Consider using (set-waterfall-parallelism-hacks-enabled! t).  See ~
-           :DOC set-waterfall-parallelism-hacks-enabled for~ more~ ~
-           information.")))
-
-(table waterfall-parallelism-table
-       nil nil :guard (set-waterfall-parallelism-hacks-enabled-guard world))
+(set-table-guard waterfall-parallelism-table
+                 (ttag world)
+                 :topic set-waterfall-parallelism-hacks-enabled)
 
 (defmacro set-waterfall-parallelism-hacks-enabled (val)
 

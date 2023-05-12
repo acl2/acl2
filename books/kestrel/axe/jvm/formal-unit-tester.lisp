@@ -564,7 +564,7 @@
         (simp-dag dag :rules (formal-unit-testing-extra-simplification-rules)
                   :check-inputs nil))
        ((when erp) (mv erp t state))
-       (- (cw "Done unrolling code)~%"))
+       (- (cw "Done unrolling code (~x0 nodes))~%" (len dag)))
        ;; Handle the :assert case, if applicable:
        ((mv erp dag state)
         (if (eq variant :assert)

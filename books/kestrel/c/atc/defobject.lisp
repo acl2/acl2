@@ -245,7 +245,7 @@
        ((when okp)
         (retok (expr-const (const-int const))
                out-type))
-       ((mv okp & arg in-type out-type op) (atc-check-unop term))
+       ((erp okp & arg in-type out-type op) (atc-check-unop term))
        ((when okp)
         (b* (((erp arg-expr type) (defobject-term-to-expr arg))
              ((unless (equal type in-type))

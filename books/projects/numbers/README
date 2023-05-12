@@ -8,7 +8,9 @@ number theory.  It includes the following ACL2 books:
   euclid
      Divisibility, primes, and two theorems of Euclid:
      (1) The infinitude of the set of primes
-     (2) if p is a prime and p divides a * b, then p divides either a or b.
+     (2) If p is a prime and p divides a * b, then p divides either a or b.
+     Several corollaries of (2) are also proved, including the Fundamental 
+     Theorem of Arithmetic and the Chinese Remainder Theorem.
 
   fermat
      Fermat's Theorem: if p is a prime and p does not divide m, then

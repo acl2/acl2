@@ -31,6 +31,7 @@
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
 (include-book "../prune") ;brings in rewriter-basic
 (include-book "../dag-info")
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
@@ -57,6 +58,95 @@
                 (and error-on-incomplete-runsp
                      (hard-error 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above)." nil)))
       t)))
+
+;; Works for terms or dag-exprs
+(defun elide-make-frame-args (fn args)
+  (declare (xargs :guard t)) ;strengthen?
+  (if (and (eq fn 'jvm::make-frame)
+           (= 6 (len args)))
+      (list (first args)
+            (second args)
+            (third args)
+            (fourth args)
+            ':method-info-elided ;; (fifth args)
+            (sixth args))
+    args))
+
+(mutual-recursion
+ (defun elide-method-info-in-term (term)
+   (declare (xargs :guard t)) ; or require pseudo-termp, but that might take time to check?
+   (if (or (not (consp term)) ; var
+           (eq 'quote (ffn-symb term)))
+       term
+     (let* ((fn (ffn-symb term))
+            (args (elide-make-frame-args fn (fargs term)))
+            (new-args (elide-method-info-in-terms args)))
+       (cons fn new-args))))
+ (defun elide-method-info-in-terms (terms)
+   (declare (xargs :guard t)) ; or require pseudo-term-listp, but that might take time to check?
+   (if (not (consp terms))
+       nil
+     (cons (elide-method-info-in-term (first terms))
+           (elide-method-info-in-terms (rest terms))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defund print-dag-array-with-elided-method-info-aux (nodenum dag-array-name dag-array first-elementp)
+;;   (declare (xargs :guard (and (integerp nodenum)
+;;                               (<= -1 nodenum)
+;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))
+;;                   :measure (+ 1 (nfix (+ 1 nodenum)))
+;; ;                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
+;;                   :split-types t)
+;;            (type integer nodenum))
+;;   (if (or (< nodenum 0)
+;;           (not (mbt (integerp nodenum))))
+;;       nil
+;;     (let* ((expr (aref1 dag-array-name dag-array nodenum))
+;;            (expr (or (not (consp expr))
+;;                      (eq 'quote (ffn-symb expr)))
+;;                  expr
+;;                  (let ((fn (ffn-symb expr)))
+;;                    (cons fn (elide-make-frame-args fn (cdr expr))))))
+;;       (progn$ (if (not first-elementp) (cw "~% ") nil)
+;;               (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
+;;               (print-dag-array-with-elided-method-info-aux (+ -1 nodenum)
+;;                                        dag-array-name
+;;                                        dag-array
+;;                                        nil)))))
+
+;; ;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
+;; (defund print-dag-array-with-elided-method-info (nodenum dag-array-name dag-array)
+;;   (declare (xargs :guard (and (integerp nodenum)
+;;                               (<= -1 nodenum)
+;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
+;;   (progn$ (cw "(")
+;;           (print-dag-array-with-elided-method-info-aux nodenum dag-array-name dag-array t)
+;;           (cw ")~%")))
+
+(defund print-dag-with-elided-method-info-aux (dag first-elementp)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (booleanp first-elementp))))
+  (if (endp dag)
+      nil
+    (let* ((entry (first dag))
+           (nodenum (car entry))
+           (expr (cdr entry))
+           (expr (if (or (not (consp expr))
+                         (eq 'quote (ffn-symb expr)))
+                     expr
+                   (let ((fn (ffn-symb expr)))
+                     (cons fn (elide-make-frame-args fn (cdr expr)))))))
+      (progn$ (if (not first-elementp) (cw "~% ") nil)
+              (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
+              (print-dag-with-elided-method-info-aux (rest dag) nil)))))
+
+;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
+(defund print-dag-with-elided-method-info (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (progn$ (cw "(")
+          (print-dag-with-elided-method-info-aux dag t)
+          (cw ")~%")))
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -100,7 +190,7 @@
                     :assumptions assumptions
                     :rule-alists rule-alists
                     :use-internal-contextsp t ;new!
-                    :print print              ;(if monitored-rules t nil)
+                    :print (reduce-print-level print)         ;(if monitored-rules t nil)
                     :print-interval print-interval
                     :monitor rules-to-monitor
                     :normalize-xors normalize-xors
@@ -133,10 +223,11 @@
                            ;; Print as a term unless it would be huge:
                            (if (dag-or-quotep-size-less-thanp dag 1000)
                                (progn$ (cw "(Term after ~x0 steps:~%" total-steps)
-                                       (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil)
+                                       (cw "~X01" (untranslate (elide-method-info-in-term (dag-to-term dag)) nil (w state)) nil)
                                        (cw ")~%"))
                              (progn$ (cw "(DAG after ~x0 steps:~%" total-steps)
-                                     (cw "~X01)" dag nil)))))))
+                                     (print-dag-with-elided-method-info dag)
+                                     (cw ")")))))))
               (repeatedly-run dag
                               (- steps-left steps-for-this-iteration)
                               step-increment rule-alists assumptions normalize-xors rules-to-monitor ; use-internal-contextsp
