@@ -412,6 +412,9 @@
                              (op binopp)
                              (gin pexpr-ginp)
                              state)
+  :guard (and (type-nonchar-integerp in1-type)
+              (type-nonchar-integerp in2-type)
+              (type-nonchar-integerp out-type))
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression and theorem from an ACL2 term
           that represents a binary expression."
@@ -451,10 +454,6 @@
                           :names-to-avoid gin.names-to-avoid
                           :proofs nil)))
        (op-name (pack (binop-kind op)))
-       ((unless (type-nonchar-integerp arg1-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg1-type)))
-       ((unless (type-nonchar-integerp arg2-type))
-        (reterr (raise "Internal error: non-integer type ~x0." arg2-type)))
        (fn-okp (and (or (member-eq (binop-kind op) '(:div :rem :shl :shr))
                         (and (member-eq (binop-kind op) '(:add :sub :mul))
                              (type-signed-integerp out-type)))
