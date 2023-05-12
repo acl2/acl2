@@ -63,12 +63,16 @@
 (defun elide-make-frame-args (fn args)
   (declare (xargs :guard t)) ;strengthen?
   (if (and (eq fn 'jvm::make-frame)
-           (= 6 (len args)))
+           (= 6 (len args))
+           ;; for termination:
+           (myquotep (fifth args))
+           (consp (unquote (fifth args)))
+           )
       (list (first args)
             (second args)
             (third args)
             (fourth args)
-            ':method-info-elided ;; (fifth args)
+            '':method-info-elided ;; (fifth args)
             (sixth args))
     args))
 
@@ -151,7 +155,7 @@
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
-;; erp result-dag state).
+;; erp result-dag-or-quotep state).
 ;; TODO: Consider adding an option to prune between chunks.
 (defun repeatedly-run (dag
                        steps-left
@@ -185,7 +189,7 @@
     (b* ((this-step-increment (this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
-         ((mv erp dag state)
+         ((mv erp dag-or-quotep state)
           (simp-dag dag
                     :assumptions assumptions
                     :rule-alists rule-alists
@@ -201,6 +205,10 @@
                               (run-until-return-from-stack-height-opener-fast-axe . ,steps-for-this-iteration))
                     :check-inputs nil))
          ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quotep))
+          (cw "Note: The run produced the constant ~x0." dag-or-quotep)
+          (mv (erp-nil) dag-or-quotep state))
+         (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          (dag-fns (dag-fns dag)))
       (if (not (or (member-eq 'run-until-return-from-stack-height dag-fns)
                    (member-eq 'jvm::run-n-steps dag-fns)
