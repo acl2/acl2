@@ -1,4 +1,4 @@
-; Top file for building all Axe JVM examples.
+; Portcullis commands and cert-flags for top.lisp
 ;
 ; Copyright (C) 2023 Kestrel Institute
 ;
@@ -8,7 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(include-book "kestrel/crypto/aes/portcullis" :dir :system)
 
-(include-book "crypto/top")
-(include-book "formal-unit-tester/top")
+; cert-flags: ? NIL :TTAGS :ALL :SKIP-PROOFS-OKP T

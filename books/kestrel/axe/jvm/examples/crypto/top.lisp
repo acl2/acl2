@@ -1,4 +1,4 @@
-; Top file for building all Axe JVM examples.
+; Top file for building Axe JVM crypto examples.
 ;
 ; Copyright (C) 2023 Kestrel Institute
 ;
@@ -10,5 +10,5 @@
 
 (in-package "ACL2")
 
-(include-book "crypto/top")
-(include-book "formal-unit-tester/top")
+(include-book "aes-128-encrypt-light-and-spec")
+(include-book "aes-128-encrypt-regular-and-spec")
