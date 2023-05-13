@@ -496,10 +496,10 @@
   (xdoc::topstring
    (xdoc::p
     "The ACL2 formal parameters are actually passed as an alist,
-     from the formals to their C types,
+     from the formals to their information,
      as calculated by @(tsee atc-typed-formals).")
    (xdoc::p
-    "We check that the name of the parameter is a portable C identifier,
+    "We check that the name of each parameter is a portable C identifier,
      and distinct from the names of the other parameters.")
    (xdoc::p
     "If a parameter represents an access to an external object,
@@ -558,7 +558,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This will be just used (in the future) in theorems,
+    "This is used only in theorems,
      so there is no need to guard-verify it."))
   (b* ((wrld (w state))
        (name (pack fn "-GUARD"))
@@ -592,7 +592,7 @@
      in our new modular proof generation approach,
      we use @(tsee if*) instead of @(tsee if).
      The target functions use @(tsee if) of course,
-     so we need to convert their definition to use @(tsee if*).
+     so we need to convert their definitions to use @(tsee if*).
      We do so by generating, for each target function,
      a rule that expands it to its body
      but with @(tsee if) replaced with @(tsee if*)."))
@@ -656,8 +656,8 @@
      when there is a large number of functions involved.
      A previous version of ATC was generating proofs
      that were executing function lookups,
-     which worked fine for small programs,
-     but not for larger programs."))
+     which worked fine for small C programs,
+     but was slow for larger C programs."))
   (b* ((fn-name (symbol-name fn))
        (formula `(equal (fun-env-lookup (ident ,fn-name)
                                         (init-fun-env (preprocess ,prog-const)))
