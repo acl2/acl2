@@ -1955,7 +1955,7 @@
     "(omap::update (ident <string>) <symbol> (omap::update ... nil) ...)")
    (xdoc::p
     "where @('<string>') is the string for the name of the C formal
-     and @('<symbol') is the symbol that is the corresponding ACL2 formal.")
+     and @('<symbol>') is the symbol that is the corresponding ACL2 formal.")
    (xdoc::p
     "We also return a flag saying whether
      the formals all have integer types and are not external object,
