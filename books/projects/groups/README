@@ -57,6 +57,7 @@ This directory contains an ACL2 formalization of elementary finite group theory,
   - Every abelian group is a direct product of cyclic p-groups
   - Powers of abelian groups
   - Fundamental Theorem of Finite Abelian Groups
+  - Euler's totient theorem
 
 * symmetric
   - Symmetric groups

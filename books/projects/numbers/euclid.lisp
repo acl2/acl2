@@ -213,6 +213,15 @@ This book contains proofs of two theorems of Euclid:
 	  (cons (cons p 1) l)))
     ()))
 
+(defthmd caar-prime-fact
+  (implies (and (natp n) (> n 1))
+	   (equal (caar (prime-fact n))
+		  (least-prime-divisor n))))
+
+(defthmd caar-prime-pow-list
+  (implies (and (prime-pow-list-p l) (consp l))
+           (equal (caar l) (least-prime-divisor (pow-prod l)))))
+
 (defthmd prime-fact-existence
   (implies (posp n)
 	   (let ((l (prime-fact n)))
@@ -440,6 +449,26 @@ This book contains proofs of two theorems of Euclid:
 		(divides d y))
 	   (equal (gcd (/ x d) (/ y d))
 	          (/ (gcd x y) d))))
+
+(defthmd gcd-divisor
+  (implies (and (integerp x) (integerp y)                
+                (integerp d) (not (= d 0))
+		(divides d y)
+		(= (gcd x y) 1))
+	   (equal (gcd x d) 1)))
+
+;; If x and y are nor relatively prime, then they have a common prime divisor:
+
+(defund cpd (x y)
+  (least-prime-divisor (gcd x y)))
+
+(defthmd cpd-divides
+  (implies (and (integerp x) (not (= x 0))
+                (integerp y) (not (= y 0))
+		(not (= (gcd x y) 1)))
+	   (and (primep (cpd x y))
+	        (divides (cpd x y) x)
+	        (divides (cpd x y) y))))
 
 "The main theorem:
  @(thm euclid)"
