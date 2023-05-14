@@ -3670,3 +3670,12 @@
 			(:instance divides-leq (x (ord (power a n g) g)) (y (/ (ord a g) (gcd (ord a g) n))))
 			(:instance divides-leq (y (ord (power a n g) g)) (x (/ (ord a g) (gcd (ord a g) n))))))))
 
+;;-----------------------------------------------------------------------------------------------------------------------
+
+(defthmd power-order
+  (implies (and (groupp g)
+                (in x g))
+	   (equal (power x (order g) g)
+	          (e g)))
+  :hints (("Goal" :use (ord-divides-order
+                        (:instance divides-ord (a x))))))

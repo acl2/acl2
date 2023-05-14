@@ -2,7 +2,9 @@
 
 (include-book "products")
 (include-book "cauchy")
+(include-book "rtl/rel11/lib/basic" :dir :system)
 (local (include-book "support/abelian"))
+(local (include-book "support/totient"))
 
 ;; Fundamental Theorem of Finite Abelian Groups: Every finite abelian group is isomorphic to a direct
 ;; product of cyclic p-groups, the orders of which are unique up to permutation.
@@ -673,3 +675,183 @@
 		(cyclic-p-group-list-p m)
 		(isomorphismp map (direct-product l) (direct-product m)))
 	   (permutationp (orders l) (orders m))))
+
+
+;;-------------------------------------------------------------------------------------------------------
+;; Euler's Totient Theorem
+;;-------------------------------------------------------------------------------------------------------
+
+;; Euler's totient function is based on the prime factorization of an integer:
+
+(defun totient-comp (l)
+  (if (consp l)
+      (* (expt (caar l) (1- (cdar l)))
+	 (1- (caar l))
+	 (totient-comp (cdr l)))
+    1))
+
+(defund totient (n) (totient-comp (prime-fact n)))
+
+;; We shall prove Euler's Theorem:
+
+;; (defthmd euler-totient
+;;   (implies (and (posp n) (> n 1)
+;;                 (posp x) (< x n)
+;; 		   (equal (gcd x n) 1))
+;;            (equal (mod (expt x (totient n)) n)
+;;                   1)))
+
+;; Note that if n is prime, then (totient n) = n - 1.  Thus, Euler's Theorem is a
+;; generalization of Fermat's Theorem:
+
+;; (defthm fermat
+;;   (implies (and (primep p)
+;;		  (integerp m)
+;;		  (not (divides p m)))
+;;	     (equal (mod (expt m (1- p)) p)
+;;		    1)))
+
+;; Our strategy is to prove that (totient n) = (order (z* n)) and invoke power-order (seeccauchy.lisp).
+;; We begin by defining a homomorphism from (z* (* m n)) to (direct-product (list (z* m) (z* n))):
+
+(defmap mod-map (m n) (ninit (* m n))
+  (list (mod x m) (mod x n)))
+
+(defthm homomorphismp-z*mod
+  (implies (and (posp m) (> m 1)
+                (posp n) (> n 1))
+           (homomorphismp (mod-map m n)
+	                  (z* (* m n))
+			  (direct-product (list (z* m) (z* n))))))
+
+;; Now suppose (gcd m n) = 1.  The Chinese Remainder Theorem guarantees that every element of the direct
+;; product is in the image of mod-map:
+						      
+(defthmd mod-map-preimage
+  (implies (and (posp m) (> m 1)
+                (posp n) (> n 1)
+		(equal (gcd m n) 1)
+		(in x (direct-product (list (z* m) (z* n)))))
+	   (let ((c (mod (crt x (list m n)) (* m n))))
+	     (and (in c (z* (* m n)))
+	          (equal (mapply (mod-map m n) c) x)))))
+
+;; Therefore, mod-map is an epimorphism:
+  
+(defthmd epimorphismp-mod-map
+  (implies (and (posp m) (> m 1)
+                (posp n) (> n 1)
+		(equal (gcd m n) 1))
+           (epimorphismp (mod-map m n)
+	                 (z* (* m n))
+			 (direct-product (list (z* m) (z* n))))))
+
+;; If x is in the kernel, then (mod x m) = (mod x n) = 1, i.e, m and n both divide x - 1.  But then
+;; by product-rel-prime-divides, (* m n) divides x - 1, and it follows that x = 1:
+
+(defthmd kernel-mod-map
+  (implies (and (posp m) (> m 1)
+                (posp n) (> n 1)
+		(equal (gcd m n) 1)
+		(in x (z* (* m n)))
+		(equal (mapply (mod-map m n) x)
+		       (e (direct-product (list (z* m) (z* n))))))
+	   (equal (e (z* (* m n))) x)))
+
+;; Therefore, mod-map is an isomorphism:
+
+(defthmd endomorphismp-mod-map
+  (implies (and (posp m) (> m 1)
+                (posp n) (> n 1)
+		(equal (gcd m n) 1))
+           (endomorphismp (mod-map m n)
+	                 (z* (* m n))
+			 (direct-product (list (z* m) (z* n))))))
+
+(defthmd isomorphismp-mod-map
+  (implies (and (posp m) (> m 1)
+                (posp n) (> n 1)
+		(equal (gcd m n) 1))
+           (isomorphismp (mod-map m n)
+	                 (z* (* m n))
+			 (direct-product (list (z* m) (z* n))))))
+
+;; This yields the following equation:
+
+(defthmd order-z*-prod
+  (implies (and (posp m) (> m 1)
+                (posp n) (> n 1)
+		(equal (gcd m n) 1))
+	   (equal (order (z* (* m n)))
+	          (* (order (z* m)) (order (z* n))))))
+
+;; Two lemmas are needed to compute the order of (z* (expt p n)) for prime p:
+
+(defthmd rel-prime-prime-power
+  (implies (and (primep p) (posp n) (posp k))
+           (iff (equal (gcd k (expt p n)) 1)
+	        (not (divides p k)))))
+
+(defthmd fl-m/n
+  (implies (and (posp m) (posp n) (> n 1))
+           (equal (fl (/ m n))
+	          (if (divides n m)
+		      (1+ (fl (/ (1- m) n)))
+		    (fl (/ (1- m) n))))))
+
+;; The following may now be proved by induction on k:
+
+(defthmd rel-primes-aux-prime-power
+  (implies (and (primep p) (posp n) (natp k))
+           (equal (+ (len (rel-primes-aux k (expt p n)))
+	             (fl (/ k p)))
+		  k)))
+
+;; This gives us the following formula:
+
+(defthmd order-z*-prime-power
+  (implies (and (primep p) (posp n))
+           (equal (order (z* (expt p n)))
+	          (* (expt p (1- n)) (1- p)))))
+
+;; The following allows us to apply order-z*-prod to the computation of (order (z* (pow-prod l)))
+;; for a prime-pow-list l:
+
+(defthmd gcd-primep-pow-list
+  (implies (and (prime-pow-list-p l)
+                (consp l))
+	   (equal (gcd (expt (caar l) (cdar l))
+	               (pow-prod (cdr l)))
+		  1)))
+
+;; The formula follows from order-z*-prod and gcd-primep-pow-list by induction:
+
+(defthmd order-z*-totient-comp
+  (implies (and (prime-pow-list-p l) (consp l))
+           (equal (order (z* (pow-prod l)))
+	          (totient-comp l))))
+
+;; Combine order-z*-totient-comp with prime-fact-existence:
+	  
+(defthmd order-totient
+  (implies (and (posp n) (> n 1))
+	   (equal (order (z* n))
+	          (totient n))))
+
+;; Finally, we need a formula for a power of an element of (z* n):
+
+(defthmd power-z*
+  (implies (and (posp n) (> n 1)
+                (in x (z* n))
+		(natp k))
+	   (equal (power x k (z* n))
+	          (mod (expt x k) n))))
+
+;; Euler's theorem follows:
+
+(defthmd euler-totient
+  (implies (and (posp n) (> n 1)
+                (posp x) (< x n)
+		(equal (gcd x n) 1))
+	   (equal (mod (expt x (totient n)) n)
+	          1)))

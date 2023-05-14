@@ -25,7 +25,7 @@
 	  (cons (cons p 1) l)))
     ()))
 
-(local-defthmd caar-prime-fact
+(defthmd caar-prime-fact
   (implies (and (natp n) (> n 1))
 	   (equal (caar (prime-fact n))
 		  (least-prime-divisor n))))
@@ -49,7 +49,7 @@
 			(:instance least-divisor-divides (k 2) (n (/ n (least-prime-divisor n))))
 			(:instance least-divisor-is-least (k 2) (d (caar (prime-fact (/ n (least-prime-divisor n))))))))))
 
-(local-defthmd prime-pow-list-prime-fact
+(defthmd prime-pow-list-prime-fact
   (implies (posp n)
 	   (prime-pow-list-p (prime-fact n)))
   :hints (("Subgoal *1/6" :use (primep-least-divisor case-6))
@@ -62,7 +62,7 @@
 	 (pow-prod (cdr l)))
     1))
 
-(local-defthmd pow-prod-equal
+(defthmd pow-prod-equal
   (implies (posp n)
 	   (equal (pow-prod (prime-fact n))
 		  n))
@@ -181,7 +181,7 @@
   :hints (("Subgoal *1/1" :use ((:instance primep-divides-prime-power (q p) (p (caar l)) (n (cdar l)))
                                 (:instance euclid (a (expt (caar l) (cdar l))) (b (pow-prod (cdr l))))))))
 
-(local-defthmd caar-prime-pow-list
+(defthmd caar-prime-pow-list
   (implies (and (prime-pow-list-p l) (consp l))
            (equal (caar l) (least-prime-divisor (pow-prod l))))
   :hints (("Goal" :use (pow-prod-pos
@@ -223,3 +223,37 @@
 	  ("Subgoal *1/1" :use (pow-prod-pos primep-least-divisor prime-pow-list-p-reduce caar-prime-pow-list
 	                        prime-pow-list-p-reduce pow-prod-reduce caar-prime-pow-list prime-fact-uniqueness-subgoal))
 	  ("Subgoal *1/2" :use (pow-prod-pos))))
+
+
+(defund cpd (x y)
+  (least-prime-divisor (gcd x y)))
+
+(defthmd cpd-divides
+  (implies (and (integerp x) (not (= x 0))
+                (integerp y) (not (= y 0))
+		(not (= (gcd x y) 1)))
+	   (and (primep (cpd x y))
+	        (divides (cpd x y) x)
+	        (divides (cpd x y) y)))
+  :hints (("Goal" :in-theory (enable cpd)
+                  :use (gcd-pos gcd-divides
+		        (:instance primep-least-divisor (n (gcd x y)))
+			(:instance least-divisor-divides (k 2) (n (gcd x y)))
+			(:instance divides-transitive (x (cpd x y)) (y (gcd x y)) (z x))
+			(:instance divides-transitive (x (cpd x y)) (y (gcd x y)) (z y))))))
+
+(defthmd gcd-divisor
+  (implies (and (integerp x) (integerp y)                
+                (integerp d) (not (= d 0))
+		(divides d y)
+		(= (gcd x y) 1))
+	   (equal (gcd x d) 1))
+  :hints (("Goal" :use ((:instance gcd-pos (y d))
+                        (:instance primep-least-divisor (n (gcd x d)))
+			(:instance divides-gcd (d (least-prime-divisor (gcd x d))) (y d))
+			(:instance divides-transitive (x (least-prime-divisor (gcd x d))) (y (gcd x d)) (z x))
+			(:instance divides-transitive (x (least-prime-divisor (gcd x d))) (y (gcd x d)) (z d))
+			(:instance divides-transitive (x (least-prime-divisor (gcd x d))) (y d) (z y))
+			(:instance least-divisor-divides (k 2) (n (gcd x d)))
+			(:instance divides-gcd (d (least-prime-divisor (gcd x d))))
+			(:instance gcd-divides (y d))))))
