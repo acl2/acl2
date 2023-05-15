@@ -157,6 +157,39 @@
            (pseudo-term-listp (get-equalities assumptions)))
   :hints (("Goal" :in-theory (enable get-equalities))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund make-bool-fix (arg)
+  (declare (xargs :guard (pseudo-termp arg)))
+  (if (quotep arg)
+      (enquote (bool-fix (unquote arg)))
+    `(bool-fix$inline ,arg)))
+
+(defthm pseudo-termp-of-make-bool-fix
+  (implies (pseudo-termp arg)
+           (pseudo-termp (make-bool-fix arg)))
+  :hints (("Goal" :in-theory (enable make-bool-fix))))
+
+(defund make-bvchop (size x)
+  (declare (xargs :guard (and (pseudo-termp size)
+                              (pseudo-termp x))))
+  (if (and (quotep x) ; unusual, so we test this first
+           (quotep size)
+           (natp (unquote x))
+           (natp (unquote size)))
+      (enquote (bvchop (unquote size) (unquote x)))
+    `(bvchop ,size ,x)))
+
+(defthm pseudo-termp-of-make-bvchop
+  (implies (and (pseudo-termp x)
+                (pseudo-termp size))
+           (pseudo-termp (make-bvchop size x)))
+  :hints (("Goal" :in-theory (enable make-bvchop))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tries to resolve the TEST assuming the ASSUMPTIONS and EQUALITY-ASSUMPTIONS.  Uses rewriting and STP.
 ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown.
 ;; (It may be the case that the test can be shown to be other true and false,
 ;; because the assumptions contradict, in which case the entire enclosing
@@ -247,35 +280,6 @@
                 (mv nil :false state))))
     (prog2$ (cw "STP did not resolve the test.))~%")
             (mv nil :unknown state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund make-bool-fix (arg)
-  (declare (xargs :guard (pseudo-termp arg)))
-  (if (quotep arg)
-      (enquote (bool-fix (unquote arg)))
-    `(bool-fix$inline ,arg)))
-
-(defthm pseudo-termp-of-make-bool-fix
-  (implies (pseudo-termp arg)
-           (pseudo-termp (make-bool-fix arg)))
-  :hints (("Goal" :in-theory (enable make-bool-fix))))
-
-(defund make-bvchop (size x)
-  (declare (xargs :guard (and (pseudo-termp size)
-                              (pseudo-termp x))))
-  (if (and (quotep x) ; unusual, so we test this first
-           (quotep size)
-           (natp (unquote x))
-           (natp (unquote size)))
-      (enquote (bvchop (unquote size) (unquote x)))
-    `(bvchop ,size ,x)))
-
-(defthm pseudo-termp-of-make-bvchop
-  (implies (and (pseudo-termp x)
-                (pseudo-termp size))
-           (pseudo-termp (make-bvchop size x)))
-  :hints (("Goal" :in-theory (enable make-bvchop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -596,7 +600,7 @@
   (if (not (dag-fns-include-any dag '(if myif boolif bvif)))
       ;; No IFs, so no point in pruning:
       (mv (erp-nil) dag state)
-    (b* ( ;; TODO: Consider first doing a simplification as a DAG, using only approximate contexts.
+    (b* ( ;; TODO: Consider first doing a pruning as a DAG, using only approximate contexts (or would that not do anything that rewriting doesn't already do?)
          (term (dag-to-term dag)) ; can explode!
          ((mv erp changep term state)
           (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ; todo: call something here that returns a dag, not a term!
