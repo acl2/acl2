@@ -475,9 +475,26 @@
             ;; Prune branches in arguments:
             (b* ((args (fargs term))
                  ((mv erp new-args state) (prune-terms-aux args assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))
-                 ((when erp) (mv erp nil state)))
-              ;; TODO: Handle ground term here:
-              (mv (erp-nil) `(,fn ,@new-args) state))))))))
+                 ((when erp) (mv erp nil state))
+                 ;; Try to evaluate a ground term:
+                 ((mv erp evaluatedp val) ; val only meaningful if evaluatedp
+                  (if (not (all-myquotep new-args))
+                      (mv (erp-nil) nil nil) ; not a ground term
+                    ;; ground term, so try to evaluate (may fail, but we may have a constant opener rule to apply later):
+                    (b* (((mv erp val) (apply-axe-evaluator-basic-to-quoted-args fn new-args interpreted-function-alist)))
+                      (if erp
+                          (if (call-of :unknown-function erp)
+                              (mv (erp-nil) nil nil) ; suppress error, but it didn't produce a value (todo: print a warning?)
+                            ;; anything else non-nil is a true error:
+                            (mv erp nil nil))
+                        ;; normal case (evaluated to VAL):
+                        (mv (erp-nil) t val)))))
+                 ((when erp) (mv erp nil state))
+                 (new-term (if evaluatedp
+                               (enquote val)
+                             ;; todo: any other simplifications to try?:
+                             `(,fn ,@new-args))))
+              (mv (erp-nil) new-term state))))))))
 
  ;; Returns (mv erp result-terms state) where, if ERP is nil, then the
  ;; RESULT-TERMS are equal to their corresponding TERMS, given the ASSUMPTIONS
@@ -536,7 +553,7 @@
     :flag prune-terms-aux)
   :hints (("Goal" :in-theory (enable prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp))))
 
-(verify-guards prune-term-aux)
+(verify-guards prune-term-aux :hints (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
