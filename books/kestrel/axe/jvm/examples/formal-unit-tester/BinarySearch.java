@@ -46,20 +46,19 @@ public class BinarySearch {
 
     // The formal unit test: Compare binarySearch with linearSearch:
     public static boolean test (int target, int [] data) {
-        if (data.length == 10) { // todo: generalize!
-            if (!sorted(data))
-                return true; // require the list to be sorted
-            // Use linear search as the specification:
-            int spec_result = linearSearch(target, data);
-            int bs_result = binarySearch(target, data);
-            // If the item is present, binary search must find an
-            // occurrence of it (not necessarily at the same index):
-            if (spec_result != -1) // item present
-                return bs_result >= 0 && bs_result < data.length && data[bs_result] == target;
-            else // item not present
-                return bs_result == -1;
-        }
-        else
-            return true; // restrict size of data
+        if (data.length != 10) // ensure loops can be unrolled
+            return true;
+        if (!sorted(data))
+            return true; // require the list to be sorted
+        // Proceed with the test:
+        // Use linear search as the specification:
+        int spec_result = linearSearch(target, data);
+        int bs_result = binarySearch(target, data);
+        // If the item is present, binary search must find an
+        // occurrence of it (not necessarily at the same index):
+        if (spec_result != -1) // item present
+            return bs_result >= 0 && bs_result < data.length && data[bs_result] == target;
+        else // item not present, so binary search must return -1:
+            return bs_result == -1;
     }
 }
