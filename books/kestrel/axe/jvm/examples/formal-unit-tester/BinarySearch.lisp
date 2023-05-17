@@ -14,4 +14,4 @@
 
 (include-book "kestrel/axe/jvm/formal-unit-tester" :dir :system)
 
-(test-file "BinarySearch.java" :print t :remove-rules (sbvlt-of-bvif-rules))
+(test-file "BinarySearch.java")
