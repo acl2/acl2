@@ -34,8 +34,8 @@
 (include-book "../step-increments")
 (include-book "../dag-size")
 (include-book "../dag-info")
-(include-book "../prune")
-(include-book "../prune-dag")
+(include-book "../prune-dag-precisely")
+(include-book "../prune-dag-approximately")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
@@ -140,7 +140,7 @@
          ;;                       (cw ")~%"))))
          (dag dag-or-quote)
          ;; Prune the DAG quickly but possibly imprecisely:
-         ((mv erp dag-or-quotep state) (acl2::prune-dag-with-contexts dag state))
+         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep

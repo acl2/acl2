@@ -20,7 +20,7 @@
 
 ;; TODO: Make a lighter-weight version that does not depend on skip-proofs.
 
-(include-book "prune")
+(include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
 (include-book "dag-size")
 (include-book "make-term-into-dag-basic")

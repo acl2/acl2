@@ -42,6 +42,7 @@
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "unroll-java-code") ;for unroll-java-code-rules
 (include-book "../dag-to-term-with-lets")
+(include-book "../prune-dag-precisely")
 
 ;; Used by Axe
 (defthm natp-of-+

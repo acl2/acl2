@@ -1,7 +1,7 @@
 ; Pruning irrelevant IF-branches
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,9 +18,7 @@
 
 (include-book "rewriter-basic") ;because we call simplify-term-basic
 (include-book "prove-with-stp")
-(include-book "make-term-into-dag-simple")
 (include-book "interpreted-function-alists")
-(include-book "dag-size-fast")
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -106,7 +104,7 @@
 
 ;; Fixup assumption when it will obviously loop when used as a directed equality.
 ;; could check for (equal <constant> <x>) here too, but Axe may be smart enough to reorient that
-;; Returns a possibly-empty list
+;; Returns a possibly-empty list.
 (defund fixup-assumption (assumption)
   (declare (xargs :guard (pseudo-termp assumption)))
   (if (not (and (consp assumption)
@@ -115,13 +113,13 @@
                 ))
       (list assumption)
     (if (subtermp (farg1 assumption) (farg2 assumption))
-        (prog2$ (cw "Note: re-orienting equality assumption ~x0.~%" assumption)
+        (prog2$ (cw "(Note: re-orienting equality assumption ~x0.)~%" assumption)
                 `((equal ,(farg2 assumption) ,(farg1 assumption))))
       (if (quotep (farg1 assumption))
           (list assumption)
         (if (quotep (farg2 assumption))
             `((equal ,(farg1 assumption) ,(farg2 assumption)))
-          (prog2$ (cw "Note: Dropping equality assumption ~x0.~%" assumption)
+          (prog2$ (cw "(Note: Dropping equality assumption ~x0.)~%" assumption)
                   nil))))))
 
 (defthm pseudo-term-listp-of-fixup-assumption
@@ -157,6 +155,39 @@
            (pseudo-term-listp (get-equalities assumptions)))
   :hints (("Goal" :in-theory (enable get-equalities))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund make-bool-fix (arg)
+  (declare (xargs :guard (pseudo-termp arg)))
+  (if (quotep arg)
+      (enquote (bool-fix (unquote arg)))
+    `(bool-fix$inline ,arg)))
+
+(defthm pseudo-termp-of-make-bool-fix
+  (implies (pseudo-termp arg)
+           (pseudo-termp (make-bool-fix arg)))
+  :hints (("Goal" :in-theory (enable make-bool-fix))))
+
+(defund make-bvchop (size x)
+  (declare (xargs :guard (and (pseudo-termp size)
+                              (pseudo-termp x))))
+  (if (and (quotep x) ; unusual, so we test this first
+           (quotep size)
+           (natp (unquote x))
+           (natp (unquote size)))
+      (enquote (bvchop (unquote size) (unquote x)))
+    `(bvchop ,size ,x)))
+
+(defthm pseudo-termp-of-make-bvchop
+  (implies (and (pseudo-termp x)
+                (pseudo-termp size))
+           (pseudo-termp (make-bvchop size x)))
+  :hints (("Goal" :in-theory (enable make-bvchop))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tries to resolve the TEST assuming the ASSUMPTIONS and EQUALITY-ASSUMPTIONS.  Uses rewriting and STP.
 ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown.
 ;; (It may be the case that the test can be shown to be other true and false,
 ;; because the assumptions contradict, in which case the entire enclosing
@@ -250,43 +281,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund make-bool-fix (arg)
-  (declare (xargs :guard (pseudo-termp arg)))
-  (if (quotep arg)
-      (enquote (bool-fix (unquote arg)))
-    `(bool-fix$inline ,arg)))
-
-(defthm pseudo-termp-of-make-bool-fix
-  (implies (pseudo-termp arg)
-           (pseudo-termp (make-bool-fix arg)))
-  :hints (("Goal" :in-theory (enable make-bool-fix))))
-
-(defund make-bvchop (size x)
-  (declare (xargs :guard (and (pseudo-termp size)
-                              (pseudo-termp x))))
-  (if (and (quotep x) ; unusual, so we test this first
-           (quotep size)
-           (natp (unquote x))
-           (natp (unquote size)))
-      (enquote (bvchop (unquote size) (unquote x)))
-    `(bvchop ,size ,x)))
-
-(defthm pseudo-termp-of-make-bvchop
-  (implies (and (pseudo-termp x)
-                (pseudo-termp size))
-           (pseudo-termp (make-bvchop size x)))
-  :hints (("Goal" :in-theory (enable make-bvchop))))
-
-
-
-
-
 ;; TODO: Thread through a print option
 (mutual-recursion
  ;; Returns (mv erp result-term state) where RESULT-TERM is equal
- ;; to TERM. Tries to rewrite each if/myif test using context from all overarching
+ ;; to TERM. Tries to rewrite each if/myif/boolif/bvif test using context from all overarching
  ;; tests (and any given assumptions).
-;TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
+ ;; TODO: Add an IFF flag and, if set, turn (if x t nil) into x and (if x nil t) into (not x)
  ;; TODO: Consider filtering out assumptions unusable by STP once instead of each time try-to-resolve-test is called (or perhaps improve STP to use the known-booleans machinery so it rejects many fewer assumptions).
  (defund prune-term-aux (term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
    (declare (xargs :guard (and (pseudo-termp term)
@@ -570,7 +570,7 @@
                               (or (booleanp call-stp)
                                   (natp call-stp)))
                   :stobjs state))
-  (b* ((- (cw "(Pruning branches in term (~x0 rules, ~x1 assumptions).~%" (count-rules-in-rule-alist rule-alist) (len assumptions)))
+  (b* ((- (cw "(Pruning term (~x0 rules, ~x1 assumptions).~%" (count-rules-in-rule-alist rule-alist) (len assumptions)))
        ;; (- (cw "(Term: ~x0)~%" term))  ;; TODO: Print, but only if small (and thread through a print arg)
        ((mv erp new-term state)
         (prune-term-aux term
@@ -598,142 +598,3 @@
                     (natp call-stp)))
            (pseudo-termp (mv-nth 2 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
   :hints (("Goal" :in-theory (enable prune-term))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Prune unreachable branches using full contexts.  Warning: can explode the
-;; term size. Returns (mv erp dag-or-quotep state).
-(defund prune-dag-precisely-with-rule-alist (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
-  (declare (xargs :guard (and (pseudo-dagp dag)
-                              (pseudo-term-listp assumptions)
-                              (rule-alistp rule-alist)
-                              (interpreted-function-alistp interpreted-function-alist)
-                              (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp)))
-                  :stobjs state))
-  (if (not (dag-fns-include-any dag '(if myif boolif bvif)))
-      ;; No IFs, so no point in pruning:
-      (mv (erp-nil) dag state)
-    (b* ( ;; TODO: Consider first doing a simplification as a DAG, using only approximate contexts.
-         (term (dag-to-term dag)) ; can explode!
-         ((mv erp changep term state)
-          (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ; todo: call something here that returns a dag, not a term!
-         ((when erp) (mv erp nil state))
-         ((mv erp dag)
-          (if changep
-              ;; something changed, so make a new dag:
-              (make-term-into-dag-simple term)
-            ;; returning the original dag ensures that nodenums didn't change:
-            (mv (erp-nil) dag)))
-         ((when erp) (mv erp nil state)))
-      (mv (erp-nil) dag state))))
-
-(defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-precisely-with-rule-alist
-  (implies (and (not (mv-nth 0 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)));; no error
-                (not (myquotep (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
-                (pseudo-dagp dag)
-                (pseudo-term-listp assumptions)
-                (rule-alistp rule-alist)
-                (interpreted-function-alistp interpreted-function-alist)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp)))
-           (pseudo-dagp (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp state))))
-  :hints (("Goal" :in-theory (enable prune-dag-precisely-with-rule-alist))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Prune unreachable branches using full contexts.  Warning: can explode the
-;; term size. Returns (mv erp dag-or-quotep state).
-;; TODO: This makes the rule-alist each time it is called.
-(defund prune-dag-precisely (dag assumptions rules interpreted-fns monitored-rules call-stp state)
-  (declare (xargs :guard (and (pseudo-dagp dag)
-                              (pseudo-term-listp assumptions)
-                              (symbol-listp rules)
-                              (symbol-listp interpreted-fns)
-                              (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
-                              (ilks-plist-worldp (w state)))
-                  :stobjs state))
-  (b* (((mv erp rule-alist) (make-rule-alist rules (w state))) ; todo: avoid this if the dag-fns-include-any check will fail
-       ((when erp) (mv erp nil state)))
-    (prune-dag-precisely-with-rule-alist dag assumptions rule-alist
-                                         (make-interpreted-function-alist interpreted-fns (w state))
-                                         monitored-rules call-stp state)))
-
-(local (in-theory (disable mv-nth myquotep)))
-
-(defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-precisely
-  (implies (and (not (mv-nth 0 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))) ;; no error
-                (not (myquotep (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))))
-                (pseudo-dagp dag)
-                (pseudo-term-listp assumptions)
-                (symbol-listp rules)
-                (symbol-listp interpreted-fns)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp))
-                (ilks-plist-worldp (w state)))
-           (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))))
-  :hints (("Goal" :in-theory (enable prune-dag-precisely))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;Returns (mv erp result-dag state).  Pruning turns the DAG into a term and
-;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
-;; TODO: This can make the rule-alist each time it is called.
-(defund maybe-prune-dag-precisely (prune-branches ; t, nil, or a limit on the size
-                                   dag assumptions rules interpreted-fns monitored-rules call-stp
-                                   print
-                                   state)
-  (declare (xargs :guard (and (or (booleanp prune-branches)
-                                  (natp prune-branches))
-                              (pseudo-dagp dag)
-                              (< (len dag) 2147483647) ;todo?
-                              (pseudo-term-listp assumptions)
-                              (symbol-listp rules)
-                              (symbol-listp interpreted-fns)
-                              (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
-                              (print-levelp print)
-                              (ilks-plist-worldp (w state)))
-                  :stobjs state))
-  (let ((prune-branchesp (if (booleanp prune-branches)
-                             prune-branches
-                           ;; prune-branches is a natp (a limit on the size):
-                           ;; todo: allow this to fail fast:
-                           (dag-or-quotep-size-less-thanp dag
-                                                          prune-branches))))
-    (if prune-branchesp
-        (b* ((size (dag-or-quotep-size-fast dag)) ;todo: also perhaps done above
-             (- (cw "(Pruning branches in DAG (~x0 nodes, ~x1 unique)~%" size (len dag)))
-             (- (and (print-level-at-least-tp print)
-                     (progn$ (cw "(DAG:~%")
-                             (print-list dag)
-                             (cw ")~%")
-                             (cw "(Assumptions: ~X01)~%" assumptions nil))))
-             ((mv erp result-dag state)
-              (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))
-             ((when erp) (mv erp nil state))
-             (- (cw "Done pruning DAG.)~%")))
-          (mv nil result-dag state))
-      (prog2$ (and (natp prune-branches)
-                   (cw "(Note: Not pruning with precise contexts (DAG size > ~x0).)~%" prune-branches))
-              (mv nil dag state)))))
-
-(defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely
-  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp print state))) ;; no error
-                (not (myquotep (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp print state))))
-                (pseudo-dagp dag)
-                (pseudo-term-listp assumptions)
-                (symbol-listp rules)
-                (symbol-listp interpreted-fns)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp))
-                (ilks-plist-worldp (w state)))
-           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp print state))))
-  :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))

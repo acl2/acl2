@@ -1,6 +1,6 @@
 ; Pruning irrelevant IF-branches in a DAG
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 
 (include-book "prove-with-stp")
 (include-book "rewriter-basic")
+(include-book "dag-size-fast")
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -76,13 +77,13 @@
 
 ;; When the test of an IF or MYIF can be resolved, the IF/MYIF can be replaced
 ;; by a call of ID around either its then-branch or its else-branch.  This
-;; ensures the resulting DAG is still legal and had no changes in node
-;; numbering.  The calls to ID can be removed by a sequent call of the
-;; rewriter.
+;; ensures the resulting DAG is still legal and has no changes in node
+;; numbering.  The calls to ID can be removed by a subsequent call of the
+;; rewriter.  TODO: Do better?
 (defun id (x) x)
 
 ;; Returns (mv erp result state), where result is :true (meaning non-nil), :false, or :unknown.
-;; TODO: Also use rewriting?  See try-to-resolve-node.
+;; TODO: Also use rewriting?  See also try-to-resolve-test.
 (defund try-to-resolve-node-with-stp (nodenum-or-quotep
                                       assumptions
                                       ;; rule-alist interpreted-function-alist monitored-rules call-stp
@@ -156,7 +157,7 @@
                                      ))))
 
 ;; Returns (mv erp dag state).
-(defund prune-dag-with-contexts-aux (dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)
+(defund prune-dag-approximately-aux (dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                               (equal (alen1 'dag-parent-array dag-parent-array)
@@ -178,11 +179,11 @@
            (nodenum (car entry))
            (expr (cdr entry)))
       (if (atom expr) ; variable (nothing to do):
-          (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)
+          (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)
         (let ((fn (ffn-symb expr)))
           (case fn
             ;; quoted constant (nothing to do):
-            (quote (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))
+            (quote (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))
             ((if myif)
              (b* (((when (not (consp (cdr (cdr (dargs expr))))))
                    (mv :bad-if-arity nil state))
@@ -190,7 +191,7 @@
                   (context (aref1 'context-array context-array nodenum))
                   ((when (eq (false-context) context))
                    (cw "NOTE: False context encountered for node ~x0 (selecting then-branch).~%" nodenum)
-                   (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(id ,(darg2 expr)) dag-acc) state))
+                   (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(id ,(darg2 expr)) dag-acc) state))
                   ;; Try to resolve the IF test:
                   ((mv erp result state)
                    (try-to-resolve-node-with-stp (darg1 expr) ; the test of the IF/MYIF
@@ -210,20 +211,21 @@
                               `(id ,(darg3 expr)) ; the IF/MYIF is equal to its else-branch
                             ;; Could not resolve the test:
                             expr))))
-               (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
+               (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
             ;; todo: add support for boolif and bvif?
             (t
-             (prune-dag-with-contexts-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))))))))
+             (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))))))))
 
-(defthm w-of-mv-nth-2-of-prune-dag-with-contexts-aux
-  (equal (w (mv-nth 2 (prune-dag-with-contexts-aux dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
+(defthm w-of-mv-nth-2-of-prune-dag-approximately-aux
+  (equal (w (mv-nth 2 (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
          (w state))
-  :hints (("Goal" :in-theory (enable prune-dag-with-contexts-aux))))
+  :hints (("Goal" :in-theory (enable prune-dag-approximately-aux))))
 
 ;; Returns (mv erp dag-or-quotep state).
 ;; Smashes the arrays named 'dag-array, 'temp-dag-array, and 'context-array.
 ;; todo: may need multiple passes, but watch for loops!
-(defund prune-dag-with-contexts (dag
+;; TODO: Don't bother pruning if there are no IFs.
+(defund prune-dag-approximately (dag
                                  ;; assumptions
                                  ;; rules ; todo: add support for this
                                  ;; interpreted-fns
@@ -241,13 +243,13 @@
                               (ilks-plist-worldp (w state)))
                   :verify-guards nil ; todo
                   :stobjs state))
-  (b* ((- (cw "(Pruning DAG:~%"))
+  (b* ((- (cw "(Pruning DAG with approximate contexts:~%"))
        (context-array (make-full-context-array-for-dag dag))
        (dag-array (make-into-array 'dag-array dag))
        (dag-len (+ 1 (top-nodenum-of-dag dag)))
        (dag-parent-array (make-dag-parent-array-with-name2 dag-len 'dag-array dag-array 'dag-parent-array))
        ((mv erp dag state)
-        (prune-dag-with-contexts-aux dag dag-array dag-len dag-parent-array context-array
+        (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array
                                      t         ;print
                                      60000     ;todo max-conflicts
                                      nil       ; dag-acc
@@ -269,3 +271,20 @@
        ((when erp) (mv erp nil state))
        (- (cw "Done pruning DAG.)~%")))
     (mv (erp-nil) dag-or-quotep state)))
+
+;; Returns (mv erp dag-or-quotep state).
+(defund maybe-prune-dag-approximately (prune-branches dag state)
+  (declare (xargs :guard (and (or (booleanp prune-branches)
+                                  (natp prune-branches))
+                              (pseudo-dagp dag)
+                              (<= (len dag) 2147483646)
+                              (ilks-plist-worldp (w state)))
+                  :verify-guards nil ; todo
+                  :stobjs state))
+  (let ((prune-branchesp (if (booleanp prune-branches)
+                             prune-branches
+                           ;; prune-branches is a natp (a limit on the size):
+                           (dag-or-quotep-size-less-thanp dag prune-branches))))
+    (if prune-branchesp
+        (prune-dag-approximately dag state)
+      (mv (erp-nil) dag state))))
