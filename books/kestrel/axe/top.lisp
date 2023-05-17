@@ -168,7 +168,7 @@
 (include-book "prune-with-contexts")
 (include-book "prune-term")
 (include-book "prune-dag-precisely")
-(include-book "prune-dag")
+(include-book "prune-dag-approximately")
 (include-book "rational-lists")
 (include-book "rebuild-literals")
 (include-book "rebuild-nodes2")

@@ -29,7 +29,7 @@
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "../make-term-into-dag-basic")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
-(include-book "../prune-dag") ;brings in rewriter-basic
+(include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
