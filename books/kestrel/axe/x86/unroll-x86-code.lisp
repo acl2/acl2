@@ -140,7 +140,7 @@
          ;;                       (cw ")~%"))))
          (dag dag-or-quote)
          ;; Prune the DAG quickly but possibly imprecisely:
-         ((mv erp dag-or-quotep state) (acl2::prune-dag-with-contexts dag state))
+         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep

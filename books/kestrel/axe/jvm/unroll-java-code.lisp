@@ -214,7 +214,7 @@
           (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
-         ((mv erp dag-or-quotep state) (maybe-prune-dag-with-contexts prune-branches dag state)
+         ((mv erp dag-or-quotep state) (maybe-prune-dag-approximately prune-branches dag state)
           )
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
@@ -485,7 +485,7 @@
        ((when (quotep dag)) ; todo: test this case
         (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
        ;;; Prune irrelevant branches, if instructed:
-       ;; TODO: Consider calling prune-dag-with-contexts here:
+       ;; TODO: Consider calling prune-dag-approximately here:
        ((mv erp dag state)
         (if (if (booleanp prune-branches)
                 prune-branches
