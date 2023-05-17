@@ -115,13 +115,13 @@
                 ))
       (list assumption)
     (if (subtermp (farg1 assumption) (farg2 assumption))
-        (prog2$ (cw "Note: re-orienting equality assumption ~x0.~%" assumption)
+        (prog2$ (cw "(Note: re-orienting equality assumption ~x0.)~%" assumption)
                 `((equal ,(farg2 assumption) ,(farg1 assumption))))
       (if (quotep (farg1 assumption))
           (list assumption)
         (if (quotep (farg2 assumption))
             `((equal ,(farg1 assumption) ,(farg2 assumption)))
-          (prog2$ (cw "Note: Dropping equality assumption ~x0.~%" assumption)
+          (prog2$ (cw "(Note: Dropping equality assumption ~x0.)~%" assumption)
                   nil))))))
 
 (defthm pseudo-term-listp-of-fixup-assumption
@@ -572,7 +572,7 @@
                               (or (booleanp call-stp)
                                   (natp call-stp)))
                   :stobjs state))
-  (b* ((- (cw "(Pruning branches in term (~x0 rules, ~x1 assumptions).~%" (count-rules-in-rule-alist rule-alist) (len assumptions)))
+  (b* ((- (cw "(Pruning term (~x0 rules, ~x1 assumptions).~%" (count-rules-in-rule-alist rule-alist) (len assumptions)))
        ;; (- (cw "(Term: ~x0)~%" term))  ;; TODO: Print, but only if small (and thread through a print arg)
        ((mv erp new-term state)
         (prune-term-aux term
@@ -684,7 +684,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Returns (mv erp result-dag state).  Pruning turns the DAG into a term and
+;;Returns (mv erp result-dag-or-quotep state).  Pruning turns the DAG into a term and
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
 ;; TODO: This can make the rule-alist each time it is called.
 (defund maybe-prune-dag-precisely (prune-branches ; t, nil, or a limit on the size
@@ -718,11 +718,19 @@
                              (print-list dag)
                              (cw ")~%")
                              (cw "(Assumptions: ~X01)~%" assumptions nil))))
-             ((mv erp result-dag state)
+             ((mv erp result-dag-or-quotep state)
               (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))
              ((when erp) (mv erp nil state))
-             (- (cw "Done pruning DAG.)~%")))
-          (mv nil result-dag state))
+             ((when (quotep result-dag-or-quotep))
+              (cw "Done pruning DAG. Result: ~x0)~%" result-dag-or-quotep)
+              (mv (erp-nil) result-dag-or-quotep state))
+             ;; It's a dag:
+             (result-dag-len (len result-dag-or-quotep))
+             (result-dag-size (if (<= 2147483647 result-dag-len)
+                                  "many" ; too big to call dag-or-quotep-size-fast (todo: impossible?)
+                                (dag-or-quotep-size-fast result-dag-or-quotep)))
+             (- (cw "Done pruning DAG (~x0 nodes, ~x1 unique))~%" result-dag-size result-dag-len)))
+          (mv nil result-dag-or-quotep state))
       (prog2$ (and (natp prune-branches)
                    (cw "(Note: Not pruning with precise contexts (DAG size > ~x0).)~%" prune-branches))
               (mv nil dag state)))))
