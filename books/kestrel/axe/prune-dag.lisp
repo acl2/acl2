@@ -16,6 +16,7 @@
 
 (include-book "prove-with-stp")
 (include-book "rewriter-basic")
+(include-book "dag-size-fast")
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -224,6 +225,7 @@
 ;; Smashes the arrays named 'dag-array, 'temp-dag-array, and 'context-array.
 ;; todo: may need multiple passes, but watch for loops!
 ;; TODO: Don't bother pruning if there are no IFs.
+;; TODO: Rename to prune-dag-approximately.
 (defund prune-dag-with-contexts (dag
                                  ;; assumptions
                                  ;; rules ; todo: add support for this
@@ -270,3 +272,20 @@
        ((when erp) (mv erp nil state))
        (- (cw "Done pruning DAG.)~%")))
     (mv (erp-nil) dag-or-quotep state)))
+
+;; Returns (mv erp dag-or-quotep state).
+(defund maybe-prune-dag-with-contexts (prune-branches dag state)
+  (declare (xargs :guard (and (or (booleanp prune-branches)
+                                  (natp prune-branches))
+                              (pseudo-dagp dag)
+                              (<= (len dag) 2147483646)
+                              (ilks-plist-worldp (w state)))
+                  :verify-guards nil ; todo
+                  :stobjs state))
+  (let ((prune-branchesp (if (booleanp prune-branches)
+                             prune-branches
+                           ;; prune-branches is a natp (a limit on the size):
+                           (dag-or-quotep-size-less-thanp dag prune-branches))))
+    (if prune-branchesp
+        (prune-dag-with-contexts dag state)
+      (mv (erp-nil) dag state))))
