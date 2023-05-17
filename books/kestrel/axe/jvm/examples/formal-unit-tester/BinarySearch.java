@@ -11,7 +11,7 @@
 public class BinarySearch {
 
     // The routine to test:
-    // Returns an index into data that contains target, or -1
+    // Returns an index i into the data array that data[i] is target, or -1
     // if target is not present.  The data array must be sorted.
     public static int binarySearch (int target, int [] data) {
         int low = 0;
