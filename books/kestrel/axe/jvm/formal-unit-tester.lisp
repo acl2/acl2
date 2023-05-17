@@ -181,8 +181,20 @@
            (parameter-name (lookup slot param-slot-to-name-alist))
            (assumptions (if (jvm::primitive-typep type)
                             (type-assumptions-for-param type parameter-name)
-                          nil ;todo: what about arrays?
-                          ))
+                          (if (jvm::is-one-dim-array-typep type)
+                              (let ((component-type (jvm::get-array-component-type type)))
+                                (if (and (jvm::bit-vector-typep component-type)
+                                         (not (eq type :boolean)) ; exclude for now, since we need to think about packed booleans (see baload)
+                                         )
+                                    ;; array of BVS:
+                                    (list `(true-listp ,parameter-name)
+                                          `(all-unsigned-byte-p ',(jvm::size-of-array-element component-type) ,parameter-name)
+                                          ;; can't put in anything about the length, since we don't know it
+                                          )
+                                  nil ; array of some other type (todo: can we do anything here?)
+                                  ))
+                            ;; something else (todo: can we do anything here?)
+                            nil)))
            (slot-count (jvm::type-slot-count type)))
       (append assumptions
               (param-var-assumptions-aux (+ slot slot-count)
