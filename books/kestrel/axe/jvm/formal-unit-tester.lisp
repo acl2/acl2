@@ -558,7 +558,7 @@
                                  nil    ;print-interval
                                  t ;memoizep
                                  t      ;vars-for-array-elements
-                                 t      ;prune-branches
+                                 10000      ;prune-branches
                                  nil    ;call-stp ;t, nil, or a max-conflicts
                                  :auto  ;steps
                                  :smart ;; (if (eq variant :assert) :split :smart)

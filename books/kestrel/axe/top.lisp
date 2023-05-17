@@ -1,6 +1,6 @@
 ; Top file for Axe
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -167,6 +167,7 @@
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")
 (include-book "prune")
+(include-book "prune-dag-precisely")
 (include-book "prune-dag")
 (include-book "rational-lists")
 (include-book "rebuild-literals")

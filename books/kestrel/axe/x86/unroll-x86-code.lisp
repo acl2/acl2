@@ -34,7 +34,7 @@
 (include-book "../step-increments")
 (include-book "../dag-size")
 (include-book "../dag-info")
-(include-book "../prune")
+(include-book "../prune-dag-precisely")
 (include-book "../prune-dag")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
