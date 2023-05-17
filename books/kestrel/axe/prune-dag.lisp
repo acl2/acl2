@@ -223,6 +223,7 @@
 ;; Returns (mv erp dag-or-quotep state).
 ;; Smashes the arrays named 'dag-array, 'temp-dag-array, and 'context-array.
 ;; todo: may need multiple passes, but watch for loops!
+;; TODO: Don't bother pruning if there are no IFs.
 (defund prune-dag-with-contexts (dag
                                  ;; assumptions
                                  ;; rules ; todo: add support for this
@@ -241,7 +242,7 @@
                               (ilks-plist-worldp (w state)))
                   :verify-guards nil ; todo
                   :stobjs state))
-  (b* ((- (cw "(Pruning DAG:~%"))
+  (b* ((- (cw "(Pruning DAG with approximate contexts:~%"))
        (context-array (make-full-context-array-for-dag dag))
        (dag-array (make-into-array 'dag-array dag))
        (dag-len (+ 1 (top-nodenum-of-dag dag)))

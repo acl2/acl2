@@ -1,7 +1,7 @@
 ; Utilities for unrolling Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -188,6 +188,7 @@
                                                              ,parameter-name)
                                                       (equal (len ,parameter-name)
                                                              ',maybe-len)
+                                                      ;; TODO: Should we also put in an all-unsigned-byte-p claim here, to support STP translation?
                                                       (true-listp ,parameter-name)))
                                                   ;;todo: what about type assumptions for individual vars?:
                                                   `((array-refp ,local-term
