@@ -14,7 +14,7 @@
 
 ;; Prune irrelevant if-then-else branches in DAGs using rewriting and calls to STP.
 
-(include-book "prune") ; todo: rename to prune-term
+(include-book "prune-term")
 (include-book "dag-size-fast")
 (include-book "make-term-into-dag-simple")
 

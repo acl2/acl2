@@ -166,7 +166,7 @@
 (include-book "prover-common")
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")
-(include-book "prune")
+(include-book "prune-term")
 (include-book "prune-dag-precisely")
 (include-book "prune-dag")
 (include-book "rational-lists")
