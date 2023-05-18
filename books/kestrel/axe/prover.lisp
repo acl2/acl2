@@ -1748,6 +1748,7 @@
                      ;; Calling STP:
                      (prove-node-disjunction-with-stp literal-nodenums dag-array dag-len dag-parent-array case-designator print max-conflicts
                                                       nil ;no counterexample (for now)
+                                                      nil ; don't print cex as signed
                                                       state))
                    (if (eq *valid* result)
                        (prog2$ (cw "Proved case ~s0 with STP.~%" case-designator)

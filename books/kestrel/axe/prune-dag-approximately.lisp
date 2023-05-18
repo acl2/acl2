@@ -122,6 +122,7 @@
                                          dag-array dag-len dag-parent-array
                                          base-filename print max-conflicts
                                          nil ; counterexamplep
+                                         nil ; print-cex-as-signedp
                                          state))
        ((when (eq *error* true-result))
         (prog2$ (er hard? 'try-to-resolve-node-with-stp "Error calling STP")
@@ -137,8 +138,8 @@
                                          dag-array dag-len dag-parent-array
                                          base-filename print max-conflicts
                                          nil ;counterexamplep
-                                         state
-                                         ))
+                                         nil ; print-cex-as-signedp
+                                         state))
        ((when (eq *error* false-result))
         (prog2$ (er hard? 'try-to-resolve-node-with-stp "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
