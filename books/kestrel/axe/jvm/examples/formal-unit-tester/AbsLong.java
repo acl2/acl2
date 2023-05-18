@@ -59,7 +59,6 @@ public class AbsLong {
     }
 
     // Test that two different values can't have the same abs (fails).
-    // TODO: Print the counterexample as a signed value.
     public static boolean fail_testAbsTwoDiff (long x, long y) {
         if (absLong(x) == absLong(y))
             return (x == y);
