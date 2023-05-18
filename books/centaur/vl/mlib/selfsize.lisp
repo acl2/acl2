@@ -1257,18 +1257,17 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
                                          :args (list x))
                                   nil))
                              (reps (vl-resolved->val x.reps))
-                             ((unless (<= 0 reps))
-                              (mv (fatal :type :vl-unresolved-multiplicity
-                                         :msg "cannot size ~a0 because its ~
-                                             multiplicity is negative."
-                                         :args (list x))
-                                  nil))
-                             ((mv warnings part-sizes)
+                             (warnings (if (< reps 0)
+                                           (warn :type :vl-negative-multiplicity
+                                                 :msg "Multiplicity of multiconcat ~a0 is negative; treating as 0."
+                                                 :args (list x))
+                                         warnings))
+                             ((wmv warnings part-sizes)
                               (vl-exprlist-selfsize x.parts ss scopes))
                              ((wmv warnings) (vl-extensional-const-in-concat-check x x.parts))
                              ((when (member nil part-sizes))
                               (mv warnings nil)))
-                          (mv (ok) (* reps (sum-nats part-sizes))))
+                          (mv (ok) (* (nfix reps) (sum-nats part-sizes))))
 
         ;; Streaming concatenations need to be treated specially.  They sort of
         ;; have a self-size -- the number of bits available -- but can't be
