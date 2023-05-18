@@ -7314,6 +7314,7 @@
                                                print
                                                max-conflicts
                                                nil ;no counterexample (for now)
+                                               nil
                                                state)
                 (if (eq result *error*)
                     (prog2$ (hard-error 'attempt-aggressively-cut-equivalence-proof "Error calling STP." nil)
@@ -7363,6 +7364,7 @@
                                           print
                                           max-conflicts
                                           nil ;no counterexample (for now)
+                                          nil
                                           state)
            (if (eq result *error*)
                (prog2$ (hard-error 'attempt-cut-equivalence-proofs "Error calling STP." nil)
@@ -15929,6 +15931,7 @@
                                                   print
                                                   max-conflicts
                                                   nil ;no counterexample (for now)
+                                                  nil
                                                   state)
                    (if (eq *error* result)
                        (prog2$ (er hard 'try-to-prove-node-is-constant "Error calling STP.")

@@ -1,4 +1,4 @@
-// Formal Unit Tests of a binary search function
+// Formal Unit Tests of a binary search function (with a bug!)
 //
 // Copyright (C) 2023 Kestrel Institute
 //
@@ -8,7 +8,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-public class BinarySearch {
+public class BinarySearchBuggy {
 
     // The routine to test:
     // Returns an index i into the data array that data[i] is target, or -1
@@ -16,7 +16,7 @@ public class BinarySearch {
     public static int binarySearch (int target, int [] data) {
         int low = 0;
         int high = data.length - 1;
-        while (low <= high) {
+        while (low < high) { // bug: should be <= !
             int mid = low + (high - low) / 2;
             if (data[mid] == target)
                 return mid; // found
@@ -45,7 +45,8 @@ public class BinarySearch {
     }
 
     // The formal unit test: Compare binarySearch with linearSearch:
-    public static boolean test (int target, int [] data) {
+    // This is expected to fail, as indicated by its name:
+    public static boolean fail_test (int target, int [] data) {
         if (data.length != 10) // ensure loops can be unrolled
             return true;
         if (!sorted(data))

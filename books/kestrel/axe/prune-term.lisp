@@ -250,6 +250,7 @@
         (prove-implication-with-stp simplified-test-term
                                     (append assumptions equality-assumptions)
                                     nil         ;counterexamplep
+                                    nil ; print-cex-as-signedp
                                     (if (natp call-stp) call-stp *default-stp-max-conflicts*)
                                     nil                ;print
                                     "PRUNE-PROVE-TRUE" ;todo: do better?
@@ -266,6 +267,7 @@
         (prove-implication-with-stp `(not ,simplified-test-term)
                                     assumptions ;todo: this caused problems with an rlp example: (append assumptions equality-assumptions)
                                     nil         ;counterexamplep
+                                    nil ; print-cex-as-signedp
                                     (if (natp call-stp) call-stp *default-stp-max-conflicts*)
                                     nil                 ;print
                                     "PRUNE-PROVE-FALSE" ;todo: do better?

@@ -1,6 +1,5 @@
-; Apply the Formal Unit Tester to Prefix
+; Apply the Formal Unit Tester to BinarySearchBuggy
 ;
-; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,9 +14,15 @@
 ;; the Formal Unit Tester would be invoked from the command line or from within
 ;; an IDE.
 
-; (depends-on "Prefix.class")
+; (depends-on "BinarySearchBuggy.class")
 
 (include-book "kestrel/axe/jvm/formal-unit-tester" :dir :system)
 
-;; TODO: BV-ARRAY-READ-OF-BV-ARRAY-WRITE introduces <
-(test-file "Prefix.java")
+;; The test fails as follows (with my version of STP):
+;; (Counterexample:
+;;   Node 0: DATA is (-2147483648 0 0 0 0 0 0 0 0 0).
+;;   Node 1: TARGET is -2147483648.
+;;   Node 2: (LEN DATA) is 10.
+;;   Node 130: (TRUE-LISTP DATA) is T.
+;;   Node 132: (ALL-UNSIGNED-BYTE-P '32 DATA) is T.)
+(test-file "BinarySearchBuggy.java")
