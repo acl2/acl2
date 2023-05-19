@@ -176,7 +176,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-thm ((def definitionp) (prime symbolp) (wrld plist-worldp))
-  :returns (event pseudo-event-formp)
+  :returns (mv (event pseudo-event-formp)
+               (def-hyps true-listp))
   :short "Generate the theorem connecting
           deeply and shallowly embedded semantics."
   :long
@@ -225,61 +226,63 @@
        (def-hyps (lift-thm-def-hyps def wrld))
 
        ((when (equal free nil))
-        `(defruled ,thm-name
-           (implies (and ,@def-hyps
-                         ,@(sesem-gen-fep-terms def.para prime))
-                    (equal (definition-satp
-                             ',def.name defs (list ,@def.para) ,prime)
-                           (,def.name ,@def.para ,prime)))
-           :in-theory '(,def.name
-                        (:e ,def.name)
-                        definition-satp
-                        constraint-satp-of-relation-when-nofreevars
-                        constraint-relation-nofreevars-satp
-                        constraint-list-satp-of-cons
-                        constraint-list-satp-of-nil
-                        constraint-satp-of-equal
-                        constraint-equal-satp
-                        eval-expr
-                        eval-expr-list
-                        (:e definition->para)
-                        (:e definition->body)
-                        (:e definition-free-vars)
-                        (:e constraint-kind)
-                        (:e constraint-equal->left)
-                        (:e constraint-equal->right)
-                        (:e constraint-relation)
-                        (:e constraint-relation->name)
-                        (:e constraint-relation->args)
-                        (:e expression-kind)
-                        (:e expression-const->value)
-                        (:e expression-var->name)
-                        (:e expression-add->arg1)
-                        (:e expression-add->arg2)
-                        (:e expression-mul->arg1)
-                        (:e expression-mul->arg2)
-                        (:e expression-var-list)
-                        assignment-wfp-of-update
-                        assignment-wfp-of-nil
-                        assignment-fix-when-assignmentp
-                        assignmentp-of-update
-                        (:e assignmentp)
-                        omap::from-lists
-                        pfield::fep-fw-to-natp
-                        pfield::natp-of-add
-                        pfield::natp-of-mul
-                        len
-                        fty::consp-when-reserrp
-                        acl2::natp-compound-recognizer
-                        (:e nat-listp)
-                        (:e set::empty)
-                        car-cons
-                        cdr-cons
-                        omap::in-of-update
-                        acl2::nat-listp-of-cons
-                        acl2::not-reserrp-when-nat-listp
-                        nfix
-                        (:t mod))))
+        (mv
+         `(defruled ,thm-name
+            (implies (and ,@def-hyps
+                          ,@(sesem-gen-fep-terms def.para prime))
+                     (equal (definition-satp
+                              ',def.name defs (list ,@def.para) ,prime)
+                            (,def.name ,@def.para ,prime)))
+            :in-theory '(,def.name
+                         (:e ,def.name)
+                         definition-satp
+                         constraint-satp-of-relation-when-nofreevars
+                         constraint-relation-nofreevars-satp
+                         constraint-list-satp-of-cons
+                         constraint-list-satp-of-nil
+                         constraint-satp-of-equal
+                         constraint-equal-satp
+                         eval-expr
+                         eval-expr-list
+                         (:e definition->para)
+                         (:e definition->body)
+                         (:e definition-free-vars)
+                         (:e constraint-kind)
+                         (:e constraint-equal->left)
+                         (:e constraint-equal->right)
+                         (:e constraint-relation)
+                         (:e constraint-relation->name)
+                         (:e constraint-relation->args)
+                         (:e expression-kind)
+                         (:e expression-const->value)
+                         (:e expression-var->name)
+                         (:e expression-add->arg1)
+                         (:e expression-add->arg2)
+                         (:e expression-mul->arg1)
+                         (:e expression-mul->arg2)
+                         (:e expression-var-list)
+                         assignment-wfp-of-update
+                         assignment-wfp-of-nil
+                         assignment-fix-when-assignmentp
+                         assignmentp-of-update
+                         (:e assignmentp)
+                         omap::from-lists
+                         pfield::fep-fw-to-natp
+                         pfield::natp-of-add
+                         pfield::natp-of-mul
+                         len
+                         fty::consp-when-reserrp
+                         acl2::natp-compound-recognizer
+                         (:e nat-listp)
+                         (:e set::empty)
+                         car-cons
+                         cdr-cons
+                         omap::in-of-update
+                         acl2::nat-listp-of-cons
+                         acl2::not-reserrp-when-nat-listp
+                         nfix
+                         (:t mod)))
+         def-hyps))
 
        (constraint-relation-satp-witness
         `(constraint-relation-satp-witness ',def.name
@@ -291,29 +294,101 @@
        (def-witness `(,(add-suffix-to-fn def.name "-WITNESS")
                       ,@def.para ,prime)))
 
-    `(defruled ,thm-name
-       (implies (and ,@def-hyps
-                     ,@(sesem-gen-fep-terms def.para prime)
-                     (posp ,prime))
-                (equal (definition-satp
-                         ',def.name defs (list ,@def.para) ,prime)
-                       (,def.name ,@def.para ,prime)))
-       :in-theory '((:t definition-satp)
-                    (:t ,def.name))
-       :use (only-if-direction if-direction)
+    (mv
+     `(defruled ,thm-name
+        (implies (and ,@def-hyps
+                      ,@(sesem-gen-fep-terms def.para prime)
+                      (posp ,prime))
+                 (equal (definition-satp
+                          ',def.name defs (list ,@def.para) ,prime)
+                        (,def.name ,@def.para ,prime)))
+        :in-theory '((:t definition-satp)
+                     (:t ,def.name))
+        :use (only-if-direction if-direction)
 
-       :prep-lemmas
+        :prep-lemmas
 
-       ((defruled only-if-direction
-          (implies (and (equal (lookup-definition ',def.name defs)
-                               ',def)
-                        ,@(sesem-gen-fep-terms def.para prime))
-                   (implies (definition-satp
-                              ',def.name defs (list ,@def.para) ,prime)
-                            (,def.name ,@def.para ,prime)))
-          :in-theory '(definition-satp
+        ((defruled only-if-direction
+           (implies (and (equal (lookup-definition ',def.name defs)
+                                ',def)
+                         ,@(sesem-gen-fep-terms def.para prime))
+                    (implies (definition-satp
+                               ',def.name defs (list ,@def.para) ,prime)
+                             (,def.name ,@def.para ,prime)))
+           :in-theory '(definition-satp
+                         constraint-satp-of-relation
+                         constraint-relation-satp
+                         constraint-list-satp-of-cons
+                         constraint-list-satp-of-nil
+                         constraint-satp-of-equal
+                         constraint-equal-satp
+                         eval-expr
+                         eval-expr-list
+                         (:e definition->para)
+                         (:e definition->body)
+                         (:e definition-free-vars)
+                         (:e constraint-kind)
+                         (:e constraint-equal->left)
+                         (:e constraint-equal->right)
+                         (:e constraint-relation)
+                         (:e constraint-relation->name)
+                         (:e constraint-relation->args)
+                         (:e expression-kind)
+                         (:e expression-const->value)
+                         (:e expression-var->name)
+                         (:e expression-add->arg1)
+                         (:e expression-add->arg2)
+                         (:e expression-mul->arg1)
+                         (:e expression-mul->arg2)
+                         (:e expression-var-list)
+                         assignment-wfp-of-update*
+                         assignment-wfp-of-update
+                         assignment-wfp-of-nil
+                         assignment-fix-when-assignmentp
+                         assignmentp-of-update*
+                         assignmentp-of-update
+                         (:e assignmentp)
+                         omap::from-lists
+                         pfield::fep-fw-to-natp
+                         pfield::natp-of-add
+                         pfield::natp-of-mul
+                         len
+                         fty::consp-when-reserrp
+                         acl2::natp-compound-recognizer
+                         (:e nat-listp)
+                         (:e set::empty)
+                         car-cons
+                         cdr-cons
+                         omap::in-of-update*
+                         omap::in-of-update
+                         acl2::nat-listp-of-cons
+                         acl2::not-reserrp-when-nat-listp
+                         lift-rule-nfix-when-natp
+                         (:t mod)
+                         (:t reserr)
+                         fty::reserrp-of-reserr
+                         lift-rule-omap-consp-of-in-iff-in
+                         (:e set::in)
+                         natp-of-cdr-of-in-when-assignmentp-type
+                         fep-of-cdr-of-in-when-assignment-wfp)
+           :use ((:instance ,(add-suffix-to-fn def.name "-SUFF")
+                            ,@(lift-thm-aux1
+                               free constraint-relation-satp-witness))
+                 ,@(lift-thm-aux2
+                    (append def.para free)
+                    constraint-relation-satp-witness)))
+
+         (defruled if-direction
+           (implies (and (equal (lookup-definition ',def.name defs)
+                                ',def)
+                         ,@(sesem-gen-fep-terms def.para prime)
+                         (posp ,prime))
+                    (implies (,def.name ,@def.para ,prime)
+                             (definition-satp
+                               ',def.name defs (list ,@def.para) ,prime)))
+           :in-theory '(,def.name
+                        definition-satp
                         constraint-satp-of-relation
-                        constraint-relation-satp
                         constraint-list-satp-of-cons
                         constraint-list-satp-of-nil
                         constraint-satp-of-equal
@@ -346,102 +421,32 @@
                         (:e assignmentp)
                         omap::from-lists
                         pfield::fep-fw-to-natp
-                        pfield::natp-of-add
-                        pfield::natp-of-mul
-                        len
-                        fty::consp-when-reserrp
-                        acl2::natp-compound-recognizer
-                        (:e nat-listp)
-                        (:e set::empty)
                         car-cons
                         cdr-cons
+                        (:e nat-listp)
+                        omap::keys-of-update
                         omap::in-of-update*
                         omap::in-of-update
-                        acl2::nat-listp-of-cons
-                        acl2::not-reserrp-when-nat-listp
+                        (:e omap::keys)
+                        (:e set::insert)
+                        len
                         lift-rule-nfix-when-natp
-                        (:t mod)
-                        (:t reserr)
-                        fty::reserrp-of-reserr
-                        lift-rule-omap-consp-of-in-iff-in
-                        (:e set::in)
-                        natp-of-cdr-of-in-when-assignmentp-type
-                        fep-of-cdr-of-in-when-assignment-wfp)
-          :use ((:instance ,(add-suffix-to-fn def.name "-SUFF")
-                           ,@(lift-thm-aux1
-                              free constraint-relation-satp-witness))
-                ,@(lift-thm-aux2
-                   (append def.para free)
-                   constraint-relation-satp-witness)))
-
-        (defruled if-direction
-          (implies (and (equal (lookup-definition ',def.name defs)
-                               ',def)
-                        ,@(sesem-gen-fep-terms def.para prime)
-                        (posp ,prime))
-                   (implies (,def.name ,@def.para ,prime)
-                            (definition-satp
-                              ',def.name defs (list ,@def.para) ,prime)))
-          :in-theory '(,def.name
-                       definition-satp
-                       constraint-satp-of-relation
-                       constraint-list-satp-of-cons
-                       constraint-list-satp-of-nil
-                       constraint-satp-of-equal
-                       constraint-equal-satp
-                       eval-expr
-                       eval-expr-list
-                       (:e definition->para)
-                       (:e definition->body)
-                       (:e definition-free-vars)
-                       (:e constraint-kind)
-                       (:e constraint-equal->left)
-                       (:e constraint-equal->right)
-                       (:e constraint-relation)
-                       (:e constraint-relation->name)
-                       (:e constraint-relation->args)
-                       (:e expression-kind)
-                       (:e expression-const->value)
-                       (:e expression-var->name)
-                       (:e expression-add->arg1)
-                       (:e expression-add->arg2)
-                       (:e expression-mul->arg1)
-                       (:e expression-mul->arg2)
-                       (:e expression-var-list)
-                       assignment-wfp-of-update*
-                       assignment-wfp-of-update
-                       assignment-wfp-of-nil
-                       assignment-fix-when-assignmentp
-                       assignmentp-of-update*
-                       assignmentp-of-update
-                       (:e assignmentp)
-                       omap::from-lists
-                       pfield::fep-fw-to-natp
-                       car-cons
-                       cdr-cons
-                       (:e nat-listp)
-                       omap::keys-of-update
-                       omap::in-of-update*
-                       omap::in-of-update
-                       (:e omap::keys)
-                       (:e set::insert)
-                       len
-                       lift-rule-nfix-when-natp
-                       (:e reserrp)
-                       acl2::not-reserrp-when-natp
-                       nat-listp
-                       (:e omap::in)
-                       lift-rule-natp-of-mod
-                       (:e natp))
-          :use (:instance constraint-relation-satp-suff
-                          (asgfree (omap::from-lists
-                                    ',free
-                                    (list ,@(lift-thm-aux3
-                                             free def-witness))))
-                          (name ',def.name)
-                          (args (expression-var-list ',def.para))
-                          (asg (omap::from-lists ',def.para
-                                                 (list ,@def.para))))))))
+                        (:e reserrp)
+                        acl2::not-reserrp-when-natp
+                        nat-listp
+                        (:e omap::in)
+                        lift-rule-natp-of-mod
+                        (:e natp))
+           :use (:instance constraint-relation-satp-suff
+                           (asgfree (omap::from-lists
+                                     ',free
+                                     (list ,@(lift-thm-aux3
+                                              free def-witness))))
+                           (name ',def.name)
+                           (args (expression-var-list ',def.para))
+                           (asg (omap::from-lists ',def.para
+                                                  (list ,@def.para)))))))
+     def-hyps))
 
   :prepwork
 
@@ -478,16 +483,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lift-table-add ((def definitionp) (hyps true-listp))
+  :returns (even pseudo-event-formp)
+  :short "Event to update the table of lifted PFCSes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This adds an entry to the table for the definition passed as argument."))
+  (b* ((info (make-lift-info :def def :hyps hyps)))
+    `(table lift-table ',(definition->name def) ',info)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lift-fn ((def definitionp) (prime symbolp) (wrld plist-worldp))
   :returns (event pseudo-event-formp)
   :short "Lift a deeply embedded PFCS definition
           to a shallowly embedded PFCS definition
           with a theorem relating the two."
   (b* ((event-fn (sesem-definition def prime))
-       (event-thm (lift-thm def prime wrld)))
+       ((mv event-thm def-hyps) (lift-thm def prime wrld))
+       (event-table (lift-table-add def def-hyps)))
     `(encapsulate ()
        ,event-fn
-       ,event-thm)))
+       ,event-thm
+       ,event-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
