@@ -1,7 +1,7 @@
 ; BV Library: leftrotate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -75,7 +75,7 @@
   (implies (and (natp width)
                 (natp amt))
            (equal (leftrotate width (mod amt width) val)
-                  (leftrotate width (nfix amt) val)))
+                  (leftrotate width amt val)))
   :hints (("Goal" :in-theory (enable leftrotate))))
 
 (defthm leftrotate-of-leftrotate
