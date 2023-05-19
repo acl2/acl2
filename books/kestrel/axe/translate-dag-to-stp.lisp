@@ -83,6 +83,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (in-theory (disable open-output-channels open-output-channel-p1))
@@ -1776,8 +1777,8 @@
                         ":0])")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
-        (leftrotate32 ;; (leftrotate32 amt val)
-         ;;fixme handle leftrotate with any power of 2 size?
+        (leftrotate32 ;; (leftrotate32 amt val) where amt is a constant
+         ;; todo: handle leftrotate with any power of 2 size?
          (if (and (= 2 (len (dargs expr)))
                   (quoted-natp (darg1 expr)) ;todo: think about 0
                   (bv-arg-okp (darg2 expr)))
@@ -1790,19 +1791,18 @@
                               "[31:0])")
                        constant-array-info)
                  ;;main case:
-                 (let ((low-slice-size (- 32 shift-amt)) ;bad name?
+                 (let ((low-slice-size (- 32 shift-amt))
                        ;;high-slice-size is shift-amt
-                       )
+                       (translated-arg (translate-bv-arg (darg2 expr) 32 dag-array-name dag-array dag-len cut-nodenum-type-alist)))
                    (mv (erp-nil)
                        (list* "("
-                              (translate-bv-arg (darg2 expr) 32 ;or should we use low-slice-size?
-                                                dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                              translated-arg
                               "["
-                              (nat-to-string-debug (+ -1 low-slice-size))
+                              (nat-to-string (+ -1 low-slice-size))
                               ":0]@"
-                              (translate-bv-arg (darg2 expr) 32 dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                              translated-arg
                               "[31:"
-                              (nat-to-string-debug low-slice-size) "])")
+                              (nat-to-string low-slice-size) "])")
                        constant-array-info))))
            (mv (erp-t) nil constant-array-info)))
         (equal
