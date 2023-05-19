@@ -77,21 +77,21 @@
 ;; and create the function below in order to calculate the value of "mode"
 ;; in a user-friendly fashion.  This  helps determine  the value  of
 ;; "mode" signal in the Integrated_Multiplier module.
-(define mode (&key
-              (acc-on 'nil)
-              (reload-acc 'nil)
-              (signed 'nil)
-              (dot-product 'nil)
-              (four-lanes-lo 'nil)
-              (four-lanes-hi 'nil)
-              (one-lane 'nil))
+(define control-mode (&key
+                      (acc-on 'nil)
+                      (reload-acc 'nil)
+                      (signed 'nil)
+                      (dot-product 'nil)
+                      (four-lanes-lo 'nil)
+                      (four-lanes-hi 'nil)
+                      (one-lane 'nil))
   (b* (((unless (= 1 (+ (if dot-product 1 0)
                         (if four-lanes-lo 1 0)
                         (if four-lanes-hi 1 0)
                         (if one-lane 1 0))))
         (or (cw "one and only one of dot-product, four-lanes-lo,
 four-lanes-hi and one-lane should be set to 1.~%")
-            (hard-error 'mode "" nil)
+            (hard-error 'control-mode "" nil)
             0))
        (mode 0)
        (mode (svl::sbits 0 1 (if acc-on 0 1) mode))
@@ -127,8 +127,8 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in3))
            (equal (sv::svtv-run (one-lane-mult2-svtv)
                                 (one-lane-mult2-svtv-autoins
-                                 :mode (mode :one-lane t
-                                             :signed t)))
+                                 :mode (control-mode :one-lane t
+                                                     :signed t)))
                   `((result . ,(loghead 128 (+ (* (logext 64 in1)
                                                   (logext 64 in2))
                                                in3)))))))
@@ -140,8 +140,8 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in3))
            (equal (sv::svtv-run (one-lane-mult2-svtv)
                                 (one-lane-mult2-svtv-autoins
-                                 :mode (mode :one-lane t
-                                             :signed nil)))
+                                 :mode (control-mode :one-lane t
+                                                     :signed nil)))
                   `((result . ,(loghead 128 (+ (* (loghead 64 in1)
                                                   (loghead 64 in2))
                                                in3)))))))
@@ -178,8 +178,8 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in3))
            (equal (sv::svtv-run (dotproduct-mult2-svtv)
                                 (dotproduct-mult2-svtv-autoins
-                                 :mode (mode :dot-product t
-                                             :signed t)))
+                                 :mode (control-mode :dot-product t
+                                                     :signed t)))
                   `((result . ,(loghead 128 (+ (* (logext 32 in1_0)
                                                   (logext 32 in2_0))
                                                (* (logext 32 in1_1)
@@ -204,8 +204,8 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in3))
            (equal (sv::svtv-run (dotproduct-mult2-svtv)
                                 (dotproduct-mult2-svtv-autoins
-                                 :mode (mode :dot-product t
-                                             :signed nil)))
+                                 :mode (control-mode :dot-product t
+                                                     :signed nil)))
                   `((result . ,(loghead 128 (+ (* (loghead 32 in1_0)
                                                   (loghead 32 in2_0))
                                                (* (loghead 32 in1_1)
@@ -260,8 +260,8 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in3_3))
            (equal (sv::svtv-run (four-lanes-mult2-svtv)
                                 (four-lanes-mult2-svtv-autoins
-                                 :mode (mode :four-lanes-lo t
-                                             :signed t)))
+                                 :mode (control-mode :four-lanes-lo t
+                                                     :signed t)))
                   `((result0 . ,(loghead 32 (+ (* (logext 32 in1_0)
                                                   (logext 32 in2_0))
                                                in3_0)))
@@ -294,8 +294,8 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in3_3))
            (equal (sv::svtv-run (four-lanes-mult2-svtv)
                                 (four-lanes-mult2-svtv-autoins
-                                 :mode (mode :four-lanes-lo t
-                                             :signed nil)))
+                                 :mode (control-mode :four-lanes-lo t
+                                                     :signed nil)))
                   `((result0 . ,(loghead 32 (+ (* (loghead 32 in1_0)
                                                   (loghead 32 in2_0))
                                                in3_0)))
@@ -331,8 +331,8 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in3_3))
            (equal (sv::svtv-run (four-lanes-mult2-svtv)
                                 (four-lanes-mult2-svtv-autoins
-                                 :mode (mode :four-lanes-hi t
-                                             :signed t)))
+                                 :mode (control-mode :four-lanes-hi t
+                                                     :signed t)))
                   `((result0 . ,(loghead 32 (+ (ash (* (logext 32 in1_0)
                                                        (logext 32 in2_0))
                                                     -32)
@@ -370,8 +370,8 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in3_3))
            (equal (sv::svtv-run (four-lanes-mult2-svtv)
                                 (four-lanes-mult2-svtv-autoins
-                                 :mode (mode :four-lanes-hi t
-                                             :signed nil)))
+                                 :mode (control-mode :four-lanes-hi t
+                                                     :signed nil)))
                   `((result0 . ,(loghead 32 (+ (ash (* (loghead 32 in1_0)
                                                        (loghead 32 in2_0))
                                                     -32)
@@ -408,9 +408,9 @@ four-lanes-hi and one-lane should be set to 1.~%")
             ("IN1[127:96]" _ _ in1[3] _ in1[7])
             ("IN2[127:96]" _ _ in2[3] _ in2[7])
             ("IN3" acc-init-val)
-            ("mode" ,(mode :acc-on t
-                           :dot-product t
-                           :reload-acc t)
+            ("mode" ,(control-mode :acc-on t
+                                   :dot-product t
+                                   :reload-acc t)
              mode mode mode mode))
   :outputs '(("result" _ _ _ _ result)))
 
@@ -456,9 +456,9 @@ four-lanes-hi and one-lane should be set to 1.~%")
   (implies (and (equal signed t)
                 (equal acc-size 128)
                 (equal dot-product-size 8)
-                (equal mode (mode :dot-product t
-                                  :acc-on t
-                                  :signed signed))
+                (equal mode (control-mode :dot-product t
+                                          :acc-on t
+                                          :signed signed))
                 (sequential-dotproduct-mult2-svtv-autohyps))
            (equal
             (sv::svtv-run (sequential-dotproduct-mult2-svtv)
@@ -473,9 +473,9 @@ four-lanes-hi and one-lane should be set to 1.~%")
   (implies (and (equal signed nil)
                 (equal acc-size 128)
                 (equal dot-product-size 8)
-                (equal mode (mode :dot-product t
-                                  :acc-on t
-                                  :signed signed))
+                (equal mode (control-mode :dot-product t
+                                          :acc-on t
+                                          :signed signed))
                 (sequential-dotproduct-mult2-svtv-autohyps))
            (equal
             (sv::svtv-run (sequential-dotproduct-mult2-svtv)

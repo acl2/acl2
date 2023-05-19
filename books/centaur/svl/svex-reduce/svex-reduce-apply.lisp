@@ -361,7 +361,13 @@
                (new-size (+ size2 (- size))))
             (hons-list 'sv::partsel new-start new-size var))))
         (t svex)))
-  
+
+(local
+ (defthm and*-of-repeated
+   (equal (and* x x)
+          x)
+   :hints (("Goal"
+            :in-theory (e/d (and*) ())))))
 
 (define svex-reduce-w/-env-apply-specials (fn args)
   :returns (res svex-p :hyp (and (FNSYM-P fn)
@@ -375,10 +381,14 @@
                (equal fn 'sv::?*))
           (equal-len args 3))
     (b* ((test (first args))
-         ((unless (4vec-p test)) (hons fn args))
-         (test (sv::3vec-fix test))
          (then (second args))
          (else (third args))
+         ((when (and*-exec (equal then else)
+                           (integerp then)))
+          then)
+         ((unless (4vec-p test)) (hons fn args))
+         (test (sv::3vec-fix test))
+         
          ((sv::4vec test))
          ((when (eql test.upper 0))
           else)
@@ -748,14 +758,45 @@
                              (:definition member-equal)))))))
 
 
+(local
+ (defthm 4vec-?/?*-of-repeated-then-else
+   (implies (and (integerp then)
+                 (equal then else))
+            (and (equal (sv::4vec-? test then else)
+                        then)
+                 (equal (sv::4vec-?* test then else)
+                        then)))
+   :hints (("goal"
+            :in-theory '((:definition sv::3vec-?)
+                         (:definition sv::3vec-?*)
+                         (:definition 4vec-?)
+                         (:definition 4vec-?*)
+                         (:definition acl2::binary-logeqv)
+                         (:definition ifix)
+                         (:definition logorc1)
+                         (:definition synp)
+                         (:executable-counterpart acl2::binary-logand)
+                         (:rewrite acl2::|(equal (if a b c) x)|)
+                         (:rewrite acl2::|(logior y x)|)
+                         (:rewrite sv::4vec->upper-and-lower-equivalance)
+                         (:rewrite 4vec->upper-and-lower-when-integerp)
+                         (:rewrite sv::4vec-equal)
+                         (:rewrite sv::4vec-fix-of-4vec)
+                         (:rewrite integerp-implies-4vecp)
+                         (:rewrite acl2::logand--1-x)
+                         (:rewrite acl2::logand-x-x)
+                         (:rewrite acl2::logior-0-x)
+                         (:rewrite bitops::logior-x-lognot-x . 1)
+                         (:rewrite acl2::logior-x-x)
+                         (:rewrite acl2::logxor-x-x))))))
+
 (svex-eval-lemma-tmpl
  (defthm svex-eval-of-svex-reduce-w/-env-apply-specials-correct
    (equal (svex-eval (svex-reduce-w/-env-apply-specials fn args) env)
           (svex-eval `(,fn . ,args) env))
    :hints (("Goal"
             :do-not-induct t
-            :expand ((sv::4vec->lower (car args))
-                     (svexlist-eval args env)
+            :expand ((svexlist-eval args env)
                      (svex-eval (car args) env)
                      (svex-kind (car args))
                      (svex-call->fn (car args))
@@ -774,7 +815,7 @@
                      (:free (x) (sv::svex-apply 'sv::bit?! x))
                      (:free (x) (sv::svex-apply 'sv::bit? x)))
             :in-theory (e/d (svex-reduce-w/-env-apply-specials
-                             4vec-?
+                             ;;4vec-?
                              sv::4vec-bitmux
                              sv::4vec-1mask
                              acl2::logite
@@ -782,13 +823,14 @@
                              svex-call->args
                              sv::4vec-bit?!
                              4vec-p
-                             4vec-?*
+                             ;;4vec-?*
                              sv::3vec-bit?
                              sv::3vec-?*
                              ;;sv::4vec-bit?!
                              sv::4vec-?!
-                             sv::4vec->upper
-                             sv::3vec-?)
+                             ;;sv::4vec->upper
+                             sv::3vec-?
+                             )
                             ((:TYPE-PRESCRIPTION 4VECLIST-NTH-SAFE)
                              (:DEFINITION ACL2::APPLY$-BADGEP)
                              (:REWRITE BITP-IMPLIES-4VECP)
@@ -800,8 +842,15 @@
                              (:TYPE-PRESCRIPTION
                               SV::INTEGERP-OF-4VEC->UPPER)
                              (:TYPE-PRESCRIPTION SV::4VEC-FIX$INLINE)
-                             (:TYPE-PRESCRIPTION ACL2::BINARY-LOGAND)
-                             ))))))
+                             (:TYPE-PRESCRIPTION ACL2::BINARY-LOGAND))))
+           (and stable-under-simplificationp
+                '(:expand ((SVEX-CALL->FN (CADR ARGS))
+                           (SVEX-KIND (CADR ARGS))
+                           (SVEX-EVAL (CADR ARGS) ENV)
+                           (:free (x) (sv::svex-apply 'sv::unfloat x))
+                           
+                           (:free (x y z) (sv::4vec-? x y z))
+                           (:free (x y z) (sv::4vec-?* x y z))))))))
 
 (local
  (defthm svex-eval-when-fn-is-absent

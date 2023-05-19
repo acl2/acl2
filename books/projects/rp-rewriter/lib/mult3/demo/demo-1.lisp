@@ -47,11 +47,11 @@
 
 
 ;; should be parsed in around a second.
-(parse-and-create-svtv :file "DT_SB4_HC_64_64_multgen.sv"
-                       :topmodule "DT_SB4_HC_64_64"
-                       :name my-multiplier-example)
+(parse-and-create-svtv :name my-multiplier-example
+                       :file "DT_SB4_HC_64_64_multgen.sv"
+                       :topmodule "DT_SB4_HC_64_64")
 
-(verify-svtv-of-mult :name my-multiplier-example
+(verify-svtv-of-mult :name my-multiplier-example 
                      :concl (equal result ;; output signal name
                                    ;; specification:
                                    (loghead 128 (* (logext 64 in1)

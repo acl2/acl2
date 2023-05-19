@@ -14,8 +14,19 @@
 (include-book "get-process-id")
 (include-book "get-username")
 (include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "read-acl2-oracle"))
+
+;; move
+;; Checks whether the ITEMS appear as a contiguous sublist within LIST.
+(defun list-containsp (items list)
+  (declare (xargs :guard (and (true-listp items)
+                              (true-listp list))))
+  (if (endp list)
+      (endp items) ; i guess we say the empty list is always contained?
+    (or (prefixp items list)
+        (list-containsp items (rest list)))))
 
 (in-theory (disable mv-nth)) ;make local?
 
@@ -131,8 +142,21 @@
                (digit-char-p char)
                (eql char  #\-)
                (eql char  #\_)
-               (eql char  #\/))
+               (eql char  #\/)
+               (eql char  #\.) ;elsewhere we disallow ..
+               )
            (temp-dir-chars-okp (rest chars))))))
+
+(defun safe-term-dir-to-deletep (temp-dir-name)
+  (declare (xargs :guard (stringp temp-dir-name)))
+  (let ((temp-dir-chars (coerce temp-dir-name 'list))
+        (expected-prefix (coerce *system-temp-dir-with-slash* 'list)))
+    (and ;; Temp dir name must start with the expected dir in /tmp:
+     (equal expected-prefix (take (len expected-prefix) temp-dir-chars))
+     ;; And it must contain only allowed characters (e.g., no spaces):
+     (temp-dir-chars-okp temp-dir-chars)
+     ;; And there is no ".." :
+     (not (list-containsp (coerce ".." 'list) temp-dir-chars)))))
 
 ;; Remove the temp dir whose name is stored in the state global (if the dir
 ;; exists).  Returns state.  The temp dir may go in and out of existence (e.g.,
@@ -145,13 +169,9 @@
        state)
     (mv-let (temp-dir-name state)
       (temp-dir-name state)
-      ;; Makes sure that the rm command doesn't do anything bad:
+      ;; Makes sure that the rm command will not do anything bad:
       (if (not (and (stringp temp-dir-name)
-                    (let ((temp-dir-chars (coerce temp-dir-name 'list))
-                          (expected-prefix (coerce *system-temp-dir-with-slash* 'list)))
-                      (and (temp-dir-chars-okp temp-dir-chars)
-                           (equal expected-prefix
-                                  (take (len expected-prefix) temp-dir-chars))))))
+                    (safe-term-dir-to-deletep temp-dir-name)))
           (prog2$ (er hard? 'maybe-remove-temp-dir "Bad temp dir name: ~x0." temp-dir-name)
                   state)
         (progn$

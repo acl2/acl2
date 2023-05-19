@@ -12,3 +12,4 @@
 
 (include-book "AbsLong")
 (include-book "Prefix")
+(include-book "BinarySearch")

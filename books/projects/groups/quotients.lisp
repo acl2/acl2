@@ -274,6 +274,12 @@
 		(in x g))
 	   (divides (ord x g) (order g))))
 
+(defthmd power-order
+  (implies (and (groupp g)
+                (in x g))
+	   (equal (power x (order g) g)
+	          (e g))))
+
 (defthm primep-cyclicp
   (implies (and (groupp g)
 		(primep (order g)))

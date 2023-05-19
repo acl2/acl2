@@ -64,6 +64,8 @@
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
+(include-book "kestrel/bv-lists/logext-list" :dir :system)
+(include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/utilities/file-io-string-trees" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system) ; for newline-string
@@ -81,6 +83,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (in-theory (disable open-output-channels open-output-channel-p1))
@@ -140,8 +143,11 @@
            (equal x y))
   :rule-classes nil)
 
-(defund print-counterexample (cex dag-array-name dag-array)
+;; TODO: Also chop arrays whose lengths are not powers of 2?
+(defund print-counterexample (cex cut-nodenum-type-alist print-signedp dag-array-name dag-array)
   (declare (xargs :guard (and (counterexamplep cex)
+                              (nodenum-type-alistp cut-nodenum-type-alist)
+                              (booleanp print-signedp) ; whether to print BVs as signed integers
                               (if (consp cex)
                                   (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem (strip-cars cex))))
                                 t))))
@@ -150,12 +156,32 @@
     (b* ((entry (first cex))
          (nodenum (car entry))
          (value (cdr entry))
-         ;(expr (aref1 dag-array-name dag-array nodenum))
+         (type (lookup-safe nodenum cut-nodenum-type-alist))
+         ;;(expr (aref1 dag-array-name dag-array nodenum))
          (expr (dag-to-term-aux-array dag-array-name dag-array nodenum))
+         (value (if (and print-signedp (symbolp expr)) ; for now, only do it for vars
+                    (if (bv-typep type)
+                        (let ((width (bv-type-width type)))
+                          (if (not (unsigned-byte-p width value))
+                              (er hard? 'print-counterexample "Wrong type value, ~x0, for node ~x1 (should be a BV of size ~x2)." value nodenum width)
+                            (if (posp width)
+                                (logext width value)
+                              (er hard? 'print-counterexample "Can't treat a BV as signed when it has width 0."))))
+                      (if (bv-array-typep type)
+                          (let ((array-len (bv-array-type-len type))
+                                (element-width (bv-array-type-element-width type)))
+                            (if (posp element-width)
+                                 ; todo: drop the bvchop-list and the true-list-fix?
+                                (logext-list element-width (bvchop-list element-width
+                                                                        (take array-len (true-list-fix value)) ; todo: ensure there are at least enough (there may be extra elements if we rounded the array size up to a power of 2
+                                                                        ))
+                              (er hard? 'print-counterexample "Can't treat an array as signed when its elements are of width 0.")))
+                        value))
+                  value))
          (- (cw "  Node ~x0: ~x1 is ~x2." nodenum expr value))
          ;; Print newline unless this is the last line:
          (- (and (consp (rest cex)) (cw "~%"))))
-      (print-counterexample (rest cex) dag-array-name dag-array))))
+      (print-counterexample (rest cex) cut-nodenum-type-alist print-signedp dag-array-name dag-array))))
 
 (defund maybe-shorten-filename (base-filename)
   (declare (xargs :guard (stringp base-filename)))
@@ -1751,8 +1777,8 @@
                         ":0])")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
-        (leftrotate32 ;; (leftrotate32 amt val)
-         ;;fixme handle leftrotate with any power of 2 size?
+        (leftrotate32 ;; (leftrotate32 amt val) where amt is a constant
+         ;; todo: handle leftrotate with any power of 2 size?
          (if (and (= 2 (len (dargs expr)))
                   (quoted-natp (darg1 expr)) ;todo: think about 0
                   (bv-arg-okp (darg2 expr)))
@@ -1765,19 +1791,18 @@
                               "[31:0])")
                        constant-array-info)
                  ;;main case:
-                 (let ((low-slice-size (- 32 shift-amt)) ;bad name?
+                 (let ((low-slice-size (- 32 shift-amt))
                        ;;high-slice-size is shift-amt
-                       )
+                       (translated-arg (translate-bv-arg (darg2 expr) 32 dag-array-name dag-array dag-len cut-nodenum-type-alist)))
                    (mv (erp-nil)
                        (list* "("
-                              (translate-bv-arg (darg2 expr) 32 ;or should we use low-slice-size?
-                                                dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                              translated-arg
                               "["
-                              (nat-to-string-debug (+ -1 low-slice-size))
+                              (nat-to-string (+ -1 low-slice-size))
                               ":0]@"
-                              (translate-bv-arg (darg2 expr) 32 dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                              translated-arg
                               "[31:"
-                              (nat-to-string-debug low-slice-size) "])")
+                              (nat-to-string low-slice-size) "])")
                        constant-array-info))))
            (mv (erp-t) nil constant-array-info)))
         (equal
@@ -2407,6 +2432,7 @@
                               max-conflicts ;a number of conflicts!, or nil for no max
                               constant-array-info ;may get an entry when we create translated-query-core (e.g., if a term is equated to a constant array)
                               counterexamplep
+                              print-cex-as-signedp
                               state)
   (declare (xargs :guard (and (nat-listp nodenums-to-translate)
                               (stringp extra-string)
@@ -2417,6 +2443,7 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
                               (symbolp dag-array-name)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-< nodenums-to-translate dag-len)
@@ -2481,7 +2508,7 @@
        (- (and print
                counterexamplep
                (b* ((- (cw "(Counterexample:~%"))
-                    (- (print-counterexample counterexample dag-array-name dag-array))
+                    (- (print-counterexample counterexample cut-nodenum-type-alist print-cex-as-signedp dag-array-name dag-array))
                     (- (cw ")~%")))
                  nil)))
        ;; ((when (eq result *error*)) ;todo: can this happen or would a hard error have already been thrown?
@@ -2518,6 +2545,7 @@
                                                       max-conflicts
                                                       constant-array-info
                                                       counterexamplep
+                                                      print-cex-as-signedp
                                                       state))))
              (or (eq *error* res)
                  (eq *valid* res)
@@ -2547,6 +2575,7 @@
                                                       max-conflicts
                                                       constant-array-info
                                                       counterexamplep
+                                                      print-cex-as-signedp
                                                       state)))
          (w state))
   :hints (("Goal" :in-theory (e/d (prove-query-with-stp) (w)))))
@@ -2566,6 +2595,7 @@
                                        print
                                        max-conflicts ;a number of conflicts, or nil for no max
                                        counterexamplep
+                                       print-cex-as-signedp
                                        state)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (or (myquotep lhs)
@@ -2575,6 +2605,7 @@
                                   (and (natp rhs)
                                        (< rhs dag-len)))
                               (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
                               (stringp base-filename)
                               (symbolp dag-array-name)
                               (consp nodenums-to-translate) ;why?
@@ -2598,6 +2629,7 @@
                           cut-nodenum-type-alist
                           print max-conflicts constant-array-info
                           counterexamplep
+                          print-cex-as-signedp
                           state)))
 
 (defthmd prove-equality-query-with-stp-return-type
@@ -2613,6 +2645,7 @@
                                                                print
                                                                max-conflicts
                                                                counterexamplep
+                                                               print-cex-as-signedp
                                                                state))))
              (or (eq *error* res)
                  (eq *valid* res)

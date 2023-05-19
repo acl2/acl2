@@ -40,7 +40,6 @@
 
 (include-book "rewriter-common")
 (include-book "supporting-nodes") ; for drop-non-supporters-array
-(include-book "make-node-replacement-alist")
 ;(include-book "node-replacement-array2")
 (include-book "node-replacement-array3")
 (include-book "refined-assumption-alists2")
