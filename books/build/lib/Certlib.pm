@@ -980,7 +980,7 @@ sub find_deps {
 	    $certinfo->image($paramimage || $imagefileimage);
 	}
     }
-    if ($certinfo->image) {
+    if ($certinfo->image && $imagefile_src_dir) {
 	add_image_deps($certinfo->image, $depdb, $lispfile);
     }
 
@@ -1509,18 +1509,27 @@ sub add_image_deps {
     	return;
     }
 
-    $depdb->certdeps->{$targetimage} = 0;
-
-    print "add_image_deps $target\n" if $debugging;
-
     if (! $imagefile_src_dir) {
 	print STDERR "Can't get dependencies of saved image $target because --image-sources/ACL2_IMAGE_SRC_DIR isn't set.\n";
+	$depdb->certdeps->{$targetimage} = new Certinfo;
+	return;
 	
     }
     # We need to somehow map from the image name to the location of
     # the source file. For now, we're just going to use a configured
     # path for all images; will need to revisit this later.
     my $lspfile = canonical_path(File::Spec->catfile($imagefile_src_dir, $target . ".lsp"));
+
+    if (! -e $lspfile) {
+	# The file doesn't exist in the expected place.
+	print STDERR "Skipping dependencies of saved image $target -- build file not found in image source dir\n";
+	$depdb->certdeps->{$targetimage} = new Certinfo;
+	return;
+    }
+    
+    $depdb->certdeps->{$targetimage} = 0;
+
+    print "add_image_deps $target\n" if $debugging;
 
     # What should we do when cleaning?  Delete images?  Leave it for now
     # clean_generated_files($base) if ($clean_certs);
