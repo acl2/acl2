@@ -186,10 +186,9 @@ phases and value is toggled.</p>")
 (fty::defprod svtv*-input
   ((setting svtv-entry-p)
    (toggle maybe-posp :rule-classes :type-prescription)
-   ;; Hold NIL means don't hold
    ;; Hold 0 means hold forever.
-   ;; Hold N (posp) means hold N additional cycles.
-   (hold maybe-natp :rule-classes :type-prescription))
+   ;; Hold N (posp) means hold N stages total. 1 is the default.
+   (hold natp :rule-classes :type-prescription :default 1))
   :layout :list)
 
 (fty::defalist svtv*-input-alist :key-type stringp :val-type svtv*-input :true-listp t)
@@ -232,6 +231,7 @@ phases and value is toggled.</p>")
 (define svtv*-parse-input (x overridep)
   :returns (mv (input-entry svtv*-input-alist-p)
                (output-entry svtv*-output-alist-p))
+  :guard-debug t
   ;; :mode :program
   (b* ((intype (if overridep "Override" "Input"))
        ((unless (true-listp x))
@@ -276,7 +276,8 @@ phases and value is toggled.</p>")
                  (cdr (assoc :toggle kwd-alist))))
        (hold   (if (eq t (cdr (assoc :hold kwd-alist)))
                    0
-                 (cdr (assoc :hold kwd-alist))))
+                 (or (cdr (assoc :hold kwd-alist))
+                     1)))
        ((unless overridep)
         (mv (list (cons signame (make-svtv*-input :setting entry :toggle toggle :hold hold))) nil))
        ;; Couple of extra things to check for overrides.
@@ -491,14 +492,12 @@ phases and value is toggled.</p>")
        ((when (zp nphases)) nil)
        ((when (svtv-dontcare-p entry.setting))
         (repeat nphases entry.setting))
-       ((when entry.hold)
+       ((unless entry.toggle)
         (if (eql entry.hold 0)
             (repeat nphases entry.setting)
-          (b* ((reps (min nphases (+ 1 entry.hold))))
+          (b* ((reps (min nphases entry.hold)))
             (append (repeat reps entry.setting)
                     (repeat (- nphases reps) '&)))))
-       ((unless entry.toggle)
-        (cons entry.setting (repeat (1- nphases) '&)))
        ;; toggle is positive
        ((unless (svtv-condoverride-p entry.setting))
         (b* (((unless (4vec-p entry.setting))

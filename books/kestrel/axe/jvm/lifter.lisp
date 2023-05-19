@@ -61,7 +61,7 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/utilities/auto-termination" :dir :system)
-(include-book "../prune") ; for maybe-prune-dag-precisely
+(include-book "../prune-dag-precisely")
 (include-book "kestrel/jvm/symbolic-execution2" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)

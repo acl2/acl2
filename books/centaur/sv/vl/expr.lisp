@@ -3973,12 +3973,13 @@ functions can assume all bits of it are good.</p>"
                           :msg "Unresolved reps in multiple concatenation ~a0"
                           :args (list x))
                   (svex-x)))
-             (reps (vl-resolved->val x.reps))
-             ((unless (<= 0 reps))
-              (mv (vfatal :type :vl-expr-to-svex-fail
-                          :msg "Negative value for reps in multiple concatenation ~a0"
-                          :args (list x))
-                  (svex-x)))
+             (reps (nfix (vl-resolved->val x.reps)))
+             ;; Already warned about this in sizing
+             ;; ((unless (<= 0 reps))
+             ;;  (mv (vfatal :type :vl-expr-to-svex-fail
+             ;;              :msg "Negative value for reps in multiple concatenation ~a0"
+             ;;              :args (list x))
+             ;;      (svex-x)))
              ((when (member nil sizes))
               (mv vttree (svex-x)))
              (svex
@@ -4742,7 +4743,7 @@ functions can assume all bits of it are good.</p>"
                           :args (list orig-x))
                   nil
                   (svex-x)))
-             (reps (vl-resolved->val x.reps))
+             (reps (nfix (vl-resolved->val x.reps)))
              ((unless (eql (* reps (len subexprs)) arrsize))
               (mv (vfatal :type :vl-expr-to-svex-fail
                           :msg "Wrong number of elements in positional assignment ~

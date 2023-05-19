@@ -575,8 +575,15 @@ remove_file_if_exists($outfile);
 write_whole_file($outfile, $HEADER);
 
 
-# --- Scan the source file for includes (to collect the portculli) and resource limits ----
+# --- Scan the source file and .acl2 file for various things ----
+my $acl2file = (-f "$file.acl2") ? "$file.acl2"
+    : (-f "cert.acl2")  ? "cert.acl2"
+    : "";
+
 my ($max_mem, $max_time, $includes, $book_pbs, $book_image) = scan_source_file("$file.lisp");
+my ($acl2_max_mem, $acl2_max_time, $acl2_includes, $acl2_pbs, $acl2_image)
+    = $acl2file ? scan_source_file($acl2file) : (0, 0, [], [], 0);
+
 $max_mem = $max_mem ? ($max_mem + 3) : 4;
 $max_time = $max_time || 240;
 
@@ -586,6 +593,7 @@ $ENV{"CERT_GOALFILE"} = $goal;
 
 # Override ACL2 per the image file, as appropriate.
 my $acl2 = $book_image;
+$acl2 = $acl2_image if !$acl2;
 $acl2 = read_whole_file_if_exists("$file.image") if !$acl2;
 $acl2 = read_whole_file_if_exists("cert.image") if !$acl2;
 $acl2 = $default_acl2 if !$acl2;
@@ -628,14 +636,8 @@ $instrs .= "$INHIBIT\n" if ($INHIBIT);
 $instrs .= "\n";
 
 
-# Get the certification instructions from foo.acl2 or cert.acl2, if either
-# exists, or make a generic certify-book command.
-my $acl2file = (-f "$file.acl2") ? "$file.acl2"
-    : (-f "cert.acl2")  ? "cert.acl2"
-    : "";
 
 my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
-my $acl2_pbs = $acl2file ? extract_pbs_from_acl2file($acl2file) : [];
 
 # Don't hideously underapproximate timings in event summaries
 $instrs .= "(acl2::assign acl2::get-internal-time-as-realtime acl2::t)\n";

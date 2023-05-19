@@ -2620,6 +2620,12 @@ theorem proved in FGL and the generalized corollary this macro generates.</p>
 
 <h3>Arguments</h3>
 
+<p>Several arguments come in pairs with the naming convention
+@(':<arg>, :more-<arg>').  This allows one of these (typically the @(':more')
+version) to be set by the defaults table while the other still be set in
+individual theorems.  We note below which arguments support this and how the
+two arguments are combined.</p>
+
 <ul>
 
 <li>@(':svtv') is the name of the SVTV.  This argument must always be provided
@@ -2630,33 +2636,40 @@ either explicitly or via the defaults table.</li>
 <li>@(':input-vars') are the names of any input variables of the SVTV that will
 appear in the hypothesis or conclusion, except those that are bound in
 @(':input-var-bindings'). Instead of a list of signals, users may pass \":all\"
-parameter to get all the input variables that are not bound.</li>
+parameter to get all the input variables that are not bound.  If not @(':all'),
+additional input variables can be specified in @(':more-input-vars'); the two
+sets of input variables are appended.</li>
 
-<li>@(':input-var-bindings') is a list of @('let')-like bindings of input
-variables to expressions.</li>
+<li>@(':input-var-bindings') (appended with @(':more-input-var-bindings) is a
+list of @('let')-like bindings of input variables to expressions.</li>
 
-<li>@(':override-vars') is a list of override-value variables of the SVTV to be
+<li>@(':override-vars') (appended with @(':more-override-vars'))
+is a list of override-value variables of the SVTV to be
 overridden in the FGL lemma but not overridden in the generalized theorem.
 Each such variable must have a corresponding output sampling the same signal at
 the same time so as to support eliminating the override.</li>
 
-<li>@(':override-var-bindings') is a list of @('let')-like bindings of override
+<li>@(':override-var-bindings') (appended with @(':more-override-var-bindings'))
+is a list of @('let')-like bindings of override
 value variables to expressions, to be overridden in the lemma but not
 overridden in the generalized theorem.  Each such variable must have a
 corresponding output sampling the same signal at the same time so as to support
 eliminating the override.</li>
 
-<li>@(':spec-override-vars') is a list of override-value variables of the SVTV
+<li>@(':spec-override-vars') (appended with @(':more-spec-override-vars'))
+is a list of override-value variables of the SVTV
 to be overridden in both the FGL theorem and the resulting generalized theorem.
 The difference between @(':override-vars') and @(':spec-override-vars') is that
 the @(':override-vars') will not be overridden in the generalized theorem, but
 the @(':spec-override-vars') still will.</li>
 
-<li>@(':spec-override-var-bindings') is a list of @('let')-like bindings of
+<li>@(':spec-override-var-bindings') (appended with @(':more-spec-override-var-bindings'))
+is a list of @('let')-like bindings of
 override value variables to expressions, which will be overridden in both the
 FGL theorem and generalized theorem.</li>
 
-<li>@(':output-vars') is a list of output variables of the SVTV that are used in the conclusion.</li>
+<li>@(':output-vars') (appended with @(':more-output-vars'))
+is a list of output variables of the SVTV that are used in the conclusion.</li>
 
 <li>@(':output-parts') is a list of 4vec expressions -- part selects, zero
 extends, shifts, concatenations -- of the output variables.  The given parts of
@@ -2664,9 +2677,9 @@ the outputs will be proved to be integerp in order to use a monotonicity
 argument.  Variables that are not mentioned in output-parts will be proved
 integerp as a whole.</li>
 
-<li>@(':hyp') is a term (default T), which may reference variables
-listed in input-vars and override-vars as well as variables used in the
-expressions of input-bindings</li>
+<li>@(':hyp') (conjoined with @(':more-hyp') is a term (default T), which may
+reference variables listed in input-vars and override-vars as well as variables
+used in the expressions of input-bindings.</li>
 
 <li>@(':concl') is a term which may reference the same variables available to
 @(':hyp') as well as the output-vars.</li>

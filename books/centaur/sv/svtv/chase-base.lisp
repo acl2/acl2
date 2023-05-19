@@ -336,7 +336,7 @@
 
 
 (define svtv-chase-deps ((var svar-p)
-                         (phase integerp)
+                         (phase natp)
                          (rsh natp)
                          (mask 4vmask-p)
                          &key
@@ -347,17 +347,17 @@
                (vars 4vmask-alist-p)
                (expr svex-p))
   (b* (((svtv-chase-data svtv-chase-data))
-       (phase (lifix phase))
+       (phase (lnfix phase))
        (var (svar-fix var))
        (type
-        (b* (((when (< phase 0))
-              :initst)
-             (svex (svex-fastlookup var svtv-chase-data.updates))
+        (b* ((svex (svex-fastlookup var svtv-chase-data.updates))
              ((when svex)
               :update)
              (prev-var-look (hons-get var (svex-alist-fix svtv-chase-data.delays)))
              ((when prev-var-look)
-              :prevst))
+              (if (eql phase 0)
+                  :initst
+                :prevst)))
           :input))
 
        ((when (or (eq type :input)
@@ -1433,7 +1433,7 @@ What you can enter at the SVTV-CHASE prompt:
              (svtv-chase-data (svtv-chase-signal-data
                                (make-chase-position
                                 :path (address->path name)
-                                :phase new-phase
+                                :phase (- new-phase (svar->delay new-var))
                                 :rsh rsh :mask mask))))
           (mv nil svtv-chase-data state)))
        ((when (symbolp obj))
@@ -1599,47 +1599,6 @@ What you can enter at the SVTV-CHASE prompt:
     :hints(("Goal" :in-theory (enable member-equal)))))
 
   
-
-(define svtv-chase-repl1 (&key
-                         ((moddb moddb-ok) 'moddb)
-                         (aliases 'aliases)
-                         (svtv-chase-data 'svtv-chase-data)
-                         (state 'state))
-  :guard (and (open-input-channel-p *standard-oi* :object state)
-              ;; (svarlist-addr-p (svexlist-collect-vars (svex-alist-vals (debugdata->override-assigns debugdata))))
-              ;; (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
-              (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
-              (<= (moddb-mod-totalwires (svtv-chase-data->modidx svtv-chase-data) moddb)
-                  (aliass-length aliases))
-              ;; (svarlist-addr-p (aliases-vars aliases))
-              )
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable svtv-chase-datap)
-                       :do-not-induct t)))
-  :returns (mv new-svtv-chase-data new-state)
-  :measure (file-measure *standard-oi* state)
-  :parents (svtv-chase)
-  :short "Re-enter the @(see svtv-chase) read-eval-print loop, with no change to the environment or SVTV."
-  (b* (((mv exitp svtv-chase-data state) (svtv-chase-rep))
-       ((when exitp)
-        (cw! "~%Exiting SVTV-CHASE.  You may execute ~x0 to re-enter or ~x1 ~
-              to change the simulation inputs.~%"
-             '(svtv-chase-repl) '(svtv-chase-update env))
-        (mv svtv-chase-data state)))
-    (svtv-chase-repl1))
-
-  ///
-  (defret nth-of-<fn>
-    (implies (not (member-equal (nfix n) (list *svtv-chase-data->smartp*
-                                               *svtv-chase-data->stack*
-                                               *svtv-chase-data->sigtype*
-                                               *svtv-chase-data->vars*
-                                               *svtv-chase-data->expr*
-                                               *svtv-chase-data->print-with-mask-mode*
-                                               *svtv-chase-data->print-overrides-mode*)))
-             (equal (nth n new-svtv-chase-data)
-                    (nth n svtv-chase-data)))))
-
 
 (define svtv-chase-repl1 (&key
                          ((moddb moddb-ok) 'moddb)

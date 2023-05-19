@@ -14340,6 +14340,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     trust-mfc
     with-global-stobj
     with-cbd
+    with-current-package
     ))
 
 (defun untouchable-marker (mac)

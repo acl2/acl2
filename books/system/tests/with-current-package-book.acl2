@@ -1,0 +1,11 @@
+(include-book "tools/run-script" :dir :system)
+(defpkg "MY-PKG" nil)
+(run-script "with-current-package")
+
+; Help dependency scanner.
+#||
+(depends-on "with-current-package-input.lsp")
+(depends-on "with-current-package-log.txt")
+||#
+
+; cert-flags: ? t :ttags :all
