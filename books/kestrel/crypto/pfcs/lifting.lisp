@@ -13,11 +13,14 @@
 (include-book "semantics-shallow")
 (include-book "proof-support")
 
+(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+
 (local (include-book "omap-lib-ext"))
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/lists/union" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -90,7 +93,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-definition-thm ((def definitionp) (prime symbolp))
+(fty::defprod lift-info
+  :short "Fixtype of information about lifted PFCSes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are stored in the @(see lift-table).
+     For each lifted PFCS definition,
+     we store the abstract syntax of the definition
+     and a list of terms used as hypotheses in generated theorems.
+     Each term in the list says that
+     looking up a certain PFCS definition by name
+     yields the expected abstract syntax of the definition;
+     there is one such term
+     for the PFCS definition that the information refers to,
+     and one such term for each PFCS definition
+     directly or indirectly called by
+     the PFCS definition that the information refers to."))
+  ((def definition)
+   (hyps true-list))
+  :pred lift-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection lift-table
+  :short "Table of information about lifted PFCSes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For each lifted PFCS definition,
+     we store an entry in this table
+     whose key is the definition name (a symbol)
+     and whose value is the information of type @(tsee lift-info)."))
+
+  (table lift-table nil nil
+    :guard (and (symbolp acl2::key)
+                (lift-infop acl2::val))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-thm-def-hyps ((def definitionp) (wrld plist-worldp))
+  :returns (hyps true-listp)
+  :short "Hypotheses about certain relations having the expected definitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are hypotheses in the generated lifting theorems.
+     For each relation,
+     whose definition is the @('def') parameter passed to this function,
+     we need the hypothesis that looking up the relation in @('defs')
+     (the latter is the variable, in the generated theorem,
+     holding the definitions with respect to which the semntics is given)
+     yields @('def').
+     We also need the cumulative hypotheses of the same form
+     of the relations called directly or indirectly by @('def'):
+     these are retrieved from the table of lifted PFCSes,
+     taking the set-like union (thus avoiding duplicates)
+     of each relation called."))
+  (b* (((definition def) def)
+       (hyp `(equal (lookup-definition ',def.name defs) ',def))
+       (crels (constraint-list-constrels def.body))
+       (tab (table-alist+ 'lift-table wrld))
+       (more-hyps (lift-thm-def-hyps-aux crels tab)))
+    (cons hyp more-hyps))
+
+  :prepwork
+  ((define lift-thm-def-hyps-aux ((crels constrel-setp) (tab alistp))
+     :returns (more-hyps true-listp)
+     :parents nil
+     (b* (((when (set::empty crels)) nil)
+          (crel (set::head crels))
+          (name (constrel->name crel))
+          (info (assoc-eq name tab))
+          ((unless info)
+           (raise "Internal error: ~x0 not in table." name))
+          ((unless (lift-infop info))
+           (raise "Internal error: ~x0 has the wrong type." info))
+          (hyps (lift-info->hyps info))
+          (more-hyps (lift-thm-def-hyps-aux (set::tail crels) tab)))
+       (union-equal hyps more-hyps)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sesem-definition-thm ((def definitionp)
+                              (prime symbolp)
+                              (wrld plist-worldp))
   :returns (event pseudo-event-formp)
   :short "Generate theorem connecting deeply and shallowly embedded semantics."
   :long
@@ -136,11 +223,11 @@
                                         def.name
                                         '-to-shallow)
                                   def.name))
+       (def-hyps (lift-thm-def-hyps def wrld))
 
        ((when (equal free nil))
         `(defruled ,thm-name
-           (implies (and (equal (lookup-definition ',def.name defs)
-                                ',def)
+           (implies (and ,@def-hyps
                          ,@(sesem-gen-fep-terms def.para prime))
                     (equal (definition-satp
                              ',def.name defs (list ,@def.para) ,prime)
@@ -206,8 +293,7 @@
                       ,@def.para ,prime)))
 
     `(defruled ,thm-name
-       (implies (and (equal (lookup-definition ',def.name defs)
-                            ',def)
+       (implies (and ,@def-hyps
                      ,@(sesem-gen-fep-terms def.para prime)
                      (posp ,prime))
                 (equal (definition-satp
@@ -393,13 +479,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-fn ((def definitionp) (prime symbolp))
+(define lift-fn ((def definitionp) (prime symbolp) (wrld plist-worldp))
   :returns (event pseudo-event-formp)
   :short "Lift a deeply embedded PFCS definition
           to a shallowly embedded PFCS definition
           with a theorem relating the two."
   (b* ((event-fn (sesem-definition def prime))
-       (event-thm (sesem-definition-thm def prime)))
+       (event-thm (sesem-definition-thm def prime wrld)))
     `(encapsulate ()
        ,event-fn
        ,event-thm)))
@@ -421,4 +507,4 @@
      to use for the prime that parameterizes the PFCS semantics.
      It is @('p') by default.
      This is quoted (not evaluated) for processing."))
-  `(make-event (lift-fn ,def ',prime)))
+  `(make-event (lift-fn ,def ',prime (w state))))
