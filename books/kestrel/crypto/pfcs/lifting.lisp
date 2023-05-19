@@ -195,6 +195,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lift-thm-omap-keys-lemma-instances ((vars symbol-listp)
+                                            (witness "A term."))
+  :returns (lemma-instances true-listp)
+  :short "Calculate lemmas instances for the lifting theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate one lemma instance for each variable passed as input.
+     The lemma is the same for all instances."))
+  (cond ((endp vars) nil)
+        (t (cons `(:instance lift-rule-omap-in-to-in-of-keys
+                             (key ',(car vars))
+                             (map ,witness))
+                 (lift-thm-omap-keys-lemma-instances (cdr vars) witness)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lift-thm ((def definitionp) (prime symbolp) (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
                (def-hyps true-listp))
@@ -394,7 +411,7 @@
            :use ((:instance ,(add-suffix-to-fn def.name "-SUFF")
                             ,@(lift-thm-free-inst
                                free constraint-relation-satp-witness))
-                 ,@(lift-thm-aux2
+                 ,@(lift-thm-omap-keys-lemma-instances
                     (append def.para free)
                     constraint-relation-satp-witness)))
 
@@ -470,15 +487,7 @@
 
   :prepwork
 
-  ((define lift-thm-aux2 ((vars symbol-listp) (witness "A term."))
-     :returns (lemma-instances true-listp)
-     (cond ((endp vars) nil)
-           (t (cons `(:instance lift-rule-omap-in-to-in-of-keys
-                                (key ',(car vars))
-                                (map ,witness))
-                    (lift-thm-aux2 (cdr vars) witness)))))
-
-   (define lift-thm-aux3 ((free symbol-listp) (witness "A term."))
+  ((define lift-thm-aux3 ((free symbol-listp) (witness "A term."))
      :returns (terms true-listp)
      (cond ((endp free) (raise "Error."))
            ((endp (cdr free)) (list witness))
