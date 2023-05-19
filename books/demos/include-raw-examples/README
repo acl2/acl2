@@ -1,0 +1,11 @@
+The following two subdirectories approach the problem of modifying
+memory accesses for "special" addresses.  Details are in file mem.lisp
+in each directory (see especially comments near the top), but in
+summary:
+
+- mem-access-sound/ uses wrappers for reading and writing memory,
+  which bypass the primitive read and write operations when given a
+  special address; and
+
+- mem-access-unsound/ modifies the behavior of stobj primitives at
+  special addresses, in a way that is unsound.
