@@ -142,7 +142,11 @@
     ;; do we need these?:
     car-of-new-ads-slice
     cdr-of-new-ads-slice
-    ))
+
+    equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg3
+    equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg3-alt
+    equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg2
+    equal-of-nth-new-ad-and-myif-of-nth-new-ad-arg2-alt))
 
 (defun address-rules ()
   (declare (xargs :guard t))
@@ -173,7 +177,18 @@
   '(run-until-return ;opens to run-until-return-from-stack-height
     ;;these are used when we have a single make-state, not a myif-nest of states:
     run-until-return-from-stack-height-opener-fast-axe ;this goes straight to do-inst
-    run-until-return-from-stack-height-base-axe))
+    run-until-return-from-stack-height-base-axe
+    ;; Stuff to get rid of step around exception states:
+    step-state-with-pc-and-call-stack-height-of-obtain-and-throw-exception
+    <-of-constant-and-call-stack-size-when-negative
+    posp-of-+-of-constant
+    integerp-of-call-stack-size
+    inverse-of-+
+    distributivity-of-minus-over-+
+    associativity-of-+
+    +-commutative-2-axe
+    +-commutative-axe
+    +-combine-constants))
 
 ;; These really split the execution when a branch is encountered. ;; Always
 ;; push run-until-return-from-stack-height into myif branches.
@@ -250,7 +265,8 @@
     jvm::locals-constant-opener
     jvm::stack-constant-opener
     jvm::method-info-constant-opener
-    jvm::method-designator-constant-opener))
+    jvm::method-designator-constant-opener
+    jvm::exception-handler-targets-constant-opener))
 
 ;; Rules for executing JVM instructions and model methods (but not for
 ;; simplifying JVM expressions/states -- those are separate).
@@ -780,6 +796,8 @@
             jvm::top-long-of-push-long
             jvm::pop-long-of-push-long
             jvm::pop-operand-of-pop-operand-of-push-long ;does this break the operand stack abstraction?
+            popn-frames-opener
+            popn-frames-of-0
 
             ;; rules about operand-stack-size:
             jvm::operand-stack-size-of-empty-operand-stack

@@ -6584,7 +6584,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :rule-classes :forward-chaining)
 
 (defun throw-nonexec-error (fn actuals)
-  (declare (xargs :guard
+  (declare (xargs :mode :logic
+                  :guard
 
 ; An appropriate guard would seem to be the following.
 
@@ -6597,8 +6598,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; guard-checking has been set to :none.  A simple fix is to replace the actuals
 ; if they are ill-formed, and that is what we do.
 
-                  t
-                  :verify-guards nil)
+                  t)
            #+acl2-loop-only
            (ignore fn actuals))
   #-acl2-loop-only
@@ -14021,6 +14021,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     initialize-accumulated-warnings
     ev-rec-return-last
     chk-return-last-entry
+    chk-return-last-entry-coda
     fchecksum-atom
     step-limit-error1
     waterfall1-lst@par ; for #+acl2-par
@@ -14036,7 +14037,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     certify-book-finish-complete
     chk-absstobj-invariants
     get-stobj-creator
-    iprint-oracle-updates
     iprint-oracle-updates@par
     ld-fix-command
     update-enabled-structure-array
@@ -14242,6 +14242,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     #-acl2-devel apply$-lambda
     #-acl2-devel apply$-prim
     #-acl2-devel ilks-plist-worldp
+    iprint-oracle-updates
   ))
 
 (defconst *initial-macros-with-raw-code*
@@ -17319,7 +17320,27 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (t ; default
            t))))
 
-(table acl2-defaults-table nil nil
+(defmacro set-table-guard (name guard &key topic show coda)
+  `(table ,name nil nil
+          :guard
+          (if ,guard
+              (mv t nil)
+            (mv nil
+                (msg "The TABLE :guard for ~x0 disallows the combination of ~
+                      key ~x1 and value ~x2.~#3~[  ~@4~/~]  See :DOC ~
+                      ~x5.~@6"
+                     ',name key val
+                     ,(if show 0 1)
+                     ,(and show ; optimization
+                           `(msg "The :guard requires ~x0." ',guard))
+                     ',(or topic name)
+                     (let ((coda ,coda))
+                       (if coda
+                           (msg "  ~@0" coda)
+                         "")))))))
+
+(set-table-guard
+ acl2-defaults-table
 
 ; Warning: If you add or delete a new key, there will probably be a change you
 ; should make to a list in chk-embedded-event-form.  (Search there for
@@ -17337,102 +17358,101 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;                           (get 'acl2-defaults-table
 ;                                *current-acl2-world-key*)))))
 
-       :guard
-       (cond
-        ((eq key :defun-mode)
-         (member-eq val '(:logic :program)))
-        ((eq key :verify-guards-eagerness)
-         (member val '(0 1 2)))
-        ((eq key :enforce-redundancy)
-         (member-eq val '(t nil :warn)))
-        ((eq key :compile-fns)
-         (member-eq val '(t nil)))
-        ((eq key :measure-function)
-         (and (symbolp val)
-              (function-symbolp val world)
+ (cond
+  ((eq key :defun-mode)
+   (member-eq val '(:logic :program)))
+  ((eq key :verify-guards-eagerness)
+   (member val '(0 1 2)))
+  ((eq key :enforce-redundancy)
+   (member-eq val '(t nil :warn)))
+  ((eq key :compile-fns)
+   (member-eq val '(t nil)))
+  ((eq key :measure-function)
+   (and (symbolp val)
+        (function-symbolp val world)
 
 ; The length expression below is just (arity val world) but we don't have arity
 ; yet.
 
-              (= (length (getpropc val 'formals t world))
-                 1)))
-        ((eq key :well-founded-relation)
-         (and (symbolp val)
-              (assoc-eq val (global-val 'well-founded-relation-alist world))))
-        ((eq key :bogus-defun-hints-ok)
-         (member-eq val '(t nil :warn)))
-        ((eq key :bogus-mutual-recursion-ok)
-         (member-eq val '(t nil :warn)))
-        ((eq key :irrelevant-formals-ok)
-         (member-eq val '(t nil :warn)))
-        ((eq key :ignore-ok)
-         (member-eq val '(t nil :warn)))
-        ((eq key :bdd-constructors)
+        (= (length (getpropc val 'formals t world))
+           1)))
+  ((eq key :well-founded-relation)
+   (and (symbolp val)
+        (assoc-eq val (global-val 'well-founded-relation-alist world))))
+  ((eq key :bogus-defun-hints-ok)
+   (member-eq val '(t nil :warn)))
+  ((eq key :bogus-mutual-recursion-ok)
+   (member-eq val '(t nil :warn)))
+  ((eq key :irrelevant-formals-ok)
+   (member-eq val '(t nil :warn)))
+  ((eq key :ignore-ok)
+   (member-eq val '(t nil :warn)))
+  ((eq key :bdd-constructors)
 
 ; We could insist that the symbols are function symbols by using
 ; (all-function-symbolps val world),
 ; but perhaps one wants to set the bdd-constructors even before defining the
 ; functions.
 
-         (symbol-listp val))
-        ((eq key :ttag)
-         (or (null val)
-             (and (keywordp val)
-                  (not (equal (symbol-name val) "NIL")))))
-        ((eq key :state-ok)
-         (member-eq val '(t nil)))
+   (symbol-listp val))
+  ((eq key :ttag)
+   (or (null val)
+       (and (keywordp val)
+            (not (equal (symbol-name val) "NIL")))))
+  ((eq key :state-ok)
+   (member-eq val '(t nil)))
 
 ; Rockwell Addition: See the doc string associated with
 ; set-let*-abstractionp.
 
-        ((eq key :let*-abstractionp)
-         (member-eq val '(t nil)))
+  ((eq key :let*-abstractionp)
+   (member-eq val '(t nil)))
 
-        ((eq key :backchain-limit)
-         (and (true-listp val)
-              (equal (length val) 2)
-              (or (null (car val))
-                  (natp (car val)))
-              (or (null (cadr val))
-                  (natp (cadr val)))))
-        ((eq key :step-limit)
-         (and (natp val)
-              (<= val *default-step-limit*)))
-        ((eq key :default-backchain-limit)
-         (and (true-listp val)
-              (equal (length val) 2)
-              (or (null (car val))
-                  (natp (car val)))
-              (or (null (cadr val))
-                  (natp (cadr val)))))
-        ((eq key :rewrite-stack-limit)
-         (unsigned-byte-p 29 val))
-        ((eq key :case-split-limitations)
+  ((eq key :backchain-limit)
+   (and (true-listp val)
+        (equal (length val) 2)
+        (or (null (car val))
+            (natp (car val)))
+        (or (null (cadr val))
+            (natp (cadr val)))))
+  ((eq key :step-limit)
+   (and (natp val)
+        (<= val *default-step-limit*)))
+  ((eq key :default-backchain-limit)
+   (and (true-listp val)
+        (equal (length val) 2)
+        (or (null (car val))
+            (natp (car val)))
+        (or (null (cadr val))
+            (natp (cadr val)))))
+  ((eq key :rewrite-stack-limit)
+   (unsigned-byte-p 29 val))
+  ((eq key :case-split-limitations)
 
 ; In set-case-split-limitations we permit val to be nil and default that
 ; to (nil nil).
 
-         (and (true-listp val)
-              (equal (length val) 2)
-              (or (null (car val))
-                  (natp (car val)))
-              (or (null (cadr val))
-                  (natp (cadr val)))))
-        ((eq key :match-free-default)
-         (member-eq val '(:once :all nil)))
-        ((eq key :match-free-override)
-         (or (eq val :clear)
-             (null (non-free-var-runes val
-                                       (free-var-runes :once world)
-                                       (free-var-runes :all world)
-                                       nil))))
-        ((eq key :match-free-override-nume)
-         (integerp val))
-        ((eq key :non-linearp)
-         (booleanp val))
-        ((eq key :tau-auto-modep)
-         (booleanp val))
-        ((eq key :include-book-dir-alist)
+   (and (true-listp val)
+        (equal (length val) 2)
+        (or (null (car val))
+            (natp (car val)))
+        (or (null (cadr val))
+            (natp (cadr val)))))
+  ((eq key :match-free-default)
+   (member-eq val '(:once :all nil)))
+  ((eq key :match-free-override)
+   (or (eq val :clear)
+       (null (non-free-var-runes val
+                                 (free-var-runes :once world)
+                                 (free-var-runes :all world)
+                                 nil))))
+  ((eq key :match-free-override-nume)
+   (integerp val))
+  ((eq key :non-linearp)
+   (booleanp val))
+  ((eq key :tau-auto-modep)
+   (booleanp val))
+  ((eq key :include-book-dir-alist)
 
 ; At one time we disallowed :SYSTEM as a key.  Now, we check at
 ; add-include-book-dir time that :SYSTEM isn't bound to a directory that
@@ -17441,34 +17461,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; way of add-include-book-dir; see the use of state global
 ; modifying-include-book-dir-alist in chk-table-guard.
 
-         (include-book-dir-alistp val (os world)))
-        ((eq key :ruler-extenders)
-         (or (eq val :all)
-             (chk-ruler-extenders val hard 'acl2-defaults-table world)))
-        ((eq key :memoize-ideal-okp)
-         (or (eq val :warn)
-             (booleanp val)))
-        ((eq key :check-invariant-risk)
-         (or (eq val :CLEAR)
-             (and (member-eq val *check-invariant-risk-values*)
-                  (or val
-                      (ttag world)
-                      (illegal 'acl2-defaults-table
-                               "An active trust tag is required for setting ~
-                                the :check-invariant-risk key to nil in the ~
-                                acl2-defaults-table."
-                               nil)))))
-        ((eq key :register-invariant-risk)
-         (or (eq val t)
-             (and (eq val nil)
-                  (or (null (get-register-invariant-risk-world world))
-                      (ttag world)
-                      (illegal 'acl2-defaults-table
-                               "An active trust tag is required for setting ~
-                                the :register-invariant-risk key to nil in ~
-                                the acl2-defaults-table."
-                               nil)))))
-        ((eq key :user)
+   (include-book-dir-alistp val (os world)))
+  ((eq key :ruler-extenders)
+   (or (eq val :all)
+       (chk-ruler-extenders val hard 'acl2-defaults-table world)))
+  ((eq key :memoize-ideal-okp)
+   (or (eq val :warn)
+       (booleanp val)))
+  ((eq key :check-invariant-risk)
+   (or (eq val :CLEAR)
+       (and (member-eq val *check-invariant-risk-values*)
+            (or val
+                (ttag world)))))
+  ((eq key :register-invariant-risk)
+   (or (eq val t)
+       (and (eq val nil)
+            (or (null (get-register-invariant-risk-world world))
+                (ttag world)))))
+  ((eq key :user)
 
 ; The :user key is reserved for users; the ACL2 system will not consult or
 ; modify it (except as part of general maintenance of the acl2-defaults-table).
@@ -17477,10 +17487,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; could own another, so that for example :user is bound to ((:k1 . val1) (:k2
 ; . val2)).
 
-         (alistp val))
-        ((eq key :in-theory-redundant-okp)
-         (booleanp val))
-        (t nil)))
+   (alistp val))
+  ((eq key :in-theory-redundant-okp)
+   (booleanp val))
+  (t nil))
+ :coda (and (member-eq key '(:check-invariant-risk
+                             :register-invariant-risk))
+            (null val)
+            (msg "Note that an active trust tag is required for setting the ~
+                  ~x0 key to nil in the acl2-defaults-table."
+                 key)))
 
 ; (set-state-ok t)
 (table acl2-defaults-table :state-ok t)
@@ -19248,6 +19264,206 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (boundp-global 'acl2-raw-mode-p state))))
   (f-get-global 'acl2-raw-mode-p state))
 
+#-acl2-loop-only
+(defparameter *next-acl2-oracle-value* nil)
+
+(defun read-acl2-oracle (state-state)
+
+; Keep in sync with #+acl2-par read-acl2-oracle@par.
+
+  (declare (xargs :guard (state-p1 state-state)))
+
+;   Wart: We use state-state instead of state because of a bootstrap problem.
+
+; See also read-run-time.
+
+  #-acl2-loop-only
+  (cond ((live-state-p state-state)
+         (return-from read-acl2-oracle
+                      (let ((val *next-acl2-oracle-value*))
+                        (setq *next-acl2-oracle-value* nil)
+                        (mv nil val state-state)))))
+  (mv (null (acl2-oracle state-state))
+      (car (acl2-oracle state-state))
+      (update-acl2-oracle (cdr (acl2-oracle state-state)) state-state)))
+
+; We thank Jared Davis for permission to adapt his function true-list-fix (and
+; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for
+; further credits and explanation.
+
+(defun true-list-fix-exec (x)
+  (declare (xargs :guard t :mode :logic))
+  (if (consp x)
+      (cons (car x)
+            (true-list-fix-exec (cdr x)))
+    nil))
+
+(defun true-list-fix (x)
+  (declare (xargs :guard t
+                  :mode :logic
+                  :verify-guards nil))
+  (mbe :logic
+       (if (consp x)
+           (cons (car x)
+                 (true-list-fix (cdr x)))
+         nil)
+       :exec
+       (if (true-listp x)
+           x
+         (true-list-fix-exec x))))
+
+(defmacro fix-true-list (x) `(true-list-fix ,x))
+
+(encapsulate
+  ()
+
+  (local (defthm true-list-fix-true-listp
+           (implies (true-listp x)
+                    (equal (true-list-fix x) x))
+           :hints (("Goal" :expand ((true-list-fix x))))))
+
+  (local (defthm true-list-fix-exec-removal
+           (equal (true-list-fix-exec x)
+                  (true-list-fix x))
+           :hints(("Goal" :in-theory (enable true-list-fix)))))
+
+  (verify-guards true-list-fix
+    :hints (("Goal" :expand ((true-list-fix x)))))
+  )
+
+(in-theory (disable true-list-fix-exec))
+
+(defthm pairlis$-true-list-fix
+  (equal (pairlis$ x (true-list-fix y))
+         (pairlis$ x y)))
+
+(encapsulate
+ ()
+
+; Before Version_2.9.3, len-update-nth had the form of the local lemma below.
+; It turns out that an easy way to prove the improved version below,
+; contributed by Jared Davis, is to prove the old version first as a lemma:
+
+ (local
+  (defthm len-update-nth-lemma
+    (implies (< (nfix n) (len x))
+             (equal (len (update-nth n val x))
+                    (len x)))))
+
+ (defthm len-update-nth
+   (equal (len (update-nth n val x))
+          (max (1+ (nfix n))
+               (len x)))))
+
+(defthm assoc-add-pair
+  (equal (assoc sym1 (add-pair sym2 val alist))
+         (if (equal sym1 sym2)
+             (cons sym1 val)
+           (assoc sym1 alist))))
+
+(defthm add-pair-preserves-all-boundp
+  (implies (all-boundp alist1 alist2)
+           (all-boundp alist1 (add-pair sym val alist2))))
+
+(defthm state-p1-read-acl2-oracle
+    (implies (state-p1 state)
+             (state-p1 (mv-nth 2 (read-acl2-oracle state))))
+  :hints (("Goal" :in-theory (enable state-p1 read-acl2-oracle))))
+
+(encapsulate ()
+
+; This is an ugly proof but it gets the job done quickly (when doing "make
+; proofs").
+
+(local
+ (defthm state-p1-update-nth-2-add-pair-1
+   (implies (and (state-p1 st1)
+                 (state-p1 st2)
+                 (symbolp sym1)
+                 (not (member-eq sym1 '(timer-alist current-acl2-world))))
+            (state-p1 (update-nth 2
+                                  (add-pair
+                                   sym1 val1
+                                   (nth 2 st1))
+                                  st2)))
+   :hints (("Goal" :in-theory (enable state-p1)))))
+
+(local
+ (defthm state-p1-update-nth-2-add-pair-2
+   (implies (and (state-p1 st1)
+                 (state-p1 st2)
+                 (symbolp sym1)
+                 (symbolp sym2)
+                 (not (member-eq sym1 '(timer-alist current-acl2-world)))
+                 (not (member-eq sym2 '(timer-alist current-acl2-world))))
+            (state-p1 (update-nth 2
+                                  (add-pair
+                                   sym1 val1
+                                   (add-pair
+                                    sym2 val2
+                                    (nth 2 st1)))
+                                  st2)))
+   :hints (("Goal" :in-theory (enable state-p1)))))
+
+(local
+ (defthm state-p1-update-nth-2-add-pair-3
+   (implies (and (state-p1 st1)
+                 (state-p1 st2)
+                 (symbolp sym1)
+                 (symbolp sym2)
+                 (symbolp sym3)
+                 (not (member-eq sym1 '(timer-alist current-acl2-world)))
+                 (not (member-eq sym2 '(timer-alist current-acl2-world)))
+                 (not (member-eq sym3 '(timer-alist current-acl2-world))))
+            (state-p1 (update-nth 2
+                                  (add-pair
+                                   sym1 val1
+                                   (add-pair
+                                    sym2 val2
+                                    (add-pair
+                                     sym3 val3
+                                     (nth 2 st1))))
+                                  st2)))
+   :hints (("Goal" :in-theory (enable state-p1)))))
+
+(local (in-theory (disable acl2-oracle read-acl2-oracle)))
+
+(defun iprint-oracle-updates (state)
+
+; Warning: Keep in sync with iprint-oracle-updates-raw.
+
+; See the discussion of wormholes in the Essay on Iprinting.  Also see
+; comments at the call of iprint-oracle-updates in read-object.
+
+  (declare (xargs :stobjs state))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from iprint-oracle-updates
+                 (iprint-oracle-updates-raw state)))
+  (mv-let (erp val state)
+    (read-acl2-oracle state)
+    (declare (ignore erp))
+
+; If we intend to reason about this function, then we might want to check that
+; val is a reasonable value.  But that seems not to be important, since very
+; little reasoning would be possible anyhow for this function.
+
+    (let ((val (true-list-fix val)))
+      (pprogn (f-put-global 'iprint-ar
+                            (nth 0 val)
+                            state)
+              (f-put-global 'iprint-hard-bound
+                            (nfix (nth 1 val))
+                            state)
+              (f-put-global 'iprint-soft-bound
+                            (nfix (nth 2 val))
+                            state)
+              (f-put-global 'iprint-fal
+                            (nth 3 val)
+                            state)
+              state))))
+)
+
 (defun read-object (channel state-state)
 
 ; Read-object is somewhat like read.  It returns an mv-list of three
@@ -19265,15 +19481,55 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (open-input-channel-p1
                                channel :object state-state))))
 
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (cond ((and *wormholep*
-                     (not (eq channel *standard-oi*)))
-                (wormhole-er 'read-object (list channel))))
-         (return-from
-          read-object
-          (let* ((*read-object-comma-count* 0)
-                 (read-object-eof
+  (let ((state-state ; avoid pprogn here because of the use of state-state
+
+; The following call of iprint-oracle-updates is necessary even with the calls
+; of iprint-oracle-updates? in eviscerate-top and eviscerate-stobjs-top.  To
+; see why, consider the following example.
+
+;   (set-iprint t)
+;   (monitor! 'nth t)
+;   (thm (equal (nth n (cons x y)) z))
+;   (fmx "~X01~%" (make-list 10) (evisc-tuple 3 4 nil nil))
+;   (a!)
+;   (quote #@1#)
+
+; The fmx call is made in the brr wormhole, and it prints #@1#.  Without the
+; following call of iprint-oracle-updates, the final form results in the error,
+; "Out-of-bounds index in #@1#."
+
+; The following example is perhaps even more persuasive of the need to call
+; iprint-oracle-updates.
+
+;   (set-iprint t)
+;   (prog2$ (cw "~X01~|" (make-list 10) (evisc-tuple 2 3 nil nil))
+;           (read-standard-oi state))
+
+; The cw output is (NIL NIL NIL . #@1#), and then we are prompted for input.
+; Input of #@1# will yield the expected object, (NIL NIL NIL NIL NIL NIL NIL);
+; but what is the logical explanation?  Iprint-oracle-updates supplies logical
+; updates to the iprint structures that explain the ability to read #@1#.
+
+         #-acl2-loop-only
+         (iprint-oracle-updates state-state)
+         #+acl2-loop-only
+
+; In the logic, iprint-oracle-updates takes state; but state is not a parameter
+; here (see *super-defun-wart-table* and relevant comments).  Since we don't
+; expect to execute the #+acl2-loop-only code, it seems appropriate to solve
+; that problem by using non-exec here.
+
+         (non-exec (iprint-oracle-updates state-state))))
+
+    #-acl2-loop-only
+    (cond ((live-state-p state-state)
+           (cond ((and *wormholep*
+                       (not (eq channel *standard-oi*)))
+                  (wormhole-er 'read-object (list channel))))
+           (return-from
+            read-object
+            (let* ((*read-object-comma-count* 0)
+                   (read-object-eof
 
 ; Suggestion from Bob Boyer: By using dynamic-extent [see declaration below],
 ; we make the cons more 'secret' or 'new'.  (Added August 2009: the
@@ -19281,34 +19537,34 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; comfortable continuing to use a let-bound local here, since the extra cons
 ; seems trivial.)
 
-                  (cons nil nil))
-                 (*package* (find-package-fast
-                             (current-package *the-live-state*)))
-                 (*readtable* *acl2-readtable*)
-                 #+cltl2 (*read-eval* t)
-                 (*read-suppress* *acl2-read-suppress*)
-                 (*read-base* 10)
-                 #+gcl (si:*notify-gbc* ; no gbc messages while typing
-                        (if (or (eq channel *standard-oi*)
-                                (eq channel *standard-ci*))
-                            nil
-                          si:*notify-gbc*))
-                 #+acl2-infix
-                 (infixp (f-get-global 'infixp state-state))
-                 (stream (get-input-stream-from-channel channel))
-                 (obj
-                  (cond
+                    (cons nil nil))
+                   (*package* (find-package-fast
+                               (current-package *the-live-state*)))
+                   (*readtable* *acl2-readtable*)
+                   #+cltl2 (*read-eval* t)
+                   (*read-suppress* *acl2-read-suppress*)
+                   (*read-base* 10)
+                   #+gcl (si:*notify-gbc* ; no gbc messages while typing
+                          (if (or (eq channel *standard-oi*)
+                                  (eq channel *standard-ci*))
+                              nil
+                            si:*notify-gbc*))
                    #+acl2-infix
-                   ((and (or (eq infixp t) (eq infixp :in))
-                         (eq stream (get-input-stream-from-channel  *standard-ci*)))
-                    (let ((obj (parse-infix-from-terminal read-object-eof)))
-                      (cond ((eq obj read-object-eof)
-                             read-object-eof)
-                            (t (chk-bad-lisp-object obj)
-                               obj))))
-                   #+(and mcl (not ccl))
-                   ((eq channel *standard-oi*)
-                    (ccl::toplevel-read))
+                   (infixp (f-get-global 'infixp state-state))
+                   (stream (get-input-stream-from-channel channel))
+                   (obj
+                    (cond
+                     #+acl2-infix
+                     ((and (or (eq infixp t) (eq infixp :in))
+                           (eq stream (get-input-stream-from-channel  *standard-ci*)))
+                      (let ((obj (parse-infix-from-terminal read-object-eof)))
+                        (cond ((eq obj read-object-eof)
+                               read-object-eof)
+                              (t (chk-bad-lisp-object obj)
+                                 obj))))
+                     #+(and mcl (not ccl))
+                     ((eq channel *standard-oi*)
+                      (ccl::toplevel-read))
 
 ; We formerly called a function hons-read here when (f-get-global 'hons-read-p
 ; *the-live-state*) was true (in ACL2 versions that supported hons).  That had
@@ -19317,8 +19573,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the addition of source files serialize[-raw].lisp, contributed by Jared
 ; Davis.
 
-                   (t
-                    (read stream nil read-object-eof nil)))))
+                     (t
+                      (read stream nil read-object-eof nil)))))
 
 ; The following dynamic-extent declaration looks fine.  There were spurious
 ; ill-formed certificate and checksum problems with Allegro CL for a few months
@@ -19328,24 +19584,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; seems rather trivial, but the space improvement can be substantial; so I'll
 ; include it.
 
-            #+cltl2
-            (declare (dynamic-extent read-object-eof))
+              #+cltl2
+              (declare (dynamic-extent read-object-eof))
 
-            (cond ((eq obj read-object-eof)
-                   (mv t nil state-state))
-                  (t (or (raw-mode-p state-state)
-                         (chk-bad-lisp-object obj))
-                     (mv nil obj state-state)))))))
-  (let ((entry (cdr (assoc-eq channel (open-input-channels state-state)))))
-    (cond ((cdr entry)
-           (mv nil
-               (car (cdr entry))
-               (update-open-input-channels
-                (add-pair channel
-                          (cons (car entry) (cdr (cdr entry)))
-                          (open-input-channels state-state))
-                state-state)))
-          (t (mv t nil state-state)))))
+              (cond ((eq obj read-object-eof)
+                     (mv t nil state-state))
+                    (t (or (raw-mode-p state-state)
+                           (chk-bad-lisp-object obj))
+                       (mv nil obj state-state)))))))
+    (let ((entry (cdr (assoc-eq channel (open-input-channels state-state)))))
+      (cond ((cdr entry)
+             (mv nil
+                 (car (cdr entry))
+                 (update-open-input-channels
+                  (add-pair channel
+                            (cons (car entry) (cdr (cdr entry)))
+                            (open-input-channels state-state))
+                  state-state)))
+            (t (mv t nil state-state))))))
 
 (defun read-object-with-case (channel mode state)
   (declare (xargs :guard
@@ -20229,29 +20485,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (t (car (acl2-oracle state-state))))
       (update-acl2-oracle (cdr (acl2-oracle state-state)) state-state)))
 
-#-acl2-loop-only
-(defparameter *next-acl2-oracle-value* nil)
-
-(defun read-acl2-oracle (state-state)
-
-; Keep in sync with #+acl2-par read-acl2-oracle@par.
-
-  (declare (xargs :guard (state-p1 state-state)))
-
-;   Wart: We use state-state instead of state because of a bootstrap problem.
-
-; See also read-run-time.
-
-  #-acl2-loop-only
-  (cond ((live-state-p state-state)
-         (return-from read-acl2-oracle
-                      (let ((val *next-acl2-oracle-value*))
-                        (setq *next-acl2-oracle-value* nil)
-                        (mv nil val state-state)))))
-  (mv (null (acl2-oracle state-state))
-      (car (acl2-oracle state-state))
-      (update-acl2-oracle (cdr (acl2-oracle state-state)) state-state)))
-
 #+acl2-par
 (defun read-acl2-oracle@par (state-state)
 
@@ -20432,24 +20665,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (read-acl2-oracle state)
           (declare (ignore erp))
           (mv val state)))
-
-(encapsulate
- ()
-
-; Before Version_2.9.3, len-update-nth had the form of the local lemma below.
-; It turns out that an easy way to prove the improved version below,
-; contributed by Jared Davis, is to prove the old version first as a lemma:
-
- (local
-  (defthm len-update-nth-lemma
-    (implies (< (nfix n) (len x))
-             (equal (len (update-nth n val x))
-                    (len x)))))
-
- (defthm len-update-nth
-   (equal (len (update-nth n val x))
-          (max (1+ (nfix n))
-               (len x)))))
 
 (defthm update-acl2-oracle-preserves-state-p1
   (implies (and (state-p1 state)
@@ -20941,16 +21156,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   ((:forward-chaining
     :trigger-terms
     ((add-pair key value l)))))
-
-(defthm assoc-add-pair
-  (equal (assoc sym1 (add-pair sym2 val alist))
-         (if (equal sym1 sym2)
-             (cons sym1 val)
-           (assoc sym1 alist))))
-
-(defthm add-pair-preserves-all-boundp
-  (implies (all-boundp alist1 alist2)
-           (all-boundp alist1 (add-pair sym val alist2))))
 
 (defthm state-p1-update-main-timer
   (implies (state-p1 state)
@@ -22291,9 +22496,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (function-symbolp key wrld)
        (unary-function-symbol-listp val wrld)))
 
-(table invisible-fns-table nil nil
-       :guard
-       (invisible-fns-entryp key val world))
+(set-table-guard invisible-fns-table
+                 (invisible-fns-entryp key val world)
+                 :show t)
 
 (set-invisible-fns-table t)
 
@@ -22417,9 +22622,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore x))
   nil)
 
-(table inhibit-warnings-table nil nil
-       :guard
-       (standard-string-p key))
+(set-table-guard inhibit-warnings-table
+                 (and (stringp key)
+                      (standard-string-p key))
+                 :topic set-inhibit-warnings)
 
 #+acl2-loop-only
 (defmacro set-inhibit-warnings! (&rest lst)
@@ -22459,9 +22665,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore x))
   nil)
 
-(table inhibit-er-table nil nil
-       :guard
-       (stringp key))
+(set-table-guard inhibit-ero-table
+                 (stringp key)
+                 :topic set-inhibit-er)
 
 #+acl2-loop-only
 (defmacro set-inhibit-er! (&rest lst)
@@ -23122,9 +23328,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                             #+acl2-loop-only state
                             #-acl2-loop-only *the-live-state*))
 
-(table include-book-dir!-table nil nil
-       :guard (include-book-dir-alist-entry-p
-               key val (global-val 'operating-system world)))
+(set-table-guard
+ include-book-dir!-table
+ (include-book-dir-alist-entry-p key val (global-val 'operating-system world))
+ :topic add-include-book-dir!)
 
 (defun raw-include-book-dir-p (state)
 
@@ -23331,11 +23538,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; different values of theory expressions, so it's silly to start worrying now
 ; about the dependency of theory information on macro alias information.
 
-(table macro-aliases-table nil nil
-       :guard
-       (and (symbolp key)
-            (not (eq (getpropc key 'macro-args t world) t))
-            (symbolp val)
+(set-table-guard macro-aliases-table
+                 (and (symbolp key)
+                      (not (eq (getpropc key 'macro-args t world) t))
+                      (symbolp val)
 
 ; We no longer (as of August 2012) require that val be a function symbol, so
 ; that we can support recursive definition with defun-inline.  It would be nice
@@ -23355,7 +23561,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;                   (declare (ignore val))
 ;                   (null erp)))
 
-            ))
+                      ))
 
 (table macro-aliases-table nil
        '((+ . binary-+)
@@ -23389,6 +23595,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  #+:non-standard-analysis realp
                  #-:non-standard-analysis rationalp)
 
+(add-macro-alias fix-true-list true-list-fix)
 (add-macro-alias member-eq member-equal)
 (add-macro-alias member member-equal)
 (add-macro-alias assoc-eq assoc-equal)
@@ -23459,14 +23666,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; macro-aliases table; see the comment above for a discussion of why we do not
 ; use the acl2-defaults-table here.
 
-(table nth-aliases-table nil nil
-       :guard
-       (and (symbolp key)
-            (not (eq key 'state))
-            (eq (getpropc key 'accessor-names t world)
-                t)
-            (symbolp val)
-            (not (eq val 'state))))
+(set-table-guard nth-aliases-table
+                 (and (symbolp key)
+                      (not (eq key 'state))
+                      (eq (getpropc key 'accessor-names t world)
+                          t)
+                      (symbolp val)
+                      (not (eq val 'state))))
 
 (table nth-aliases-table nil nil :clear)
 
@@ -23815,17 +24021,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *legal-rw-cache-states*
   '(t nil :disabled :atom))
 
-(table rw-cache-state-table nil nil
-       :guard
-       (case key
-         ((t) (member-eq val *legal-rw-cache-states*))
-         (t nil)))
+(set-table-guard rw-cache-state-table
+                 (case key
+                   ((t) (member-eq val *legal-rw-cache-states*))
+                   (t nil))
+                 :topic set-rw-cache-state)
 
-(table induction-depth-limit-table nil nil
-       :guard
-       (and (eq key t)
-            (or (null val) ; no limit
-                (natp val))))
+(set-table-guard induction-depth-limit-table
+                 (and (eq key t)
+                      (or (null val) ; no limit
+                          (natp val)))
+                 :topic set-induction-depth-limit)
 
 (defconst *induction-depth-limit-default*
 
@@ -23850,58 +24056,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro set-induction-depth-limit (val)
   `(local (set-induction-depth-limit! ,val)))
-
-; We thank Jared Davis for permission to adapt his function true-list-fix (and
-; supporting function true-list-fix-exec), below.  See :DOC note-8-2 for
-; further credits and explanation.
-
-(defun true-list-fix-exec (x)
-  (declare (xargs :guard t :mode :logic))
-  (if (consp x)
-      (cons (car x)
-            (true-list-fix-exec (cdr x)))
-    nil))
-
-(defun true-list-fix (x)
-  (declare (xargs :guard t
-                  :mode :logic
-                  :verify-guards nil))
-  (mbe :logic
-       (if (consp x)
-           (cons (car x)
-                 (true-list-fix (cdr x)))
-         nil)
-       :exec
-       (if (true-listp x)
-           x
-         (true-list-fix-exec x))))
-
-(encapsulate
-  ()
-
-  (local (defthm true-list-fix-true-listp
-           (implies (true-listp x)
-                    (equal (true-list-fix x) x))
-           :hints (("Goal" :expand ((true-list-fix x))))))
-
-  (local (defthm true-list-fix-exec-removal
-           (equal (true-list-fix-exec x)
-                  (true-list-fix x))
-           :hints(("Goal" :in-theory (enable true-list-fix)))))
-
-  (verify-guards true-list-fix
-    :hints (("Goal" :expand ((true-list-fix x)))))
-  )
-
-(in-theory (disable true-list-fix-exec))
-
-(defmacro fix-true-list (x) `(true-list-fix ,x))
-
-(table macro-aliases-table 'fix-true-list 'true-list-fix)
-
-(defthm pairlis$-true-list-fix
-  (equal (pairlis$ x (true-list-fix y))
-         (pairlis$ x y)))
 
 (defun boolean-listp (lst)
 
@@ -26040,11 +26194,10 @@ Lisp definition."
   (cond ((car tuple) (list *false-clause*))
         (t (cadr tuple))))
 
-(table evisc-table nil nil
-       :guard ; we don't want to abbreviate nil
-       (and (not (null key))
-            (or (stringp val)
-                (null val))))
+(set-table-guard evisc-table
+                 (and (not (null key)) ; We don't want to abbreviate nil.
+                      (or (stringp val)
+                          (null val))))
 
 ; Essay on the Design of Custom Keyword Hints
 
@@ -26191,8 +26344,7 @@ Lisp definition."
             :induct
             :rw-cache-state)))
 
-(table custom-keywords-table nil nil
-       :guard
+(set-table-guard custom-keywords-table
 
 ; Val must be of the form (uterm1 uterm2), where uterm1 and uterm2 are
 ; untranslated terms with certain syntactic properties, including being
@@ -26207,9 +26359,10 @@ Lisp definition."
 ; As a matter of interest, uterm1 is the untranslated generator term for the
 ; key and uterm2 is the untranslated checker term.
 
-       (and (not (member-eq key *hint-keywords*))
-            (true-listp val)
-            (equal (length val) 2)))
+                 (and (not (member-eq key *hint-keywords*))
+                      (true-listp val)
+                      (equal (length val) 2))
+                 :topic add-custom-keyword-hint)
 
 #+acl2-loop-only
 (defmacro add-custom-keyword-hint (key uterm1 &key (checker '(value t)))
@@ -26901,7 +27054,6 @@ Lisp definition."
     (equal (true-listp (revappend x y))
            (true-listp y))))
 
- (verify-guards throw-nonexec-error)
  (verify-guards defun-nx-form)
  (verify-guards defun-nx-fn)
  (verify-guards update-mutual-recursion-for-defun-nx-1)

@@ -374,6 +374,8 @@
 (def-constant-opener jvm::get-array-component-type)
 (def-constant-opener gen-init-bindings-for-class)
 
+(def-constant-opener jvm::exception-handler-targets)
+
 (def-constant-opener alistp)
 
 (def-constant-opener new-ad)
@@ -395,3 +397,19 @@
 
 (defthm booleanp-of-array-ref-listp
   (booleanp (array-ref-listp ads dims element-type heap)))
+
+(defthm <-of-constant-and-call-stack-size-when-negative
+  (implies (and (syntaxp (quotep k))
+                (< k 0))
+           (< k (jvm::call-stack-size call-stack))))
+
+(defthm integerp-of-call-stack-size
+  (integerp (jvm::call-stack-size call-stack)))
+
+;move
+(defthmd posp-of-+-of-constant
+  (implies (and (syntaxp (quotep k))
+                (integerp k)
+                (integerp x))
+           (equal (posp (+ k x))
+                  (< (- k) x))))

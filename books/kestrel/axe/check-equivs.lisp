@@ -57,7 +57,7 @@
            (fn (car pair))
            (arg-equivs (cdr pair))
            (arity (len arg-equivs))
-           (args (make-var-names arity 'x)))
+           (args (make-var-names 'x arity)))
       (append (equiv-alist-thms-aux-aux args arg-equivs fn args outer-equiv)
               (equiv-alist-thms-aux outer-equiv (rest fn-to-arg-equivs-alist))))))
 

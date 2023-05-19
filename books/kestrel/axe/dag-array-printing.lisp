@@ -1,7 +1,7 @@
 ; Printing DAG arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -132,7 +132,7 @@
                                        dag-array
                                        nil)))))
 
-;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM.
+;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
 (defund print-dag-array-all (nodenum dag-array-name dag-array)
   (declare (xargs :guard (and (integerp nodenum)
                               (<= -1 nodenum)

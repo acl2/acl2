@@ -74,7 +74,10 @@
                                         nil ; interpreted-function-alist ; todo: thread through
                                         monitor
                                         t ;normalize-xors (todo: make this an option?)
-                                        print max-conflicts call-stp-when-pruning nil state)))
+                                        print max-conflicts call-stp-when-pruning
+                                        t ; counterexamplep
+                                        nil ; print-cex-as-signedp
+                                        nil state)))
     (if (eq *error* result)
         (prog2$ (er hard? 'query-fn "Error encountered in the tactic prover.")
                 (mv *unknown* state))

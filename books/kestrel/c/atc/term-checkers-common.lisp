@@ -291,7 +291,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-unop ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (fn symbolp)
                (arg pseudo-termp)
                (in-type typep)
@@ -309,21 +310,32 @@
    (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type) (irr-unop)))
+  (b* (((reterr) nil nil nil (irr-type) (irr-type) (irr-unop))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type) (irr-type) (irr-unop)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype) (atc-check-symbol-2part term.fn))
-       ((when (not okp)) (no))
        (in-type (fixtype-to-integer-type fixtype))
-       ((when (not in-type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
-       (arg (first term.args)))
-    (case op
-      (plus (mv t term.fn arg in-type (promote-type in-type) (unop-plus)))
-      (minus (mv t term.fn arg in-type (promote-type in-type) (unop-minus)))
-      (bitnot (mv t term.fn arg in-type (promote-type in-type) (unop-bitnot)))
-      (lognot (mv t term.fn arg in-type (type-sint) (unop-lognot)))
-      (t (no))))
+       ((unless (and okp
+                     (member-eq op '(plus minus bitnot lognot))
+                     in-type))
+        (no))
+       ((unless (equal (symbol-package-name term.fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an integer unary operation function, ~
+                      but it is not in the \"C\" package."
+                     term.fn)))
+       ((unless (list-lenp 1 term.args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." term)))
+       (arg (first term.args))
+       ((mv out-type unop)
+        (case op
+          (plus (mv (promote-type in-type) (unop-plus)))
+          (minus (mv (promote-type in-type) (unop-minus)))
+          (bitnot (mv (promote-type in-type) (unop-bitnot)))
+          (lognot (mv (type-sint) (unop-lognot)))
+          (t (prog2$ (impossible) (mv (irr-type) (irr-unop)))))))
+    (retok t term.fn arg in-type out-type unop))
   ///
 
   (defret pseudo-term-count-of-atc-check-unop-arg
@@ -343,65 +355,71 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-binop ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (op binopp)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
                (arg1 pseudo-termp)
                (arg2 pseudo-termp)
                (in-type1 typep)
                (in-type2 typep)
-               (out-type typep))
+               (out-type typep)
+               (op binopp))
   :short "Check if a term may represent a strict pure binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represent C strict pure binary operators,
-     we return the operator and the argument terms.")
+     we return the function, the argument terms,
+     the inputs and output types,
+     and the C operator.")
    (xdoc::p
-    "We also return the input and output C types of the operator.")
-   (xdoc::p
-    "If the term does not have that form, we return an indication of failure."))
-  (b* (((acl2::fun (no))
-        (mv nil (irr-binop) nil nil (irr-type) (irr-type) (irr-type)))
+    "If the term does not have that form, we return an indication of failure.
+     The term may represent some other kind of C expression."))
+  (b* (((reterr) nil nil nil nil (irr-type) (irr-type) (irr-type) (irr-binop))
+       ((acl2::fun (no))
+        (retok nil nil nil nil (irr-type) (irr-type) (irr-type) (irr-binop)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp op fixtype1 fixtype2) (atc-check-symbol-3part term.fn))
-       ((when (not okp)) (no))
        (in-type1 (fixtype-to-integer-type fixtype1))
-       ((when (not in-type1)) (no))
        (in-type2 (fixtype-to-integer-type fixtype2))
-       ((when (not in-type2)) (no))
-       ((unless (list-lenp 2 term.args)) (no))
+       ((unless (and okp
+                     (member-eq op '(add sub mul div rem shl shr
+                                         lt le gt ge eq ne
+                                         bitand bitxor bitior))
+                     in-type1
+                     in-type2))
+        (no))
+       ((unless (equal (symbol-package-name term.fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an integer binary operation function, ~
+                      but it is not in the \"C\" package."
+                     term.fn)))
+       ((unless (list-lenp 2 term.args))
+        (reterr (raise "Internal error: ~x0 not applied to 2 arguments." term)))
        (arg1 (first term.args))
-       (arg2 (second term.args)))
-    (case op
-      (add (mv t (binop-add) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (sub (mv t (binop-sub) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (mul (mv t (binop-mul) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (div (mv t (binop-div) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (rem (mv t (binop-rem) arg1 arg2
-               in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (shl (mv t (binop-shl) arg1 arg2
-               in-type1 in-type2 (promote-type in-type1)))
-      (shr (mv t (binop-shr) arg1 arg2
-               in-type1 in-type2 (promote-type in-type1)))
-      (lt (mv t (binop-lt) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (le (mv t (binop-le) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (gt (mv t (binop-gt) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (ge (mv t (binop-ge) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (eq (mv t (binop-eq) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (ne (mv t (binop-ne) arg1 arg2 in-type1 in-type2 (type-sint)))
-      (bitand (mv t (binop-bitand) arg1 arg2
-                  in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (bitxor (mv t (binop-bitxor) arg1 arg2
-                  in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (bitior (mv t (binop-bitior) arg1 arg2
-                  in-type1 in-type2 (uaconvert-types in-type1 in-type2)))
-      (t (no))))
+       (arg2 (second term.args))
+       ((mv out-type binop)
+        (case op
+          (add (mv (uaconvert-types in-type1 in-type2) (binop-add)))
+          (sub (mv (uaconvert-types in-type1 in-type2) (binop-sub)))
+          (mul (mv (uaconvert-types in-type1 in-type2) (binop-mul)))
+          (div (mv (uaconvert-types in-type1 in-type2) (binop-div)))
+          (rem (mv (uaconvert-types in-type1 in-type2) (binop-rem)))
+          (shl (mv (promote-type in-type1) (binop-shl)))
+          (shr (mv (promote-type in-type1) (binop-shr)))
+          (lt (mv (type-sint) (binop-lt)))
+          (le (mv (type-sint) (binop-le)))
+          (gt (mv (type-sint) (binop-gt)))
+          (ge (mv (type-sint) (binop-ge)))
+          (eq (mv (type-sint) (binop-eq)))
+          (ne (mv (type-sint) (binop-ne)))
+          (bitand (mv (uaconvert-types in-type1 in-type2) (binop-bitand)))
+          (bitxor (mv (uaconvert-types in-type1 in-type2) (binop-bitxor)))
+          (bitior (mv (uaconvert-types in-type1 in-type2) (binop-bitior)))
+          (t (prog2$ (impossible) (mv (irr-type) (irr-binop)))))))
+    (retok t term.fn arg1 arg2 in-type1 in-type2 out-type binop))
   ///
 
   (defret pseudo-term-count-of-atc-check-binop-arg1
@@ -414,7 +432,19 @@
     (implies yes/no
              (< (pseudo-term-count arg2)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-binop-in-type1
+    (implies yes/no
+             (type-nonchar-integerp in-type1)))
+
+  (defret type-nonchar-integerp-of-atc-check-binop-in-type2
+    (implies yes/no
+             (type-nonchar-integerp in-type2)))
+
+  (defret type-nonchar-integerp-of-atc-check-binop-out-type
+    (implies yes/no
+             (type-nonchar-integerp out-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

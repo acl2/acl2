@@ -1,7 +1,7 @@
 ; An array to track replacements of nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -785,8 +785,8 @@
                                            nil ;interpreted-function-alist
                                            ))
          ((when erp) (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-         ((when (consp term-nodenum-or-quotep)) ; check for quotep -- todo: prove this can't happen
-          (er hard? 'update-node-replacement-array-and-extend-dag-for-alist "Assumption with a quotep LHS: ~x0." `(equal ,term ,replacement))
+         ((when (consp term-nodenum-or-quotep)) ; check for quotep -- todo: what if the LHS is an evaluatable ground term?
+          (er hard? 'update-node-replacement-array-and-extend-dag-for-alist "Assumption term, ~x0, became a quotep, ~x1." term term-nodenum-or-quotep)
           (mv :unexpected-quote node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
          ;; Add the replacement if it is not *non-nil*:
          ((mv erp replacement-item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

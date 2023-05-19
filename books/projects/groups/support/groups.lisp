@@ -812,12 +812,12 @@
 (defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r-int x y) x)
-		   (* (s-int x y) y))
+	     (= (+ (* (r x y) x)
+		   (* (s x y) y))
 		(gcd x y)))
     :rule-classes ())
 
-(defund z*-inv (x n) (mod (r-int x n) n))
+(defund z*-inv (x n) (mod (r x n) n))
 
 ;; Rewrite rules required by defgroup:
 
@@ -3670,3 +3670,12 @@
 			(:instance divides-leq (x (ord (power a n g) g)) (y (/ (ord a g) (gcd (ord a g) n))))
 			(:instance divides-leq (y (ord (power a n g) g)) (x (/ (ord a g) (gcd (ord a g) n))))))))
 
+;;-----------------------------------------------------------------------------------------------------------------------
+
+(defthmd power-order
+  (implies (and (groupp g)
+                (in x g))
+	   (equal (power x (order g) g)
+	          (e g)))
+  :hints (("Goal" :use (ord-divides-order
+                        (:instance divides-ord (a x))))))

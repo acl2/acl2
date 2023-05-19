@@ -40,7 +40,6 @@
 
 (include-book "rewriter-common")
 (include-book "supporting-nodes") ; for drop-non-supporters-array
-(include-book "make-node-replacement-alist")
 ;(include-book "node-replacement-array2")
 (include-book "node-replacement-array3")
 (include-book "refined-assumption-alists2")
@@ -1842,8 +1841,7 @@
                 (len trees))
          :hints (("Goal" :expand ((:free (count) ,call-of-simplify-trees-and-add-to-dag))
                   :induct (simplify-trees-and-add-to-dag-induct trees count)
-                  :in-theory (e/d ((:i len)) ( ;LEN-OF-CDR
-                                              )))))
+                  :in-theory (enable (:i len)))))
 
        ;; Everything returns an info-world:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)

@@ -61,7 +61,7 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/utilities/auto-termination" :dir :system)
-(include-book "../prune") ; for maybe-prune-dag-precisely
+(include-book "../prune-dag-precisely")
 (include-book "kestrel/jvm/symbolic-execution2" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
@@ -4612,7 +4612,7 @@
                                          ;; (farg1 type)))
                                          parameter-name))
                         (input-vars (if len
-                                        (list parameter-name) ;(make-var-names len parameter-name) ;TODO: what about clashes
+                                        (list parameter-name) ;(make-var-names parameter-name len) ;TODO: what about clashes
                                       (list parameter-name)))
                         (len-claims (if len
                                         `((equal (len ,contents-term) ',len))

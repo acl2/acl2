@@ -49,7 +49,10 @@
            ;; (introduce-bv-array-rules)
            ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
            (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
-           )
+           ;; Handle nth of a 2-d array:
+           '(nth-becomes-nth-to-unroll-for-2d-array
+             nth-to-unroll-opener
+             collect-constants-over-<-2))
    ;; can lead to blowup in lifting md5:
    (bvplus-rules)))
 

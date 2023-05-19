@@ -1605,20 +1605,20 @@
 (defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r-int x y) x)
-		   (* (s-int x y) y))
+	     (= (+ (* (r x y) x)
+		   (* (s x y) y))
 		(gcd x y)))
     :rule-classes ())
 
-(defun z*-inv (x n) (mod (r-int x n) n))
+(defun z*-inv (x n) (mod (r x n) n))
 
 (local-defthm hack
   (implies (and (integerp x)
                 (integerp n)
-                (equal (+ (* n (s-int x n)) (* x (r-int x n)))
+                (equal (+ (* n (s x n)) (* x (r x n)))
                        1))
-           (equal (+ 1 (- (* n (s-int x n))))
-	          (* x (r-int x n)))))
+           (equal (+ 1 (- (* n (s x n))))
+	          (* x (r x n)))))
 
 (local-defthmd z*-inverse-1
   (implies (and (posp n) (> n 1)
@@ -1627,8 +1627,8 @@
   :hints (("Goal" :use (hack
 		        (:instance gcd-linear-combination (y n))
                         (:instance member-rel-primes (k x))
-			(:instance rtl::mod-mod-times (n n) (a (r-int x n)) (b x))
-                        (:instance rtl::mod-mult (n n) (m 1) (a (- (s-int x n))))))))
+			(:instance rtl::mod-mod-times (n n) (a (r x n)) (b x))
+                        (:instance rtl::mod-mult (n n) (m 1) (a (- (s x n))))))))
 
 (local-defthmd z*-inverse-2
   (implies (and (posp n) (> n 1)
@@ -1636,11 +1636,11 @@
 		(posp k)
 		(divides k (z*-inv x n))
 		(divides k n))
-	  (and (divides k (* (r-int x n) x))
-	       (divides k (* (s-int x n) n))))
+	  (and (divides k (* (r x n) x))
+	       (divides k (* (s x n) n))))
   :hints (("Goal" :in-theory (enable divides)
                   :use ((:instance member-rel-primes (k x))
-                        (:instance divides-mod-n (m (r-int x n)))))))
+                        (:instance divides-mod-n (m (r x n)))))))
 
 (local-defthmd z*-inverse-3
   (implies (and (posp n) (> n 1)
@@ -1650,10 +1650,10 @@
 		(divides k n))
 	  (divides k 1))
   :hints (("Goal" :use (z*-inverse-2
-		        (:instance divides-sum (x k) (y (* (r-int x n) x)) (z (* (s-int x n) n)))
+		        (:instance divides-sum (x k) (y (* (r x n) x)) (z (* (s x n) n)))
 		        (:instance member-rel-primes (k x))
 			(:instance gcd-linear-combination (y n))
-                        (:instance divides-mod-n (m (r-int x n)))))))
+                        (:instance divides-mod-n (m (r x n)))))))
 
 (local-defthmd z*-inverse-4
   (implies (and (posp n) (> n 1)

@@ -174,6 +174,13 @@
            (open-channels-p (open-output-channels state)))
   :hints (("Goal" :in-theory (enable state-p1))))
 
+; Matt K. addition:
+(defthm state-p1-forward-to-true-listp-acl2-oracle
+  (implies (state-p1 state)
+           (true-listp (acl2-oracle state)))
+  :hints (("Goal" :in-theory (enable state-p1)))
+  :rule-classes :forward-chaining)
+
 (defthm file-clock-p-of-file-clock
   (implies (state-p1 state)
            (file-clock-p (file-clock state)))
@@ -204,6 +211,11 @@
 
   (defthm global-table-of-update-open-output-channels
     (equal (global-table (update-open-output-channels x st))
+           (global-table st)))
+
+; Matt K. addition:
+  (defthm global-table-of-update-acl2-oracle
+    (equal (global-table (update-acl2-oracle x st))
            (global-table st)))
 
   (defthm global-table-of-update-file-clock
@@ -357,6 +369,11 @@
 
   (defthm open-input-channels-of-update-open-output-channels
     (equal (open-input-channels (update-open-output-channels x st))
+           (open-input-channels st)))
+
+; Matt K. addition:
+  (defthm open-input-channels-of-update-acl2-oracle
+    (equal (open-input-channels (update-acl2-oracle x st))
            (open-input-channels st)))
 
   (defthm global-table-of-update-read-files
@@ -701,3 +718,18 @@
            (equal (boundp-global1 name (put-global key value state))
                   (boundp-global1 name state)))
   :hints (("Goal" :in-theory (enable put-global boundp-global1))))
+
+; Matt K. addition:
+(defthm global-table-p-add-pair
+  (implies (and (symbolp sym)
+                (not (eq sym 'current-acl2-world))
+                (not (eq sym 'timer-alist))
+                (global-table-p x))
+           (global-table-p (add-pair sym val x)))
+  :hints (("Goal" :in-theory (enable global-table-p add-pair))))
+
+; Matt K. addition:
+(defthm global-table-p-of-global-table
+  (implies (state-p1 state)
+           (global-table-p (global-table state)))
+  :hints (("Goal" :in-theory (enable global-table-p global-table))))

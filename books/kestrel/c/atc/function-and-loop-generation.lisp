@@ -118,7 +118,7 @@
                                   (prec-tags atc-string-taginfo-alistp)
                                   (prec-objs atc-string-objinfo-alistp))
   :returns (mv (type type-optionp)
-               (externalp booleanp)
+               (defobj-pred symbolp)
                (arg symbolp))
   :short "C type and argument derived from a guard conjunct, if any."
   :long
@@ -150,8 +150,8 @@
      in this case, the @(tsee star) wrapper is disallowed,
      and the type is the one of the object.
      In this last case,
-     we return a flag indicating that the formal represents an external object;
-     in all other cases, the flag is @('nil').")
+     we also return the @('object-<name>-p') name;
+     in all other cases, this result is @('nil').")
    (xdoc::p
     "If the recognizer does not have any of the above forms,
      we return @('nil') as all results.
@@ -180,7 +180,7 @@
           (mv t nil fn arg)))
        ((when (not okp)) (mv nil nil nil))
        ((unless (symbolp arg)) (mv nil nil nil))
-       ((mv type externalp)
+       ((mv type defobj-pred)
         (b* (((when (eq recog 'scharp)) (mv (type-schar) nil))
              ((when (eq recog 'ucharp)) (mv (type-uchar) nil))
              ((when (eq recog 'sshortp)) (mv (type-sshort) nil))
@@ -249,7 +249,8 @@
                    (info (atc-obj-info->defobject info))
                    ((unless (eq recog (defobject-info->recognizer info)))
                     (mv nil nil)))
-                (mv (defobject-info->type info) t))))
+                (mv (defobject-info->type info)
+                    (defobject-info->recognizer info)))))
           (mv nil nil)))
        ((unless type) (mv nil nil nil))
        ((when (and pointerp
@@ -258,7 +259,7 @@
        (type (if pointerp
                  (type-pointer type)
                type)))
-    (mv type externalp arg))
+    (mv type defobj-pred arg))
   :guard-hints
   (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-rewrite
                               iff-consp-when-true-listp
@@ -272,7 +273,7 @@
                             (fn-formals symbol-listp)
                             (formal symbolp)
                             (type typep)
-                            (externalp booleanp)
+                            (defobj-pred symbolp)
                             (names-to-avoid symbol-listp)
                             (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
@@ -287,22 +288,26 @@
      the type recognizer from the shallow embedding (e.g. @(tsee sintp)).
      This property is used in proofs that build on this theorem.")
    (xdoc::p
-    "For now we only support integer types
-     for formals that are not external objects.
-     If we encounter a different kind of type,
-     we return @('nil') as the name and a dummy event;
-     the caller checks that the returned name is not @('nil')
-     before using the event."))
-  (b* (((unless (and (type-integerp type)
-                     (not externalp)))
-        (mv '(_) nil names-to-avoid))
-       (name (pack fn '- formal))
+    "The theorem is proved in the theory that consists of just
+     the guard function,
+     the @(tsee star) wrapper,
+     and the @(tsee defobject) predicate
+     if the formal refers to an external object.
+     This is because the recognizer predicate is
+     either directly in a conjunct in the guard,
+     possibly wrapped by @(tsee star),
+     or in the definition of the @(tsee defobject) predicate
+     that is in a conjunct of the guard."))
+  (b* ((name (pack fn '- formal))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (pred (type-to-recognizer type wrld))
        (formula `(implies (,fn-guard ,@fn-formals)
                           (,pred ,formal)))
-       (hints `(("Goal" :in-theory '(,fn-guard))))
+       (hints `(("Goal" :in-theory '(,fn-guard
+                                     star
+                                     ,@(and defobj-pred
+                                            (list defobj-pred))))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -315,13 +320,11 @@
                            (fn-guard symbolp)
                            (prec-tags atc-string-taginfo-alistp)
                            (prec-objs atc-string-objinfo-alistp)
-                           (proofs booleanp)
                            (names-to-avoid symbol-listp)
                            (wrld plist-worldp))
   :returns (mv erp
                (typed-formals atc-symbol-varinfo-alistp)
                (events pseudo-event-form-listp)
-               (updated-proofs booleanp :hyp (booleanp proofs))
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
   :short "Calculate the C types of the formal parameters of a target function."
@@ -333,11 +336,7 @@
      types for the formals of @('fn').
      We ensure that there is exactly one such term for each formal.")
    (xdoc::p
-    "We also generate theorems about the formals,
-     unless the input flag @('proofs') is @('nil').
-     For now this is only for formals with certain types:
-     if we encounter a type for which we do not generate a theorem,
-     we set the output flag @('updated-proofs') to @('nil').")
+    "We also generate theorems about the formals.")
    (xdoc::p
     "If we find types for all the formals,
      we return an alist from the formals to their variable information.
@@ -357,11 +356,11 @@
    (xdoc::p
     "We also consult the @(tsee defobject) alist
      to set the @('externalp') flag of the information about the formal."))
-  (b* (((reterr) nil nil nil nil)
+  (b* (((reterr) nil nil nil)
        (formals (formals+ fn wrld))
        (guard (uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((erp prelim-alist events proofs names-to-avoid)
+       ((erp prelim-alist events names-to-avoid)
         (atc-typed-formals-prelim-alist fn
                                         fn-guard
                                         formals
@@ -369,12 +368,11 @@
                                         guard-conjuncts
                                         prec-tags
                                         prec-objs
-                                        proofs
                                         names-to-avoid
                                         wrld))
        ((erp typed-formals)
         (atc-typed-formals-final-alist fn formals guard prelim-alist wrld)))
-    (retok typed-formals events proofs names-to-avoid))
+    (retok typed-formals events names-to-avoid))
 
   :prepwork
 
@@ -387,22 +385,20 @@
                                            (guard-conjuncts pseudo-term-listp)
                                            (prec-tags atc-string-taginfo-alistp)
                                            (prec-objs atc-string-objinfo-alistp)
-                                           (proofs booleanp)
                                            (names-to-avoid symbol-listp)
                                            (wrld plist-worldp))
      :returns (mv erp
                   (prelim-alist-final atc-symbol-varinfo-alistp)
                   (events pseudo-event-form-listp)
-                  (updated-proofs booleanp :hyp (booleanp proofs))
                   (updated-names-to-avoid symbol-listp
                                           :hyp (symbol-listp names-to-avoid)))
      :parents nil
-     (b* (((reterr) nil nil nil nil)
-          ((when (endp guard-conjuncts)) (retok nil nil proofs names-to-avoid))
+     (b* (((reterr) nil nil nil)
+          ((when (endp guard-conjuncts)) (retok nil nil names-to-avoid))
           (conjunct (car guard-conjuncts))
-          ((mv type externalp arg) (atc-check-guard-conjunct conjunct
-                                                             prec-tags
-                                                             prec-objs))
+          ((mv type defobj-pred arg) (atc-check-guard-conjunct conjunct
+                                                               prec-tags
+                                                               prec-objs))
           ((unless type)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
@@ -411,7 +407,6 @@
                                            (cdr guard-conjuncts)
                                            prec-tags
                                            prec-objs
-                                           proofs
                                            names-to-avoid
                                            wrld))
           ((unless (member-eq arg formals))
@@ -422,10 +417,9 @@
                                            (cdr guard-conjuncts)
                                            prec-tags
                                            prec-objs
-                                           proofs
                                            names-to-avoid
                                            wrld))
-          ((erp prelim-alist events proofs names-to-avoid)
+          ((erp prelim-alist events names-to-avoid)
            (atc-typed-formals-prelim-alist fn
                                            fn-guard
                                            formals
@@ -433,7 +427,6 @@
                                            (cdr guard-conjuncts)
                                            prec-tags
                                            prec-objs
-                                           proofs
                                            names-to-avoid
                                            wrld))
           ((when (consp (assoc-eq arg prelim-alist)))
@@ -445,20 +438,15 @@
                          even when the multiple predicates are the same."
                         guard fn arg)))
           ((mv event name names-to-avoid)
-           (if proofs
-               (atc-gen-formal-thm fn fn-guard formals arg type externalp
-                                   names-to-avoid wrld)
-             (mv '(_) nil names-to-avoid)))
-          (events (if name
-                      (cons event events)
-                    events))
-          (proofs (and name proofs))
+           (atc-gen-formal-thm fn fn-guard formals arg type defobj-pred
+                               names-to-avoid wrld))
+          (events (cons event events))
           (externalp
            (b* ((info? (cdr (assoc-equal (symbol-name arg) prec-objs))))
              (and info? t)))
           (info (make-atc-var-info :type type :thm name :externalp externalp))
           (prelim-alist (acons arg info prelim-alist)))
-       (retok prelim-alist events proofs names-to-avoid))
+       (retok prelim-alist events names-to-avoid))
      :prepwork ((local (in-theory (enable acons))))
      :verify-guards nil ; done below
      ///
@@ -508,10 +496,10 @@
   (xdoc::topstring
    (xdoc::p
     "The ACL2 formal parameters are actually passed as an alist,
-     from the formals to their C types,
+     from the formals to their information,
      as calculated by @(tsee atc-typed-formals).")
    (xdoc::p
-    "We check that the name of the parameter is a portable C identifier,
+    "We check that the name of each parameter is a portable C identifier,
      and distinct from the names of the other parameters.")
    (xdoc::p
     "If a parameter represents an access to an external object,
@@ -570,7 +558,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This will be just used (in the future) in theorems,
+    "This is used only in theorems,
      so there is no need to guard-verify it."))
   (b* ((wrld (w state))
        (name (pack fn "-GUARD"))
@@ -604,7 +592,7 @@
      in our new modular proof generation approach,
      we use @(tsee if*) instead of @(tsee if).
      The target functions use @(tsee if) of course,
-     so we need to convert their definition to use @(tsee if*).
+     so we need to convert their definitions to use @(tsee if*).
      We do so by generating, for each target function,
      a rule that expands it to its body
      but with @(tsee if) replaced with @(tsee if*)."))
@@ -668,8 +656,8 @@
      when there is a large number of functions involved.
      A previous version of ATC was generating proofs
      that were executing function lookups,
-     which worked fine for small programs,
-     but not for larger programs."))
+     which worked fine for small C programs,
+     but was slow for larger C programs."))
   (b* ((fn-name (symbol-name fn))
        (formula `(equal (fun-env-lookup (ident ,fn-name)
                                         (init-fun-env (preprocess ,prog-const)))
@@ -1967,16 +1955,18 @@
     "(omap::update (ident <string>) <symbol> (omap::update ... nil) ...)")
    (xdoc::p
     "where @('<string>') is the string for the name of the C formal
-     and @('<symbol') is the symbol that is the corresponding ACL2 formal.")
+     and @('<symbol>') is the symbol that is the corresponding ACL2 formal.")
    (xdoc::p
     "We also return a flag saying whether
-     the formals all have integer types or not."))
+     the formals all have integer types and are not external object,
+     or not."))
   (b* (((when (endp typed-formals)) (mv nil t))
        ((cons var info) (car typed-formals))
        ((mv omap-rest all-intp)
         (atc-gen-omap-update-formals (cdr typed-formals))))
     (mv `(omap::update (ident ',(symbol-name var)) ,var ,omap-rest)
         (and (type-integerp (atc-var-info->type info))
+             (not (atc-var-info->externalp info))
              all-intp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2330,9 +2320,6 @@
                                                (ident ,(symbol-name var))
                                                compst)
                                               compst)
-                                 ,var)
-                          (equal (read-var (ident ,(symbol-name var))
-                                           ,compst-var)
                                  ,var)))
           (formula1 (atc-contextualize formula1
                                        context
@@ -2357,8 +2344,7 @@
           (valuep-when-type-pred (pack 'valuep-when- type-pred))
           (hints
            `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
-                                  read-object-of-objdesign-of-var-to-read-var
-                                  read-var-of-add-var
+                                  read-object-of-objdesign-of-var-of-add-var
                                   ,var-thm
                                   ident-fix-when-identp
                                   identp-of-ident
@@ -2639,9 +2625,9 @@
             fn-def*
             names-to-avoid)
         (atc-gen-fn-def* fn names-to-avoid wrld))
-       ((erp typed-formals formals-events modular-proofs names-to-avoid)
-        (atc-typed-formals
-         fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
+       ((erp typed-formals formals-events names-to-avoid)
+        (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
+       (modular-proofs proofs)
        ((erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
        (formals (strip-cars typed-formals))
        (compst-var (genvar$ 'atc "COMPST" nil formals state))
@@ -4048,9 +4034,8 @@
             fn-guard
             names-to-avoid)
         (atc-gen-fn-guard fn names-to-avoid state))
-       ((erp typed-formals formals-events & names-to-avoid)
-        (atc-typed-formals
-         fn fn-guard prec-tags prec-objs proofs names-to-avoid wrld))
+       ((erp typed-formals formals-events names-to-avoid)
+        (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
        (body (ubody+ fn wrld))
        ((erp (lstmt-gout loop))
         (atc-gen-loop-stmt body

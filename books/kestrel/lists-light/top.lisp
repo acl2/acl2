@@ -1,6 +1,6 @@
 ; Top-level book for the lightweight-lists library.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -83,6 +83,8 @@
 (include-book "remove-nth")
 
 (include-book "len-at-least")
+
+(include-book "nth-to-unroll")
 
 (include-book "take2")
 (include-book "memberp2")

@@ -74,12 +74,11 @@
            (computed-hint-tuple-listp (cdr x) wrld))))
    (t (null x))))
 
-(table default-hints-table nil nil
-       :guard
-       (case key
-         ((t) (true-listp val))
-         (:override (computed-hint-tuple-listp val world))
-         (t nil)))
+(set-table-guard default-hints-table
+                 (case key
+                   ((t) (true-listp val))
+                   (:override (computed-hint-tuple-listp val world))
+                   (t nil)))
 
 (table default-hints-table nil nil :clear)
 
@@ -11043,10 +11042,10 @@
                    (car form)
                    (macro-args (car form) wrld)))))
 
-(table duplicate-keys-action-table nil nil
-       :guard
-       (and (symbolp key)
-            (member val '(:error :warning nil))))
+(set-table-guard duplicate-keys-action-table
+                 (and (symbolp key)
+                      (member val '(:error :warning nil)))
+                 :topic set-duplicate-keys-action)
 
 (defmacro set-duplicate-keys-action! (key action)
   `(with-output
@@ -26383,11 +26382,11 @@
 ; Now that ev-w, translate, untranslate, and so on are all defined, let us
 ; populate guard-msg-table.
 
-(table guard-msg-table nil nil
-       :guard
-       (and (symbolp key)
-            (or (null val)
-                (termp val world))))
+(set-table-guard guard-msg-table
+                 (and (symbolp key)
+                      (or (null val)
+                          (termp val world)))
+                 :topic set-guard-msg)
 
 (defmacro set-guard-msg (fn form)
   (declare (xargs :guard (symbolp fn)))

@@ -1499,24 +1499,24 @@
                  the number of conjuncts)"
                 nil nil nil))))))
 
-(table dive-into-macros-table nil nil
-       :guard
-       (and (symbolp key)
-            (or (and (function-symbolp val world)
+(set-table-guard
+ dive-into-macros-table
+ (and (symbolp key)
+      (or (and (function-symbolp val world)
 
 ; We can call key using ev-fncall-w in expand-address, so we had better be sure
 ; that the guard of ev-fncall-w will be satisfied.
 
-                     (equal (stobjs-in val world) '(nil nil nil nil))
-                     (not (assoc-eq val *ttag-fns*))
+               (equal (stobjs-in val world) '(nil nil nil nil))
+               (not (assoc-eq val *ttag-fns*))
 
 ; The following test is a bit too strong, since it fails to take into account
 ; temp-touchable-fns; see untouchable-fn-p.  However, this drawback seems quite
 ; minor and it certainly does not affect soundness.
 
-                     (not (member-eq val (global-val 'untouchable-fns world))))
-                (integerp val)
-                (null val))))
+               (not (member-eq val (global-val 'untouchable-fns world))))
+          (integerp val)
+          (null val))))
 
 (defmacro add-dive-into-macro (name val)
   `(table dive-into-macros-table ',name ',val))
