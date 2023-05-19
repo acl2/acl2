@@ -212,6 +212,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lift-thm-asgfree-pairs ((free symbol-listp) (witness "A term."))
+  :returns (terms true-listp)
+  :short "Calculate a list of pairs for constructing
+          a witness assignment to free variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used in the hints for the `if' direction
+     of the lifting theorem, when there are free variables."))
+  (cond ((endp free) (raise "Error."))
+        ((endp (cdr free)) (list witness))
+        (t (lift-thm-asgfree-pairs-aux free 0 witness)))
+
+  :prepwork
+  ((define lift-thm-asgfree-pairs-aux ((free symbol-listp)
+                                       (index natp)
+                                       (witness "A term."))
+     :returns (terms true-listp)
+     (cond ((endp free) nil)
+           (t (cons `(mv-nth ,index ,witness)
+                    (lift-thm-asgfree-pairs-aux
+                     (cdr free) (1+ index) witness)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-thm-called-lemma-instance ((crel constrelp)
+                                        (params symbol-listp)
+                                        (prime symbolp))
+  :returns lemma-instance
+  :short "Calculate a lemma instance for a relation call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "To prove the lifting theorem of a PFCS definition,
+     we need to use the lifting theorems of the PFCS relations
+     called by this definition.
+     There is one lemma instance for each call.
+     The variables of the lemma are instantiated
+     with the result of evaluating the actual arguments of the call."))
+  (b* (((constrel crel) crel)
+       (asg `(omap::from-lists ',params (list ,@params)))
+       (inst-pairs (lift-thm-called-lemma-instance-aux params asg prime))
+       (lemma-name (acl2::packn-pos (list 'definition-satp-of-
+                                          crel.name
+                                          '-to-shallow)
+                                    crel.name)))
+    `(:instance ,lemma-name ,@inst-pairs))
+
+  :prepwork
+  ((define lift-thm-called-lemma-instance-aux ((params symbol-listp)
+                                               asg
+                                               (prime symbolp))
+     :returns (doublets doublet-listp)
+     (b* (((when (endp params)) nil)
+          (param (car params))
+          (doublet `(,param (eval-expr ',(expression-var param) ,asg ,prime)))
+          (doublets (lift-thm-called-lemma-instance-aux
+                     (cdr params) asg prime)))
+       (cons doublet doublets))
+     :prepwork ((local (in-theory (enable doublet-listp length len)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-thm-called-lemma-instances ((crels constrel-setp)
+                                         (params symbol-listp)
+                                         (prime symbolp))
+  :returns (lemma-instances true-listp)
+  :short "Calculate lemma instances for a set of relation calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called on all the relations called by a PFCS definition
+     for which we need to prove the lifting theorem;
+     the resulting lemma instances are used in the proof."))
+  (b* (((when (set::empty crels)) nil)
+       (crel (set::head crels))
+       (instance (lift-thm-called-lemma-instance crel params prime))
+       (instances (lift-thm-called-lemma-instances
+                   (set::tail crels) params prime)))
+    (cons instance instances)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lift-thm ((def definitionp) (prime symbolp) (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
                (def-hyps true-listp))
@@ -261,6 +344,10 @@
                                         '-to-shallow)
                                   def.name))
        (def-hyps (lift-thm-def-hyps def wrld))
+       (callee-lemma-instances
+        (lift-thm-called-lemma-instances (constraint-list-constrels def.body)
+                                         def.para
+                                         prime))
 
        ((when (equal free nil))
         (mv
@@ -318,7 +405,8 @@
                          acl2::nat-listp-of-cons
                          acl2::not-reserrp-when-nat-listp
                          nfix
-                         (:t mod)))
+                         (:t mod))
+            :use (,@callee-lemma-instances))
          def-hyps))
 
        (constraint-relation-satp-witness
@@ -413,7 +501,8 @@
                                free constraint-relation-satp-witness))
                  ,@(lift-thm-omap-keys-lemma-instances
                     (append def.para free)
-                    constraint-relation-satp-witness)))
+                    constraint-relation-satp-witness)
+                 ,@callee-lemma-instances))
 
          (defruled if-direction
            (implies (and (equal (lookup-definition ',def.name defs)
@@ -474,33 +563,17 @@
                         (:e omap::in)
                         lift-rule-natp-of-mod
                         (:e natp))
-           :use (:instance constraint-relation-satp-suff
-                           (asgfree (omap::from-lists
-                                     ',free
-                                     (list ,@(lift-thm-aux3
-                                              free def-witness))))
-                           (name ',def.name)
-                           (args (expression-var-list ',def.para))
-                           (asg (omap::from-lists ',def.para
-                                                  (list ,@def.para)))))))
-     def-hyps))
-
-  :prepwork
-
-  ((define lift-thm-aux3 ((free symbol-listp) (witness "A term."))
-     :returns (terms true-listp)
-     (cond ((endp free) (raise "Error."))
-           ((endp (cdr free)) (list witness))
-           (t (lift-thm-aux3-aux free 0 witness)))
-     :prepwork
-     ((define lift-thm-aux3-aux ((free symbol-listp)
-                                 (index natp)
-                                 (witness "A term."))
-        :returns (terms true-listp)
-        (cond ((endp free) nil)
-              (t (cons `(mv-nth ,index ,witness)
-                       (lift-thm-aux3-aux
-                        (cdr free) (1+ index) witness)))))))))
+           :use ((:instance constraint-relation-satp-suff
+                            (asgfree (omap::from-lists
+                                      ',free
+                                      (list ,@(lift-thm-asgfree-pairs
+                                               free def-witness))))
+                            (name ',def.name)
+                            (args (expression-var-list ',def.para))
+                            (asg (omap::from-lists ',def.para
+                                                   (list ,@def.para))))
+                 ,@callee-lemma-instances))))
+     def-hyps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
