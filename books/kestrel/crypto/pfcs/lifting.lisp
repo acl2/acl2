@@ -175,11 +175,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-definition-thm ((def definitionp)
-                              (prime symbolp)
-                              (wrld plist-worldp))
+(define lift-thm ((def definitionp) (prime symbolp) (wrld plist-worldp))
   :returns (event pseudo-event-formp)
-  :short "Generate theorem connecting deeply and shallowly embedded semantics."
+  :short "Generate the theorem connecting
+          deeply and shallowly embedded semantics."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -369,9 +368,9 @@
                         natp-of-cdr-of-in-when-assignmentp-type
                         fep-of-cdr-of-in-when-assignment-wfp)
           :use ((:instance ,(add-suffix-to-fn def.name "-SUFF")
-                           ,@(sesem-definition-thm-aux1
+                           ,@(lift-thm-aux1
                               free constraint-relation-satp-witness))
-                ,@(sesem-definition-thm-aux2
+                ,@(lift-thm-aux2
                    (append def.para free)
                    constraint-relation-satp-witness)))
 
@@ -437,7 +436,7 @@
           :use (:instance constraint-relation-satp-suff
                           (asgfree (omap::from-lists
                                     ',free
-                                    (list ,@(sesem-definition-thm-aux3
+                                    (list ,@(lift-thm-aux3
                                              free def-witness))))
                           (name ',def.name)
                           (args (expression-var-list ',def.para))
@@ -446,35 +445,35 @@
 
   :prepwork
 
-  ((define sesem-definition-thm-aux1 ((free symbol-listp) (witness "A term."))
+  ((define lift-thm-aux1 ((free symbol-listp) (witness "A term."))
      :returns (doublets doublet-listp)
      (cond ((endp free) nil)
            (t (cons `(,(car free)
                       (cdr (omap::in ',(car free) ,witness)))
-                    (sesem-definition-thm-aux1 (cdr free) witness))))
+                    (lift-thm-aux1 (cdr free) witness))))
      :prepwork ((local (in-theory (enable doublet-listp length len)))))
 
-   (define sesem-definition-thm-aux2 ((vars symbol-listp) (witness "A term."))
+   (define lift-thm-aux2 ((vars symbol-listp) (witness "A term."))
      :returns (lemma-instances true-listp)
      (cond ((endp vars) nil)
            (t (cons `(:instance lift-rule-omap-in-to-in-of-keys
                                 (key ',(car vars))
                                 (map ,witness))
-                    (sesem-definition-thm-aux2 (cdr vars) witness)))))
+                    (lift-thm-aux2 (cdr vars) witness)))))
 
-   (define sesem-definition-thm-aux3 ((free symbol-listp) (witness "A term."))
+   (define lift-thm-aux3 ((free symbol-listp) (witness "A term."))
      :returns (terms true-listp)
      (cond ((endp free) (raise "Error."))
            ((endp (cdr free)) (list witness))
-           (t (sesem-definition-thm-aux3-aux free 0 witness)))
+           (t (lift-thm-aux3-aux free 0 witness)))
      :prepwork
-     ((define sesem-definition-thm-aux3-aux ((free symbol-listp)
-                                             (index natp)
-                                             (witness "A term."))
+     ((define lift-thm-aux3-aux ((free symbol-listp)
+                                 (index natp)
+                                 (witness "A term."))
         :returns (terms true-listp)
         (cond ((endp free) nil)
               (t (cons `(mv-nth ,index ,witness)
-                       (sesem-definition-thm-aux3-aux
+                       (lift-thm-aux3-aux
                         (cdr free) (1+ index) witness)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -485,7 +484,7 @@
           to a shallowly embedded PFCS definition
           with a theorem relating the two."
   (b* ((event-fn (sesem-definition def prime))
-       (event-thm (sesem-definition-thm def prime wrld)))
+       (event-thm (lift-thm def prime wrld)))
     `(encapsulate ()
        ,event-fn
        ,event-thm)))
