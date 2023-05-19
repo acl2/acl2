@@ -164,7 +164,7 @@
      (b* (((when (set::empty crels)) nil)
           (crel (set::head crels))
           (name (constrel->name crel))
-          (info (assoc-eq name tab))
+          (info (cdr (assoc-eq name tab)))
           ((unless info)
            (raise "Internal error: ~x0 not in table." name))
           ((unless (lift-infop info))
@@ -172,6 +172,26 @@
           (hyps (lift-info->hyps info))
           (more-hyps (lift-thm-def-hyps-aux (set::tail crels) tab)))
        (union-equal hyps more-hyps)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-thm-free-inst ((free symbol-listp) (witness "A term."))
+  :returns (doublets doublet-listp)
+  :short "Calculate an instantiation of free variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to prove the lifting theorem,
+     precisely the `only if' direction of the theorem
+     for the case in which the relation has free variables.
+     This instantiation is used in a lemma instance (see @(tsee lift-thm)).
+     The instantiation replaces each free variable
+     with its lookup in the witness term of the @(tsee defun-sk)."))
+  (cond ((endp free) nil)
+        (t (cons `(,(car free)
+                   (cdr (omap::in ',(car free) ,witness)))
+                 (lift-thm-free-inst (cdr free) witness))))
+  :prepwork ((local (in-theory (enable doublet-listp length len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -372,7 +392,7 @@
                          natp-of-cdr-of-in-when-assignmentp-type
                          fep-of-cdr-of-in-when-assignment-wfp)
            :use ((:instance ,(add-suffix-to-fn def.name "-SUFF")
-                            ,@(lift-thm-aux1
+                            ,@(lift-thm-free-inst
                                free constraint-relation-satp-witness))
                  ,@(lift-thm-aux2
                     (append def.para free)
@@ -450,15 +470,7 @@
 
   :prepwork
 
-  ((define lift-thm-aux1 ((free symbol-listp) (witness "A term."))
-     :returns (doublets doublet-listp)
-     (cond ((endp free) nil)
-           (t (cons `(,(car free)
-                      (cdr (omap::in ',(car free) ,witness)))
-                    (lift-thm-aux1 (cdr free) witness))))
-     :prepwork ((local (in-theory (enable doublet-listp length len)))))
-
-   (define lift-thm-aux2 ((vars symbol-listp) (witness "A term."))
+  ((define lift-thm-aux2 ((vars symbol-listp) (witness "A term."))
      :returns (lemma-instances true-listp)
      (cond ((endp vars) nil)
            (t (cons `(:instance lift-rule-omap-in-to-in-of-keys
