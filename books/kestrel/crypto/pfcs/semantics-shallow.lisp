@@ -112,7 +112,8 @@
    constr
    :equal `(equal ,(sesem-expression constr.left prime)
                   ,(sesem-expression constr.right prime))
-   :relation `(,constr.name ,@(sesem-expression-list constr.args prime))))
+   :relation `(,constr.name ,@(sesem-expression-list constr.args prime)
+                            ,prime)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
