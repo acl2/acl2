@@ -637,10 +637,7 @@
      obtaining the computation state after all the items;
      note that, at that spot in the generated theorem,
      the computation state variables already accumulates
-     the contextual premises in @('gin').")
-   (xdoc::p
-    "We temporarily do the same hack described in @(tsee atc-gen-pop-frame-thm),
-     in regard to contextualizing the computation state."))
+     the contextual premises in @('gin')."))
   (b* ((wrld (w state))
        ((stmt-gin gin) gin)
        (all-items (cons item items))

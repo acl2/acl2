@@ -2411,16 +2411,7 @@
      More precisely, the ``difference'' between the ending and starting context
      is used to contextualize the computation state;
      we double-check that
-     the starting context is a prefix of the ending context.")
-   (xdoc::p
-    "As a temporary hack, as we contextualize the computation state,
-     since @(tsee atc-contextualize) is meant to contextualize formulas,
-     we get an implication of the form
-     @('(implies (compustatep <compst-var>) <compst-term>)'),
-     where @('<compst-term>') is what we actually want.
-     So we extract it from the term.
-     We plan to differentiate contextualization for formulas and terms,
-     and avoid this hack."))
+     the starting context is a prefix of the ending context."))
   (b* ((compst0-var (pack compst-var "0"))
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
