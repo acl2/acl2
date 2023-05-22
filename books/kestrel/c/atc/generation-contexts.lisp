@@ -220,7 +220,15 @@
      passed to this ACL2 function as @('compst-var').
      We go through the context and wrap the computation state variable
      with @(tsee let)s corresponding to binding of
-     computation states and C variables."))
+     computation states and C variables.")
+   (xdoc::p
+    "This is used to calculate an updated (symbolic) computation state
+     after the execution of some code, e.g. a list of block items.
+     The caller takes the ``difference'' between
+     the context before and after that execution,
+     and passes it to this function.
+     We expect that there should be no test in that difference context:
+     we defensively check that, and raise an error if we find one."))
   (atc-contextualize-compustate-aux compst-var (atc-context->premises context))
 
   :prepwork
@@ -238,5 +246,4 @@
         :cvalue `(let ((,premise.var ,premise.term))
                    ,(atc-contextualize-compustate-aux
                      compst-var (cdr premises)))
-        :test (atc-contextualize-compustate-aux
-               compst-var (cdr premises)))))))
+        :test (raise "Internal error: test ~x0 found." premise.term))))))
