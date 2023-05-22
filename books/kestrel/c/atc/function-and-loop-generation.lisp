@@ -2425,11 +2425,14 @@
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       ((unless (prefixp context-start context-end))
+       (premises-start (atc-context->premises context-start))
+       (premises-end (atc-context->premises context-end))
+       ((unless (prefixp premises-start premises-end))
         (raise "Internal error: prefix ~x0 is not a prefix of context ~x1."
                context-start context-end)
         (mv '(_) nil nil))
-       (context-diff (nthcdr (len context-start) context-end))
+       (premises-diff (nthcdr (len premises-start) premises-end))
+       (context-diff (make-atc-context :premises premises-diff))
        (compst-term (atc-contextualize-compustate compst-var
                                                   context-diff))
        (formula `(equal (pop-frame ,compst-term)
@@ -2657,8 +2660,9 @@
             (atc-gen-push-init-thm fn fn-guard typed-formals omap-update-nest
                                    compst-var names-to-avoid wrld)
           (mv '(_) nil nil names-to-avoid)))
-       (context (list (make-atc-premise-compustate :var compst-var
-                                                   :term add-var-nest)))
+       (premises (list (make-atc-premise-compustate :var compst-var
+                                                    :term add-var-nest)))
+       (context (make-atc-context :premises premises))
        ((mv inscope init-inscope-events names-to-avoid)
         (if (and proofs
                  modular-proofs)
@@ -4039,7 +4043,8 @@
        (body (ubody+ fn wrld))
        ((erp (lstmt-gout loop))
         (atc-gen-loop-stmt body
-                           (make-lstmt-gin :context nil
+                           (make-lstmt-gin :context (make-atc-context
+                                                     :premises nil)
                                            :typed-formals typed-formals
                                            :inscope (list typed-formals)
                                            :fn fn
