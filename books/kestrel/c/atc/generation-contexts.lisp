@@ -210,7 +210,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-contextualize-compustate ((compst-var symbolp)
-                                      (context atc-contextp))
+                                      (premises atc-premise-listp))
   :returns (term "An untranslated term.")
   :short "Put a computation state into context."
   :long
@@ -218,7 +218,7 @@
    (xdoc::p
     "The initial computation state is expressed as a variable,
      passed to this ACL2 function as @('compst-var').
-     We go through the context and wrap the computation state variable
+     We go through the premises and wrap the computation state variable
      with @(tsee let)s corresponding to binding of
      computation states and C variables.")
    (xdoc::p
@@ -228,22 +228,16 @@
      the context before and after that execution,
      and passes it to this function.
      We expect that there should be no test in that difference context:
-     we defensively check that, and raise an error if we find one."))
-  (atc-contextualize-compustate-aux compst-var (atc-context->premises context))
-
-  :prepwork
-  ((define atc-contextualize-compustate-aux ((compst-var symbolp)
-                                             (premises atc-premise-listp))
-     :returns (term "An untranslated term.")
-     :parents nil
-     (b* (((when (endp premises)) compst-var)
-          (premise (car premises)))
-       (atc-premise-case
-        premise
-        :compustate `(let ((,premise.var ,premise.term))
-                       ,(atc-contextualize-compustate-aux
-                         compst-var (cdr premises)))
-        :cvalue `(let ((,premise.var ,premise.term))
-                   ,(atc-contextualize-compustate-aux
-                     compst-var (cdr premises)))
-        :test (raise "Internal error: test ~x0 found." premise.term))))))
+     we defensively check that, and raise an error if we find one.")
+   (xdoc::p
+    "Note that this function takes as input a list of premises, not a context.
+     This is the ``difference'' betweeen the two contexts mentioned above."))
+  (b* (((when (endp premises)) compst-var)
+       (premise (car premises)))
+    (atc-premise-case
+     premise
+     :compustate `(let ((,premise.var ,premise.term))
+                    ,(atc-contextualize-compustate compst-var (cdr premises)))
+     :cvalue `(let ((,premise.var ,premise.term))
+                ,(atc-contextualize-compustate compst-var (cdr premises)))
+     :test (raise "Internal error: test ~x0 found." premise.term))))

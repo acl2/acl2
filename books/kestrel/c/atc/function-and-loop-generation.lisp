@@ -2423,9 +2423,7 @@
                context-start context-end)
         (mv '(_) nil nil))
        (premises-diff (nthcdr (len premises-start) premises-end))
-       (context-diff (make-atc-context :premises premises-diff))
-       (compst-term (atc-contextualize-compustate compst-var
-                                                  context-diff))
+       (compst-term (atc-contextualize-compustate compst-var premises-diff))
        (formula `(equal (pop-frame ,compst-term)
                         ,compst0-var))
        (formula (atc-contextualize formula
