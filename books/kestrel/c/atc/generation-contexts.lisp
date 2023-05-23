@@ -150,8 +150,7 @@
      "The fact that the limit variable is greater than or equal to
       a given bound (expressed as a term)."))
    (xdoc::p
-    "If @('fn-guard?') is @('nil'),
-     we omit the the guard hypothesis.
+    "If @('fn-guard?') is @('nil'), we omit the guard hypothesis.
      This is used to generate some claims within the ACL2 proof builder.
      In this case, @('fn?') must be @('nil') too.")
    (xdoc::p
