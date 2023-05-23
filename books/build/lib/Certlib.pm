@@ -972,7 +972,7 @@ sub find_deps {
 	    $imagefileimage = $line;
 	}
 	if ($paramimage || $imagefileimage) {
-	    if ($paramimage && $imagefileimage && ! ($paramimage eq $imagefileimage && !$directory_imagefile)) {
+	    if ($paramimage && $imagefileimage && ! ($paramimage eq $imagefileimage) && !$directory_imagefile) {
 		print STDERR "Warning: find_deps: different acl2 images for $lispfile given by acl2-image cert-param and .image file.\n";
 		print STDERR " Using image given by cert-param:     $paramimage\n";
 		print STDERR " Ignoring image from .image file:     $imagefileimage\n";
