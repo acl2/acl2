@@ -1356,7 +1356,7 @@
                                   (prec-objs atc-string-objinfo-alistp))
   :returns (args symbol-listp :hyp (symbol-listp formals))
   :short "Filter external objects out of the formals,
-          for passing to @(tsee exec-fun),"
+          for passing to @(tsee exec-fun)."
   :long
   (xdoc::topstring
    (xdoc::p
