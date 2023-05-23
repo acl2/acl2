@@ -159,7 +159,8 @@
      we avoid all the premises and hypotheses that concern computation states.
      Some of the theorems we generate do not involve computation states:
      they apply just to ACL2 terms that represent shallowly embedded C code;
-     they do not apply to relations between ACL2 and deeply embedded C code.")
+     they do not apply to relations
+     between ACL2 terms and deeply embedded C code.")
    (xdoc::p
     "If @('limit-var?') is @('nil'),
      we avoid the hypotheses that concern limits.
@@ -170,10 +171,10 @@
        (formula (atc-contextualize-aux formula
                                        (atc-context->premises context)
                                        skip-cs))
-       (hyps (append (and fn-guard?
-                          `((,fn-guard? ,@(formals+ fn? wrld))))
-                     (and compst-var?
+       (hyps (append (and compst-var?
                           `((compustatep ,compst-var?)))
+                     (and fn-guard?
+                          `((,fn-guard? ,@(formals+ fn? wrld))))
                      (and limit-var?
                           `((integerp ,limit-var?)
                             (>= ,limit-var? ,limit-bound?)))))
