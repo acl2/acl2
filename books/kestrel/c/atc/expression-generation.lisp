@@ -272,9 +272,7 @@
    (xdoc::p
     "If the operation has an associated @('okp') predicate,
      we also generate a theorem saying that
-     the @('okp') predicate holds under the guard.
-     For now this does not consider any contextual information,
-     but it will be extended to consider it."))
+     the @('okp') predicate holds under the guard."))
   (b* (((reterr) (irr-pexpr-gout))
        (wrld (w state))
        ((pexpr-gin gin) gin)
