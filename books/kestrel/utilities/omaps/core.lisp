@@ -1,6 +1,6 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -582,6 +582,10 @@
                    (t (in key (tail map)))))))
   ///
 
+  (defrule in-of-mfix
+    (equal (in key (mfix map))
+           (in key map)))
+
   (defrule in-when-empty
     (implies (empty map)
              (equal (in key map) nil))
@@ -608,10 +612,20 @@
              (in key1 map)))
     :enable (update head tail empty mfix mapp))
 
+  (defrule in-of-update*
+    (equal (in key (update* map1 map2))
+           (or (in key map1)
+               (in key map2)))
+    :enable update*)
+
   (defrule update-of-cdr-of-in-when-in
     (implies (in k m)
              (equal (update k (cdr (in k m)) m)
-                    m))))
+                    m)))
+
+  (defruled consp-of-in-iff-in
+    (iff (consp (in key map))
+         (in key map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -835,7 +849,7 @@
   :short "Oset of the keys of an omap."
   (cond ((empty map) nil)
         (t (mv-let (key val)
-             (head map)
+               (head map)
              (declare (ignore val))
              (set::insert key (keys (tail map))))))
   ///
@@ -844,14 +858,38 @@
     (implies (empty map)
              (equal (keys map) nil))
     :rule-classes (:rewrite :type-prescription)
-    :enable empty))
+    :enable empty)
 
-(defthm keys-of-update
-  (equal (keys (update key val m))
-         (set::insert key (keys m)))
-  ;; This ugly list suggests a need for useful lemmas!
-  :hints (("Goal" :in-theory (enable keys update empty insert head tail mfix mapp set::insert
-                                     set::head set::tail set::empty setp))))
+  (defruled keys-iff-not-empty
+    (iff (keys map)
+         (not (empty map))))
+
+  (defruled in-to-in-of-keys
+    (iff (in key map)
+         (set::in key (keys map)))
+    :enable in)
+
+  (defruled in-keys-when-in-forward
+    (implies (in key map)
+             (set::in key (keys map)))
+    :rule-classes :forward-chaining)
+
+  (defrule keys-of-update
+    (equal (keys (update key val m))
+           (set::insert key (keys m)))
+    ;; This ugly list suggests a need for useful lemmas!
+    :enable (update
+             empty
+             insert
+             head
+             tail
+             mfix
+             mapp
+             set::insert
+             set::head
+             set::tail
+             set::empty
+             set::setp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

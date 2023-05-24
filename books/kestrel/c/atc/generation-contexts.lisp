@@ -64,7 +64,7 @@
     "We include bindings of the computation state.
      Each such binding consists of
      a variable for the computation state
-     (contained in @('compst-var') in the code generation code),
+     (stored in @('compst-var') in the code generation code),
      and a term that must represent a computation state.
      The meaning is that the variable is bound to the term.")
    (xdoc::p
@@ -77,6 +77,12 @@
      (as in @(tsee atc-contextualize)).")
    (xdoc::p
     "We also include terms that are tests of @(tsee if)s.")
+   (xdoc::p
+    "Since the terms used in premises are untranslated,
+     we do not have type constraints on them.
+     In the future, we could use a type for untranslated terms,
+     perhaps a shallow/light recognizer
+     analogous to @(tsee pseudo-event-formp).")
    (xdoc::p
     "We may add more kinds later."))
   (:compustate ((var symbolp)
@@ -104,10 +110,21 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A context consists a list of premises, in order.
-     We wrap the list type into a product type
-     because we will extend this fixtype soon."))
-  ((premises atc-premise-list))
+    "A context consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "A preamble consisting of a list of terms.
+      Since the terms are untranslated,
+      we do not constrain them to be of any specific type,
+      analogously to tests in premises
+      (see discussion in @(tsee atc-premise)).")
+    (xdoc::li
+     "A list of premises, in order."))
+   (xdoc::p
+    "The preamble is fixed, and logically precedes the premises.
+     The premises, as explained in @(see atc-generation-contexts), grow."))
+  ((preamble true-list)
+   (premises atc-premise-list))
   :pred atc-contextp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,7 +132,7 @@
 (defirrelevant irr-atc-context
   :short "An irrelevant context."
   :type atc-contextp
-  :body (make-atc-context :premises nil))
+  :body (make-atc-context :preamble nil :premises nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,6 +143,7 @@
                            (compst-var? symbolp)
                            (limit-var? symbolp)
                            (limit-bound? pseudo-termp)
+                           (preamblep booleanp)
                            (wrld plist-worldp))
   :returns (formula1 "An untranslated term.")
   :short "Put a formula into a context."
@@ -137,21 +155,25 @@
      and ending with the term given as input.")
    (xdoc::p
     "We also add, around the resulting term from the process described above,
-     with additional premises:")
+     additional premises:")
    (xdoc::ul
+    (xdoc::li
+     "The fact that the computation state variable is a computation state.")
+    (xdoc::li
+     "The preamble from the context.")
     (xdoc::li
      "The fact that the guard of the target function @('fn')
       holds on the formals of the function.")
-    (xdoc::li
-     "The fact that the computation state variable is a computation state.")
     (xdoc::li
      "The fact that the limit variable is an integer.")
     (xdoc::li
      "The fact that the limit variable is greater than or equal to
       a given bound (expressed as a term)."))
    (xdoc::p
-    "If @('fn-guard?') is @('nil'),
-     we omit the the guard hypothesis.
+    "If @('preamblep') is @('nil'), we omit the preamble from the context.
+     This is used to generate some claims within the ACL2 proof builder.")
+   (xdoc::p
+    "If @('fn-guard?') is @('nil'), we omit the guard hypothesis.
      This is used to generate some claims within the ACL2 proof builder.
      In this case, @('fn?') must be @('nil') too.")
    (xdoc::p
@@ -159,7 +181,8 @@
      we avoid all the premises and hypotheses that concern computation states.
      Some of the theorems we generate do not involve computation states:
      they apply just to ACL2 terms that represent shallowly embedded C code;
-     they do not apply to relations between ACL2 and deeply embedded C code.")
+     they do not apply to relations
+     between ACL2 terms and deeply embedded C code.")
    (xdoc::p
     "If @('limit-var?') is @('nil'),
      we avoid the hypotheses that concern limits.
@@ -170,10 +193,12 @@
        (formula (atc-contextualize-aux formula
                                        (atc-context->premises context)
                                        skip-cs))
-       (hyps (append (and fn-guard?
-                          `((,fn-guard? ,@(formals+ fn? wrld))))
-                     (and compst-var?
+       (hyps (append (and compst-var?
                           `((compustatep ,compst-var?)))
+                     (and preamblep
+                          (atc-context->preamble context))
+                     (and fn-guard?
+                          `((,fn-guard? ,@(formals+ fn? wrld))))
                      (and limit-var?
                           `((integerp ,limit-var?)
                             (>= ,limit-var? ,limit-bound?)))))
