@@ -272,9 +272,7 @@
    (xdoc::p
     "If the operation has an associated @('okp') predicate,
      we also generate a theorem saying that
-     the @('okp') predicate holds under the guard.
-     For now this does not consider any contextual information,
-     but it will be extended to consider it."))
+     the @('okp') predicate holds under the guard."))
   (b* (((reterr) (irr-pexpr-gout))
        (wrld (w state))
        ((pexpr-gin gin) gin)
@@ -321,6 +319,7 @@
                                      gin.context
                                      gin.fn
                                      gin.fn-guard
+                                     nil
                                      nil
                                      nil
                                      nil
@@ -478,6 +477,7 @@
                                      gin.context
                                      gin.fn
                                      gin.fn-guard
+                                     nil
                                      nil
                                      nil
                                      nil
@@ -655,6 +655,7 @@
                                      gin.context
                                      gin.fn
                                      gin.fn-guard
+                                     nil
                                      nil
                                      nil
                                      nil
@@ -929,28 +930,29 @@
                                ,value-kind-when-test-type-pred))))
        (instructions
         `((casesplit
-           ,(atc-contextualize test-term gin.context nil nil nil nil nil wrld))
+           ,(atc-contextualize test-term
+                               gin.context nil nil nil nil nil nil wrld))
           (claim ,(atc-contextualize `(test* ,test-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (condexpr (if* ,test-term ,then-term ,else-term))
                            ,then-term)
-                   gin.context nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true
                                        condexpr
                                        test*))))
           (prove :hints ,hints-then)
           (claim ,(atc-contextualize `(test* (not ,test-term))
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (condexpr (if* ,test-term ,then-term ,else-term))
                            ,else-term)
-                   gin.context nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false
                                        condexpr
@@ -1076,23 +1078,24 @@
                         apconvert-expr-value-when-not-value-array
                         ,value-kind-when-arg1-type-pred))))
        (instructions
-        `((casesplit ,(atc-contextualize arg1-term
-                                         gin.context nil nil nil nil nil wrld))
+        `((casesplit ,(atc-contextualize
+                       arg1-term
+                       gin.context nil nil nil nil nil nil wrld))
           (claim ,(atc-contextualize `(test* ,arg1-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term ,arg2-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
           (claim ,(atc-contextualize `(test* (not ,arg1-term))
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term nil)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
@@ -1220,23 +1223,24 @@
                         ,value-kind-when-arg1-type-pred
                         ,value-kind-when-arg2-type-pred))))
        (instructions
-        `((casesplit ,(atc-contextualize arg1-term
-                                         gin.context nil nil nil nil nil wrld))
+        `((casesplit ,(atc-contextualize
+                       arg1-term
+                       gin.context nil nil nil nil nil nil wrld))
           (claim ,(atc-contextualize `(test* ,arg1-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term ,arg1-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
           (claim ,(atc-contextualize `(test* (not ,arg1-term))
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term ,arg2-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
@@ -1741,7 +1745,10 @@
                ((erp (pexpr-gout then))
                 (b* ((then-cond (untranslate$ test.term t state))
                      (then-premise (atc-premise-test then-cond))
-                     (then-context (append gin.context (list then-premise))))
+                     (premises (atc-context->premises gin.context))
+                     (then-premises (append premises (list then-premise)))
+                     (then-context
+                      (change-atc-context gin.context :premises then-premises)))
                   (atc-gen-expr-pure then-term
                                      (change-pexpr-gin
                                       gin
@@ -1754,7 +1761,10 @@
                 (b* ((not-test-term `(not ,test.term))
                      (else-cond (untranslate$ not-test-term nil state))
                      (else-premise (atc-premise-test else-cond))
-                     (else-context (append gin.context (list else-premise))))
+                     (premises (atc-context->premises gin.context))
+                     (else-premises (append premises (list else-premise)))
+                     (else-context
+                      (change-atc-context gin.context :premises else-premises)))
                   (atc-gen-expr-pure else-term
                                      (change-pexpr-gin
                                       gin
@@ -1828,7 +1838,9 @@
                 (atc-gen-expr-bool arg1-term gin state))
                (cond (untranslate$ arg1.term t state))
                (premise (atc-premise-test cond))
-               (context (append gin.context (list premise)))
+               (premises (atc-context->premises gin.context))
+               (premises (append premises (list premise)))
+               (context (change-atc-context gin.context :premises premises))
                ((erp (pexpr-gout arg2))
                 (atc-gen-expr-bool arg2-term
                                    (change-pexpr-gin
@@ -1860,7 +1872,9 @@
                 (atc-gen-expr-bool arg1-term gin state))
                (cond (untranslate$ `(not ,arg1.term) t state))
                (premise (atc-premise-test cond))
-               (context (append gin.context (list premise)))
+               (premises (atc-context->premises gin.context))
+               (premises (append premises (list premise)))
+               (context (change-atc-context gin.context :premises premises))
                ((erp (pexpr-gout arg2))
                 (atc-gen-expr-bool arg2-term
                                    (change-pexpr-gin
@@ -2175,11 +2189,13 @@
                                     gin.compst-var
                                     gin.limit-var
                                     ''1
+                                    t
                                     wrld))
        (formula2 (atc-contextualize formula2
                                     gin.context
                                     gin.fn
                                     gin.fn-guard
+                                    nil
                                     nil
                                     nil
                                     nil

@@ -7428,6 +7428,14 @@
                                            new-clause nil))
                                          nil
                                          sr-limit)))
+                    (ttree1 (if (and (null (cdr tail))
+                                     (consp branches)
+                                     (null (cdr branches))
+                                     (eq (car branches) *false-clause*))
+                                (add-to-tag-tree 'dropped-last-literal
+                                                 t
+                                                 ttree1)
+                              ttree1))
                     (ttree1 (if (and sr-limit
                                      (> (length branches)
                                         sr-limit))
@@ -9894,12 +9902,17 @@
                     state
                     (term-evisc-tuple nil state)))
               (raw-proof-format
-               (fms "This ~#0~[~/forcibly ~]simplifies~@b, using ~*1~
-                     to~#2~[~/ the following ~n3 conjectures.~@c~]~|"
+               (fms "This ~#0~[~/forcibly ~]simplifies~#a~[~/ (dropping false ~
+                     conclusion; see :DOC clause)~]~@b, using ~*1to~#2~[~/ ~
+                     the following ~n3 conjectures.~@c~]~|"
                     (list (cons #\0 (if (tagged-objectsp 'assumption ttree) 1 0))
                           (cons #\1 (tilde-*-raw-simp-phrase ttree #\, ""))
                           (cons #\2 clauses)
                           (cons #\3 (length clauses))
+                          (cons #\a (if (tagged-objectsp 'dropped-last-literal
+                                                         ttree)
+                                        1
+                                      0))
                           (cons #\b (tilde-@-bddnote-phrase
                                      (tagged-object 'bddnote ttree)))
                           (cons #\c (tilde-@-case-split-limitations-phrase
@@ -9910,12 +9923,17 @@
                     state
                     (term-evisc-tuple nil state)))
               (t
-               (fms "This ~#0~[~/forcibly ~]simplifies~@b, using ~*1, ~
-                     to~#2~[~/ the following ~n3 conjectures.~@c~]~|"
+               (fms "This ~#0~[~/forcibly ~]simplifies~#a~[~/ (dropping false ~
+                     conclusion; see :DOC clause)~]~@b, using ~*1, to~#2~[~/ ~
+                     the following ~n3 conjectures.~@c~]~|"
                     (list (cons #\0 (if (tagged-objectsp 'assumption ttree) 1 0))
                           (cons #\1 (tilde-*-simp-phrase ttree))
                           (cons #\2 clauses)
                           (cons #\3 (length clauses))
+                          (cons #\a (if (tagged-objectsp 'dropped-last-literal
+                                                         ttree)
+                                        1
+                                      0))
                           (cons #\b (tilde-@-bddnote-phrase
                                      (tagged-object 'bddnote ttree)))
                           (cons #\c (tilde-@-case-split-limitations-phrase

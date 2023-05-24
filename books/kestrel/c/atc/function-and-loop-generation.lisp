@@ -1356,7 +1356,7 @@
                                   (prec-objs atc-string-objinfo-alistp))
   :returns (args symbol-listp :hyp (symbol-listp formals))
   :short "Filter external objects out of the formals,
-          for passing to @(tsee exec-fun),"
+          for passing to @(tsee exec-fun)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2328,12 +2328,14 @@
                                        compst-var
                                        nil
                                        nil
+                                       t
                                        wrld))
           (formula2 `(,type-pred ,var))
           (formula2 (atc-contextualize formula2
                                        context
                                        fn
                                        fn-guard
+                                       nil
                                        nil
                                        nil
                                        nil
@@ -2411,27 +2413,19 @@
      More precisely, the ``difference'' between the ending and starting context
      is used to contextualize the computation state;
      we double-check that
-     the starting context is a prefix of the ending context.")
-   (xdoc::p
-    "As a temporary hack, as we contextualize the computation state,
-     since @(tsee atc-contextualize) is meant to contextualize formulas,
-     we get an implication of the form
-     @('(implies (compustatep <compst-var>) <compst-term>)'),
-     where @('<compst-term>') is what we actually want.
-     So we extract it from the term.
-     We plan to differentiate contextualization for formulas and terms,
-     and avoid this hack."))
+     the starting context is a prefix of the ending context."))
   (b* ((compst0-var (pack compst-var "0"))
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       ((unless (prefixp context-start context-end))
+       (premises-start (atc-context->premises context-start))
+       (premises-end (atc-context->premises context-end))
+       ((unless (prefixp premises-start premises-end))
         (raise "Internal error: prefix ~x0 is not a prefix of context ~x1."
                context-start context-end)
         (mv '(_) nil nil))
-       (context-diff (nthcdr (len context-start) context-end))
-       (compst-term (atc-contextualize-compustate compst-var
-                                                  context-diff))
+       (premises-diff (nthcdr (len premises-start) premises-end))
+       (compst-term (atc-contextualize-compustate compst-var premises-diff))
        (formula `(equal (pop-frame ,compst-term)
                         ,compst0-var))
        (formula (atc-contextualize formula
@@ -2439,6 +2433,7 @@
                                    fn
                                    fn-guard
                                    compst-var
+                                   nil
                                    nil
                                    nil
                                    wrld))
@@ -2657,8 +2652,9 @@
             (atc-gen-push-init-thm fn fn-guard typed-formals omap-update-nest
                                    compst-var names-to-avoid wrld)
           (mv '(_) nil nil names-to-avoid)))
-       (context (list (make-atc-premise-compustate :var compst-var
-                                                   :term add-var-nest)))
+       (premises (list (make-atc-premise-compustate :var compst-var
+                                                    :term add-var-nest)))
+       (context (make-atc-context :preamble nil :premises premises))
        ((mv inscope init-inscope-events names-to-avoid)
         (if (and proofs
                  modular-proofs)
@@ -4039,7 +4035,9 @@
        (body (ubody+ fn wrld))
        ((erp (lstmt-gout loop))
         (atc-gen-loop-stmt body
-                           (make-lstmt-gin :context nil
+                           (make-lstmt-gin :context (make-atc-context
+                                                     :preamble nil
+                                                     :premises nil)
                                            :typed-formals typed-formals
                                            :inscope (list typed-formals)
                                            :fn fn

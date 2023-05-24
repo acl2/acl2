@@ -94,10 +94,10 @@
        (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
                          (expr-value ,uterm ,uobjdes)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
-                                    compst-var nil nil wrld))
+                                    compst-var nil nil t wrld))
        (formula2 `(,type-pred ,uterm))
        (formula2 (atc-contextualize formula2 context fn fn-guard
-                                    nil nil nil wrld))
+                                    nil nil nil nil wrld))
        (formula `(and ,formula1 ,formula2))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
@@ -173,13 +173,13 @@
        (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
                          (expr-value ,ucterm ,uobjdes)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
-                                    compst-var nil nil wrld))
+                                    compst-var nil nil t wrld))
        (formula2 `(and (,type-pred ,ucterm)
                        (equal (test-value ,ucterm)
                               ,uaterm)
                        (booleanp ,uaterm)))
        (formula2 (atc-contextualize formula2 context fn fn-guard
-                                    nil nil nil wrld))
+                                    nil nil nil nil wrld))
        (formula `(and ,formula1 ,formula2))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
@@ -313,10 +313,10 @@
                                      ,compst-var)
                                     ,var)))
              (formula1 (atc-contextualize formula1 new-context fn fn-guard
-                                          compst-var nil nil wrld))
+                                          compst-var nil nil t wrld))
              (formula2 `(,type-pred ,var))
              (formula2 (atc-contextualize formula2 new-context fn fn-guard
-                                          nil nil nil wrld))
+                                          nil nil nil nil wrld))
              (formula `(and ,formula1 ,formula2))
              (hints `(("Goal" :in-theory '(,thm ,@rules))))
              ((mv event &) (evmac-generate-defthm new-thm
@@ -375,7 +375,9 @@
      there may be other forms possible, which we will handle later."))
   (b* ((premise (make-atc-premise-compustate :var compst-var
                                              :term `(enter-scope ,compst-var)))
-       (new-context (append context (list premise)))
+       (premises (atc-context->premises context))
+       (new-premises (append premises (list premise)))
+       (new-context (change-atc-context context :premises new-premises))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 objdesign-of-var-of-add-var-iff
                 read-object-of-objdesign-of-var-of-enter-scope
@@ -425,7 +427,9 @@
        (cs-premise-term `(add-var (ident ,(symbol-name var)) ,var ,compst-var))
        (cs-premise (make-atc-premise-compustate :var compst-var
                                                 :term cs-premise-term))
-       (new-context (append context (list var-premise cs-premise)))
+       (premises (atc-context->premises context))
+       (new-premises (append premises (list var-premise cs-premise)))
+       (new-context (change-atc-context context :premises new-premises))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 objdesign-of-var-of-add-var-iff
                 read-object-of-objdesign-of-var-of-add-var
@@ -453,11 +457,11 @@
                      ,var)))
        (var-in-scope-formula1
         (atc-contextualize var-in-scope-formula1 new-context fn fn-guard
-                           compst-var nil nil wrld))
+                           compst-var nil nil t wrld))
        (var-in-scope-formula2 `(,type-pred ,var))
        (var-in-scope-formula2
         (atc-contextualize var-in-scope-formula2 new-context fn fn-guard
-                           nil nil nil wrld))
+                           nil nil nil nil wrld))
        (var-in-scope-formula `(and ,var-in-scope-formula1
                                    ,var-in-scope-formula2))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
