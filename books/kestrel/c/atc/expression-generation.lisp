@@ -322,6 +322,7 @@
                                      nil
                                      nil
                                      nil
+                                     nil
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
@@ -476,6 +477,7 @@
                                      gin.context
                                      gin.fn
                                      gin.fn-guard
+                                     nil
                                      nil
                                      nil
                                      nil
@@ -653,6 +655,7 @@
                                      gin.context
                                      gin.fn
                                      gin.fn-guard
+                                     nil
                                      nil
                                      nil
                                      nil
@@ -927,28 +930,29 @@
                                ,value-kind-when-test-type-pred))))
        (instructions
         `((casesplit
-           ,(atc-contextualize test-term gin.context nil nil nil nil nil wrld))
+           ,(atc-contextualize test-term
+                               gin.context nil nil nil nil nil nil wrld))
           (claim ,(atc-contextualize `(test* ,test-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (condexpr (if* ,test-term ,then-term ,else-term))
                            ,then-term)
-                   gin.context nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true
                                        condexpr
                                        test*))))
           (prove :hints ,hints-then)
           (claim ,(atc-contextualize `(test* (not ,test-term))
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (condexpr (if* ,test-term ,then-term ,else-term))
                            ,else-term)
-                   gin.context nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false
                                        condexpr
@@ -1074,23 +1078,24 @@
                         apconvert-expr-value-when-not-value-array
                         ,value-kind-when-arg1-type-pred))))
        (instructions
-        `((casesplit ,(atc-contextualize arg1-term
-                                         gin.context nil nil nil nil nil wrld))
+        `((casesplit ,(atc-contextualize
+                       arg1-term
+                       gin.context nil nil nil nil nil nil wrld))
           (claim ,(atc-contextualize `(test* ,arg1-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term ,arg2-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
           (claim ,(atc-contextualize `(test* (not ,arg1-term))
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term nil)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
@@ -1218,23 +1223,24 @@
                         ,value-kind-when-arg1-type-pred
                         ,value-kind-when-arg2-type-pred))))
        (instructions
-        `((casesplit ,(atc-contextualize arg1-term
-                                         gin.context nil nil nil nil nil wrld))
+        `((casesplit ,(atc-contextualize
+                       arg1-term
+                       gin.context nil nil nil nil nil nil wrld))
           (claim ,(atc-contextualize `(test* ,arg1-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term ,arg1-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,hints-then)
           (claim ,(atc-contextualize `(test* (not ,arg1-term))
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize `(equal ,term ,arg2-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,hints-else)))
@@ -2183,11 +2189,13 @@
                                     gin.compst-var
                                     gin.limit-var
                                     ''1
+                                    t
                                     wrld))
        (formula2 (atc-contextualize formula2
                                     gin.context
                                     gin.fn
                                     gin.fn-guard
+                                    nil
                                     nil
                                     nil
                                     nil

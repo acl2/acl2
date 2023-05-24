@@ -2328,12 +2328,14 @@
                                        compst-var
                                        nil
                                        nil
+                                       t
                                        wrld))
           (formula2 `(,type-pred ,var))
           (formula2 (atc-contextualize formula2
                                        context
                                        fn
                                        fn-guard
+                                       nil
                                        nil
                                        nil
                                        nil
@@ -2431,6 +2433,7 @@
                                    fn
                                    fn-guard
                                    compst-var
+                                   nil
                                    nil
                                    nil
                                    wrld))
@@ -2651,7 +2654,7 @@
           (mv '(_) nil nil names-to-avoid)))
        (premises (list (make-atc-premise-compustate :var compst-var
                                                     :term add-var-nest)))
-       (context (make-atc-context :premises premises))
+       (context (make-atc-context :preamble nil :premises premises))
        ((mv inscope init-inscope-events names-to-avoid)
         (if (and proofs
                  modular-proofs)
@@ -4033,6 +4036,7 @@
        ((erp (lstmt-gout loop))
         (atc-gen-loop-stmt body
                            (make-lstmt-gin :context (make-atc-context
+                                                     :preamble nil
                                                      :premises nil)
                                            :typed-formals typed-formals
                                            :inscope (list typed-formals)
