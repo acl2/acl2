@@ -13,7 +13,6 @@
 (include-book "semantics-deep")
 
 (local (include-book "oset-lib-ext"))
-(local (include-book "omap-lib-ext"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
