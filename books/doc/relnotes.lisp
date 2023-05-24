@@ -1,5 +1,5 @@
 ; ACL2 Community Books Release Notes
-; Copyright (C) 2013-2022 Centaur Technology
+; Copyright (C) 2013-2023 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -300,7 +300,7 @@
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
-    "Added a theorem.")
+    "Added some theorems.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

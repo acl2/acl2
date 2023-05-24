@@ -15,8 +15,6 @@
 
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 
-(local (include-book "omap-lib-ext"))
-
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))

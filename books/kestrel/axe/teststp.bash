@@ -14,5 +14,9 @@
 
 THISSCRIPTDIR="$( cd "$( dirname "$0" )" && pwd )" #Simpler commands can just give "." here, which seems bad.
 cd ${THISSCRIPTDIR}
+
+echo "STP=${STP}"
+echo "ACL2_STP_VARIETY=${ACL2_STP_VARIETY}"
+
 ./callstp.bash teststp.cvc teststp.out -1 y
 cat teststp.out
