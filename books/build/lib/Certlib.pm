@@ -55,6 +55,7 @@ store_cache
 certlib_add_dir
 process_labels_and_targets
 add_deps
+add_image_deps
 propagate_reqparam
 to_cert_name
 cert_to_acl2x
@@ -1677,7 +1678,7 @@ sub process_labels_and_targets {
     my ($input, $depdb, $target_ext) = @_;
     my %labels = ();
     my @targets = ();
-    my @maketargets = ();
+    my @images = ();
     my $label_started = 0;
     my $label_targets;
     foreach my $str (@$input) {
@@ -1689,6 +1690,7 @@ sub process_labels_and_targets {
 		push (@targets, @{$certinfo->bookdeps});
 		push (@targets, @{$certinfo->portdeps});
 		push (@$label_targets, @{$certinfo->bookdeps}) if $label_started;
+		push (@images, $certinfo->image) if $certinfo->image;
 	    } else {
 		print STDERR "Bad path for target: $str\n";
 	    }
@@ -1729,7 +1731,7 @@ sub process_labels_and_targets {
     # 	}
     # }
 
-    return (\@targets, \%labels);
+    return (\@targets, \@images, \%labels);
 }
 
 
