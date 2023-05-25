@@ -195,26 +195,26 @@
      namely when the term cannot represent any other C construct."))
   (b* (((reterr) nil nil (irr-type) (irr-iconst))
        ((acl2::fun (no)) (retok nil nil (irr-type) (irr-iconst)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp type base const) (atc-check-symbol-3part term.fn))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp type base const) (atc-check-symbol-3part fn))
        ((unless (and okp
                      (member-eq type '(sint uint slong ulong sllong ullong))
                      (member-eq base '(dec oct hex))
                      (eq const 'const)))
         (no))
-       ((unless (equal (symbol-package-name term.fn) "C"))
+       ((unless (equal (symbol-package-name fn) "C"))
         (reterr (msg "Invalid function ~x0 encountered: ~
                       it has the form of an integer constant function, ~
                       but it is not in the \"C\" package."
-                     term.fn)))
-       ((unless (list-lenp 1 term.args))
+                     fn)))
+       ((unless (list-lenp 1 args))
         (reterr (raise "Internal error: ~x0 not applied to 1 argument." term)))
-       (arg (first term.args))
+       (arg (first args))
        ((unless (pseudo-term-case arg :quote))
         (reterr (msg "The function ~x0 must be applied to a quoted constant, ~
                       but it is applied to ~x1 instead."
-                     term.fn arg)))
+                     fn arg)))
        (val (pseudo-term-quote->val arg))
        ((unless (natp val))
         (reterr (msg "The function ~x0 ~
@@ -222,7 +222,7 @@
                       but it is applied to ~x1 instead. ~
                       Since this is required by the guard of ~x0, ~
                       this call is unreachable under the guard."
-                     term.fn val)))
+                     fn val)))
        (inrangep (case type
                    (sint (sint-integerp val))
                    (uint (uint-integerp val))
@@ -238,7 +238,7 @@
                       but it is applied to ~x2 instead.
                       This is indicative of provably dead code, ~
                       given that the code is guard-verified."
-                     term.fn type val)))
+                     fn type val)))
        (base (case base
                (dec (iconst-base-dec))
                (oct (iconst-base-oct))
@@ -277,7 +277,7 @@
                                    :length (iconst-length-llong))
                       (type-ullong)))
           (t (mv (impossible) (impossible))))))
-    (retok t term.fn type const))
+    (retok t fn type const))
   ///
 
   (defret type-integerp-of-atc-check-iconst-type
@@ -312,22 +312,22 @@
      The term may represent some other kind of C expression."))
   (b* (((reterr) nil nil nil (irr-type) (irr-type) (irr-unop))
        ((acl2::fun (no)) (retok nil nil nil (irr-type) (irr-type) (irr-unop)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp op fixtype) (atc-check-symbol-2part term.fn))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp op fixtype) (atc-check-symbol-2part fn))
        (in-type (fixtype-to-integer-type fixtype))
        ((unless (and okp
                      (member-eq op '(plus minus bitnot lognot))
                      in-type))
         (no))
-       ((unless (equal (symbol-package-name term.fn) "C"))
+       ((unless (equal (symbol-package-name fn) "C"))
         (reterr (msg "Invalid function ~x0 encountered: ~
                       it has the form of an integer unary operation function, ~
                       but it is not in the \"C\" package."
-                     term.fn)))
-       ((unless (list-lenp 1 term.args))
+                     fn)))
+       ((unless (list-lenp 1 args))
         (reterr (raise "Internal error: ~x0 not applied to 1 argument." term)))
-       (arg (first term.args))
+       (arg (first args))
        ((mv out-type unop)
         (case op
           (plus (mv (promote-type in-type) (unop-plus)))
@@ -335,7 +335,7 @@
           (bitnot (mv (promote-type in-type) (unop-bitnot)))
           (lognot (mv (type-sint) (unop-lognot)))
           (t (prog2$ (impossible) (mv (irr-type) (irr-unop)))))))
-    (retok t term.fn arg in-type out-type unop))
+    (retok t fn arg in-type out-type unop))
   ///
 
   (defret pseudo-term-count-of-atc-check-unop-arg
@@ -379,9 +379,9 @@
   (b* (((reterr) nil nil nil nil (irr-type) (irr-type) (irr-type) (irr-binop))
        ((acl2::fun (no))
         (retok nil nil nil nil (irr-type) (irr-type) (irr-type) (irr-binop)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp op fixtype1 fixtype2) (atc-check-symbol-3part term.fn))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp op fixtype1 fixtype2) (atc-check-symbol-3part fn))
        (in-type1 (fixtype-to-integer-type fixtype1))
        (in-type2 (fixtype-to-integer-type fixtype2))
        ((unless (and okp
@@ -391,15 +391,15 @@
                      in-type1
                      in-type2))
         (no))
-       ((unless (equal (symbol-package-name term.fn) "C"))
+       ((unless (equal (symbol-package-name fn) "C"))
         (reterr (msg "Invalid function ~x0 encountered: ~
                       it has the form of an integer binary operation function, ~
                       but it is not in the \"C\" package."
-                     term.fn)))
-       ((unless (list-lenp 2 term.args))
+                     fn)))
+       ((unless (list-lenp 2 args))
         (reterr (raise "Internal error: ~x0 not applied to 2 arguments." term)))
-       (arg1 (first term.args))
-       (arg2 (second term.args))
+       (arg1 (first args))
+       (arg2 (second args))
        ((mv out-type binop)
         (case op
           (add (mv (uaconvert-types in-type1 in-type2) (binop-add)))
@@ -419,7 +419,7 @@
           (bitxor (mv (uaconvert-types in-type1 in-type2) (binop-bitxor)))
           (bitior (mv (uaconvert-types in-type1 in-type2) (binop-bitior)))
           (t (prog2$ (impossible) (mv (irr-type) (irr-binop)))))))
-    (retok t term.fn arg1 arg2 in-type1 in-type2 out-type binop))
+    (retok t fn arg1 arg2 in-type1 in-type2 out-type binop))
   ///
 
   (defret pseudo-term-count-of-atc-check-binop-arg1
@@ -474,9 +474,9 @@
      we return an indication of failure."))
   (b* (((reterr) nil nil nil (irr-type) (irr-type) (irr-tyname))
        ((acl2::fun (no)) (retok nil nil nil (irr-type) (irr-type) (irr-tyname)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp dtype from stype) (atc-check-symbol-3part term.fn))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp dtype from stype) (atc-check-symbol-3part fn))
        (in-type (fixtype-to-integer-type stype))
        (out-type (fixtype-to-integer-type dtype))
        ((unless (and okp
@@ -484,16 +484,16 @@
                      in-type
                      out-type))
         (no))
-       ((unless (equal (symbol-package-name term.fn) "C"))
+       ((unless (equal (symbol-package-name fn) "C"))
         (reterr (msg "Invalid function ~x0 encountered: ~
                       it has the form of an integer conversion function, ~
                       but it is not in the \"C\" package."
-                     term.fn)))
-       ((unless (list-lenp 1 term.args))
+                     fn)))
+       ((unless (list-lenp 1 args))
         (reterr (raise "Internal error: ~x0 not applied to 1 argument." term)))
-       (arg (first term.args))
+       (arg (first args))
        (out-tyname (type-to-tyname out-type)))
-    (retok t term.fn arg in-type out-type out-tyname))
+    (retok t fn arg in-type out-type out-tyname))
   ///
 
   (defret pseudo-term-count-of-atc-check-conv-arg
