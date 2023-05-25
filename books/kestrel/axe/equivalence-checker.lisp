@@ -18389,7 +18389,7 @@
 ;;                         (mv t new-supporting-nodenums-to-translate-acc (acons-fast nodenum type cut-nodenum-type-alist))
 ;;                       ;; if we have a bv-array-read with a constant element-width, we can replace it with a variable (even if we can't translate it since the length is not constant):
 ;;                       (if (and (eq 'bv-array-read (ffn-symb expr))
-;;                                (quoted-posp (first args)))
+;;                                (darg-quoted-posp (first args)))
 ;;                           (mv t new-supporting-nodenums-to-translate-acc (acons-fast nodenum (make-bv-type (unquote (first args))) cut-nodenum-type-alist))
 ;;                         (mv nil nil nil))))
 ;;                 ;;make sure we can translate all the children: - do we have to do this? can't we just cut at the children?
