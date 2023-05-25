@@ -1721,7 +1721,7 @@
                            struct.type
                            (type-struct tag)
                            (type-pointer (type-struct tag))))))))
-         ((mv okp arg-term) (atc-check-sint-from-boolean term))
+         ((erp okp arg-term) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-bool arg-term gin state)))
             (atc-gen-expr-sint-from-bool arg.term

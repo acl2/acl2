@@ -43,17 +43,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-sint-from-boolean ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (arg pseudo-termp))
   :short "Check if a term may represent a conversion
           from an ACL2 boolean to a C @('int') value."
-  (b* (((acl2::fun (no)) (mv nil nil))
+  (b* (((reterr) nil nil)
+       ((acl2::fun (no)) (retok nil nil))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless (and okp
-                     (eq fn 'c::sint-from-boolean)
-                     (list-lenp 1 args)))
-        (no)))
-    (mv t (first args)))
+                     (eq fn 'c::sint-from-boolean)))
+        (no))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an integer binary operation function, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn))))
+    (retok t (first args)))
   ///
 
   (defret pseudo-term-count-of-atc-check-sint-from-boolean
