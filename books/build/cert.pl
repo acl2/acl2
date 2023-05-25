@@ -834,8 +834,9 @@ if (! $ext_valid) {
 }
 
 
-my ($targets_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $depdb, $target_ext);
+my ($targets_ref, $images_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $depdb, $target_ext);
 my @targets = @$targets_ref;
+my @images = @$images_ref;
 my %labels = %$labels_ref;
 
 # print "Targets\n";
@@ -845,14 +846,19 @@ my %labels = %$labels_ref;
 # print "end targets\n";
 
 unless (@targets) {
-    print STDERR "\nError: No targets provided.\n";
-    print STDERR $helpstr;
-    exit 1;
+    unless (@images) {
+	print STDERR "\nError: No targets provided.\n";
+	print STDERR $helpstr;
+	exit 1;
+    }
 }
 
 foreach my $target (@targets) {
     (my $tcert = $target) =~ s/\.(acl2x|pcert(0|1))/\.cert/;
     add_deps($tcert, $depdb, 0);
+}
+foreach my $image (@images) {
+    add_image_deps($image, $depdb, 0);
 }
 
 if ($params_file && open (my $params, "<", $params_file)) {
@@ -996,6 +1002,16 @@ sub make_encode { # encode a filename for MAKE
 # this will prevent any leakage to the file system if output goes to $smf.
 $smf_name = $ysmf ? ( $mf_name . ".lsp" ) : "/dev/null";
 
+
+sub image_file_path {
+    my ($dotimage) = @_;
+    (my $barename = $dotimage) =~ s/\.image$//;
+    my $imagepath = canonical_path(File::Spec->catfile($bin_dir, $barename));
+    return make_encode($imagepath);
+}
+
+
+
 unless ($no_makefile) {
     # Build the makefile and run make.
     open (my $mf, ">", $mf_name)
@@ -1041,9 +1057,11 @@ unless ($no_makefile) {
         print $mf "\ninclude $incl\n";
     }
 
-    print $mf "\n.PHONY: all-cert-pl-certs\n\n";
+    print $mf "\n.PHONY: all-cert-pl-certs all-cert-pl-images\n\n";
     print $mf "# Depends on all certificate files.\n";
     print $mf "all-cert-pl-certs:\n\n";
+    print $mf "# Depends on all acl2 image files.\n";
+    print $mf "all-cert-pl-images:\n\n";
 
     # declare $var_prefix_CERTS to be the list of certificates
     print $mf "# Note: This variable lists the certificates for all books to be built.\n";
@@ -1053,16 +1071,32 @@ unless ($no_makefile) {
     $ysmf and print $smf "( " . ":" . $var_prefix . "_CERTS\n ";
 
     foreach my $cert (@certs) {
-        print $mf " \\\n     " . make_encode($cert);
-        $ysmf and print $smf " \"" . make_encode($cert) . "\"\n ";
-        # if (cert_get_param($cert, $depdb, "acl2x")) {
-        #     my $acl2xfile = cert_to_acl2x($cert);
-        #     print $mf " \\\n     $acl2xfile";
-        # }
+	my $cert_is_image = $cert =~ /\.image$/;
+	if (! $cert_is_image) {
+	    print $mf " \\\n     " . make_encode($cert);
+	    $ysmf and print $smf " \"" . make_encode($cert) . "\"\n ";
+	    # if (cert_get_param($cert, $depdb, "acl2x")) {
+	    #     my $acl2xfile = cert_to_acl2x($cert);
+	    #     print $mf " \\\n     $acl2xfile";
+	    # }
+	}
     }
     $ysmf and print $smf ")\n\n";
     print $mf "\n\n";
 
+    print $mf $var_prefix . "_IMAGES :=";
+    # BOZO smf stuff
+
+    foreach my $cert (@certs) {
+	my $cert_is_image = $cert =~ /\.image$/;
+	if ($cert_is_image) {
+	    print $mf " \\\n     " . image_file_path($cert);
+	}
+    }
+    
+
+    
+    
     print $mf "# Note: This variable lists the certificates for all books to be built\n";
     print $mf "# along with any pcert or acl2x files to be built along the way.\n";
     print $mf "${var_prefix}_ALLCERTS := \$(${var_prefix}_CERTS)";
@@ -1113,6 +1147,7 @@ unless ($no_makefile) {
     # print $mf "\n\nendif\n";
 
     print $mf "all-cert-pl-certs: \$(" . $var_prefix . "_CERTS)\n\n";
+    print $mf "all-cert-pl-images: \$(" . $var_prefix . "_IMAGES)\n\n";
 
     # declare $var_prefix_SOURCES to be the list of sources
     print $mf $var_prefix . "_SOURCES :=";
@@ -1226,9 +1261,7 @@ unless ($no_makefile) {
 	
 	my $maketarget;
 	if ($cert_is_image) {
-	    (my $barename = $cert) =~ s/\.image$//;
-	    my $imagepath = canonical_path(File::Spec->catfile($bin_dir, $barename));
-	    $maketarget = make_encode($imagepath);
+	    $maketarget = image_file_path($cert);
 	} else {
 	    $maketarget = make_encode($cert);
 	}
@@ -1409,7 +1442,7 @@ unless ($no_makefile) {
         my $make_cmd = join(' ', ("$make -j $jobs -f $mf_name --no-builtin-rules ",
                                   ($keep_going ? " -k" : ""),
                                   @make_args,
-                                  "all-cert-pl-certs"));
+                                  "all-cert-pl-certs all-cert-pl-images"));
         if ($certlib_opts{"debugging"}) {
 	    # Print debugging output on stdout
             print "$make_cmd\n";
