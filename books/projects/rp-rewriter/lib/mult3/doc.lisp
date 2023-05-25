@@ -897,7 +897,7 @@ product specification function as given below.
   :parents (Multiplier-Verification vescmul)
   :short "A macro to parse a combinational RTL design and create a simulation
   test vector"
-  :long "<p>@(call parse-and-create-svtv)</p>
+  :long "<p><b> parse-and-create-svtv</b> can take the following arguments</p>
 <p> :file has to be provided. It should be a string and point to the relative path to the
   target Verilog file. </p>
 <p> :topmodule has to be provided. It should be a string and be the name of the top module
@@ -943,7 +943,7 @@ product specification function as given below.
   :parents (Multiplier-Verification vescmul)
   :short "A macro to verify a multiplier using @(see VeSCmul)  from an already crated simulation
   test vector with @(see parse-and-create-svtv)"
-  :long "<p>@(call verify-svtv-of-mult)</p>
+  :long "<p><b>verify-svtv-of-mult</b> can take the following arguments</p>
 <p> :name has to be provided. It should be a symbol and be the name corresponding to the name picked in @(see parse-and-create-svtv). </p>
 <p> :concl has to be provided. The body of the conjecture we aim to proved. </p>
 <p> :then-fgl  is optional. To invoke FGL (calls a SAT solver) after rewriter finishes. </p>
