@@ -1974,12 +1974,7 @@
 (define atc-gen-add-var-formals ((fn symbolp)
                                  (typed-formals atc-symbol-varinfo-alistp)
                                  (compst-var symbolp))
-  :returns (term pseudo-termp
-                 :hyp (and (symbolp compst-var)
-                           (atc-symbol-varinfo-alistp typed-formals))
-                 :hints (("Goal"
-                          :induct t
-                          :in-theory (enable pseudo-termp))))
+  :returns (term "An untranslated term.")
   :short "Generate a term that is an @(tsee add-var) nest
           for the formals of a function."
   :long
@@ -1998,12 +1993,12 @@
      and the nest ends with @('(add-frame (ident <fn>) compst)'),
      where @('<fn>') is the string for the function name."))
   (b* (((when (endp typed-formals))
-        `(add-frame (ident ',(symbol-name fn)) ,compst-var))
+        `(add-frame (ident ,(symbol-name fn)) ,compst-var))
        ((cons var &) (car typed-formals))
        (add-var-rest (atc-gen-add-var-formals fn
                                               (cdr typed-formals)
                                               compst-var)))
-    `(add-var (ident ',(symbol-name var)) ,var ,add-var-rest)))
+    `(add-var (ident ,(symbol-name var)) ,var ,add-var-rest)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2181,10 +2176,7 @@
                                (wrld plist-worldp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp)
-               (add-var-nest
-                pseudo-termp
-                :hyp (and (symbolp compst-var)
-                          (atc-symbol-varinfo-alistp typed-formals)))
+               (add-var-nest "An untranslated term.")
                (names-to-avoid symbol-listp
                                :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorem about
