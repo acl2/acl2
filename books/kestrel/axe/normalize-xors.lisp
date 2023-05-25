@@ -419,7 +419,6 @@
 
 (defund all-nodes-are-bitxorsp (nodenums dag-array)
   (declare (xargs :guard (and (array1p 'normalize-xors-old-array dag-array)
-                              (true-listp nodenums)
                               ;;combine these three things?
                               (true-listp nodenums)
                               (all-natp nodenums)
@@ -901,7 +900,6 @@
 ;keep in sync with bitxor version
 (defund all-nodes-are-bvxorsp (nodenums quoted-size dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
-                              (true-listp nodenums)
                               ;;combine these three things?
                               (true-listp nodenums)
                               (all-natp nodenums)
