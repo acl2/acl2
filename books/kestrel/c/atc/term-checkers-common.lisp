@@ -449,42 +449,51 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-conv ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (tyname tynamep)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
                (arg pseudo-termp)
                (in-type typep)
-               (out-type typep))
+               (out-type typep)
+               (out-tyname tynamep))
   :short "Check if a term may represent a conversion."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
      that represents C integer conversions,
-     we return the C type name for the destination type
-     and the argument term.")
-   (xdoc::p
-    "We also return the input and output C types of the conversion.
-     The output type is redundant,
-     because it can be determined from the returned type name.
-     But we return it for uniformity and simplicity.")
+     we return the function, the argument term,
+     the input (i.e. argument) type, the output type,
+     and the C output type name.
+     The type name is redundant,
+     because it can be determined from the output type,
+     but we return it for the callers' convenience,
+     since this kind of ACL2 term represents a C cast.")
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil (irr-tyname) nil (irr-type) (irr-type)))
+  (b* (((reterr) nil nil nil (irr-type) (irr-type) (irr-tyname))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type) (irr-type) (irr-tyname)))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((mv okp dtype from stype) (atc-check-symbol-3part term.fn))
-       ((unless (and okp
-                     (eq from 'from)))
-        (no))
        (in-type (fixtype-to-integer-type stype))
-       ((when (not in-type)) (no))
        (out-type (fixtype-to-integer-type dtype))
-       ((when (not out-type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
+       ((unless (and okp
+                     (eq from 'from)
+                     in-type
+                     out-type))
+        (no))
+       ((unless (equal (symbol-package-name term.fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an integer conversion function, ~
+                      but it is not in the \"C\" package."
+                     term.fn)))
+       ((unless (list-lenp 1 term.args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." term)))
        (arg (first term.args))
-       (tyname (type-to-tyname out-type)))
-    (mv t tyname arg in-type out-type))
+       (out-tyname (type-to-tyname out-type)))
+    (retok t term.fn arg in-type out-type out-tyname))
   ///
 
   (defret pseudo-term-count-of-atc-check-conv-arg
