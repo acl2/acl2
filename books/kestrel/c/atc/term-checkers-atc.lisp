@@ -56,7 +56,7 @@
         (no))
        ((unless (equal (symbol-package-name fn) "C"))
         (reterr (msg "Invalid function ~x0 encountered: ~
-                      it has the form of an integer binary operation function, ~
+                      it has the form of a conversion from boolean to int, ~
                       but it is not in the \"C\" package."
                      fn)))
        ((unless (list-lenp 1 args))
@@ -73,7 +73,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-boolean-from-type ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
                (arg pseudo-termp)
                (in-type typep))
   :short "Check if a term may represent a conversion
@@ -83,18 +85,25 @@
    (xdoc::p
     "We also return the input C type of the conversion.
      The output type is known (boolean), and it is in fact an ACL2 type."))
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless okp) (no))
        ((mv okp boolean from type) (atc-check-symbol-3part fn))
+       (in-type (fixtype-to-integer-type type))
        ((unless (and okp
                      (eq boolean 'boolean)
-                     (eq from 'from)))
+                     (eq from 'from)
+                     in-type))
         (no))
-       (in-type (fixtype-to-integer-type type))
-       ((when (not in-type)) (no))
-       ((unless (list-lenp 1 args)) (no)))
-    (mv t (first args) in-type))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a conversion to boolean from integer, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn))))
+    (retok t fn (first args) in-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-boolean-from-type

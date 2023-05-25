@@ -719,13 +719,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-bool-from-type ((term pseudo-termp)
-                                     (in-type typep)
+(define atc-gen-expr-bool-from-type ((fn symbolp)
                                      (arg-term pseudo-termp)
                                      (arg-expr exprp)
                                      (arg-type typep)
                                      (arg-events pseudo-event-form-listp)
                                      (arg-thm symbolp)
+                                     (in-type typep)
                                      (gin pexpr-ginp)
                                      state)
   :returns (mv erp (gout pexpr-goutp))
@@ -763,12 +763,13 @@
                given that the code is guard-verified."
               in-type arg-term arg-type)))
        (expr arg-expr)
+       (aterm `(,fn ,arg-term))
        (type arg-type)
        ((when (not gin.proofs))
         (retok
          (make-pexpr-gout :expr expr
                           :type arg-type
-                          :term term
+                          :term aterm
                           :events arg-events
                           :thm-name nil
                           :thm-index gin.thm-index
@@ -777,16 +778,12 @@
        (cterm arg-term)
        ((unless (type-nonchar-integerp type))
         (reterr (raise "Internal error: non-integer type ~x0." type)))
-       (fixtype (integer-type-to-fixtype type))
        (type-pred (type-to-recognizer type wrld))
-       (boolean-from-fixtype (pack 'boolean-from- fixtype))
-       (aterm `(,boolean-from-fixtype ,arg-term))
        (test-value-when-type-pred (pack 'test-value-when- type-pred))
-       (booleanp-of-boolean-from-fixtype
-        (pack 'booleanp-of- boolean-from-fixtype))
+       (booleanp-of-fn (pack 'booleanp-of- fn))
        (hints `(("Goal" :in-theory '(,arg-thm
                                      ,test-value-when-type-pred
-                                     ,booleanp-of-boolean-from-fixtype
+                                     ,booleanp-of-fn
                                      booleanp-compound-recognizer))))
        (objdes (if (expr-case expr :ident)
                    `(objdesign-of-var
@@ -1895,7 +1892,7 @@
                                      :names-to-avoid arg2.names-to-avoid
                                      :proofs arg2.proofs)
                                     state))))
-         ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
+         ((erp okp fn arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
                 (atc-gen-expr-pure arg-term gin state))
@@ -1903,13 +1900,13 @@
                                       :thm-index arg.thm-index
                                       :names-to-avoid arg.names-to-avoid
                                       :proofs arg.proofs)))
-            (atc-gen-expr-bool-from-type term
-                                         in-type
+            (atc-gen-expr-bool-from-type fn
                                          arg.term
                                          arg.expr
                                          arg.type
                                          arg.events
                                          arg.thm-name
+                                         in-type
                                          gin
                                          state))))
       (reterr
