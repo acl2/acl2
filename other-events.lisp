@@ -3820,7 +3820,8 @@
 
 ; (local &)
 ; (skip-proofs &)
-; (with-cbd dir form)
+; (with-cbd dir form) ; dir a string
+; (with-current-package pkg form) ; pkg a string
 ; (with-guard-checking-event g &) ; g in *guard-checking-values*; (quote g) ok
 ; (with-output ... &)
 ; (with-prover-step-limit ... &)
@@ -4018,6 +4019,7 @@
                                  make-event-chk)))
                      (value (and new-form (list (car form) new-form))))))
           ((and (member-eq (car form) '(with-cbd
+                                        with-current-package
                                         with-guard-checking-event
                                         with-output
                                         with-prover-step-limit
@@ -4042,8 +4044,16 @@
                        constant from the list ~x1, or of the form (QUOTE X) ~
                        for such a constant, X."
                       'with-guard-checking-event
-                      *guard-checking-values*
-                      form)))
+                      *guard-checking-values*)))
+            ((and (member-eq (car form) '(with-cbd with-current-package))
+                  (not (stringp (cadr form))))
+             (er soft ctx er-str
+                 form
+                 ""
+                 (chk-embedded-event-form-orig-form-msg orig-form state)
+                 (msg "~|The macro ~x0 requires the second argument to be a ~
+                       string when used in an event context."
+                      (car form))))
             (t (er-let* ((new-form (chk-embedded-event-form
                                     (car (last form))
                                     orig-form wrld ctx state
@@ -4162,6 +4172,7 @@
   (declare (xargs :guard (true-listp form)))
   (cond ((member-eq (car form) '(local skip-proofs
                                        with-cbd
+                                       with-current-package
                                        with-guard-checking-event
                                        with-output
                                        with-prover-step-limit
@@ -4482,6 +4493,7 @@
                  (t (mv nil form)))))
         ((member-eq (car form) '(skip-proofs
                                  with-cbd
+                                 with-current-package
                                  with-guard-checking-event
                                  with-output
                                  with-prover-time-limit
@@ -7266,6 +7278,7 @@
                    nil)
                   ((member-eq sym '(skip-proofs
                                     with-cbd
+                                    with-current-package
                                     with-guard-checking-event
                                     with-output
                                     with-prover-step-limit
@@ -7320,6 +7333,7 @@
          *local-value-triple-elided*)
         ((member-eq (car form) '(skip-proofs
                                  with-cbd
+                                 with-current-package
                                  with-guard-checking-event
                                  with-output
                                  with-prover-time-limit
@@ -9287,6 +9301,48 @@
           (pathname (or dir (our-pwd))))
     (assign connected-book-directory dir))))
 
+(defun set-cbd-fn-dir (str os ctx state)
+
+; See set-cbd-fn.  Here we return either a new value for cbd or else a cons
+; that is the value of a ~@0 fmt in the error message.
+
+  (cond
+   ((not (stringp str))
+    (cond ((and (null str)
+                (f-get-global 'boot-strap-flg state))
+
+; This special case is expected.
+
+           nil)
+          (t
+           (msg "The argument cbd must be a string, unlike ~x0.  See :DOC cbd."
+                str))))
+   (t (let ((str (expand-tilde-to-user-home-dir str os ctx state)))
+        (cond
+         ((absolute-pathname-string-p str nil os)
+          (canonical-dirname! (maybe-add-separator str)
+                              ctx
+                              state))
+         ((not (absolute-pathname-string-p
+                (f-get-global 'connected-book-directory state)
+                t
+                os))
+          (msg "An attempt was made to set the connected book directory (cbd) ~
+                using relative pathname ~p0, but surprisingly, the existing ~
+                cbd is ~p1, which is not an absolute pathname.  This appears ~
+                to be an implementation error; please contact the ACL2 ~
+                implementors."
+               str
+               (f-get-global 'connected-book-directory state)))
+         (t
+          (canonical-dirname!
+           (maybe-add-separator
+            (our-merge-pathnames
+             (f-get-global 'connected-book-directory state)
+             str))
+           ctx
+           state)))))))
+
 (defun set-cbd-fn (str state)
 
 ; We attempt to reduce potential confusion by having Lisp special variable
@@ -9309,55 +9365,16 @@
 ;   such component is copied from default-pathname.
 
   (cond
-   ((and str ; avoid a boot-strap problem
+   ((and str                ; avoid a boot-strap problem
          (equal (cbd) str)) ; optimization to avoid canonical-dirname!
     (value nil))
    (t
-    (let ((os (os (w state)))
-          (ctx (cons 'set-cbd str)))
-      (cond
-       ((not (stringp str))
-        (cond ((and (null str)
-                    (f-get-global 'boot-strap-flg state))
-
-; This special case is expected.
-
-               (set-cbd-fn1 nil state))
-              (t
-               (er soft ctx
-                   "The argument of set-cbd must be a string, unlike ~x0.  ~
-                    See :DOC cbd."
-                   str))))
-       (t (let ((str (expand-tilde-to-user-home-dir str os ctx state)))
-            (cond
-             ((absolute-pathname-string-p str nil os)
-              (set-cbd-fn1
-               (canonical-dirname! (maybe-add-separator str)
-                                   ctx
-                                   state)
-               state))
-             ((not (absolute-pathname-string-p
-                    (f-get-global 'connected-book-directory state)
-                    t
-                    os))
-              (er soft ctx
-                  "An attempt was made to set the connected book directory ~
-                   (cbd) using relative pathname ~p0, but surprisingly, the ~
-                   existing cbd is ~p1, which is not an absolute pathname.  ~
-                   This appears to be an implementation error; please contact ~
-                   the ACL2 implementors."
-                  str
-                  (f-get-global 'connected-book-directory state)))
-             (t
-              (set-cbd-fn1
-               (canonical-dirname!
-                (maybe-add-separator
-                 (our-merge-pathnames
-                  (f-get-global 'connected-book-directory state)
-                  str))
-                ctx
-                state)
-               state))))))))))
+    (let* ((os (os (w state)))
+           (ctx (cons 'set-cbd str))
+           (val (set-cbd-fn-dir str os ctx state)))
+      (cond ((consp val)
+             (er soft ctx "~@0" val))
+            (t (set-cbd-fn1 val state)))))))
 
 (defmacro set-cbd (str)
   `(set-cbd-fn ,str state))
@@ -9403,13 +9420,26 @@
 ; A special case is when dir is :SAME, meaning that we want to protect the cbd
 ; and *default-pathname-defaults* but we don't want to modify them going in.
 
-; Note that (with-cbd dir form) is only accepted by ACL2 form evaluates to an
-; error triple.  But since form can be an event, form can evaluate to something
-; else in raw Lisp; for example, in (with-cbd dir (defun ...)), the call of
-; defun returns a single value in raw Lisp.  But such event forms in raw Lisp
-; are the only way we can get a violation of the requirement that form
+; Note that (with-cbd dir form) is only accepted by ACL2 when form evaluates to
+; an error triple.  But since form can be an event, form can evaluate to
+; something else in raw Lisp; for example, in (with-cbd dir (defun ...)), the
+; call of defun returns a single value in raw Lisp.  But such event forms in
+; raw Lisp are the only way we can get a violation of the requirement that form
 ; evaluates to an error triple, and in those cases, we don't care about the
 ; value returned by with-cbd, as noted in a comment below.
+
+; In an event context we require dir to be a string, for two reasons.  One
+; reason is a concern about soundness: although we have not proved nil with the
+; earlier implementation without that restriction, it seems best not to allow
+; the expression to depend on state.  (Make-event may seem to have the same
+; problem, but careful tracking of expansions, including redundancy for
+; encapsulates and the expansion-alist of a certificate file, should take care
+; of such concerns for make-event.)  The second reason for dir to be a string
+; is to support make-include-books-absolute, which takes advantage of the
+; string being truly a string.  (We could get around that by redefining
+; with-cbd to be a make-event that replaces the string expression by its value,
+; but then non-event uses of with-cbd would be prohibited, which would even
+; break our own source code!)
 
   (let ((form #+acl2-loop-only
               form
@@ -9425,6 +9455,32 @@
                              form
                            `(pprogn (set-cbd-state ,dir state)
                                     ,form)))))
+
+(defmacro with-current-package (pkg form)
+
+; ACL2 generally keeps the current-package and Lisp variable *package* in sync;
+; in particular, read-object binds *package* to the package indicated by ACL2's
+; current-package.  So it would be a mistake merely to bind the current-package
+; with state-global-let*; we want to bind *package* as well.  The code below
+; accomplishes this task.
+
+; See with-cbd for discussion of technical details, which are analogous to
+; those here.  Note that with-cbd has a bit different form since it must do
+; more than bind the cbd -- it must call set-cbd so that
+; *default-pathname-defaults* tracks the cbd.
+
+  (let ((form #+acl2-loop-only
+              form
+              #-acl2-loop-only
+              `(let ((result (multiple-value-list ,form)))
+                 (cond ((and (= (length result) 3)
+                             (eq (caddr result) *the-live-state*))
+                        (values-list result))
+                       (t ; otherwise value doesn't matter; see comment above
+                        (value nil))))))
+    `(state-global-let*
+      ((current-package ,pkg set-current-package-state))
+      ,form)))
 
 (defun substring-p (i1 s1 len i2 s2)
 
@@ -9810,7 +9866,31 @@
     (mv nil form))
    ((eq (car form) 'make-event) ; already fixed
     (mv nil form))
-   ((and (member-eq (car form) '(with-cbd
+   ((eq (car form) 'with-cbd)
+    (assert$
+; Since we are in an event context, (cadr form) is a string.  See comments in
+; with-cbd.
+     (stringp (cadr form))
+     (let ((new-cbd (set-cbd-fn-dir (cadr form) (os (w state)) ctx state)))
+       (cond ((consp new-cbd)
+              (mv (er hard ctx
+                      "A call of with-cbd has unexpectedly referenced a ~
+                       directory, ~x0, that does not exist in the current ~
+                       context.  The error message produced is as ~
+                       follows.~|~%~@1"
+                      (cadr form)
+                      new-cbd)
+                  form))
+             (t
+              (assert$
+               (stringp new-cbd) ; fails only when nil in the boot-strap
+               (mv-let (changedp x)
+                 (make-include-books-absolute-1
+                  (car (last form))
+                  new-cbd new-cbd names localp ctx state)
+                 (cond (changedp (mv t (append (butlast form 1) (list x))))
+                       (t (mv nil form))))))))))
+   ((and (member-eq (car form) '(with-current-package
                                  with-guard-checking-event
                                  with-output
                                  with-prover-step-limit
@@ -9832,9 +9912,9 @@
    (t (mv nil
           (er hard ctx
               "Implementation error in make-include-books-absolute-1:  ~
-              unrecognized event type, ~x0.  Make-include-books-absolute ~
-              needs to be kept in sync with chk-embedded-event-form.  Please ~
-              send this error message to the implementors."
+               unrecognized event type, ~x0.  Make-include-books-absolute ~
+               needs to be kept in sync with chk-embedded-event-form.  Please ~
+               send this error message to the implementors."
               (car form))))))
 
 (defun make-include-books-absolute-lst (forms cbd dir names localp ctx state)

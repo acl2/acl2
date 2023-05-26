@@ -28,6 +28,7 @@
 (program)
 (set-state-ok t)
 
+
 (defun include-events-fn (fname dir encapsulate state)
   (declare (xargs :mode :program :stobjs state))
   (let ((ctx `(include-events ,fname)))
@@ -37,13 +38,15 @@
       (let* ((full-fname (extend-pathname dir-value fname state))
              (file-dir (get-directory-of-file full-fname)))
         (er-let* ((contents (read-object-file full-fname ctx state)))
-          ;; first form is always in-package
-          (let ((event-contents (cdr contents)))
+          ;; first form is always in-package due to the way read-object-file works
+          (let* ((event-contents (cdr contents))
+                 (package (cadr (car contents))))
             (value `(with-cbd ,file-dir
-                      (,@(if encapsulate
-                             '(encapsulate nil)
-                           '(progn))
-                       . ,event-contents)))))))))
+                      (with-current-package ,package
+                        (,@(if encapsulate
+                               '(encapsulate nil)
+                             '(progn))
+                         . ,event-contents))))))))))
 
 (defmacro include-src-events (fname &key dir encapsulate)
   `(make-event (include-events-fn ,fname ,dir ,encapsulate state)))
