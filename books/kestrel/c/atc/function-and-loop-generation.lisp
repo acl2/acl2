@@ -1937,11 +1937,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-omap-update-formals ((typed-formals atc-symbol-varinfo-alistp))
-  :returns (mv (term pseudo-termp
-                     :hyp (atc-symbol-varinfo-alistp typed-formals)
-                     :hints (("Goal"
-                              :induct t
-                              :in-theory (enable pseudo-termp))))
+  :returns (mv (term "An untranslated term.")
+               (init-formals symbol-listp
+                             :hyp (atc-symbol-varinfo-alistp typed-formals))
                (proofs booleanp))
   :short "Generate a term that is an @(tsee omap::update) nest
           for the formals of a function."
@@ -1964,27 +1962,32 @@
      these are the values that go into the initial scope,
      not the pointeed-to objects.")
    (xdoc::p
+    "We also return the list of the @('<symbol>')s,
+     some of which are the formals,
+     while the others are the formals suffixed by @('-ptr').")
+   (xdoc::p
     "We also return a flag saying whether modular proofs should be generated,
      which currently is when the formals
      all have integer types or pointer to integer types
      and are not external object.
      If the flag is @('nil'), we also return @('nil') as the nest,
      because it is not used in generated theorems in that case."))
-  (b* (((when (endp typed-formals)) (mv nil t))
+  (b* (((when (endp typed-formals)) (mv nil nil t))
        ((cons var info) (car typed-formals))
-       ((mv omap-rest proofs-rest)
+       ((mv omap-rest init-formals-rest proofs-rest)
         (atc-gen-omap-update-formals (cdr typed-formals)))
-       ((when (not proofs-rest)) (mv nil nil))
+       ((when (not proofs-rest)) (mv nil nil nil))
        (type (atc-var-info->type info))
        ((unless (and (or (type-integerp type)
                          (and (type-case type :pointer)
                               (type-integerp (type-pointer->to type))))
                      (not (atc-var-info->externalp info))))
-        (mv nil nil))
+        (mv nil nil nil))
        (var/varptr (if (type-case type :pointer)
                        (add-suffix var "-PTR")
                      var)))
-    (mv `(omap::update (ident ',(symbol-name var)) ,var/varptr ,omap-rest)
+    (mv `(omap::update (ident ,(symbol-name var)) ,var/varptr ,omap-rest)
+        (cons var/varptr init-formals-rest)
         t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2100,8 +2103,7 @@
                (expand-thm symbolp)
                (scopep-event pseudo-event-formp)
                (scopep-thm symbolp)
-               (omap-update-nest pseudo-termp
-                                 :hyp (atc-symbol-varinfo-alistp typed-formals))
+               (omap-update-nest "An untranslated term.")
                (proofs booleanp)
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorems about
@@ -2115,7 +2117,7 @@
     "We also return the @(tsee omap::update) nest term
      that describes the initial scope, for use in subsequent theorems."))
   (b* ((wrld (w state))
-       ((mv omap-update-nest proofs)
+       ((mv omap-update-nest init-formals proofs)
         (atc-gen-omap-update-formals typed-formals))
        ((unless proofs) (mv '(_) nil '(_) nil nil nil names-to-avoid))
        (formals (strip-cars typed-formals))
@@ -2134,7 +2136,7 @@
                        ,@context-preamble
                        (,fn-guard ,@formals))
                   (equal (init-scope (fun-info->params ,info-var)
-                                     (list ,@formals))
+                                     (list ,@init-formals))
                          ,omap-update-nest)))
        (expand-hints
         `(("Goal" :in-theory '(,fn-fun-env-thm
@@ -2262,7 +2264,7 @@
                                (fn-guard symbolp)
                                (typed-formals atc-symbol-varinfo-alistp)
                                (context-preamble true-listp)
-                               (omap-update-nest pseudo-termp)
+                               (omap-update-nest "An untranslated term.")
                                (compst-var symbolp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
@@ -2713,8 +2715,6 @@
        (fenv-var (genvar$ 'atc "FENV" nil formals state))
        (limit-var (genvar$ 'atc "LIMIT" nil formals state))
        (context-preamble (atc-gen-context-preamble typed-formals compst-var))
-       (modular-proofs (and proofs
-                            (not context-preamble))) ; <-- temporary
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        ((mv init-scope-expand-event
@@ -2722,10 +2722,9 @@
             init-scope-scopep-event
             init-scope-scopep-thm
             omap-update-nest
-            modular-proofs
+            init-scope-proofs
             names-to-avoid)
-        (if (and proofs
-                 modular-proofs)
+        (if proofs
             (atc-gen-init-scope-thms fn
                                      fn-guard
                                      typed-formals
@@ -2737,6 +2736,8 @@
                                      names-to-avoid
                                      state)
           (mv '(_) nil '(_) nil nil nil names-to-avoid)))
+       (modular-proofs (and init-scope-proofs
+                            (not context-preamble))) ; <-- temporary
        ((mv push-init-thm-event
             push-init-thm
             add-var-nest
@@ -2910,10 +2911,11 @@
                                        (list fn-guard-event)
                                        fn-def*-events
                                        formals-events
-                                       (and modular-proofs
+                                       (and init-scope-proofs
                                             (list init-scope-expand-event
-                                                  init-scope-scopep-event
-                                                  push-init-thm-event))
+                                                  init-scope-scopep-event))
+                                       (and modular-proofs
+                                            (list push-init-thm-event))
                                        init-inscope-events
                                        body.events
                                        (and modular-proofs
