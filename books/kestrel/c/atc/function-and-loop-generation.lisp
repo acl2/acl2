@@ -1955,19 +1955,37 @@
     "(omap::update (ident <string>) <symbol> (omap::update ... nil) ...)")
    (xdoc::p
     "where @('<string>') is the string for the name of the C formal
-     and @('<symbol>') is the symbol that is the corresponding ACL2 formal.")
+     and @('<symbol>') is the symbol that is
+     either the corresponding ACL2 formal
+     or the corresponding ACL2 formal with the @('-ptr') suffix.
+     The latter is for formals of pointer type:
+     as explained in @(tsee atc-gen-context-preamble),
+     the C values are represented by ACL2 variables of the form @('x-ptr'):
+     these are the values that go into the initial scope,
+     not the pointeed-to objects.")
    (xdoc::p
     "We also return a flag saying whether modular proofs should be generated,
      which currently is when the formals
-     all have integer types and are not external object."))
+     all have integer types or pointer to integer types
+     and are not external object.
+     If the flag is @('nil'), we also return @('nil') as the nest,
+     because it is not used in generated theorems in that case."))
   (b* (((when (endp typed-formals)) (mv nil t))
        ((cons var info) (car typed-formals))
-       ((mv omap-rest proofs)
-        (atc-gen-omap-update-formals (cdr typed-formals))))
-    (mv `(omap::update (ident ',(symbol-name var)) ,var ,omap-rest)
-        (and (type-integerp (atc-var-info->type info))
-             (not (atc-var-info->externalp info))
-             proofs))))
+       ((mv omap-rest proofs-rest)
+        (atc-gen-omap-update-formals (cdr typed-formals)))
+       ((when (not proofs-rest)) (mv nil nil))
+       (type (atc-var-info->type info))
+       ((unless (and (or (type-integerp type)
+                         (and (type-case type :pointer)
+                              (type-integerp (type-pointer->to type))))
+                     (not (atc-var-info->externalp info))))
+        (mv nil nil))
+       (var/varptr (if (type-case type :pointer)
+                       (add-suffix var "-PTR")
+                     var)))
+    (mv `(omap::update (ident ',(symbol-name var)) ,var/varptr ,omap-rest)
+        t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2097,7 +2115,8 @@
     "We also return the @(tsee omap::update) nest term
      that describes the initial scope, for use in subsequent theorems."))
   (b* ((wrld (w state))
-       ((mv omap-update-nest proofs) (atc-gen-omap-update-formals typed-formals))
+       ((mv omap-update-nest proofs)
+        (atc-gen-omap-update-formals typed-formals))
        ((unless proofs) (mv '(_) nil '(_) nil nil nil names-to-avoid))
        (formals (strip-cars typed-formals))
        (expand-thm (pack fn '-init-scope-expand))
@@ -2153,6 +2172,7 @@
                                type-of-value-when-slongp
                                type-of-value-when-ullongp
                                type-of-value-when-sllongp
+                               type-of-value-when-value-pointer
                                not-flexible-array-member-p-when-ucharp
                                not-flexible-array-member-p-when-scharp
                                not-flexible-array-member-p-when-ushortp
@@ -2163,6 +2183,7 @@
                                not-flexible-array-member-p-when-slongp
                                not-flexible-array-member-p-when-ullongp
                                not-flexible-array-member-p-when-sllongp
+                               not-flexible-array-member-p-when-value-pointer
                                remove-flexible-array-member-when-absent
                                value-fix-when-valuep
                                (:e param-declon-to-ident+tyname)
@@ -2184,6 +2205,7 @@
                                (:e type-slong)
                                (:e type-ullong)
                                (:e type-sllong)
+                               (:e type-pointer)
                                omap::in-of-update
                                (:e omap::in)
                                scopep-of-update
@@ -2685,13 +2707,14 @@
         (atc-gen-fn-def* fn names-to-avoid wrld))
        ((erp typed-formals formals-events names-to-avoid)
         (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
-       (modular-proofs proofs)
        ((erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
        (formals (strip-cars typed-formals))
        (compst-var (genvar$ 'atc "COMPST" nil formals state))
        (fenv-var (genvar$ 'atc "FENV" nil formals state))
        (limit-var (genvar$ 'atc "LIMIT" nil formals state))
        (context-preamble (atc-gen-context-preamble typed-formals compst-var))
+       (modular-proofs (and proofs
+                            (not context-preamble))) ; <-- temporary
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        ((mv init-scope-expand-event
