@@ -1942,7 +1942,7 @@
                      :hints (("Goal"
                               :induct t
                               :in-theory (enable pseudo-termp))))
-               (all-integers-p booleanp))
+               (proofs booleanp))
   :short "Generate a term that is an @(tsee omap::update) nest
           for the formals of a function."
   :long
@@ -1957,17 +1957,17 @@
     "where @('<string>') is the string for the name of the C formal
      and @('<symbol>') is the symbol that is the corresponding ACL2 formal.")
    (xdoc::p
-    "We also return a flag saying whether
-     the formals all have integer types and are not external object,
-     or not."))
+    "We also return a flag saying whether modular proofs should be generated,
+     which currently is when the formals
+     all have integer types and are not external object."))
   (b* (((when (endp typed-formals)) (mv nil t))
        ((cons var info) (car typed-formals))
-       ((mv omap-rest all-intp)
+       ((mv omap-rest proofs)
         (atc-gen-omap-update-formals (cdr typed-formals))))
     (mv `(omap::update (ident ',(symbol-name var)) ,var ,omap-rest)
         (and (type-integerp (atc-var-info->type info))
              (not (atc-var-info->externalp info))
-             all-intp))))
+             proofs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
