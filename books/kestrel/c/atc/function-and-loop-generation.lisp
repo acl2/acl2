@@ -2010,16 +2010,23 @@
     "          (add-var ... (add-frame (ident <fn>) compst)...))")
    (xdoc::p
     "where @('<string>') is the string for the name of the C formal,
-     @('<symbol>') is the symbol that is the corresponding ACL2 formal,
+     @('<symbol>') is the symbol that is
+     either the corresponding ACL2 formal
+     or the corresponding ACL2 formal with the @('-ptr') suffix
+     (according to the criterion in @(tsee atc-gen-omap-update-formals)),
      and the nest ends with @('(add-frame (ident <fn>) compst)'),
      where @('<fn>') is the string for the function name."))
   (b* (((when (endp typed-formals))
         `(add-frame (ident ,(symbol-name fn)) ,compst-var))
-       ((cons var &) (car typed-formals))
+       ((cons var info) (car typed-formals))
+       (type (atc-var-info->type info))
        (add-var-rest (atc-gen-add-var-formals fn
                                               (cdr typed-formals)
-                                              compst-var)))
-    `(add-var (ident ,(symbol-name var)) ,var ,add-var-rest)))
+                                              compst-var))
+       (var/varptr (if (type-case type :pointer)
+                       (add-suffix var "-PTR")
+                     var)))
+    `(add-var (ident ,(symbol-name var)) ,var/varptr ,add-var-rest)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
