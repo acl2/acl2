@@ -2266,7 +2266,7 @@
      in each variable information in the typed formals alist
      only talks about the variable (i.e. formal parameter).")
    (xdoc::p
-    "This ACL2 function goes throught the typed formals,
+    "This ACL2 function goes through the typed formals,
      and generates a corresponding variable table.
      Each theorem is contextualized to the initial computation state;
      this is what @('context') contains.
