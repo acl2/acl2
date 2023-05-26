@@ -62,7 +62,7 @@
                     bvif))
     (and (consp dargs)
          (let ((width (first dargs)))
-           (and (quoted-natp width)
+           (and (darg-quoted-natp width)
                 (make-bv-type (unquote width))))))
    ;; 32-bit operations:
    ;;see unsigned-byte-p-32-of-leftrotate32 and unsigned-byte-p-32-of-rightrotate32:
