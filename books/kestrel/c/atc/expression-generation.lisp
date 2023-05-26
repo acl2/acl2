@@ -570,15 +570,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-conv ((term pseudo-termp)
-                           (tyname tynamep)
-                           (in-type typep)
-                           (out-type typep)
+(define atc-gen-expr-conv ((fn symbolp)
                            (arg-term pseudo-termp)
                            (arg-expr exprp)
                            (arg-type typep)
                            (arg-events pseudo-event-form-listp)
                            (arg-thm symbolp)
+                           (in-type typep)
+                           (out-type typep)
+                           (tyname tynamep)
                            (gin pexpr-ginp)
                            state)
   :returns (mv erp (gout pexpr-goutp))
@@ -604,6 +604,7 @@
                given that the code is guard-verified."
               in-type out-type arg-term arg-type)))
        (expr (make-expr-cast :type tyname :arg arg-expr))
+       (term `(,fn ,arg-term))
        ((when (not gin.proofs))
         (retok (make-pexpr-gout
                 :expr expr
@@ -614,14 +615,7 @@
                 :thm-index gin.thm-index
                 :names-to-avoid gin.names-to-avoid
                 :proofs nil)))
-       ((unless (type-nonchar-integerp in-type))
-        (reterr (raise "Internal error: non-integer type ~x0." in-type)))
-       (in-fixtype (integer-type-to-fixtype in-type))
-       ((unless (type-nonchar-integerp out-type))
-        (reterr (raise "Internal error: non-integer type ~x0." out-type)))
-       (out-fixtype (integer-type-to-fixtype out-type))
-       (op-name (pack out-fixtype '-from- in-fixtype))
-       (op-name-okp
+       (fn-okp
         (and (or (type-case out-type :schar)
                  (and (type-case out-type :sshort)
                       (not (member-eq (type-kind in-type)
@@ -635,12 +629,12 @@
                  (and (type-case out-type :sllong)
                       (not (member-eq (type-kind in-type)
                                       '(:schar :sshort :sint :slong)))))
-             (pack op-name '-okp)))
+             (pack fn '-okp)))
        ((mv okp-lemma-event?
             okp-lemma-name
             thm-index
             names-to-avoid)
-        (if op-name-okp
+        (if fn-okp
             (b* ((okp-lemma-name
                   (pack gin.fn '-expr- gin.thm-index '-okp-lemma))
                  ((mv okp-lemma-name names-to-avoid)
@@ -649,7 +643,7 @@
                                                      gin.names-to-avoid
                                                      wrld))
                  (arg-uterm (untranslate$ arg-term nil state))
-                 (okp-lemma-formula `(,op-name-okp ,arg-uterm))
+                 (okp-lemma-formula `(,fn-okp ,arg-uterm))
                  (okp-lemma-formula
                   (atc-contextualize okp-lemma-formula
                                      gin.context
@@ -677,10 +671,10 @@
        (hints
         (b* ((arg-type-pred (type-to-recognizer arg-type wrld))
              (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
-             (exec-cast-of-out-fixtype-when-arg-type-pred
-              (pack 'exec-cast-of- out-fixtype '-when- arg-type-pred))
+             (exec-cast-of-out-type-when-arg-type-pred
+              (pack 'exec-cast-of- (type-kind out-type) '-when- arg-type-pred))
              (type-pred (type-to-recognizer out-type wrld))
-             (type-pred-of-op-name (pack type-pred '-of- op-name))
+             (type-pred-of-fn (pack type-pred '-of- fn))
              (valuep-when-type-pred (pack 'valuep-when- type-pred)))
           `(("Goal" :in-theory '(exec-expr-pure-when-cast
                                  (:e expr-kind)
@@ -688,9 +682,9 @@
                                  (:e expr-cast->arg)
                                  ,arg-thm
                                  ,valuep-when-arg-type-pred
-                                 ,exec-cast-of-out-fixtype-when-arg-type-pred
-                                 ,type-pred-of-op-name
-                                 ,@(and op-name-okp
+                                 ,exec-cast-of-out-type-when-arg-type-pred
+                                 ,type-pred-of-fn
+                                 ,@(and fn-okp
                                         (list okp-lemma-name))
                                  expr-valuep-of-expr-value
                                  expr-value->value-of-expr-value
@@ -702,7 +696,7 @@
                                        gin.context
                                        expr
                                        out-type
-                                       `(,op-name ,arg-term)
+                                       `(,fn ,arg-term)
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
@@ -713,7 +707,7 @@
     (retok
      (make-pexpr-gout :expr expr
                       :type out-type
-                      :term `(,op-name ,arg-term)
+                      :term term
                       :events (append arg-events
                                       okp-lemma-event?
                                       (list thm-event))
@@ -725,13 +719,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-bool-from-type ((term pseudo-termp)
-                                     (in-type typep)
+(define atc-gen-expr-bool-from-type ((fn symbolp)
                                      (arg-term pseudo-termp)
                                      (arg-expr exprp)
                                      (arg-type typep)
                                      (arg-events pseudo-event-form-listp)
                                      (arg-thm symbolp)
+                                     (in-type typep)
                                      (gin pexpr-ginp)
                                      state)
   :returns (mv erp (gout pexpr-goutp))
@@ -769,12 +763,13 @@
                given that the code is guard-verified."
               in-type arg-term arg-type)))
        (expr arg-expr)
+       (aterm `(,fn ,arg-term))
        (type arg-type)
        ((when (not gin.proofs))
         (retok
          (make-pexpr-gout :expr expr
                           :type arg-type
-                          :term term
+                          :term aterm
                           :events arg-events
                           :thm-name nil
                           :thm-index gin.thm-index
@@ -783,16 +778,12 @@
        (cterm arg-term)
        ((unless (type-nonchar-integerp type))
         (reterr (raise "Internal error: non-integer type ~x0." type)))
-       (fixtype (integer-type-to-fixtype type))
        (type-pred (type-to-recognizer type wrld))
-       (boolean-from-fixtype (pack 'boolean-from- fixtype))
-       (aterm `(,boolean-from-fixtype ,arg-term))
        (test-value-when-type-pred (pack 'test-value-when- type-pred))
-       (booleanp-of-boolean-from-fixtype
-        (pack 'booleanp-of- boolean-from-fixtype))
+       (booleanp-of-fn (pack 'booleanp-of- fn))
        (hints `(("Goal" :in-theory '(,arg-thm
                                      ,test-value-when-type-pred
-                                     ,booleanp-of-boolean-from-fixtype
+                                     ,booleanp-of-fn
                                      booleanp-compound-recognizer))))
        (objdes (if (expr-case expr :ident)
                    `(objdesign-of-var
@@ -1511,7 +1502,7 @@
                                  op
                                  gin
                                  state)))
-         ((mv okp tyname arg-term in-type out-type) (atc-check-conv term))
+         ((erp okp fn arg-term in-type out-type tyname) (atc-check-conv term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
                 (atc-gen-expr-pure arg-term gin state))
@@ -1519,9 +1510,10 @@
                                       :thm-index arg.thm-index
                                       :names-to-avoid arg.names-to-avoid
                                       :proofs arg.proofs)))
-            (atc-gen-expr-conv term tyname in-type out-type
-                               arg.term arg.expr arg.type
+            (atc-gen-expr-conv fn arg.term
+                               arg.expr arg.type
                                arg.events arg.thm-name
+                               in-type out-type tyname
                                gin state)))
          ((mv okp arg-term type) (atc-check-integer-read term))
          ((when okp)
@@ -1726,7 +1718,7 @@
                            struct.type
                            (type-struct tag)
                            (type-pointer (type-struct tag))))))))
-         ((mv okp arg-term) (atc-check-sint-from-boolean term))
+         ((erp okp arg-term) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-bool arg-term gin state)))
             (atc-gen-expr-sint-from-bool arg.term
@@ -1900,7 +1892,7 @@
                                      :names-to-avoid arg2.names-to-avoid
                                      :proofs arg2.proofs)
                                     state))))
-         ((mv okp arg-term in-type) (atc-check-boolean-from-type term))
+         ((erp okp fn arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
                 (atc-gen-expr-pure arg-term gin state))
@@ -1908,13 +1900,13 @@
                                       :thm-index arg.thm-index
                                       :names-to-avoid arg.names-to-avoid
                                       :proofs arg.proofs)))
-            (atc-gen-expr-bool-from-type term
-                                         in-type
+            (atc-gen-expr-bool-from-type fn
                                          arg.term
                                          arg.expr
                                          arg.type
                                          arg.events
                                          arg.thm-name
+                                         in-type
                                          gin
                                          state))))
       (reterr

@@ -1942,7 +1942,7 @@
                      :hints (("Goal"
                               :induct t
                               :in-theory (enable pseudo-termp))))
-               (all-integers-p booleanp))
+               (proofs booleanp))
   :short "Generate a term that is an @(tsee omap::update) nest
           for the formals of a function."
   :long
@@ -1955,31 +1955,44 @@
     "(omap::update (ident <string>) <symbol> (omap::update ... nil) ...)")
    (xdoc::p
     "where @('<string>') is the string for the name of the C formal
-     and @('<symbol>') is the symbol that is the corresponding ACL2 formal.")
+     and @('<symbol>') is the symbol that is
+     either the corresponding ACL2 formal
+     or the corresponding ACL2 formal with the @('-ptr') suffix.
+     The latter is for formals of pointer type:
+     as explained in @(tsee atc-gen-context-preamble),
+     the C values are represented by ACL2 variables of the form @('x-ptr'):
+     these are the values that go into the initial scope,
+     not the pointeed-to objects.")
    (xdoc::p
-    "We also return a flag saying whether
-     the formals all have integer types and are not external object,
-     or not."))
+    "We also return a flag saying whether modular proofs should be generated,
+     which currently is when the formals
+     all have integer types or pointer to integer types
+     and are not external object.
+     If the flag is @('nil'), we also return @('nil') as the nest,
+     because it is not used in generated theorems in that case."))
   (b* (((when (endp typed-formals)) (mv nil t))
        ((cons var info) (car typed-formals))
-       ((mv omap-rest all-intp)
-        (atc-gen-omap-update-formals (cdr typed-formals))))
-    (mv `(omap::update (ident ',(symbol-name var)) ,var ,omap-rest)
-        (and (type-integerp (atc-var-info->type info))
-             (not (atc-var-info->externalp info))
-             all-intp))))
+       ((mv omap-rest proofs-rest)
+        (atc-gen-omap-update-formals (cdr typed-formals)))
+       ((when (not proofs-rest)) (mv nil nil))
+       (type (atc-var-info->type info))
+       ((unless (and (or (type-integerp type)
+                         (and (type-case type :pointer)
+                              (type-integerp (type-pointer->to type))))
+                     (not (atc-var-info->externalp info))))
+        (mv nil nil))
+       (var/varptr (if (type-case type :pointer)
+                       (add-suffix var "-PTR")
+                     var)))
+    (mv `(omap::update (ident ',(symbol-name var)) ,var/varptr ,omap-rest)
+        t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-add-var-formals ((fn symbolp)
                                  (typed-formals atc-symbol-varinfo-alistp)
                                  (compst-var symbolp))
-  :returns (term pseudo-termp
-                 :hyp (and (symbolp compst-var)
-                           (atc-symbol-varinfo-alistp typed-formals))
-                 :hints (("Goal"
-                          :induct t
-                          :in-theory (enable pseudo-termp))))
+  :returns (term "An untranslated term.")
   :short "Generate a term that is an @(tsee add-var) nest
           for the formals of a function."
   :long
@@ -1998,18 +2011,85 @@
      and the nest ends with @('(add-frame (ident <fn>) compst)'),
      where @('<fn>') is the string for the function name."))
   (b* (((when (endp typed-formals))
-        `(add-frame (ident ',(symbol-name fn)) ,compst-var))
+        `(add-frame (ident ,(symbol-name fn)) ,compst-var))
        ((cons var &) (car typed-formals))
        (add-var-rest (atc-gen-add-var-formals fn
                                               (cdr typed-formals)
                                               compst-var)))
-    `(add-var (ident ',(symbol-name var)) ,var ,add-var-rest)))
+    `(add-var (ident ,(symbol-name var)) ,var ,add-var-rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-context-preamble ((typed-formals atc-symbol-varinfo-alistp)
+                                  (compst-var symbolp))
+  :returns (terms true-listp)
+  :short "Generate a context preamble from the formals of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atc-context),
+     the logical contexts for the generated theorems
+     includes a preamble of premises that is a list of untranslated terms.
+     This is calculated from the typed formals of
+     the ACL2 function that is translated to a C function.")
+   (xdoc::p
+    "For each formal @('x') whose C type is pointer to integer,
+     we generate a portion of the preamble saying that
+     @('x-ptr') is a valid pointer value of the right type,
+     the pointer's object designator is in allocated memory
+     (for now; this will be generalized later),
+     and reading the object yields @('x').
+     Thus, a formal that is a pointer to an integer
+     is represented by two variables in the generated theorems:
+     this is necessary because the ACL2 function takes integers (not pointers),
+     but the C function takes pointers that point to the integers.
+     In the theorems, we use the name of the form as the integer,
+     and we introduce a new name, with a @('-ptr') suffix, for the pointer.
+     Note that, because of the restriction on portable ASCII C identifiers,
+     dashes cannot occur in names of formals,
+     and thus something ending in @('-ptr') cannot conflict with any formal.
+     The terms generated in the preamble constrain @('x-ptr') to be the pointer,
+     and include a binding hypothesis that sets @('x') to be
+     the integer to which @('x-ptr') points to.
+     There is also a binding hypothesis for a variable @('x-objdes')
+     that is the object designator in @('x-ptr');
+     note that it cannot conflict with other variables,
+     for the same reason as @('x-ptr').")
+   (xdoc::p
+    "Formals of integer type generate no preamble terms,
+     as they do not involve pointers.")
+   (xdoc::p
+    "For now we do not generate any preamble terms for
+     formals of other types than the ones discussed just above.
+     We will do that soon,
+     as we extend the reach of our new modular proof generation approach."))
+  (b* (((when (endp typed-formals)) nil)
+       ((cons var info) (car typed-formals))
+       (type (atc-var-info->type info))
+       ((unless (type-case type :pointer))
+        (atc-gen-context-preamble (cdr typed-formals) compst-var))
+       (reftype (type-pointer->to type))
+       ((unless (type-integerp reftype))
+        (atc-gen-context-preamble (cdr typed-formals) compst-var))
+       (var-ptr (add-suffix var "-PTR"))
+       (var-objdes (add-suffix var "-OBJDES"))
+       (terms `((valuep ,var-ptr)
+                (equal (value-kind ,var-ptr) :pointer)
+                (value-pointer-validp ,var-ptr)
+                (equal ,var-objdes (value-pointer->designator ,var-ptr))
+                (equal (objdesign-kind ,var-objdes) :alloc)
+                (equal (value-pointer->reftype ,var-ptr)
+                       ,(type-to-maker reftype))
+                (equal ,var (read-object ,var-objdes ,compst-var))))
+       (more-terms (atc-gen-context-preamble (cdr typed-formals) compst-var)))
+    (append terms more-terms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-init-scope-thms ((fn symbolp)
                                  (fn-guard symbolp)
                                  (typed-formals atc-symbol-varinfo-alistp)
+                                 (context-preamble true-listp)
                                  (prog-const symbolp)
                                  (fn-fun-env-thm symbolp)
                                  (compst-var symbolp)
@@ -2033,9 +2113,10 @@
      and one theorem saying that the expansion satisfies @(tsee scopep).")
    (xdoc::p
     "We also return the @(tsee omap::update) nest term
-     that describes the initial scope, for use in subsequent theorems.."))
+     that describes the initial scope, for use in subsequent theorems."))
   (b* ((wrld (w state))
-       ((mv omap-update-nest proofs) (atc-gen-omap-update-formals typed-formals))
+       ((mv omap-update-nest proofs)
+        (atc-gen-omap-update-formals typed-formals))
        ((unless proofs) (mv '(_) nil '(_) nil nil nil names-to-avoid))
        (formals (strip-cars typed-formals))
        (expand-thm (pack fn '-init-scope-expand))
@@ -2050,6 +2131,7 @@
                        (equal ,info-var
                               (fun-env-lookup (ident ,(symbol-name fn))
                                               ,fenv-var))
+                       ,@context-preamble
                        (,fn-guard ,@formals))
                   (equal (init-scope (fun-info->params ,info-var)
                                      (list ,@formals))
@@ -2090,6 +2172,7 @@
                                type-of-value-when-slongp
                                type-of-value-when-ullongp
                                type-of-value-when-sllongp
+                               type-of-value-when-value-pointer
                                not-flexible-array-member-p-when-ucharp
                                not-flexible-array-member-p-when-scharp
                                not-flexible-array-member-p-when-ushortp
@@ -2100,6 +2183,7 @@
                                not-flexible-array-member-p-when-slongp
                                not-flexible-array-member-p-when-ullongp
                                not-flexible-array-member-p-when-sllongp
+                               not-flexible-array-member-p-when-value-pointer
                                remove-flexible-array-member-when-absent
                                value-fix-when-valuep
                                (:e param-declon-to-ident+tyname)
@@ -2121,6 +2205,7 @@
                                (:e type-slong)
                                (:e type-ullong)
                                (:e type-sllong)
+                               (:e type-pointer)
                                omap::in-of-update
                                (:e omap::in)
                                scopep-of-update
@@ -2140,6 +2225,7 @@
         (fresh-logical-name-with-$s-suffix scopep-thm nil names-to-avoid wrld))
        (scopep-formula
         `(implies (and (compustatep ,compst-var)
+                       ,@context-preamble
                        (,fn-guard ,@formals))
                   (scopep ,omap-update-nest)))
        (scopep-hints
@@ -2175,16 +2261,14 @@
 (define atc-gen-push-init-thm ((fn symbolp)
                                (fn-guard symbolp)
                                (typed-formals atc-symbol-varinfo-alistp)
+                               (context-preamble true-listp)
                                (omap-update-nest pseudo-termp)
                                (compst-var symbolp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp)
-               (add-var-nest
-                pseudo-termp
-                :hyp (and (symbolp compst-var)
-                          (atc-symbol-varinfo-alistp typed-formals)))
+               (add-var-nest "An untranslated term.")
                (names-to-avoid symbol-listp
                                :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorem about
@@ -2207,6 +2291,7 @@
        (formal-thms (atc-var-info-list->thm-list (strip-cdrs typed-formals)))
        (formula
         `(implies (and (compustatep ,compst-var)
+                       ,@context-preamble
                        (,fn-guard ,@formals))
                   (equal (push-frame
                           (make-frame :function (ident ,(symbol-name fn))
@@ -2274,7 +2359,7 @@
      in each variable information in the typed formals alist
      only talks about the variable (i.e. formal parameter).")
    (xdoc::p
-    "This ACL2 function goes throught the typed formals,
+    "This ACL2 function goes through the typed formals,
      and generates a corresponding variable table.
      Each theorem is contextualized to the initial computation state;
      this is what @('context') contains.
@@ -2622,12 +2707,14 @@
         (atc-gen-fn-def* fn names-to-avoid wrld))
        ((erp typed-formals formals-events names-to-avoid)
         (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
-       (modular-proofs proofs)
        ((erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
        (formals (strip-cars typed-formals))
        (compst-var (genvar$ 'atc "COMPST" nil formals state))
        (fenv-var (genvar$ 'atc "FENV" nil formals state))
        (limit-var (genvar$ 'atc "LIMIT" nil formals state))
+       (context-preamble (atc-gen-context-preamble typed-formals compst-var))
+       (modular-proofs (and proofs
+                            (not context-preamble))) ; <-- temporary
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        ((mv init-scope-expand-event
@@ -2639,9 +2726,16 @@
             names-to-avoid)
         (if (and proofs
                  modular-proofs)
-            (atc-gen-init-scope-thms fn fn-guard typed-formals prog-const
-                                     fn-fun-env-thm compst-var fenv-var
-                                     names-to-avoid state)
+            (atc-gen-init-scope-thms fn
+                                     fn-guard
+                                     typed-formals
+                                     context-preamble
+                                     prog-const
+                                     fn-fun-env-thm
+                                     compst-var
+                                     fenv-var
+                                     names-to-avoid
+                                     state)
           (mv '(_) nil '(_) nil nil nil names-to-avoid)))
        ((mv push-init-thm-event
             push-init-thm
@@ -2649,12 +2743,19 @@
             names-to-avoid)
         (if (and proofs
                  modular-proofs)
-            (atc-gen-push-init-thm fn fn-guard typed-formals omap-update-nest
-                                   compst-var names-to-avoid wrld)
+            (atc-gen-push-init-thm fn
+                                   fn-guard
+                                   typed-formals
+                                   context-preamble
+                                   omap-update-nest
+                                   compst-var
+                                   names-to-avoid
+                                   wrld)
           (mv '(_) nil nil names-to-avoid)))
        (premises (list (make-atc-premise-compustate :var compst-var
                                                     :term add-var-nest)))
-       (context (make-atc-context :preamble nil :premises premises))
+       (context (make-atc-context :preamble context-preamble
+                                  :premises premises))
        ((mv inscope init-inscope-events names-to-avoid)
         (if (and proofs
                  modular-proofs)

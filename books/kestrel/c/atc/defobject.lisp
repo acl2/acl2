@@ -270,7 +270,7 @@
                                    :arg1 arg1-expr
                                    :arg2 arg2-expr)
                  out-type)))
-       ((mv okp tyname arg in-type out-type) (atc-check-conv term))
+       ((erp okp & arg in-type out-type tyname) (atc-check-conv term))
        ((when okp)
         (b* (((erp arg-expr type) (defobject-term-to-expr arg))
              ((unless (equal type in-type))
