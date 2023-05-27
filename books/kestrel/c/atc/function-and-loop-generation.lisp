@@ -2360,14 +2360,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like the typed formals alist,
+    "This is similar to the typed formals alist,
      except that the theorem stored in each variable information
-     says that reading the variable from the computation state
-     yields the variable itself,
+     says that reading the C variable from the computation state
+     yields the ACL2 variable,
      and also that the variable has the applicable type.
      In contrast, the theorem stored
      in each variable information in the typed formals alist
-     only talks about the variable (i.e. formal parameter).")
+     only talks about the variable (i.e. formal parameter).
+     More precisely, if the C variable has pointer type,
+     the theorem says that reading the C variable
+     yields the @('-ptr') ACL2 variable (which contains a pointer value),
+     and in addition that dereferencing this pointer
+     yields the ACL2 variable that is the formal.
+     That is, in the case of a pointer, there is an ``intermediate''.")
    (xdoc::p
     "This ACL2 function goes through the typed formals,
      and generates a corresponding variable table.
@@ -2410,12 +2416,20 @@
           (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
            (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+          (var/varptr (if (type-case type :pointer)
+                          (add-suffix var "-PTR")
+                        var))
           (formula1 `(and (objdesign-of-var (ident ,(symbol-name var)) compst)
                           (equal (read-object (objdesign-of-var
                                                (ident ,(symbol-name var))
                                                compst)
                                               compst)
-                                 ,var)))
+                                 ,var/varptr)
+                          ,@(and (type-case type :pointer)
+                                 `((equal (read-object
+                                           ,(add-suffix var "-OBJDES")
+                                           ,compst-var)
+                                          ,var)))))
           (formula1 (atc-contextualize formula1
                                        context
                                        fn
@@ -2440,17 +2454,24 @@
            (pack 'not-flexible-array-member-p-when- type-pred))
           (valuep-when-type-pred (pack 'valuep-when- type-pred))
           (hints
-           `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
-                                  read-object-of-objdesign-of-var-of-add-var
-                                  ,var-thm
-                                  ident-fix-when-identp
-                                  identp-of-ident
-                                  equal-of-ident-and-ident
-                                  (:e str-fix)
-                                  ,not-flexible-array-member-p-when-type-pred
-                                  remove-flexible-array-member-when-absent
-                                  value-fix-when-valuep
-                                  ,valuep-when-type-pred))))
+           `(("Goal"
+              :in-theory '(objdesign-of-var-of-add-var-iff
+                           read-object-of-objdesign-of-var-of-add-var
+                           ,var-thm
+                           ident-fix-when-identp
+                           identp-of-ident
+                           equal-of-ident-and-ident
+                           (:e str-fix)
+                           ,(if (type-case type :pointer)
+                                'not-flexible-array-member-p-when-value-pointer
+                              not-flexible-array-member-p-when-type-pred)
+                           remove-flexible-array-member-when-absent
+                           value-fix-when-valuep
+                           ,@(and (type-case type :pointer)
+                                  '(read-object-of-add-var
+                                    read-object-of-add-frame))
+                           ,@(and (not (type-case type :pointer))
+                                  (list valuep-when-type-pred))))))
           ((mv event &) (evmac-generate-defthm name
                                                :formula formula
                                                :hints hints
@@ -2763,14 +2784,14 @@
                                                     :term add-var-nest)))
        (context (make-atc-context :preamble context-preamble
                                   :premises premises))
-       (modular-proofs (and init-proofs
-                            (not context-preamble)))
        ((mv inscope init-inscope-events names-to-avoid)
         (if (and proofs
-                 modular-proofs)
+                 init-proofs)
             (atc-gen-init-inscope fn fn-guard formals typed-formals
                                   compst-var context names-to-avoid wrld)
           (mv (list typed-formals) nil names-to-avoid)))
+       (modular-proofs (and init-proofs
+                            (not context-preamble)))
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
