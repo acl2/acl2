@@ -2331,6 +2331,7 @@
                                not-flexible-array-member-p-when-slongp
                                not-flexible-array-member-p-when-ullongp
                                not-flexible-array-member-p-when-sllongp
+                               not-flexible-array-member-p-when-value-pointer
                                scopep-of-update
                                (:e scopep)
                                identp-of-ident))))
@@ -2729,7 +2730,7 @@
             init-scope-scopep-event
             init-scope-scopep-thm
             omap-update-nest
-            init-scope-proofs
+            init-proofs
             names-to-avoid)
         (if proofs
             (atc-gen-init-scope-thms fn
@@ -2743,14 +2744,12 @@
                                      names-to-avoid
                                      state)
           (mv '(_) nil '(_) nil nil nil names-to-avoid)))
-       (modular-proofs (and init-scope-proofs
-                            (not context-preamble))) ; <-- temporary
        ((mv push-init-thm-event
             push-init-thm
             add-var-nest
             names-to-avoid)
         (if (and proofs
-                 modular-proofs)
+                 init-proofs)
             (atc-gen-push-init-thm fn
                                    fn-guard
                                    typed-formals
@@ -2764,6 +2763,8 @@
                                                     :term add-var-nest)))
        (context (make-atc-context :preamble context-preamble
                                   :premises premises))
+       (modular-proofs (and init-proofs
+                            (not context-preamble)))
        ((mv inscope init-inscope-events names-to-avoid)
         (if (and proofs
                  modular-proofs)
@@ -2918,11 +2919,10 @@
                                        (list fn-guard-event)
                                        fn-def*-events
                                        formals-events
-                                       (and init-scope-proofs
+                                       (and init-proofs
                                             (list init-scope-expand-event
-                                                  init-scope-scopep-event))
-                                       (and modular-proofs
-                                            (list push-init-thm-event))
+                                                  init-scope-scopep-event
+                                                  push-init-thm-event))
                                        init-inscope-events
                                        body.events
                                        (and modular-proofs
