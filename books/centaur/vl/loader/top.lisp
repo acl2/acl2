@@ -563,11 +563,14 @@ descriptions.</li>
                                 :defmap   defmap
                                 :bytes    bytes))
        ((unless successp)
-        (mv (vl-loadstate-fatal :type :vl-preprocess-failed
-                                :msg "Preprocessing failed for ~s0."
-                                :args (list filename)
-                                :st st)
-            state))
+        (b* ((st
+              ;; keep the old defines but make the fast alist again
+              (change-vl-loadstate st :defines (make-fast-alist st.defines))))
+          (mv (vl-loadstate-fatal :type :vl-preprocess-failed
+                                  :msg "Preprocessing failed for ~s0."
+                                  :args (list filename)
+                                  :st st)
+              state)))
 
        ((mv preprocessed state)
         (vl-preprocess-debug filename preprocessed st state))

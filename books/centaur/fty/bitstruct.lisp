@@ -78,7 +78,7 @@
 
 (defconst *defbitstruct-keywords*
   '(:pred :fix :equiv :xvar :signedp :inline :fullp
-    :parents :short :long :msb-first))
+    :parents :short :long :msb-first :extra-binder-names))
 
 (define lookup-bitstruct (name bitstruct-table)
   (cond ((atom bitstruct-table) nil)
@@ -1242,6 +1242,13 @@ necessary when accessed.)</li>
 
 <li>@(':msb-first') -- when non-NIL, reverses the order of the top-level fields,
 it does not reverse @(':subfield') accessors/updaters.</li>
+
+<li>@(':extra-binder-args') -- a list of symbols that, in addition to the
+fields, will be accessible through the generated B* binder once corresponding
+accessor functions are defined.  For example if we define a bitstruct @('foo')
+with @(':extra-binder-args (bar)'), then once the function @('foo->bar') is
+defined, the B* binder @('(b* (((foo x))) ...)') will allow access to
+@('(foo->bar x)') via variable @('x.bar').</li>
 
 </ul>
 
