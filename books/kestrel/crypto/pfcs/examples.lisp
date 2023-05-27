@@ -14,8 +14,6 @@
 
 (include-book "std/util/defrule" :dir :system)
 
-(local (include-book "omap-lib-ext"))
-
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

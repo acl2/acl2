@@ -31,6 +31,8 @@
                          symbol-fix
                          symbol-list
                          symbol-setp
+                         table-alist+
+                         true-list
                          dm::primep
                          fty::ok
                          fty::reserr

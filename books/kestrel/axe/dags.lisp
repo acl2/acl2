@@ -1022,17 +1022,17 @@
 
 ;; move these?
 
-;; TODO: Put darg in name
-(defun quoted-natp (item)
-  (declare (xargs :guard (dargp item)))
-  (and (consp item)
-       (natp (unquote item))))
+;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is a natp.
+(defun darg-quoted-natp (darg)
+  (declare (xargs :guard (dargp darg)))
+  (and (consp darg)
+       (natp (unquote darg))))
 
-;; TODO: Put darg in name
-(defun quoted-posp (item)
-  (declare (xargs :guard (dargp item)))
-  (and (consp item)
-       (posp (unquote item))))
+;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is a posp.
+(defun darg-quoted-posp (darg)
+  (declare (xargs :guard (dargp darg)))
+  (and (consp darg)
+       (posp (unquote darg))))
 
 (defthm not-<-of-+-1-of-nth-when-bounded-darg-listp
   (implies (and (bounded-darg-listp items dag-len)

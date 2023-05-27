@@ -767,7 +767,7 @@
                                                          ;;no equality match:
                                                          (if (and (eq fn 'bvxor) ;; TODO: Add similar handling for bitxor!
                                                                   normalize-xors
-                                                                  (quoted-natp (first simplified-args)))
+                                                                  (darg-quoted-natp (first simplified-args)))
                                                              ;;it's a bvxor. note that since the args are simplified, if they are bvxor nests they are *normalized* bvxor nests
                                                              (b* ((bvxor-width (unquote (first simplified-args)))
                                                                   ;; get xors from arg2 (TODO: Consider memoizing):

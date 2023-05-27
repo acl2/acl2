@@ -94,10 +94,10 @@
        (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
                          (expr-value ,uterm ,uobjdes)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
-                                    compst-var nil nil wrld))
+                                    compst-var nil nil t wrld))
        (formula2 `(,type-pred ,uterm))
        (formula2 (atc-contextualize formula2 context fn fn-guard
-                                    nil nil nil wrld))
+                                    nil nil nil nil wrld))
        (formula `(and ,formula1 ,formula2))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
@@ -173,13 +173,13 @@
        (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
                          (expr-value ,ucterm ,uobjdes)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
-                                    compst-var nil nil wrld))
+                                    compst-var nil nil t wrld))
        (formula2 `(and (,type-pred ,ucterm)
                        (equal (test-value ,ucterm)
                               ,uaterm)
                        (booleanp ,uaterm)))
        (formula2 (atc-contextualize formula2 context fn fn-guard
-                                    nil nil nil wrld))
+                                    nil nil nil nil wrld))
        (formula `(and ,formula1 ,formula2))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
@@ -232,10 +232,12 @@
      e.g. by adding a computation state binding for entering a scope.")
    (xdoc::p
     "The theorems of the updated symbol table are generated here.
-     They say that reading each variable name yields the variable
+     They say that reading each C variable
+     yields the corresponding ACL2 variable
+     or the @('-ptr') ACL2 variable,
      in the computation state updated according to the (new) context.
      Each new theorem is proved from the old theorem,
-     and using rules passed to this ACL2 function,
+     using rules passed to this ACL2 function,
      since the rules may differ depending on
      the specifics of the updated context and computation state.")
    (xdoc::p
@@ -304,19 +306,28 @@
              (type-pred (type-to-recognizer type wrld))
              (new-thm (pack fn '- var '-in-scope- thm-index))
              ((mv new-thm names-to-avoid)
-              (fresh-logical-name-with-$s-suffix new-thm nil names-to-avoid wrld))
+              (fresh-logical-name-with-$s-suffix
+               new-thm nil names-to-avoid wrld))
+             (var/varptr (if (type-case type :pointer)
+                             (add-suffix var "-PTR")
+                           var))
              (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
                                                ,compst-var)
                              (equal (read-object
                                      (objdesign-of-var (ident ,(symbol-name var))
                                                        ,compst-var)
                                      ,compst-var)
-                                    ,var)))
+                                    ,var/varptr)
+                             ,@(and (type-case type :pointer)
+                                    `((equal (read-object
+                                              ,(add-suffix var "-OBJDES")
+                                              ,compst-var)
+                                             ,var)))))
              (formula1 (atc-contextualize formula1 new-context fn fn-guard
-                                          compst-var nil nil wrld))
+                                          compst-var nil nil t wrld))
              (formula2 `(,type-pred ,var))
              (formula2 (atc-contextualize formula2 new-context fn fn-guard
-                                          nil nil nil wrld))
+                                          nil nil nil nil wrld))
              (formula `(and ,formula1 ,formula2))
              (hints `(("Goal" :in-theory '(,thm ,@rules))))
              ((mv event &) (evmac-generate-defthm new-thm
@@ -363,8 +374,9 @@
      and then we add a new empty scope to it.")
    (xdoc::p
     "The theorems for the new symbol table are proved from the old ones
-     using the rule that reduces @(tsee read-object) of @(tsee enter-scope)
-     to just @(tsee read-object).
+     using the rule that reduces
+     @(tsee objdesign-of-var) and @(tsee read-object) of @(tsee enter-scope)
+     to just @(tsee objdesign-of-var) and @(tsee read-object).
      The hypothesis of that rule saying that there are frames
      is discharged via the rules in
      @(see atc-compustate-frames-number-rules):
@@ -372,16 +384,22 @@
      always starts with @(tsee add-frame)
      or @(tsee enter-scope)
      or @(tsee add-var);
-     there may be other forms possible, which we will handle later."))
+     there may be other forms possible, which we will handle later.
+     For pointers, we also need the rule that reduces
+     @(tsee read-object) of the object designator of @(tsee enter-scope)
+     to just @(tsee read-object) of @(tsee enter-scope)."))
   (b* ((premise (make-atc-premise-compustate :var compst-var
                                              :term `(enter-scope ,compst-var)))
-       (new-context (append context (list premise)))
+       (premises (atc-context->premises context))
+       (new-premises (append premises (list premise)))
+       (new-context (change-atc-context context :premises new-premises))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 objdesign-of-var-of-add-var-iff
                 read-object-of-objdesign-of-var-of-enter-scope
                 compustate-frames-number-of-add-frame-not-zero
                 compustate-frames-number-of-enter-scope-not-zero
-                compustate-frames-number-of-add-var-not-zero))
+                compustate-frames-number-of-add-var-not-zero
+                read-object-of-enter-scope))
        ((mv new-inscope events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var
                              rules thm-index names-to-avoid wrld)))
@@ -425,7 +443,9 @@
        (cs-premise-term `(add-var (ident ,(symbol-name var)) ,var ,compst-var))
        (cs-premise (make-atc-premise-compustate :var compst-var
                                                 :term cs-premise-term))
-       (new-context (append context (list var-premise cs-premise)))
+       (premises (atc-context->premises context))
+       (new-premises (append premises (list var-premise cs-premise)))
+       (new-context (change-atc-context context :premises new-premises))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 objdesign-of-var-of-add-var-iff
                 read-object-of-objdesign-of-var-of-add-var
@@ -453,11 +473,11 @@
                      ,var)))
        (var-in-scope-formula1
         (atc-contextualize var-in-scope-formula1 new-context fn fn-guard
-                           compst-var nil nil wrld))
+                           compst-var nil nil t wrld))
        (var-in-scope-formula2 `(,type-pred ,var))
        (var-in-scope-formula2
         (atc-contextualize var-in-scope-formula2 new-context fn fn-guard
-                           nil nil nil wrld))
+                           nil nil nil nil wrld))
        (var-in-scope-formula `(and ,var-in-scope-formula1
                                    ,var-in-scope-formula2))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))

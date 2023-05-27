@@ -1,5 +1,5 @@
 ; ACL2 Community Books Release Notes
-; Copyright (C) 2013-2022 Centaur Technology
+; Copyright (C) 2013-2023 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -121,6 +121,15 @@
 
    (xdoc::h3 "New Libraries")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Group Theory Library")
+
+   (xdoc::p
+    "Added seven books to @('projects/groups/') on the topics of homomorphisms,
+     direct products, the Fundamental Theorem of Finite Abelian Groups,
+     symmetric groups, group actions, the Sylow theorems, and simple groups.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -237,6 +246,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Demos Library")
+
+   (xdoc::p
+    "See directory @('demos/include-raw-examples/') for examples demonstrating
+     the use of @(tsee include-raw) and @(tsee partial-encapsulate).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "digits-any-base" "Digits Library"))
 
    (xdoc::p
@@ -254,15 +271,6 @@
     "In the library of "
     (xdoc::seetopic "fty::defresult" "result types")
     ", some names have been improved.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 "Group Theory Library")
-
-   (xdoc::p
-    "Added seven books to @('projects/groups/') on the topics of homomorphisms,
-     direct products, the Fundamental Theorem of Finite Abelian Groups,
-     symmetric groups, group actions, the Sylow theorems, and simple groups.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -292,7 +300,7 @@
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
-    "Added a theorem.")
+    "Added some theorems.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

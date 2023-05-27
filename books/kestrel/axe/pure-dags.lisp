@@ -21,6 +21,7 @@
 ;does this function handle everything in *bv-and-array-fns-we-can-translate* ?
 ;the quotep checks on arguments could be consp checks?
 ;fixme compare to can-always-translate-expr-to-stp?
+; should this allow ':irrelevant values in bvifs?
 (defun pure-fn-call-exprp (expr)
   (declare (xargs :guard (dag-function-call-exprp expr)
                   :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))

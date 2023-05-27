@@ -13,6 +13,8 @@
 
 (include-book "test-star")
 
+(include-book "kestrel/std/util/defirrelevant" :dir :system)
+
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -62,7 +64,7 @@
     "We include bindings of the computation state.
      Each such binding consists of
      a variable for the computation state
-     (contained in @('compst-var') in the code generation code),
+     (stored in @('compst-var') in the code generation code),
      and a term that must represent a computation state.
      The meaning is that the variable is bound to the term.")
    (xdoc::p
@@ -76,6 +78,12 @@
    (xdoc::p
     "We also include terms that are tests of @(tsee if)s.")
    (xdoc::p
+    "Since the terms used in premises are untranslated,
+     we do not have type constraints on them.
+     In the future, we could use a type for untranslated terms,
+     perhaps a shallow/light recognizer
+     analogous to @(tsee pseudo-event-formp).")
+   (xdoc::p
     "We may add more kinds later."))
   (:compustate ((var symbolp)
                 (term any)))
@@ -87,17 +95,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist atc-context
+(fty::deflist atc-premise-list
+  :short "Fixtype of lists of premises."
+  :elt-type atc-premise
+  :true-listp t
+  :elementp-of-nil nil
+  :pred atc-premise-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod atc-context
   :short "Fixtype of contexts."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A context is a list of premises, in order."))
-  :elt-type atc-premise
-  :true-listp t
-  :elementp-of-nil nil
-  :pred atc-contextp
-  :prepwork ((local (in-theory (enable nfix)))))
+    "A context consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "A preamble consisting of a list of terms.
+      Since the terms are untranslated,
+      we do not constrain them to be of any specific type,
+      analogously to tests in premises
+      (see discussion in @(tsee atc-premise)).")
+    (xdoc::li
+     "A list of premises, in order."))
+   (xdoc::p
+    "The preamble is fixed, and logically precedes the premises.
+     The premises, as explained in @(see atc-generation-contexts), grow."))
+  ((preamble true-list)
+   (premises atc-premise-list))
+  :pred atc-contextp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-atc-context
+  :short "An irrelevant context."
+  :type atc-contextp
+  :body (make-atc-context :preamble nil :premises nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,6 +143,7 @@
                            (compst-var? symbolp)
                            (limit-var? symbolp)
                            (limit-bound? pseudo-termp)
+                           (preamblep booleanp)
                            (wrld plist-worldp))
   :returns (formula1 "An untranslated term.")
   :short "Put a formula into a context."
@@ -119,21 +155,25 @@
      and ending with the term given as input.")
    (xdoc::p
     "We also add, around the resulting term from the process described above,
-     with additional premises:")
+     additional premises:")
    (xdoc::ul
+    (xdoc::li
+     "The fact that the computation state variable is a computation state.")
+    (xdoc::li
+     "The preamble from the context.")
     (xdoc::li
      "The fact that the guard of the target function @('fn')
       holds on the formals of the function.")
-    (xdoc::li
-     "The fact that the computation state variable is a computation state.")
     (xdoc::li
      "The fact that the limit variable is an integer.")
     (xdoc::li
      "The fact that the limit variable is greater than or equal to
       a given bound (expressed as a term)."))
    (xdoc::p
-    "If @('fn-guard?') is @('nil'),
-     we omit the the guard hypothesis.
+    "If @('preamblep') is @('nil'), we omit the preamble from the context.
+     This is used to generate some claims within the ACL2 proof builder.")
+   (xdoc::p
+    "If @('fn-guard?') is @('nil'), we omit the guard hypothesis.
      This is used to generate some claims within the ACL2 proof builder.
      In this case, @('fn?') must be @('nil') too.")
    (xdoc::p
@@ -141,7 +181,8 @@
      we avoid all the premises and hypotheses that concern computation states.
      Some of the theorems we generate do not involve computation states:
      they apply just to ACL2 terms that represent shallowly embedded C code;
-     they do not apply to relations between ACL2 and deeply embedded C code.")
+     they do not apply to relations
+     between ACL2 terms and deeply embedded C code.")
    (xdoc::p
     "If @('limit-var?') is @('nil'),
      we avoid the hypotheses that concern limits.
@@ -149,11 +190,15 @@
      do not involve execution recursion limits.
      In this case, @('limit-bound?') must be @('nil') too."))
   (b* ((skip-cs (not compst-var?))
-       (formula (atc-contextualize-aux formula context skip-cs))
-       (hyps (append (and fn-guard?
-                          `((,fn-guard? ,@(formals+ fn? wrld))))
-                     (and compst-var?
+       (formula (atc-contextualize-aux formula
+                                       (atc-context->premises context)
+                                       skip-cs))
+       (hyps (append (and compst-var?
                           `((compustatep ,compst-var?)))
+                     (and preamblep
+                          (atc-context->preamble context))
+                     (and fn-guard?
+                          `((,fn-guard? ,@(formals+ fn? wrld))))
                      (and limit-var?
                           `((integerp ,limit-var?)
                             (>= ,limit-var? ,limit-bound?)))))
@@ -168,45 +213,56 @@
 
   :prepwork
   ((define atc-contextualize-aux ((formula "An untranslated term.")
-                                  (context atc-contextp)
+                                  (premises atc-premise-listp)
                                   (skip-cs booleanp))
      :returns (formula1 "An untranslated term.")
      :parents nil
-     (b* (((when (endp context)) formula)
-          (premise (car context)))
+     (b* (((when (endp premises)) formula)
+          (premise (car premises)))
        (atc-premise-case
         premise
         :compustate
         (if skip-cs
-            (atc-contextualize-aux formula (cdr context) skip-cs)
+            (atc-contextualize-aux formula (cdr premises) skip-cs)
           `(let ((,premise.var ,premise.term))
-             ,(atc-contextualize-aux formula (cdr context) skip-cs)))
+             ,(atc-contextualize-aux formula (cdr premises) skip-cs)))
         :cvalue `(let ((,premise.var ,premise.term))
-                   ,(atc-contextualize-aux formula (cdr context) skip-cs))
+                   ,(atc-contextualize-aux formula (cdr premises) skip-cs))
         :test `(implies
                 (test* ,premise.term)
-                ,(atc-contextualize-aux formula (cdr context) skip-cs)))))))
+                ,(atc-contextualize-aux formula (cdr premises) skip-cs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-contextualize-compustate ((compst-var symbolp)
-                                      (context atc-contextp))
-  :returns (term1 "An untranslated term.")
+                                      (premises atc-premise-listp))
+  :returns (term "An untranslated term.")
   :short "Put a computation state into context."
   :long
   (xdoc::topstring
    (xdoc::p
     "The initial computation state is expressed as a variable,
      passed to this ACL2 function as @('compst-var').
-     We go through the context and wrap the computation state variable
+     We go through the premises and wrap the computation state variable
      with @(tsee let)s corresponding to binding of
-     computation states and C variables."))
-  (b* (((when (endp context)) compst-var)
-       (premise (car context)))
+     computation states and C variables.")
+   (xdoc::p
+    "This is used to calculate an updated (symbolic) computation state
+     after the execution of some code, e.g. a list of block items.
+     The caller takes the ``difference'' between
+     the context before and after that execution,
+     and passes it to this function.
+     We expect that there should be no test in that difference context:
+     we defensively check that, and raise an error if we find one.")
+   (xdoc::p
+    "Note that this function takes as input a list of premises, not a context.
+     This is the ``difference'' betweeen the two contexts mentioned above."))
+  (b* (((when (endp premises)) compst-var)
+       (premise (car premises)))
     (atc-premise-case
      premise
      :compustate `(let ((,premise.var ,premise.term))
-                    ,(atc-contextualize-compustate compst-var (cdr context)))
+                    ,(atc-contextualize-compustate compst-var (cdr premises)))
      :cvalue `(let ((,premise.var ,premise.term))
-                ,(atc-contextualize-compustate compst-var (cdr context)))
-     :test (atc-contextualize-compustate compst-var (cdr context)))))
+                ,(atc-contextualize-compustate compst-var (cdr premises)))
+     :test (raise "Internal error: test ~x0 found." premise.term))))
