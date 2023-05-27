@@ -2419,11 +2419,12 @@
           (var/varptr (if (type-case type :pointer)
                           (add-suffix var "-PTR")
                         var))
-          (formula1 `(and (objdesign-of-var (ident ,(symbol-name var)) compst)
+          (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
+                                            ,compst-var)
                           (equal (read-object (objdesign-of-var
                                                (ident ,(symbol-name var))
-                                               compst)
-                                              compst)
+                                               ,compst-var)
+                                              ,compst-var)
                                  ,var/varptr)
                           ,@(and (type-case type :pointer)
                                  `((equal (read-object
