@@ -394,7 +394,6 @@
        (new-premises (append premises (list premise)))
        (new-context (change-atc-context context :premises new-premises))
        (rules '(objdesign-of-var-of-enter-scope-iff
-                objdesign-of-var-of-add-var-iff
                 read-object-of-objdesign-of-var-of-enter-scope
                 compustate-frames-number-of-add-frame-not-zero
                 compustate-frames-number-of-enter-scope-not-zero
