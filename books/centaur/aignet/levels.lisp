@@ -50,8 +50,8 @@
   :guard (and (<= (num-fanins aignet) (u32-length aignet-levels))
               (<= n (num-fanins aignet)))
   :measure (nfix (- (num-fanins aignet) (nfix n)))
-  :returns (aignet-levels-out (<= (len aignet-levels)
-                                  (len aignet-levels-out))
+  :returns (new-aignet-levels (<= (len aignet-levels)
+                                  (len new-aignet-levels))
                               :rule-classes :linear)
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   (b* (((when (mbe :logic (zp (- (num-fanins aignet) (nfix n)))
@@ -160,7 +160,11 @@
   (defthm aignet-levels-correct-of-aignet-record-levels-aux
     (aignet-levels-correct-up-to (+ 1 (fanin-count aignet))
                                  aignet
-                                 (aignet-record-levels-aux 0 aignet aignet-levels))))
+                                 (aignet-record-levels-aux 0 aignet aignet-levels)))
+
+  (defret len-of-<fn>
+    (implies (<= (num-fanins aignet) (len aignet-levels))
+             (equal (len new-aignet-levels) (len aignet-levels)))))
 
 
 (define aignet-record-levels (aignet
@@ -171,9 +175,9 @@
           have maximum level n."
   :long "<p>Does not record a level value for combinational outputs.  Look up the
          level of its fanin node instead.</p>"
-  :returns (aignet-levels
+  :returns (new-aignet-levels
             (< (fanin-count aignet)
-               (len aignet-levels))
+               (len new-aignet-levels))
             :rule-classes :linear)
   (b* ((aignet-levels (resize-u32 (num-fanins aignet) aignet-levels)))
     (aignet-record-levels-aux 0 aignet aignet-levels))
@@ -181,6 +185,8 @@
   (defthm aignet-levels-correct-of-aignet-record-levels
     (aignet-levels-correct-up-to (+ 1 (fanin-count aignet))
                                  aignet
-                                 (aignet-record-levels aignet aignet-levels))))
+                                 (aignet-record-levels aignet aignet-levels)))
 
-  
+  (defret len-of-<fn>
+    (equal (len new-aignet-levels) (num-fanins aignet))))
+

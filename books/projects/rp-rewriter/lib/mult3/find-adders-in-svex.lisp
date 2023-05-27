@@ -6549,13 +6549,14 @@
                              #|(equal remaining-bitand -1)|#)
                          (svl::bitp-of-svex shared-arg1)
                          (svl::bitp-of-svex shared-arg2)))
-            (progn$ (cwe "Failed: ~p0. remaining-bitor: ~p1 remaining-bitand: ~p2 ~%"
+            (progn$ (cwe "Failed: ~p0. remaining-bitor: ~p1 remaining-bitand: ~p2 ~%Config:~p3,context:~p4,env:~p5"
                          (list (cons :other-arg (svl::bitp-of-svex other-arg))
                                (cons :remaining-bitor (svl::bitp-of-svex remaining-bitor))
                                (cons :remaining-bitand (svl::bitp-of-svex remaining-bitand))
                                (cons :shared-arg1 (svl::bitp-of-svex shared-arg1))
                                (cons :shared-arg2 (svl::bitp-of-svex shared-arg2)))
-                         remaining-bitor remaining-bitand)
+                         remaining-bitor remaining-bitand
+                         config context env)
                     svex))
 
            (new-inner-bitor (ex-adder-fnc-from-unfloat
@@ -8269,7 +8270,8 @@ pattern
                          (and* (equal (car node-term) 'sv::bitxor)
                                (not (equal (nth 1 (true-list-fix node-term)) 1))
                                (not (equal (nth 2 (true-list-fix node-term)) 1))
-                               'sv::bitxor))))
+                               'sv::bitxor)
+                         (and (equal (car node-term) 'sv::partsel) under-gate))))
       (or*
        (missed-adder-warning--traverse-node-lst (cdr node-term)
                                                 node-num

@@ -109,6 +109,7 @@
                (enable rp::is-rp-loose))))
   (and (rp::is-rp-loose term)
        (or (equal (cadr term) ''integerp)
+           (equal (cadr term) ''bitp)
            (has-integerp-rp (caddr term))))
   ///
   (local
@@ -124,6 +125,12 @@
                    (equal (car x) 'integerp))
               (equal (rp-evlt x a)
                      (integerp (rp-evlt (cadr x) a))))))
+  (local
+   (defthm rp-evlt-of-bitp-call
+     (implies (and (consp x)
+                   (equal (car x) 'bitp))
+              (equal (rp-evlt x a)
+                     (bitp (rp-evlt (cadr x) a))))))
   (defthm has-integerp-rp-is-correct
     (implies (and (rp::valid-sc term a)
                   (has-integerp-rp term))
@@ -230,8 +237,13 @@
 
                    ((mv res &)
                     (rp::rp-check-context `(integerp ,val) nil context
-                                          :iff-flg t)))
-                (equal res ''t)))
+                                          :iff-flg t))
+                   ((when (equal res ''t)) t)
+                   ((mv res &)
+                    (rp::rp-check-context `(bitp ,val) nil context
+                                          :iff-flg t))
+                   ((when (equal res ''t)) t))
+                nil))
         (:quote (integerp x))
         (:call
          (b* ((x.fn (car x))
@@ -575,6 +587,7 @@
   (verify-guards integerp-of-svex-fn
     :hints (("goal"
              :expand ((:free (x) (rp::rp-termp (cons 'integerp x)))
+                      (:free (x) (rp::rp-termp (cons 'bitp x)))
                       (:free (x) (rp::rp-termp (cons 'natp x)))
                       (:free (x y) (rp::rp-term-listp (cons x y))))
              :in-theory (e/d ()
@@ -1631,6 +1644,11 @@
    (equal (rp-evlt `(natp ,x) a)
           (natp (rp-evlt x a)))))
 
+(local
+ (defthm rp-evlt-of-bitp
+   (equal (rp-evlt `(bitp ,x) a)
+          (bitp (rp-evlt x a)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; main lemma.
 (with-output
@@ -1761,6 +1779,15 @@
                                      (rp::context context)
                                      (rp::a a)
                                      (rp::term (list 'integerp
+                                                     (cdr (hons-assoc-equal x big-env))))
+                                     (rp::attach-sc nil)
+                                     (rp::rw-context-flg nil))
+                          (:instance rp::rp-check-context-is-correct-iff
+                                     (rp::iff-flg t)
+                                     (rp::dont-rw nil)
+                                     (rp::context context)
+                                     (rp::a a)
+                                     (rp::term (list 'bitp
                                                      (cdr (hons-assoc-equal x big-env))))
                                      (rp::attach-sc nil)
                                      (rp::rw-context-flg nil))

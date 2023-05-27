@@ -434,8 +434,10 @@
 
 (defines simplify-dont-care-branch-apply
   (define simplify-dont-care-branch-apply ((x svex-p)
-                                           partsel-term
-                                           (new-val natp))
+					   &key
+                                           (partsel-term 'partsel-term)
+                                           ((new-val natp) 'new-val)
+					   ((under-test-arg booleanp) 'under-test-arg))
     :measure (sv::svex-count x)
     :returns (res svex-p :hyp (and (svex-p x)
                                    (natp new-val)))
@@ -446,26 +448,42 @@
      :call
      ;; TODO:  Maybe try  to apply  partsel  terms only  for test  cases if  it
      ;; becomes too slow..
-     (b* (((mv val changed)
+     (b* (((when (and* (not under-test-arg)
+		       (or (equal x.fn 'sv::?*)
+			   (equal x.fn 'sv::?))
+		       (equal-len x.args 3)))
+           (b* ((test (simplify-dont-care-branch-apply (first x.args) :under-test-arg t))
+                ((when (equal test -1))
+                 (second x.args))
+                ((when (equal test 0))
+                 (simplify-dont-care-branch-apply (third x.args))))
+             x)
+	   #|(svex-reduce-w/-env-apply x.fn
+				     (cons (simplify-dont-care-branch-apply (first x.args) :under-test-arg t)
+	   (simplify-dont-care-branch-apply-lst (cdr x.args))))|#
+           )
+	  ((unless under-test-arg) x)		   
+	  ((mv val changed)
            (simplify-dont-care-branch-apply-aux x partsel-term new-val))
-          ((when changed)
-           val)
-          (args (simplify-dont-care-branch-apply-lst x.args partsel-term new-val)))
+          ((when changed) val)
+          (args (simplify-dont-care-branch-apply-lst x.args)))
        (svex-reduce-w/-env-apply x.fn args))))
   (define simplify-dont-care-branch-apply-lst ((lst svexlist-p)
-                                               partsel-term
-                                               (new-val natp))
+                                                &key
+						(partsel-term 'partsel-term)
+						((new-val natp) 'new-val)
+						((under-test-arg booleanp) 'under-test-arg))
     :measure (sv::svexlist-count lst)
     :returns (res svexlist-p :hyp (and (svexlist-p lst)
                                        (natp new-val)))
     (if (atom lst)
         nil
       ;; no need to hons
-      (cons (simplify-dont-care-branch-apply (car lst)
-                                             partsel-term new-val)
-            (simplify-dont-care-branch-apply-lst (cdr lst)
-                                                 partsel-term new-val))))
+      (cons (simplify-dont-care-branch-apply (car lst))
+            (simplify-dont-care-branch-apply-lst (cdr lst)))))
   ///
+  (local
+   (in-theory (disable sv::svex-apply$-is-svex-apply)))
   (svex-eval-lemma-tmpl
    (defret-mutual correctness
      (defret svex-eval-of-<fn>-is-correct
@@ -483,7 +501,22 @@
                             new-val))
                 (equal (svexlist-eval res env)
                        (svexlist-eval lst env)))
-       :fn simplify-dont-care-branch-apply-lst))))
+       :fn simplify-dont-care-branch-apply-lst)
+     :hints (("Goal"
+              :expand ((SVEXLIST-EVAL (CDR X) ENV)
+                       (SVEXLIST-EVAL (CdDR X) ENV)
+                       (SVEXLIST-EVAL (CddDR X) ENV)
+                       (:free (x y)
+                              (svex-apply x (cons -1 y)))
+                       (:free (x y)
+                              (svex-apply x (cons 0 y)))
+                       (:free (x y env)
+                              (svex-eval (cons x y) env))
+                       (:free (x y)
+                              (svex-kind (cons x y))))
+              :in-theory (e/d (SVEX-CALL->FN
+                               SVEX-CALL->ARGS)
+                              ()))))))
 
 (memoize 'simplify-dont-care-branch-apply)
 
@@ -492,7 +525,9 @@
                                                (cnt natp))
   (if (zp cnt)
       t
-    (b* ((res (simplify-dont-care-branch-apply x partsel-term (1- cnt)))
+    (b* ((res (simplify-dont-care-branch-apply x
+                                               :new-val (1- cnt)
+                                               :under-test-arg nil))
          ((unless (implies (4vec-p res)
                            (integerp res)))
           nil))
@@ -535,8 +570,10 @@
   (if (zp cnt)
       t
     (b* ((cnt (1- cnt))
-         (resx (simplify-dont-care-branch-apply x partsel-term cnt))
-         (resy (simplify-dont-care-branch-apply y partsel-term cnt))
+         (new-val cnt)
+         (under-test-arg nil)
+         (resx (simplify-dont-care-branch-apply x))
+         (resy (simplify-dont-care-branch-apply y))
          ((unless (equal resx resy))
           nil))
       (simplify-dont-care-branch-cosimulate x y partsel-term cnt)))
@@ -569,9 +606,11 @@
               :in-theory (e/d () (svex-eval-of-simplify-dont-care-branch-apply-is-correct)))
              (and stable-under-simplificationp
                   '(:use ((:instance svex-eval-of-simplify-dont-care-branch-apply-is-correct
-                                     (new-val (+ -1 CNT)))
+                                     (new-val (+ -1 CNT))
+                                     (UNDER-TEST-ARG nil))
                           (:instance svex-eval-of-simplify-dont-care-branch-apply-is-correct
                                      (x y)
+                                     (UNDER-TEST-ARG nil)
                                      (new-val (+ -1 CNT))))))))))
 
 (local
