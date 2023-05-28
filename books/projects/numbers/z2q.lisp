@@ -3,13 +3,13 @@
 (include-book "euclid")
 (local (include-book "support/z2q"))
 
-;; We shall construct a surjection z2q from the integers to the rationals and a 
+;; We shall construct a surjection z2q from the integers to the rationals and a
 ;; somewhat more complicated bijection z2q-bi from the integers to the rationals.
 
-;; We begin by definining a surjection n2q from the positive integers to the positive 
+;; We begin by defining a surjection n2q from the positive integers to the positive
 ;; rationals.  This is a formalization of Cantor's diagonal enumeration, graphically
-;; represented in the diagram below.  If the positive integer n appears in row p and 
-;; column q, then (n2q n) = (/ p q):
+;; represented in the diagram below.  If the positive integer n appears in row p and
+;; column q, then (n2q n 1) = (/ p q):
 
 ;;        1    2   3  4   5
 ;;      _________________________
@@ -37,10 +37,12 @@
       (n2q n 1)
     (- (n2q (- n) 1))))
 
-;; To prove that z2q is surjective, we shall define a function q2n and prove that
-;; for every rational x, (q2n x) is an integer and (z2q (q2n x)) = x.  The definition
-;; of q2n is based on the function tri, which computes the sequence of triangular
-;; numbers:
+;; To prove that z2q is surjective, we shall define a function q2z and prove that
+;; for every rational x, (q2z x) is an integer and (z2q (q2z x)) = x.
+;; First we define a binary function q2n with the following property: If x is a
+;; positive rational expressed in lowest terms as p/q, then (q2n p q) is a positive
+;; integer and (n2q (q2n p q)) = x.  The definition of q2n is based on the function
+;; tri, which computes the sequence of triangular numbers:
 
 (defun tri (k)
   (if (zp k)
@@ -163,7 +165,7 @@
 ;; The proof that q2z-bi and z2q-bi are inverse functions requires two results from
 ;; euclid.lisp:
 ;;  (1) gcd-num-den: The numerator and denominator of a rational are relatively prime.
-;;  (2) lowest-terms-unique: If a rational x is the quotient (/ p q) of reatively prime 
+;;  (2) lowest-terms-unique: If a rational x is the quotient (/ p q) of reatively prime
 ;;      positive integers , then p = (numerator x) and q = (denominator x).
 
 (defthmd q2z-bi-z2q
