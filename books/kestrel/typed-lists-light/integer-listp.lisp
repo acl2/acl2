@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integer-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -58,3 +58,15 @@
            (integerp (nth n x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :hints (("Goal" :in-theory (enable integer-listp))))
+
+(local
+ (defthm not-integer-listp-of-revappend-when-not-integer-listp
+   (implies (not (integer-listp y))
+            (not (integer-listp (revappend x y))))
+   :hints (("Goal" :in-theory (enable integer-listp revappend)))))
+
+(defthm integer-listp-of-revappend
+  (equal (integer-listp (revappend x y))
+         (and (integer-listp (true-list-fix x))
+              (integer-listp y)))
+  :hints (("Goal" :in-theory (enable integer-listp revappend))))

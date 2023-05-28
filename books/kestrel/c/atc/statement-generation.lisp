@@ -258,7 +258,7 @@
   :body (make-stmt-gout :items nil
                         :type (irr-type)
                         :term nil
-                        :context nil
+                        :context (irr-atc-context)
                         :limit nil
                         :events nil
                         :thm-name nil
@@ -327,13 +327,13 @@
                                           ,limit-var)
                          (mv ,result-uterm ,compst-uterm)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
-                                    compst-var limit-var item-limit wrld))
+                                    compst-var limit-var item-limit t wrld))
        (formula (if result-term
                     (b* ((type-pred (type-to-recognizer result-type wrld))
                          (formula2 `(,type-pred ,result-uterm))
                          (formula2 (atc-contextualize formula2 context
                                                       fn fn-guard
-                                                      nil nil nil wrld)))
+                                                      nil nil nil nil wrld)))
                       `(and ,formula1 ,formula2))
                   formula1))
        (hints `(("Goal" :in-theory '(exec-block-item-when-stmt
@@ -423,7 +423,7 @@
                                (mv (init-value-single ,expr-term) ,compst-var)))
        (initer-formula
         (atc-contextualize initer-formula context fn fn-guard
-                           compst-var limit-var initer-limit wrld))
+                           compst-var limit-var initer-limit t wrld))
        (type-pred (type-to-recognizer type wrld))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
@@ -453,7 +453,7 @@
                                               ,limit-var)
                              (mv nil ,(untranslate$ new-compst nil state))))
        (item-formula (atc-contextualize item-formula context fn fn-guard
-                                        compst-var limit-var item-limit wrld))
+                                        compst-var limit-var item-limit t wrld))
        (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
        (e-type `(:e ,(car (type-to-maker type))))
        (item-hints
@@ -572,14 +572,14 @@
                                                ,limit-var)
                          (mv ,result-uterm ,compst-uterm)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
-                                    compst-var limit-var items-limit wrld))
+                                    compst-var limit-var items-limit t wrld))
        (type-pred (and result-term
                        (type-to-recognizer result-type wrld)))
        (formula (if result-term
                     (b* ((formula2 `(,type-pred ,result-uterm))
                          (formula2 (atc-contextualize formula2 context
                                                       fn fn-guard
-                                                      nil nil nil wrld)))
+                                                      nil nil nil nil wrld)))
                       `(and ,formula1 ,formula2))
                   formula1))
        (valuep-when-type-pred (and result-term
@@ -637,10 +637,7 @@
      obtaining the computation state after all the items;
      note that, at that spot in the generated theorem,
      the computation state variables already accumulates
-     the contextual premises in @('gin').")
-   (xdoc::p
-    "We temporarily do the same hack described in @(tsee atc-gen-pop-frame-thm),
-     in regard to contextualizing the computation state."))
+     the contextual premises in @('gin')."))
   (b* ((wrld (w state))
        ((stmt-gin gin) gin)
        (all-items (cons item items))
@@ -650,20 +647,21 @@
          :items all-items
          :type items-type
          :term term
-         :context nil
+         :context (make-atc-context :preamble nil :premises nil)
          :limit all-items-limit
          :events (append item-events items-events)
          :thm-name nil
          :thm-index gin.thm-index
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
-       ((unless (prefixp gin.context items-new-context))
+       (premises (atc-context->premises gin.context))
+       (items-new-premises (atc-context->premises items-new-context))
+       ((unless (prefixp premises items-new-premises))
         (raise "Internal error: context ~x0 is not a prefix of context ~x1."
                gin.context items-new-context)
         (irr-stmt-gout))
-       (context-diff (nthcdr (len gin.context) items-new-context))
-       (new-compst (atc-contextualize-compustate gin.compst-var
-                                                 context-diff))
+       (premises-diff (nthcdr (len premises) items-new-premises))
+       (new-compst (atc-contextualize-compustate gin.compst-var premises-diff))
        (uterm (untranslate$ term nil state))
        (formula1 `(equal (exec-block-item-list ',all-items
                                                ,gin.compst-var
@@ -677,6 +675,7 @@
                                     gin.compst-var
                                     gin.limit-var
                                     all-items-limit
+                                    t
                                     wrld))
        (type-pred (type-to-recognizer items-type wrld))
        (formula2 `(,type-pred ,uterm))
@@ -684,6 +683,7 @@
                                     gin.context
                                     gin.fn
                                     gin.fn-guard
+                                    nil
                                     nil
                                     nil
                                     nil
@@ -820,7 +820,7 @@
                 :items (list (block-item-stmt stmt))
                 :type expr.type
                 :term expr.term
-                :context nil
+                :context (make-atc-context :preamble nil :premises nil)
                 :limit (pseudo-term-fncall
                         'binary-+
                         (list (pseudo-term-quote 3)
@@ -855,12 +855,14 @@
                                          gin.compst-var
                                          gin.limit-var
                                          stmt-limit
+                                         t
                                          wrld))
        (stmt-formula2 `(,type-pred ,uterm))
        (stmt-formula2 (atc-contextualize stmt-formula2
                                          gin.context
                                          gin.fn
                                          gin.fn-guard
+                                         nil
                                          nil
                                          nil
                                          nil
@@ -1006,7 +1008,7 @@
           :items (list (block-item-stmt stmt))
           :type type
           :term term
-          :context nil
+          :context (make-atc-context :preamble nil :premises nil)
           :limit (pseudo-term-fncall
                   'binary-+
                   (list
@@ -1049,12 +1051,14 @@
                                               gin.compst-var
                                               gin.limit-var
                                               then-stmt-limit
+                                              t
                                               wrld))
        (then-stmt-formula2 `(,type-pred ,then-uterm))
        (then-stmt-formula2 (atc-contextualize then-stmt-formula2
                                               then-context
                                               gin.fn
                                               gin.fn-guard
+                                              nil
                                               nil
                                               nil
                                               nil
@@ -1072,12 +1076,14 @@
                                               gin.compst-var
                                               gin.limit-var
                                               else-stmt-limit
+                                              t
                                               wrld))
        (else-stmt-formula2 `(,type-pred ,else-uterm))
        (else-stmt-formula2 (atc-contextualize else-stmt-formula2
                                               else-context
                                               gin.fn
                                               gin.fn-guard
+                                              nil
                                               nil
                                               nil
                                               nil
@@ -1149,12 +1155,14 @@
                                             gin.compst-var
                                             gin.limit-var
                                             if-stmt-limit
+                                            t
                                             wrld))
        (if-stmt-formula2 `(,type-pred ,uterm*))
        (if-stmt-formula2 (atc-contextualize if-stmt-formula2
                                             gin.context
                                             gin.fn
                                             gin.fn-guard
+                                            nil
                                             nil
                                             nil
                                             nil
@@ -1202,27 +1210,28 @@
                                  apconvert-expr-value-when-not-value-array
                                  ,value-kind-when-test-type-pred)))))
        (if-stmt-instructions
-        `((casesplit ,(atc-contextualize test-term
-                                         gin.context nil nil nil nil nil wrld))
+        `((casesplit ,(atc-contextualize
+                       test-term
+                       gin.context nil nil nil nil nil nil wrld))
           (claim ,(atc-contextualize `(test* ,test-term)
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (if* ,test-term ,then-term ,else-term)
                            ,then-term)
-                   gin.context nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,if-stmt-hints)
           (claim ,(atc-contextualize `(test* (not ,test-term))
-                                     gin.context nil nil nil nil nil wrld)
+                                     gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal" :in-theory '(test*))))
           (drop 1)
           (claim ,(atc-contextualize
                    `(equal (if* ,test-term ,then-term ,else-term)
                            ,else-term)
-                   gin.context nil nil nil nil nil wrld)
+                   gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,if-stmt-hints)))
@@ -1506,8 +1515,10 @@
               (b* (((reterr) (irr-stmt-gout) nil)
                    (then-cond (untranslate$ test.term t state))
                    (then-premise (atc-premise-test then-cond))
-                   (then-context (append gin.context
-                                         (list then-premise)))
+                   (premises (atc-context->premises gin.context))
+                   (then-premises (append premises (list then-premise)))
+                   (then-context
+                    (change-atc-context gin.context :premises then-premises))
                    ((mv then-inscope
                         then-enter-scope-context
                         then-enter-scope-events
@@ -1548,8 +1559,10 @@
                    (not-test-term `(not ,test.term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
-                   (else-context (append gin.context
-                                         (list else-premise)))
+                   (premises (atc-context->premises gin.context))
+                   (else-premises (append premises (list else-premise)))
+                   (else-context
+                    (change-atc-context gin.context :premises else-premises))
                    ((mv else-inscope
                         else-enter-scope-context
                         else-enter-scope-events
@@ -1719,7 +1732,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
-                        :context nil
+                        :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -1818,7 +1831,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
-                        :context nil
+                        :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -1886,7 +1899,7 @@
                   :items items
                   :type type
                   :term term
-                  :context nil
+                  :context (make-atc-context :preamble nil :premises nil)
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -1982,7 +1995,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
-                        :context nil
+                        :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append ptr.events
                                         int.events
@@ -2100,7 +2113,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
-                        :context nil
+                        :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append arr.events
                                         sub.events
@@ -2219,7 +2232,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
-                        :context nil
+                        :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append arr.events
                                         sub.events
@@ -2327,7 +2340,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
-                        :context nil
+                        :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append struct.events
                                         member.events)
@@ -2458,7 +2471,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
-                        :context nil
+                        :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append struct.events
                                         index.events
@@ -2663,7 +2676,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
-                        :context nil
+                        :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -2720,7 +2733,7 @@
                   :items items
                   :type type
                   :term term
-                  :context nil
+                  :context (make-atc-context :preamble nil :premises nil)
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -2740,7 +2753,7 @@
                   :items nil
                   :type (type-void)
                   :term term
-                  :context nil
+                  :context (make-atc-context :preamble nil :premises nil)
                   :limit (pseudo-term-quote 1)
                   :events nil
                   :thm-name nil
@@ -2763,7 +2776,8 @@
             (retok (make-stmt-gout :items nil
                                    :type (type-void)
                                    :term term
-                                   :context nil
+                                   :context (make-atc-context :preamble nil
+                                                              :premises nil)
                                    :limit (pseudo-term-quote 1)
                                    :events nil
                                    :thm-name nil
@@ -2827,7 +2841,7 @@
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
                   :term term
-                  :context nil
+                  :context (make-atc-context :preamble nil :premises nil)
                   :limit limit
                   :events nil
                   :thm-name nil
@@ -2840,7 +2854,7 @@
                     :items nil
                     :type (type-void)
                     :term term
-                    :context nil
+                    :context (make-atc-context :preamble nil :premises nil)
                     :limit (pseudo-term-quote 1)
                     :events nil
                     :thm-name nil
@@ -2905,7 +2919,7 @@
                   :items (list (block-item-stmt (stmt-expr call-expr)))
                   :type (type-void)
                   :term term
-                  :context nil
+                  :context (make-atc-context :preamble nil :premises nil)
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
                   :thm-name nil

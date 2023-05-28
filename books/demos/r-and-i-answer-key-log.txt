@@ -2999,7 +2999,8 @@ Subgoal *1/2'
               (SUB B C))
          (SUB A C)).
 
-This simplifies, using the :definition SUB, to
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definition SUB, to
 
 Subgoal *1/2''
 (IMPLIES (AND (CONSP A)
@@ -20364,9 +20365,10 @@ Subgoal *1/3'
               (REL FN D E))
          (ALL-REL FN X E)).
 
-This simplifies, using the :definitions <<=, ALL-REL and REL (if-intro),
-the :executable-counterpart of EQUAL, primitive type reasoning and
-the :rewrite rule LEXORDER-REFLEXIVE, to the following eight conjectures.
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definitions <<=, ALL-REL and REL (if-intro), the :executable-
+counterpart of EQUAL, primitive type reasoning and the :rewrite rule
+LEXORDER-REFLEXIVE, to the following eight conjectures.
 
 Subgoal *1/3.8
 (IMPLIES (AND (CONSP X)
@@ -22230,9 +22232,10 @@ Subgoal *1/2'
                ((CONSP LST) NIL)
                (T T))).
 
-This simplifies, using the :compound-recognizer rule NATP-COMPOUND-RECOGNIZER,
-the :definitions LIST-OF-NATSP, MAX, MAXIMAL and MEM and the :type-
-prescription rules MEM and NATP, to
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :compound-recognizer rule NATP-COMPOUND-RECOGNIZER, the :definitions
+LIST-OF-NATSP, MAX, MAXIMAL and MEM and the :type-prescription rules
+MEM and NATP, to
 
 Subgoal *1/2''
 (IMPLIES (AND (CONSP LST)
@@ -22929,11 +22932,11 @@ Subgoal *1/1'5'
               (NO-DUPS LST2))
          (< LST1 LST1)).
 
-This simplifies, using the :compound-recognizer rule NATP-COMPOUND-RECOGNIZER,
-the :definitions MAXIMAL and NO-DUPS, the :executable-counterpart of
-<, primitive type reasoning, the :forward-chaining rule PROBLEM-112D,
-the :rewrite rule PROBLEM-112A and the :type-prescription rule LIST-OF-NATSP,
-to
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :compound-recognizer rule NATP-COMPOUND-RECOGNIZER, the :definitions
+MAXIMAL and NO-DUPS, the :executable-counterpart of <, primitive type
+reasoning, the :forward-chaining rule PROBLEM-112D, the :rewrite rule
+PROBLEM-112A and the :type-prescription rule LIST-OF-NATSP, to
 
 Subgoal *1/1'6'
 (IMPLIES (AND (<= 0 (MAXIMAL LST2))
@@ -31894,10 +31897,11 @@ Subgoal *1/2'
                        (CONSP (RMB (CDR X)))))
          (CONSP (RMB X))).
 
-This simplifies, using the :definitions CC and RMB, the :executable-
-counterpart of CONSP, primitive type reasoning, the :meta rule 
-CANCEL_PLUS-LESSP-CORRECT, the :rewrite rules CAR-CONS and CDR-CONS
-and the :type-prescription rule CC, to the following two conjectures.
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definitions CC and RMB, the :executable-counterpart of CONSP,
+primitive type reasoning, the :meta rule CANCEL_PLUS-LESSP-CORRECT,
+the :rewrite rules CAR-CONS and CDR-CONS and the :type-prescription
+rule CC, to the following two conjectures.
 
 Subgoal *1/2.2
 (IMPLIES (AND (CONSP X)
@@ -31909,9 +31913,10 @@ Subgoal *1/2.2
               (NOT (CONSP (CDR (RMB (CDR X))))))
          (NOT (CONSP (RMB (CDR X))))).
 
-This simplifies, using the :definitions CC and RMB, the :executable-
-counterparts of CC and CONSP, primitive type reasoning and the :type-
-prescription rule CC, to
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definitions CC and RMB, the :executable-counterparts of CC and
+CONSP, primitive type reasoning and the :type-prescription rule CC,
+to
 
 Subgoal *1/2.2'
 (IMPLIES (AND (CONSP X)
@@ -32118,7 +32123,8 @@ Subgoal 2
                       (RMB (CONS (CAR X)
                                  (RMB (CDR (RMB (CDR X))))))))).
 
-This simplifies, using primitive type reasoning, to
+This simplifies (dropping false conclusion; see :DOC clause), using
+primitive type reasoning, to
 
 Subgoal 2'
 (IMPLIES (AND (CONSP X) (CONSP (CDR X)))
@@ -32139,7 +32145,8 @@ Subgoal 1
                       (RMB (CONS (CAR X)
                                  (RMB (CDR (RMB (CDR X))))))))).
 
-This simplifies, using primitive type reasoning, to
+This simplifies (dropping false conclusion; see :DOC clause), using
+primitive type reasoning, to
 
 Subgoal 1'
 (IMPLIES (AND (CONSP X) (CONSP (CDR X)))
