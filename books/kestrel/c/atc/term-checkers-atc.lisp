@@ -156,11 +156,12 @@
 (define atc-check-integer-read ((term pseudo-termp))
   :returns (mv erp
                (yes/no booleanp)
+               (fn symbolp)
                (arg pseudo-termp)
                (type typep))
   :short "Check if a term may represent a read of an integer by pointer."
-  (b* (((reterr) nil nil (irr-type))
-       ((acl2::fun (no)) (retok nil nil (irr-type)))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless okp) (no))
        ((mv okp fixtype read) (atc-check-symbol-2part fn))
@@ -177,7 +178,7 @@
        ((unless (list-lenp 1 args))
         (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
        (arg (first args)))
-    (retok t arg type))
+    (retok t fn arg type))
   ///
 
   (defret pseudo-term-count-of-atc-check-integer-read
