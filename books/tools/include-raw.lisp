@@ -41,7 +41,9 @@ achieve better performance or do fancy things like connect to external
 programs.  With <see topic='@(url defttag)'>trust tags</see>, you can do this.
 Unfortunately, the built-in mechanisms (@(see progn!) and @(see set-raw-mode))
 have some portability problems related to compilation, file paths, read tables,
-non-ACL2 objects, and so on; see below for some examples.</p>
+non-ACL2 objects, and so on.  See below for some examples; still more examples
+may be found under the @(see community-books) directory,
+@('demos/include-raw-examples')./</p>
 
 <h3>Using Include-Raw</h3>
 

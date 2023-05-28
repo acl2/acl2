@@ -24,11 +24,7 @@ information on suppressing attempts to use STP during builds.
 
 Different versions of STP support different option syntax, especially for the max conflicts option, so you might need to set the environment variable @('ACL2_STP_VARIETY').  The default (equivalent to a setting of \"2\") should work with the latest STP and with other versions that use the option @('--max-num-confl') (note the dashes).  For older STP versions that use the option @('--max_num_confl') (note the underscores), set @('ACL2_STP_VARIETY') to \"1\".  For very old versions of STP that only support the use of @('-g') for the max conflicts option, set @('ACL2_STP_VARIETY') to \"0\".
 
-A sample input file for testing STP is @('[books]/kestrel/axe/teststp.cvc').  Calling STP on it like this:
-
-@('stp teststp.cvc')
-
-should cause the message @('\"Valid.\"') to be printed."))
+To test whether STP is being called correctly in your environment, run the script @('[books]/kestrel/axe/teststp.bash') with no arguments.  Its output should include the string @('\"Valid.\"') if STP is being correctly invoked."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

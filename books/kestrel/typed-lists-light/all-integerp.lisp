@@ -1,7 +1,7 @@
 ; A recognizer for lists of integers.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -113,3 +113,15 @@
   (implies (nat-listp x)
            (all-integerp x))
   :hints (("Goal" :in-theory (enable all-integerp nat-listp))))
+
+(local
+ (defthm not-all-integerp-of-revappend-when-not-all-integerp
+   (implies (not (all-integerp y))
+            (not (all-integerp (revappend x y))))
+   :hints (("Goal" :in-theory (enable all-integerp revappend)))))
+
+(defthm all-integerp-of-revappend
+  (equal (all-integerp (revappend x y))
+         (and (all-integerp x)
+              (all-integerp y)))
+  :hints (("Goal" :in-theory (enable all-integerp revappend))))

@@ -43,17 +43,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-sint-from-boolean ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (arg pseudo-termp))
   :short "Check if a term may represent a conversion
           from an ACL2 boolean to a C @('int') value."
-  (b* (((acl2::fun (no)) (mv nil nil))
+  (b* (((reterr) nil nil)
+       ((acl2::fun (no)) (retok nil nil))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless (and okp
-                     (eq fn 'c::sint-from-boolean)
-                     (list-lenp 1 args)))
-        (no)))
-    (mv t (first args)))
+                     (eq fn 'sint-from-boolean)))
+        (no))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn))))
+    (retok t (first args)))
   ///
 
   (defret pseudo-term-count-of-atc-check-sint-from-boolean
@@ -65,7 +68,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-boolean-from-type ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
                (arg pseudo-termp)
                (in-type typep))
   :short "Check if a term may represent a conversion
@@ -75,18 +80,25 @@
    (xdoc::p
     "We also return the input C type of the conversion.
      The output type is known (boolean), and it is in fact an ACL2 type."))
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless okp) (no))
        ((mv okp boolean from type) (atc-check-symbol-3part fn))
+       (in-type (fixtype-to-integer-type type))
        ((unless (and okp
                      (eq boolean 'boolean)
-                     (eq from 'from)))
+                     (eq from 'from)
+                     in-type))
         (no))
-       (in-type (fixtype-to-integer-type type))
-       ((when (not in-type)) (no))
-       ((unless (list-lenp 1 args)) (no)))
-    (mv t (first args) in-type))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a conversion to boolean from integer, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn))))
+    (retok t fn (first args) in-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-boolean-from-type
@@ -98,18 +110,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-condexpr ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (test pseudo-termp)
                (then pseudo-termp)
                (else pseudo-termp))
   :short "Check if a term may represent a C conditional expression."
-  (b* (((acl2::fun (no)) (mv nil nil nil nil))
+  (b* (((reterr) nil nil nil nil)
+       ((acl2::fun (no)) (retok nil nil nil nil))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless (and okp
-                     (eq fn 'c::condexpr)
-                     (list-lenp 1 args)))
-        (no)))
-    (fty-check-if-call (first args)))
+                     (eq fn 'condexpr)))
+        (no))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (first args))
+       ((mv okp test then else) (fty-check-if-call arg))
+       ((when (not okp))
+        (reterr (msg "The function CONDEXPR is not applied to an IF, ~
+                      but instead to the term ~x0."
+                     arg))))
+    (retok t test then else))
   ///
 
   (defret pseudo-term-count-of-atc-check-condexpr.test
@@ -133,22 +154,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-integer-read ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
                (arg pseudo-termp)
                (type typep))
   :short "Check if a term may represent a read of an integer by pointer."
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp fixtype read) (atc-check-symbol-2part term.fn))
-       ((unless (and okp
-                     (eq read 'read)))
-        (no))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp fixtype read) (atc-check-symbol-2part fn))
        (type (fixtype-to-integer-type fixtype))
-       ((when (not type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
-       (arg (first term.args)))
-    (mv t arg type))
+       ((unless (and okp
+                     (eq read 'read)
+                     type))
+        (no))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a read of an integer by pointer, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (first args)))
+    (retok t fn arg type))
   ///
 
   (defret pseudo-term-count-of-atc-check-integer-read

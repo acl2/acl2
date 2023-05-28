@@ -13,7 +13,6 @@
 (include-book "semantics-deep")
 
 (local (include-book "oset-lib-ext"))
-(local (include-book "omap-lib-ext"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -471,6 +470,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled constraint-satp-of-relation-when-nofreevars
+  :short "Proof rule for relation application constraints,
+          for the case in which the relation has no free variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a specialized version of @(tsee constraint-satp-of-relation),
+     applicable when the definition of the relation has no free variables.
+     In this case, we can rewrite the satisfaction to
+     the function @(tsee constraint-relation-nofreevars-satp),
+     which avoids the existential quantification."))
   (implies (and (assignmentp asg)
                 (assignment-wfp asg p)
                 (constraint-case constr :relation))

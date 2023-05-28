@@ -159,3 +159,57 @@
         (definition-fix def)))
     (lookup-definition name (cdr defs)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod constrel
+  :short "Fixtype of relation constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is isomorphic to the @(':relation') kind of @(tsee constraint),
+     but it is convenient to have a separate fixtype here,
+     for certain purposes."))
+  ((name symbol)
+   (args expression-list))
+  :pred constrelp)
+
+(fty::defset constrel-set
+  :short "Fixtype of osets of relation constraints."
+  :elt-type constrel
+  :elementp-of-nil nil
+  :pred constrel-setp
+  :fix constrel-sfix
+  :equiv constrel-sequiv)
+
+(define constraint-constrels ((constr constraintp))
+  :returns (crels constrel-setp)
+  :short "Set of relation constraints in a constraint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the empty set for an equality constraints;
+     for a relation constraint, it is the singleton with that constraint,
+     in @(tsee constrel) form.
+     This function is used to define @(tsee constraint-list-constrels)."))
+  (constraint-case constr
+                   :equal nil
+                   :relation (set::insert
+                              (make-constrel :name constr.name
+                                             :args constr.args)
+                              nil))
+  :hooks (:fix))
+
+(define constraint-list-constrels ((constrs constraint-listp))
+  :returns (crels constrel-setp)
+  :short "Set of relation constraints in a list of constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In essence, we select the relation constraints
+     and we turn them into the @(tsee constrel) form."))
+  (cond ((endp constrs) nil)
+        (t (set::union (constraint-constrels (car constrs))
+                       (constraint-list-constrels (cdr constrs)))))
+  :verify-guards :after-returns
+  :hooks (:fix))

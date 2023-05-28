@@ -14906,7 +14906,7 @@ its attachment is ignored during proofs"))))
 
             (not (equal (fargn term 1) ''progn)))
        (rewrite-entry
-        (rewrite (fargn term 3) alist 2)
+        (rewrite (fargn term 3) alist 3)
         :ttree (push-lemma
                 (fn-rune-nume 'return-last nil nil wrld)
                 ttree)))
@@ -15020,7 +15020,7 @@ its attachment is ignored during proofs"))))
           (mv step-limit *t* ttree))
          (t
           (sl-let (rewritten-concl ttree)
-                  (rewrite-entry (rewrite (fargn term 2) alist 1)
+                  (rewrite-entry (rewrite (fargn term 2) alist 2)
                                  :obj '?
                                  :geneqv *geneqv-iff*
                                  :pequiv-info nil)
