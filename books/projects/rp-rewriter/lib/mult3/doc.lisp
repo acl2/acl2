@@ -993,17 +993,29 @@ event. </p>
   :short "A macro to verify a multiplier using @(see VeSCmul)  from an already crated simulation
   test vector with @(see parse-and-create-svtv)"
   :long "<p><b>verify-svtv-of-mult</b> can take the following arguments:</p>
-<p> <b>:name</b> has to be provided. It should be a symbol and be the name corresponding to the name picked in @(see parse-and-create-svtv). </p>
-<p> <b>:concl</b> has to be provided. The body of the conjecture we aim to proved. </p>
-<p> <b>:then-fgl</b>  is optional. To invoke FGL (calls a SAT solver) after rewriter finishes. </p>
-<p> <b>:read-from-file</b> is optional. It should be a string be the value
-  corresponding to the one in the :save-to-file argument of @(see parse-and-create-svtv). </p>
-<p> <b>:cases</b> is optional. A list of terms that can be used to casesplit upon starting the program. May be useful for some corner cases. </p>
-<p> <b>:keep-going</b> is optional, should be t or nil. When set to t, the program will not stop ACL2 if a proof-attempt fails. This is useful when running a lot of experiments in the same file.</p>
-<p> <b>:print-message</b> is optional and should be a string if given. The
-  program will also generate a proof summary file after it's run. Users may
-  pass a custom message that will appear in the proof summary file.</p>
+<ul>
+<li> <b>:name</b> has to be provided. It should be a symbol and be the name
+  corresponding to the name picked in @(see parse-and-create-svtv). </li>
 
+<li> <b>:concl</b> has to be provided. The body of the conjecture we aim to
+  proved. </li>
+
+<li> <b>:then-fgl</b>  is optional. To invoke FGL (calls a SAT solver) after
+  rewriter finishes. </li>
+
+<li> <b>:read-from-file</b> is optional. It should be a string be the value
+  corresponding to the one in the :save-to-file argument of @(see
+  parse-and-create-svtv). </li>
+
+<li> <b>:cases</b> is optional. A list of terms that can be used to casesplit
+  upon starting the program. May be useful for some corner cases. </li>
+<li> <b>:keep-going</b> is optional, should be t or nil. When set to t, the
+  program will not stop ACL2 if a proof-attempt fails. This is useful when
+  running a lot of experiments in the same file.</li>
+<li> <b>:print-message</b> is optional and should be a string if given. The
+  program will also generate a proof summary file after it's run. Users may
+  pass a custom message that will appear in the proof summary file.</li>
+</ul>
 <br />
 <p>verify-svtv-of-mult will create a proof-summary file under the
 generated-proof-summary directory showing the proof time and what the program
