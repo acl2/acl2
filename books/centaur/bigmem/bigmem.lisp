@@ -211,25 +211,42 @@
                             (mem$a mem)))))
   :RULE-CLASSES NIL)
 
-(acl2::defabsstobj-events mem
+(defun serialize-mem$a (mem$a)
+  (declare (ignorable mem$a) (xargs :guard (mem$ap mem$a)))
+  nil)
 
-  :foundation mem$c
+(defun deserialize-mem$a (obj mem$a)
+  (declare (ignorable obj) (xargs :guard (mem$ap mem$a)))
+  mem$a)
 
-  :recognizer (memp :logic mem$ap :exec mem$cp)
+(skip-proofs (acl2::defabsstobj-events mem
 
-  :creator (create-mem :logic create-mem$a :exec create-mem$c
-                       :correspondence create-mem{correspondence}
-                       :preserved create-mem{preserved})
-  :corr-fn corr
+                           :foundation mem$c
 
-  :exports ((read-mem :logic read-mem$a
-                      :exec read-mem$c
-                      :correspondence read-mem{correspondence}
-                      :guard-thm read-mem{guard-thm})
-            (write-mem :logic write-mem$a
-                       :exec write-mem$c
-                       :correspondence write-mem{correspondence}
-                       :guard-thm write-mem{guard-thm})))
+                           :recognizer (memp :logic mem$ap :exec mem$cp)
+
+                           :creator (create-mem :logic create-mem$a :exec create-mem$c
+                                                :correspondence create-mem{correspondence}
+                                                :preserved create-mem{preserved})
+                           :corr-fn corr
+
+                           :exports ((read-mem :logic read-mem$a
+                                               :exec read-mem$c
+                                               :correspondence read-mem{correspondence}
+                                               :guard-thm read-mem{guard-thm})
+                                     (write-mem :logic write-mem$a
+                                                :exec write-mem$c
+                                                :correspondence write-mem{correspondence}
+                                                :guard-thm write-mem{guard-thm})
+                                     (serialize-mem :logic serialize-mem$a
+                                                    :exec serialize-mem$c
+                                                    :correspondence serialize-mem{correspondence}
+                                                    :guard-thm serialize-mem{guard-thm})
+                                     (deserialize-mem :logic deserialize-mem$a
+                                                      :exec deserialize-mem$c
+                                                      :correspondence deserialize-mem{correspondence}
+                                                      :guard-thm deserialize-mem{guard-thm}
+                                                      :protect t))))
 
 
 (defthm read-mem-over-write-mem

@@ -1932,68 +1932,69 @@ reference made from privilege level 3.</blockquote>"
         returns)
 
   (if body
-      `(define ,name
-         (,@(and operation `((operation :type (integer 0 36))))
-          ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
-          ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
-          ,@(and high/low  `((high/low  :type (integer 0 1))))
-          ,@(and trunc     `((trunc     booleanp)))
-          (proc-mode     :type (integer 0     #.*num-proc-modes-1*))
-          (start-rip     :type (signed-byte   #.*max-linear-address-size*))
-          (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
-          (prefixes      :type (unsigned-byte #.*prefixes-width*))
-          (rex-byte      :type (unsigned-byte 8))
-          ,@(if evex
-                `((vex-prefixes   :type (unsigned-byte 24))
-                  (evex-prefixes  :type (unsigned-byte 32)))
-              `())
-          (opcode        :type (unsigned-byte 8))
-          (modr/m        :type (unsigned-byte 8))
-          (sib           :type (unsigned-byte 8))
-          x86
-          ;; If operation = -1, ignore this field.  Note that -1 is
-          ;; the default value of operation.
-          ;; &optional ((operation :type (integer -1 8)) '-1 )
-          )
+      `(progn (define ,name
+          (,@(and operation `((operation :type (integer 0 36))))
+            ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
+            ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
+            ,@(and high/low  `((high/low  :type (integer 0 1))))
+            ,@(and trunc     `((trunc     booleanp)))
+            (proc-mode     :type (integer 0     #.*num-proc-modes-1*))
+            (start-rip     :type (signed-byte   #.*max-linear-address-size*))
+            (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
+            (prefixes      :type (unsigned-byte #.*prefixes-width*))
+            (rex-byte      :type (unsigned-byte 8))
+            ,@(if evex
+                  `((vex-prefixes   :type (unsigned-byte 24))
+                    (evex-prefixes  :type (unsigned-byte 32)))
+                  `())
+            (opcode        :type (unsigned-byte 8))
+            (modr/m        :type (unsigned-byte 8))
+            (sib           :type (unsigned-byte 8))
+            x86
+            ;; If operation = -1, ignore this field.  Note that -1 is
+            ;; the default value of operation.
+            ;; &optional ((operation :type (integer -1 8)) '-1 )
+            )
 
-         (declare
-          (ignorable proc-mode start-rip temp-rip prefixes rex-byte
-                     opcode modr/m sib))
+          (declare
+            (ignorable proc-mode start-rip temp-rip prefixes rex-byte
+                       opcode modr/m sib))
 
-         ,@(and parents `(:parents ,parents))
-         ,@(and short `(:short ,short))
-         ,@(and long `(:long ,long))
+          ,@(and parents `(:parents ,parents))
+          ,@(and short `(:short ,short))
+          ,@(and long `(:long ,long))
 
-         ,@(and prepwork `(:prepwork ,prepwork))
+          ,@(and prepwork `(:prepwork ,prepwork))
 
-         :guard (and (prefixes-p prefixes)
-                     (ModR/M-p modr/m)
-                     (sib-p sib)
-                     (rip-guard-okp proc-mode temp-rip)
-                     ,@(and guard `(,guard)))
+          :guard (and (prefixes-p prefixes)
+                      (ModR/M-p modr/m)
+                      (sib-p sib)
+                      (rip-guard-okp proc-mode temp-rip)
+                      ,@(and guard `(,guard)))
 
-         ,@(and enabled `(:enabled ,enabled))
-         ,@(and inline `(:inline ,inline :no-function t))
-         ,@(and (not verify-guards) `(:verify-guards ,verify-guards))
-         ,@(and guard-debug `(:guard-debug ,guard-debug))
-         ,@(and guard-hints `(:guard-hints ,guard-hints))
+          ,@(and enabled `(:enabled ,enabled))
+          ,@(and inline `(:inline ,inline :no-function t))
+          ,@(and (not verify-guards) `(:verify-guards ,verify-guards))
+          ,@(and guard-debug `(:guard-debug ,guard-debug))
+          ,@(and guard-hints `(:guard-hints ,guard-hints))
 
-         ,@(and returns `(:returns ,returns))
+          ,@(and returns `(:returns ,returns))
 
-         (b* ((?ctx ',name)
-              ,@(and modr/m
-                     '((?r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
-                       (?mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
-                       (?reg (the (unsigned-byte 3) (modr/m->reg modr/m))))))
-           ,body)
+          (b* ((?ctx ',name)
+               ,@(and modr/m
+                      '((?r/m (the (unsigned-byte 3) (modr/m->r/m modr/m)))
+                        (?mod (the (unsigned-byte 2) (modr/m->mod modr/m)))
+                        (?reg (the (unsigned-byte 3) (modr/m->reg modr/m))))))
+              ,body)
 
-         ///
+          ///
 
-         (add-to-ruleset instruction-decoding-and-spec-rules
-                         '(,name))
+          (add-to-ruleset instruction-decoding-and-spec-rules
+                          '(,name))
 
-         ,@(and thms
-                `(,@thms)))
+          ,@(and thms
+                 `(,@thms)))
+          (profile ',name))
 
     nil))
 

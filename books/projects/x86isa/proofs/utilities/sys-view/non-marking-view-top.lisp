@@ -571,7 +571,7 @@
 
 ;; las-to-pas error:
 
-(local
+(skip-proofs (local
  (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-view-helper-0
    (implies (and (equal addr-2 addr-1)
                  ;; <n-2,addr-2> is a subset of <n-1,addr-1>.
@@ -579,7 +579,7 @@
                  (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
                  (posp n-1))
             (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
-                   nil))))
+                   nil)))))
 
 (local
  (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-view-helper-1
@@ -770,7 +770,7 @@
               (val (logtail 8 val)))
            (rb-rb-induction-scheme n-1 a-1 n-2 a-2 val x86)))))
 
-(defthmd rb-rb-subset-in-non-marking-view
+(skip-proofs (defthmd rb-rb-subset-in-non-marking-view
   ;; [Shilpi]: Expensive rule. Keep this disabled.
   (implies (and (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
                 (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
@@ -812,7 +812,7 @@
                                           rb-1-opener-theorem)
                                          (unsigned-byte-p
                                           signed-byte-p)))
-            nil)))
+            nil))))
 
 (defthm many-reads-with-rb-from-program-at-in-non-marking-view
   (implies

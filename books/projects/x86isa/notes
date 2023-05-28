@@ -1,0 +1,1 @@
+we load kernel starting from offset 0x3c00 at address 0x100000

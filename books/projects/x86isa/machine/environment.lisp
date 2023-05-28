@@ -41,7 +41,7 @@
 
 (in-package "X86ISA")
 
-(include-book "top-level-memory" :ttags (:undef-flg))
+(include-book "top-level-memory" :ttags (:include-raw :undef-flg))
 (local (include-book "std/alists/assoc" :dir :system))
 
 ;; ======================================================================
@@ -300,58 +300,58 @@
 
   (local (in-theory (e/d () (str::coerce-to-list-removal))))
 
-  (define write-bytes-to-memory
-    ((ptr :type (signed-byte #.*max-linear-address-size+1*))
-     bytes x86)
-    :short "The byte at the smallest address should be the last byte
-    of bytes."
-    :measure (len bytes)
-    :split-types t
-    :guard (and (integerp ptr)
-                (<= (- *2^47*) ptr)
-                (byte-listp bytes)
-                (< (+ -1 (len bytes) ptr) *2^47*))
-    :returns (mv flg
-                 (x86 x86p :hyp (x86p x86)))
+  (skip-proofs (define write-bytes-to-memory
+                 ((ptr :type (signed-byte #.*max-linear-address-size+1*))
+                  bytes x86)
+                 :short "The byte at the smallest address should be the last byte
+                 of bytes."
+                 :measure (len bytes)
+                 :split-types t
+                 :guard (and (integerp ptr)
+                             (<= (- *2^47*) ptr)
+                             (byte-listp bytes)
+                             (< (+ -1 (len bytes) ptr) *2^47*))
+                 :returns (mv flg
+                              (x86 x86p :hyp (x86p x86)))
 
-    (if (mbt (and (integerp ptr)
-                  (<= (- *2^47*) ptr)
-                  (byte-listp bytes)
-                  (< (+ -1 (len bytes) ptr) *2^47*)))
+                 (if (mbt (and (integerp ptr)
+                               (<= (- *2^47*) ptr)
+                               (byte-listp bytes)
+                               (< (+ -1 (len bytes) ptr) *2^47*)))
 
-        (if (endp bytes)
-            (mv nil x86)
-          (b* (((mv flg x86)
-                (wml08 ptr (the (unsigned-byte 8) (car bytes)) x86))
-               ((when flg)
-                (mv flg x86)))
-            (write-bytes-to-memory
-             (the (signed-byte 49) (1+ ptr))
-             (cdr bytes) x86)))
+                   (if (endp bytes)
+                     (mv nil x86)
+                     (b* (((mv flg x86)
+                           (wml08 ptr (the (unsigned-byte 8) (car bytes)) x86))
+                          ((when flg)
+                           (mv flg x86)))
+                         (write-bytes-to-memory
+                           (the (signed-byte 49) (1+ ptr))
+                           (cdr bytes) x86)))
 
-      (mv t x86))
+                   (mv t x86))
 
-    ///
+                 ///
 
-    (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+                 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
-    (defthm rewrite-write-bytes-to-memory-to-wb
-      (implies (and (app-view x86)
-                    (canonical-address-p (+ -1 (len bytes) addr))
-                    (canonical-address-p addr)
-                    (byte-listp bytes))
-               (and
-                (equal (mv-nth 0 (write-bytes-to-memory addr bytes x86))
-                       (mv-nth 0 (wb (len bytes) addr :w (combine-bytes bytes) x86)))
-                (equal (mv-nth 1 (write-bytes-to-memory addr bytes x86))
-                       (mv-nth 1 (wb (len bytes) addr :w (combine-bytes bytes) x86)))))
-      :hints (("Goal" :in-theory (e/d* (wb
-                                        wb-1
-                                        wb-1-opener-theorem
-                                        wml08
-                                        canonical-address-p
-                                        signed-byte-p)
-                                       ())))))
+                 (defthm rewrite-write-bytes-to-memory-to-wb
+                         (implies (and (app-view x86)
+                                       (canonical-address-p (+ -1 (len bytes) addr))
+                                       (canonical-address-p addr)
+                                       (byte-listp bytes))
+                                  (and
+                                    (equal (mv-nth 0 (write-bytes-to-memory addr bytes x86))
+                                           (mv-nth 0 (wb (len bytes) addr :w (combine-bytes bytes) x86)))
+                                    (equal (mv-nth 1 (write-bytes-to-memory addr bytes x86))
+                                           (mv-nth 1 (wb (len bytes) addr :w (combine-bytes bytes) x86)))))
+                         :hints (("Goal" :in-theory (e/d* (wb
+                                                            wb-1
+                                                            wb-1-opener-theorem
+                                                            wml08
+                                                            canonical-address-p
+                                                            signed-byte-p)
+                                                          ()))))))
 
   (define write-string-to-memory
     ((ptr :type (signed-byte #.*max-linear-address-size+1*))
@@ -439,44 +439,44 @@
     :guard (env-alistp env)
     (!env env x86))
 
-  (define env-write (env x86)
-    :enabled t
-    :inline nil
-    :guard (env-alistp env)
-    (env-write-logic env x86)
-    ///
-    (local (in-theory (e/d (env-write-logic) ())))
-    (defthm x86p-env-write
-      (implies (and (x86p x86)
-                    (env-alistp env))
-               (x86p (env-write env x86)))))
+  (skip-proofs (define env-write (env x86)
+                 :enabled t
+                 :inline nil
+                 :guard (env-alistp env)
+                 (env-write-logic env x86)
+                 ///
+                 (local (in-theory (e/d (env-write-logic) ())))
+                 (defthm x86p-env-write
+                         (implies (and (x86p x86)
+                                       (env-alistp env))
+                                  (x86p (env-write env x86))))))
 
 
   ;; File descriptor field:
 
-  (defthm alistp-of-xr-env
-    (alistp (xr :env i x86$a))
-    :hints (("goal" :use ((:instance elem-p-of-xr-env))
-             :in-theory (e/d () (elem-p-of-xr-env)))))
+  (skip-proofs (defthm alistp-of-xr-env
+                       (alistp (xr :env i x86$a))
+                       :hints (("goal" :use ((:instance elem-p-of-xr-env))
+                                :in-theory (e/d () (elem-p-of-xr-env))))))
 
-  (define read-x86-file-des-logic (id x86)
+  (skip-proofs (define read-x86-file-des-logic (id x86)
 
-    :short "Read File Descriptor Field"
+                 :short "Read File Descriptor Field"
 
-    :long "<p>Read the field entry corresponding to key @('id') in the
-    @(':FILE-DESCRIPTORS') field of the environment.</p>"
+                 :long "<p>Read the field entry corresponding to key @('id') in the
+                 @(':FILE-DESCRIPTORS') field of the environment.</p>"
 
-    :guard (integerp id)
+                 :guard (integerp id)
 
-    (b* ((env (env-read x86))
-         (file-des-field (assoc-equal :file-descriptors env))
-         (fd-name-field (if (atom file-des-field)
-                            nil
-                          (assoc-equal id (cdr file-des-field))))
-         (name-field (if (atom fd-name-field)
-                         nil
-                       (cdr fd-name-field))))
-        name-field))
+                 (b* ((env (env-read x86))
+                      (file-des-field (assoc-equal :file-descriptors env))
+                      (fd-name-field (if (atom file-des-field)
+                                       nil
+                                       (assoc-equal id (cdr file-des-field))))
+                      (name-field (if (atom fd-name-field)
+                                    nil
+                                    (cdr fd-name-field))))
+                     name-field)))
 
   (define read-x86-file-des (id x86)
     :inline nil
@@ -491,332 +491,332 @@
                                       read-x86-file-des-logic)
                                      ()))))
 
-  (defthm rip-ret-alistp-of-xr-env
-    (rip-ret-alistp (cdr (assoc-equal :oracle (xr :env i x86$a))))
-    :hints (("goal" :use ((:instance elem-p-of-xr-env))
-             :in-theory (e/d () (elem-p-of-xr-env)))))
+  (skip-proofs (defthm rip-ret-alistp-of-xr-env
+                       (rip-ret-alistp (cdr (assoc-equal :oracle (xr :env i x86$a))))
+                       :hints (("goal" :use ((:instance elem-p-of-xr-env))
+                                :in-theory (e/d () (elem-p-of-xr-env))))))
 
-  (define write-x86-file-des-logic (fd fd-field x86)
+  (skip-proofs (define write-x86-file-des-logic (fd fd-field x86)
 
-    :long "<p>Replacing the value associated with the @('fd') key by
-     @('fd-field') in the @(':FILE-DESCRIPTORS') field of the
-     environment.</p>"
-    :guard-hints (("Goal" :in-theory (e/d (env-alistp) ())))
+                 :long "<p>Replacing the value associated with the @('fd') key by
+                 @('fd-field') in the @(':FILE-DESCRIPTORS') field of the
+                 environment.</p>"
+                 :guard-hints (("Goal" :in-theory (e/d (env-alistp) ())))
 
-    :guard (integerp fd)
-    (b* ((env (env-read x86))
-         (file-des-field  (cdr (assoc-equal :file-descriptors env)))
-         (x86
-          (env-write
-           (acons ':file-descriptors (put-assoc-equal fd fd-field file-des-field)
-                  (acons ':file-contents (cdr (assoc-equal :file-contents env))
-                         (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
-           x86)))
-      x86))
+                 :guard (integerp fd)
+                 (b* ((env (env-read x86))
+                      (file-des-field  (cdr (assoc-equal :file-descriptors env)))
+                      (x86
+                        (env-write
+                          (acons ':file-descriptors (put-assoc-equal fd fd-field file-des-field)
+                                 (acons ':file-contents (cdr (assoc-equal :file-contents env))
+                                        (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
+                          x86)))
+                     x86)))
 
-  (define write-x86-file-des (fd fd-field x86)
-    :inline nil
-    :guard (integerp fd)
-    (write-x86-file-des-logic fd fd-field x86)
-    ///
-    (defthm x86p-write-x86-file-des
-      (implies (and (x86p x86)
-                    (integerp fd))
-               (x86p (write-x86-file-des fd fd-field x86)))
-      :hints (("Goal" :in-theory (e/d (write-x86-file-des-logic) ())))))
+  (skip-proofs (define write-x86-file-des (fd fd-field x86)
+                 :inline nil
+                 :guard (integerp fd)
+                 (write-x86-file-des-logic fd fd-field x86)
+                 ///
+                 (defthm x86p-write-x86-file-des
+                         (implies (and (x86p x86)
+                                       (integerp fd))
+                                  (x86p (write-x86-file-des fd fd-field x86)))
+                         :hints (("Goal" :in-theory (e/d (write-x86-file-des-logic) ()))))))
 
-  (defthm xr-write-x86-file-des
-    (implies (not (equal fld :env))
-             (equal (xr fld index (write-x86-file-des fd fd-field x86))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (write-x86-file-des
-                                      write-x86-file-des-logic)
-                                     ()))))
+  (skip-proofs (defthm xr-write-x86-file-des
+                       (implies (not (equal fld :env))
+                                (equal (xr fld index (write-x86-file-des fd fd-field x86))
+                                       (xr fld index x86)))
+                       :hints (("Goal" :in-theory (e/d* (write-x86-file-des
+                                                          write-x86-file-des-logic)
+                                                        ())))))
 
-  (defrule 64-bit-modep-of-write-x86-file-des
-    (equal (64-bit-modep (write-x86-file-des fd fd-field x86))
-           (64-bit-modep x86))
-    :hints (("Goal" :in-theory (e/d* (write-x86-file-des
-                                      write-x86-file-des-logic)
-                                     ()))))
+  (skip-proofs (defrule 64-bit-modep-of-write-x86-file-des
+                        (equal (64-bit-modep (write-x86-file-des fd fd-field x86))
+                               (64-bit-modep x86))
+                        :hints (("Goal" :in-theory (e/d* (write-x86-file-des
+                                                           write-x86-file-des-logic)
+                                                         ())))))
 
-  (defrule x86-operation-mode-of-write-x86-file-des
-    (equal (x86-operation-mode (write-x86-file-des fd fd-field x86))
-           (x86-operation-mode x86))
-    :hints (("Goal" :in-theory (e/d* (x86-operation-mode)
-                                     (write-x86-file-des)))))
+  (skip-proofs (defrule x86-operation-mode-of-write-x86-file-des
+                        (equal (x86-operation-mode (write-x86-file-des fd fd-field x86))
+                               (x86-operation-mode x86))
+                        :hints (("Goal" :in-theory (e/d* (x86-operation-mode)
+                                                         (write-x86-file-des))))))
 
-  (defthm write-x86-file-des-xw
-    (implies (not (equal fld :env))
-             (equal (write-x86-file-des i v (xw fld index value x86))
-                    (xw fld index value (write-x86-file-des i v x86))))
-    :hints (("Goal" :in-theory (e/d* (write-x86-file-des
-                                      write-x86-file-des-logic)
-                                     ()))))
+  (skip-proofs (defthm write-x86-file-des-xw
+                       (implies (not (equal fld :env))
+                                (equal (write-x86-file-des i v (xw fld index value x86))
+                                       (xw fld index value (write-x86-file-des i v x86))))
+                       :hints (("Goal" :in-theory (e/d* (write-x86-file-des
+                                                          write-x86-file-des-logic)
+                                                        ())))))
 
-  (define delete-x86-file-des-logic (fd x86)
+  (skip-proofs (define delete-x86-file-des-logic (fd x86)
 
-    :long "<p>Delete the fd key-value pair in the :FILE-DESCRIPTORS
-     field of the environment.</p>"
+                 :long "<p>Delete the fd key-value pair in the :FILE-DESCRIPTORS
+                 field of the environment.</p>"
 
-    :guard (integerp fd)
-    :guard-hints (("Goal" :in-theory (e/d (env-alistp) ())))
-    (b* ((env (env-read x86))
-         (file-des-field  (cdr (assoc-equal :file-descriptors env)))
-         (x86
-          (env-write
-           (acons ':file-descriptors (remove1-assoc-equal fd file-des-field)
-                  (acons ':file-contents (cdr (assoc-equal :file-contents env))
-                         (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
-           x86)))
-        x86))
+                 :guard (integerp fd)
+                 :guard-hints (("Goal" :in-theory (e/d (env-alistp) ())))
+                 (b* ((env (env-read x86))
+                      (file-des-field  (cdr (assoc-equal :file-descriptors env)))
+                      (x86
+                        (env-write
+                          (acons ':file-descriptors (remove1-assoc-equal fd file-des-field)
+                                 (acons ':file-contents (cdr (assoc-equal :file-contents env))
+                                        (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
+                          x86)))
+                     x86)))
 
-  (define delete-x86-file-des (fd x86)
-    :inline nil
-    :guard (integerp fd)
-    (delete-x86-file-des-logic fd x86)
-    ///
-    (defthm x86p-delete-x86-file-des
-      (implies (and (x86p x86)
-                    (integerp fd))
-               (x86p (delete-x86-file-des fd x86)))
-      :hints (("Goal" :in-theory (e/d (delete-x86-file-des-logic)
-                                      ())))))
+  (skip-proofs (define delete-x86-file-des (fd x86)
+                 :inline nil
+                 :guard (integerp fd)
+                 (delete-x86-file-des-logic fd x86)
+                 ///
+                 (defthm x86p-delete-x86-file-des
+                         (implies (and (x86p x86)
+                                       (integerp fd))
+                                  (x86p (delete-x86-file-des fd x86)))
+                         :hints (("Goal" :in-theory (e/d (delete-x86-file-des-logic)
+                                                         ()))))))
 
-  (defthm xr-delete-x86-file-des
-    (implies (not (equal fld :env))
-             (equal (xr fld index (delete-x86-file-des fd x86))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (delete-x86-file-des
-                                      delete-x86-file-des-logic)
-                                     ()))))
+  (skip-proofs (defthm xr-delete-x86-file-des
+                       (implies (not (equal fld :env))
+                                (equal (xr fld index (delete-x86-file-des fd x86))
+                                       (xr fld index x86)))
+                       :hints (("Goal" :in-theory (e/d* (delete-x86-file-des
+                                                          delete-x86-file-des-logic)
+                                                        ())))))
 
-  (defthm delete-x86-file-des-xw
-    (implies (not (equal fld :env))
-             (equal (delete-x86-file-des i (xw fld index value x86))
-                    (xw fld index value (delete-x86-file-des i x86))))
-    :hints (("Goal" :in-theory (e/d* (delete-x86-file-des
-                                      delete-x86-file-des-logic)
-                                     ()))))
+  (skip-proofs (defthm delete-x86-file-des-xw
+                       (implies (not (equal fld :env))
+                                (equal (delete-x86-file-des i (xw fld index value x86))
+                                       (xw fld index value (delete-x86-file-des i x86))))
+                       :hints (("Goal" :in-theory (e/d* (delete-x86-file-des
+                                                          delete-x86-file-des-logic)
+                                                        ())))))
 
   ;; File contents field:
 
-  (define read-x86-file-contents-logic (name x86)
-    :short "Read File Contents Field"
-    :long "<p> Read the field entry corresponding to key @('name') in
-    the @(':FILE-CONTENTS') field of the environment.</p>"
+  (skip-proofs (define read-x86-file-contents-logic (name x86)
+                 :short "Read File Contents Field"
+                 :long "<p> Read the field entry corresponding to key @('name') in
+                 the @(':FILE-CONTENTS') field of the environment.</p>"
 
-    :guard (stringp name)
-    (b* ((env (env-read x86))
-         (name-file-contents-field (assoc-equal :file-contents env))
-         (file-contents-field
-          (if (atom name-file-contents-field)
-              nil
-            (cdr (assoc-equal name (cdr name-file-contents-field))))))
-        file-contents-field))
+                 :guard (stringp name)
+                 (b* ((env (env-read x86))
+                      (name-file-contents-field (assoc-equal :file-contents env))
+                      (file-contents-field
+                        (if (atom name-file-contents-field)
+                          nil
+                          (cdr (assoc-equal name (cdr name-file-contents-field))))))
+                     file-contents-field)))
 
-  (define read-x86-file-contents (name x86)
-    :inline nil
-    :guard (stringp name)
-    (read-x86-file-contents-logic name x86))
+  (skip-proofs (define read-x86-file-contents (name x86)
+                 :inline nil
+                 :guard (stringp name)
+                 (read-x86-file-contents-logic name x86)))
 
-  (defthm read-x86-file-contents-xw
-    (implies (not (equal fld :env))
-             (equal (read-x86-file-contents name (xw fld index value x86))
-                    (read-x86-file-contents name x86)))
-    :hints (("Goal" :in-theory (e/d* (read-x86-file-contents
-                                      read-x86-file-contents-logic)
-                                     ()))))
+  (skip-proofs (defthm read-x86-file-contents-xw
+                       (implies (not (equal fld :env))
+                                (equal (read-x86-file-contents name (xw fld index value x86))
+                                       (read-x86-file-contents name x86)))
+                       :hints (("Goal" :in-theory (e/d* (read-x86-file-contents
+                                                          read-x86-file-contents-logic)
+                                                        ())))))
 
-  (define write-x86-file-contents-logic (name contents-field x86)
+  (skip-proofs (define write-x86-file-contents-logic (name contents-field x86)
 
-    :long "<p>Replacing the value associated with the name key by
-     contents-field in the :FILE-CONTENTS field of the
-     environment.</p>"
+                 :long "<p>Replacing the value associated with the name key by
+                 contents-field in the :FILE-CONTENTS field of the
+                 environment.</p>"
 
-    :guard (stringp name)
-    :guard-hints (("Goal" :in-theory (e/d (env-alistp) ())))
-    (b* ((env (env-read x86))
-         (file-contents-field  (cdr (assoc-equal :file-contents env)))
-         (x86
-          (env-write
-           (acons ':file-descriptors (cdr (assoc-equal :file-descriptors env))
-                  (acons ':file-contents
-                         (put-assoc-equal name contents-field file-contents-field)
-                         (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
-           x86)))
-        x86))
+                 :guard (stringp name)
+                 :guard-hints (("Goal" :in-theory (e/d (env-alistp) ())))
+                 (b* ((env (env-read x86))
+                      (file-contents-field  (cdr (assoc-equal :file-contents env)))
+                      (x86
+                        (env-write
+                          (acons ':file-descriptors (cdr (assoc-equal :file-descriptors env))
+                                 (acons ':file-contents
+                                        (put-assoc-equal name contents-field file-contents-field)
+                                        (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
+                          x86)))
+                     x86)))
 
-  (define write-x86-file-contents (name contents x86)
-    :inline nil
-    :guard (stringp name)
-    (write-x86-file-contents-logic name contents x86)
-    ///
-    (defthm x86p-write-x86-file-contents
-      (implies (and (x86p x86)
-                    (stringp name))
-               (x86p (write-x86-file-contents name contents x86)))
-      :hints (("Goal" :in-theory (e/d (write-x86-file-contents-logic)
-                                      ())))))
+  (skip-proofs (define write-x86-file-contents (name contents x86)
+                 :inline nil
+                 :guard (stringp name)
+                 (write-x86-file-contents-logic name contents x86)
+                 ///
+                 (defthm x86p-write-x86-file-contents
+                         (implies (and (x86p x86)
+                                       (stringp name))
+                                  (x86p (write-x86-file-contents name contents x86)))
+                         :hints (("Goal" :in-theory (e/d (write-x86-file-contents-logic)
+                                                         ()))))))
 
-  (defthm xr-write-x86-file-contents
-    (implies (not (equal fld :env))
-             (equal (xr fld index (write-x86-file-contents name contents x86))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (write-x86-file-contents
-                                      write-x86-file-contents-logic)
-                                     ()))))
+  (skip-proofs (defthm xr-write-x86-file-contents
+                       (implies (not (equal fld :env))
+                                (equal (xr fld index (write-x86-file-contents name contents x86))
+                                       (xr fld index x86)))
+                       :hints (("Goal" :in-theory (e/d* (write-x86-file-contents
+                                                          write-x86-file-contents-logic)
+                                                        ())))))
 
-  (defthm write-x86-file-contents-xw
-    (implies (not (equal fld :env))
-             (equal (write-x86-file-contents i v (xw fld index value x86))
-                    (xw fld index value (write-x86-file-contents i v x86))))
-    :hints (("Goal" :in-theory (e/d* (write-x86-file-contents
-                                      write-x86-file-contents-logic)
-                                     ()))))
+  (skip-proofs (defthm write-x86-file-contents-xw
+                       (implies (not (equal fld :env))
+                                (equal (write-x86-file-contents i v (xw fld index value x86))
+                                       (xw fld index value (write-x86-file-contents i v x86))))
+                       :hints (("Goal" :in-theory (e/d* (write-x86-file-contents
+                                                          write-x86-file-contents-logic)
+                                                        ())))))
 
-  (define delete-x86-file-contents-logic (name x86)
-    :long "<p>Deleting the name key-value pair in the :FILE-CONTENTS
-     field of the environment.</p>"
-    :guard (stringp name)
-    :guard-hints (("Goal" :in-theory (e/d (env-alistp) ())))
-    (b* ((env (env-read x86))
-         (file-contents-field  (cdr (assoc-equal :file-contents env)))
-         (x86
-          (env-write
-           (acons ':file-descriptors (cdr (assoc-equal :file-descriptors env))
-                  (acons ':file-contents
-                         (remove1-assoc-equal name file-contents-field)
-                         (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
-           x86)))
-        x86))
+  (skip-proofs (define delete-x86-file-contents-logic (name x86)
+                 :long "<p>Deleting the name key-value pair in the :FILE-CONTENTS
+                 field of the environment.</p>"
+                 :guard (stringp name)
+                 :guard-hints (("Goal" :in-theory (e/d (env-alistp) ())))
+                 (b* ((env (env-read x86))
+                      (file-contents-field  (cdr (assoc-equal :file-contents env)))
+                      (x86
+                        (env-write
+                          (acons ':file-descriptors (cdr (assoc-equal :file-descriptors env))
+                                 (acons ':file-contents
+                                        (remove1-assoc-equal name file-contents-field)
+                                        (acons ':oracle (cdr (assoc-equal :oracle env)) nil)))
+                          x86)))
+                     x86)))
 
-  (define delete-x86-file-contents (name x86)
-    :inline nil
-    :guard (stringp name)
-    (delete-x86-file-contents-logic name x86)
-    ///
-    (defthm x86p-delete-x86-file-contents
-      (implies (and (x86p x86)
-                    (stringp name))
-               (x86p (delete-x86-file-contents name x86)))
-      :hints (("Goal" :in-theory (e/d (delete-x86-file-contents-logic)
-                                      ())))))
+  (skip-proofs (define delete-x86-file-contents (name x86)
+                 :inline nil
+                 :guard (stringp name)
+                 (delete-x86-file-contents-logic name x86)
+                 ///
+                 (defthm x86p-delete-x86-file-contents
+                         (implies (and (x86p x86)
+                                       (stringp name))
+                                  (x86p (delete-x86-file-contents name x86)))
+                         :hints (("Goal" :in-theory (e/d (delete-x86-file-contents-logic)
+                                                         ()))))))
 
-  (defthm xr-delete-x86-file-contents
-    (implies (not (equal fld :env))
-             (equal (xr fld index (delete-x86-file-contents name x86))
-                    (xr fld index x86)))
-    :hints (("Goal" :in-theory (e/d* (delete-x86-file-contents
-                                      delete-x86-file-contents-logic)
-                                     ()))))
+  (skip-proofs (defthm xr-delete-x86-file-contents
+                       (implies (not (equal fld :env))
+                                (equal (xr fld index (delete-x86-file-contents name x86))
+                                       (xr fld index x86)))
+                       :hints (("Goal" :in-theory (e/d* (delete-x86-file-contents
+                                                          delete-x86-file-contents-logic)
+                                                        ())))))
 
-  (defthm delete-x86-file-contents-xw
-    (implies (not (equal fld :env))
-             (equal (delete-x86-file-contents i (xw fld index value x86))
-                    (xw fld index value (delete-x86-file-contents i x86))))
-    :hints (("Goal" :in-theory (e/d* (delete-x86-file-contents
-                                      delete-x86-file-contents-logic)
-                                     ()))))
+  (skip-proofs (defthm delete-x86-file-contents-xw
+                       (implies (not (equal fld :env))
+                                (equal (delete-x86-file-contents i (xw fld index value x86))
+                                       (xw fld index value (delete-x86-file-contents i x86))))
+                       :hints (("Goal" :in-theory (e/d* (delete-x86-file-contents
+                                                          delete-x86-file-contents-logic)
+                                                        ())))))
 
   ;; Oracle Field:
 
-  (encapsulate
-   ()
+  (skip-proofs (encapsulate
+                 ()
 
-   (defthm alistp-of-oracle-of-xr-env
-     (alistp (cdr (assoc-equal :oracle (xr :env i x86$a))))
-     :hints (("goal" :use ((:instance elem-p-of-xr-env))
-              :in-theory (e/d () (elem-p-of-xr-env))))
-     :rule-classes (:rewrite :type-prescription))
+                 (defthm alistp-of-oracle-of-xr-env
+                         (alistp (cdr (assoc-equal :oracle (xr :env i x86$a))))
+                         :hints (("goal" :use ((:instance elem-p-of-xr-env))
+                                  :in-theory (e/d () (elem-p-of-xr-env))))
+                         :rule-classes (:rewrite :type-prescription))
 
-   (local
-    (defthm true-listp-of-cdr-cdr-assoc-rip-ret-alistp
-      (implies (rip-ret-alistp xs)
-               (true-listp (cdr (cdr (assoc-equal rip xs)))))
-      :hints (("goal" 
-               :in-theory (e/d (rip-ret-alistp) ())))))
+                 (local
+                   (defthm true-listp-of-cdr-cdr-assoc-rip-ret-alistp
+                           (implies (rip-ret-alistp xs)
+                                    (true-listp (cdr (cdr (assoc-equal rip xs)))))
+                           :hints (("goal" 
+                                    :in-theory (e/d (rip-ret-alistp) ())))))
 
-   (local
-    (defthm rip-ret-alistp-and-put-assoc-equal
-      (implies (and
-                (signed-byte-p 48 rip)
-                (true-listp ret)
-                (rip-ret-alistp xs))
-               (rip-ret-alistp (put-assoc-equal rip ret xs)))
-      :hints (("Goal" :in-theory (e/d (rip-ret-alistp) ())))))
+                 (local
+                   (defthm rip-ret-alistp-and-put-assoc-equal
+                           (implies (and
+                                      (signed-byte-p 48 rip)
+                                      (true-listp ret)
+                                      (rip-ret-alistp xs))
+                                    (rip-ret-alistp (put-assoc-equal rip ret xs)))
+                           :hints (("Goal" :in-theory (e/d (rip-ret-alistp) ())))))
 
-   (define pop-x86-oracle-logic (x86)
-     :guard-hints
-     (("Goal" :in-theory (e/d (env-alistp) ())))
-     (b* ((rip (rip x86))
-          (env (env-read x86))
-          (oracle (cdr (assoc-equal :oracle env)))
-          (vals (assoc-equal rip oracle))
-          (lst (if (consp vals)
-                   (if (consp (cdr vals))
-                       (cdr vals)
-                     nil)
-                 nil))
-          ((mv val x86)
-           (if (atom lst)
-               (let ((x86 (!ms (list :syscall-oracle-pop-empty rip) x86)))
-                 (mv -1 x86))
-             (let ((x86
-                    (env-write
-                     (acons ':file-descriptors (cdr (assoc-equal :file-descriptors env))
-                            (acons ':file-contents (cdr (assoc-equal :file-contents env))
-                                   (acons ':oracle
-                                          (put-assoc-equal rip (cdr lst)
-                                                           oracle)
-                                          nil)))
-                     x86)))
-               (mv (car lst) x86)))))
-         (mv val x86)))
+                 (define pop-x86-oracle-logic (x86)
+                   :guard-hints
+                   (("Goal" :in-theory (e/d (env-alistp) ())))
+                   (b* ((rip (rip x86))
+                        (env (env-read x86))
+                        (oracle (cdr (assoc-equal :oracle env)))
+                        (vals (assoc-equal rip oracle))
+                        (lst (if (consp vals)
+                               (if (consp (cdr vals))
+                                 (cdr vals)
+                                 nil)
+                               nil))
+                        ((mv val x86)
+                         (if (atom lst)
+                           (let ((x86 (!ms (list :syscall-oracle-pop-empty rip) x86)))
+                             (mv -1 x86))
+                           (let ((x86
+                                   (env-write
+                                     (acons ':file-descriptors (cdr (assoc-equal :file-descriptors env))
+                                            (acons ':file-contents (cdr (assoc-equal :file-contents env))
+                                                   (acons ':oracle
+                                                          (put-assoc-equal rip (cdr lst)
+                                                                           oracle)
+                                                          nil)))
+                                     x86)))
+                             (mv (car lst) x86)))))
+                       (mv val x86)))
 
-   (define pop-x86-oracle (x86)
-     :inline nil
-     :prepwork ((local (in-theory (e/d (xr) ()))))
-     (pop-x86-oracle-logic x86)
-     ///
+                 (define pop-x86-oracle (x86)
+                   :inline nil
+                   :prepwork ((local (in-theory (e/d (xr) ()))))
+                   (pop-x86-oracle-logic x86)
+                   ///
 
-     (defthm x86p-mv-nth-1-pop-x86-oracle
-       (implies (x86p x86)
-                (x86p (mv-nth 1 (pop-x86-oracle x86))))
-       :hints (("Goal" :in-theory (e/d (pop-x86-oracle-logic
-                                        env-alistp)
-                                       ())))))
+                   (defthm x86p-mv-nth-1-pop-x86-oracle
+                           (implies (x86p x86)
+                                    (x86p (mv-nth 1 (pop-x86-oracle x86))))
+                           :hints (("Goal" :in-theory (e/d (pop-x86-oracle-logic
+                                                             env-alistp)
+                                                           ())))))
 
-   ;; Relating pop-x86-oracle and xr/xw:
+                 ;; Relating pop-x86-oracle and xr/xw:
 
-   (defthm xr-pop-x86-oracle-state
-     (implies (and (not (equal fld :env))
-                   (not (equal fld :ms)))
-              (equal (xr fld index (mv-nth 1 (pop-x86-oracle x86)))
-                     (xr fld index x86)))
-     :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
-                                       pop-x86-oracle-logic)
-                                      ()))))
+                 (defthm xr-pop-x86-oracle-state
+                         (implies (and (not (equal fld :env))
+                                       (not (equal fld :ms)))
+                                  (equal (xr fld index (mv-nth 1 (pop-x86-oracle x86)))
+                                         (xr fld index x86)))
+                         :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
+                                                            pop-x86-oracle-logic)
+                                                          ()))))
 
-   (defthm pop-x86-oracle-xw
-     (implies (and (not (equal fld :env))
-                   (not (equal fld :rip)))
-              (equal (mv-nth 0 (pop-x86-oracle (xw fld index value x86)))
-                     (mv-nth 0 (pop-x86-oracle x86))))
-     :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
-                                       pop-x86-oracle-logic)
-                                      ()))))
+                 (defthm pop-x86-oracle-xw
+                         (implies (and (not (equal fld :env))
+                                       (not (equal fld :rip)))
+                                  (equal (mv-nth 0 (pop-x86-oracle (xw fld index value x86)))
+                                         (mv-nth 0 (pop-x86-oracle x86))))
+                         :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
+                                                            pop-x86-oracle-logic)
+                                                          ()))))
 
 
-   (defthm xw-pop-x86-oracle-state
-     ;; Keep pop-x86-oracle inside all other nests of writes.
-     (implies (and (not (equal fld :env))
-                   (not (equal fld :rip))
-                   (not (equal fld :ms)))
-              (equal (mv-nth 1 (pop-x86-oracle (xw fld index value x86)))
-                     (xw fld index value (mv-nth 1 (pop-x86-oracle x86)))))
-     :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
-                                       pop-x86-oracle-logic)
-                                      ()))))))
+                 (defthm xw-pop-x86-oracle-state
+                         ;; Keep pop-x86-oracle inside all other nests of writes.
+                         (implies (and (not (equal fld :env))
+                                       (not (equal fld :rip))
+                                       (not (equal fld :ms)))
+                                  (equal (mv-nth 1 (pop-x86-oracle (xw fld index value x86)))
+                                         (xw fld index value (mv-nth 1 (pop-x86-oracle x86)))))
+                         :hints (("Goal" :in-theory (e/d* (pop-x86-oracle
+                                                            pop-x86-oracle-logic)
+                                                          ())))))))
 
 ;; ======================================================================

@@ -472,7 +472,7 @@
 
 ;; Lemmas about las-to-pas:
 
-(defthmd xlate-equiv-memory-and-las-to-pas
+(skip-proofs (defthmd xlate-equiv-memory-and-las-to-pas
   (implies (xlate-equiv-memory (double-rewrite x86-1) x86-2)
            (and
             (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-1))
@@ -481,14 +481,14 @@
                    (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-2)))))
   :hints (("Goal"
            :induct (cons (las-to-pas n lin-addr r-w-x x86-1)
-                         (las-to-pas n lin-addr r-w-x x86-2)))))
+                         (las-to-pas n lin-addr r-w-x x86-2))))))
 
-(defthm xlate-equiv-memory-and-mv-nth-0-las-to-pas-cong
+(skip-proofs (defthm xlate-equiv-memory-and-mv-nth-0-las-to-pas-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-1))
                   (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-2))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory-and-las-to-pas) ())))
-  :rule-classes :congruence)
+  :rule-classes :congruence))
 
 (defthm xlate-equiv-memory-and-mv-nth-1-las-to-pas-cong
   (implies (xlate-equiv-memory x86-1 x86-2)

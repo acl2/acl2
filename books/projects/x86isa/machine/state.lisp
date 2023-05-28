@@ -49,6 +49,8 @@
 (include-book "centaur/bigmem/bigmem" :dir :system)
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
+(include-book "hacking/hacker" :dir :system)
+(include-book "tools/include-raw" :dir :system)
 
 ; cert_param: (non-lispworks)
 
@@ -514,6 +516,35 @@
            :child-updater  bigmem::write-mem
            :accessor memi
            :updater !memi)
+    ;; (mem   :type bigmem::mem
+    ;;        :recognizer bigmem::memp
+    ;;        :accessor mem
+    ;;        :updater !mem)
+    (:doc "</li>")
+
+    (:doc "<li>@('Set Interrupt Flag Next'): The Intel manual states that the STI instruction sets the interrupt
+           flag after the next instruction is executed. To allow for this behavior, we set this field when the STI instruction is
+           executed. Consult the documentation for STI in Volume 2B 4.3 in the Intel manual.<br/>")
+    (set-interrupt-flag-next   :type (satisfies booleanp)
+                               :initially nil
+                               :fix (acl2::bool-fix x))
+    (:doc "</li>")
+
+    (:doc "</li>")
+
+    (:doc "<li>@('Time Stamp Counter'): This keeps track of how many instructions have been executed for the RDTSC instruction.<br/>")
+    (time-stamp-counter :type (satisfies natp)
+                        :initially 0
+                        :fix (nfix x))
+    (:doc "</li>")
+
+    (:doc "<li>@('Last Clock Event'): Our clock device sends a clock event every 100,000 instructions. When interrupts
+          are disabled, however, we can't send a clock event. Instead of sending one on every 100,000 instructions,
+          we send an interrupt if interrupts are enabled and the last clock event was 100,000 or more instructions ago.
+          This keeps track of how many instructions have been executed since the last clock event.<br/>")
+    (last-clock-event   :type (satisfies natp)
+                        :initially 0
+                        :fix (nfix x))
     (:doc "</li>")
 
     (:doc "</ul>")))
@@ -531,24 +562,255 @@
                                                :print-lowercase t))
                   " })" rest)))))
 
-(with-output
-  :on summary
-  :summary-off #!acl2(:other-than errors time)
-  (make-event
-   `(rstobj2::defrstobj x86
-                        ,@(loop$ for fld in *x86isa-state* append
-                                 (if (equal (car fld) :doc)
-                                     nil
-                                   (list fld)))
-                        :inline t
-                        :non-memoizable t
-                        :enable '(bigmem::read-mem-over-write-mem
-                                  bigmem::read-mem-from-nil
-                                  bigmem::loghead-identity-alt)
-                        :accessor xr
-                        :updater  xw
-                        :accessor-template ( x)
-                        :updater-template (! x))))
+(skip-proofs (with-output
+               :on summary
+               :summary-off #!acl2(:other-than errors time)
+               (make-event
+                 `(rstobj2::defrstobj x86
+                                      ,@(loop$ for fld in *x86isa-state* append
+                                               (if (equal (car fld) :doc)
+                                                 nil
+                                                 (list fld)))
+                                      :inline t
+                                      :non-memoizable t
+                                      :enable '(bigmem::read-mem-over-write-mem
+                                                 bigmem::read-mem-from-nil
+                                                 bigmem::loghead-identity-alt)
+                                      :accessor xr
+                                      :updater  xw
+                                      :accessor-template ( x)
+                                      :updater-template (! x)))))
+
+(defun without-docs (data)
+  (declare (xargs :mode :program))
+  (b* (((when (equal data nil)) nil)
+       (curr (car data))
+       ((when (equal (car curr) :doc)) (without-docs (cdr data))))
+      (cons curr (without-docs (cdr data)))))
+
+(defun field-array-p (field)
+  (declare (xargs :mode :program))
+  (b* ((typ (cadr (assoc-keyword :type (cdr field)))))
+      (and (consp typ)
+           (equal 'array
+                  (car typ)))))
+
+(defconst *c-type-alist* '(((satisfies booleanp) . "bool")
+                           ((signed-byte 8) . "int8_t")
+                           ((signed-byte 16) . "int16_t")
+                           ((signed-byte 32) . "int32_t")
+                           ((signed-byte 48) . "int64_t")
+                           ((signed-byte 64) . "int64_t")
+                           ((signed-byte 80) . "int128_t")
+                           ((signed-byte 128) . "int128_t")
+                           ((signed-byte 512) . "int512_t")
+                           ((unsigned-byte 8) . "uint8_t")
+                           ((unsigned-byte 16) . "uint16_t")
+                           ((unsigned-byte 32) . "uint32_t")
+                           ((unsigned-byte 48) . "uint64_t")
+                           ((unsigned-byte 64) . "uint64_t")
+                           ((unsigned-byte 80) . "uint128_t")
+                           ((unsigned-byte 128) . "uint128_t")
+                           ((unsigned-byte 512) . "uint512_t")))
+
+(defun get-c-type (typ)
+  (declare (xargs :mode :program))
+  (cond ((and (consp typ)
+              (equal (car typ)
+                     'array)) (b* ((el-type (str::nat-to-dec-string (caaddr typ)))
+                     ((when (not el-type)) nil))
+                                  (get-c-type (cadr typ))))
+        (t (cdr (assoc-equal typ *c-type-alist*)))))
+
+(defun c-suffix (typ)
+  (declare (xargs :mode :program))
+  (b* (((when (not (and (consp typ)
+                        (equal (car typ)
+                               'array)))) "")
+       (cnt (caaddr typ)))
+      (concatenate 'string 
+                   (c-suffix (cadr typ))
+                   "["
+                   (str::nat-to-dec-string cnt)
+                   "]")))
+
+(defun to-c-name-fn (char-list)
+  (declare (xargs :mode :program))
+  (b* (((when (not char-list)) nil)
+       ((cons head tail) char-list)
+       (chr (cond ((alpha-char-p head) (char-downcase head))
+                  ((equal #\- head) #\_)
+                  (t head))))
+      (cons chr (to-c-name-fn tail))))
+
+(defmacro to-c-name (sym)
+  `(coerce (to-c-name-fn (coerce (symbol-name ,sym) 'list)) 'string))
+
+(defun write-c-field (field channel state)
+  (declare (xargs :stobjs (state)
+                  :mode :program))
+  (b* ((fld-name (car field))
+       ((when (equal fld-name 'mem)) (fms "x86_mem mem;" nil channel state nil))
+       (typ (cadr (assoc-keyword :type (cdr field))))
+       ((when (equal typ t)) state)
+       (c-type (get-c-type typ))
+       ((when (not c-type)) state)
+       (suffix (c-suffix typ)))
+      (fms "~s0 ~s1~s2;"
+           (list (cons #\0 c-type)
+                 (cons #\1 (to-c-name (car field)))
+                 (cons #\2 suffix))
+           channel
+           state
+           nil))) 
+
+(defun write-c-fields (fields channel state)
+  (declare (xargs :stobjs (state)
+                  :mode :program))
+  (b* (((when (equal fields nil)) state)
+       ((cons head tail) fields)
+       (state (write-c-field head channel state)))
+      (write-c-fields tail channel state)))
+
+(defun x86-dump-c-state (filename x86 state)
+  (declare (xargs :stobjs (x86 state)
+                  :mode :program))
+  (b* (((mv channel state) (open-output-channel filename :character state))
+       (state (fms "struct x86isa_state {" nil channel state nil))
+       (state (write-c-fields (without-docs *x86isa-state*) channel state))
+       (state (fms "}" nil channel state nil))
+       (state (close-output-channel channel state)))
+      (mv x86 state)))
+
+(defun serialize-mem (x86)
+  (declare (ignorable x86) (xargs :stobjs (x86)))
+  nil)
+
+(defun deserialize-mem (obj x86)
+  (declare (ignorable obj) (xargs :stobjs (x86)))
+  x86)
+
+(defun save-x86 (filename x86)
+  (declare (ignorable filename x86) (xargs :stobjs (x86)))
+  nil)
+
+(defun restore-x86 (filename x86)
+  (declare (ignorable filename) (xargs :stobjs (x86)))
+  x86)
+
+(defttag :include-raw)
+(include-raw "state-raw.lisp")
+
+;; Define functions to serialize and deserialize the x86 stobj to a cons based object
+(defun serialize-arr-fn (accessor len idx)
+  (declare (xargs :mode :program))
+  (if (equal len idx)
+    nil
+    `(b* ((val (,accessor ,idx x86)))
+         (cons val ,(serialize-arr-fn accessor len (1+ idx))))))
+
+(defmacro serialize-arr (accessor len)
+  (serialize-arr-fn accessor len 0))
+
+(defun deserialize-arr-fn (updater len idx)
+  (declare (xargs :mode :program))
+  (if (equal len idx)
+    'x86
+    `(b* (((list* ?el ?val) val)
+          (x86 (,updater ,idx el x86)))
+         ,(deserialize-arr-fn updater len (1+ idx)))))
+
+(defmacro deserialize-arr (updater len)
+  (deserialize-arr-fn updater len 0))
+
+(defun field-array-length (field)
+  (declare (xargs :mode :program))
+  (caaddr (cadr (assoc-keyword :type (cdr field)))))
+
+(defun field-accessor (field)
+  (declare (xargs :mode :program))
+  (b* ((accessor (cadr (assoc-keyword :accessor (cdr field))))
+       ((when accessor) accessor)
+       (arr? (field-array-p field))
+       ((when arr?) (acl2::packn (list (car field) 'i))))
+      (car field)))
+
+(defun field-updater (field)
+  (declare (xargs :mode :program))
+  (b* ((updater (cadr (assoc-keyword :updater (cdr field))))
+       ((when updater) updater)
+       (arr? (field-array-p field))
+       ((when arr?) (acl2::packn (list '! (car field) 'i))))
+      (acl2::packn (list '! (car field)))))
+
+(defmacro serialize-scalar (accessor)
+  `(,accessor x86))
+
+(defmacro deserialize-scalar (updater)
+  `(,updater val x86))
+
+(defun serialize-field (field)
+  (declare (xargs :mode :program))
+  (b* ((accessor (field-accessor field))
+       (fld-name (car field)))
+      (cond ((equal fld-name 'mem) `(serialize-mem x86))
+            ((field-array-p field) `(serialize-arr ,accessor ,(field-array-length field)))
+            (t `(serialize-scalar ,accessor)))))
+
+(defun deserialize-field (field)
+  (declare (xargs :mode :program))
+  (b* ((updater (field-updater field))
+       (fld-name (car field)))
+      (cond ((equal fld-name 'mem) `(deserialize-mem val x86))
+            ((field-array-p field) `(deserialize-arr ,updater ,(field-array-length field)))
+            (t `(deserialize-scalar ,updater)))))
+
+(defun serialize-x86-fields (fields)
+  (declare (xargs :mode :program))
+  (if (not fields)
+    nil
+    (cons (serialize-field (car fields))
+          (serialize-x86-fields (cdr fields)))))
+
+(defun deserialize-x86-fields (fields)
+  (declare (xargs :mode :program))
+  (if (not fields)
+    nil
+    (cons (deserialize-field (car fields))
+          (deserialize-x86-fields (cdr fields)))))
+
+(defun exec-and-cons-together (code)
+  (declare (xargs :mode :program))
+  (if (not code)
+    nil
+    `(b* ((val ,(car code)))
+         (cons val ,(exec-and-cons-together (cdr code))))))
+
+(defun consume-from-list (code)
+  (declare (xargs :mode :program))
+  (if (not code)
+    'x86
+    `(b* (((list* ?val ?obj) obj)
+          (x86 ,(car code)))
+         ,(consume-from-list (cdr code)))))
+
+(defmacro serialize-x86-body ()
+  (b* ((serialization-code (serialize-x86-fields (without-docs *x86isa-state*))))
+      (exec-and-cons-together serialization-code)))
+
+(defmacro deserialize-x86-body ()
+  (b* ((deserialization-code (deserialize-x86-fields (without-docs *x86isa-state*))))
+      (consume-from-list deserialization-code)))
+
+(defun serialize-x86 (x86)
+  (declare (xargs :stobjs (x86)
+                  :mode :program))
+  (serialize-x86-body))
+
+(defun deserialize-x86 (obj x86)
+  (declare (xargs :stobjs (x86)
+                  :mode :program))
+  (deserialize-x86-body))
 
 (defthm x86p-xw
   (implies (x86p x86)

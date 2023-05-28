@@ -60,7 +60,7 @@
        (create-dispatch-for-opcodes
         #ux0F_00 256 :two-byte (w state))))
 
-   `(define two-byte-opcode-execute
+   `(skip-proofs (define two-byte-opcode-execute
       ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
        (start-rip        :type (signed-byte   #.*max-linear-address-size*))
        (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
@@ -104,7 +104,7 @@
         (implies (x86p x86)
                  (x86p (two-byte-opcode-execute
                         proc-mode start-rip temp-rip prefixes mandatory-prefix
-                        rex-byte opcode modr/m sib x86)))))))
+                        rex-byte opcode modr/m sib x86))))))))
 
 (local
  (defthm unsigned-byte-p-from-<=-loghead

@@ -160,6 +160,96 @@
 (make-event (gpr-add-spec-gen-fn 4))
 (make-event (gpr-add-spec-gen-fn 8))
 
+(define gpr-xadd-spec-gen-fn ((operand-size :type (member 1 2 4 8)))
+  :verify-guards nil
+
+  (b* ((fn-name (mk-name "GPR-XADD-SPEC-" operand-size))
+       (result-nbits (ash operand-size 3))
+       (str-nbits (if (eql result-nbits 8) "08" result-nbits))
+       (ntoi (mk-name "N" str-nbits "-TO-I" str-nbits))
+       (cf-spec-fn (mk-name "CF-SPEC" result-nbits))
+       (pf-spec-fn (mk-name "PF-SPEC" result-nbits))
+       (af-spec-fn (mk-name "ADD-AF-SPEC" result-nbits))
+       (sf-spec-fn (mk-name "SF-SPEC" result-nbits))
+       (of-spec-fn (mk-name "OF-SPEC" result-nbits)))
+
+
+      `(define ,fn-name
+         ((dst            :type (unsigned-byte ,result-nbits))
+          (src            :type (unsigned-byte ,result-nbits))
+          (input-rflags   :type (unsigned-byte 32)))
+         :inline t
+         :no-function t
+         :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                                ((tau-system)))))
+
+         :parents (,(mk-name "GPR-ARITH/LOGIC-SPEC-" operand-size))
+
+         (b* ((dst (mbe :logic (n-size ,result-nbits dst)
+                        :exec dst))
+              (src (mbe :logic (n-size ,result-nbits src)
+                        :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+
+              (raw-result (the (unsigned-byte ,(1+ result-nbits))
+                            (+ (the (unsigned-byte ,result-nbits) dst)
+                               (the (unsigned-byte ,result-nbits) src))))
+              (signed-raw-result
+               (the (signed-byte ,(1+ result-nbits))
+                 (+ (the (signed-byte ,result-nbits)
+                      (,ntoi dst))
+                    (the (signed-byte ,result-nbits)
+                      (,ntoi src)))))
+
+              (result (the (unsigned-byte ,result-nbits)
+                        (n-size ,result-nbits raw-result)))
+
+              (cf (the (unsigned-byte 1) (,cf-spec-fn raw-result)))
+              (pf (the (unsigned-byte 1) (,pf-spec-fn result)))
+              (af (the (unsigned-byte 1) (,af-spec-fn dst src)))
+              (zf (the (unsigned-byte 1) (zf-spec result)))
+              (sf (the (unsigned-byte 1) (,sf-spec-fn result)))
+              (of (the (unsigned-byte 1) (,of-spec-fn signed-raw-result)))
+
+              (output-rflags (mbe :logic
+                                  (change-rflagsBits
+                                   input-rflags
+                                   :cf cf
+                                   :pf pf
+                                   :af af
+                                   :zf zf
+                                   :sf sf
+                                   :of of)
+                                  :exec
+                                  (the (unsigned-byte 32)
+                                    (!rflagsBits->cf
+                                     cf
+                                     (!rflagsBits->pf
+                                      pf
+                                      (!rflagsBits->af
+                                       af
+                                       (!rflagsBits->zf
+                                        zf
+                                        (!rflagsBits->sf
+                                         sf
+                                         (!rflagsBits->of
+                                          of
+                                          input-rflags)))))))))
+
+              (output-rflags (mbe :logic (n32 output-rflags)
+                                  :exec output-rflags))
+
+              ;; No undefined flags.
+              (undefined-flags 0))
+
+             (mv result output-rflags undefined-flags)))))
+
+(make-event (gpr-xadd-spec-gen-fn 1))
+(make-event (gpr-xadd-spec-gen-fn 2))
+(make-event (gpr-xadd-spec-gen-fn 4))
+(make-event (gpr-xadd-spec-gen-fn 8))
+
 ;; ======================================================================
 ;; SPECIFICATION: ADC
 ;; ======================================================================

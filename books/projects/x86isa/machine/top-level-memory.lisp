@@ -170,274 +170,274 @@
           mode.  In 64-bit mode, the R bit of the code segment descriptor is
           ignored (see Atmel manual, Dec'17, Volume 2, Section 4.8.1).</p>")))
 
-    `(define ,fn-name ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-                       (eff-addr  :type (signed-byte 64))
-                       (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
-                       (r-x       :type (member :r :x))
-                       ,@(and check-alignment?-var `((check-alignment? booleanp)))
-                       x86
-                       ,@(and mem-ptr?-var `(&key ((mem-ptr? booleanp) 'nil))))
-       :inline t
-       :no-function t
-       :returns (mv flg
-                    (value
-                     (,(if signed? 'signed-byte-p 'unsigned-byte-p) ,size value)
-                     :hyp (x86p x86))
-                    (x86-new x86p :hyp (x86p x86)))
-       :parents (top-level-memory)
+    `(skip-proofs (define ,fn-name ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+                                    (eff-addr  :type (signed-byte 64))
+                                    (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
+                                    (r-x       :type (member :r :x))
+                                    ,@(and check-alignment?-var `((check-alignment? booleanp)))
+                                    x86
+                                    ,@(and mem-ptr?-var `(&key ((mem-ptr? booleanp) 'nil))))
+                    :inline t
+                    :no-function t
+                    :returns (mv flg
+                                 (value
+                                   (,(if signed? 'signed-byte-p 'unsigned-byte-p) ,size value)
+                                   :hyp (x86p x86))
+                                 (x86-new x86p :hyp (x86p x86)))
+                    :parents (top-level-memory)
 
-       :short ,short-doc-string
-       :long ,long-doc-string
+                    :short ,short-doc-string
+                    :long ,long-doc-string
 
-       (b* (((when (and
-                    (/= proc-mode #.*64-bit-mode*)
-                    (= seg-reg #.*cs*)
-                    (eq r-x :r)
-                    (b* ((attr (loghead 16 (seg-hidden-attri seg-reg x86)))
-                         (r (code-segment-descriptor-attributesBits->r attr)))
-                      (= r 0))))
-             (mv (list :execute-only-code-segment eff-addr) 0 x86))
-            ((mv flg lin-addr)
-             (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
-            ((when flg) (mv flg 0 x86))
-            ,@(and
-               check-alignment?-var
-               `(((unless (or (not check-alignment?)
-                              (address-aligned-p
-                               lin-addr
-                               ,(/ size 8)
-                               ,(if mem-ptr?-var 'mem-ptr? 'nil))))
-                  (mv (list :unaligned-linear-address lin-addr) 0 x86)))))
-         (,lin-mem-fn-name lin-addr r-x x86))
-       ///
+                    (b* (((when (and
+                                  (/= proc-mode #.*64-bit-mode*)
+                                  (= seg-reg #.*cs*)
+                                  (eq r-x :r)
+                                  (b* ((attr (loghead 16 (seg-hidden-attri seg-reg x86)))
+                                       (r (code-segment-descriptor-attributesBits->r attr)))
+                                      (= r 0))))
+                          (mv (list :execute-only-code-segment eff-addr) 0 x86))
+                         ((mv flg lin-addr)
+                          (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
+                         ((when flg) (mv flg 0 x86))
+                         ,@(and
+                             check-alignment?-var
+                             `(((unless (or (not check-alignment?)
+                                            (address-aligned-p
+                                              lin-addr
+                                              ,(/ size 8)
+                                              ,(if mem-ptr?-var 'mem-ptr? 'nil))))
+                                (mv (list :unaligned-linear-address lin-addr) 0 x86)))))
+                        (,lin-mem-fn-name lin-addr r-x x86))
+                    ///
 
-       (,(if signed? 'defthm-signed-byte-p 'defthm-unsigned-byte-p)
-        ,(mk-name (if signed? "I" "N") size-str "P-OF-MV-NTH-1-" fn)
-        :hyp t
-        :bound ,size
-        :concl (mv-nth 1 ,fn-call)
-        :gen-linear t
-        :gen-type t)
+                    (,(if signed? 'defthm-signed-byte-p 'defthm-unsigned-byte-p)
+                      ,(mk-name (if signed? "I" "N") size-str "P-OF-MV-NTH-1-" fn)
+                      :hyp t
+                      :bound ,size
+                      :concl (mv-nth 1 ,fn-call)
+                      :gen-linear t
+                      :gen-type t)
 
-       (defrule ,(mk-name fn "-VALUE-WHEN-ERROR")
-         (implies (mv-nth 0 ,fn-call)
-                  (equal (mv-nth 1 ,fn-call) 0))
-         :enable (,@(and signed?
-                         `(,lin-mem-fn-name
-                           ;; ,(mk-name "RML" size-str)
-                           ))
-                  ))
+                    (defrule ,(mk-name fn "-VALUE-WHEN-ERROR")
+                             (implies (mv-nth 0 ,fn-call)
+                                      (equal (mv-nth 1 ,fn-call) 0))
+                             :enable (,@(and signed?
+                                             `(,lin-mem-fn-name
+                                                ;; ,(mk-name "RML" size-str)
+                                                ))
+                                       ))
 
-       (defrule ,(mk-name fn "-DOES-NOT-AFFECT-STATE-IN-APP-VIEW")
-         (implies (app-view x86)
-                  (equal (mv-nth 2 ,fn-call) x86))
-         :enable (,@(and signed?
-                         `(,lin-mem-fn-name
-                           ;; ,(mk-name "RML" size-str)
-                           ))
-                  ))
+                    (defrule ,(mk-name fn "-DOES-NOT-AFFECT-STATE-IN-APP-VIEW")
+                             (implies (app-view x86)
+                                      (equal (mv-nth 2 ,fn-call) x86))
+                             :enable (,@(and signed?
+                                             `(,lin-mem-fn-name
+                                                ;; ,(mk-name "RML" size-str)
+                                                ))
+                                       ))
 
-       (defrule ,(mk-name "MV-NTH-2-" fn "-IN-SYSTEM-LEVEL-NON-MARKING-VIEW")
-         (implies (and (not (app-view x86))
-                       (not (marking-view x86))
-                       (x86p x86)
-                       (not (mv-nth 0 ,fn-call)))
-                  (equal (mv-nth 2 ,fn-call) x86))
-         :enable (,@(and signed?
-                         `(,lin-mem-fn-name
-                           ;; ,(mk-name "RML" size-str)
-                           ))))
+                    (defrule ,(mk-name "MV-NTH-2-" fn "-IN-SYSTEM-LEVEL-NON-MARKING-VIEW")
+                             (implies (and (not (app-view x86))
+                                           (not (marking-view x86))
+                                           (x86p x86)
+                                           (not (mv-nth 0 ,fn-call)))
+                                      (equal (mv-nth 2 ,fn-call) x86))
+                             :enable (,@(and signed?
+                                             `(,lin-mem-fn-name
+                                                ;; ,(mk-name "RML" size-str)
+                                                ))))
 
-       (defrule ,(mk-name "XR-" fn "-STATE-APP-VIEW")
-         (implies (app-view x86)
-                  (equal (xr fld index (mv-nth 2 ,fn-call))
-                         (xr fld index x86)))
-         :enable (,@(and signed?
-                         `(,lin-mem-fn-name
-                           ;; ,(mk-name "RML" size-str)
-                           ))))
+                    (defrule ,(mk-name "XR-" fn "-STATE-APP-VIEW")
+                             (implies (app-view x86)
+                                      (equal (xr fld index (mv-nth 2 ,fn-call))
+                                             (xr fld index x86)))
+                             :enable (,@(and signed?
+                                             `(,lin-mem-fn-name
+                                                ;; ,(mk-name "RML" size-str)
+                                                ))))
 
-       (defrule ,(mk-name "XR-" fn "-STATE-SYS-VIEW")
-         (implies (and (not (app-view x86))
-                       (not (equal fld :mem))
-                       (not (equal fld :fault))
-                       ,@(if (< size 10)
-                             nil
-                           `((member-equal fld *x86-field-names-as-keywords*))))
-                  (equal (xr fld index (mv-nth 2 ,fn-call))
-                         (xr fld index x86)))
-         :enable (,@(and signed?
-                         `(,lin-mem-fn-name
-                           ;; ,(mk-name "RML" size-str)
-                           )))
-         ,@(if (< size 10)
-               nil
-             `(:disable (rb unsigned-byte-p signed-byte-p member-equal))))
+                    (defrule ,(mk-name "XR-" fn "-STATE-SYS-VIEW")
+                             (implies (and (not (app-view x86))
+                                           (not (equal fld :mem))
+                                           (not (equal fld :fault))
+                                           ,@(if (< size 10)
+                                               nil
+                                               `((member-equal fld *x86-field-names-as-keywords*))))
+                                      (equal (xr fld index (mv-nth 2 ,fn-call))
+                                             (xr fld index x86)))
+                             :enable (,@(and signed?
+                                             `(,lin-mem-fn-name
+                                                ;; ,(mk-name "RML" size-str)
+                                                )))
+                             ,@(if (< size 10)
+                                 nil
+                                 `(:disable (rb unsigned-byte-p signed-byte-p member-equal))))
 
-       (defrule ,(mk-name fn "-XW-APP-VIEW")
-         (implies
-          (and (app-view x86)
-               (not (equal fld :mem))
-               (not (equal fld :app-view))
-               (not (equal fld :seg-hidden-base))
-               (not (equal fld :seg-hidden-limit))
-               (not (equal fld :seg-hidden-attr))
-               (not (equal fld :seg-visible))
-               (not (equal fld :msr)))
-          (and
-           (equal (mv-nth 0
-                          ,(search-and-replace-once
-                            'x86
-                            '(xw fld index value x86)
-                            fn-call))
-                  (mv-nth 0 ,fn-call))
-           (equal (mv-nth 1 ,(search-and-replace-once
-                              'x86
-                              '(xw fld index value x86)
-                              fn-call))
-                  (mv-nth 1 ,fn-call))
-           ;; No need for the conclusion about the state; see
-           ;; ,(mk-name fn "-DOES-NOT-AFFECT-STATE-IN-APP-VIEW")
-           ))
-         :enable (,@(and signed?
-                         `(,lin-mem-fn-name
-                           ;; ,(mk-name "RML" size-str)
-                           )))
-         :disable (rb))
+                    (defrule ,(mk-name fn "-XW-APP-VIEW")
+                             (implies
+                               (and (app-view x86)
+                                    (not (equal fld :mem))
+                                    (not (equal fld :app-view))
+                                    (not (equal fld :seg-hidden-base))
+                                    (not (equal fld :seg-hidden-limit))
+                                    (not (equal fld :seg-hidden-attr))
+                                    (not (equal fld :seg-visible))
+                                    (not (equal fld :msr)))
+                               (and
+                                 (equal (mv-nth 0
+                                                ,(search-and-replace-once
+                                                   'x86
+                                                   '(xw fld index value x86)
+                                                   fn-call))
+                                        (mv-nth 0 ,fn-call))
+                                 (equal (mv-nth 1 ,(search-and-replace-once
+                                                     'x86
+                                                     '(xw fld index value x86)
+                                                     fn-call))
+                                        (mv-nth 1 ,fn-call))
+                                 ;; No need for the conclusion about the state; see
+                                 ;; ,(mk-name fn "-DOES-NOT-AFFECT-STATE-IN-APP-VIEW")
+                                 ))
+                             :enable (,@(and signed?
+                                             `(,lin-mem-fn-name
+                                                ;; ,(mk-name "RML" size-str)
+                                                )))
+                             :disable (rb))
 
-       (defrule ,(mk-name fn "-XW-SYS-VIEW")
-         (implies
-          (and (not (app-view x86))
-               (not (equal fld :fault))
-               (not (equal fld :seg-visible))
-               (not (equal fld :seg-hidden-base))
-               (not (equal fld :seg-hidden-limit))
-               (not (equal fld :seg-hidden-attr))
-               (not (equal fld :mem))
-               (not (equal fld :ctr))
-               (not (equal fld :msr))
-               (not (equal fld :rflags))
-               (not (equal fld :app-view))
-               (not (equal fld :marking-view))
-               ,@(if (< size 10)
-                     nil
-                   `((member-equal fld *x86-field-names-as-keywords*))))
-          (and
-           (equal
-            (mv-nth 0 ,(search-and-replace-once
-                        'x86
-                        '(xw fld index value x86)
-                        fn-call))
-            (mv-nth 0 ,fn-call))
-           (equal
-            (mv-nth 1 ,(search-and-replace-once
-                        'x86
-                        '(xw fld index value x86)
-                        fn-call))
-            (mv-nth 1 ,fn-call))
-           (equal
-            (mv-nth 2 ,(search-and-replace-once
-                        'x86
-                        '(xw fld index value x86)
-                        fn-call))
-            (xw fld index value (mv-nth 2 ,fn-call)))))
-         :enable (,@(and signed?
-                         `(,lin-mem-fn-name
-                           ;; ,(mk-name "RML" size-str)
-                           )))
-         ,@(if (< size 10)
-               nil
-             `(:disable (rb unsigned-byte-p signed-byte-p member-equal))))
+                    (defrule ,(mk-name fn "-XW-SYS-VIEW")
+                             (implies
+                               (and (not (app-view x86))
+                                    (not (equal fld :fault))
+                                    (not (equal fld :seg-visible))
+                                    (not (equal fld :seg-hidden-base))
+                                    (not (equal fld :seg-hidden-limit))
+                                    (not (equal fld :seg-hidden-attr))
+                                    (not (equal fld :mem))
+                                    (not (equal fld :ctr))
+                                    (not (equal fld :msr))
+                                    (not (equal fld :rflags))
+                                    (not (equal fld :app-view))
+                                    (not (equal fld :marking-view))
+                                    ,@(if (< size 10)
+                                        nil
+                                        `((member-equal fld *x86-field-names-as-keywords*))))
+                               (and
+                                 (equal
+                                   (mv-nth 0 ,(search-and-replace-once
+                                                'x86
+                                                '(xw fld index value x86)
+                                                fn-call))
+                                   (mv-nth 0 ,fn-call))
+                                 (equal
+                                   (mv-nth 1 ,(search-and-replace-once
+                                                'x86
+                                                '(xw fld index value x86)
+                                                fn-call))
+                                   (mv-nth 1 ,fn-call))
+                                 (equal
+                                   (mv-nth 2 ,(search-and-replace-once
+                                                'x86
+                                                '(xw fld index value x86)
+                                                fn-call))
+                                   (xw fld index value (mv-nth 2 ,fn-call)))))
+                             :enable (,@(and signed?
+                                             `(,lin-mem-fn-name
+                                                ;; ,(mk-name "RML" size-str)
+                                                )))
+                             ,@(if (< size 10)
+                                 nil
+                                 `(:disable (rb unsigned-byte-p signed-byte-p member-equal))))
 
-       (defrule ,(mk-name fn "-XW-SYS-VIEW-RFLAGS-NOT-AC")
-         (implies
-          (and (not (app-view x86))
-               (equal (rflagsBits->ac value)
-                      (rflagsBits->ac (rflags x86))))
-          (and
-           (equal
-            (mv-nth 0 ,(search-and-replace-once
-                        'x86
-                        '(xw :rflags nil value x86)
-                        fn-call))
-            (mv-nth 0 ,fn-call))
-           (equal
-            (mv-nth 1 ,(search-and-replace-once
-                        'x86
-                        '(xw :rflags nil value x86)
-                        fn-call))
-            (mv-nth 1 ,fn-call))
-           (equal
-            (mv-nth 2 ,(search-and-replace-once
-                        'x86
-                        '(xw :rflags nil value x86)
-                        fn-call))
-            (xw :rflags nil value (mv-nth 2 ,fn-call)))))
-         :enable (,@(and signed?
-                         `(,lin-mem-fn-name
-                           ;; ,(mk-name "RML" size-str)
-                           )))
-         :disable (rb unsigned-byte-p signed-byte-p))
+                    (defrule ,(mk-name fn "-XW-SYS-VIEW-RFLAGS-NOT-AC")
+                             (implies
+                               (and (not (app-view x86))
+                                    (equal (rflagsBits->ac value)
+                                           (rflagsBits->ac (rflags x86))))
+                               (and
+                                 (equal
+                                   (mv-nth 0 ,(search-and-replace-once
+                                                'x86
+                                                '(xw :rflags nil value x86)
+                                                fn-call))
+                                   (mv-nth 0 ,fn-call))
+                                 (equal
+                                   (mv-nth 1 ,(search-and-replace-once
+                                                'x86
+                                                '(xw :rflags nil value x86)
+                                                fn-call))
+                                   (mv-nth 1 ,fn-call))
+                                 (equal
+                                   (mv-nth 2 ,(search-and-replace-once
+                                                'x86
+                                                '(xw :rflags nil value x86)
+                                                fn-call))
+                                   (xw :rflags nil value (mv-nth 2 ,fn-call)))))
+                             :enable (,@(and signed?
+                                             `(,lin-mem-fn-name
+                                                ;; ,(mk-name "RML" size-str)
+                                                )))
+                             :disable (rb unsigned-byte-p signed-byte-p))
 
-       (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-NOT-FS/GS")
-         (implies (and (not (equal seg-reg #.*fs*))
-                       (not (equal seg-reg #.*gs*))
-                       (canonical-address-p eff-addr)
-                       ,@(and check-alignment?-var
-                              `((or (not check-alignment?)
-                                    (address-aligned-p
-                                     eff-addr ,(/ size 8)
-                                     ,(if mem-ptr?-var 'mem-ptr? 'nil))))))
-                  (equal ,(search-and-replace-once 'proc-mode
-                                                   '#.*64-bit-mode*
-                                                   fn-call)
-                         (,lin-mem-fn-name eff-addr r-x x86))))
+                    (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-NOT-FS/GS")
+                             (implies (and (not (equal seg-reg #.*fs*))
+                                           (not (equal seg-reg #.*gs*))
+                                           (canonical-address-p eff-addr)
+                                           ,@(and check-alignment?-var
+                                                  `((or (not check-alignment?)
+                                                        (address-aligned-p
+                                                          eff-addr ,(/ size 8)
+                                                          ,(if mem-ptr?-var 'mem-ptr? 'nil))))))
+                                      (equal ,(search-and-replace-once 'proc-mode
+                                                                       '#.*64-bit-mode*
+                                                                       fn-call)
+                                             (,lin-mem-fn-name eff-addr r-x x86))))
 
-       ,@(and
-          check-alignment?-var
-          `((defrule ,(mk-name fn "-UNALIGNED-WHEN-64-BIT-MODEP-AND-NOT-FS/GS")
-              (implies
-               (and (not (equal seg-reg #.*fs*))
-                    (not (equal seg-reg #.*gs*))
-                    (not
-                     (or (not check-alignment?)
-                         (address-aligned-p
-                          eff-addr
-                          ,(/ size 8)
-                          ,(if mem-ptr?-var 'mem-ptr? 'nil))))
-                    (canonical-address-p eff-addr))
-               (equal ,(search-and-replace-once 'proc-mode
-                                                '#.*64-bit-mode*
-                                                fn-call)
-                      (list (list :unaligned-linear-address eff-addr)
-                            0
-                            x86))))))
+                    ,@(and
+                        check-alignment?-var
+                        `((defrule ,(mk-name fn "-UNALIGNED-WHEN-64-BIT-MODEP-AND-NOT-FS/GS")
+                                   (implies
+                                     (and (not (equal seg-reg #.*fs*))
+                                          (not (equal seg-reg #.*gs*))
+                                          (not
+                                            (or (not check-alignment?)
+                                                (address-aligned-p
+                                                  eff-addr
+                                                  ,(/ size 8)
+                                                  ,(if mem-ptr?-var 'mem-ptr? 'nil))))
+                                          (canonical-address-p eff-addr))
+                                     (equal ,(search-and-replace-once 'proc-mode
+                                                                      '#.*64-bit-mode*
+                                                                      fn-call)
+                                            (list (list :unaligned-linear-address eff-addr)
+                                                  0
+                                                  x86))))))
 
-       (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-FS/GS")
-         (implies
-          (or (equal seg-reg #.*fs*)
-              (equal seg-reg #.*gs*))
-          (equal
-           ,(search-and-replace-once 'proc-mode '#.*64-bit-mode* fn-call)
-           (b* (((mv flg lin-addr)
-                 (b* (((mv base & &)
-                       (segment-base-and-bounds 0 seg-reg x86))
-                      (lin-addr (i64 (+ base (n64 eff-addr)))))
-                   (if (canonical-address-p lin-addr)
-                       (mv nil lin-addr)
-                     (mv (list :non-canonical-address lin-addr) 0))))
-                ((when flg)
-                 (mv flg 0 x86))
-                ,@(and
-                   check-alignment?-var
-                   `(((unless (or (not check-alignment?)
-                                  (address-aligned-p
-                                   lin-addr
-                                   ,(/ size 8)
-                                   ,(if mem-ptr?-var 'mem-ptr? 'nil))))
-                      (mv (list :unaligned-linear-address lin-addr) 0 x86)))))
-             (,lin-mem-fn-name lin-addr r-x x86))))
-         :hints (("Goal" :in-theory (e/d (ea-to-la) ())))))))
+                    (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-FS/GS")
+                             (implies
+                               (or (equal seg-reg #.*fs*)
+                                   (equal seg-reg #.*gs*))
+                               (equal
+                                 ,(search-and-replace-once 'proc-mode '#.*64-bit-mode* fn-call)
+                                 (b* (((mv flg lin-addr)
+                                       (b* (((mv base & &)
+                                             (segment-base-and-bounds 0 seg-reg x86))
+                                            (lin-addr (i64 (+ base (n64 eff-addr)))))
+                                           (if (canonical-address-p lin-addr)
+                                             (mv nil lin-addr)
+                                             (mv (list :non-canonical-address lin-addr) 0))))
+                                      ((when flg)
+                                       (mv flg 0 x86))
+                                      ,@(and
+                                          check-alignment?-var
+                                          `(((unless (or (not check-alignment?)
+                                                         (address-aligned-p
+                                                           lin-addr
+                                                           ,(/ size 8)
+                                                           ,(if mem-ptr?-var 'mem-ptr? 'nil))))
+                                             (mv (list :unaligned-linear-address lin-addr) 0 x86)))))
+                                     (,lin-mem-fn-name lin-addr r-x x86))))
+                             :hints (("Goal" :in-theory (e/d (ea-to-la) ()))))))))
 
 (make-event
  `(progn
@@ -505,294 +505,294 @@
                         :check-alignment?-var t
                         :mem-ptr?-var nil)))
 
-(define rme-size
-  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (nbytes :type (member 1 2 4 6 8 10 16))
-   (eff-addr :type (signed-byte 64))
-   (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
-   (r-x :type (member :r :x))
-   (check-alignment? booleanp)
-   x86
-   &key
-   ;; Default value for mem-ptr? is nil --- note that this input is
-   ;; relevant only for nbytes = 4.
-   ((mem-ptr? booleanp) 'nil))
-  :returns (mv flg
-               (value natp)
-               (x86-new x86p :hyp (x86p x86)))
-  :parents (top-level-memory)
-  :short "Read an unsigned value with the specified number of bytes
-          from memory via an effective address."
-  :long
-  "<p>The effective address is translated to a canonical linear address using
-   @(see ea-to-la). If this translation is successful and no other errors (like
-   alignment errors) occur, then @(see rml-size) is called.</p>
-   <p>Prior to the effective address translation, we check whether read
-   access is allowed.  The only case in which it is not allowed is when a
-   read access is attempted on an execute-only code segment, in 32-bit
-   mode.  In 64-bit mode, the R bit of the code segment descriptor is
-   ignored; see Intel manual, Dec'17, Volume 2, Section 4.8.1</p>"
-  (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                   (= seg-reg #.*cs*)
-                   (eq r-x :r)
-                   (b* ((attr (loghead 16 (seg-hidden-attri seg-reg x86)))
-                        (r (code-segment-descriptor-attributesBits->r attr)))
-                     (= r 0))))
-        (mv (list :execute-only-code-segment eff-addr) 0 x86))
-       ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
-       ((when flg) (mv flg 0 x86))
-       ((unless (or (not check-alignment?)
-                    (address-aligned-p lin-addr nbytes mem-ptr?)))
-        (mv (list :unaligned-linear-address lin-addr) 0 x86)))
-    (rml-size nbytes lin-addr r-x x86))
-  :inline t
-  :no-function t
+(skip-proofs (define rme-size
+               ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+                (nbytes :type (member 1 2 4 6 8 10 16))
+                (eff-addr :type (signed-byte 64))
+                (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
+                (r-x :type (member :r :x))
+                (check-alignment? booleanp)
+                x86
+                &key
+                ;; Default value for mem-ptr? is nil --- note that this input is
+                ;; relevant only for nbytes = 4.
+                ((mem-ptr? booleanp) 'nil))
+               :returns (mv flg
+                            (value natp)
+                            (x86-new x86p :hyp (x86p x86)))
+               :parents (top-level-memory)
+               :short "Read an unsigned value with the specified number of bytes
+               from memory via an effective address."
+               :long
+               "<p>The effective address is translated to a canonical linear address using
+               @(see ea-to-la). If this translation is successful and no other errors (like
+                                                                                        alignment errors) occur, then @(see rml-size) is called.</p>
+               <p>Prior to the effective address translation, we check whether read
+               access is allowed.  The only case in which it is not allowed is when a
+               read access is attempted on an execute-only code segment, in 32-bit
+               mode.  In 64-bit mode, the R bit of the code segment descriptor is
+               ignored; see Intel manual, Dec'17, Volume 2, Section 4.8.1</p>"
+               (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                                (= seg-reg #.*cs*)
+                                (eq r-x :r)
+                                (b* ((attr (loghead 16 (seg-hidden-attri seg-reg x86)))
+                                     (r (code-segment-descriptor-attributesBits->r attr)))
+                                    (= r 0))))
+                     (mv (list :execute-only-code-segment eff-addr) 0 x86))
+                    ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+                    ((when flg) (mv flg 0 x86))
+                    ((unless (or (not check-alignment?)
+                                 (address-aligned-p lin-addr nbytes mem-ptr?)))
+                     (mv (list :unaligned-linear-address lin-addr) 0 x86)))
+                   (rml-size nbytes lin-addr r-x x86))
+               :inline t
+               :no-function t
 
-  ///
+               ///
 
-  (defrule rme-size-when-64-bit-modep-and-not-fs/gs
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (canonical-address-p eff-addr)
-                  (or (not check-alignment?)
-                      (address-aligned-p eff-addr nbytes mem-ptr?)))
-             (equal (rme-size #.*64-bit-mode*
-                              nbytes eff-addr seg-reg r-x check-alignment? x86
-                              :mem-ptr? mem-ptr?)
-                    (rml-size nbytes eff-addr r-x x86))))
+               (defrule rme-size-when-64-bit-modep-and-not-fs/gs
+                        (implies (and (not (equal seg-reg #.*fs*))
+                                      (not (equal seg-reg #.*gs*))
+                                      (canonical-address-p eff-addr)
+                                      (or (not check-alignment?)
+                                          (address-aligned-p eff-addr nbytes mem-ptr?)))
+                                 (equal (rme-size #.*64-bit-mode*
+                                                  nbytes eff-addr seg-reg r-x check-alignment? x86
+                                                  :mem-ptr? mem-ptr?)
+                                        (rml-size nbytes eff-addr r-x x86))))
 
-  (defrule rme-size-when-64-bit-modep-fs/gs
-    (implies (or (equal seg-reg #.*fs*)
-                 (equal seg-reg #.*gs*))
-             (equal (rme-size #.*64-bit-mode*
-                              nbytes eff-addr seg-reg r-x check-alignment? x86
-                              :mem-ptr? mem-ptr?)
-                    (b* (((mv flg lin-addr)
-                          (b* (((mv base & &)
-                                (segment-base-and-bounds 0 seg-reg x86))
-                               (lin-addr (i64 (+ base (n64 eff-addr)))))
-                            (if (canonical-address-p lin-addr)
-                                (mv nil lin-addr)
-                              (mv (list :non-canonical-address lin-addr) 0))))
-                         ((when flg)
-                          (mv flg 0 x86))
-                         ((unless (or (not check-alignment?)
-                                      (address-aligned-p
-                                       lin-addr nbytes mem-ptr?)))
-                          (mv (list :unaligned-linear-address lin-addr) 0 x86)))
-                      (rml-size nbytes lin-addr r-x x86))))
-    :in-theory (e/d (ea-to-la) ()))
+               (defrule rme-size-when-64-bit-modep-fs/gs
+                        (implies (or (equal seg-reg #.*fs*)
+                                     (equal seg-reg #.*gs*))
+                                 (equal (rme-size #.*64-bit-mode*
+                                                  nbytes eff-addr seg-reg r-x check-alignment? x86
+                                                  :mem-ptr? mem-ptr?)
+                                        (b* (((mv flg lin-addr)
+                                              (b* (((mv base & &)
+                                                    (segment-base-and-bounds 0 seg-reg x86))
+                                                   (lin-addr (i64 (+ base (n64 eff-addr)))))
+                                                  (if (canonical-address-p lin-addr)
+                                                    (mv nil lin-addr)
+                                                    (mv (list :non-canonical-address lin-addr) 0))))
+                                             ((when flg)
+                                              (mv flg 0 x86))
+                                             ((unless (or (not check-alignment?)
+                                                          (address-aligned-p
+                                                            lin-addr nbytes mem-ptr?)))
+                                              (mv (list :unaligned-linear-address lin-addr) 0 x86)))
+                                            (rml-size nbytes lin-addr r-x x86))))
+                        :in-theory (e/d (ea-to-la) ()))
 
-  (defthm rme-size-unaligned-when-64-bit-modep-and-not-fs/gs
-    ;; [Shilpi] Added for guard proof obligations generated from the expansion
-    ;; of rme-size-opt.
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (not
-                   (or (not check-alignment?)
-                       (address-aligned-p eff-addr nbytes mem-ptr?)))
-                  (canonical-address-p eff-addr))
-             (equal (rme-size #.*64-bit-mode*
-                              nbytes eff-addr seg-reg r-x check-alignment? x86
-                              :mem-ptr? mem-ptr?)
-                    (list (list :unaligned-linear-address eff-addr)
-                          0 x86)))
-    :hints (("Goal" :in-theory (e/d (rme-size) ()))))
+               (defthm rme-size-unaligned-when-64-bit-modep-and-not-fs/gs
+                       ;; [Shilpi] Added for guard proof obligations generated from the expansion
+                       ;; of rme-size-opt.
+                       (implies (and (not (equal seg-reg #.*fs*))
+                                     (not (equal seg-reg #.*gs*))
+                                     (not
+                                       (or (not check-alignment?)
+                                           (address-aligned-p eff-addr nbytes mem-ptr?)))
+                                     (canonical-address-p eff-addr))
+                                (equal (rme-size #.*64-bit-mode*
+                                                 nbytes eff-addr seg-reg r-x check-alignment? x86
+                                                 :mem-ptr? mem-ptr?)
+                                       (list (list :unaligned-linear-address eff-addr)
+                                             0 x86)))
+                       :hints (("Goal" :in-theory (e/d (rme-size) ()))))
 
-  (defthm rme-size-non-canonical-when-64-bit-modep-and-not-fs/gs
-    ;; [Shilpi] Added for guard proof obligations generated from the expansion
-    ;; of rme-size-opt.
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (not (canonical-address-p eff-addr)))
-             (equal (rme-size #.*64-bit-mode*
-                              nbytes eff-addr seg-reg r-x check-alignment? x86
-                              :mem-ptr? mem-ptr?)
-                    (list (list :non-canonical-address eff-addr) 0 x86)))
-    :hints (("Goal" :in-theory (e/d (rme-size) ()))))
+               (defthm rme-size-non-canonical-when-64-bit-modep-and-not-fs/gs
+                       ;; [Shilpi] Added for guard proof obligations generated from the expansion
+                       ;; of rme-size-opt.
+                       (implies (and (not (equal seg-reg #.*fs*))
+                                     (not (equal seg-reg #.*gs*))
+                                     (not (canonical-address-p eff-addr)))
+                                (equal (rme-size #.*64-bit-mode*
+                                                 nbytes eff-addr seg-reg r-x check-alignment? x86
+                                                 :mem-ptr? mem-ptr?)
+                                       (list (list :non-canonical-address eff-addr) 0 x86)))
+                       :hints (("Goal" :in-theory (e/d (rme-size) ()))))
 
 
-  (defruled rme-size-of-1-to-rme08
-    (equal
-     (rme-size proc-mode 1 eff-addr seg-reg r-x check-alignment? x86
-               :mem-ptr? mem-ptr?)
-     (rme08 proc-mode eff-addr seg-reg r-x x86))
-    :enable (rme-size rme08))
+               (defruled rme-size-of-1-to-rme08
+                         (equal
+                           (rme-size proc-mode 1 eff-addr seg-reg r-x check-alignment? x86
+                                     :mem-ptr? mem-ptr?)
+                           (rme08 proc-mode eff-addr seg-reg r-x x86))
+                         :enable (rme-size rme08))
 
-  (defruled rme-size-of-2-to-rme16
-    (equal
-     (rme-size proc-mode 2 eff-addr seg-reg r-x check-alignment? x86
-               :mem-ptr? mem-ptr?)
-     (rme16 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-    :enable (rme-size rme16))
+               (defruled rme-size-of-2-to-rme16
+                         (equal
+                           (rme-size proc-mode 2 eff-addr seg-reg r-x check-alignment? x86
+                                     :mem-ptr? mem-ptr?)
+                           (rme16 proc-mode eff-addr seg-reg r-x check-alignment? x86))
+                         :enable (rme-size rme16))
 
-  (defruled rme-size-of-4-to-rme32
-    (equal
-     (rme-size proc-mode 4 eff-addr seg-reg r-x check-alignment? x86
-               :mem-ptr? mem-ptr?)
-     (rme32 proc-mode eff-addr seg-reg r-x check-alignment? x86
-            :mem-ptr? mem-ptr?))
-    :enable (rme-size rme32))
+               (defruled rme-size-of-4-to-rme32
+                         (equal
+                           (rme-size proc-mode 4 eff-addr seg-reg r-x check-alignment? x86
+                                     :mem-ptr? mem-ptr?)
+                           (rme32 proc-mode eff-addr seg-reg r-x check-alignment? x86
+                                  :mem-ptr? mem-ptr?))
+                         :enable (rme-size rme32))
 
-  (defruled rme-size-of-6-to-rme48
-    (equal
-     (rme-size proc-mode 6 eff-addr seg-reg r-x check-alignment? x86
-               :mem-ptr? mem-ptr?)
-     (rme48 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-    :enable (rme-size rme48))
+               (defruled rme-size-of-6-to-rme48
+                         (equal
+                           (rme-size proc-mode 6 eff-addr seg-reg r-x check-alignment? x86
+                                     :mem-ptr? mem-ptr?)
+                           (rme48 proc-mode eff-addr seg-reg r-x check-alignment? x86))
+                         :enable (rme-size rme48))
 
-  (defruled rme-size-of-8-to-rme64
-    (equal
-     (rme-size proc-mode 8 eff-addr seg-reg r-x check-alignment? x86
-               :mem-ptr? mem-ptr?)
-     (rme64 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-    :enable (rme-size rme64))
+               (defruled rme-size-of-8-to-rme64
+                         (equal
+                           (rme-size proc-mode 8 eff-addr seg-reg r-x check-alignment? x86
+                                     :mem-ptr? mem-ptr?)
+                           (rme64 proc-mode eff-addr seg-reg r-x check-alignment? x86))
+                         :enable (rme-size rme64))
 
-  (defruled rme-size-of-10-to-rme64
-    (equal
-     (rme-size proc-mode 10 eff-addr seg-reg r-x check-alignment? x86
-               :mem-ptr? mem-ptr?)
-     (rme80 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-    :enable (rme-size rme80))
+               (defruled rme-size-of-10-to-rme64
+                         (equal
+                           (rme-size proc-mode 10 eff-addr seg-reg r-x check-alignment? x86
+                                     :mem-ptr? mem-ptr?)
+                           (rme80 proc-mode eff-addr seg-reg r-x check-alignment? x86))
+                         :enable (rme-size rme80))
 
-  (defruled rme-size-of-16-to-rme128
-    (equal
-     (rme-size proc-mode 16 eff-addr seg-reg r-x check-alignment? x86
-               :mem-ptr? mem-ptr?)
-     (rme128 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-    :enable (rme-size rme128)))
+               (defruled rme-size-of-16-to-rme128
+                         (equal
+                           (rme-size proc-mode 16 eff-addr seg-reg r-x check-alignment? x86
+                                     :mem-ptr? mem-ptr?)
+                           (rme128 proc-mode eff-addr seg-reg r-x check-alignment? x86))
+                         :enable (rme-size rme128))))
 
-(define rime-size
-  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (nbytes :type (member 1 2 4 8))
-   (eff-addr :type (signed-byte 64))
-   (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
-   (r-x :type (member :r :x))
-   (check-alignment? booleanp)
-   x86
-   &key
-   ;; Default value for mem-ptr? is nil --- note that this input is
-   ;; relevant only for nbytes = 4.
-   ((mem-ptr? booleanp) 'nil))
-  :returns (mv flg
-               (value integerp :hyp (integerp nbytes))
-               (x86-new x86p :hyp (x86p x86)))
-  :parents (top-level-memory)
-  :short "Read a signed value with the specified number of bytes
-          from memory via an effective address."
-  :long
-  "<p>The effective address is translated to a canonical linear address using
-   @(see ea-to-la). If this translation is successful and no other errors (like
-   alignment errors) occur, then @(see riml-size) is called.</p>
-   <p>Prior to the effective address translation, we check whether read
-   access is allowed.  The only case in which it is not allowed is when a
-   read access is attempted on an execute-only code segment, in 32-bit
-   mode.  In 64-bit mode, the R bit of the code segment descriptor is
-   ignored; see Atmel manual, Dec'17, Volume 2, Section 4.8.1</p>"
-  (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                   (= seg-reg #.*cs*)
-                   (eq r-x :r)
-                   (b* ((attr (loghead 16 (seg-hidden-attri seg-reg x86)))
-                        (r (code-segment-descriptor-attributesBits->r attr)))
-                     (= r 0))))
-        (mv (list :execute-only-code-segment eff-addr) 0 x86))
-       ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
-       ((when flg) (mv flg 0 x86))
-       ((unless (or (not check-alignment?)
-                    (address-aligned-p lin-addr nbytes mem-ptr?)))
-        (mv (list :unaligned-linear-address lin-addr) 0 x86)))
-    (riml-size nbytes lin-addr r-x x86))
-  :inline t
-  :no-function t
-  ///
+(skip-proofs (define rime-size
+               ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+                (nbytes :type (member 1 2 4 8))
+                (eff-addr :type (signed-byte 64))
+                (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
+                (r-x :type (member :r :x))
+                (check-alignment? booleanp)
+                x86
+                &key
+                ;; Default value for mem-ptr? is nil --- note that this input is
+                ;; relevant only for nbytes = 4.
+                ((mem-ptr? booleanp) 'nil))
+               :returns (mv flg
+                            (value integerp :hyp (integerp nbytes))
+                            (x86-new x86p :hyp (x86p x86)))
+               :parents (top-level-memory)
+               :short "Read a signed value with the specified number of bytes
+               from memory via an effective address."
+               :long
+               "<p>The effective address is translated to a canonical linear address using
+               @(see ea-to-la). If this translation is successful and no other errors (like
+                                                                                        alignment errors) occur, then @(see riml-size) is called.</p>
+               <p>Prior to the effective address translation, we check whether read
+               access is allowed.  The only case in which it is not allowed is when a
+               read access is attempted on an execute-only code segment, in 32-bit
+               mode.  In 64-bit mode, the R bit of the code segment descriptor is
+               ignored; see Atmel manual, Dec'17, Volume 2, Section 4.8.1</p>"
+               (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                                (= seg-reg #.*cs*)
+                                (eq r-x :r)
+                                (b* ((attr (loghead 16 (seg-hidden-attri seg-reg x86)))
+                                     (r (code-segment-descriptor-attributesBits->r attr)))
+                                    (= r 0))))
+                     (mv (list :execute-only-code-segment eff-addr) 0 x86))
+                    ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+                    ((when flg) (mv flg 0 x86))
+                    ((unless (or (not check-alignment?)
+                                 (address-aligned-p lin-addr nbytes mem-ptr?)))
+                     (mv (list :unaligned-linear-address lin-addr) 0 x86)))
+                   (riml-size nbytes lin-addr r-x x86))
+               :inline t
+               :no-function t
+               ///
 
-  (defrule rime-size-when-64-bit-modep-and-not-fs/gs
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (canonical-address-p eff-addr)
-                  (or (not check-alignment?)
-                      (address-aligned-p eff-addr nbytes mem-ptr?)))
-             (equal (rime-size #.*64-bit-mode*
-                               nbytes eff-addr seg-reg r-x check-alignment? x86
-                               :mem-ptr? mem-ptr?)
-                    (riml-size nbytes eff-addr r-x x86))))
+               (defrule rime-size-when-64-bit-modep-and-not-fs/gs
+                        (implies (and (not (equal seg-reg #.*fs*))
+                                      (not (equal seg-reg #.*gs*))
+                                      (canonical-address-p eff-addr)
+                                      (or (not check-alignment?)
+                                          (address-aligned-p eff-addr nbytes mem-ptr?)))
+                                 (equal (rime-size #.*64-bit-mode*
+                                                   nbytes eff-addr seg-reg r-x check-alignment? x86
+                                                   :mem-ptr? mem-ptr?)
+                                        (riml-size nbytes eff-addr r-x x86))))
 
-  (defrule rime-size-when-64-bit-modep-fs/gs
-    (implies (or (equal seg-reg #.*fs*)
-                 (equal seg-reg #.*gs*))
-             (equal (rime-size #.*64-bit-mode*
-                               nbytes eff-addr seg-reg r-x check-alignment? x86
-                               :mem-ptr? mem-ptr?)
-                    (b* (((mv flg lin-addr)
-                          (b* (((mv base & &)
-                                (segment-base-and-bounds 0 seg-reg x86))
-                               (lin-addr (i64 (+ base (n64 eff-addr)))))
-                            (if (canonical-address-p lin-addr)
-                                (mv nil lin-addr)
-                              (mv (list :non-canonical-address lin-addr) 0))))
-                         ((when flg)
-                          (mv flg 0 x86))
-                         ((unless (or (not check-alignment?)
-                                      (address-aligned-p
-                                       lin-addr nbytes mem-ptr?)))
-                          (mv (list :unaligned-linear-address lin-addr) 0 x86)))
-                      (riml-size nbytes lin-addr r-x x86))))
-    :in-theory (e/d (ea-to-la) ()))
+               (defrule rime-size-when-64-bit-modep-fs/gs
+                        (implies (or (equal seg-reg #.*fs*)
+                                     (equal seg-reg #.*gs*))
+                                 (equal (rime-size #.*64-bit-mode*
+                                                   nbytes eff-addr seg-reg r-x check-alignment? x86
+                                                   :mem-ptr? mem-ptr?)
+                                        (b* (((mv flg lin-addr)
+                                              (b* (((mv base & &)
+                                                    (segment-base-and-bounds 0 seg-reg x86))
+                                                   (lin-addr (i64 (+ base (n64 eff-addr)))))
+                                                  (if (canonical-address-p lin-addr)
+                                                    (mv nil lin-addr)
+                                                    (mv (list :non-canonical-address lin-addr) 0))))
+                                             ((when flg)
+                                              (mv flg 0 x86))
+                                             ((unless (or (not check-alignment?)
+                                                          (address-aligned-p
+                                                            lin-addr nbytes mem-ptr?)))
+                                              (mv (list :unaligned-linear-address lin-addr) 0 x86)))
+                                            (riml-size nbytes lin-addr r-x x86))))
+                        :in-theory (e/d (ea-to-la) ()))
 
-  (defthm rime-size-unaligned-when-64-bit-modep-and-not-fs/gs
-    ;; [Shilpi] Added for guard proof obligations generated from the expansion
-    ;; of rime-size-opt.
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (not
-                   (or (not check-alignment?)
-                       (address-aligned-p eff-addr nbytes mem-ptr?)))
-                  (canonical-address-p eff-addr))
-             (equal (rime-size #.*64-bit-mode*
-                               nbytes eff-addr seg-reg r-x check-alignment? x86
-                               :mem-ptr? mem-ptr?)
-                    (list (list :unaligned-linear-address eff-addr)
-                          0 x86)))
-    :hints (("Goal" :in-theory (e/d (rime-size) ()))))
+               (defthm rime-size-unaligned-when-64-bit-modep-and-not-fs/gs
+                       ;; [Shilpi] Added for guard proof obligations generated from the expansion
+                       ;; of rime-size-opt.
+                       (implies (and (not (equal seg-reg #.*fs*))
+                                     (not (equal seg-reg #.*gs*))
+                                     (not
+                                       (or (not check-alignment?)
+                                           (address-aligned-p eff-addr nbytes mem-ptr?)))
+                                     (canonical-address-p eff-addr))
+                                (equal (rime-size #.*64-bit-mode*
+                                                  nbytes eff-addr seg-reg r-x check-alignment? x86
+                                                  :mem-ptr? mem-ptr?)
+                                       (list (list :unaligned-linear-address eff-addr)
+                                             0 x86)))
+                       :hints (("Goal" :in-theory (e/d (rime-size) ()))))
 
-  (defthm rime-size-non-canonical-when-64-bit-modep-and-not-fs/gs
-    ;; [Shilpi] Added for guard proof obligations generated from the expansion
-    ;; of rime-size-opt.
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (not (canonical-address-p eff-addr)))
-             (equal (rime-size #.*64-bit-mode*
-                               nbytes eff-addr seg-reg r-x check-alignment? x86
-                               :mem-ptr? mem-ptr?)
-                    (list (list :non-canonical-address eff-addr) 0 x86)))
-    :hints (("Goal" :in-theory (e/d (rime-size) ()))))
+               (defthm rime-size-non-canonical-when-64-bit-modep-and-not-fs/gs
+                       ;; [Shilpi] Added for guard proof obligations generated from the expansion
+                       ;; of rime-size-opt.
+                       (implies (and (not (equal seg-reg #.*fs*))
+                                     (not (equal seg-reg #.*gs*))
+                                     (not (canonical-address-p eff-addr)))
+                                (equal (rime-size #.*64-bit-mode*
+                                                  nbytes eff-addr seg-reg r-x check-alignment? x86
+                                                  :mem-ptr? mem-ptr?)
+                                       (list (list :non-canonical-address eff-addr) 0 x86)))
+                       :hints (("Goal" :in-theory (e/d (rime-size) ()))))
 
-  (defruled rime-size-of-1-to-rime08
-    (equal (rime-size proc-mode 1 eff-addr seg-reg r-x check-alignment? x86
-                      :mem-ptr? mem-ptr?)
-           (rime08 proc-mode eff-addr seg-reg r-x x86))
-    :enable (rime-size rime08))
+               (defruled rime-size-of-1-to-rime08
+                         (equal (rime-size proc-mode 1 eff-addr seg-reg r-x check-alignment? x86
+                                           :mem-ptr? mem-ptr?)
+                                (rime08 proc-mode eff-addr seg-reg r-x x86))
+                         :enable (rime-size rime08))
 
-  (defruled rime-size-of-2-to-rime16
-    (equal (rime-size proc-mode 2 eff-addr seg-reg r-x check-alignment? x86
-                      :mem-ptr? mem-ptr?)
-           (rime16 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-    :enable (rime-size rime16))
+               (defruled rime-size-of-2-to-rime16
+                         (equal (rime-size proc-mode 2 eff-addr seg-reg r-x check-alignment? x86
+                                           :mem-ptr? mem-ptr?)
+                                (rime16 proc-mode eff-addr seg-reg r-x check-alignment? x86))
+                         :enable (rime-size rime16))
 
-  (defruled rime-size-of-4-to-rime32
-    (equal
-     (rime-size proc-mode 4 eff-addr seg-reg r-x check-alignment? x86
-                :mem-ptr? mem-ptr?)
-     (rime32 proc-mode eff-addr seg-reg r-x check-alignment? x86
-             :mem-ptr? mem-ptr?))
-    :enable (rime-size rime32))
+               (defruled rime-size-of-4-to-rime32
+                         (equal
+                           (rime-size proc-mode 4 eff-addr seg-reg r-x check-alignment? x86
+                                      :mem-ptr? mem-ptr?)
+                           (rime32 proc-mode eff-addr seg-reg r-x check-alignment? x86
+                                   :mem-ptr? mem-ptr?))
+                         :enable (rime-size rime32))
 
-  (defruled rime-size-of-8-to-rime64
-    (equal
-     (rime-size proc-mode 8 eff-addr seg-reg r-x check-alignment? x86
-                :mem-ptr? mem-ptr?)
-     (rime64 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-    :enable (rime-size rime64)))
+               (defruled rime-size-of-8-to-rime64
+                         (equal
+                           (rime-size proc-mode 8 eff-addr seg-reg r-x check-alignment? x86
+                                      :mem-ptr? mem-ptr?)
+                           (rime64 proc-mode eff-addr seg-reg r-x check-alignment? x86))
+                         :enable (rime-size rime64))))
 
 ;; ----------------------------------------------------------------------
 
@@ -841,101 +841,101 @@
           These checks may be slightly optimized using the invariant that
           SS.W must be 1 when SS is loaded.</p>")))
 
-    `(define ,fn-name ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-                       (eff-addr  :type (signed-byte 64))
-                       (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
-                       (val       :type (,(if signed? 'signed-byte 'unsigned-byte) ,size))
-                       ,@(and check-alignment?-var `((check-alignment? booleanp)))
-                       x86
-                       ,@(and mem-ptr?-var `(&key ((mem-ptr? booleanp) 'nil))))
-       :inline t
-       :no-function t
-       :returns (mv flg
-                    (x86-new x86p :hyp (x86p x86)))
-       :parents (top-level-memory)
+    `(skip-proofs (define ,fn-name ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+                                    (eff-addr  :type (signed-byte 64))
+                                    (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
+                                    (val       :type (,(if signed? 'signed-byte 'unsigned-byte) ,size))
+                                    ,@(and check-alignment?-var `((check-alignment? booleanp)))
+                                    x86
+                                    ,@(and mem-ptr?-var `(&key ((mem-ptr? booleanp) 'nil))))
+                    :inline t
+                    :no-function t
+                    :returns (mv flg
+                                 (x86-new x86p :hyp (x86p x86)))
+                    :parents (top-level-memory)
 
-       :short ,short-doc-string
-       :long ,long-doc-string
+                    :short ,short-doc-string
+                    :long ,long-doc-string
 
-       (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                        (or (= seg-reg #.*cs*)
-                            (b* ((attr (loghead
-                                        16 (seg-hidden-attri seg-reg x86)))
-                                 (w (data-segment-descriptor-attributesBits->w
-                                     attr)))
-                              (= w 0)))))
-             (mv (list :non-writable-segment eff-addr seg-reg) x86))
-            ((mv flg lin-addr)
-             (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
-            ((when flg) (mv flg x86))
-            ,@(and
-               check-alignment?-var
-               `(((unless (or (not check-alignment?)
-                              (address-aligned-p
-                               lin-addr
-                               ,(/ size 8)
-                               ,(if mem-ptr?-var 'mem-ptr? 'nil))))
-                  (mv (list :unaligned-linear-address lin-addr) x86)))))
-         (,lin-mem-fn-name lin-addr val x86))
-       ///
+                    (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                                     (or (= seg-reg #.*cs*)
+                                         (b* ((attr (loghead
+                                                      16 (seg-hidden-attri seg-reg x86)))
+                                              (w (data-segment-descriptor-attributesBits->w
+                                                   attr)))
+                                             (= w 0)))))
+                          (mv (list :non-writable-segment eff-addr seg-reg) x86))
+                         ((mv flg lin-addr)
+                          (ea-to-la proc-mode eff-addr seg-reg ,(/ size 8) x86))
+                         ((when flg) (mv flg x86))
+                         ,@(and
+                             check-alignment?-var
+                             `(((unless (or (not check-alignment?)
+                                            (address-aligned-p
+                                              lin-addr
+                                              ,(/ size 8)
+                                              ,(if mem-ptr?-var 'mem-ptr? 'nil))))
+                                (mv (list :unaligned-linear-address lin-addr) x86)))))
+                        (,lin-mem-fn-name lin-addr val x86))
+                    ///
 
-       (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-NOT-FS/GS")
-         (implies (and (not (equal seg-reg #.*fs*))
-                       (not (equal seg-reg #.*gs*))
-                       (canonical-address-p eff-addr)
-                       ,@(and check-alignment?-var
-                              `((or (not check-alignment?)
-                                    (address-aligned-p
-                                     eff-addr ,(/ size 8)
-                                     ,(if mem-ptr?-var 'mem-ptr? 'nil))))))
-                  (equal ,(search-and-replace-once 'proc-mode
-                                                   '#.*64-bit-mode*
-                                                   fn-call)
-                         (,lin-mem-fn-name eff-addr val x86))))
+                    (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-NOT-FS/GS")
+                             (implies (and (not (equal seg-reg #.*fs*))
+                                           (not (equal seg-reg #.*gs*))
+                                           (canonical-address-p eff-addr)
+                                           ,@(and check-alignment?-var
+                                                  `((or (not check-alignment?)
+                                                        (address-aligned-p
+                                                          eff-addr ,(/ size 8)
+                                                          ,(if mem-ptr?-var 'mem-ptr? 'nil))))))
+                                      (equal ,(search-and-replace-once 'proc-mode
+                                                                       '#.*64-bit-mode*
+                                                                       fn-call)
+                                             (,lin-mem-fn-name eff-addr val x86))))
 
-       ,@(and
-          check-alignment?-var
-          `((defrule ,(mk-name fn "-UNALIGNED-WHEN-64-BIT-MODEP-AND-NOT-FS/GS")
-              (implies
-               (and (not (equal seg-reg #.*fs*))
-                    (not (equal seg-reg #.*gs*))
-                    (not
-                     (or (not check-alignment?)
-                         (address-aligned-p
-                          eff-addr
-                          ,(/ size 8)
-                          ,(if mem-ptr?-var 'mem-ptr? 'nil))))
-                    (canonical-address-p eff-addr))
-               (equal ,(search-and-replace-once 'proc-mode
-                                                '#.*64-bit-mode*
-                                                fn-call)
-                      (list (list :unaligned-linear-address eff-addr) x86))))))
+                    ,@(and
+                        check-alignment?-var
+                        `((defrule ,(mk-name fn "-UNALIGNED-WHEN-64-BIT-MODEP-AND-NOT-FS/GS")
+                                   (implies
+                                     (and (not (equal seg-reg #.*fs*))
+                                          (not (equal seg-reg #.*gs*))
+                                          (not
+                                            (or (not check-alignment?)
+                                                (address-aligned-p
+                                                  eff-addr
+                                                  ,(/ size 8)
+                                                  ,(if mem-ptr?-var 'mem-ptr? 'nil))))
+                                          (canonical-address-p eff-addr))
+                                     (equal ,(search-and-replace-once 'proc-mode
+                                                                      '#.*64-bit-mode*
+                                                                      fn-call)
+                                            (list (list :unaligned-linear-address eff-addr) x86))))))
 
-       (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-FS/GS")
-         (implies
-          (or (equal seg-reg #.*fs*)
-              (equal seg-reg #.*gs*))
-          (equal
-           ,(search-and-replace-once 'proc-mode '#.*64-bit-mode* fn-call)
-           (b* (((mv flg lin-addr)
-                 (b* (((mv base & &)
-                       (segment-base-and-bounds 0 seg-reg x86))
-                      (lin-addr (i64 (+ base (n64 eff-addr)))))
-                   (if (canonical-address-p lin-addr)
-                       (mv nil lin-addr)
-                     (mv (list :non-canonical-address lin-addr) 0))))
-                ((when flg)
-                 (mv flg x86))
-                ,@(and
-                   check-alignment?-var
-                   `(((unless (or (not check-alignment?)
-                                  (address-aligned-p
-                                   lin-addr
-                                   ,(/ size 8)
-                                   ,(if mem-ptr?-var 'mem-ptr? 'nil))))
-                      (mv (list :unaligned-linear-address lin-addr) x86)))))
-             (,lin-mem-fn-name lin-addr val x86))))
-         :hints (("Goal" :in-theory (e/d (ea-to-la) ())))))))
+                    (defrule ,(mk-name fn "-WHEN-64-BIT-MODEP-AND-FS/GS")
+                             (implies
+                               (or (equal seg-reg #.*fs*)
+                                   (equal seg-reg #.*gs*))
+                               (equal
+                                 ,(search-and-replace-once 'proc-mode '#.*64-bit-mode* fn-call)
+                                 (b* (((mv flg lin-addr)
+                                       (b* (((mv base & &)
+                                             (segment-base-and-bounds 0 seg-reg x86))
+                                            (lin-addr (i64 (+ base (n64 eff-addr)))))
+                                           (if (canonical-address-p lin-addr)
+                                             (mv nil lin-addr)
+                                             (mv (list :non-canonical-address lin-addr) 0))))
+                                      ((when flg)
+                                       (mv flg x86))
+                                      ,@(and
+                                          check-alignment?-var
+                                          `(((unless (or (not check-alignment?)
+                                                         (address-aligned-p
+                                                           lin-addr
+                                                           ,(/ size 8)
+                                                           ,(if mem-ptr?-var 'mem-ptr? 'nil))))
+                                             (mv (list :unaligned-linear-address lin-addr) x86)))))
+                                     (,lin-mem-fn-name lin-addr val x86))))
+                             :hints (("Goal" :in-theory (e/d (ea-to-la) ()))))))))
 
 (make-event
  `(progn
@@ -1003,238 +1003,238 @@
                          :check-alignment?-var t
                          :mem-ptr?-var nil)))
 
-(define wme-size
-  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (nbytes :type (member 1 2 4 6 8 10 16))
-   (eff-addr :type (signed-byte 64))
-   (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
-   (val :type (integer 0 *))
-   (check-alignment? booleanp)
-   x86
-   &key
-   ;; Default value for mem-ptr? is nil --- note that this input is
-   ;; relevant only for nbytes = 4.
-   ((mem-ptr? booleanp) 'nil))
-  :guard (case nbytes
-           (1  (n08p val))
-           (2  (n16p val))
-           (4  (n32p val))
-           (6  (n48p val))
-           (8  (n64p val))
-           (10 (n80p val))
-           (16 (n128p val)))
-  :returns (mv flg
-               (x86-new x86p :hyp (x86p x86)))
-  :parents (top-level-memory)
-  :short "Write an unsigned value with the specified number of bytes
-          to memory via an effective address."
-  :long
-  "<p>The effective address is translated to a canonical linear address.  If
-   this translation is successful and no other errors occur (like alignment
-   errors), then @(see wml-size) is called.</p>
-   <p>Prior to the effective address translation, we check whether write
-   access is allowed.  In 32-bit mode, write access is allowed in data
-   segments (DS, ES, FS, GS, and SS) if the W bit in the segment
-   descriptor is 1; write access is disallowed in code segments (this is
-   not explicitly mentioned in Intel manual, May'18, Volume 3, Section
-   3.4.5.1, but it seems reasonable).  In 64-bit mode, the W bit is
-   ignored (see Atmel manual, Dec'17, Volume 2, Section 4.8.1); by
-   analogy, we allow write access to the code segment as well.
-   These checks may be slightly optimized using the invariant that
-   SS.W must be 1 when SS is loaded.</p>"
-  (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                   (or (= seg-reg #.*cs*)
-                       (b* ((attr (loghead
-                                   16 (seg-hidden-attri seg-reg x86)))
-                            (w (data-segment-descriptor-attributesBits->w
-                                attr)))
-                         (= w 0)))))
-        (mv (list :non-writable-segment eff-addr seg-reg) x86))
-       ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
-       ((when flg) (mv flg x86))
-       ((unless (or (not check-alignment?)
-                    (address-aligned-p lin-addr nbytes mem-ptr?)))
-        (mv (list :unaligned-linear-address lin-addr) x86)))
-    (wml-size nbytes lin-addr val x86))
-  :inline t
-  :no-function t
-  ///
+(skip-proofs (define wme-size
+               ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+                (nbytes :type (member 1 2 4 6 8 10 16))
+                (eff-addr :type (signed-byte 64))
+                (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
+                (val :type (integer 0 *))
+                (check-alignment? booleanp)
+                x86
+                &key
+                ;; Default value for mem-ptr? is nil --- note that this input is
+                ;; relevant only for nbytes = 4.
+                ((mem-ptr? booleanp) 'nil))
+               :guard (case nbytes
+                        (1  (n08p val))
+                        (2  (n16p val))
+                        (4  (n32p val))
+                        (6  (n48p val))
+                        (8  (n64p val))
+                        (10 (n80p val))
+                        (16 (n128p val)))
+               :returns (mv flg
+                            (x86-new x86p :hyp (x86p x86)))
+               :parents (top-level-memory)
+               :short "Write an unsigned value with the specified number of bytes
+               to memory via an effective address."
+               :long
+               "<p>The effective address is translated to a canonical linear address.  If
+               this translation is successful and no other errors occur (like alignment
+                                                                              errors), then @(see wml-size) is called.</p>
+               <p>Prior to the effective address translation, we check whether write
+               access is allowed.  In 32-bit mode, write access is allowed in data
+               segments (DS, ES, FS, GS, and SS) if the W bit in the segment
+               descriptor is 1; write access is disallowed in code segments (this is
+               not explicitly mentioned in Intel manual, May'18, Volume 3, Section
+               3.4.5.1, but it seems reasonable).  In 64-bit mode, the W bit is
+             ignored (see Atmel manual, Dec'17, Volume 2, Section 4.8.1); by
+             analogy, we allow write access to the code segment as well.
+             These checks may be slightly optimized using the invariant that
+             SS.W must be 1 when SS is loaded.</p>"
+             (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                              (or (= seg-reg #.*cs*)
+                                  (b* ((attr (loghead
+                                               16 (seg-hidden-attri seg-reg x86)))
+                                       (w (data-segment-descriptor-attributesBits->w
+                                            attr)))
+                                      (= w 0)))))
+                   (mv (list :non-writable-segment eff-addr seg-reg) x86))
+                  ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+                  ((when flg) (mv flg x86))
+                  ((unless (or (not check-alignment?)
+                               (address-aligned-p lin-addr nbytes mem-ptr?)))
+                   (mv (list :unaligned-linear-address lin-addr) x86)))
+                 (wml-size nbytes lin-addr val x86))
+             :inline t
+             :no-function t
+             ///
 
-  (defrule wme-size-when-64-bit-modep-and-not-fs/gs
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (canonical-address-p eff-addr)
-                  (or (not check-alignment?)
-                      (address-aligned-p eff-addr nbytes mem-ptr?)))
-             (equal
-              (wme-size #.*64-bit-mode*
-                        nbytes eff-addr seg-reg val check-alignment? x86
-                        :mem-ptr? mem-ptr?)
-              (wml-size nbytes eff-addr val x86))))
+             (defrule wme-size-when-64-bit-modep-and-not-fs/gs
+                      (implies (and (not (equal seg-reg #.*fs*))
+                                    (not (equal seg-reg #.*gs*))
+                                    (canonical-address-p eff-addr)
+                                    (or (not check-alignment?)
+                                        (address-aligned-p eff-addr nbytes mem-ptr?)))
+                               (equal
+                                 (wme-size #.*64-bit-mode*
+                                           nbytes eff-addr seg-reg val check-alignment? x86
+                                           :mem-ptr? mem-ptr?)
+                                 (wml-size nbytes eff-addr val x86))))
 
-  (defrule wme-size-when-64-bit-modep-fs/gs
-    (implies (or (equal seg-reg #.*fs*)
-                 (equal seg-reg #.*gs*))
-             (equal (wme-size #.*64-bit-mode*
-                              nbytes eff-addr seg-reg val check-alignment? x86
-                              :mem-ptr? mem-ptr?)
-                    (b* (((mv flg lin-addr)
-                          (b* (((mv base & &)
-                                (segment-base-and-bounds 0 seg-reg x86))
-                               (lin-addr (i64 (+ base (n64 eff-addr)))))
-                            (if (canonical-address-p lin-addr)
-                                (mv nil lin-addr)
-                              (mv (list :non-canonical-address lin-addr) 0))))
-                         ((when flg)
-                          (mv flg x86))
-                         ((unless (or (not check-alignment?)
-                                      (address-aligned-p
-                                       lin-addr nbytes mem-ptr?)))
-                          (mv (list :unaligned-linear-address lin-addr) x86)))
-                      (wml-size nbytes lin-addr val x86))))
-    :in-theory (e/d (ea-to-la) ()))
+             (defrule wme-size-when-64-bit-modep-fs/gs
+                      (implies (or (equal seg-reg #.*fs*)
+                                   (equal seg-reg #.*gs*))
+                               (equal (wme-size #.*64-bit-mode*
+                                                nbytes eff-addr seg-reg val check-alignment? x86
+                                                :mem-ptr? mem-ptr?)
+                                      (b* (((mv flg lin-addr)
+                                            (b* (((mv base & &)
+                                                  (segment-base-and-bounds 0 seg-reg x86))
+                                                 (lin-addr (i64 (+ base (n64 eff-addr)))))
+                                                (if (canonical-address-p lin-addr)
+                                                  (mv nil lin-addr)
+                                                  (mv (list :non-canonical-address lin-addr) 0))))
+                                           ((when flg)
+                                            (mv flg x86))
+                                           ((unless (or (not check-alignment?)
+                                                        (address-aligned-p
+                                                          lin-addr nbytes mem-ptr?)))
+                                            (mv (list :unaligned-linear-address lin-addr) x86)))
+                                          (wml-size nbytes lin-addr val x86))))
+                      :in-theory (e/d (ea-to-la) ()))
 
-  (defthm wme-size-64-bit-unaligned-when-64-bit-modep-and-not-fs/gs
-    ;; [Shilpi] Added for guard proof obligations generated from the expansion
-    ;; of wme-size-opt.
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (not
-                   (or (not check-alignment?)
-                       (address-aligned-p eff-addr nbytes mem-ptr?)))
-                  (canonical-address-p eff-addr))
-             (equal (wme-size #.*64-bit-mode*
-                              nbytes eff-addr seg-reg val check-alignment? x86
-                              :mem-ptr? mem-ptr?)
-                    (list (list :unaligned-linear-address eff-addr) x86)))
-    :hints (("Goal" :in-theory (e/d (wme-size) ()))))
+             (defthm wme-size-64-bit-unaligned-when-64-bit-modep-and-not-fs/gs
+                     ;; [Shilpi] Added for guard proof obligations generated from the expansion
+                     ;; of wme-size-opt.
+                     (implies (and (not (equal seg-reg #.*fs*))
+                                   (not (equal seg-reg #.*gs*))
+                                   (not
+                                     (or (not check-alignment?)
+                                         (address-aligned-p eff-addr nbytes mem-ptr?)))
+                                   (canonical-address-p eff-addr))
+                              (equal (wme-size #.*64-bit-mode*
+                                               nbytes eff-addr seg-reg val check-alignment? x86
+                                               :mem-ptr? mem-ptr?)
+                                     (list (list :unaligned-linear-address eff-addr) x86)))
+                     :hints (("Goal" :in-theory (e/d (wme-size) ()))))
 
-  (defthm wme-size-non-canonical-when-64-bit-modep-and-not-fs/gs
-    ;; [Shilpi] Added for guard proof obligations generated from the expansion
-    ;; of rme-size-opt.
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (not (canonical-address-p eff-addr)))
-             (equal (wme-size #.*64-bit-mode*
-                              nbytes eff-addr seg-reg val check-alignment? x86
-                              :mem-ptr? mem-ptr?)
-                    (list (list :non-canonical-address eff-addr) x86)))
-    :hints (("Goal" :in-theory (e/d (wme-size) ())))))
+             (defthm wme-size-non-canonical-when-64-bit-modep-and-not-fs/gs
+                     ;; [Shilpi] Added for guard proof obligations generated from the expansion
+                     ;; of rme-size-opt.
+                     (implies (and (not (equal seg-reg #.*fs*))
+                                   (not (equal seg-reg #.*gs*))
+                                   (not (canonical-address-p eff-addr)))
+                              (equal (wme-size #.*64-bit-mode*
+                                               nbytes eff-addr seg-reg val check-alignment? x86
+                                               :mem-ptr? mem-ptr?)
+                                     (list (list :non-canonical-address eff-addr) x86)))
+                     :hints (("Goal" :in-theory (e/d (wme-size) ()))))))
 
-(define wime-size
-  ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (nbytes :type (member 1 2 4 8))
-   (eff-addr :type (signed-byte 64))
-   (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
-   (val :type integer)
-   (check-alignment? booleanp)
-   x86
-   &key
-   ;; Default value for mem-ptr? is nil --- note that this input is
-   ;; relevant only for nbytes = 4.
-   ((mem-ptr? booleanp) 'nil))
-  :inline t
-  :no-function t
-  :guard (case nbytes
-           (1  (i08p val))
-           (2  (i16p val))
-           (4  (i32p val))
-           (8  (i64p val)))
-  :returns (mv flg
-               (x86-new x86p :hyp (x86p x86)))
-  :parents (top-level-memory)
-  :short "Write a signed value with the specified number of bytes
-          to memory via an effective address."
-  :long
-  "<p>The effective address is translated to a canonical linear address.  If
-   this translation is successful and no other errors occur (like alignment
-   errors), then @(see wiml-size) is called.</p>
-   <p>Prior to the effective address translation, we check whether write
-   access is allowed.  In 32-bit mode, write access is allowed in data
-   segments (DS, ES, FS, GS, and SS) if the W bit in the segment
-   descriptor is 1; write access is disallowed in code segments (this is
-   not explicitly mentioned in Intel manual, May'18, Volume 3, Section
-   3.4.5.1, but it seems reasonable).  In 64-bit mode, the W bit is
-   ignored (see Atmel manual, Dec'17, Volume 2, Section 4.8.1); by
-   analogy, we allow write access to the code segment as well.
-   These checks may be slightly optimized using the invariant that
-   SS.W must be 1 when SS is loaded.</p>"
-  (b* (((when (and (/= proc-mode #.*64-bit-mode*)
-                   (or (= seg-reg #.*cs*)
-                       (b* ((attr (loghead
-                                   16 (seg-hidden-attri seg-reg x86)))
-                            (w (data-segment-descriptor-attributesBits->w
-                                attr)))
-                         (= w 0)))))
-        (mv (list :non-writable-segment eff-addr seg-reg) x86))
-       ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
-       ((when flg) (mv flg x86))
-       ((unless (or (not check-alignment?)
-                    (address-aligned-p lin-addr nbytes mem-ptr?)))
-        (mv (list :unaligned-linear-address lin-addr) x86)))
-    (wiml-size nbytes lin-addr val x86))
+(skip-proofs (define wime-size
+               ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+                (nbytes :type (member 1 2 4 8))
+                (eff-addr :type (signed-byte 64))
+                (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
+                (val :type integer)
+                (check-alignment? booleanp)
+                x86
+                &key
+                ;; Default value for mem-ptr? is nil --- note that this input is
+                ;; relevant only for nbytes = 4.
+                ((mem-ptr? booleanp) 'nil))
+               :inline t
+               :no-function t
+               :guard (case nbytes
+                        (1  (i08p val))
+                        (2  (i16p val))
+                        (4  (i32p val))
+                        (8  (i64p val)))
+               :returns (mv flg
+                            (x86-new x86p :hyp (x86p x86)))
+               :parents (top-level-memory)
+               :short "Write a signed value with the specified number of bytes
+               to memory via an effective address."
+               :long
+               "<p>The effective address is translated to a canonical linear address.  If
+               this translation is successful and no other errors occur (like alignment
+                                                                              errors), then @(see wiml-size) is called.</p>
+               <p>Prior to the effective address translation, we check whether write
+               access is allowed.  In 32-bit mode, write access is allowed in data
+               segments (DS, ES, FS, GS, and SS) if the W bit in the segment
+               descriptor is 1; write access is disallowed in code segments (this is
+               not explicitly mentioned in Intel manual, May'18, Volume 3, Section
+               3.4.5.1, but it seems reasonable).  In 64-bit mode, the W bit is
+             ignored (see Atmel manual, Dec'17, Volume 2, Section 4.8.1); by
+             analogy, we allow write access to the code segment as well.
+             These checks may be slightly optimized using the invariant that
+             SS.W must be 1 when SS is loaded.</p>"
+             (b* (((when (and (/= proc-mode #.*64-bit-mode*)
+                              (or (= seg-reg #.*cs*)
+                                  (b* ((attr (loghead
+                                               16 (seg-hidden-attri seg-reg x86)))
+                                       (w (data-segment-descriptor-attributesBits->w
+                                            attr)))
+                                      (= w 0)))))
+                   (mv (list :non-writable-segment eff-addr seg-reg) x86))
+                  ((mv flg lin-addr) (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+                  ((when flg) (mv flg x86))
+                  ((unless (or (not check-alignment?)
+                               (address-aligned-p lin-addr nbytes mem-ptr?)))
+                   (mv (list :unaligned-linear-address lin-addr) x86)))
+                 (wiml-size nbytes lin-addr val x86))
 
-  ///
+             ///
 
-  (defrule wime-size-when-64-bit-modep-and-not-fs/gs
-    (implies
-     (and (not (equal seg-reg #.*fs*))
-          (not (equal seg-reg #.*gs*))
-          (canonical-address-p eff-addr)
-          (or (not check-alignment?)
-              (address-aligned-p eff-addr nbytes mem-ptr?)))
-     (equal (wime-size #.*64-bit-mode*
-                       nbytes eff-addr seg-reg val check-alignment? x86
-                       :mem-ptr? mem-ptr?)
-            (wiml-size nbytes eff-addr val x86))))
+             (defrule wime-size-when-64-bit-modep-and-not-fs/gs
+                      (implies
+                        (and (not (equal seg-reg #.*fs*))
+                             (not (equal seg-reg #.*gs*))
+                             (canonical-address-p eff-addr)
+                             (or (not check-alignment?)
+                                 (address-aligned-p eff-addr nbytes mem-ptr?)))
+                        (equal (wime-size #.*64-bit-mode*
+                                          nbytes eff-addr seg-reg val check-alignment? x86
+                                          :mem-ptr? mem-ptr?)
+                               (wiml-size nbytes eff-addr val x86))))
 
-  (defrule wime-size-when-64-bit-modep-fs/gs
-    (implies (or (equal seg-reg #.*fs*)
-                 (equal seg-reg #.*gs*))
-             (equal (wime-size #.*64-bit-mode*
-                               nbytes eff-addr seg-reg val check-alignment? x86
-                               :mem-ptr? mem-ptr?)
-                    (b* (((mv flg lin-addr)
-                          (b* (((mv base & &)
-                                (segment-base-and-bounds 0 seg-reg x86))
-                               (lin-addr (i64 (+ base (n64 eff-addr)))))
-                            (if (canonical-address-p lin-addr)
-                                (mv nil lin-addr)
-                              (mv (list :non-canonical-address lin-addr) 0))))
-                         ((when flg)
-                          (mv flg x86))
-                         ((unless (or (not check-alignment?)
-                                      (address-aligned-p
-                                       lin-addr nbytes mem-ptr?)))
-                          (mv (list :unaligned-linear-address lin-addr) x86)))
-                      (wiml-size nbytes lin-addr val x86))))
-    :in-theory (e/d (ea-to-la) ()))
+             (defrule wime-size-when-64-bit-modep-fs/gs
+                      (implies (or (equal seg-reg #.*fs*)
+                                   (equal seg-reg #.*gs*))
+                               (equal (wime-size #.*64-bit-mode*
+                                                 nbytes eff-addr seg-reg val check-alignment? x86
+                                                 :mem-ptr? mem-ptr?)
+                                      (b* (((mv flg lin-addr)
+                                            (b* (((mv base & &)
+                                                  (segment-base-and-bounds 0 seg-reg x86))
+                                                 (lin-addr (i64 (+ base (n64 eff-addr)))))
+                                                (if (canonical-address-p lin-addr)
+                                                  (mv nil lin-addr)
+                                                  (mv (list :non-canonical-address lin-addr) 0))))
+                                           ((when flg)
+                                            (mv flg x86))
+                                           ((unless (or (not check-alignment?)
+                                                        (address-aligned-p
+                                                          lin-addr nbytes mem-ptr?)))
+                                            (mv (list :unaligned-linear-address lin-addr) x86)))
+                                          (wiml-size nbytes lin-addr val x86))))
+                      :in-theory (e/d (ea-to-la) ()))
 
-  (defthm wime-size-unaligned-when-64-bit-modep-and-not-fs/gs
-    ;; [Shilpi] Added for guard proof obligations generated from the expansion
-    ;; of wime-size-opt.
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (not
-                   (or (not check-alignment?)
-                       (address-aligned-p eff-addr nbytes mem-ptr?)))
-                  (canonical-address-p eff-addr))
-             (equal (wime-size #.*64-bit-mode*
-                               nbytes eff-addr seg-reg val check-alignment? x86
-                               :mem-ptr? mem-ptr?)
-                    (list (list :unaligned-linear-address eff-addr) x86))))
+             (defthm wime-size-unaligned-when-64-bit-modep-and-not-fs/gs
+                     ;; [Shilpi] Added for guard proof obligations generated from the expansion
+                     ;; of wime-size-opt.
+                     (implies (and (not (equal seg-reg #.*fs*))
+                                   (not (equal seg-reg #.*gs*))
+                                   (not
+                                     (or (not check-alignment?)
+                                         (address-aligned-p eff-addr nbytes mem-ptr?)))
+                                   (canonical-address-p eff-addr))
+                              (equal (wime-size #.*64-bit-mode*
+                                                nbytes eff-addr seg-reg val check-alignment? x86
+                                                :mem-ptr? mem-ptr?)
+                                     (list (list :unaligned-linear-address eff-addr) x86))))
 
-  (defthm wime-size-non-canonical-when-64-bit-modep-and-not-fs/gs
-    ;; [Shilpi] Added for guard proof obligations generated from the expansion
-    ;; of rme-size-opt.
-    (implies (and (not (equal seg-reg #.*fs*))
-                  (not (equal seg-reg #.*gs*))
-                  (not (canonical-address-p eff-addr)))
-             (equal (wime-size #.*64-bit-mode*
-                               nbytes eff-addr seg-reg val check-alignment? x86
-                               :mem-ptr? mem-ptr?)
-                    (list (list :non-canonical-address eff-addr) x86)))
-    :hints (("Goal" :in-theory (e/d (wime-size) ())))))
+             (defthm wime-size-non-canonical-when-64-bit-modep-and-not-fs/gs
+                     ;; [Shilpi] Added for guard proof obligations generated from the expansion
+                     ;; of rme-size-opt.
+                     (implies (and (not (equal seg-reg #.*fs*))
+                                   (not (equal seg-reg #.*gs*))
+                                   (not (canonical-address-p eff-addr)))
+                              (equal (wime-size #.*64-bit-mode*
+                                                nbytes eff-addr seg-reg val check-alignment? x86
+                                                :mem-ptr? mem-ptr?)
+                                     (list (list :non-canonical-address eff-addr) x86)))
+                     :hints (("Goal" :in-theory (e/d (wime-size) ()))))))
 
 ;; ----------------------------------------------------------------------
 

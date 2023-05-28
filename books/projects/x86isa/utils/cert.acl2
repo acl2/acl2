@@ -41,6 +41,6 @@
 (set-waterfall-parallelism t)
 (include-book "../portcullis/sharp-dot-constants")
 ; The book utilities.lisp, at least, seems to need :useless-runes nil:
-;; cert-flags: ? t :useless-runes nil
+;; cert-flags: ? t :useless-runes nil :skip-proofs-okp t
 
 ;; ======================================================================

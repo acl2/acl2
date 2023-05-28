@@ -213,3 +213,314 @@
   `(binary-file-load-fn ,filename exld::elf exld::mach-o x86 state :elf ,elf :mach-o ,mach-o))
 
 ;; ----------------------------------------------------------------------
+;; Load linux. We load a linux kernel image (i.e. vmlinuz),
+;; a compressed cpio ram disk image, and the kernel command line into
+;; memory. We then setup the various options the kernel expects to be set
+;; in memory. We then setup the state in the way the kernel expects and
+;; then jump to the kernel 64-bit entrypoint.
+
+(skip-proofs (defun read-channel-into-byte-list1 (channel limit acc state)
+               (declare (xargs :stobjs (state)
+                               :guard (and (open-input-channel-p channel :byte state)
+                                           (natp limit)
+                                           (symbolp channel))))
+               (if (zp limit)
+                   (mv acc state)
+                   (b* (((mv current-byte state) (read-byte$ channel state)))
+                       (if (equal current-byte nil)
+                           (mv acc state)
+                           (read-channel-into-byte-list1 channel (1- limit) (cons current-byte acc) state))))))
+
+;; Read from the given byte channel into the returned list. Reads limit
+;; bytes or until EOF, whichever comes first.
+(skip-proofs
+  (defun read-channel-into-byte-list (channel limit state)
+    (declare (xargs :stobjs (state)))
+    (b* (((mv result state) (read-channel-into-byte-list1 channel limit nil state)))
+        (mv (reverse result) state))))
+
+(skip-proofs
+  (defun chars-to-c-str (char-lst)
+    (if (equal char-lst nil)
+        '(0)
+        (cons (char-code (car char-lst))
+              (chars-to-c-str (cdr char-lst))))))
+
+(skip-proofs (defun string-to-c-str (str)
+               (b* ((lst (coerce str 'list)))
+                   (chars-to-c-str lst))))
+
+(skip-proofs (defun pack-u32 (val)
+               (list (logand #xff val)
+                     (logand #xff (ash val -8))
+                     (logand #xff (ash val -16))
+                     (logand #xff (ash val -24)))))
+
+(skip-proofs (defun pack-u64 (val)
+               (list (logand #xff val)
+                     (logand #xff (ash val -8))
+                     (logand #xff (ash val -16))
+                     (logand #xff (ash val -24))
+                     (logand #xff (ash val -32))
+                     (logand #xff (ash val -40))
+                     (logand #xff (ash val -48))
+                     (logand #xff (ash val -56)))))
+
+(defmacro pack-u (value bytes)
+  (if (equal bytes 0)
+    nil
+    `(cons (logand #xFF ,value) (pack-u (ash ,value -8) ,(- bytes 1)))))
+
+;; From linux/arch/x86/include/asm/segment.h
+;; /*
+;;  * Constructor for a conventional segment GDT (or LDT) entry.
+;;  * This is a macro so it can be used in initializers.
+;;  */
+;; #define GDT_ENTRY(flags, base, limit)			\
+;; 	((((base)  & _AC(0xff000000,ULL)) << (56-24)) |	\
+;; 	 (((flags) & _AC(0x0000f0ff,ULL)) << 40) |	\
+;; 	 (((limit) & _AC(0x000f0000,ULL)) << (48-16)) |	\
+;; 	 (((base)  & _AC(0x00ffffff,ULL)) << 16) |	\
+;; 	 (((limit) & _AC(0x0000ffff,ULL))))
+(defun gdt-entry (flags base limit)
+  (logior (ash (logand base #xff000000) (- 56 24))
+          (ash (logand flags #x0000f0ff) 40)
+          (ash (logand limit #x000f0000) (- 48 16))
+          (ash (logand base #x00ffffff) 16)
+          (logand limit #x0000ffff)))
+
+;; Run (init-sys-view #x10000000 x86) to setup paging and set model to system view before running this function
+(skip-proofs
+  (defun linux-load (kernel-image-filename disk-image-filename command-line x86 state)
+    (declare (xargs :stobjs (x86 state) :verify-guards nil))
+    (b* (;; Enable some features in cr0
+         (x86 (!ctri 0 (logior #x60000010 ;; initial value of cr0 using vmx on an i7 10700k
+                               (ash 1 0)  ;; Protected mode enable
+                               (ash 1 31) ;; paging enable
+                               ) x86))
+
+         ;; Read kernel from file and write it to memory
+         ((mv kernel-image-channel state) (open-input-channel kernel-image-filename :byte state))
+         ((mv kernel-image state) (read-channel-into-byte-list kernel-image-channel (1- (ash 1 60)) state))
+         (kernel-ptr #x1000000)
+         ((mv & x86) (write-bytes-to-memory kernel-ptr kernel-image x86)) 
+         (state (close-input-channel kernel-image-channel state)) ;; Setup command line
+
+         (zero-page-ptr #x1000)
+         (gdt-ptr (+ zero-page-ptr #x1000))
+         (gdt-size #x20)
+
+         (command-line-c-str (string-to-c-str command-line))
+         (command-line-ptr (+ gdt-ptr gdt-size))
+         ((mv & x86) (write-bytes-to-memory command-line-ptr command-line-c-str x86))
+
+         ;; Setup ramdisk image
+         ((mv disk-image-channel state) (open-input-channel disk-image-filename :byte state))
+         ((mv disk-image state) (read-channel-into-byte-list disk-image-channel (1- (ash 1 60)) state))
+         (disk-image-size (len disk-image))
+         (disk-image-ptr #x100000)
+         ((mv & x86) (write-bytes-to-memory disk-image-ptr disk-image x86))
+         (state (close-input-channel disk-image-channel state))
+
+         ;; Setup Zero page
+
+         ;; We assume the memory is zero initialized on loading
+         ;; The zero page is a struct boot_params as defined in
+         ;; arch/x86/include/uapi/asm/bootparam.h in the linux source
+         ;; Copy over the setup header from the kernel image
+         (setup-header (take #x26c (nthcdr #x1f1 kernel-image)))
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x1f1) setup-header x86))
+         ;; Set various setup-header fields (all fields are little endian)
+         ;; Set vid_mode to normal (0xffff)
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x1fa) '(#xff #xff) x86))
+         ;; Set type_of_loader
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x210) '(#xff) x86))
+         ;; Set loadflags
+         ;; This is a bit field. We want to set QUIET_FLAG (bit 5) to 0 (print early messages)
+         ;; and set CAN_USE_HEAP (bit 7) to 0 (i.e. heap_end_ptr is invalid)
+         (loadflags (logand (nth #x211 kernel-image) #x5F))
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x211) (list loadflags) x86))
+         ;; We (may be) loading the kernel at a nonstandard address, so we may need to relocate code32_start.
+         ;; kernel-ptr could theoretically be a 64-bit pointer and this is a 32-bit field, so I don't
+         ;; think it is relevant if we're launching the kernel through the 64-bit entrypoint, but I set
+         ;; it anyways.
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x214) (pack-u32 kernel-ptr) x86))
+         ;; Set ramdisk_image
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x218) (pack-u32 (logand #xFFFFFFFF disk-image-ptr)) x86))
+         ;; Set ramdisk_size
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x21c) (pack-u32 (logand #xFFFFFFFF disk-image-size)) x86))
+         ;; Linux docs state setting heap_end_ptr is obligatory, but we CAN_USE_HEAP to 0, so I don't think we have to
+         ;; Set cmd_line_ptr
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x228) (pack-u32 (logand #xFFFFFFFF command-line-ptr)) x86))
+         ;; Theoretically, we should be making sure we're loading the kernel at a properly aligned address
+         ;; That being said, the kernel I am looking at while building this seems to have a preferred alignment of 0x1.
+         ;; However, it also seems to have a min_alignment of 0x15 or 2^21, which is clearly contradictory.
+         ;; I'm going to hope loading at 0x100000 is fine
+
+         ;; boot_params is now populated
+
+         ;; We need to fill out the rest of the zero page. It isn't nearly as well documented.
+         ;; I'm going to hope we can get away with leaving most of this info zeroed out
+         ;; Lots of it involves info about things we don't have (like a screen or BIOS).
+         ;; Set ext_ramdisk_image
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x0c0) (pack-u32 (logand #xFFFFFFFF (ash disk-image-ptr -32))) x86))
+         ;; Set ext_ramdisk_size
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x0c4) (pack-u32 (logand #xFFFFFFFF (ash disk-image-size -32))) x86))
+         ;; Set ext_cmd_line_ptr
+         ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x0c8) (pack-u32 (logand #xFFFFFFFF (ash command-line-ptr -32))) x86))
+
+         ;; This concludes the zero page initialization
+
+         ;; From https://www.kernel.org/doc/html/latest/arch/x86/boot.html
+         ;;
+         ;; In 64-bit boot protocol, the kernel is started by jumping to the
+         ;; 64-bit kernel entry point, which is the start address of loaded 64-bit
+         ;; kernel plus 0x200.
+         ;;
+         ;; At entry, the CPU must be in 64-bit mode with paging enabled. The
+         ;; range with setup_header.init_size from start address of loaded kernel
+         ;; and zero page and command line buffer get ident mapping; a GDT must be
+         ;; loaded with the descriptors for selectors __BOOT_CS(0x10) and
+         ;; __BOOT_DS(0x18); both descriptors must be 4G flat segment; __BOOT_CS
+         ;; must have execute/read permission, and __BOOT_DS must have read/write
+         ;; permission; CS must be __BOOT_CS and DS, ES, SS must be __BOOT_DS;
+         ;; interrupt must be disabled; %rsi must hold the base address of the
+         ;; struct boot_params.
+
+         ;; Setup GDT
+         (cs-descriptor (gdt-entry #xa09b 0 #xfffff))
+         ((mv & x86) (write-bytes-to-memory (+ gdt-ptr #x10) (pack-u64 cs-descriptor) x86))
+         (ds-descriptor (gdt-entry #xc093 0 #xfffff))
+         ((mv & x86) (write-bytes-to-memory (+ gdt-ptr #x18) (pack-u64 ds-descriptor) x86))
+         (x86 (!stri *gdtr* (!gdtr/idtrBits->base-addr gdt-ptr (!gdtr/idtrBits->limit (1- gdt-size) 0)) x86))
+         ;; Set CS = 0x10 and DS = ES = SS = 0x18
+         (x86 (load-segment-reg *CS* #x10 x86))
+         (x86 (load-segment-reg *DS* #x18 x86))
+         (x86 (load-segment-reg *ES* #x18 x86))
+         (x86 (load-segment-reg *SS* #x18 x86))
+
+         ;; Clear the interrupt flag (bit 9 of rflags)
+         (x86 (!rflags (logand (lognot (ash 1 9))
+                               (rflags x86))
+                       x86))
+
+         (x86 (!rgfi *rsi* zero-page-ptr x86))
+
+         ((mv & x86) (init-x86-state-64 
+                       nil 
+                       (+ kernel-ptr (* (nth #x1F1 kernel-image) 512) #x400)
+                       nil
+                       nil 
+                       nil 
+                       nil 
+                       nil 
+                       nil 
+                       nil 
+                       nil 
+                       nil
+                       x86)))
+        (mv x86 state))))
+
+(skip-proofs
+  (defun write-bytes-to-channel (bytes channel state)
+    (declare (xargs :stobjs (state)))
+    (b* (((when (equal bytes nil)) state)
+         (state (write-byte$ (car bytes) channel state)))
+        (write-bytes-to-channel (cdr bytes) channel state))))
+
+;; Reading linear memory with read-bytes-from-memory is slow
+;; This reads physical memory instead
+(skip-proofs
+  (defun read-bytes-from-physical-memory (start n x86 acc)
+    (declare (xargs :stobjs (x86)))
+    (b* (((when (equal n 0)) acc)
+         (current-byte (memi (+ start n -1) x86)))
+        (read-bytes-from-physical-memory start (- n 1) x86 (cons current-byte acc)))))
+
+(defun dump-mem-to-channel (channel addr len x86 state)
+  (declare (xargs :mode :program
+                  :stobjs (x86 state)))
+  (b* (((when (equal len 0)) state)
+       (current-byte (memi addr x86))
+       (state (write-byte$ current-byte channel state)))
+      (dump-mem-to-channel channel (1+ addr) (1- len) x86 state)))
+
+;; Dump the given memory region to a file
+(defun dump-mem-to-file (path addr len x86 state)
+  (declare (xargs :mode :program
+                  :stobjs (x86 state)))
+  (b* (((mv & bytes x86) (read-bytes-from-memory addr len x86 nil))
+       ((mv channel state) (open-output-channel path :byte state))
+       (state (write-bytes-to-channel bytes channel state))
+       (state (close-output-channel channel state)))
+      (mv x86 state)))
+
+(defun gdb-write-bytes (addr bytes channel state)
+  (declare (xargs :mode :program
+                  :stobjs (state)))
+  (b* (((when (not bytes)) state)
+       (state (fms "set *(unsigned char*)~x0 = ~x1" (list (cons #\0 addr)
+                                                          (cons #\1 (car bytes))) channel state nil))
+       (state (gdb-write-bytes (+ addr 1) (cdr bytes) channel state)))
+      state))
+
+;; Dump state to load in Qemu
+;; Dumps the lower 64Mib of physical memory and a gdb script to set the registers and other state
+;; Call Qemu with the following command:
+;; qemu-system-x86_64 -nographic -s -S -hda long-loader \
+;;   -device loader,file=<dump-path>.mem,addr=0x100000,force-raw=on
+;; Then run gdb with the following command:
+;; gdb -x <dump-path>.gdb
+(defun dump-state (dump-path x86 state)
+  (declare (xargs :mode :program
+                  :stobjs (x86 state)))
+  ;; Dump memory
+  (b* (((mv memory-channel state) (open-output-channel (concatenate 'string dump-path ".mem") :byte state))
+       (state (dump-mem-to-channel memory-channel #x100000 #x4000000 x86 state))
+       (state (close-output-channel memory-channel state))
+
+       ;; Done dumping memory
+       ;; Dump GDB script to set other state
+       ((mv gdb-channel state) (open-output-channel (concatenate 'string dump-path ".gdb") :character state))
+       (state (fms "target remote localhost:1234" nil gdb-channel state nil))
+       (state (fms "break *0x7ca0" nil gdb-channel state nil))
+       (state (fms "c" nil gdb-channel state nil))
+       ;; Code corresponding to lgdt [0x10]
+       (state (fms "dump binary memory tmp.mem 0x100000 0x1000FF" nil gdb-channel state nil))
+       (state (gdb-write-bytes #x100000 '(#x0f #x01 #x14 #x25 #x10 #x00 #x00 #x00) gdb-channel state))
+       ;; Write gdtr
+       (state (gdb-write-bytes #x1000F0 (pack-u (stri *gdtr* x86) 10) gdb-channel state))
+       (state (fms "restore tmp.mem binary 0x100000 0 0xFF" nil gdb-channel state nil))
+       (state (fms "set $rip = 0x30" nil gdb-channel state nil))
+       (state (fms "stepi" nil gdb-channel state nil))
+       (state (fms "set $rax = ~x0" (list (cons #\0 (rgfi *rax* x86))) gdb-channel state nil))
+       (state (fms "set $rbx = ~x0" (list (cons #\0 (rgfi *rbx* x86))) gdb-channel state nil))
+       (state (fms "set $rcx = ~x0" (list (cons #\0 (rgfi *rcx* x86))) gdb-channel state nil))
+       (state (fms "set $rdx = ~x0" (list (cons #\0 (rgfi *rdx* x86))) gdb-channel state nil))
+       (state (fms "set $rsi = ~x0" (list (cons #\0 (rgfi *rsi* x86))) gdb-channel state nil))
+       (state (fms "set $rdi = ~x0" (list (cons #\0 (rgfi *rdi* x86))) gdb-channel state nil))
+       (state (fms "set $rbp = ~x0" (list (cons #\0 (rgfi *rbp* x86))) gdb-channel state nil))
+       (state (fms "set $rsp = ~x0" (list (cons #\0 (rgfi *rsp* x86))) gdb-channel state nil))
+       (state (fms "set $r8  = ~x0" (list (cons #\0 (rgfi *r8* x86))) gdb-channel state nil))
+       (state (fms "set $r9  = ~x0" (list (cons #\0 (rgfi *r9* x86))) gdb-channel state nil))
+       (state (fms "set $r10 = ~x0" (list (cons #\0 (rgfi *r10* x86))) gdb-channel state nil))
+       (state (fms "set $r11 = ~x0" (list (cons #\0 (rgfi *r11* x86))) gdb-channel state nil))
+       (state (fms "set $r12 = ~x0" (list (cons #\0 (rgfi *r12* x86))) gdb-channel state nil))
+       (state (fms "set $r13 = ~x0" (list (cons #\0 (rgfi *r13* x86))) gdb-channel state nil))
+       (state (fms "set $r14 = ~x0" (list (cons #\0 (rgfi *r14* x86))) gdb-channel state nil))
+       (state (fms "set $r15 = ~x0" (list (cons #\0 (rgfi *r15* x86))) gdb-channel state nil))
+       (state (fms "set $rip = ~x0" (list (cons #\0 (rip x86))) gdb-channel state nil))
+       (state (fms "set $eflags = ~x0" (list (cons #\0 (rflags x86))) gdb-channel state nil))
+       (state (fms "set $es = ~x0" (list (cons #\0 (seg-visiblei *es* x86))) gdb-channel state nil))
+       (state (fms "set $cs = ~x0" (list (cons #\0 (seg-visiblei *cs* x86))) gdb-channel state nil))
+       (state (fms "set $ss = ~x0" (list (cons #\0 (seg-visiblei *ss* x86))) gdb-channel state nil))
+       (state (fms "set $ds = ~x0" (list (cons #\0 (seg-visiblei *ds* x86))) gdb-channel state nil))
+       (state (fms "set $fs = ~x0" (list (cons #\0 (seg-visiblei *fs* x86))) gdb-channel state nil))
+       (state (fms "set $gs = ~x0" (list (cons #\0 (seg-visiblei *gs* x86))) gdb-channel state nil))
+       (state (fms "set $cr0 = (unsigned long)~x0" (list (cons #\0 (ctri *cr0* x86))) gdb-channel state nil))
+       (state (fms "set $cr2 = (unsigned long)~x0" (list (cons #\0 (ctri *cr2* x86))) gdb-channel state nil))
+       (state (fms "set $cr3 = (unsigned long)~x0" (list (cons #\0 (ctri *cr3* x86))) gdb-channel state nil))
+       (state (fms "set $cr4 = (unsigned long)~x0" (list (cons #\0 (ctri *cr4* x86))) gdb-channel state nil))
+       (state (fms "set $cr8 = (unsigned long)~x0" (list (cons #\0 (ctri *cr8* x86))) gdb-channel state nil))
+       (state (close-output-channel gdb-channel state)))
+      (mv x86 state)))

@@ -333,7 +333,7 @@
 	 ((and (consp flg1) (eql (car flg1) :unaligned-linear-address))
 	  (!!fault-fresh :ac 0 :new-rsp-unaligned flg1)) ;; #AC(0)
 	 (t                                              ;; Unclassified error!
-	  (!!fault-fresh flg1))))
+	  (!!ms-fresh flg1))))
 
        (x86 (write-*sp proc-mode new-rsp x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
@@ -563,6 +563,23 @@
 	 (t ;; Unclassified error!
 	  (!!fault-fresh flg0))))
 
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Update the x86 state:
+
+       ;; Intel manual, Mar'17, Vol. 2 says, in the specification of POP,
+       ;; that a POP SP/ESP/RSP instruction increments the stack pointer
+       ;; before the popped data is written into the stack pointer.
+       ;; Thus, we must write to the stack pointer before the operand.
+       ;; We must also compute the effective address to write to
+       ;; after writing *sp.
+
+       (x86 (write-*sp proc-mode new-rsp x86))
+
        ((mv flg1
 	    (the (signed-byte 64) addr)
 	    (the (unsigned-byte 3) increment-RIP-by)
@@ -575,23 +592,8 @@
        ((when flg1) ;; #SS exception?
 	(!!ms-fresh :x86-effective-addr-error flg1))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
        ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
-
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-       ;; Update the x86 state:
-
-       ;; Intel manual, Mar'17, Vol. 2 says, in the specification of POP,
-       ;; that a POP SP/ESP/RSP instruction increments the stack pointer
-       ;; before the popped data is written into the stack pointer.
-       ;; Thus, we must write to the stack pointer before the operand.
-
-       (x86 (write-*sp proc-mode new-rsp x86))
 
        ((mv flg3 x86)
 	(x86-operand-to-reg/mem proc-mode operand-size

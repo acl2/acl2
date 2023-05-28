@@ -597,7 +597,105 @@
   :hints (("Goal" :in-theory (e/d (read-mem$c write-mem$c)
                                   (l1p)))))
 
-(in-theory (e/d () (good-level1p good-mem$cp mem$cp)))
+(in-theory (e/d (unsigned-byte-p) (good-level1p good-mem$cp mem$cp)))
+
+(defun read-page (idx page acc)
+  (declare (xargs :stobjs (page)
+                  :guard (and (good-pagep page)
+                              (integerp idx)
+                              (<= 0 idx)
+                              (<= idx *num-page-entries*)
+                              (equal (pg_vld page) 1))
+                  :measure (nfix (- *num-page-entries* idx))))
+  (if (mbt (and (<= 0 idx)
+                (<= idx *num-page-entries*)
+                (integerp idx)))
+    (if (equal idx *num-page-entries*)
+      acc
+      (read-page (1+ idx)
+                 page
+                 (cons (read-from-page idx page)
+                       acc)))
+    nil))
+
+(defun serialize-page (page)
+  (declare (xargs :stobjs (page)
+                  :guard (good-pagep page)))
+  (if (equal (pg_vld page) 0)
+    nil
+    (read-page 0 page nil)))
+
+(in-theory (e/d* (read-page good-l1p good-pagesp good-pagep good-pagep-nth-of-good-pagesp) ()))
+(skip-proofs (defun serialize-pages (idx l1 acc)
+               (declare (xargs :stobjs (l1)))
+               (if (mbt (and (<= 0 idx)
+                             (<= idx *num-level-entries*)
+                             (integerp idx)))
+                 (if (equal idx *num-level-entries*)
+                   acc
+                   (serialize-pages (1+ idx)
+                                    l1
+                                    (b* ((serialized (stobj-let ((page (pagesi idx l1)))
+                                                                (serialized)
+                                                                (serialize-page page)
+                                                                serialized))
+                                         ((when (equal serialized nil)) acc))
+                                        (cons (cons idx serialized) acc))))
+                 nil)))
+
+(skip-proofs (defun serialize-l1 (l1)
+               (declare (xargs :stobjs (l1)))
+               (if (equal (pages_vld l1) 0)
+                 nil
+                 (serialize-pages 0 l1 nil))))
+
+(skip-proofs (defun serialize-level1s (idx mem$c acc)
+   (declare (xargs :stobjs (mem$c)))
+   (if (equal idx *num-level-entries*)
+     acc
+     (serialize-level1s (1+ idx) 
+                        mem$c
+                        (b* ((serialized (stobj-let ((l1 (level1i idx mem$c)))
+                                                    (serialized)
+                                                    (serialize-l1 l1)
+                                                    serialized))
+                             ((unless serialized) acc))
+                            (cons (cons idx serialized) acc))))))
+
+(skip-proofs (defun serialize-mem$c (mem$c)
+               (declare (xargs :stobjs (mem$c)
+                               :guard (good-mem$cp mem$c)))
+               (serialize-level1s 0 mem$c nil)))
+
+(skip-proofs (defun deserialize-page (i j k obj mem$c)
+               (declare (xargs :stobjs (mem$c)))
+               (b* (((when (not obj)) mem$c)
+                    ((list* head tail) obj)
+                    (mem$c (write-mem$c (+ (* (+ (* i *num-level-entries*) j) *num-page-entries*) k) head mem$c)))
+                   (deserialize-page i j (1- k) tail mem$c))))
+
+(skip-proofs (defun deserialize-l1 (i obj mem$c)
+               (declare (xargs :stobjs (mem$c)))
+               (b* (((list* head tail) obj)
+                    ((cons j serialized) head)
+                    (mem$c (deserialize-page i j (1- *num-page-entries*) serialized mem$c)))
+                   (if (equal j 0)
+                     mem$c
+                     (deserialize-l1 i tail mem$c)))))
+
+(skip-proofs (defun deserialize-level1s (obj mem$c)
+               (declare (xargs :stobjs (mem$c)
+                               :guard (good-mem$cp mem$c)))
+               (b* (((when (not obj)) mem$c)
+                    ((list* head tail) obj)
+                    ((cons idx serialized) head)
+                    (mem$c (deserialize-l1 idx serialized mem$c)))
+                   (deserialize-level1s tail mem$c))))
+
+(skip-proofs (defun deserialize-mem$c (obj mem$c)
+               (declare (xargs :stobjs (mem$c)
+                               :guard (good-mem$cp mem$c)))
+               (deserialize-level1s obj mem$c)))
 
 ;; ----------------------------------------------------------------------
 

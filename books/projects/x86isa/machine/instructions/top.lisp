@@ -7,9 +7,7 @@
 ; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
-; Redistribution and use in source and binary forms, with or without
-; modification, are permitted provided that the following conditions are
-; met:
+; Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
 ; o Redistributions of source code must retain the above copyright
 ;   notice, this list of conditions and the following disclaimer.
@@ -74,6 +72,18 @@
 (include-book "subroutine"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "fp/top"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "interrupts"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "cpuid"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "msrs"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "x87"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "time"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "pio"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -159,7 +169,8 @@ writes the final value of the instruction pointer into RIP.</p>")
        ;; instruction, the saved instruction pointer points to the instruction
        ;; following the HLT instruction."
        (x86 (write-*ip proc-mode temp-rip x86)))
-    (!!ms-fresh :legal-halt :hlt)))
+    ;; (!!ms-fresh :legal-halt :hlt)
+    x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: CMC/CLC/STC/CLD/STD

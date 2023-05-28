@@ -202,6 +202,7 @@
 (defconst *OP-IDIV*      32)
 (defconst *OP-MAX*       34)
 (defconst *OP-MIN*       36)
+(defconst *OP-XADD*      38)
 
 ;; Odd IDs: Logical Instructions
 

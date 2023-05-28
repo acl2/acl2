@@ -167,7 +167,7 @@
 ;; add, adc, sub, sbb, or, and, sub, xor, cmp, test
 ;; ======================================================================
 
-(def-inst x86-add/adc/sub/sbb/or/and/xor/cmp/test-E-G
+(def-inst x86-add/xadd/adc/sub/sbb/or/and/xor/cmp/test-E-G
 
   :parents (one-byte-opcodes)
 
@@ -191,7 +191,8 @@
   28, 29: SUB    c p a z s o<br/>
   30, 31: XOR      p   z s   \(o and c cleared, a undefined\)<br/>
   38, 39: CMP    c p a z s o<br/>
-  84, 85: TEST     p   z s   \(o and c cleared, a undefined\)<br/>"
+  84, 85: TEST     p   z s   \(o and c cleared, a undefined\)<br/>
+  0F C0, 0F C1: XADD   c p a z s o<br/>"
 
   :operation t
 
@@ -265,6 +266,10 @@
 	    (the (unsigned-byte 32) undefined-flags))
 	(gpr-arith/logic-spec operand-size operation E G input-rflags))
 
+       ;; Write destination into source for XADD
+       (x86 (if (equal operation *OP-XADD*)
+                (!rgfi-size operand-size (reg-index reg rex-byte #.*r*) E rex-byte x86)
+                x86))
        ;; Updating the x86 state with the result and eflags.
        ((mv flg1 x86)
 	(if (or (eql operation #.*OP-CMP*)
