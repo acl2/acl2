@@ -82,13 +82,16 @@ href=\"http://doi.org/10.34727/2021/isbn.978-3-85448-046-4_13\">
 http://doi.org/10.34727/2021/isbn.978-3-85448-046-4_13</a>). This method is also
 described in Mertcan Temel's (<a
 href=\"https://repositories.lib.utexas.edu/handle/2152/88056\">
-Ph.D. thesis</a>) from University of Texas at Austin. There might be more work
+Ph.D. thesis</a>) from University of Texas at Austin. These papers describe
+this method as working on hierarchical reasoning; however, VeSCmul now supports
+flattened designs as well. More papers  are
 coming soon.   </p>
 
 <p> Our framework currently supports  (System) Verilog. In one of our schemes,
 we use @(see sv::defsvtv$) (also see @(see sv::sv-tutorial)) to simulate
 designs. This SVTV system has been used for complex design at Centaur
-Technology and now at Intel Corporation. SVTV system flattens designs.</p>
+Technology and now at Intel Corporation. SVTV system flattens designs. It can
+support other simulators such as @(see SVL) but we only use SVTV now. </p>
 
 <p>  Our  library  uses  various  heuristics  and  modes  to  simplify  various
 designs. We give the users the  option to enable/disable some of the heuristics
@@ -101,11 +104,11 @@ help a proof attempt to go through, and in some cases, it may cause them to fail
 
 <h3>Quick Start</h3>
 
-<p> If you have a combinational multiplier design you need to verify, you can
+<p> If you have a combinational multiplier design you need to verify, you may
 follow these steps. </p>
 
 <ol>
-<li> Install ACL2. </li>
+<li> Install ACL2 and certify books. </li>
 <li> Start ACL2 and submit:
 <code> @('(include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)')
 </code>
@@ -128,25 +131,34 @@ follow these steps. </p>
                                                    (logext 64 in2)))))
 ')
 </code>
+
+Here, @(see logext) sign-extends its argument, and @(see loghead) zero-extends it.
+
 </li>
 </ol>
 
-<p>  We  deliver  various demos in more detail to  show  how  this  tool  can be  used  in  new
-designs. For the SVL system: @(see Multiplier-Verification-demo-1) shows  a very basic verification
+<p> See @(see parse-and-create-svtv) and @(see verify-svtv-of-mult) for more
+ways to use these tools. </p>
+
+<p> Various demos in much more detail are present to  show  how  this  tool  can be  used  in  new
+designs.  @(see Multiplier-Verification-demo-1) shows  a very basic verification
 case  on  a  stand-alone  64x64-bit  Booth  Encoded  Dadda  multiplier.   @(see
 Multiplier-Verification-demo-2) shows  how this tool  can be used on  much more
 complex designs where a stand-alone integer multiplier is reused as a submodule
 for various operations  such as MAC dot-product and  merged multiplication. It
-also shows a simple verification case on a sequential circuit.  </p>
+also shows a simple verification case on a sequential circuit. Note that these
+demos are tailored for starting point for more  advanced uses and they do not use @(see
+parse-and-create-svtv) and @(see verify-svtv-of-mult) macros.   </p>
 
 <h3>Calling SAT Solver after rewriting is done </h3>
 
 <p> This library can be used to quickly generate counterexamples using an
 external SAT solver, or help finish proofs with a SAT solver when our library
-fails to finish the job.</p>
+fails to finish the job. By default, glucose is used as SAT solver. This can be
+configured to call a different SAT solver (see @(see fgl::fgl-solving).</p>
 
 <p> If you are using macros from Quick Start above, then \":then-fgl t\" argument as shown below will be enough to
-call a SAT solver after we finish with out rewriting:
+call FGL, which will invoke a SAT solver after VeSCmul finishes rewriting:
 <code> @('
 (verify-svtv-of-mult :name my-multiplier-example
                      :then-fgl t
@@ -317,7 +329,7 @@ complex arithmetic module.  </p>
 </p>
 
 <p>
-1. Include the books to convert Verilog designs to SVL format.
+1. Include the books to parse Verilog designs and crete symbolic simulation vectors.
 </p>
 <code>
 (include-book \"centaur/sv/top\" :dir :system) ;; a big book; takes around 30 seconds
@@ -897,30 +909,39 @@ product specification function as given below.
   :parents (Multiplier-Verification vescmul)
   :short "A macro to parse a combinational RTL design and create a simulation
   test vector"
-  :long "<p><b> parse-and-create-svtv</b> can take the following arguments</p>
-<p> <b>:file</b> has to be provided. It should be a string and point to the relative path to the
-  target Verilog file. </p>
-<p> <b>:topmodule</b> has to be provided. It should be a string and be the name of the top module
-  of the Verilog file. </p>
-<p> <b>:name</b>  is optional. It should be a symbol. It will be the name
+  :long "<p><b> parse-and-create-svtv</b> can take the following arguments:</p>
+<ul>
+<li> <b>:file</b> has to be provided. It should be a string and point to the relative path to the
+  target Verilog file. </li>
+<li> <b>:topmodule</b> has to be provided. It should be a string and be the name of the top module
+  of the Verilog file. </li>
+<li> <b>:name</b>  is optional. It should be a symbol. It will be the name
   of the objects generated for symbolic simulation vectors in ACL2. When not
-  provided, the program uses the topmodule for name.</p>
-<p> <b>:save-to-file</b> is optional. It should be a string and be used as a prefix for the outputting file name. When provided, it will
+  provided, the program uses the topmodule for name.</li>
+<li> <b>:save-to-file</b> is optional. It should be a string and be used as a prefix for the outputting file name. When provided, it will
   save the created simulation vectors to a file in a compact form (svexl) that
   can be read later more quickly. When not provided, the simulation vector will
-  remain in the session (or in certificate files). </p>
+  remain in the session (or in certificate files). </li>
 
-<p> <b>:modified-modules-file</b> is optional. When provided, it should be a string
+<li> <b>:modified-modules-file</b> is optional. When provided, it should be a string
 pointing to a Verilog file containing alternative definitions of adder modules
-that may be used to override the modules of the same name in the original design. This is useful
-for hierarchical reasoning for cases vescmul cannot detect certain adder
+that may be used to override the modules of the same name in the original
+design.
+<br />
+ This is useful
+for hierarchical reasoning for cases VeSCmul cannot detect certain adder
 patterns in some designs. This will create two simulation vectors: one for the
 original design and another for the modified version. @(see
 verify-svtv-of-mult) will later prove equivalance between the two versions
 using FGL (sat solver), and VeSCmul will be used to rewrite the modified
 version. In the end, a theorem stating the correctness of the original design
-will be saved.  </p>
-
+will be saved.
+<br />
+VeSCmul is usually very good at finding adders automatically on its own in
+flattened designs, and
+hopefully, this option will not be necessary. However, should the need rise, we still
+keep hierarchical reasoning as an option.  </li>
+</ul>
 <br />
 <p> Example call 1:
 <code>
@@ -942,16 +963,16 @@ will be saved.  </p>
 </p>
 
 
-<p> Example call 3:
+<p> Example call 3 (-somewhat- hierarchical reasoning):
 <code>
 @('
 ;; Create a Verilog file that has an alternative definition for Han-Carlson
-;; vector adder used in the target multiplier. 
+;; vector adder used in the target multiplier. VeSCmul works well with the +
+;; operator.
 (write-string-to-file-event \"demo/modified-HC_128.v\"
-                            \"
-module HC_128(input [127:0] IN1, input [127:0] IN2, output [128:0] OUT);
-    assign OUT = IN1+IN2;
-endmodule\")
+   \"module HC_128(input [127:0] IN1, input [127:0] IN2, output [128:0] OUT);
+     assign OUT = IN1+IN2;
+   endmodule\")
 ;; Use this alternative definition to help the verification program 
 (parse-and-create-svtv :file \"demo/DT_SB4_HC_64_64_multgen.sv\"
                        :modified-modules-file \"demo/modified-HC_128.v\"
@@ -979,7 +1000,15 @@ event. </p>
   corresponding to the one in the :save-to-file argument of @(see parse-and-create-svtv). </p>
 <p> <b>:cases</b> is optional. A list of terms that can be used to casesplit upon starting the program. May be useful for some corner cases. </p>
 <p> <b>:keep-going</b> is optional, should be t or nil. When set to t, the program will not stop ACL2 if a proof-attempt fails. This is useful when running a lot of experiments in the same file.</p>
-<p> <b>:print-message</b> is optional and should be a string if given. The program will also generate a proof summary file after it's run. Users may pass a custom message that will appear in the proof summary file.</p>
+<p> <b>:print-message</b> is optional and should be a string if given. The
+  program will also generate a proof summary file after it's run. Users may
+  pass a custom message that will appear in the proof summary file.</p>
+
+<br />
+<p>verify-svtv-of-mult will create a proof-summary file under the
+generated-proof-summary directory showing the proof time and what the program
+verified about multiplier design.</p>
+
 <br />
 <p> Example call 1:
 <code>
@@ -1019,7 +1048,7 @@ event. </p>
 <p> Example call 4:
 <code>
 @('
-;; Call FGL after rewriting is done if VeSCmul cannot finish the proofs. 
+;; If VeSCmul cannot finish the proofs, this will call FGL after rewriting is done 
 (verify-svtv-of-mult :name my-multiplier-example
                      :then-fgl t
                      :concl (equal result
@@ -1081,3 +1110,4 @@ equivalance checking during hierarchical reasoning scheme.
 </p>
 
 ")
+
