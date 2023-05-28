@@ -620,3 +620,68 @@
 		        (:instance gcd-quotient-2 (d (gcd x y)))
 			(:instance product-rel-prime-divides (x (/ x (gcd x y))) (y (/ y (gcd x y))) (m (/ m (gcd x y))))))))
 		
+;;--------------------------------------------------------------------------------------------
+
+(defthmd gcd-diff-1
+  (implies (and (posp p) (posp q) (< p q))
+           (equal (gcd p (- q p))
+	          (gcd p q)))
+  :hints (("Goal" :in-theory (enable gcd gcd-nat))))
+
+(defthmd gcd-diff-2
+  (implies (and (posp p) (posp q) (< q p))
+           (equal (gcd (- p q) q)
+	          (gcd p q)))
+  :hints (("Goal" :in-theory (enable gcd gcd-nat))))
+
+(defthmd gcd-num-den
+  (implies (and (rationalp x) (not (= x 0)))
+           (equal (gcd (numerator x) (denominator x))
+	          1))
+  :hints (("Goal" :in-theory (enable divides)
+                  :use ((:instance Lowest-Terms (n (gcd (numerator x) (denominator x)))
+                                                (r (/ (numerator x) (gcd (numerator x) (denominator x))))
+                                                (q (/ (denominator x) (gcd (numerator x) (denominator x)))))
+			(:instance gcd-divides (x (numerator x)) (y (denominator x)))
+			(:instance gcd-pos (x (numerator x)) (y (denominator x)))))))
+
+;; The lemma lowest-terms-unique shoiuld not be this hard to prove:
+
+(local-defthm hack-1
+  (implies (and (posp n) (posp d) (posp p) (posp q))
+           (and (equal (* q d p (/ q)) (* d p))
+	        (equal (* q d n (/ d)) (* q n))))
+  :rule-classes ())
+
+(local-defthm hack-2
+  (implies (and (posp n) (posp d) (posp p) (posp q)
+                (equal (/ p q) (/ n d)))
+           (equal (* n q) (* d p)))
+  :rule-classes ()
+  :hints (("Goal" :use (hack-1))))
+
+(local-defthm hack-3
+  (implies (and (posp n) (posp d) (posp p) (posp q) (equal (gcd p q) 1)
+                (equal (* n q) (* d p)))
+           (divides p n))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (enable divides)
+                  :use ((:instance divides-product-divides-factor (d p) (m q) (n n))))))
+
+(defthm lowest-terms-unique
+  (implies (and (posp n) (posp d) (equal (gcd n d) 1)
+                (posp p) (posp q) (equal (gcd p q) 1)
+                (equal (/ p q) (/ n d)))
+           (and (equal n p) (equal d q)))
+  :rule-classes ()
+  :hints (("Goal" :in-theory (enable divides)
+                  :use (hack-2 hack-3 
+		        (:instance hack-3 (p n) (n p) (q d) (d q))
+			(:instance hack-3 (p q) (n d) (q p) (d n))
+			(:instance hack-3 (p d) (n q) (q n) (d p))
+			(:instance divides-leq (x p) (y n))
+			(:instance divides-leq (x q) (y d))
+			(:instance divides-leq (x n) (y p))
+			(:instance divides-leq (x d) (y q))
+			(:instance gcd-commutative (x p) (y q))
+			(:instance gcd-commutative (x n) (y d))))))
