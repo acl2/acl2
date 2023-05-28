@@ -115,18 +115,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-condexpr ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (test pseudo-termp)
                (then pseudo-termp)
                (else pseudo-termp))
   :short "Check if a term may represent a C conditional expression."
-  (b* (((acl2::fun (no)) (mv nil nil nil nil))
+  (b* (((reterr) nil nil nil nil)
+       ((acl2::fun (no)) (retok nil nil nil nil))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless (and okp
-                     (eq fn 'c::condexpr)
-                     (list-lenp 1 args)))
-        (no)))
-    (fty-check-if-call (first args)))
+                     (eq fn 'condexpr)))
+        (no))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (first args))
+       ((mv okp test then else) (fty-check-if-call arg))
+       ((when (not okp))
+        (reterr (msg "The function CONDEXPR is not applied to an IF, ~
+                      but instead to the term ~x0."
+                     arg))))
+    (retok t test then else))
   ///
 
   (defret pseudo-term-count-of-atc-check-condexpr.test

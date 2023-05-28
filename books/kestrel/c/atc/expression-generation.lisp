@@ -1731,7 +1731,7 @@
                                           :names-to-avoid arg.names-to-avoid
                                           :proofs arg.proofs)
                                          state)))
-         ((mv okp test-term then-term else-term) (atc-check-condexpr term))
+         ((erp okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
           (b* (((erp (pexpr-gout test)) (atc-gen-expr-bool test-term gin state))
                ((erp (pexpr-gout then))
