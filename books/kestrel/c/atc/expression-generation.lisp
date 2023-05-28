@@ -1515,7 +1515,7 @@
                                arg.events arg.thm-name
                                in-type out-type tyname
                                gin state)))
-         ((mv okp arg-term type) (atc-check-integer-read term))
+         ((erp okp arg-term type) (atc-check-integer-read term))
          ((when okp)
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin

@@ -154,22 +154,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-integer-read ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (arg pseudo-termp)
                (type typep))
   :short "Check if a term may represent a read of an integer by pointer."
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp fixtype read) (atc-check-symbol-2part term.fn))
-       ((unless (and okp
-                     (eq read 'read)))
-        (no))
+  (b* (((reterr) nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp fixtype read) (atc-check-symbol-2part fn))
        (type (fixtype-to-integer-type fixtype))
-       ((when (not type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
-       (arg (first term.args)))
-    (mv t arg type))
+       ((unless (and okp
+                     (eq read 'read)
+                     type))
+        (no))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a read of an integer by pointer, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (first args)))
+    (retok t arg type))
   ///
 
   (defret pseudo-term-count-of-atc-check-integer-read
