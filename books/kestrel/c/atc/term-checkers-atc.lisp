@@ -52,13 +52,8 @@
        ((acl2::fun (no)) (retok nil nil))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless (and okp
-                     (eq fn 'c::sint-from-boolean)))
+                     (eq fn 'sint-from-boolean)))
         (no))
-       ((unless (equal (symbol-package-name fn) "C"))
-        (reterr (msg "Invalid function ~x0 encountered: ~
-                      it has the form of a conversion from boolean to int, ~
-                      but it is not in the \"C\" package."
-                     fn)))
        ((unless (list-lenp 1 args))
         (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn))))
     (retok t (first args)))
