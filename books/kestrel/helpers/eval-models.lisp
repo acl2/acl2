@@ -599,7 +599,13 @@
                   :mode :program))
   (b* ( ;; Get the rec-lists for all the models:
        ((mv erp recommendation-alist state)
-        (help::get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print nil state))
+        (help::get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body
+                                    ;; the presumed broken-theorem:
+                                    `(defthm ,theorem-name
+                                       ,theorem-body
+                                       ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
+                                       ,@(and theorem-hints `(:hints ,theorem-hints)))
+                                    server-url debug print nil state))
        ((when erp) (mv erp nil state)))
     (eval-models-on-checkpoints-aux recommendation-alist
                                     checkpoint-clauses
