@@ -1,7 +1,7 @@
 ; BV Library: bvplus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -165,32 +165,31 @@
 
 ;fixme improve BVCHOP-+-CANCEL-0
 
-;rename?
+;todo: rename
 (defthm bvplus-cancel
   (equal (equal (bvplus size x y) (bvplus size x z))
          (equal (bvchop size y) (bvchop size z)))
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvplus))))
 
-(defthm bvplus-cancel-third-third
+;todo: rename vars
+(defthm bvplus-cancel-arg3-arg3
   (equal (equal (bvplus size k1 (bvplus size x a)) (bvplus size k2 (bvplus size y a)))
          (equal (bvplus size k1 x) (bvplus size k2 y)))
   :hints (("Goal" :use (:instance bvplus-cancel (x a)
                                   (y (bvplus size k1 x))
                                   (z (bvplus size k2 y))))))
 
-(defthm bvplus-cancel-cross
-  (equal (equal (bvplus size y x)
-                (bvplus size x z))
+(defthm equal-of-bvplus-and-bvplus-cancel-arg2-arg1
+  (equal (equal (bvplus size y x) (bvplus size x z))
          (equal (bvchop size y)
                 (bvchop size z))))
 
-(defthm bvplus-cancel-cross2
-  (equal (equal (bvplus size x y)
-                (bvplus size z x))
+(defthm equal-of-bvplus-and-bvplus-cancel-arg1-arg2
+  (equal (equal (bvplus size x y) (bvplus size z x))
          (equal (bvchop size y) (bvchop size z)))
-  :hints (("Goal" :use (:instance bvplus-cancel-cross)
-           :in-theory (disable bvplus-cancel-cross))))
+  :hints (("Goal" :use (:instance equal-of-bvplus-and-bvplus-cancel-arg2-arg1)
+           :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg2-arg1))))
 
 (defthm equal-of-bvplus-and-bvplus-cancel-arg2-arg2
   (equal (equal (bvplus size y x) (bvplus size z x))
