@@ -1341,13 +1341,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-integer-read ((term pseudo-termp)
-                                   (type typep)
+(define atc-gen-expr-integer-read ((fn symbolp)
                                    (arg-term pseudo-termp)
                                    (arg-expr exprp)
                                    (arg-type typep)
                                    (arg-events pseudo-event-form-listp)
                                    (arg-thm symbolp)
+                                   (type typep)
                                    (gin pexpr-ginp)
                                    state)
   (declare (ignore arg-thm state))
@@ -1365,6 +1365,7 @@
                This is indicative of provably dead code, ~
                given that the code is guard-verified."
               type arg-term arg-type (type-pointer type))))
+       (term `(,fn ,arg-term))
        (expr (make-expr-unary :op (unop-indir)
                               :arg arg-expr)))
     (retok
@@ -1375,7 +1376,8 @@
                       :thm-name nil
                       :thm-index gin.thm-index
                       :names-to-avoid gin.names-to-avoid
-                      :proofs nil))))
+                      :proofs nil)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1515,20 +1517,20 @@
                                arg.events arg.thm-name
                                in-type out-type tyname
                                gin state)))
-         ((mv okp arg-term type) (atc-check-integer-read term))
+         ((erp okp fn arg-term type) (atc-check-integer-read term))
          ((when okp)
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
                                       :names-to-avoid arg.names-to-avoid
                                       :proofs arg.proofs)))
-            (atc-gen-expr-integer-read term
-                                       type
+            (atc-gen-expr-integer-read fn
                                        arg.term
                                        arg.expr
                                        arg.type
                                        arg.events
                                        arg.thm-name
+                                       type
                                        gin
                                        state)))
          ((mv okp arr-term sub-term arr-type elem-type)
@@ -1731,7 +1733,7 @@
                                           :names-to-avoid arg.names-to-avoid
                                           :proofs arg.proofs)
                                          state)))
-         ((mv okp test-term then-term else-term) (atc-check-condexpr term))
+         ((erp okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
           (b* (((erp (pexpr-gout test)) (atc-gen-expr-bool test-term gin state))
                ((erp (pexpr-gout then))

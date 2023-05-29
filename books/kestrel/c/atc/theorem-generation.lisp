@@ -246,107 +246,86 @@
      we use the same theorem index for all the theorems.
      The updated theorem index, returned by this ACL2 function,
      is just one more than the input theorem index."))
-  (b* (((mv new-inscope events names-to-avoid)
-        (atc-gen-new-inscope-aux fn fn-guard inscope new-context compst-var
-                                 rules thm-index names-to-avoid wrld)))
-    (mv new-inscope events names-to-avoid))
+  (b* (((when (endp inscope)) (mv nil nil names-to-avoid))
+       (scope (car inscope))
+       ((mv new-scope events names-to-avoid)
+        (atc-gen-new-inscope-aux fn fn-guard scope new-context compst-var
+                                 rules thm-index names-to-avoid wrld))
+       (scopes (cdr inscope))
+       ((mv new-scopes more-events names-to-avoid)
+        (atc-gen-new-inscope fn fn-guard scopes new-context compst-var
+                             rules thm-index names-to-avoid wrld)))
+    (mv (cons new-scope new-scopes)
+        (append events more-events)
+        names-to-avoid))
 
   :prepwork
   ((define atc-gen-new-inscope-aux ((fn symbolp)
                                     (fn-guard symbolp)
-                                    (inscope atc-symbol-varinfo-alist-listp)
+                                    (scope atc-symbol-varinfo-alistp)
                                     (new-context atc-contextp)
                                     (compst-var symbolp)
                                     (rules true-listp)
                                     (thm-index posp)
                                     (names-to-avoid symbol-listp)
                                     (wrld plist-worldp))
-     :returns (mv (new-inscope atc-symbol-varinfo-alist-listp
-                               :hyp (atc-symbol-varinfo-alist-listp inscope))
+     :returns (mv (new-scope atc-symbol-varinfo-alistp
+                             :hyp (atc-symbol-varinfo-alistp scope)
+                             :hints (("Goal"
+                                      :induct t
+                                      :in-theory (enable acons))))
                   (events pseudo-event-form-listp)
                   (names-to-avoid symbol-listp
                                   :hyp (symbol-listp names-to-avoid)))
      :parents nil
-     (b* (((when (endp inscope)) (mv nil nil names-to-avoid))
-          (scope (car inscope))
-          ((mv new-scope events names-to-avoid)
-           (atc-gen-new-inscope-aux-aux fn fn-guard scope new-context compst-var
-                                        rules thm-index names-to-avoid wrld))
-          (scopes (cdr inscope))
-          ((mv new-scopes more-events names-to-avoid)
-           (atc-gen-new-inscope-aux fn fn-guard scopes new-context compst-var
-                                    rules thm-index names-to-avoid wrld)))
-       (mv (cons new-scope new-scopes)
-           (append events more-events)
+     (b* (((when (endp scope)) (mv nil nil names-to-avoid))
+          ((cons var info) (car scope))
+          (type (atc-var-info->type info))
+          (thm (atc-var-info->thm info))
+          (type-pred (type-to-recognizer type wrld))
+          (new-thm (pack fn '- var '-in-scope- thm-index))
+          ((mv new-thm names-to-avoid)
+           (fresh-logical-name-with-$s-suffix
+            new-thm nil names-to-avoid wrld))
+          (var/varptr (if (type-case type :pointer)
+                          (add-suffix var "-PTR")
+                        var))
+          (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
+                                            ,compst-var)
+                          (equal (read-object
+                                  (objdesign-of-var (ident ,(symbol-name var))
+                                                    ,compst-var)
+                                  ,compst-var)
+                                 ,var/varptr)
+                          ,@(and (type-case type :pointer)
+                                 `((equal (read-object
+                                           ,(add-suffix var "-OBJDES")
+                                           ,compst-var)
+                                          ,var)))))
+          (formula1 (atc-contextualize formula1 new-context fn fn-guard
+                                       compst-var nil nil t wrld))
+          (formula2 `(,type-pred ,var))
+          (formula2 (atc-contextualize formula2 new-context fn fn-guard
+                                       nil nil nil nil wrld))
+          (formula `(and ,formula1 ,formula2))
+          (hints `(("Goal" :in-theory '(,thm ,@rules))))
+          ((mv event &) (evmac-generate-defthm new-thm
+                                               :formula formula
+                                               :hints hints
+                                               :enable nil))
+          (new-info (change-atc-var-info info :thm new-thm))
+          (rest (cdr scope))
+          ((mv new-rest events names-to-avoid)
+           (atc-gen-new-inscope-aux fn fn-guard rest new-context
+                                    compst-var rules thm-index
+                                    names-to-avoid wrld)))
+       (mv (acons var new-info new-rest)
+           (cons event events)
            names-to-avoid))
-
      :prepwork
-     ((define atc-gen-new-inscope-aux-aux ((fn symbolp)
-                                           (fn-guard symbolp)
-                                           (scope atc-symbol-varinfo-alistp)
-                                           (new-context atc-contextp)
-                                           (compst-var symbolp)
-                                           (rules true-listp)
-                                           (thm-index posp)
-                                           (names-to-avoid symbol-listp)
-                                           (wrld plist-worldp))
-        :returns (mv (new-scope atc-symbol-varinfo-alistp
-                                :hyp (atc-symbol-varinfo-alistp scope)
-                                :hints (("Goal"
-                                         :induct t
-                                         :in-theory (enable acons))))
-                     (events pseudo-event-form-listp)
-                     (names-to-avoid symbol-listp
-                                     :hyp (symbol-listp names-to-avoid)))
-        :parents nil
-        (b* (((when (endp scope)) (mv nil nil names-to-avoid))
-             ((cons var info) (car scope))
-             (type (atc-var-info->type info))
-             (thm (atc-var-info->thm info))
-             (type-pred (type-to-recognizer type wrld))
-             (new-thm (pack fn '- var '-in-scope- thm-index))
-             ((mv new-thm names-to-avoid)
-              (fresh-logical-name-with-$s-suffix
-               new-thm nil names-to-avoid wrld))
-             (var/varptr (if (type-case type :pointer)
-                             (add-suffix var "-PTR")
-                           var))
-             (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
-                                               ,compst-var)
-                             (equal (read-object
-                                     (objdesign-of-var (ident ,(symbol-name var))
-                                                       ,compst-var)
-                                     ,compst-var)
-                                    ,var/varptr)
-                             ,@(and (type-case type :pointer)
-                                    `((equal (read-object
-                                              ,(add-suffix var "-OBJDES")
-                                              ,compst-var)
-                                             ,var)))))
-             (formula1 (atc-contextualize formula1 new-context fn fn-guard
-                                          compst-var nil nil t wrld))
-             (formula2 `(,type-pred ,var))
-             (formula2 (atc-contextualize formula2 new-context fn fn-guard
-                                          nil nil nil nil wrld))
-             (formula `(and ,formula1 ,formula2))
-             (hints `(("Goal" :in-theory '(,thm ,@rules))))
-             ((mv event &) (evmac-generate-defthm new-thm
-                                                  :formula formula
-                                                  :hints hints
-                                                  :enable nil))
-             (new-info (change-atc-var-info info :thm new-thm))
-             (rest (cdr scope))
-             ((mv new-rest events names-to-avoid)
-              (atc-gen-new-inscope-aux-aux fn fn-guard rest new-context
-                                           compst-var rules thm-index
-                                           names-to-avoid wrld)))
-          (mv (acons var new-info new-rest)
-              (cons event events)
-              names-to-avoid))
-        :prepwork
-        ((local
-          (in-theory (enable alistp-when-atc-symbol-varinfo-alistp-rewrite))))
-        :verify-guards :after-returns)))))
+     ((local
+       (in-theory (enable alistp-when-atc-symbol-varinfo-alistp-rewrite))))
+     :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -394,7 +373,6 @@
        (new-premises (append premises (list premise)))
        (new-context (change-atc-context context :premises new-premises))
        (rules '(objdesign-of-var-of-enter-scope-iff
-                objdesign-of-var-of-add-var-iff
                 read-object-of-objdesign-of-var-of-enter-scope
                 compustate-frames-number-of-add-frame-not-zero
                 compustate-frames-number-of-enter-scope-not-zero
