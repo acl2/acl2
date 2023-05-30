@@ -1913,14 +1913,14 @@
               (atc-update-var-term-alist (list var)
                                          (list val-instance)
                                          gin.var-term-alist))
-             ((mv okp int-term type) (atc-check-integer-write val-term))
+             ((erp okp & arg-term type) (atc-check-integer-write val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
                     (reterr
                      (msg "The pointed integer write term ~x0 ~
                            to which ~x1 is bound ~
                            has the ~x2 wrapper, which is disallowed."
-                          int-term var wrapper?)))
+                          arg-term var wrapper?)))
                    ((unless (member-eq var gin.affect))
                     (reterr
                      (msg "The pointed integer ~x0 is being written to, ~
@@ -1950,7 +1950,7 @@
                            given that the code is guard-verified."
                           var ptr.type (type-pointer type))))
                    ((erp (pexpr-gout int))
-                    (atc-gen-expr-pure int-term
+                    (atc-gen-expr-pure arg-term
                                        (make-pexpr-gin
                                         :context gin.context
                                         :inscope gin.inscope
@@ -1970,7 +1970,7 @@
                            This is indicative of ~
                            unreachable code under the guards, ~
                            given that the code is guard-verified."
-                          int-term int.type type)))
+                          arg-term int.type type)))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (make-expr-unary

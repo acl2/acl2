@@ -194,8 +194,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-integer-write ((val pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (int pseudo-termp)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
+               (arg pseudo-termp)
                (type typep))
   :short "Check if a term may represent a write of an integer by pointer."
   :long
@@ -212,26 +214,40 @@
     "This ACL2 function takes as argument the value term of the @(tsee let),
      i.e. @('(<type>-write <int>)'),
      and checks if it has the expected form,
-     returning the integer type and the @('<int>') argument if successful."))
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp fixtype write) (atc-check-symbol-2part val.fn))
-       ((unless (and okp
-                     (eq write 'write)))
-        (no))
+     returning, if successful,
+     the function @('<type>-write'),
+     the argument @('<int>'),
+     and the integer type."))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call val))
+       ((unless okp) (no))
+       ((mv okp fixtype write) (atc-check-symbol-2part fn))
        (type (fixtype-to-integer-type fixtype))
-       ((when (not type)) (no))
-       ((unless (list-lenp 1 val.args)) (no))
-       (int (first val.args)))
-    (mv t int type))
+       ((unless (and okp
+                     (eq write 'write)
+                     type))
+        (no))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a write of an integer by pointer, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (first args)))
+    (retok t fn arg type))
   ///
 
   (defret pseudo-term-count-of-atc-check-integer-write
     (implies yes/no
-             (< (pseudo-term-count int)
+             (< (pseudo-term-count arg)
                 (pseudo-term-count val)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-integer-write
+    (implies yes/no
+             (type-nonchar-integerp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
