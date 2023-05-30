@@ -2600,7 +2600,16 @@
      We use 1 more than the limit for the body as limit bound,
      because we need 1 to go from @(tsee exec-fun)
      to @(tsee exec-block-item-list),
-     which is what the body's theorem refers to."))
+     which is what the body's theorem refers to.")
+   (xdoc::p
+    "We enable @(tsee declar) in the generated hints
+     because the correctness theorem generated about the body of the function
+     (i.e. @('body-thm')) does not that have that wrapper.
+     We will need to add other wrappers like @(tsee assign) here,
+     when we extend modular proofs to handle those.
+     An alternative could be to include the wrappers
+     in the theorems about the statements that form the body,
+     and then we will not need to include them here."))
   (b* ((wrld (w state))
        (lemma-name (pack fn '-correct))
        ((mv lemma-name names-to-avoid) (fresh-logical-name-with-$s-suffix
