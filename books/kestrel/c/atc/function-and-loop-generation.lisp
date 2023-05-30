@@ -2111,6 +2111,8 @@
                (scopep-event pseudo-event-formp)
                (scopep-thm symbolp)
                (omap-update-nest "An untranslated term.")
+               (init-formals symbol-listp
+                             :hyp (atc-symbol-varinfo-alistp typed-formals))
                (proofs booleanp)
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorems about
@@ -2126,7 +2128,7 @@
   (b* ((wrld (w state))
        ((mv omap-update-nest init-formals proofs)
         (atc-gen-omap-update-formals typed-formals))
-       ((unless proofs) (mv '(_) nil '(_) nil nil nil names-to-avoid))
+       ((unless proofs) (mv '(_) nil '(_) nil nil nil nil names-to-avoid))
        (formals (strip-cars typed-formals))
        (expand-thm (pack fn '-init-scope-expand))
        ((mv expand-thm names-to-avoid)
@@ -2262,6 +2264,7 @@
         scopep-event
         scopep-thm
         omap-update-nest
+        init-formals
         t
         names-to-avoid)))
 
@@ -2568,6 +2571,7 @@
 (define atc-gen-fun-correct-thm ((fn symbolp)
                                  (fn-guard symbolp)
                                  (fn-def* symbolp)
+                                 (init-formals symbol-listp)
                                  (context-preamble true-listp)
                                  (prog-const symbolp)
                                  (compst-var symbolp)
@@ -2627,7 +2631,7 @@
                        (>= ,limit-var ,limit))
                   (let ((,result-var (,fn ,@formals)))
                     (and (equal (exec-fun (ident ,(symbol-name fn))
-                                          (list ,@formals)
+                                          (list ,@init-formals)
                                           ,compst-var
                                           ,fenv-var
                                           ,limit-var)
@@ -2664,12 +2668,13 @@
        (formula
         `(implies (and (compustatep ,compst-var)
                        (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
+                       ,@context-preamble
                        ,(untranslate$ (uguard+ fn wrld) nil state)
                        (integerp ,limit-var)
                        (>= ,limit-var ,limit))
                   (let ((,result-var (,fn ,@formals)))
                     (and (equal (exec-fun (ident ,(symbol-name fn))
-                                          (list ,@formals)
+                                          (list ,@init-formals)
                                           ,compst-var
                                           ,fenv-var
                                           ,limit-var)
@@ -2763,6 +2768,7 @@
             init-scope-scopep-event
             init-scope-scopep-thm
             omap-update-nest
+            init-formals
             modular-proofs
             names-to-avoid)
         (if proofs
@@ -2776,7 +2782,7 @@
                                      fenv-var
                                      names-to-avoid
                                      state)
-          (mv '(_) nil '(_) nil nil nil names-to-avoid)))
+          (mv '(_) nil '(_) nil nil nil nil names-to-avoid)))
        ((mv push-init-thm-event
             push-init-thm
             add-var-nest
@@ -2903,11 +2909,11 @@
                       fn-correct-exported-events
                       fn-correct-thm
                       names-to-avoid)
-                  (if (and modular-proofs
-                           (not context-preamble))
+                  (if modular-proofs
                       (atc-gen-fun-correct-thm fn
                                                fn-guard
                                                fn-def*
+                                               init-formals
                                                context-preamble
                                                prog-const
                                                compst-var
