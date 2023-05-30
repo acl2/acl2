@@ -52,13 +52,15 @@
 
   (defttag :write-to-file-okp)
 
-  (defun save-the-svtv-to-file (filename svtv state)
+  (defun save-the-svtv-to-file (filename svtv modified-svtv state)
     (declare (xargs :mode :program
                     :stobjs (state)))
     (b* ((svexl (svl::svex-alist-to-svexl-alist (sv::svtv->outexprs svtv)))
+         (modified-svexl (and modified-svtv
+                              (svl::svex-alist-to-svexl-alist (sv::svtv->outexprs modified-svtv))))
          (ins (sv::svtv->inmasks svtv))
          (outs (sv::svtv->orig-outs svtv))
-         (lst `(:ins ,ins :outs ,outs :svexl ,svexl))
+         (lst `(:ins ,ins :outs ,outs :svexl ,svexl :modified-svexl ,modified-svexl))
          ((mv chan state)
           (open-output-channel! filename :object state)))
       (if chan
@@ -69,13 +71,38 @@
             "Could not open for writing: ~x0"
             filename))))
 
+  (defun write-string-to-file (filename str state)
+    (declare (xargs :mode :program
+                    :stobjs (state)))
+    (b* (((mv chan state)
+          (open-output-channel! filename :object state)))
+      (if chan
+          (pprogn
+           (acl2::write-objects (list str) chan state)
+           (value ':done))
+        (er soft 'write-string-to-file
+            "Could not open for writing: ~x0"
+            filename))))
+
+  (defmacro write-string-to-file-event (filename content)
+    `(make-event
+      (er-progn
+       (write-string-to-file ,filename ,content state)
+       (value '(value-triple :done)))))
+
   (defttag nil))
 
 (defmacro parse-and-create-svtv (&key file
+                                      modified-modules-file
                                       topmodule
                                       name
                                       save-to-file)
-  (declare (xargs :guard (and (or (not name)
+  (declare (xargs :guard (and (or (stringp file)
+                                  (cw "File should be a string~%"))
+                              (or (not modified-modules-file)
+                                  (stringp modified-modules-file)
+                                  (cw "given modified-modules-file should be a string if provided.~%"))
+                              (or (not name)
                                   (symbolp name)
                                   (cw "given name should be a symbol~%"))
                               (or (not save-to-file)
@@ -87,6 +114,7 @@
      :gag-mode nil
      (make-event
       (b* ((file ',file)
+           (modified-modules-file ',modified-modules-file)
            (topmodule ',topmodule)
            (name ',(or name (intern$ (string-upcase topmodule) "RP")))
 
@@ -98,6 +126,16 @@
                               (vl::vl-load (vl::make-vl-loadconfig
                                             :start-files '(,file)))))
                           (mv (vl::vl-loadresult->design loadresult) state))))
+           (modified-vl-design (and modified-modules-file
+                                    (intern$ (str::cat "*" (symbol-name name) "MODIFIED-VL-DESIGN*") "RP")))
+           (modified-vl-event (and modified-modules-file
+                                   `(acl2::defconsts
+                                      (,modified-Vl-design state)
+                                      (b* (((mv loadresult state)
+                                            (vl::vl-load (vl::make-vl-loadconfig
+                                                          :start-files '(,modified-modules-file ,file)))))
+                                        (mv (vl::vl-loadresult->design loadresult) state)))))
+
            ;; (SV) event2
            (sv-design (intern$ (str::cat "*" (symbol-name name) "-SV-DESIGN*") "RP"))
            (sv-event `(acl2::defconsts
@@ -109,6 +147,18 @@
                           (and errmsg
                                (acl2::raise "~@0~%" errmsg))
                           sv-design)))
+           (modified-sv-design (and modified-modules-file
+                                    (intern$ (str::cat "*" (symbol-name name) "-MODIFIED-SV-DESIGN*") "RP")))
+           (modified-sv-event (and modified-modules-file
+                                   `(acl2::defconsts
+                                      (,modified-sv-design)
+                                      (b* (((mv errmsg sv-design ?good ?bad)
+                                            (vl::vl-design->sv-design ,topmodule
+                                                                      ,modified-vl-design
+                                                                      (vl::make-vl-simpconfig))))
+                                        (and errmsg
+                                             (acl2::raise "~@0~%" errmsg))
+                                        sv-design))))
 
            ;; (inputs/outputs) event3
            (get-io-event `(local
@@ -138,6 +188,22 @@
                           (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOHYPS") "RP"))
                           (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOINS") "RP"))))
 
+           (modified-name (and modified-modules-file (intern-in-package-of-symbol
+                                                      (str::cat "MODIFIED-" (symbol-name name))
+                                                      name)))
+           (modified-svtv-event (and modified-modules-file
+                                     `(progn
+                                        (make-event
+                                         `(sv::defsvtv$ ,',modified-name
+                                            :mod ,',modified-sv-design
+                                            :inputs ',(loop$ for x in *ins* collect
+                                                             `(,x ,(intern$ (string-upcase x) "RP")))
+                                            :outputs ',(loop$ for x in *outs* collect
+                                                              `(,x ,(intern$ (string-upcase x) "RP")))))
+
+                                        (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOHYPS") "RP"))
+                                        (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOINS") "RP")))))
+
            ;; (SAVE-TO-FILE) event5
            ;; save-to-file can be a string or a symbol. If string use it as
            ;; prefix.
@@ -148,21 +214,30 @@
                                      ".svexl")))
            (save-to-file-event `(make-event
                                  (er-progn
-                                  (save-the-svtv-to-file ',file-name (,name) state)
+                                  (save-the-svtv-to-file ',file-name
+                                                         (,name)
+                                                         ,(and modified-modules-file `(,modified-name))
+                                                         state)
                                   (value '(value-triple :invisible))))))
         `(encapsulate
            nil
 
            ,@(if save-to-file
                  `((local ,vl-event)
+                   ,@(and modified-modules-file `((local ,modified-vl-event)))
                    (local ,sv-event)
+                   ,@(and modified-modules-file `((local ,modified-sv-event)))
                    (local ,get-io-event)
                    (local ,svtv-event)
+                   ,@(and modified-modules-file `((local ,modified-svtv-event)))
                    (local ,save-to-file-event))
                `(,vl-event
+                 ,@(and modified-modules-file `(,modified-vl-event))
                  ,sv-event
+                 ,@(and modified-modules-file `(,modified-sv-event))
                  ,get-io-event
-                 ,svtv-event))
+                 ,svtv-event
+                 ,@(and modified-modules-file `(,modified-svtv-event))))
 
            (value-triple (clear-memoize-tables))
            ;;(value-triple (hons-clear t))
@@ -290,7 +365,7 @@
            ((mv content state)
             (acl2::read-object-all channel state))
            (state (close-input-channel channel state))
-           ((std::extract-keyword-args ins outs svexl)
+           ((std::extract-keyword-args ins outs svexl modified-svexl)
             content))
         (mv nil
             `(progn
@@ -299,7 +374,12 @@
                (defun ,outs-name ()
                  ',outs)
                (defun ,name ()
-                 (svl::svexl-alist-to-svex-alist ',svexl)))
+                 (svl::svexl-alist-to-svex-alist ',svexl))
+
+               ,@(and modified-svexl
+                      `((defun ,(intern-in-package-of-symbol (str::cat "MODIFIED-" (symbol-name name)) name)
+                            ()
+                          (svl::svexl-alist-to-svex-alist ',modified-svexl)))))
             state)))))
 
 (defmacro verify-svtv-of-mult (&key name
@@ -322,13 +402,15 @@
 
             ;; ---------------
             ;; make decisions based on read-from-file:
-            ((mv invars outvars)
+            ((mv invars outvars has-modified)
              ,(if read-from-file
                   `(mv (strip-cars (<mult>-inmasks))
-                       (strip-cars (strip-cdrs (<mult>-outs))))
+                       (strip-cars (strip-cdrs (<mult>-outs)))
+                       (not (equal (meta-extract-formula 'modified-<mult> state) ''t)))
                 `(mv (strip-cars (strip-cdrs (sv::svtv->orig-ins (<mult>))))
-                     (strip-cars (strip-cdrs (sv::svtv->orig-outs (<mult>)))))))
-            ((mv hyps simulate-call)
+                     (strip-cars (strip-cdrs (sv::svtv->orig-outs (<mult>))))
+                     (not (equal (meta-extract-formula 'modified-<mult> state) ''t)))))
+            ((mv hyps simulate-call modified-simulate-call)
              ,(if read-from-file
                   `(mv (cons 'and
                              (loop$ for x in (<mult>-inmasks) collect
@@ -336,8 +418,13 @@
                                                       ,(car x))))
                        `(sv::svex-alist-eval (<mult>)
                                              (list ,@(loop$ for x in invars collect
+                                                            (list 'cons `',x x))))
+                       `(sv::svex-alist-eval (modified-<mult>)
+                                             (list ,@(loop$ for x in invars collect
                                                             (list 'cons `',x x)))))
-                `(mv '(<mult>-autohyps) '(sv::svtv-run (<mult>) (<mult>-autoins)))))
+                `(mv '(<mult>-autohyps)
+                     '(sv::svtv-run (<mult>) (<mult>-autoins))
+                     '(sv::svtv-run (modified-<mult>) (<mult>-autoins)))))
             ;; ---------------
 
             ((acl2::er translated-concl)
@@ -356,18 +443,34 @@
                                     (str::Cat "?" (symbol-name x))
                                     x)))
 
+            (vescmul-event `(defthmrp-multiplier
+                              ,@(and ,then-fgl `(:then-fgl ,',then-fgl))
+                              <mult>-is-correct
+                              (implies ,hyps
+                                       (b* (((sv::svassocs ,@ignorable-outs)
+                                             ,simulate-call))
+                                         ,',concl))
+
+                              ,@(and cases `(:cases ,cases))))
+
+            (modified-equiv-events (and has-modified
+                                        `(defsection <mult>-is-correct
+                                           (local
+                                            (value-triple (acl2::tshell-ensure)))
+                                           (local
+                                            (fgl::def-fgl-thm <mult>--rw-from-original-to-modified
+                                              (implies ,hyps
+                                                       (equal ,simulate-call
+                                                              ,modified-simulate-call))))
+                                           (local
+                                            (rp::add-rp-rule <mult>--rw-from-original-to-modified
+                                                             :rw-direction :both))
+                                           ,vescmul-event)))
+
             (event `(:or
                      (generate-proof-summary
                       <mult>
-                      (defthmrp-multiplier
-                        ,@(and ,then-fgl `(:then-fgl ,',then-fgl))
-                        <mult>-is-correct
-                        (implies ,hyps
-                                 (b* (((sv::svassocs ,@ignorable-outs)
-                                       ,simulate-call))
-                                   ,',concl))
-
-                        ,@(and cases `(:cases ,cases)))
+                      ,(if has-modified modified-equiv-events vescmul-event)
                       :keep-going ,keep-going
                       :print-message ,print-message)
                      (value-triple
