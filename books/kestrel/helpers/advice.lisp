@@ -194,13 +194,15 @@
 ;;     (cons (untranslate-list (first clauses) iff-flg wrld)
 ;;           (untranslate-clauses (rest clauses) iff-flg wrld))))
 
-(defun make-numbered-checkpoint-entries (current-number checkpoints)
-  (declare (xargs :mode :program)) ; because of fms-to-string
-  (if (endp checkpoints)
+(defun make-numbered-checkpoint-entries (current-number checkpoint-clauses)
+  (declare (xargs :guard (and (natp current-number)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses))
+                  :mode :program)) ; because of fms-to-string
+  (if (endp checkpoint-clauses)
       nil
     (acons (concatenate 'string "checkpoint_" (acl2::nat-to-string current-number))
-           (fms-to-string "~X01" (acons #\0 (first checkpoints) (acons #\1 nil nil)))
-           (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
+           (fms-to-string "~X01" (acons #\0 (first checkpoint-clauses) (acons #\1 nil nil)))
+           (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoint-clauses)))))
 
 (defconst *rec-to-symbol-alist*
   '(;; For these, training data is obtained by removing the entire "hint
@@ -355,6 +357,7 @@
     ;; note the capital L and underscores:
     (:leidos-run10.0 . "Leidos_run10_0")
     (:leidos-run10.1 . "Leidos_run10_1")
+    (:plur . "plur")
     ))
 
 (defconst *ml-models*
@@ -3282,9 +3285,9 @@
             (mv nil (acl2::parsed-json-array->values parsed-response) state))))
        ((when erp) (mv erp nil state))
        (- (if (not (consp semi-parsed-recommendations))
-              (cw "~% WARNING: No recommendations returned from server for ~x0.~%" model)
+              (cw " WARNING: No recommendations returned from server for ~x0.~%" model)
             (if (not (equal num-recs (len semi-parsed-recommendations)))
-                (cw "~% WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
+                (cw " WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
               nil)))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
