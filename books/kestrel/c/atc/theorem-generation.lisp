@@ -294,8 +294,9 @@
           ((mv new-thm names-to-avoid)
            (fresh-logical-name-with-$s-suffix
             new-thm nil names-to-avoid wrld))
-          (var/varptr (if (type-case type :pointer)
-                          (add-suffix var "-PTR")
+          (var/varptr (if (or (type-case type :pointer)
+                              (type-case type :array))
+                          (add-suffix-to-fn var "-PTR")
                         var))
           (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
                                             ,compst-var)
@@ -304,9 +305,10 @@
                                                     ,compst-var)
                                   ,compst-var)
                                  ,var/varptr)
-                          ,@(and (type-case type :pointer)
+                          ,@(and (or (type-case type :pointer)
+                                     (type-case type :array))
                                  `((equal (read-object
-                                           ,(add-suffix var "-OBJDES")
+                                           ,(add-suffix-to-fn var "-OBJDES")
                                            ,compst-var)
                                           ,var)))))
           (formula1 (atc-contextualize formula1 new-context fn fn-guard
