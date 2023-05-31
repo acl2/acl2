@@ -906,12 +906,12 @@
 (defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r-int x y) x)
-		   (* (s-int x y) y))
+	     (= (+ (* (r x y) x)
+		   (* (s x y) y))
 		(gcd x y)))
     :rule-classes ())
 
-(defund z*-inv (x n) (mod (r-int x n) n))
+(defund z*-inv (x n) (mod (r x n) n))
 
 ;; Rewrite rules required by defgroup:
 

@@ -1,5 +1,5 @@
 ; ACL2 Community Books Release Notes
-; Copyright (C) 2013-2022 Centaur Technology
+; Copyright (C) 2013-2023 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -121,6 +121,15 @@
 
    (xdoc::h3 "New Libraries")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Group Theory Library")
+
+   (xdoc::p
+    "Added seven books to @('projects/groups/') on the topics of homomorphisms,
+     direct products, the Fundamental Theorem of Finite Abelian Groups,
+     symmetric groups, group actions, the Sylow theorems, and simple groups.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -237,6 +246,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Demos Library")
+
+   (xdoc::p
+    "See directory @('demos/include-raw-examples/') for examples demonstrating
+     the use of @(tsee include-raw) and @(tsee partial-encapsulate).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "digits-any-base" "Digits Library"))
 
    (xdoc::p
@@ -270,10 +287,20 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Number Theory Library")
+
+   (xdoc::p
+    "The library @('projects/quadratic-reciprocity/'), which was originally
+     dedicated to a proof of the theorem of that name, is being extended with
+     a variety of number-theoretic results.  Therefore, the path to the
+     directory has been changed to @('projects/numbers/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
-    "Added a theorem.")
+    "Added some theorems.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4287,15 +4314,15 @@ specialization of @(tsee r1cs::verify-r1cs).")
 
  <h4>Quadratic Reciprocity</h4>
 
- <p>In @('projects/numbers/'), certain include-books, namely
+ <p>In @('projects/quadratic-reciprocity/'), certain include-books, namely
  those that bring in books from @('support/'), have been made local.  This follows
  the standard pattern of putting all proof work in separate \"support books\"
  which are included only locally in the main files.  (The main files simply
  re-iterate, redundantly, the events to be exported.)  If this change causes
  proof failures, and your development includes books such as
- @('projects/numbers/fermat'), consider now also including the
+ @('projects/quadratic-reciprocity/fermat'), consider now also including the
  corresponding support books (e.g.,
- @('projects/numbers/support/fermat')).  (Actually, to get
+ @('projects/quadratic-reciprocity/support/fermat')).  (Actually, to get
  broken proofs working again, it may suffice to include simpler books that were
  previously brought in via the support books, such as
  @('rtl/rel11/support/basic') or @('rtl/rel11/support/util').)</p>
@@ -8042,7 +8069,7 @@ found in the change log.</p>")
      No        leftist-trees            projects/leftist-trees
      No        symbolic                 projects/symbolic
      No        translators              projects/translators
-     No        numbers                  projects/numbers
+     No        quadratic-reciprocity    projects/quadratic-reciprocity
 
      No        parallel                 misc/ or, for some books,
                                         demos/parallel or system/parallel

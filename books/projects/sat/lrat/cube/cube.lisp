@@ -14,6 +14,8 @@
                               (open-input-channel-p channel :object state)
                               (true-listp acc)
                               (natp n))
+                  :guard-hints (("Goal" :in-theory (enable read-acl2-oracle
+                                                           update-acl2-oracle)))
                   :measure (nfix n)))
   (cond
    ((zp n)

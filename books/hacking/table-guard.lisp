@@ -34,7 +34,8 @@ allow extending table guards.
  (redefun+rewrite
   table-fn1
   (:carpat (cond
-            ((equal old-guard tterm)
+            ((and (iff mv-p (cdr stobjs-out))
+                  (equal old-tterm tterm))
              %redundant%)
             (old-guard
              %er1%)
@@ -43,7 +44,8 @@ allow extending table guards.
             (t
              %rest%))
    :repl   (cond
-            ((equal old-guard tterm)
+            ((and (iff mv-p (cdr stobjs-out))
+                  (equal old-tterm tterm))
              %redundant%)
             ((and old-guard (not (ttag %wrld%)))
              %er1%)
@@ -72,6 +74,12 @@ allow extending table guards.
   (declare (xargs :guard (symbolp name)))
   `(make-event
     (er-let* ((old-guard (table ,name nil nil :guard))
+; Matt K. mod 5/10/2023: Accommodate the case that the table-guard returns (mv
+; successp msg); see :DOC table.  But note that we are changing the table guard
+; to return just the success flag; the custom message is lost.
+              (old-guard (value (if (eq (car old-guard) :mv)
+                                    `(car ,(cdr old-guard))
+                                  old-guard)))
               (new-guard-cons (er-rewrite-form (list old-guard)
                                                .,rewrite-spec)))
       (er-progn

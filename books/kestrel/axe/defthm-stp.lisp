@@ -27,7 +27,9 @@
                                   (natp max-conflicts)))
                   :stobjs state))
   (b* (((mv result state)
-        (translate-and-prove-term-with-stp theorem-body counterexamplep max-conflicts
+        (translate-and-prove-term-with-stp theorem-body counterexamplep
+                                           nil ; print-cex-as-signedp
+                                           max-conflicts
                                            print (symbol-name name) state)))
     (if (eq result *valid*)
         (mv nil ;no error

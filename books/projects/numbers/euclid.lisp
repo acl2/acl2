@@ -6,6 +6,8 @@
 (include-book "xdoc/top" :dir :system)
 
 (local (include-book "support/euclid"))
+(local (include-book "support/fta"))
+(local (include-book "support/crt"))
 
 (set-enforce-redundancy t)
 (set-inhibit-warnings "theory") ; avoid warning in the next event
@@ -186,6 +188,46 @@ This book contains proofs of two theorems of Euclid:
 
 (in-theory (disable primep))
 
+;; Every positive integer is a product of powers of distinct primes.
+;; This is the existence part of the Fundamental Theorem of Arithmetic:
+
+(defun prime-pow-list-p (l)
+  (if (consp l)
+      (and (primep (caar l))
+	   (posp (cdar l))
+	   (prime-pow-list-p (cdr l))
+	   (or (null (cdr l)) (< (caar l) (caadr l))))
+    (null l)))
+
+(defun pow-prod (l)
+  (if (consp l)
+      (* (expt (caar l) (cdar l))
+	 (pow-prod (cdr l)))
+    1))
+(defun prime-fact (n)
+  (if (and (natp n) (> n 1))
+      (let* ((p (least-prime-divisor n))
+   	     (l (prime-fact (/ n p))))
+	(if (and (consp l) (equal (caar l) p))
+	    (cons (cons p (1+ (cdar l))) (cdr l))
+	  (cons (cons p 1) l)))
+    ()))
+
+(defthmd caar-prime-fact
+  (implies (and (natp n) (> n 1))
+	   (equal (caar (prime-fact n))
+		  (least-prime-divisor n))))
+
+(defthmd caar-prime-pow-list
+  (implies (and (prime-pow-list-p l) (consp l))
+           (equal (caar l) (least-prime-divisor (pow-prod l)))))
+
+(defthmd prime-fact-existence
+  (implies (posp n)
+	   (let ((l (prime-fact n)))
+	     (and (prime-pow-list-p l)
+		  (equal (pow-prod l) n)))))
+
 "Our formulation of the infinitude of the set of primes is based on a function that
  returns a prime that is greater than its argument:
  @(def fact)
@@ -296,8 +338,8 @@ This book contains proofs of two theorems of Euclid:
  @(def r-nat)
  @(def s-nat)
  @(thm r-s-nat)
- @(def r-int)
- @(def s-int)
+ @(def r)
+ @(def s)
  @(thm gcd-linear-combination)
  @(thm divides-gcd)
  @(thm gcd-prime)"
@@ -340,14 +382,14 @@ This book contains proofs of two theorems of Euclid:
 		(gcd-nat x y)))
   :rule-classes ())
 
-(defun r-int (x y)
+(defun r (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< x 0)
       (- (r-nat (abs x) (abs y)))
     (r-nat (abs x) (abs y))))
 
-(defun s-int (x y)
+(defun s (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< y 0)
@@ -357,12 +399,12 @@ This book contains proofs of two theorems of Euclid:
 (defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r-int x y) x)
-		   (* (s-int x y) y))
+	     (= (+ (* (r x y) x)
+		   (* (s x y) y))
 		(gcd x y)))
   :rule-classes ())
 
-(in-theory (disable gcd r-int s-int))
+(in-theory (disable gcd r s))
 
 (defthm divides-gcd
     (implies (and (integerp x)
@@ -408,6 +450,26 @@ This book contains proofs of two theorems of Euclid:
 	   (equal (gcd (/ x d) (/ y d))
 	          (/ (gcd x y) d))))
 
+(defthmd gcd-divisor
+  (implies (and (integerp x) (integerp y)                
+                (integerp d) (not (= d 0))
+		(divides d y)
+		(= (gcd x y) 1))
+	   (equal (gcd x d) 1)))
+
+;; If x and y are nor relatively prime, then they have a common prime divisor:
+
+(defund cpd (x y)
+  (least-prime-divisor (gcd x y)))
+
+(defthmd cpd-divides
+  (implies (and (integerp x) (not (= x 0))
+                (integerp y) (not (= y 0))
+		(not (= (gcd x y) 1)))
+	   (and (primep (cpd x y))
+	        (divides (cpd x y) x)
+	        (divides (cpd x y) y))))
+
 "The main theorem:
  @(thm euclid)"
 
@@ -418,9 +480,21 @@ This book contains proofs of two theorems of Euclid:
 		  (not (divides p a))
 		  (not (divides p b)))
 	     (not (divides p (* a b))))
-  :rule-classes ())
+    :rule-classes ())
 
-;; 1st corollary of euclid: If d divides mn and (gcd d m) = 1, then d divides n.
+;; The following results are all consequences of euclid.
+
+;; If x is relatively prime to both y and z, then x is relatively prime to (* y z).
+
+(defthmd rel-prime-prod
+  (implies (and (integerp x) (not (= x 0))
+		(integerp y) (not (= y 0))
+		(integerp z) (not (= z 0))
+		(= (gcd x y) 1)
+		(= (gcd x z) 1))
+	   (equal (gcd x (* y z)) 1)))
+
+;; If d divides mn and (gcd d m) = 1, then d divides n.
 ;; The proof is by induction on d.  The claim is trivial for d = 1.
 ;; Let p be a prime divisor of d.  Then p does not divide m ,and therefore d divides n.
 ;; By induction, since d/p divides m(n/p), d/p divides n/p, which implies d divides n.
@@ -433,7 +507,7 @@ This book contains proofs of two theorems of Euclid:
 		(= (gcd d m) 1))
 	   (divides d n)))
 
-;; 2nd corollary of euclid: If relatively prime integers x and y both divde m, then so does xy.
+;; If relatively prime integers x and y both divde m, then so does xy.
 ;; The proof is by induction on x.  The claim is trivial for x = 1.
 ;; Let p be a prime divisor of x. Then p does not divide y, but since p divides m = (m/y)* y, p divides m/y
 ;; which implies that y divides m/p.  Thus, m/p is divisible by both x/p and y.  By induction, xy/p
@@ -489,4 +563,62 @@ This book contains proofs of two theorems of Euclid:
 		     (divides y m))
 	        (divides (lcm x y) m))))
 
+;; Uniqueness part of the Fundamental Theorem of Arithmetic:
+
+(defthmd prime-fact-uniqueness
+  (implies (and (posp n)
+		(prime-pow-list-p l)
+		(equal (pow-prod l) n))
+	   (equal (prime-fact n) l)))
+
+;; Chinese Remainder Theorem:
+
+(defun rel-prime-all (x l)
+  (if (consp l)
+      (and (equal (gcd x (car l)) 1)
+	   (rel-prime-all x (cdr l)))
+    t))
+
+(defun rel-prime-moduli (l)
+  (if (consp l)
+      (and (integerp (car l))
+	   (>= (car l) 2)
+	   (rel-prime-all (car l) (cdr l))
+	   (rel-prime-moduli (cdr l)))
+    (null l)))
+
+(defun congruent-all (x a m)
+  (declare (xargs :measure (acl2-count m)))
+  (if (consp m)
+      (and (equal (mod x (car m)) (mod (car a) (car m)))
+	   (congruent-all x (cdr a) (cdr m)))
+    t))
+
+(defun int-list-p (l)
+  (if (consp l)
+      (and (integerp (car l))
+	   (int-list-p (cdr l)))
+    t))
+
+(defun prod-list (l)
+  (if (consp l)
+      (* (car l) (prod-list (cdr l)))
+    1))
+
+(defund one-mod (x l) (* (s x (prod-list l)) (prod-list l)))
+
+(defun crt1 (a m l)
+  (if (consp a)
+      (+ (* (car a) (one-mod (car m) (remove1-equal (car m) l)))
+         (crt1 (cdr a) (cdr m) l))
+    0))
+
+(defund crt (a m) (crt1 a m m))
+
+(defthmd chinese-remainder-theorem
+    (implies (and (int-list-p a)
+		  (rel-prime-moduli m)
+		  (= (len a) (len m)))
+	     (and (integerp (crt a m))
+		  (congruent-all (crt a m) a m))))
 )

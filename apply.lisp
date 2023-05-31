@@ -1908,9 +1908,10 @@
                                          (table-alist 'badge-table wrld)))
                           wrld))))
 
-(table badge-table nil nil
-       :guard
-       (badge-table-guard key val world))
+(set-table-guard badge-table
+                 (badge-table-guard key val world)
+                 :topic defbadge
+                 :show t)
 
 (table badge-table
        :badge-userfn-structure

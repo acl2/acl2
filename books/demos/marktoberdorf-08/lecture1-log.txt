@@ -1174,10 +1174,10 @@ Subgoal *1.1.1.1/4'
          (EQUAL (INSERT IT1 (INSERT IT3 IT0))
                 (INSERT X1 (INSERT IT1 (INSERT IT3 IT))))).
 
-This simplifies, using the :definition INSERT (if-intro), primitive
-type reasoning, the :rewrite rules CAR-CONS, CDR-CONS, LEXORDER-REFLEXIVE
-and LEXORDER-TRANSITIVE and the :type-prescription rule LEXORDER, to
-the following two conjectures.
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definition INSERT (if-intro), primitive type reasoning, the :rewrite
+rules CAR-CONS, CDR-CONS, LEXORDER-REFLEXIVE and LEXORDER-TRANSITIVE
+and the :type-prescription rule LEXORDER, to the following two conjectures.
 
 Subgoal *1.1.1.1/4.2
 (IMPLIES (AND (CONSP IT0)
@@ -4727,8 +4727,9 @@ Subgoal *1.12.1/3
               (NOT (EQUAL E X1)))
          (EQUAL (HOW-MANY E X2) 2)).
 
-This simplifies, using the :definition HOW-MANY and the :executable-
-counterpart of EQUAL, to
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definition HOW-MANY and the :executable-counterpart of EQUAL,
+to
 
 Subgoal *1.12.1/3'
 (IMPLIES (AND (NOT (CONSP X2))
@@ -4771,8 +4772,9 @@ Subgoal *1.12.1/1
               (NOT (EQUAL E X1)))
          (EQUAL (HOW-MANY E X2) 2)).
 
-This simplifies, using the :definition HOW-MANY, the :executable-counterparts
-of BINARY-+ and EQUAL and primitive type reasoning, to
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definition HOW-MANY, the :executable-counterparts of BINARY-+
+and EQUAL and primitive type reasoning, to
 
 Subgoal *1.12.1/1'
 (IMPLIES (AND (CONSP X2)
@@ -7466,9 +7468,9 @@ Subgoal *1.11/3
               (NOT (EQUAL E X1)))
          (EQUAL (HOW-MANY E X2) 2)).
 
-This simplifies, using the :definitions HOW-MANY and MEMBER-EQUAL,
-the :executable-counterparts of BINARY-+ and EQUAL and primitive type
-reasoning, to
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definitions HOW-MANY and MEMBER-EQUAL, the :executable-counterparts
+of BINARY-+ and EQUAL and primitive type reasoning, to
 
 Subgoal *1.11/3'
 (IMPLIES (AND (CONSP X2)
@@ -7670,8 +7672,9 @@ Subgoal *1.11.4/4
               (EQUAL (HOW-MANY X3 R*) 2))
          (EQUAL X3 X1)).
 
-This simplifies, using the :definitions HOW-MANY and MEMBER-EQUAL and
-primitive type reasoning, to
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definitions HOW-MANY and MEMBER-EQUAL and primitive type reasoning,
+to
 
 Subgoal *1.11.4/4'
 (IMPLIES (AND (CONSP X4)
@@ -10061,9 +10064,9 @@ Subgoal *1.3/1'
          (NOT (EQUAL (HOW-MANY X1 (CDR (MEMBER-EQUAL X1 X2)))
                      0))).
 
-This simplifies, using the :definitions HOW-MANY, MEMBER-EQUAL and
-RM* and the :executable-counterparts of CDR, CONSP, EQUAL and TWINS,
-to
+This simplifies (dropping false conclusion; see :DOC clause), using
+the :definitions HOW-MANY, MEMBER-EQUAL and RM* and the :executable-
+counterparts of CDR, CONSP, EQUAL and TWINS, to
 
 Subgoal *1.3/1''
 (CONSP X2).

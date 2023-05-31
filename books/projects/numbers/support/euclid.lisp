@@ -343,38 +343,38 @@
 		(gcd-nat x y)))
   :rule-classes ())
 
-(defun r-int (x y)
+(defun r (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< x 0)
       (- (r-nat (abs x) (abs y)))
     (r-nat (abs x) (abs y))))
 
-(defun s-int (x y)
+(defun s (x y)
   (declare (xargs :guard (and (integerp x)
                               (integerp y))))
   (if (< y 0)
       (- (s-nat (abs x) (abs y)))
     (s-nat (abs x) (abs y))))
 #|
-(defthm integerp-r-int
-    (integerp (r-int x y))
+(defthm integerp-r
+    (integerp (r x y))
   :rule-classes (:type-prescription))
 
-(defthm integerp-s-int
-    (integerp (s-int x y))
+(defthm integerp-s
+    (integerp (s x y))
   :rule-classes (:type-prescription))
 |#
 (defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r-int x y) x)
-		   (* (s-int x y) y))
+	     (= (+ (* (r x y) x)
+		   (* (s x y) y))
 		(gcd x y)))
   :rule-classes ()
   :hints (("Goal" :use (:instance r-s-nat (x (abs x)) (y (abs y))))))
 
-(in-theory (disable gcd r-int s-int))
+(in-theory (disable gcd r s))
 
 (defthm divides-gcd
     (implies (and (integerp x)
@@ -385,9 +385,9 @@
 		  (divides d y))
 	     (divides d (gcd x y)))
   :hints (("Goal" :use (gcd-linear-combination
-			(:instance divides-sum (x d) (y (* (r-int x y) x)) (z (* (s-int x y) y)))
-			(:instance divides-product (x d) (y x) (z (r-int x y)))
-			(:instance divides-product (x d) (z (s-int x y)))))))
+			(:instance divides-sum (x d) (y (* (r x y) x)) (z (* (s x y) y)))
+			(:instance divides-product (x d) (y x) (z (r x y)))
+			(:instance divides-product (x d) (z (s x y)))))))
 
 (defthmd rel-prime-no-common-factor
   (implies (and (integerp x)
@@ -480,8 +480,8 @@
   (implies (and (primep p)
                 (integerp a)
                 (integerp b)
-                (= (+ (* a (s-int p a)) (* p (r-int p a))) 1))
-           (equal (+ (* a b (s-int p a)) (* b p (r-int p a)))
+                (= (+ (* a (s p a)) (* p (r p a))) 1))
+           (equal (+ (* a b (s p a)) (* b p (r p a)))
                   b)))
 
 ;; the main theorem:
@@ -496,9 +496,9 @@
   :rule-classes ()
   :hints (("Goal" :use (gcd-prime
 			(:instance gcd-linear-combination (x p) (y a))
-			(:instance divides-sum (x p) (y (* (r-int p a) p b)) (z (* (s-int p a) a b)))
-			(:instance divides-product (x p) (y (* a b)) (z (s-int p a)))
-			(:instance divides-product (x p) (y p) (z (* b (r-int p a))))))))
+			(:instance divides-sum (x p) (y (* (r p a) p b)) (z (* (s p a) a b)))
+			(:instance divides-product (x p) (y (* a b)) (z (s p a)))
+			(:instance divides-product (x p) (y p) (z (* b (r p a))))))))
 
 ;; 1st corollary of euclid: If d divides mn and (gcd d m) = 1, then d divides n.
 ;; The proof is by induction on d.  The claim is trivial for d = 1.

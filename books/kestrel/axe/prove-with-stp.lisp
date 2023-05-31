@@ -75,6 +75,46 @@
 
 (local (in-theory (disable state-p w)))
 
+(defthm no-nodes-are-variablesp-of-merge-<
+  (implies (and (no-nodes-are-variablesp l1 dag-array-name dag-array dag-len)
+                (no-nodes-are-variablesp l2 dag-array-name dag-array dag-len)
+                (no-nodes-are-variablesp acc dag-array-name dag-array dag-len))
+           (no-nodes-are-variablesp (merge-< l1 l2 acc) dag-array-name dag-array dag-len))
+  :hints (("Goal" :in-theory (enable merge-< revappend-lemma no-nodes-are-variablesp))))
+
+(defthm no-nodes-are-variablesp-of-mv-nth-0-of-split-list-fast-aux
+  (implies (and (no-nodes-are-variablesp lst dag-array-name dag-array dag-len)
+                (no-nodes-are-variablesp tail dag-array-name dag-array dag-len)
+                (no-nodes-are-variablesp acc dag-array-name dag-array dag-len)
+                (<= (len tail) (len lst)))
+           (no-nodes-are-variablesp (mv-nth 0 (split-list-fast-aux lst tail acc)) dag-array-name dag-array dag-len))
+  :hints (("Goal" :in-theory (e/d (split-list-fast-aux no-nodes-are-variablesp) (natp)))))
+
+(defthm no-nodes-are-variablesp-of-mv-nth-1-of-split-list-fast-aux
+  (implies (and (no-nodes-are-variablesp lst dag-array-name dag-array dag-len)
+                (no-nodes-are-variablesp tail dag-array-name dag-array dag-len)
+                (no-nodes-are-variablesp acc dag-array-name dag-array dag-len)
+                (<= (len tail) (len lst)))
+           (no-nodes-are-variablesp (mv-nth 1 (split-list-fast-aux lst tail acc)) dag-array-name dag-array dag-len))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux no-nodes-are-variablesp))))
+
+(defthm no-nodes-are-variablesp-of-mv-nth-0-of-split-list-fast
+  (implies (no-nodes-are-variablesp l dag-array-name dag-array dag-len)
+           (no-nodes-are-variablesp (mv-nth 0 (split-list-fast l)) dag-array-name dag-array dag-len))
+  :hints (("Goal" :in-theory (enable split-list-fast no-nodes-are-variablesp))))
+
+(defthm no-nodes-are-variablesp-of-mv-nth-1-of-split-list-fast
+  (implies (no-nodes-are-variablesp l dag-array-name dag-array dag-len)
+           (no-nodes-are-variablesp (mv-nth 1 (split-list-fast l)) dag-array-name dag-array dag-len))
+  :hints (("Goal" :in-theory (enable split-list-fast no-nodes-are-variablesp))))
+
+(defthm no-nodes-are-variablesp-of-merge-sort-<
+  (implies (no-nodes-are-variablesp x dag-array-name dag-array dag-len)
+           (no-nodes-are-variablesp (merge-sort-< x) dag-array-name dag-array dag-len))
+  :hints (("Goal" :in-theory (enable merge-sort-< no-nodes-are-variablesp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;move
 (local
  (defthm nat-listp-of-reverse-list
@@ -413,7 +453,7 @@
                       (item (second args)))
                  (if (and ;(not (consp item)) ;ensure it's not a constant
                       (nodenum-of-an-unknown-type-thingp item dag-array) ;what if the type is obvious but not usb? - fixme what if this improves on the obvious type? i guess we'll just translate the usb in that case?
-                      (quoted-posp size))
+                      (darg-quoted-posp size))
                      (improve-type item (make-bv-type (unquote size)) known-nodenum-type-alist)
                    (mv known-nodenum-type-alist
                        nil))))
@@ -456,9 +496,9 @@
                                                                  all-nodenums dag-array dag-len nil)))
                        (declare (ignore nodenum-with-len-claim)) ;fffixme drop this literal? from the full list?
                        (let ((len (lookup-eq 'len alist)))       ;move down?
-                         (if (and (quoted-posp size)             ;move up?
+                         (if (and (darg-quoted-posp size)             ;move up?
                                   found-a-len-claim
-                                  (quoted-posp len)   ;what about 0?
+                                  (darg-quoted-posp len)   ;what about 0?
                                   (< 1 (unquote len)) ;new ;todo: what about 1?
                                   (nodenum-of-an-unknown-type-thingp item dag-array) ;what if the type is known-by-looking-at-the-thing but not appropriate? ;move this test up?
                                   )
@@ -517,7 +557,7 @@
                                                                                       dag-array
                                                                                       dag-len
                                                                                       known-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 quoted-posp) (natp)))))
+  :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp)))))
 
 ; make a "bounded-nodenum-type-alistp"?
 (defthm all-<-of-strip-cars-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-node
@@ -536,7 +576,7 @@
                                                                                     dag-len
                                                                                     known-nodenum-type-alist)))
                   dag-len))
-  :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 quoted-posp) (natp)))))
+  :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp)))))
 
 ;returns (mv known-nodenum-type-alist change-flg)
 ;makes one pass through the nodes.
@@ -781,29 +821,29 @@
     (cond ((member-eq fn '(bvuminus bvchop ;$inline
                                     bvnot))
            (if (and (eql 2 (len args))
-                    (quoted-posp (first args))
+                    (darg-quoted-posp (first args))
                     (eql nodenum (second args)) ;skip this check (and others like it) if the expr is guaranteed to be a parent expr?
                     )
                (make-bv-type (unquote (first args)))
              nil))
           ;ffffixme is this sound?
 ;;           ((eq 'equal fn) ;; (equal <constant> nodenum)
-;;            (if (and (quoted-posp (first args)) ;ffixme what about 0???
+;;            (if (and (darg-quoted-posp (first args)) ;ffixme what about 0???
 ;;                     (eql nodenum (second args))
 ;;                     )
 ;;                (make-bv-type (integer-length (unquote (first args))))
 ;;              (most-general-type)))
           ((member-eq fn '(bvplus bvmult bvlt sbvlt sbvle bvminus bvxor bvand bvor bvdiv bvmod sbvdiv sbvrem))
            (if (and (eql 3 (len args))
-                    (quoted-posp (first args))
+                    (darg-quoted-posp (first args))
                     (or (eql nodenum (second args))
                         (eql nodenum (third args))))
                (make-bv-type (unquote (first args)))
              nil))
           ((eq fn 'bvsx) ;; (BVSX new-size old-size val)
            (if (and (eql 3 (len args))
-                    (quoted-posp (first args)) ;could allow natp
-                    (quoted-posp (second args))
+                    (darg-quoted-posp (first args)) ;could allow natp
+                    (darg-quoted-posp (second args))
                     (eql nodenum (third args)) ;skip this check (and others like it) if the expr is guaranteed to be a parent expr?
                     )
                (make-bv-type (unquote (second args)))
@@ -811,25 +851,25 @@
           ;; TTTODO: What if nodenum is the test and a branch?
           ((eq 'bvif fn) ;(bvif size test then else)
            (if (eql 4 (len args))
-               (if (and (quoted-posp (first args))
+               (if (and (darg-quoted-posp (first args))
                         (or (eql nodenum (third args))
                             (eql nodenum (fourth args))))
                    (make-bv-type (unquote (first args)))
-                 (if (and (quoted-posp (first args)) ;drop?
+                 (if (and (darg-quoted-posp (first args)) ;drop?
                           (eql nodenum (second args)))
                      (boolean-type) ;new Fri Aug 13 01:16:01 2010
                    nil))
              nil))
           ((member-eq fn '(getbit)) ;fixme just use eq here and below
            (if (and (eql 2 (len args))
-                    (quoted-natp (first args))
+                    (darg-quoted-natp (first args))
                     (eql nodenum (second args)))
                (make-bv-type (+ 1 (unquote (first args))))
              nil))
           ((member-eq fn '(slice))
            (if (and (eql 3 (len args))
-                    (quoted-natp (first args))
-                    (quoted-natp (second args))
+                    (darg-quoted-natp (first args))
+                    (darg-quoted-natp (second args))
                     (<= (unquote (second args)) (unquote (first args)))
                     (eql nodenum (third args)))
                (make-bv-type (+ 1 (unquote (first args))))
@@ -849,11 +889,11 @@
                    nil
                  ;;nodenum may be one or both of the bv args:
                  (if (eql nodenum (second args))
-                     (if (not (quoted-posp (first args)))
+                     (if (not (darg-quoted-posp (first args)))
                          nil
                        (if (eql nodenum (fourth args))
                            ;;it's both bv args!
-                           (if (not (quoted-posp (third args)))
+                           (if (not (darg-quoted-posp (third args)))
                                nil
                              (union-types (make-bv-type (unquote (first args)))
                                           (make-bv-type (unquote (third args)))))
@@ -862,7 +902,7 @@
                    ;;it's not the first bv arg:
                    (if (eql nodenum (fourth args))
                        ;;it's the second arg only:
-                       (if (not (quoted-posp (third args)))
+                       (if (not (darg-quoted-posp (third args)))
                            nil
                          (make-bv-type (unquote (third args))))
 ;it's neither bv arg (ffixme hard-error??):
@@ -874,12 +914,12 @@
 
 
 ;;                          (let ((high-type (if (and (eql nodenum (second args))
-;;                                        (quoted-posp (first args)))
+;;                                        (darg-quoted-posp (first args)))
 ;;                                   (make-bv-type (unquote (first args)))
 ;;                                 (most-general-type) ;:none
 ;;                                 ))
 ;;                    (low-type (if (and (eql nodenum (fourth args))
-;;                                       (quoted-posp (third args)))
+;;                                       (darg-quoted-posp (third args)))
 ;;                                  (make-bv-type (unquote (third args)))
 ;;                                (most-general-type) ;:none
 ;;                                )))
@@ -897,8 +937,8 @@
           ;;ffixme check this - arrays with different lengths are not compatible...
           ((eq fn 'bv-array-read) ;;(bv-array-read ELEMENT-SIZE LEN INDEX DATA)
            (and (eql 4 (len args))
-                (quoted-posp (first args))
-                (quoted-posp (second args))
+                (darg-quoted-posp (first args))
+                (darg-quoted-posp (second args))
                 (< 1 (unquote (second args))) ;new, since an array of length 1 would have a 0-bit index
                 ;;fixme what if it is both the index and the data?
                 (if (eql nodenum (fourth args)) ;it's the data
@@ -909,8 +949,8 @@
           ;ffixme check this - arrays with different lengths are not compatible...
           ((eq fn 'bv-array-write) ;(bv-array-write element-size len index val data)
            (and (eql 5 (len args))
-                (quoted-posp (first args))
-                (quoted-posp (second args))
+                (darg-quoted-posp (first args))
+                (darg-quoted-posp (second args))
                 ;fixme consider this, but what about when we are inducing a type on the data? (< 1 (unquote (second args))) ;new, since an array of length 1 would have a 0-bit index
                 (if (eql nodenum (fifth args))
                     (make-bv-array-type (unquote (first args)) (unquote (second args))) ;what if the width is 0?
@@ -923,13 +963,13 @@
                       nil)))))
           ((eq 'bv-array-if fn) ;(bv-array-if element-width len test then else)  ;think about 0 length and 0 width
            (if (and (eql 5 (len args))
-                    (quoted-posp (first args))
-                    (quoted-posp (second args))
+                    (darg-quoted-posp (first args))
+                    (darg-quoted-posp (second args))
                     (or (eql nodenum (fourth args))
                         (eql nodenum (fifth args))))
                (make-bv-array-type (unquote (first args)) (unquote (second args)))
-             (if (and ;(quoted-posp (first args)) ;drop?
-                      ;(quoted-posp (second args)) ;drop?
+             (if (and ;(darg-quoted-posp (first args)) ;drop?
+                      ;(darg-quoted-posp (second args)) ;drop?
                       (eql nodenum (third args))) ;TODO: What if nodenum is also other args?
                  (boolean-type) ;new Fri Aug 13 01:16:01 2010
                nil)))
@@ -1020,7 +1060,7 @@
                               (all-dargp dargs))))
   (and (= (len dargs) 4) ;optimize?
        (myquotep (first dargs)) ; drop?
-       (quoted-posp (first dargs)) ;used to allow 0 ;fixme print a warning in that case?
+       (darg-quoted-posp (first dargs)) ;used to allow 0 ;fixme print a warning in that case?
        ;; If the arg is a constant, it must be a quoted natp (not something like ':irrelevant):
        ;; todo: call bv-arg-okp here (but note the guard):
        (if (consp (third dargs))         ;checks for quotep
@@ -1062,8 +1102,8 @@
 
     ((bv-array-read) ;new (ffixme make sure these get translated right: consider constant array issues):
      (if (and (= 4 (len args)) ;todo: speed up checks like this?
-              (quoted-posp (first args))
-              (quoted-natp (second args))
+              (darg-quoted-posp (first args))
+              (darg-quoted-natp (second args))
               (< 1 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          (let* ((data-arg (fourth args))
@@ -1084,8 +1124,8 @@
 ;fixme add a case here that checks the argument type like we do just above for read:
     ((bv-array-write) ;new (ffixme make sure these get translated right - consider constant array issues):
      (if (and (= 5 (len args))
-              (quoted-posp (first args))
-              (quoted-natp (second args))
+              (darg-quoted-posp (first args))
+              (darg-quoted-natp (second args))
               (< 1 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          t
@@ -1094,8 +1134,8 @@
                nil)))
     ((bv-array-if) ;very new (ffixme make sure these get translated right - consider constant array issues):
      (if (and (= 5 (len args))
-              (quoted-posp (first args))
-              (quoted-natp (second args))
+              (darg-quoted-posp (first args))
+              (darg-quoted-natp (second args))
               (< 1 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          (let ((type (make-bv-array-type (unquote (first args)) (unquote (second args)))))
@@ -1106,15 +1146,15 @@
                     (cw "(WARNING: Not translating array expr ~x0 since the length and width are not known.)~%" (cons fn args)))
                nil)))
     (getbit (and (= 2 (len args))
-                 (quoted-natp (first args))))
+                 (darg-quoted-natp (first args))))
     ;; we can translate (leftrotate32 amt val) but only if AMT is a constant:
     (leftrotate32 (and (= 2 (len args))
-                       (quoted-natp (first args)) ;now allows 0 (todo: test it)
+                       (darg-quoted-natp (first args)) ;now allows 0 (todo: test it)
                        ;;(< (unquote (first args)) 32)
                        ))
     (slice (and (= 3 (len args))
-                (quoted-natp (first args))
-                (quoted-natp (second args))
+                (darg-quoted-natp (first args))
+                (darg-quoted-natp (second args))
                 (<= (unquote (second args))
                     (unquote (first args)))))
     ((bvif) (can-translate-bvif-args args))
@@ -1126,7 +1166,7 @@
              sbvdiv sbvrem
              )
      (and (consp args)                   ;improve?
-          (quoted-posp (first args)) ;used to allow 0 ;fixme print a warning in that case?
+          (darg-quoted-posp (first args)) ;used to allow 0 ;fixme print a warning in that case?
           ))
     ;; todo: what if some args are constants?
     ((bitor bitand bitxor)
@@ -1135,11 +1175,11 @@
      (= 1 (len args)))
     ;; (not t) ;fixme what if it's a not of a variable?
     (bvcat (and (= 4 (len args))
-                (quoted-posp (first args))
-                (quoted-posp (third args))))
+                (darg-quoted-posp (first args))
+                (darg-quoted-posp (third args))))
     (bvsx (and (= 3 (len args))
-               (quoted-posp (first args))
-               (quoted-posp (second args))
+               (darg-quoted-posp (first args))
+               (darg-quoted-posp (second args))
                ;; todo: disallow = ?
                (<= (unquote (second args))
                    (unquote (first args)))))
@@ -1263,7 +1303,6 @@
 
 ;; Returns a string-tree that extends extra-asserts.
 ;fixme rectify this printing with the other use of this function
-;todo: use dargs for expr? what is its type?
 (defund add-assert-if-a-mult (n expr dag-array-name dag-array var-type-alist print extra-asserts)
   (declare (xargs :guard (and (natp n)
                               (bounded-dag-exprp n expr)
@@ -1275,7 +1314,7 @@
                                                            not-<-of-nth-when-bounded-darg-listp-gen)))))
   (make-string-tree (and (eq 'bvmult (ffn-symb expr))
                          (= 3 (len (dargs expr)))
-                         (quoted-posp (darg1 expr))
+                         (darg-quoted-posp (darg1 expr))
                          (let ((arg2-type (get-type-of-arg-during-cutting (darg2 expr) dag-array-name dag-array var-type-alist))
                                (arg3-type (get-type-of-arg-during-cutting (darg3 expr) dag-array-name dag-array var-type-alist)))
                            (and (bv-typep arg2-type)
@@ -1482,18 +1521,29 @@
 ;returns (mv nodenums-to-translate ;decreasing order
 ;            cut-nodenum-type-alist)
 ;fixme implement increasingly aggressive cuts?
-;fixme use a worklist?
-;todo: compare to gather-nodes-to-translate
+; TODO: Considing using a worklist.
+;todo: compare to gather-nodes-to-translate-up-to-depth
 ;todo: this assumes the miter is pure, but what about :irrelevant?
 ;move to equivalence-checker.lisp?
-(defund gather-nodes-for-translation (n
-                                     dag-array-name
-                                     dag-array
-                                     var-type-alist ;; todo: what about types we can't handle?
-                                     needed-for-node1-tag-array
-                                     nodenums-to-translate ;in increasing order
-                                     cut-nodenum-type-alist)
-  (declare (xargs :measure (nfix (+ 1 n))))
+;todo: generate extra asserts for bvmults?
+(defund gather-nodes-for-translation (n ;counts down and stops at -1
+                                      dag-array-name dag-array dag-len ; dag-len is only used for the guard
+                                      var-type-alist ;; todo: what about types we can't handle?
+                                      needed-for-node1-tag-array
+                                      nodenums-to-translate ;gets extended, in increasing order
+                                      cut-nodenum-type-alist ; gets extended
+                                      )
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (integerp n)
+                              (<= -1 n)
+                              (< n dag-len)
+                              (symbol-alistp var-type-alist) ; the cdrs should be axe-types?
+                              ;; (nodenum-type-alistp cut-nodenum-type-alist) ; todo
+                              (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                              (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
+                              (nat-listp nodenums-to-translate)
+                              )
+                  :measure (nfix (+ 1 n))))
   (if (not (natp n))
       (mv (reverse-list nodenums-to-translate) cut-nodenum-type-alist)
     (let* ((needed-for-node1 (aref1 'needed-for-node1-tag-array needed-for-node1-tag-array n)))
@@ -1501,13 +1551,13 @@
           (let ((expr (aref1 dag-array-name dag-array n)))
             (if (variablep expr)
                 ;; variable; we'll cut:
-                (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array var-type-alist
+                (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist
                                               needed-for-node1-tag-array
                                               nodenums-to-translate
                                               (acons-fast n (lookup-eq-safe expr var-type-alist) cut-nodenum-type-alist))
               (if (fquotep expr)
                   ;; constant; we'll translate it:
-                  (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array var-type-alist
+                  (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist
                                                 needed-for-node1-tag-array
                                                 (cons n nodenums-to-translate)
                                                 cut-nodenum-type-alist)
@@ -1515,7 +1565,7 @@
                 (let ((translatep (if (eq 'bvif (ffn-symb expr))
                                       (can-translate-bvif-args (dargs expr))
                                     t)))
-                  (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array var-type-alist
+                  (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist
                                                 (if translatep
                                                     (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
                                                   needed-for-node1-tag-array)
@@ -1526,34 +1576,43 @@
                                                     cut-nodenum-type-alist
                                                   (acons-fast n (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)))))))
         ;; not needed, so skip it
-        (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))))
+        (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))))
 
-;; (defun max-array-elem (index max-so-far array-name array)
-;;   (declare (xargs :measure (nfix (+ 1 index))))
-;;   (if (or (< index 0)
-;;           (not (integerp index)))
-;;       max-so-far
-;;     (let ((current (aref1 array-name array index)))
-;;       (max-array-elem (+ -1 index) (max (nfix current) max-so-far) array-name array))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Used in equivalence-checker.lisp
-;fixme use a worklist algorithm?
+;TODO: Consider using a worklist algorithm.
 ;returns (mv nodenums-to-translate ;in decreasing order
 ;            cut-nodenum-type-alist
 ;            extra-asserts)
 ;where cut-nodenum-type-alist gives types for any new vars introduced at the cut
-;translates nodes that are supporters and are above the cut
-(defund gather-nodes-to-translate (n
-                                  depth
-                                  depth-array
-                                  dag-array-name dag-array
-                                  supporters-tag-array ;bad name?
-                                  nodenums-to-translate ;an accumulator, in increasing order
-                                  cut-nodenum-type-alist ;an accumulator
-                                  var-type-alist
-                                  extra-asserts ;an accumulator
-                                  )
-  (declare (xargs :measure (nfix (+ 1 n))))
+;we will translate nodes that are supporters and are above the cut
+;; todo: do guards for functions like this cause expensive checks when we call them from :program mode code?
+(defund gather-nodes-to-translate-up-to-depth (n
+                                               depth
+                                               depth-array
+                                               dag-array-name dag-array dag-len ; dag-len is only used for the guard
+                                               var-type-alist
+
+                                               supporters-tag-array ;bad name? todo: would the depth-array alone be sufficient (if it only has entries for supporters).  maybe this restricts us to supporters within the depth limit
+                                               nodenums-to-translate ;an accumulator, in increasing order
+                                               cut-nodenum-type-alist ;an accumulator
+                                               extra-asserts ;an accumulator
+                                               )
+  (declare (xargs :guard (and (integerp n)
+                              (<= -1 n)
+                              (natp depth)
+                              (array1p 'depth-array depth-array)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< n dag-len)
+                              (array1p 'supporters-tag-array supporters-tag-array)
+                              (< n (alen1 'supporters-tag-array supporters-tag-array))
+                              (nat-listp nodenums-to-translate)
+                              (nodenum-type-alistp cut-nodenum-type-alist)
+                              (symbol-alistp var-type-alist) ; the cdrs should be axe-types?
+                              (string-treep extra-asserts))
+                  :verify-guards nil ; todo
+                  :measure (nfix (+ 1 n))))
   (if (not (natp n))
       (mv (reverse-list nodenums-to-translate)
           cut-nodenum-type-alist
@@ -1562,58 +1621,58 @@
           (supporterp (aref1 'supporters-tag-array supporters-tag-array n)))
       (if (or (not depth2) ;node isn't needed anywhere is the dag (actually, doesn't support either node being merged?), so skip it
               (not supporterp)) ;fixme why both of these tests?
-          (gather-nodes-to-translate (+ -1 n) depth depth-array dag-array-name dag-array
-                                     supporters-tag-array
-                                     nodenums-to-translate
-                                     cut-nodenum-type-alist
-                                     var-type-alist  extra-asserts)
+          (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
+                                                 supporters-tag-array
+                                                 nodenums-to-translate
+                                                 cut-nodenum-type-alist
+                                                 extra-asserts)
         (let ((expr (aref1 dag-array-name dag-array n)))
           (if (variablep expr)
               ;;it's a variable.  we always cut:
-              (gather-nodes-to-translate (+ -1 n) depth depth-array dag-array-name dag-array
+              (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
                                          supporters-tag-array
                                          nodenums-to-translate
                                          (acons-fast n (lookup-eq-safe expr var-type-alist) cut-nodenum-type-alist)
-                                         var-type-alist extra-asserts)
+                                         extra-asserts)
             (if (fquotep expr)
                 ;;it's a constant: we'll translate it:
-                (gather-nodes-to-translate (+ -1 n) depth depth-array dag-array-name dag-array
+                (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
                                            supporters-tag-array
                                            (cons n nodenums-to-translate)
                                            cut-nodenum-type-alist
-                                           var-type-alist extra-asserts)
+                                           extra-asserts)
               ;;expr is a function call.  check the depth to decide whether to translate or cut:
               (let ((translatep (and (<= depth2 depth)
-                                     (not (eq 'bvmult (ffn-symb expr)))  ;ffffixme new! instead, pass in a list of functions at which to always cut?))
+                                     (not (eq 'bvmult (ffn-symb expr))) ;ffffixme new! instead, pass in a list of functions at which to always cut?))
                                      ;;new, since the child of a bvif may be :irrelevant:
-                                     (implies (eq 'bvif (ffn-symb expr))
-                                              (can-translate-bvif-args (dargs expr))))))
+                                     (if (eq 'bvif (ffn-symb expr))
+                                         (can-translate-bvif-args (dargs expr))
+                                       t))))
               (if translatep
                   ;;translate it and mark its children (if any) as supporters
-                  (gather-nodes-to-translate (+ -1 n) depth depth-array dag-array-name dag-array
+                  (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
                                              (tag-nodenums-with-name (dargs expr) 'supporters-tag-array supporters-tag-array)
                                              (cons n nodenums-to-translate)
                                              cut-nodenum-type-alist
-                                             var-type-alist extra-asserts)
+                                              extra-asserts)
                 ;;cut and make it a variable:
                 (let ((extra-asserts (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist
                                                            nil ;fixme print
                                                            extra-asserts)))
-                  (gather-nodes-to-translate (+ -1 n) depth depth-array dag-array-name dag-array
+                  (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
                                              supporters-tag-array
                                              nodenums-to-translate
                                              ;; FIXME think about array nodes here
                                              ;;fixme what if a hyp gives expr its width/type?
                                              ;;do this in the other tagging function?
 ;fixme will expr always have a known type?
-                                             (acons-fast n ; todo: do we need the checki<ng here?
+                                             (acons-fast n ; todo: do we need the checking here?
                                                          (get-type-of-function-call-checked (ffn-symb expr)
                                                                                             (dargs expr))
                                                          cut-nodenum-type-alist)
-                                             var-type-alist extra-asserts)))))))))))
+                                              extra-asserts)))))))))))
 
-
-(local (in-theory (disable quoted-posp
+(local (in-theory (disable darg-quoted-posp
                            ;; natp
                            )))
 
@@ -1651,18 +1710,19 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bv-array-typep list-typep boolean-typep))))
 
+;; todo: compare to gather-nodes-to-translate-up-to-depth
 ;returns (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array) ;the accumulators are extended
 ;fixme look for type mismatches..
 ;;fixme combine some recursive calls in this function?
 ;; When we decide to cut at a node (either because we can't translate it or we've hit the depth limit), we have to select a type for it.
 ;; TODO: Consider returning an error if a bad arity is found
 (defund process-nodenums-for-translation (worklist ;a list of nodenums to handle (each of these must either have an obvious type, a known-type, or be used in at least one choppable context)
-                                         depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
-                                         depth-array
-                                         handled-node-array
-                                         dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                         ;;these are accumulators:
-                                         nodenums-to-translate cut-nodenum-type-alist)
+                                          depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
+                                          depth-array
+                                          handled-node-array
+                                          dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                          ;;these are accumulators:
+                                          nodenums-to-translate cut-nodenum-type-alist)
   (declare (xargs ;; The measure is, first the number of unhandled nodes, then, if unchanged, check the length of the worklist.
             :measure (make-ord 1
                                (+ 1 ;coeff must be positive
@@ -1789,7 +1849,7 @@
                                                                  (acons nodenum (boolean-type) cut-nodenum-type-alist)))))
                           ((and (eq 'unsigned-byte-p fn)
                                 (= 2 (len args)))
-                           (if (not (quoted-posp (first args))) ;allow 0?
+                           (if (not (darg-quoted-posp (first args))) ;allow 0?
 ;can't translate:
                                (process-nodenums-for-translation (rest worklist) depth-limit depth-array
                                                                  (aset1 'handled-node-array handled-node-array nodenum t)
@@ -1881,6 +1941,18 @@
                                                                  nodenums-to-translate
                                                                  cut-nodenum-type-alist))))
   :hints (("Goal" :in-theory (enable  process-nodenums-for-translation))))
+
+(defthm no-nodes-are-variablesp-of-mv-nth-1-of-process-nodenums-for-translation
+  (implies (no-nodes-are-variablesp nodenums-to-translate 'dag-array dag-array dag-len)
+           (no-nodes-are-variablesp (mv-nth 1 (process-nodenums-for-translation worklist
+                                                                 depth-limit
+                                                                 depth-array handled-node-array
+                                                                 dag-array dag-len dag-parent-array
+                                                                 known-nodenum-type-alist
+                                                                 nodenums-to-translate
+                                                                 cut-nodenum-type-alist))
+                                     'dag-array dag-array dag-len))
+  :hints (("Goal" :in-theory (enable process-nodenums-for-translation no-nodes-are-variablesp))))
 
 (defthm all-<-of-mv-nth-1-of-process-nodenums-for-translation
   (implies (and (all-< nodenums-to-translate dag-len)
@@ -2056,6 +2128,18 @@
                                                                     cut-nodenum-type-alist))))
   :hints (("Goal" :in-theory (enable process-disjuncts-for-translation))))
 
+(defthm no-nodes-are-variablesp-of-mv-nth-2-of-process-disjuncts-for-translation
+  (implies (no-nodes-are-variablesp nodenums-to-translate 'dag-array dag-array dag-len)
+           (no-nodes-are-variablesp (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit
+                                                                                 depth-array handled-node-array
+                                                                                 dag-array dag-len dag-parent-array
+                                                                                 known-nodenum-type-alist
+                                                                                 disjuncts-to-include-in-query
+                                                                                 nodenums-to-translate
+                                                                                 cut-nodenum-type-alist))
+                                    'dag-array dag-array dag-len))
+  :hints (("Goal" :in-theory (enable process-disjuncts-for-translation))))
+
 (defthm all-<-of-mv-nth-2-of-process-disjuncts-for-translation
   (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len) ;(all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len)
                 (all-< nodenums-to-translate dag-len)
@@ -2122,7 +2206,7 @@
 (defund prove-node-disjunction-with-stp-at-depth (depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
                                                   disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                   base-filename
-                                                  print max-conflicts counterexamplep state)
+                                                  print max-conflicts counterexamplep print-cex-as-signedp state)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (or (natp depth-limit) (equal nil depth-limit))
                               (bounded-possibly-negated-nodenumsp disjuncts dag-len)
@@ -2136,7 +2220,8 @@
                               (all-< (strip-cars known-nodenum-type-alist) dag-len)
                               (stringp base-filename)
                               (or (natp max-conflicts) (null max-conflicts))
-                              (booleanp counterexamplep))
+                              (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp))
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp))))))
   (b* ((handled-node-array (make-empty-array 'handled-node-array
@@ -2173,12 +2258,13 @@
                           max-conflicts
                           nil ;initial constant-array-info
                           counterexamplep
+                          print-cex-as-signedp
                           state)))
 
 (defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp-at-depth
   (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                 base-filename
-                                                                print max-conflicts counterexamplep state)))
+                                                                print max-conflicts counterexamplep print-cex-as-signedp state)))
          (w state))
   :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-at-depth))))
 
@@ -2197,6 +2283,7 @@
                                              print
                                              max-conflicts ;a number of conflicts, or nil for no max
                                              counterexamplep
+                                             print-cex-as-signedp
                                              state)
   (declare (xargs :stobjs state
                   :measure (nfix (+ 1 (- max-depth min-depth)))
@@ -2220,7 +2307,8 @@
                                      (alen1 'dag-array dag-array))
                               (stringp base-filename)
                               (or (equal max-conflicts nil) (natp max-conflicts))
-                              (booleanp counterexamplep))))
+                              (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp))))
   (if (or (not (natp min-depth))
           (not (natp max-depth))
           (< max-depth min-depth))
@@ -2231,7 +2319,7 @@
          ((mv result state)
           ;; This cuts out any stuff we can't translate, or any stuff that's too deep:
           (prove-node-disjunction-with-stp-at-depth depth disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                    base-filename print max-conflicts counterexamplep state)))
+                                                    base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
       (if (eq result *error*)
           (mv *error* state)
         (if (eq result *valid*)
@@ -2239,18 +2327,18 @@
           (if (eq result *timedout*)
               ;; STP timed out, so don't try any deeper depths (they will probably time-out too). recur on the range of shallower depths
               (prove-node-disjunction-with-stp-aux min-depth (+ -1 depth) depth-array known-nodenum-type-alist disjuncts
-                                                   dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep state)
+                                                   dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)
             (progn$
              ;; STP said invalid or gave a counterexample, so don't try any shallower depths (they will also be invalid). recur on the range of deeper depths
              ;; TODO: Use the counterexample here (check whether possible or certain?)?
              (prove-node-disjunction-with-stp-aux (+ 1 depth) max-depth depth-array known-nodenum-type-alist disjuncts
                                                   dag-array dag-len dag-parent-array
                                                   base-filename print max-conflicts
-                                                  counterexamplep state))))))))
+                                                  counterexamplep print-cex-as-signedp state))))))))
 
 (defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp-aux
   (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-aux min-depth max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len
-                                                           dag-parent-array base-filename print max-conflicts counterexamplep state)))
+                                                           dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
          (w state))
   :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-aux
                                      ;; todo:
@@ -2269,6 +2357,7 @@
                                          print
                                          max-conflicts ;a number of conflicts, or nil for no max
                                          counterexamplep ;perhaps this should always be t?
+                                         print-cex-as-signedp
                                          state)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-possibly-negated-nodenumsp disjuncts dag-len)
@@ -2278,7 +2367,8 @@
                               (stringp base-filename)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (booleanp counterexamplep))
+                              (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp))
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (;all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp ; for the call of build-known-nodenum-type-alist
                                                          myquotep-when-axe-disjunctionp
@@ -2327,7 +2417,7 @@
                                                   disjuncts
                                                   nil ;fake depth-array
                                                   dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                  base-filename print max-conflicts counterexamplep state)))
+                                                  base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
     (if (eq result *error*)
         (mv *error* state)
       (if (eq result *valid*)
@@ -2352,7 +2442,7 @@
                         (make-depth-array-for-nodes (strip-nots-from-possibly-negated-nodenums disjuncts) ;todo: avoid consing this up?
                                                     'dag-array dag-array dag-len))
                        ((mv result state)
-                        (prove-node-disjunction-with-stp-aux 1 max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep state)))
+                        (prove-node-disjunction-with-stp-aux 1 max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
                     ;;todo: move printing to sub-function?
                     (if (eq result *error*)
                         (mv *error* state)
@@ -2375,6 +2465,7 @@
                                                        print
                                                        max-conflicts
                                                        counterexamplep
+                                                       print-cex-as-signedp
                                                        state)))
          (w state))
   :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp))))
@@ -2392,6 +2483,7 @@
                                          print
                                          max-conflicts ;a number of conflicts, or nil for no max
                                          counterexamplep
+                                         print-cex-as-signedp
                                          state)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-possibly-negated-nodenump conc dag-len)
@@ -2402,11 +2494,12 @@
                               (stringp base-filename)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (booleanp counterexamplep))
+                              (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp))
                   :stobjs state))
   ;; we prove (or (not <hyp1>) (not <hyp2>) ... (not <hypn>) conc):
   (prove-node-disjunction-with-stp (cons conc (negate-possibly-negated-nodenums hyps))
-                                   dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep state))
+                                   dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2438,7 +2531,8 @@
                                                                 test
                                                                 dag-array dag-len dag-parent-array
                                                                 base-filename print max-conflicts
-                                                                nil ;  counterexamplep (todo: maybe use and return)
+                                                                nil ; counterexamplep (todo: maybe use and return)
+                                                                nil ; print-cex-as-signedp
                                                                 state))
        ((when (eq :error true-result)) (mv :error-proving-implication :unknown state))
        ((when (eq :valid true-result)) (mv (erp-nil) :true state))
@@ -2446,7 +2540,8 @@
                                                                  `(not, test)
                                                                  dag-array dag-len dag-parent-array
                                                                  base-filename print max-conflicts
-                                                                 nil ;  counterexamplep (todo: maybe use and return)
+                                                                 nil ; counterexamplep (todo: maybe use and return)
+                                                                 nil ; print-cex-as-signedp
                                                                  state))
        ((when (eq :error false-result)) (mv :error-proving-implication :unknown state))
        ((when (eq :valid false-result)) (mv (erp-nil) :false state)))
@@ -2461,9 +2556,10 @@
 ;fixme: have this print balanced parens
 ;todo: exploit boolean structure in the hyps (and conc?)
 ;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
-(defun prove-clause-with-stp (clause counterexamplep max-conflicts print base-filename state)
+(defun prove-clause-with-stp (clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and (pseudo-term-listp clause)
                               (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (stringp base-filename))
@@ -2497,15 +2593,17 @@
                                          print
                                          max-conflicts
                                          counterexamplep
+                                         print-cex-as-signedp
                                          state)))))
 
 ;; Attempt to use STP to prove CONC assuming HYPS.  This version requires CONC
 ;; and HYPS to be already translated.  ;Returns (mv result state) where RESULT
 ;; is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>)..
-(defund prove-implication-with-stp (conc hyps counterexamplep max-conflicts print base-filename state)
+(defund prove-implication-with-stp (conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (stringp base-filename))
@@ -2514,6 +2612,7 @@
        (clause (cons conc negated-hyps)))
     (prove-clause-with-stp clause
                            counterexamplep
+                           print-cex-as-signedp
                            max-conflicts
                            print
                            base-filename
@@ -2539,39 +2638,42 @@
 ;;     (prove-translated-implication-with-stp conc hyps counterexamplep max-conflicts print base-filename state)))
 
  ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-(defun prove-term-with-stp (term counterexamplep max-conflicts print base-filename state)
+(defun prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (stringp base-filename))
                   :stobjs state))
   (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
-    (prove-implication-with-stp conc hyps counterexamplep max-conflicts print base-filename state)))
+    (prove-implication-with-stp conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
 
 ;; This version avoids imposing invariant-risk on callers, because it has a guard that is just a stobj recognizer.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-(defun prove-term-with-stp-unguarded (term counterexamplep max-conflicts print base-filename state)
+(defun prove-term-with-stp-unguarded (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :stobjs state))
   (if (and (pseudo-termp term)
            (booleanp counterexamplep)
+           (booleanp print-cex-as-signedp)
            (or (null max-conflicts)
                (natp max-conflicts))
            (stringp base-filename))
-      (prove-term-with-stp term counterexamplep max-conflicts print base-filename state)
+      (prove-term-with-stp term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
     (prog2$ (er hard? 'prove-term-with-stp-unguarded "Bad input.")
             (mv :error state))))
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-(defun translate-and-prove-term-with-stp (term counterexamplep max-conflicts print base-filename state)
+(defun translate-and-prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (stringp base-filename))
                   :mode :program ;because of translate-term
                   :stobjs state))
   (prove-term-with-stp-unguarded (translate-term term 'translate-and-prove-term-with-stp (w state))
-                                 counterexamplep max-conflicts print base-filename state))
+                                 counterexamplep print-cex-as-signedp max-conflicts print base-filename state))
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;TODO: Deprecate in favor of defthm-stp?
@@ -2579,9 +2681,10 @@
 (defmacro prove-with-stp (term
                           &key
                           (counterexample 't)
+                          (print-cex-as-signedp 'nil)
                           (max-conflicts '*default-stp-max-conflicts*)
                           (print 'nil))
-  `(translate-and-prove-term-with-stp ,term ',counterexample ,max-conflicts ',print
+  `(translate-and-prove-term-with-stp ,term ',counterexample ',print-cex-as-signedp ,max-conflicts ',print
                                       "USER-QUERY"
                                       state))
 
@@ -2599,7 +2702,7 @@
                   :mode :program ;because this ultimately calls translate-term
                   :stobjs state))
   (mv-let (result state)
-    (translate-and-prove-term-with-stp term counterexamplep max-conflicts print (symbol-name name) state)
+    (translate-and-prove-term-with-stp term counterexamplep nil max-conflicts print (symbol-name name) state)
     (if (eq *error* result)
         (prog2$ (er hard? 'must-prove-with-stp "Error ~x0 running test." name)
                 (mv (erp-t) :error state))
@@ -2630,7 +2733,7 @@
                               (or (null max-conflicts)
                                   (natp max-conflicts)))))
   (mv-let (result state)
-    (translate-and-prove-term-with-stp term counterexamplep max-conflicts print (symbol-name name) state)
+    (translate-and-prove-term-with-stp term counterexamplep nil max-conflicts print (symbol-name name) state)
     (if (eq *error* result)
         (prog2$ (er hard? 'must-not-prove-with-stp "Error running test ~x0." name)
                 (mv (erp-t) :error state))

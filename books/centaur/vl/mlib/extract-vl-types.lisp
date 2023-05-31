@@ -958,7 +958,7 @@
                             (case-match value
                               ,@string-to-int-cases
                               (& (progn$ (cw "Invalid enum type given: ~s0 ~%" value)
-                                         -1)
+                                         (sv::4vec-x))
                                  ;;value
                                  )))))
 

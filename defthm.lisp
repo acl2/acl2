@@ -4347,9 +4347,9 @@
           (t `(progn ,(defevaluator-check-form x evfn evfn-lst fn-args-lst)
                      ,form)))))
 
-(table term-table nil nil
-       :guard
-       (term-listp val world))
+(set-table-guard term-table
+                 (term-listp val world)
+                 :show t)
 
 (table term-table t '((binary-+ x y) (binary-* '0 y) (car x)))
 

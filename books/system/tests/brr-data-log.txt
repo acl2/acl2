@@ -189,7 +189,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM (CONS (F0 (CAR X)) (F0 (CAR X))))
 The resulting (translated) term is
   (CONS (F0 (CAR X)) (F0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 7, and it's the same result as above.
+is at frame 7, and it's the same result as above.
 ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (F0 (CAR X)))
 1. Simplifying the clause
      ((EQUAL (F3 X) YYY))
@@ -218,7 +218,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (F0 (CAR X)))
 The resulting (translated) term is
   (CONS (F0 (CAR X)) (F0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP X)
       (CONS (F0 (CAR X)) (F0 (CAR X)))
     (CONS (F0 X) (F0 X))).
@@ -253,7 +253,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (F0 (CAR X)))
 The resulting (translated) term is
   (CONS (F0 (CAR X)) (F0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP X)
       (CONS (F0 (CAR X)) (F0 (CAR X)))
     (CONS (F0 X) (F0 X))).
@@ -293,7 +293,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM* (:FREE (X) (CONS X X)))
 The resulting (translated) term is
   (CONS (F0 (CAR X)) (F0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 7, and it's the same result as above.
+is at frame 7, and it's the same result as above.
 
 ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 (Y, N or ?):  1. Simplifying the clause
@@ -323,7 +323,7 @@ ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 The resulting (translated) term is
   (CONS (F0 X) (F0 X)).
 Note: The first lemma application above that provides a suitable result
-is at position 7, and it's the same result as above.
+is at frame 7, and it's the same result as above.
 
 ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 (Y, N or ?):  There are no more results.
@@ -462,7 +462,7 @@ The resulting (translated) term is
   (CONS (F0 (CAR (F0 '3)))
         (F0 (CAR (F0 '3)))).
 Note: The first lemma application above that provides a suitable result
-is at position 7, and it's the same result as above.
+is at frame 7, and it's the same result as above.
 ACL2 !>>(CW-GSTACK-FOR-SUBTERM (F0 (CAR (F0 3))))
 1. Simplifying the clause
      ((EQUAL (F3 (F0 '3)) YYY))
@@ -492,7 +492,7 @@ The resulting (translated) term is
   (CONS (F0 (CAR (F0 '3)))
         (F0 (CAR (F0 '3)))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP (F0 '3))
       (CONS (F0 (CAR (F0 '3)))
             (F0 (CAR (F0 '3))))
@@ -638,7 +638,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (G0 (CAR X)))
 The resulting (translated) term is
   (CONS (G0 (CAR X)) (G0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP X)
       (CONS (G0 (CAR X)) (G0 (CAR X)))
     (CONS (G0 X) (G0 X))).
@@ -669,7 +669,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (G0 (CAR X)))
 The resulting (translated) term is
   (CONS (G0 (CAR X)) (G0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP X)
       (CONS (G0 (CAR X)) (G0 (CAR X)))
     (CONS (G0 X) (G0 X))).
@@ -699,7 +699,7 @@ ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
 The resulting (translated) term is
   (CONS (G0 (CAR X)) (G0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP X)
       (CONS (G0 (CAR X)) (G0 (CAR X)))
     (CONS (G0 X) (G0 X))).
@@ -795,7 +795,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM* (CONS (G0 X) (G0 X))
 The resulting (translated) term is
   (CONS (G0 X) (G0 X)).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and it's the same result as above.
+is at frame 4, and it's the same result as above.
 
 ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 (Y, N or ?):  1. Simplifying the clause
@@ -826,7 +826,7 @@ ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 The resulting (translated) term is
   (CONS (G0 X) (G0 X)).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and it's the same result as above.
+is at frame 4, and it's the same result as above.
 
 ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 (Y, N or ?):  There are no more results.
@@ -860,7 +860,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM* (CONS (G0 X) (G0 X))
 The resulting (translated) term is
   (CONS (G0 X) (G0 X)).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and it's the same result as above.
+is at frame 4, and it's the same result as above.
 
 ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 (Y, N or ?):  1. Simplifying the clause
@@ -891,7 +891,7 @@ ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 The resulting (translated) term is
   (CONS (G0 X) (G0 X)).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and it's the same result as above.
+is at frame 4, and it's the same result as above.
 
 ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 (Y, N or ?):  ACL2 !>>(WITH-BRR-DATA (THM (IMPLIES (OR (SYMBOLP X)
@@ -989,7 +989,7 @@ ACL2 !>>(CW-GSTACK-FOR-TERM* (CONS (G0 X) (G0 X)))
 The resulting (translated) term is
   (CONS (G0 X) (G0 X)).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and it's the same result as above.
+is at frame 4, and it's the same result as above.
 
 ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 (Y, N or ?):  1. Simplifying the clause
@@ -1022,7 +1022,7 @@ ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 The resulting (translated) term is
   (CONS (G0 X) (G0 X)).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and it's the same result as above.
+is at frame 4, and it's the same result as above.
 
 ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
 (Y, N or ?):  There are no more results.
@@ -1116,7 +1116,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM (CONS (F0 (CAR X)) (F0 (CAR X))))
 The resulting (translated) term is
   (CONS (F0 (CAR X)) (F0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 5, and that result is
+is at frame 5, and that result is
   (IF (CONSP X)
       (CONS (F0 (CAR X)) (F0 (CAR X)))
     (CONS (F0 X) (F0 X))).
@@ -1150,7 +1150,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (CONS (F0 X) (F0 X)))
 The resulting (translated) term is
   (CONS (F0 X) (F0 X)).
 Note: The first lemma application above that provides a suitable result
-is at position 5, and that result is
+is at frame 5, and that result is
   (IF (CONSP X)
       (CONS (F0 (CAR X)) (F0 (CAR X)))
     (CONS (F0 X) (F0 X))).
@@ -1255,7 +1255,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (:FREE (V) (CONS V V)))
 The resulting (translated) term is
   (CONS (F0 (CAR X)) (F0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP X)
       (CONS (F0 (CAR X)) (F0 (CAR X)))
     (CONS (F0 X) (F0 X))).
@@ -1288,7 +1288,7 @@ ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
 The resulting (translated) term is
   (CONS (F0 (CAR Y)) (F0 (CAR Y))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP Y)
       (CONS (F0 (CAR Y)) (F0 (CAR Y)))
     (CONS (F0 Y) (F0 Y))).
@@ -1389,7 +1389,7 @@ ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (:FREE (V) (CONS V V)))
 The resulting (translated) term is
   (CONS (F0 (CAR X)) (F0 (CAR X))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP X)
       (CONS (F0 (CAR X)) (F0 (CAR X)))
     (CONS (F0 X) (F0 X))).
@@ -1422,7 +1422,7 @@ ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
 The resulting (translated) term is
   (CONS (F0 (CAR Y)) (F0 (CAR Y))).
 Note: The first lemma application above that provides a suitable result
-is at position 4, and that result is
+is at frame 4, and that result is
   (IF (CONSP Y)
       (CONS (F0 (CAR Y)) (F0 (CAR Y)))
     (CONS (F0 Y) (F0 Y))).

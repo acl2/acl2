@@ -2237,19 +2237,19 @@
            (logicp (car (car user-table)) w)
            (arities-okp (cdr user-table) w)))))
 
-(table user-defined-functions-table nil nil
-       :guard
-       (and (symbolp val)
-            (case key
-              ((untranslate untranslate-lst)
-               (equal (length (getpropc val 'formals nil world))
-                      (length (getpropc key 'formals nil world))))
-              (untranslate-preprocess
-               (equal (length (getpropc val 'formals nil world))
-                      2))
-              (otherwise nil))
-            (equal (getpropc val 'stobjs-out '(nil) world)
-                   '(nil))))
+(set-table-guard
+ user-defined-functions-table
+ (and (symbolp val)
+      (case key
+        ((untranslate untranslate-lst)
+         (equal (length (getpropc val 'formals nil world))
+                (length (getpropc key 'formals nil world))))
+        (untranslate-preprocess
+         (equal (length (getpropc val 'formals nil world))
+                2))
+        (otherwise nil))
+      (equal (getpropc val 'stobjs-out '(nil) world)
+             '(nil))))
 
 (defrec def-body
 
@@ -3349,9 +3349,9 @@
                        (arglistp (cadr fn))
                        (int= (length (cadr fn)) n))))))))
 
-(table ld-keyword-aliases nil nil
-       :guard
-       (ld-keyword-aliasesp key val world))
+(set-table-guard ld-keyword-aliases
+                 (ld-keyword-aliasesp key val world)
+                 :show t)
 
 #+acl2-loop-only
 (defmacro add-ld-keyword-alias! (key val)

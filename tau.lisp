@@ -853,6 +853,9 @@
            (sr-limit
 ; Shape: t
             ans)
+           (dropped-last-literal
+; Shape: t
+            ans)
            (:clause-processor
 ; Shape: (clause-processor-hint summary-data . clauses)
             (all-runes-summary-data-lst lst ans))

@@ -68,29 +68,30 @@
 ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
 ;; added to it.  The result contains symbols from BASE-SYMBOL with a suffix of
 ;; 0 through BASE-SYMBOL with a suffix of COUNT minus 1.
-(defund make-var-names (count base-name)
+;; Example: (make-var-names 'in 4) = (in0 in1 in2 in3).
+(defund make-var-names (base-name count)
   (declare (xargs :guard (and (natp count)
                               (symbolp base-name))))
   (make-var-names-aux base-name 0 (+ -1 count)))
 
 (defthm symbol-listp-of-make-var-names
-  (symbol-listp (make-var-names count base-name))
+  (symbol-listp (make-var-names base-name count))
   :hints (("Goal" :in-theory (enable make-var-names))))
 
 (defthm true-listp-of-make-var-names
-  (true-listp (make-var-names count base-name))
+  (true-listp (make-var-names base-name count))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable make-var-names))))
 
 (defthm len-of-make-var-names
   (implies (natp count)
-           (equal (len (make-var-names count base-name))
+           (equal (len (make-var-names base-name count))
                   count))
   :hints (("Goal" :in-theory (enable make-var-names))))
 
 (defthm consp-of-make-var-names
   (implies (natp count)
-           (equal (consp (make-var-names count base-name))
+           (equal (consp (make-var-names base-name count))
                   (posp count)))
   :hints (("Goal" :in-theory (enable make-var-names))))
 

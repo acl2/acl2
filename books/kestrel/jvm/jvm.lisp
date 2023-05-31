@@ -702,22 +702,26 @@
                               (bound-in-alistp th (thread-table s)))))
   (top-frame (call-stack th s)))
 
-;FFIXME this is just a hack for now.  We should add real exception handling!!
-;Right now we just use the stub error-state about which nothing is known.  Simulation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; To model various errors, we use the function ERROR-STATE, about which very little is known.  Simulation
 ;can't continue when error-state is encountered, and so we'll have to add hyps
-;sufficient to ensure that the execution throws no exceptions.  the msg parameter of error-state
+;sufficient to exclude such cases.  the msg parameter of error-state
 ;can be used to pass more info (such as the index and array reference when an
 ;ArrayIndexOutOfBoundsException exception is thrown) - to aid in debugging (the message will show up in failed proofs).
 ;FIXME make sure we check exceptions for all relevant array instructions (of all different types)
 
-;FIXME think about how to do this better...
+;;Previously error-state returned s, but the user might be able to cheat by
+;;opening that up (perhaps showing that erroneous computations loop forever --
+;;and thus are partially correct)
+
 (encapsulate
  (((error-state * *) => *))
- ;;Previously error-state returned s. But the user might be able to cheat by opening that up (perhaps showing that erroneous computations loop forever -- and thus are partially correct)
+
+ ;; Local witness for the encapsulate:
  (local (defun error-state (msg s)
           (declare (ignore msg s))
-          (empty-state (empty-class-table)
-                       )))
+          (empty-state (empty-class-table))))
 
  (defthm well-formed-initialized-class-names-of-error-state
    (well-formed-initialized-class-names (initialized-classes (error-state msg s))))
@@ -725,10 +729,15 @@
  (defthm jvm-statep-of-error-state
    (implies (jvm-statep s)
             (jvm-statep (error-state msg s)))
-   :hints (("Goal" :in-theory (enable error-state)))))
+   :hints (("Goal" :in-theory (enable error-state))))
 
-
-
+ ;; Helps with the symbolic-execution machinery, because calls to
+ ;; step-state-with-pc-and-call-stack-height can be shown to usually do nothing
+ ;; to an error state.
+ (defthm call-stack-size-of-binding-of-thread-table-of-error-state
+   (equal (call-stack-size (binding th (thread-table (error-state msg s))))
+          0)
+   :hints (("Goal" :in-theory (enable binding)))))
 
 ;returns a (mv error-message monitor-table) where if error-message is non-nil it indicates an error and is a list of messages, etc. for the call of error-state
 ;pass in the instruction for debugging?
@@ -1004,33 +1013,42 @@
 ;; (defmacro decode-signed-long (val)
 ;;   `(acl2::logext 64 ,val))
 
-(defund get-to-field-from-exception-table-entry (exception-table-entry)
-  (declare (xargs :guard (exception-table-entryp exception-table-entry)))
-  (second exception-table-entry))
-
 (defund get-from-field-from-exception-table-entry (exception-table-entry)
   (declare (xargs :guard (exception-table-entryp exception-table-entry)))
   (first exception-table-entry))
+
+(defund get-to-field-from-exception-table-entry (exception-table-entry)
+  (declare (xargs :guard (exception-table-entryp exception-table-entry)))
+  (second exception-table-entry))
 
 (defund get-target-field-from-exception-table-entry (exception-table-entry)
   (declare (xargs :guard (exception-table-entryp exception-table-entry)))
   (third exception-table-entry))
 
-
-(defthm pcp-of-get-to-field-from-exception-table-entry
-  (implies (exception-table-entryp exception-table-entry)
-           (pcp (get-to-field-from-exception-table-entry exception-table-entry)))
-  :hints (("Goal" :in-theory (enable exception-table-entryp get-to-field-from-exception-table-entry))))
+(defund get-type-field-from-exception-table-entry (exception-table-entry)
+  (declare (xargs :guard (exception-table-entryp exception-table-entry)))
+  (fourth exception-table-entry))
 
 (defthm pcp-of-get-from-field-from-exception-table-entry
   (implies (exception-table-entryp exception-table-entry)
            (pcp (get-from-field-from-exception-table-entry exception-table-entry)))
   :hints (("Goal" :in-theory (enable exception-table-entryp get-from-field-from-exception-table-entry))))
 
+(defthm pcp-of-get-to-field-from-exception-table-entry
+  (implies (exception-table-entryp exception-table-entry)
+           (pcp (get-to-field-from-exception-table-entry exception-table-entry)))
+  :hints (("Goal" :in-theory (enable exception-table-entryp get-to-field-from-exception-table-entry))))
+
 (defthm pcp-of-get-target-field-from-exception-table-entry
   (implies (exception-table-entryp exception-table-entry)
            (pcp (get-target-field-from-exception-table-entry exception-table-entry)))
   :hints (("Goal" :in-theory (enable exception-table-entryp get-target-field-from-exception-table-entry))))
+
+(defthm class-namep-of-get-type-field-from-exception-table-entry
+  (implies (and (exception-table-entryp exception-table-entry)
+                (not (equal :any (get-type-field-from-exception-table-entry exception-table-entry))))
+           (class-namep (get-type-field-from-exception-table-entry exception-table-entry)))
+  :hints (("Goal" :in-theory (enable exception-table-entryp get-type-field-from-exception-table-entry))))
 
 
 ; find an exception handler for an exception that was thrown at location PC.
@@ -1046,7 +1064,7 @@
     (let* ((entry (first exception-table))
            (from (get-from-field-from-exception-table-entry entry))
            (to (get-to-field-from-exception-table-entry entry))
-           (type (fourth entry)))
+           (type (get-type-field-from-exception-table-entry entry)))
       (if (and (pc<= from pc)
                (pc< pc to)
                (or (eq :any type)
@@ -1091,6 +1109,7 @@
             ;; There is an object to be unlocked (fixme, does all this apply to frames below the first one?)
             (let ((locked-object (addressfix (locked-object frame)))) ;drop the addressfix...
               (if (not (thread-owns-monitorp th locked-object (monitor-table s)))
+                  ;; todo: call obtain-and-throw-exception here?
                   (error-state (list *IllegalMonitorStateException* :athrow) s)
                 (let ((s (modify th s
                                  :call-stack (pop-frame (call-stack th s))
@@ -1109,6 +1128,25 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :cases ((call-stack-non-emptyp th s))
            :in-theory (enable THROW-EXCEPTION))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: collect the exception table stuff
+(defund exception-handler-targets (exception-table)
+  (declare (xargs :guard (exception-tablep exception-table)
+                  :guard-hints (("Goal" :in-theory (enable exception-tablep)))))
+  (if (endp exception-table)
+      nil
+    (cons (get-target-field-from-exception-table-entry (first exception-table))
+          (exception-handler-targets (rest exception-table)))))
+
+(defthm memberp-of-find-exception-handler-and-exception-handler-targets
+  (implies (find-exception-handler exception-table pc objectref-class class-table)
+           (memberp (find-exception-handler exception-table pc objectref-class class-table)
+                    (exception-handler-targets exception-table)))
+  :hints (("Goal" :in-theory (enable find-exception-handler exception-handler-targets))))
+
+
 
 ;; This stub returns a new object where all we know after the
 ;; operation is the class of the allocated object.  It is used in

@@ -7282,7 +7282,7 @@
     (mv-let (nodenums-to-translate ;in decreasing order
              cut-nodenum-type-alist
              extra-asserts)
-      (gather-nodes-to-translate-for-heuristically-cut-proof ;fixme could use a worklist algorithm for this?
+      (gather-nodes-to-translate-for-heuristically-cut-proof ; todo: consider a worklist algorithm for this
        larger-nodenum ;skip everything above larger-nodenum
        dag-array-name
        dag-array
@@ -7314,6 +7314,7 @@
                                                print
                                                max-conflicts
                                                nil ;no counterexample (for now)
+                                               nil
                                                state)
                 (if (eq result *error*)
                     (prog2$ (hard-error 'attempt-aggressively-cut-equivalence-proof "Error calling STP." nil)
@@ -7339,16 +7340,16 @@
           (< max-depth min-depth))
       (prog2$ (cw "!! We failed to find a cut depth at which STP can prove the goal !!~%")
               (mv nil state))
-    (let* ((supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate use a worklist?
+    (let* ((supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
            ;;mark the two nodes as supporters:
            (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array larger-nodenum t))
            (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array smaller-nodenum t))
            (current-depth (ceiling (/ (+ min-depth max-depth) 2) 1)))
       (mv-let (nodenums-to-translate cut-nodenum-type-alist extra-asserts)
-        (gather-nodes-to-translate larger-nodenum current-depth depth-array dag-array-name dag-array supporters-tag-array
+        ;; TODO: Consider a worklist algorithm:
+        (gather-nodes-to-translate-up-to-depth larger-nodenum current-depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
                                    nil
                                    nil ;initial cut-nodenum-type-alist
-                                   var-type-alist
                                    nil)
         ;; Call STP:
         (prog2$
@@ -7363,6 +7364,7 @@
                                           print
                                           max-conflicts
                                           nil ;no counterexample (for now)
+                                          nil
                                           state)
            (if (eq result *error*)
                (prog2$ (hard-error 'attempt-cut-equivalence-proofs "Error calling STP." nil)
@@ -7416,10 +7418,8 @@
             (cw "  Failed.)~%"))))
     (if provedp
         (mv t state)
-      (mv-let
-        (depth-array max-depth)
-        ;;bad to do this over and over?
-        (make-depth-array-for-nodes (list smaller-nodenum larger-nodenum) miter-array-name miter-array miter-len) ;fixme any way to avoid rebuilding this?
+      (mv-let (depth-array max-depth)
+        (make-depth-array-for-nodes (list smaller-nodenum larger-nodenum) miter-array-name miter-array miter-len) ;todo: any way to avoid rebuilding this?
         (let ( ;;deepest node translated when we tried our heuristic: (attempt-aggressively-cut-equivalence-proof could compute this if we pass it the depth array, but that might be expensive?
               (depth-of-deepest-translated-node (max-array-elem2 nodenums-translated
                                                                  0 ;fixme think about the 0..
@@ -15902,10 +15902,12 @@
                ;;FIXME put in some sort of cutting heuristic (put in vars for uninteresting subterms)? binary search to find the cut depth?
                ;; TTODO: Need to handle vars not given types in the alist (look how they are used and infer a type?)
                (mv-let (nodenums-to-translate cut-nodenum-type-alist)
+                 ;; TODO: Consider a worklist algorithm:
                  (gather-nodes-for-translation ;;this one does no cutting (except for variables, of course)
                   nodenum                      ;(+ -1 miter-len)
                   miter-array-name
                   miter-array
+                  miter-len
                   var-type-alist
                   (aset1-safe 'needed-for-node1-tag-array
                               (make-empty-array 'needed-for-node1-tag-array (+ 1 nodenum))
@@ -15929,6 +15931,7 @@
                                                   print
                                                   max-conflicts
                                                   nil ;no counterexample (for now)
+                                                  nil
                                                   state)
                    (if (eq *error* result)
                        (prog2$ (er hard 'try-to-prove-node-is-constant "Error calling STP.")
@@ -18386,7 +18389,7 @@
 ;;                         (mv t new-supporting-nodenums-to-translate-acc (acons-fast nodenum type cut-nodenum-type-alist))
 ;;                       ;; if we have a bv-array-read with a constant element-width, we can replace it with a variable (even if we can't translate it since the length is not constant):
 ;;                       (if (and (eq 'bv-array-read (ffn-symb expr))
-;;                                (quoted-posp (first args)))
+;;                                (darg-quoted-posp (first args)))
 ;;                           (mv t new-supporting-nodenums-to-translate-acc (acons-fast nodenum (make-bv-type (unquote (first args))) cut-nodenum-type-alist))
 ;;                         (mv nil nil nil))))
 ;;                 ;;make sure we can translate all the children: - do we have to do this? can't we just cut at the children?

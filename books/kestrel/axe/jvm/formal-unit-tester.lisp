@@ -181,8 +181,20 @@
            (parameter-name (lookup slot param-slot-to-name-alist))
            (assumptions (if (jvm::primitive-typep type)
                             (type-assumptions-for-param type parameter-name)
-                          nil ;todo: what about arrays?
-                          ))
+                          (if (jvm::is-one-dim-array-typep type)
+                              (let ((component-type (jvm::get-array-component-type type)))
+                                (if (and (jvm::bit-vector-typep component-type)
+                                         (not (eq type :boolean)) ; exclude for now, since we need to think about packed booleans (see baload)
+                                         )
+                                    ;; array of BVS:
+                                    (list `(true-listp ,parameter-name)
+                                          `(all-unsigned-byte-p ',(jvm::size-of-array-element component-type) ,parameter-name)
+                                          ;; can't put in anything about the length, since we don't know it
+                                          )
+                                  nil ; array of some other type (todo: can we do anything here?)
+                                  ))
+                            ;; something else (todo: can we do anything here?)
+                            nil)))
            (slot-count (jvm::type-slot-count type)))
       (append assumptions
               (param-var-assumptions-aux (+ slot slot-count)
@@ -206,20 +218,24 @@
     (param-var-assumptions-aux first-param-slot parameter-types param-slot-to-name-alist ; array-length-alist
                                )))
 
+(defun sbvlt-of-bvif-rules ()
+  (declare (xargs :guard t))
+  '(sbvlt-of-bvif-when-sbvlt-arg3
+    sbvlt-of-bvif-when-sbvlt-arg4
+    sbvlt-of-bvif-when-not-sbvlt-arg3
+    sbvlt-of-bvif-when-not-sbvlt-arg4
+    sbvlt-of-bvif-when-sbvlt-arg3-alt
+    sbvlt-of-bvif-when-sbvlt-arg4-alt
+    sbvlt-of-bvif-when-not-sbvlt-arg3-alt
+    sbvlt-of-bvif-when-not-sbvlt-arg4-alt))
+
 ;; Used during lifting and after
 (defun formal-unit-testing-extra-simplification-rules ()
   (declare (xargs :guard t))
-  (append '(bv-array-read-of-bv-array-write
+  (append (sbvlt-of-bvif-rules)
+          '(bv-array-read-of-bv-array-write
             ;;todo: when prove-with-tactics sees a not applied to a boolor, it should try to prove both cases
             ;;boolor  ;might have a loop
-            sbvlt-of-bvif-when-sbvlt-arg3
-            sbvlt-of-bvif-when-sbvlt-arg4
-            sbvlt-of-bvif-when-not-sbvlt-arg3
-            sbvlt-of-bvif-when-not-sbvlt-arg4
-            sbvlt-of-bvif-when-sbvlt-arg3-alt
-            sbvlt-of-bvif-when-sbvlt-arg4-alt
-            sbvlt-of-bvif-when-not-sbvlt-arg3-alt
-            sbvlt-of-bvif-when-not-sbvlt-arg4-alt
             equal-of-bvif
             equal-of-bvif-alt
             bvplus-of-bvif-arg2 ;perhaps restrict to the case when the duplicated term is a constant
@@ -468,7 +484,7 @@
     (member-equal method-name methods-expected-to-fail)))
 
 ;; Returns (mv erp failedp state)
-(defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules monitor state)
+(defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor state)
   (declare (xargs :stobjs (state)
                   :guard (and (jvm::method-idp method-id)
                               (or (eq :any methods-expected-to-fail)
@@ -481,6 +497,10 @@
                               (stringp root-of-class-hierarchy) ;a directory name
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
+                              (or (booleanp prune-branches-approximately)
+                                  (natp prune-branches-approximately))
+                              (or (booleanp prune-branches-precisely)
+                                  (natp prune-branches-precisely))
                               (symbol-listp monitor))
                   :mode :program ;; for several reasons
                   ))
@@ -529,6 +549,7 @@
                                            MYIF-BECOMES-BOOLIF-NIL-ARG1
                                            MYIF-BECOMES-BOOLIF-NIL-ARG2
                                            MYIF-BECOMES-BOOLIF-AXE)
+                                         (sbvlt-of-bvif-rules) ; caused problems with BinarySearch ; todo: make cheap versions?
                                          remove-rules)
                                  nil ;rule-alists
                                  monitor
@@ -542,7 +563,8 @@
                                  nil    ;print-interval
                                  t ;memoizep
                                  t      ;vars-for-array-elements
-                                 t      ;prune-branches
+                                 prune-branches-approximately
+                                 prune-branches-precisely
                                  nil    ;call-stp ;t, nil, or a max-conflicts
                                  :auto  ;steps
                                  :smart ;; (if (eq variant :assert) :split :smart)
@@ -564,7 +586,7 @@
         (simp-dag dag :rules (formal-unit-testing-extra-simplification-rules)
                   :check-inputs nil))
        ((when erp) (mv erp t state))
-       (- (cw "Done unrolling code)~%"))
+       (- (cw "Done unrolling code (~x0 nodes))~%" (len dag)))
        ;; Handle the :assert case, if applicable:
        ((mv erp dag state)
         (if (eq variant :assert)
@@ -620,6 +642,8 @@
                              print
                              nil ;*default-stp-max-conflicts* ;max-conflicts ;a number of conflicts, or nil for no max
                              t   ;call-stp-when-pruning
+                             t ; counterexamplep
+                             t ; print counterexamples as signed
                              (append extra-rules
                                      (set-difference-eq (formal-unit-testing-extra-simplification-rules)
                                                         remove-rules))
@@ -666,24 +690,28 @@
          (fut-result-listp (rest results)))))
 
 ;; Returns (mv erp results state).
-(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules monitor results-acc state)
+(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor results-acc state)
   (declare (xargs :guard ;; todo: flesh out:
                   (and
                    (or (eq :any methods-expected-to-fail)
                        (eq :auto methods-expected-to-fail)
                        (string-listp methods-expected-to-fail))
-                   (booleanp  error-on-unexpectedp))
+                   (booleanp  error-on-unexpectedp)
+                   (or (booleanp prune-branches-approximately)
+                       (natp prune-branches-approximately))
+                   (or (booleanp prune-branches-precisely)
+                       (natp prune-branches-precisely)))
                   :stobjs (state)
                   :mode :program))
   (if (endp method-ids)
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
       (mv-let (erp failedp state)
-        (run-formal-test-on-method method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name nil root-of-class-hierarchy print extra-rules remove-rules monitor state)
+        (run-formal-test-on-method method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name nil root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor state)
         (if erp
             (mv erp nil state)
           (run-formal-tests-on-methods (rest method-ids)
-                                       methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules monitor
+                                       methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
@@ -724,6 +752,8 @@
                      print
                      extra-rules
                      remove-rules
+                     prune-branches-approximately
+                     prune-branches-precisely
                      monitor
                      state
                      constant-pool)
@@ -736,7 +766,11 @@
                                   (eq :auto methods-expected-to-fail) ; methods whose names start with "fail_test" should fail
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
                                   )
-                              (booleanp error-on-unexpectedp))))
+                              (booleanp error-on-unexpectedp)
+                              (or (booleanp prune-branches-approximately)
+                                  (natp prune-branches-approximately))
+                              (or (booleanp prune-branches-precisely)
+                                  (natp prune-branches-precisely)))))
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
@@ -798,7 +832,7 @@
        ;; (- (cw ")~%"))
        ;; Run the tests:
        ((mv erp results state)
-        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy print extra-rules remove-rules monitor
+        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor
                       nil ;empty accumulator
                       state))
        ((when erp) (mv erp nil state constant-pool))
@@ -822,6 +856,8 @@
                                        (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
                                        (extra-rules 'nil)
                                        (remove-rules 'nil)
+                                       (prune-branches-approximately 't)
+                                       (prune-branches-precisely '10000) ; todo: can explode
                                        (monitor 'nil)
                                        (print 'nil))
   `(make-event-quiet (test-file-fn ,path-to-java-file
@@ -832,6 +868,8 @@
                                    ,print
                                    ,extra-rules
                                    ,remove-rules
+                                   ,prune-branches-approximately
+                                   ,prune-branches-precisely
                                    ,monitor
                                    state
                                    constant-pool)))
@@ -846,6 +884,8 @@
                                                 (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
                                                 (extra-rules 'nil)
                                                 (remove-rules 'nil)
+                                                (prune-branches-approximately 't)
+                                                (prune-branches-precisely '10000) ; todo: can explode
                                                 (monitor 'nil)
                                                 (print ':brief) ;(print 'nil)
                                                 )
@@ -858,6 +898,8 @@
                    ,print
                    ,extra-rules
                    ,remove-rules
+                   ,prune-branches-approximately
+                   ,prune-branches-precisely
                    ,monitor
                    state
                    constant-pool)

@@ -7217,9 +7217,11 @@
              (er soft ctx
                  "The function ~x0 must remain in :PROGRAM mode, because it ~
                   has been marked as a function that has special raw Lisp ~
-                  code.  To avoid this error, see :DOC ~
-                  verify-termination-on-raw-program-okp."
-                 name))
+                  code.  To avoid this error, ~#1~[see :DOC ~
+                  verify-termination-on-raw-program-okp~/consider removing ~
+                  ~x0 from *initial-program-fns-with-raw-code*~]."
+                 name
+                 (if (f-get-global 'boot-strap-flg state) 1 0)))
             (t (value :reclassifying-overwrite))))
      ((and attachment-alist
            (not (eq (car attachment-alist) :ATTACHMENT-DISALLOWED))
@@ -18391,9 +18393,13 @@
 ; stobjs by the user.  But when we ev tterm in the future, we will always bind
 ; them to non-stobjs.
 
-                 (let ((old-guard (getpropc name 'table-guard nil wrld)))
+                 (let* ((old-guard (getpropc name 'table-guard nil wrld))
+                        (mv-p (and (consp old-guard)
+                                   (eq (car old-guard) :MV)))
+                        (old-tterm (if mv-p (cdr old-guard) old-guard)))
                    (cond
-                    ((equal old-guard tterm)
+                    ((and (iff mv-p (cdr stobjs-out))
+                          (equal old-tterm tterm))
                      (stop-redundant-event ctx state))
                     (old-guard
                      (er soft ctx
@@ -18402,9 +18408,7 @@
                           of ~x0 is ~x1 and this can be changed only by ~
                           undoing the event that set it.  See :DOC table."
                          name
-                         (untranslate (getpropc name 'table-guard nil
-                                                wrld)
-                                      t wrld)))
+                         (untranslate old-tterm t wrld)))
                     ((getpropc name 'table-alist nil wrld)
 
 ; At one time Matt wanted the option of setting the :val-guard of a

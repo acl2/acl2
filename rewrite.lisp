@@ -10167,8 +10167,7 @@ its attachment is ignored during proofs"))))
                                  whs
                                  (update-brr-data-2
                                   wonp failure-reason unify-subst gstack
-                                  brr-result final-ttree rcnst
-                                  nil ; ancestors is unused
+                                  brr-result final-ttree rcnst ancestors
                                   (wormhole-data whs))))
                              (list :no-wormhole-lock
                                    wonp failure-reason unify-subst gstack
@@ -10267,7 +10266,7 @@ its attachment is ignored during proofs"))))
          (target (access brr-data-1 pre :target))
          (post (access brr-data brr-data :post))
          (brr-result (access brr-data-2 post :brr-result))
-         (subterm 
+         (subterm
           (cond ((eq alist :none)
                  (and (not (dumb-occur term target))
                       (if subterm-p
@@ -10469,8 +10468,8 @@ its attachment is ignored during proofs"))))
                                                          :brr-result))))
                     (cw "The resulting (translated) term is~|  ~
                          ~y0.~|~#1~[~/Note: The first lemma application above ~
-                         that provides a suitable result is at position ~x2, ~
-                         and ~#3~[it's the same result as above.~/that result ~
+                         that provides a suitable result is at frame ~x2, and ~
+                         ~#3~[it's the same result as above.~/that result ~
                          is~|  ~y4.~]~]~|"
                         brr-result
                         (if earlier-d2 1 0)
@@ -14050,17 +14049,18 @@ its attachment is ignored during proofs"))))
           *ttag-fns*)
      forbidden-fns0)))
 
-(table skip-meta-termp-checks-table nil nil
-       :guard
-       (and (or (null val)
-                (ttag world)
-                (er hard 'skip-meta-termp-checks
-                    "An active trust tag is required for setting ~x0 except ~
-                     when clearing it."
-                    'skip-meta-termp-checks-table))
-            (eq key t)
-            (or (eq val t)
-                (symbol-listp val))))
+(set-table-guard skip-meta-termp-checks-table
+                 (and (or (null val)
+                          (ttag world))
+                      (eq key t)
+                      (or (eq val t)
+                          (symbol-listp val)))
+                 :topic set-skip-meta-termp-checks
+                 :coda (and val
+                            (not (ttag world))
+                            (msg "An active trust tag is required for setting ~
+                                  ~x0 except when clearing it."
+                                 'skip-meta-termp-checks-table)))
 
 (defmacro set-skip-meta-termp-checks! (x)
   (declare (xargs :guard (or (booleanp x)
@@ -14906,7 +14906,7 @@ its attachment is ignored during proofs"))))
 
             (not (equal (fargn term 1) ''progn)))
        (rewrite-entry
-        (rewrite (fargn term 3) alist 2)
+        (rewrite (fargn term 3) alist 3)
         :ttree (push-lemma
                 (fn-rune-nume 'return-last nil nil wrld)
                 ttree)))
@@ -15020,7 +15020,7 @@ its attachment is ignored during proofs"))))
           (mv step-limit *t* ttree))
          (t
           (sl-let (rewritten-concl ttree)
-                  (rewrite-entry (rewrite (fargn term 2) alist 1)
+                  (rewrite-entry (rewrite (fargn term 2) alist 2)
                                  :obj '?
                                  :geneqv *geneqv-iff*
                                  :pequiv-info nil)

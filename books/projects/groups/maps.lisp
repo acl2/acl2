@@ -428,6 +428,13 @@
   (implies (epimorphismp map g h)
            (homomorphismp map g h)))
 
+;; Given a homomorphism map from g to h, suppose we can prove the following for some function foo:
+;;   (implies (in x h)
+;;            (and (in (foo x g h) g)
+;;                 (equal (mapply map (foo x g h))
+;;                        x)))
+;; The we can prove that map is an epimorphism by combining member-ielts with the following:              
+
 (defthmd homomorphism-epimorphism
   (implies (and (homomorphismp map g h)
                 (sublistp (elts h) (ielts map g h)))
