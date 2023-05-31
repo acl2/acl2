@@ -512,8 +512,8 @@
        The inputs and outputs must be the same.
        The bodies must be related by function renaming."))
     (b* (((okf &) (fun-renamefun (fundef->name old)
-                                (fundef->name new)
-                                ren))
+                                 (fundef->name new)
+                                 ren))
          ((unless (equal (fundef->inputs old)
                          (fundef->inputs new)))
           (reserrf (list :mismatch (fundef-fix old) (fundef-fix new))))
