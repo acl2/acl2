@@ -591,7 +591,7 @@
           (mv nil nil nil nil)))
        ((mv wf-thm-local-events wf-thm-exported-events)
         (atc-gen-wf-thm proofs prog-const wf-thm print))
-       (init-fun-env-thm (add-suffix prog-const "-FUN-ENV"))
+       (init-fun-env-thm (add-suffix-to-fn prog-const "-FUN-ENV"))
        ((mv init-fun-env-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix init-fun-env-thm
                                            nil

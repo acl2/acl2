@@ -138,8 +138,9 @@
                                        gin.context
                                        expr
                                        type
-                                       (if (type-case type :pointer)
-                                           (add-suffix var "-PTR")
+                                       (if (or (type-case type :pointer)
+                                               (type-case type :array))
+                                           (add-suffix-to-fn var "-PTR")
                                          var)
                                        var
                                        objdes
@@ -1446,7 +1447,7 @@
                                  (:e unop-kind)
                                  ,var-thm
                                  ,type-read-when-type-pred)))))
-       (objdes (add-suffix arg-term "-OBJDES"))
+       (objdes (add-suffix-to-fn arg-term "-OBJDES"))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
