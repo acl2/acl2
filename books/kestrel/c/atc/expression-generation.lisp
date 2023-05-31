@@ -1667,47 +1667,6 @@
                     :thm-index sub.thm-index
                     :names-to-avoid sub.names-to-avoid
                     :proofs nil))))
-         ((mv okp arr-term sub-term in-type1 in-type2 out-type)
-          (atc-check-array-read-deprecated term))
-         ((when (and okp (member-eq :arrays gin.deprecated)))
-          (b* (((erp (pexpr-gout arr))
-                (atc-gen-expr-pure arr-term gin state))
-               ((erp (pexpr-gout sub))
-                (atc-gen-expr-pure sub-term
-                                   (change-pexpr-gin
-                                    gin
-                                    :thm-index arr.thm-index
-                                    :names-to-avoid arr.names-to-avoid)
-                                   state))
-               ((unless (and (type-case arr.type :array)
-                             (type-case in-type1 :array)
-                             (equal (type-array->of arr.type)
-                                    (type-array->of in-type1))
-                             (or (equal (type-array->size arr.type)
-                                        (type-array->size in-type1))
-                                 (not (type-array->size arr.type))
-                                 (not (type-array->size in-type1)))
-                             (equal sub.type in-type2)))
-                (reterr
-                 (msg "The reading of a ~x0 array with a ~x1 index ~
-                       is applied to ~
-                       an expression term ~x2 returning ~x3 ~
-                       and to an expression term ~x4 returning ~x5, ~
-                       but a ~x0 and a ~x1 operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      in-type1 in-type2
-                      arr-term arr.type sub-term sub.type))))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-arrsub :arr arr.expr
-                                            :sub sub.expr)
-                    :type out-type
-                    :term term
-                    :events (append arr.events sub.events)
-                    :thm-name nil
-                    :thm-index sub.thm-index
-                    :names-to-avoid sub.names-to-avoid
-                    :proofs nil))))
          ((mv okp arg-term tag member mem-type)
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)

@@ -1477,6 +1477,7 @@
                                   (limit pseudo-termp)
                                   (deprecated keyword-listp)
                                   state)
+  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (exported-events pseudo-event-form-listp)
                (name symbolp :hyp (symbol-symbol-alistp fn-thms)))
@@ -1707,9 +1708,7 @@
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :in-theory (union-theories
-                             (theory ',(if (member-eq :arrays deprecated)
-                                           'atc-all-rules-deprecated
-                                         'atc-all-rules))
+                             (theory 'atc-all-rules)
                              '(not-errorp-when-expr-valuep
                                ,@not-error-thms
                                ,@valuep-thms
@@ -1733,9 +1732,7 @@
                  :expand (:lambdas))
                 (and stable-under-simplificationp
                      '(:in-theory (union-theories
-                                   (theory ',(if (member-eq :arrays deprecated)
-                                                 'atc-all-rules-deprecated
-                                               'atc-all-rules))
+                                   (theory 'atc-all-rules)
                                    '(,fn
                                      not-errorp-when-expr-valuep
                                      ,@not-error-thms
@@ -3498,6 +3495,7 @@
                                        (names-to-avoid symbol-listp)
                                        (deprecated keyword-listp)
                                        state)
+  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-test-thm symbolp)
                (updated-names-to-avoid symbol-listp
@@ -3565,9 +3563,7 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory ',(if (member-eq :arrays deprecated)
-                                           'atc-all-rules-deprecated
-                                         'atc-all-rules))
+                             (theory 'atc-all-rules)
                              '(not
                                not-errorp-when-expr-valuep
                                ,@not-error-thms
@@ -3674,6 +3670,7 @@
                                        (names-to-avoid symbol-listp)
                                        (deprecated keyword-listp)
                                        state)
+  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-body-thm symbolp)
                (updated-names-to-avoid symbol-listp
@@ -3760,9 +3757,7 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory ',(if (member-eq :arrays deprecated)
-                                           'atc-all-rules-deprecated
-                                         'atc-all-rules))
+                             (theory 'atc-all-rules)
                              '(,@not-error-thms
                                ,@valuep-thms
                                ,@value-kind-thms
