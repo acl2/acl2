@@ -194,13 +194,15 @@
 ;;     (cons (untranslate-list (first clauses) iff-flg wrld)
 ;;           (untranslate-clauses (rest clauses) iff-flg wrld))))
 
-(defun make-numbered-checkpoint-entries (current-number checkpoints)
-  (declare (xargs :mode :program)) ; because we call fms-to-string
-  (if (endp checkpoints)
+(defun make-numbered-checkpoint-entries (current-number checkpoint-clauses)
+  (declare (xargs :guard (and (natp current-number)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses))
+                  :mode :program)) ; because of fms-to-string
+  (if (endp checkpoint-clauses)
       nil
     (acons (concatenate 'string "checkpoint_" (acl2::nat-to-string current-number))
-           (fms-to-string "~X01" (acons #\0 (first checkpoints) (acons #\1 nil nil)))
-           (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoints)))))
+           (fms-to-string "~X01" (acons #\0 (first checkpoint-clauses) (acons #\1 nil nil)))
+           (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoint-clauses)))))
 
 (defconst *rec-to-symbol-alist*
   '(;; For these, training data is obtained by removing the entire "hint
@@ -355,6 +357,7 @@
     ;; note the capital L and underscores:
     (:leidos-run10.0 . "Leidos_run10_0")
     (:leidos-run10.1 . "Leidos_run10_1")
+    (:plur . "plur")
     ))
 
 (defconst *ml-models*
@@ -3008,7 +3011,8 @@
                   :stobjs state))
   (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
        ((mv erp post-response state)
-        (htclient::post-light server-url post-data state))
+        (htclient::post-light server-url post-data state '((:connect-timeout 40)
+                                                           (:read-timeout 40))))
        ((when erp)
         (cw "~%Error received from HTTP POST:~%~@0.~%" erp)
         (mv erp nil state))
@@ -3229,11 +3233,12 @@
     (acons (first keys) val (acons-all-to-val (rest keys) val alist))))
 
 ;; Returns (mv erp recs state).
-(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses server-url debug print state)
+(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses broken-theorem server-url debug print state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              ;; broken-theorem is a thm or defthm form
                               (stringp server-url)
                               (booleanp debug)
                               (acl2::print-levelp print))
@@ -3253,32 +3258,37 @@
                            model
                            (len checkpoint-clauses)
                            (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint"))))
-               (post-data (acons "use-group" model-string
+               ;; Assemble the data to send with the POST request (an alist):
+               (post-data (acons "use-group" model-string ; the name of the model to use (often a group of models, one for each action type)
                                  (acons "n" (acl2::nat-to-string num-recs)
-                                        (make-numbered-checkpoint-entries 0 checkpoint-clauses))))
+                                        (acons "broken-theorem" (fms-to-string "~X01" (acons #\0 broken-theorem (acons #\1 nil nil))) ;; todo: should we translate this?
+                                               (make-numbered-checkpoint-entries 0 checkpoint-clauses)))))
+               ;; Turn off certain recommendation types (TODO: Could a generative model return something like :exact-hints?):
                (post-data (acons-all-to-val (ml-rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types))
                                             "off"
                                             post-data))
                (print-timep (acl2::print-level-at-least-tp print))
                ((mv server-start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+               ;; Send POST requqest to server and parse the response:
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url post-data debug state))
+               ((when erp)
+                ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
+                (mv erp nil state))
+               ;; Print the elapsed time:
                ((mv server-done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
                (- (and print-timep (prog2$ (acl2::print-to-hundredths (- server-done-time server-start-time))
                                            (cw "s~%") ; s = seconds
                                            )))
-               ((when erp)
-                ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
-                (mv erp nil state))
                ((when (not (acl2::parsed-json-arrayp parsed-response)))
                 (er hard? 'get-recs-from-ml-model "Error: Response from server is not a JSON array: ~x0." parsed-response)
                 (mv :bad-server-response nil state)))
             (mv nil (acl2::parsed-json-array->values parsed-response) state))))
        ((when erp) (mv erp nil state))
        (- (if (not (consp semi-parsed-recommendations))
-              (cw "~% WARNING: No recommendations returned from server for ~x0.~%" model)
+              (cw " WARNING: No recommendations returned from server for ~x0.~%" model)
             (if (not (equal num-recs (len semi-parsed-recommendations)))
-                (cw "~% WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
+                (cw " WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
               nil)))
        ;; Parse the individual strings in the recs:
        ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
@@ -3292,11 +3302,13 @@
 
 ;; Goes through the MODELS, getting recs from each.  Returns an alist from model names to rec-lists.
 ;; Returns (mv erp rec-alist state).
-(defun get-recs-from-models-aux (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print acc state)
+(defun get-recs-from-models-aux (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
                               (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              ;; theorem-body is an untranslated-term
+                              ;; broken-theorem is a thm or defthm form
                               (stringp server-url)
                               (booleanp debug)
                               (acl2::print-levelp print))
@@ -3318,23 +3330,24 @@
                     (mv nil nil state) ; don't bother creating recs as they will be disallowed below
                   (make-recs-from-history num-recs-per-model print state))
               ;; It's a normal ML model:
-              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses server-url debug print state))))
+              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem server-url debug print state))))
          ((when erp) (mv erp nil state))
          ;; Remove any recs that are disallowed (todo: drop this now?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
-      (get-recs-from-models-aux (rest models) num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print
+      (get-recs-from-models-aux (rest models) num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print
                                 ;; Associate this model with its recs in the result:
                                 (acons model recs acc)
                                 state))))
 
 ;; Returns an alist from model names to rec-lists.
 ;; Returns (mv erp rec-alist state).
-(defun get-recs-from-models (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print acc state)
+(defun get-recs-from-models (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
                               (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; theorem-body is an untranslated term (todo: translate outside this function?)
+                              ;;  broken-theorem is a thm or defthm form
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
                               (booleanp debug)
@@ -3351,8 +3364,9 @@
        ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
        ((when (not (stringp server-url)))
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
-        (mv :no-server nil state)))
-    (get-recs-from-models-aux models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print acc state)))
+        (mv :no-server nil state))
+       (- (and print (cw "ACL2 advice server is ~s0.~%" server-url))))
+    (get-recs-from-models-aux models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print acc state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3448,6 +3462,7 @@
                                  theorem-body
                                  theorem-hints
                                  theorem-otf-flg
+                                 broken-theorem
                                  num-recs-per-model
                                  current-book-absolute-path
                                  avoid-current-bookp
@@ -3468,6 +3483,7 @@
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
+                              ;; broken-theorem is a thm or defthm form
                               (natp num-recs-per-model)
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
@@ -3487,7 +3503,7 @@
                   :mode :program))
   (b* ((state (acl2::widen-margins state))
        ((mv erp recommendation-alist state)
-        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print nil state))
+        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs recommendation-alist))
@@ -3544,6 +3560,7 @@
                              translated-theorem-body
                              theorem-hints
                              theorem-otf-flg
+                             broken-theorem
                              num-recs-per-model
                              current-book-absolute-path
                              avoid-current-bookp
@@ -3562,6 +3579,7 @@
                               (pseudo-termp translated-theorem-body)
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
+                              ;; broken-theorem is a thm or defthm form
                               (natp num-recs-per-model)
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
@@ -3604,6 +3622,7 @@
                                 theorem-body
                                 theorem-hints
                                 theorem-otf-flg
+                                broken-theorem
                                 num-recs-per-model
                                 current-book-absolute-path
                                 avoid-current-bookp
@@ -3676,6 +3695,10 @@
                               translated-theorem-body
                               theorem-hints
                               theorem-otf-flg
+                              ;; the presumed broken-theorem:
+                              `(defthm ,theorem-name ,theorem-body
+                                 ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
+                                 ,@(and theorem-hints `(:hints ,theorem-hints)))
                               num-recs-per-model
                               nil ; no book to avoid (for now)
                               t
@@ -3781,6 +3804,10 @@
                               translated-theorem-body
                               theorem-hints
                               theorem-otf-flg
+                              ;; the presumed broken-theorem:
+                              `(thm ,theorem-body
+                                 ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
+                                 ,@(and theorem-hints `(:hints ,theorem-hints)))
                               num-recs-per-model
                               nil ; no book to avoid (for now)
                               t
@@ -3916,6 +3943,7 @@
                                   theorem-body
                                   theorem-hints
                                   theorem-otf-flg
+                                  most-recent-failed-theorem
                                   n ; number of recommendations from ML requested
                                   nil ; no current-book (TODO: Maybe avoid the last LDed book, in case they are working on it now)
                                   t ; avoid the current-book (but there isn't one, currently)
@@ -4028,7 +4056,13 @@
                   :mode :program))
   (b* ( ;; Get all the recs to try:
        ((mv erp recommendation-alist state)
-        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body server-url debug print nil state))
+        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body
+                              ;; the presumed broken-theorem:
+                              `(defthm fake-theorem-name ; todo: use the real name?
+                                 ,theorem-body
+                                 ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
+                                 ,@(and theorem-hints `(:hints ,theorem-hints)))
+                              server-url debug print nil state))
        ((when erp) (mv erp nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs recommendation-alist))

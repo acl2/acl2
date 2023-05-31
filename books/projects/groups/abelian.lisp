@@ -681,7 +681,7 @@
 ;; Euler's Totient Theorem
 ;;-------------------------------------------------------------------------------------------------------
 
-;; Euler's totient function is based on the prime factorization of an integer:
+;; Euler's totient is based on the prime factorization of an integer (see projects/numbers/euclid.lisp):
 
 (defun totient-comp (l)
   (if (consp l)
@@ -702,7 +702,7 @@
 ;;                   1)))
 
 ;; Note that if n is prime, then (totient n) = n - 1.  Thus, Euler's Theorem is a
-;; generalization of Fermat's Theorem:
+;; generalization of Fermat's Theorem (see projects/numbers/fermat.lisp):
 
 ;; (defthm fermat
 ;;   (implies (and (primep p)
@@ -711,7 +711,7 @@
 ;;	     (equal (mod (expt m (1- p)) p)
 ;;		    1)))
 
-;; Our strategy is to prove that (totient n) = (order (z* n)) and invoke power-order (seeccauchy.lisp).
+;; Our strategy is to prove that (totient n) = (order (z* n)) and invoke power-order (see quotients.lisp).
 ;; We begin by defining a homomorphism from (z* (* m n)) to (direct-product (list (z* m) (z* n))):
 
 (defmap mod-map (m n) (ninit (* m n))
@@ -847,7 +847,7 @@
 	   (equal (power x k (z* n))
 	          (mod (expt x k) n))))
 
-;; Euler's theorem follows:
+;; Euler's theorem follows from order-titient, power-z*, and power-order:
 
 (defthmd euler-totient
   (implies (and (posp n) (> n 1)

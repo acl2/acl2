@@ -185,13 +185,19 @@
     (implies yes/no
              (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-integer-read
+    (implies yes/no
+             (type-nonchar-integerp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-integer-write ((val pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (int pseudo-termp)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
+               (arg pseudo-termp)
                (type typep))
   :short "Check if a term may represent a write of an integer by pointer."
   :long
@@ -208,26 +214,40 @@
     "This ACL2 function takes as argument the value term of the @(tsee let),
      i.e. @('(<type>-write <int>)'),
      and checks if it has the expected form,
-     returning the integer type and the @('<int>') argument if successful."))
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp fixtype write) (atc-check-symbol-2part val.fn))
-       ((unless (and okp
-                     (eq write 'write)))
-        (no))
+     returning, if successful,
+     the function @('<type>-write'),
+     the argument @('<int>'),
+     and the integer type."))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call val))
+       ((unless okp) (no))
+       ((mv okp fixtype write) (atc-check-symbol-2part fn))
        (type (fixtype-to-integer-type fixtype))
-       ((when (not type)) (no))
-       ((unless (list-lenp 1 val.args)) (no))
-       (int (first val.args)))
-    (mv t int type))
+       ((unless (and okp
+                     (eq write 'write)
+                     type))
+        (no))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a write of an integer by pointer, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (first args)))
+    (retok t fn arg type))
   ///
 
   (defret pseudo-term-count-of-atc-check-integer-write
     (implies yes/no
-             (< (pseudo-term-count int)
+             (< (pseudo-term-count arg)
                 (pseudo-term-count val)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-integer-write
+    (implies yes/no
+             (type-nonchar-integerp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,58 +295,6 @@
     :rule-classes :linear)
 
   (defret pseudo-term-count-of-atc-check-array-read-sub
-    (implies yes/no
-             (< (pseudo-term-count sub)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-array-read-deprecated ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (arr pseudo-termp)
-               (sub pseudo-termp)
-               (in-type1 typep)
-               (in-type2 typep)
-               (out-type typep))
-  :short "Check if a term may represent an array read."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the term is a call of one of the ACL2 functions
-     that represent C array read operations,
-     we return the two argument terms.")
-   (xdoc::p
-    "We also return the input and output C types of the array read.")
-   (xdoc::p
-    "If the term does not have the form explained above,
-     we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp etype array read itype) (atc-check-symbol-4part term.fn))
-       ((unless (and okp
-                     (eq array 'array)
-                     (eq read 'read)))
-        (no))
-       (out-type (fixtype-to-integer-type etype))
-       ((when (not out-type)) (no))
-       (in-type1 (make-type-array :of out-type :size nil))
-       (in-type2 (fixtype-to-integer-type itype))
-       ((when (not in-type2)) (no))
-       ((unless (list-lenp 2 term.args)) (no))
-       (arr (first term.args))
-       (sub (second term.args)))
-    (mv t arr sub in-type1 in-type2 out-type))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-array-read-deprecated-arr
-    (implies yes/no
-             (< (pseudo-term-count arr)
-                (pseudo-term-count term)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-array-read-deprecated-sub
     (implies yes/no
              (< (pseudo-term-count sub)
                 (pseudo-term-count term)))
@@ -387,69 +355,6 @@
     :rule-classes :linear)
 
   (defret pseudo-term-count-of-atc-check-array-write-elem
-    (implies yes/no
-             (< (pseudo-term-count elem)
-                (pseudo-term-count val)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-array-write-deprecated ((var symbolp) (val pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (sub pseudo-termp)
-               (elem pseudo-termp)
-               (sub-type typep)
-               (elem-type typep))
-  :short "Check if a @(tsee let) binding may represent an array write."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "An array write, i.e. an assignment to an array element,
-     is represented by a @(tsee let) binding of the form")
-   (xdoc::codeblock
-    "(let ((<arr> (<type1>-array-write-<type2> <arr> <sub> <elem>))) ...)")
-   (xdoc::p
-    "where @('<arr>') is a variable of pointer type to an integer type,
-     which must occur identically as
-     both the @(tsee let) variable
-     and as the first argument of @('<type1>-array-write-<type2>'),
-     @('<sub>') is an expression that yields the index of the element to write,
-     @('<elem>') is an expression that yields the element to write,
-     and @('...') represents the code that follows the array assignment.
-     This function takes as arguments
-     the variable and value of a @(tsee let) binder,
-     and checks if they have the form described above.
-     If they do, the components are returned for further processing.
-     We also return the types of the index and element
-     as gathered from the name of the array write function."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp etype array write itype) (atc-check-symbol-4part val.fn))
-       ((unless (and okp
-                     (eq array 'array)
-                     (eq write 'write)))
-        (no))
-       (sub-type (fixtype-to-integer-type itype))
-       ((unless sub-type) (no))
-       (elem-type (fixtype-to-integer-type etype))
-       ((when (not elem-type)) (no))
-       ((unless (list-lenp 3 val.args)) (no))
-       (arr (first val.args))
-       (sub (second val.args))
-       (elem (third val.args)))
-    (if (eq arr var)
-        (mv t sub elem sub-type elem-type)
-      (no)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-array-write-deprecated-sub
-    (implies yes/no
-             (< (pseudo-term-count sub)
-                (pseudo-term-count val)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-array-write-deprecated-elem
     (implies yes/no
              (< (pseudo-term-count elem)
                 (pseudo-term-count val)))

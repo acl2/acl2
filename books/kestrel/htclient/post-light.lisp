@@ -12,6 +12,7 @@
 (in-package "HTCLIENT")
 
 ;; This book is just a lighter-weight variant of post.lisp.
+;; And by lighter-weight, we mean fewer books are included.
 
 (include-book "post-light-logic")
 (include-book "quicklisp/dexador" :dir :system)

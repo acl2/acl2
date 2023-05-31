@@ -64,6 +64,7 @@
                                     (acl2::translate-term theorem-body 'submit-defthm-event-with-advice (w state))
                                     nil           ; don't use any hints
                                     nil           ; theorem-otf-flg
+                                    defthm
                                     num-recs-per-model
                                     current-book-absolute-path
                                     t ; avoid using a book to prove its own checkpoints

@@ -1913,14 +1913,14 @@
               (atc-update-var-term-alist (list var)
                                          (list val-instance)
                                          gin.var-term-alist))
-             ((mv okp int-term type) (atc-check-integer-write val-term))
+             ((erp okp & arg-term type) (atc-check-integer-write val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
                     (reterr
                      (msg "The pointed integer write term ~x0 ~
                            to which ~x1 is bound ~
                            has the ~x2 wrapper, which is disallowed."
-                          int-term var wrapper?)))
+                          arg-term var wrapper?)))
                    ((unless (member-eq var gin.affect))
                     (reterr
                      (msg "The pointed integer ~x0 is being written to, ~
@@ -1950,7 +1950,7 @@
                            given that the code is guard-verified."
                           var ptr.type (type-pointer type))))
                    ((erp (pexpr-gout int))
-                    (atc-gen-expr-pure int-term
+                    (atc-gen-expr-pure arg-term
                                        (make-pexpr-gin
                                         :context gin.context
                                         :inscope gin.inscope
@@ -1970,7 +1970,7 @@
                            This is indicative of ~
                            unreachable code under the guards, ~
                            given that the code is guard-verified."
-                          int-term int.type type)))
+                          arg-term int.type type)))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (make-expr-unary
@@ -2080,125 +2080,6 @@
                            unreachable code under the guards, ~
                            given that the code is guard-verified."
                           var arr.type sub sub.type)))
-                   ((unless (equal elem.type elem-type))
-                    (reterr
-                     (msg "The array ~x0 of type ~x1 ~
-                           is being written to with ~
-                           an element ~x2 of type x3, ~
-                           instead of type ~x4 as expected.
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var arr.type elem elem.type elem-type)))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (make-expr-arrsub :arr arr.expr
-                                                 :sub sub.expr)
-                         :arg2 elem.expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
-                   ((erp (stmt-gout body))
-                    (atc-gen-stmt body-term
-                                  (change-stmt-gin
-                                   gin
-                                   :var-term-alist var-term-alist-body
-                                   :thm-index elem.thm-index
-                                   :names-to-avoid elem.names-to-avoid
-                                   :proofs nil)
-                                  state))
-                   (limit (pseudo-term-fncall 'binary-+
-                                              (list (pseudo-term-quote 4)
-                                                    body.limit))))
-                (retok (make-stmt-gout
-                        :items (cons item body.items)
-                        :type body.type
-                        :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :limit limit
-                        :events (append arr.events
-                                        sub.events
-                                        elem.events
-                                        body.events)
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
-             ((mv okp sub-term elem-term sub-type elem-type)
-              (atc-check-array-write-deprecated var val-term))
-             ((when (and okp (member-eq :arrays gin.deprecated)))
-              (b* (((unless (eq wrapper? nil))
-                    (reterr
-                     (msg "The array write term ~x0 to which ~x1 is bound ~
-                           has the ~x2 wrapper, which is disallowed."
-                          val-term var wrapper?)))
-                   ((unless (member-eq var gin.affect))
-                    (reterr
-                     (msg "The array ~x0 is being written to, ~
-                           but it is not among the variables ~x1 ~
-                           currently affected."
-                          var gin.affect)))
-                   ((erp (pexpr-gout arr))
-                    (atc-gen-expr-pure var
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs
-                                        :deprecated gin.deprecated)
-                                       state))
-                   ((erp (pexpr-gout sub))
-                    (atc-gen-expr-pure sub-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index arr.thm-index
-                                        :names-to-avoid arr.names-to-avoid
-                                        :proofs arr.proofs
-                                        :deprecated gin.deprecated)
-                                       state))
-                   ((erp (pexpr-gout elem))
-                    (atc-gen-expr-pure elem-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index sub.thm-index
-                                        :names-to-avoid sub.names-to-avoid
-                                        :proofs sub.proofs
-                                        :deprecated gin.deprecated)
-                                       state))
-                   ((unless (and (type-case arr.type :array)
-                                 (equal (type-array->of arr.type)
-                                        elem-type)))
-                    (reterr
-                     (msg "The array ~x0 of type ~x1 ~
-                           does not have the expected array type of ~x2. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var arr.type elem-type)))
-                   ((unless (equal sub.type sub-type))
-                    (reterr
-                     (msg "The array ~x0 of type ~x1 ~
-                           is being indexed with ~
-                           a subscript ~x2 of type x3, ~
-                           instead of type ~x4 as expected.
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var arr.type sub sub.type sub-type)))
                    ((unless (equal elem.type elem-type))
                     (reterr
                      (msg "The array ~x0 of type ~x1 ~

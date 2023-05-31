@@ -27,7 +27,12 @@
 (define post
   ((url stringp "Address to send POST command to.")
    (data alistp "Alist of form keys and data, both as strings.")
-   state)
+   state
+   ;; Note that keyword arguments have a different syntax than raw lisp defun
+   ;; (see doc: extended-formals).
+   &key
+   ((connect-timeout atom "Max seconds to wait for a connection.") '10)
+   ((read-timeout atom "Max seconds to wait for a reply.") '10))
   :returns (mv (error "NIL on success or an error @(see msg) on failure.")
                (val   "On success: a string response." stringp)
                (state state-p1

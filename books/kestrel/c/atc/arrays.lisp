@@ -136,14 +136,7 @@
      besides the fixtype of arrays of that type,
      we generate functions
      @('<type>-array-read') and @('<type>-array-write')
-     that take ACL2 integers as indices;
-     these functions do not directly represent C constructs,
-     but are useful to make the definition of the ones that do more concise.
-     We generate functions
-     @('<type>-array-read-<type1>') and @('<type>-array-write-<type1>'),
-     which represent C constructs:
-     that convert the index to an ACL2 integer
-     and then call the two functions above.
+     that take C integers as indices.
      We also generate convenience functions
      to test whether indices are in range
      and to return the length of the arrays:
@@ -157,14 +150,13 @@
 (define atc-def-integer-arrays ((type typep))
   :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
-  :short "Event to generate the core model of arrays of an integer type."
+  :short "Event to generate the model of arrays of an integer type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here we generate the fixtype,
-     the operations that take ACL2 integer indices,
+    "We generate the fixtype
      and the operatiosn that take indices of any C integer types.
-     Note that indices are 0-indexed.
+     Note that indices are 0-based.
      We also generate the function that returns the length of an array,
      as an ACL2 integer.")
    (xdoc::p
@@ -582,188 +574,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-def-integer-arrays-indices ((etype typep) (itype typep))
-  :guard (and (type-nonchar-integerp etype)
-              (type-nonchar-integerp itype))
-  :returns (event pseudo-event-formp)
-  :short "Event to generate the part of the model of arrays of an integer type
-          that involves indices of an integer type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Here @('etype') is the type of the array elements,
-     while @('itype') is the type of the array indices."))
-
-  (b* ((etype-string (integer-type-xdoc-string etype))
-       (itype-string (integer-type-xdoc-string itype))
-       (<etype> (integer-type-to-fixtype etype))
-       (<itype> (integer-type-to-fixtype itype))
-       (<etype>p (pack <etype> 'p))
-       (<itype>p (pack <itype> 'p))
-       (<etype>-array (pack <etype> '-array))
-       (<etype>-arrayp (pack <etype>-array 'p))
-       (<etype>-array->elements (pack <etype>-array '->elements))
-       (<etype>-array-length (pack <etype>-array '-length))
-       (<etype>-array-integer-index-okp (pack <etype>
-                                              '-array-integer-index-okp))
-       (<etype>-array-integer-read (pack <etype>-array '-integer-read))
-       (<etype>-array-integer-write (pack <etype>-array '-integer-write))
-       (integer-from-<itype> (pack 'integer-from- <itype>))
-       (<etype>-array-<itype>-index-okp (pack
-                                         <etype> '-array- <itype> '-index-okp))
-       (<etype>-array-read-<itype> (pack <etype> '-array-read- <itype>))
-       (<etype>-array-write-<itype> (pack <etype> '-array-write- <itype>))
-       (<etype>-array-index-okp (pack <etype> '-array-index-okp))
-       (<etype>-array-read (pack <etype> '-array-read))
-       (<etype>-array-write (pack <etype> '-array-write))
-       (len-of-<etype>-array->elements-of-<etype>-array-write-<itype>
-        (pack
-         'len-of- <etype>-array->elements '-of- <etype>-array-write-<itype>))
-       (<etype>-array-length-of-<etype>-array-write-<itype>
-        (pack <etype> '-array-length-of- <etype>-array-write-<itype>)))
-
-    `(progn
-
-       ,@(and (type-case etype :char)
-              (raise "Type ~x0 not supported." etype))
-
-       ,@(and (type-case itype :char)
-              (raise "Type ~x0 not supported." itype))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,<etype>-array-<itype>-index-okp ((array ,<etype>-arrayp)
-                                                 (index ,<itype>p))
-         :returns (yes/no booleanp)
-         :short ,(str::cat "Check if an index of "
-                           itype-string
-                           " is valid for an array of type "
-                           etype-string
-                           ".")
-         (,<etype>-array-integer-index-okp array (,integer-from-<itype> index))
-         :hooks (:fix)
-         ///
-
-         (defruled ,(pack <etype>-array-<itype>-index-okp '-alt-def)
-           (implies (,<itype>p index)
-                    (equal (,<etype>-array-<itype>-index-okp array index)
-                           (,<etype>-array-index-okp array index)))
-           :enable (,<etype>-array-<itype>-index-okp
-                    ,<etype>-array-integer-index-okp
-                    ,<etype>-array-index-okp
-                    integer-from-cinteger-alt-def
-                    ifix)))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,<etype>-array-read-<itype> ((array ,<etype>-arrayp)
-                                            (index ,<itype>p))
-         :guard (,<etype>-array-<itype>-index-okp array index)
-         :returns (element ,<etype>p)
-         :short ,(str::cat "Read an element from an array of "
-                           etype-string
-                           ", using an index of "
-                           itype-string
-                           ".")
-         (,<etype>-array-integer-read array (,integer-from-<itype> index))
-         :guard-hints (("Goal"
-                        :in-theory (enable ,<etype>-array-<itype>-index-okp)))
-         :hooks (:fix)
-         ///
-
-         (defruled ,(pack <etype>-array-read-<itype> '-alt-def)
-           (implies (,<itype>p index)
-                    (equal (,<etype>-array-read-<itype> array index)
-                           (,<etype>-array-read array index)))
-           :enable (,<etype>-array-read-<itype>
-                    ,<etype>-array-integer-read
-                    ,<etype>-array-read
-                    integer-from-cinteger-alt-def)))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-       (define ,<etype>-array-write-<itype> ((array ,<etype>-arrayp)
-                                             (index ,<itype>p)
-                                             (element ,<etype>p))
-         :guard (,<etype>-array-<itype>-index-okp array index)
-         :returns (new-array ,<etype>-arrayp)
-         :short ,(str::cat "Write an element to an array of "
-                           etype-string
-                           ", using an index of "
-                           itype-string
-                           ".")
-         (,<etype>-array-integer-write array
-                                       (,integer-from-<itype> index)
-                                       element)
-         :guard-hints (("Goal"
-                        :in-theory (enable ,<etype>-array-<itype>-index-okp)))
-         :hooks (:fix)
-
-         ///
-
-         (defrule ,len-of-<etype>-array->elements-of-<etype>-array-write-<itype>
-           (equal
-            (len (,<etype>-array->elements
-                  (,<etype>-array-write-<itype> array index element)))
-            (len (,<etype>-array->elements array))))
-
-         (defrule ,<etype>-array-length-of-<etype>-array-write-<itype>
-           (equal (,<etype>-array-length
-                   (,<etype>-array-write-<itype> array index element))
-                  (,<etype>-array-length array)))
-
-         (defruled ,(pack <etype>-array-write-<itype> '-alt-def)
-           (implies (,<itype>p index)
-                    (equal (,<etype>-array-write-<itype> array index element)
-                           (,<etype>-array-write array index element)))
-           :enable (,<etype>-array-write-<itype>
-                    ,<etype>-array-integer-write
-                    ,<etype>-array-write
-                    integer-from-cinteger-alt-def
-                    ,<etype>-array-index-okp
-                    ,<etype>-array-integer-index-okp
-                    ifix)))
-
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-     )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-def-integer-arrays-loop-inner ((etype typep) (itypes type-listp))
-  :guard (and (type-nonchar-integerp etype)
-              (type-nonchar-integer-listp itypes))
-  :returns (events pseudo-event-form-listp)
-  :short "Events to generate the array operations that involve indices,
-          for a given array element type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the inner loop for generating our model of arrays."))
-  (cond ((endp itypes) nil)
-        (t (cons (atc-def-integer-arrays-indices etype (car itypes))
-                 (atc-def-integer-arrays-loop-inner etype (cdr itypes))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-def-integer-arrays-loop-outer ((etypes type-listp)
-                                           (itypes type-listp))
-  :guard (and (type-nonchar-integer-listp etypes)
-              (type-nonchar-integer-listp itypes))
+(define atc-def-integer-arrays-loop ((etypes type-listp))
+  :guard (type-nonchar-integer-listp etypes)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate the model of arrays
           for the given array element types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the outer loop for generating our model of arrays."))
   (cond ((endp etypes) nil)
         (t (append (list (atc-def-integer-arrays (car etypes)))
-                   (atc-def-integer-arrays-loop-inner (car etypes) itypes)
-                   (atc-def-integer-arrays-loop-outer (cdr etypes) itypes)))))
+                   (atc-def-integer-arrays-loop (cdr etypes))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(atc-def-integer-arrays-loop-outer *nonchar-integer-types*
-                                              *nonchar-integer-types*)))
+ `(progn ,@(atc-def-integer-arrays-loop *nonchar-integer-types*)))
