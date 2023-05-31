@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun post (url data state)
+(defun post (url data state &key (connect-timeout 10) (read-timeout 10))
   (b* (((unless (live-state-p state))
         (error "POSTLS can only be called on a live state.")
         (mv "ERROR" nil state))
@@ -24,7 +24,8 @@
 
     (handler-case
       (mv-let (reply-string response-code hashtable uri something)
-          (dex:post url :content data)
+          (dex:post url :content data
+                    :connect-timeout connect-timeout :read-timeout read-timeout)
         (if (equal response-code 200)
             (mv nil reply-string state)
           ;; For now, we make any reply code except 200 be returned as the error code

@@ -17,7 +17,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun post-light (url data state)
+(defun post-light (url data state kwds)
+  ;; kwds is an alist from keyword arg to value
+  ;; The keyword args must be valid for dex:post (see https://quickdocs.org/dexador)
+  ;; E.g., (post-light "https:..." <data> state '((:connect-timeout 30) (:read-timeout 30)))
   (if (not (live-state-p state))
       (prog2$ (error "POSTLS can only be called on a live state.")
               (mv "ERROR" nil state))
@@ -26,7 +29,7 @@
                 (mv "ERROR" nil state))
       (handler-case
        (mv-let (reply-string response-code hashtable uri something)
-         (dex:post url :content data)
+         (apply 'dex:post url :content data (reduce 'append kwds))
          (if (equal response-code 200)
              (mv nil reply-string state)
            ;; For now, we make any reply code except 200 be returned as the error code
