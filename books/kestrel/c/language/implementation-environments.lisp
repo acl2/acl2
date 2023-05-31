@@ -133,16 +133,9 @@
    (xdoc::p
     "We formalize the format of @('signed char') as consisting of
      a specification of signed format
-     and a boolean flag saying whether the aforementioned pattern is a trap.
-     The latter only applies to
-     the sign-and-magniture and one's complement signed formats;
-     thus, we require it to be @('nil') for two's complement signed format."))
+     and a boolean flag saying whether the aforementioned pattern is a trap."))
   ((signed signed-format)
-   (trap bool :reqfix (if (equal (signed-format-kind signed) :twos-complement)
-                          nil
-                        trap)))
-  :require (implies (equal (signed-format-kind signed) :twos-complement)
-                    (not trap))
+   (trap bool))
   :pred schar-formatp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
