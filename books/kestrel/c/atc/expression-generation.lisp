@@ -138,6 +138,9 @@
                                        gin.context
                                        expr
                                        type
+                                       (if (type-case type :pointer)
+                                           (add-suffix var "-PTR")
+                                         var)
                                        var
                                        objdes
                                        gin.compst-var
@@ -229,6 +232,7 @@
                                        gin.context
                                        expr
                                        type
+                                       term
                                        term
                                        acl2::*nil*
                                        gin.compst-var
@@ -371,6 +375,7 @@
                                        gin.context
                                        expr
                                        out-type
+                                       term
                                        term
                                        acl2::*nil*
                                        gin.compst-var
@@ -547,6 +552,7 @@
                                        expr
                                        out-type
                                        term
+                                       term
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
@@ -696,7 +702,8 @@
                                        gin.context
                                        expr
                                        out-type
-                                       `(,fn ,arg-term)
+                                       term
+                                       term
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
@@ -955,6 +962,7 @@
                                        gin.context
                                        expr
                                        type
+                                       term*
                                        term*
                                        acl2::*nil*
                                        gin.compst-var
@@ -1321,6 +1329,7 @@
                                        expr
                                        type
                                        term
+                                       term
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
@@ -1350,11 +1359,47 @@
                                    (type typep)
                                    (gin pexpr-ginp)
                                    state)
-  (declare (ignore arg-thm state))
+  :guard (type-nonchar-integerp type)
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents an indirection of a pointer to integer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression and theorem for the argument
+     are generated in the caller, and passed here.")
+   (xdoc::p
+    "Currently, the argument term must be an ACL2 variable.
+     We defensively check that it is the case.
+     The generated theorem needs not only the theorem about the argument,
+     but also the theorem about the variable in the symbol table.
+     The reason is that the theorem about the argument
+     just says that the execution of the C variable
+     yields the ACL2 @('-ptr') variable,
+     but here we need to show that the execution of the indirection expression
+     yields the ACL2 variable that contains the integer, not the pointer:
+     that assertion is in the theorem about the variable in the symbol table.
+     An alternative proof generation approach is to
+     extend the theorem about the argument to also say that
+     dereferncing the pointer yields the integer variable,
+     i.e. the same assertion in the symbol table:
+     doing this obviated the need to use, in the theorem generated here,
+     the theorem from the symbol table.
+     However, that approach makes the theorem about the argument expression
+     disuniform with other theorems about expressions;
+     in particular, @(tsee atc-gen-expr-pure-correct-thm)
+     would have to be generalized.
+     Thus, the approach we use here seems better for now,
+     since the only slight ``disuniformity'' is in the fact that
+     we need to retrieve and use the theorem from the symbol table.
+     The current approach critically depends on
+     the argument of the indirection operator always being a variable;
+     if in the future our ACL2 representation of C is extended
+     so that the indirection operator can be applied to more general arguments,
+     we may need to choose the alternative approach sketched above,
+     which in that case would be more uniform."))
   (b* (((reterr) (irr-pexpr-gout))
+       (wrld (w state))
        ((pexpr-gin gin) gin)
        ((unless (equal arg-type
                        (type-pointer type)))
@@ -1365,18 +1410,68 @@
                This is indicative of provably dead code, ~
                given that the code is guard-verified."
               type arg-term arg-type (type-pointer type))))
-       (term `(,fn ,arg-term))
        (expr (make-expr-unary :op (unop-indir)
-                              :arg arg-expr)))
+                              :arg arg-expr))
+       (term `(,fn ,arg-term))
+       ((when (not gin.proofs))
+        (retok
+         (make-pexpr-gout :expr expr
+                          :type type
+                          :term term
+                          :events arg-events
+                          :thm-name nil
+                          :thm-index gin.thm-index
+                          :names-to-avoid gin.names-to-avoid
+                          :proofs nil)))
+       ((unless (symbolp arg-term))
+        (reterr (raise "Interal error: indirection applied to non-variable ~x0."
+                       arg-term)))
+       (info (atc-get-var arg-term gin.inscope))
+       ((unless info)
+        (reterr (raise "Internal error: variable ~x0 not found in scope."
+                       arg-term)))
+       (var-thm (atc-var-info->thm info))
+       (hints
+        (b* ((type-pred (type-to-recognizer type wrld))
+             (exec-indir-when-type-pred (pack 'exec-indir-when- type-pred))
+             (type-read (pack (type-kind type) '-read))
+             (type-read-when-type-pred (pack type-read '-when- type-pred)))
+          `(("Goal" :in-theory '(exec-expr-pure-when-unary
+                                 (:e expr-kind)
+                                 (:e expr-unary->arg)
+                                 (:e expr-unary->op)
+                                 ,arg-thm
+                                 expr-valuep-of-expr-value
+                                 ,exec-indir-when-type-pred
+                                 (:e unop-kind)
+                                 ,var-thm
+                                 ,type-read-when-type-pred)))))
+       (objdes (add-suffix arg-term "-OBJDES"))
+       ((mv thm-event thm-name thm-index names-to-avoid)
+        (atc-gen-expr-pure-correct-thm gin.fn
+                                       gin.fn-guard
+                                       gin.context
+                                       expr
+                                       type
+                                       term
+                                       term
+                                       objdes
+                                       gin.compst-var
+                                       hints
+                                       nil
+                                       gin.thm-index
+                                       gin.names-to-avoid
+                                       state)))
     (retok
      (make-pexpr-gout :expr expr
                       :type type
                       :term term
-                      :events arg-events
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid
-                      :proofs nil)))
+                      :events (append arg-events
+                                      (list thm-event))
+                      :thm-name thm-name
+                      :thm-index thm-index
+                      :names-to-avoid names-to-avoid
+                      :proofs t)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

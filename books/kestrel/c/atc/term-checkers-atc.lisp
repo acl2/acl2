@@ -185,7 +185,11 @@
     (implies yes/no
              (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-integer-read
+    (implies yes/no
+             (type-nonchar-integerp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

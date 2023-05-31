@@ -20,7 +20,7 @@ number theory.  It includes the following ACL2 books:
      Quadratic residues and Euler's Criterion: if p is an odd prime and p does
      not divide m, then
 
-          mod(m^((p-1)/2),p) = 1 if m is a quadratic residue mod p
+          mod(m^((p-1)/2),p) = 1   if m is a quadratic residue mod p
                                p-1 if not.
 
      A by-product of the proof is Wilson's Theorem: mod((p-1)!,p) = p-1.
@@ -52,3 +52,6 @@ number theory.  It includes the following ACL2 books:
 
   pratt
       Vaughn Pratt's method of prime certification applied to the prime 2^255 - 19.
+
+  z2q
+      A bijection from the integers to the rartionals

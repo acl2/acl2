@@ -2568,6 +2568,7 @@
 (define atc-gen-fun-correct-thm ((fn symbolp)
                                  (fn-guard symbolp)
                                  (fn-def* symbolp)
+                                 (context-preamble true-listp)
                                  (prog-const symbolp)
                                  (compst-var symbolp)
                                  (fenv-var symbolp)
@@ -2599,7 +2600,16 @@
      We use 1 more than the limit for the body as limit bound,
      because we need 1 to go from @(tsee exec-fun)
      to @(tsee exec-block-item-list),
-     which is what the body's theorem refers to."))
+     which is what the body's theorem refers to.")
+   (xdoc::p
+    "We enable @(tsee declar) in the generated hints
+     because the correctness theorem generated about the body of the function
+     (i.e. @('body-thm')) does not that have that wrapper.
+     We will need to add other wrappers like @(tsee assign) here,
+     when we extend modular proofs to handle those.
+     An alternative could be to include the wrappers
+     in the theorems about the statements that form the body,
+     and then we will not need to include them here."))
   (b* ((wrld (w state))
        (lemma-name (pack fn '-correct))
        ((mv lemma-name names-to-avoid) (fresh-logical-name-with-$s-suffix
@@ -2611,6 +2621,7 @@
        (lemma-formula
         `(implies (and (compustatep ,compst-var)
                        (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
+                       ,@context-preamble
                        (,fn-guard ,@formals)
                        (integerp ,limit-var)
                        (>= ,limit-var ,limit))
@@ -2752,7 +2763,7 @@
             init-scope-scopep-event
             init-scope-scopep-thm
             omap-update-nest
-            init-proofs
+            modular-proofs
             names-to-avoid)
         (if proofs
             (atc-gen-init-scope-thms fn
@@ -2771,7 +2782,7 @@
             add-var-nest
             names-to-avoid)
         (if (and proofs
-                 init-proofs)
+                 modular-proofs)
             (atc-gen-push-init-thm fn
                                    fn-guard
                                    typed-formals
@@ -2787,12 +2798,10 @@
                                   :premises premises))
        ((mv inscope init-inscope-events names-to-avoid)
         (if (and proofs
-                 init-proofs)
+                 modular-proofs)
             (atc-gen-init-inscope fn fn-guard formals typed-formals
                                   compst-var context names-to-avoid wrld)
           (mv (list typed-formals) nil names-to-avoid)))
-       (modular-proofs (and init-proofs
-                            (not context-preamble)))
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
@@ -2894,10 +2903,12 @@
                       fn-correct-exported-events
                       fn-correct-thm
                       names-to-avoid)
-                  (if modular-proofs
+                  (if (and modular-proofs
+                           (not context-preamble))
                       (atc-gen-fun-correct-thm fn
                                                fn-guard
                                                fn-def*
+                                               context-preamble
                                                prog-const
                                                compst-var
                                                fenv-var
@@ -2941,7 +2952,7 @@
                                        (list fn-guard-event)
                                        fn-def*-events
                                        formals-events
-                                       (and init-proofs
+                                       (and modular-proofs
                                             (list init-scope-expand-event
                                                   init-scope-scopep-event
                                                   push-init-thm-event))

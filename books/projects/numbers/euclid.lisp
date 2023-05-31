@@ -329,6 +329,22 @@ This book contains proofs of two theorems of Euclid:
 		  (integerp y))
 	     (and (or (= x 0) (divides (gcd x y) x))
 		  (or (= y 0) (divides (gcd x y) y))))
+    :rule-classes ())
+
+;; The numerator and denominator of a rational number are relatively prime:
+
+(defthmd gcd-num-den
+  (implies (and (rationalp x) (not (= x 0)))
+           (equal (gcd (numerator x) (denominator x))
+	          1)))
+
+;; The representation of a rational in lowest terms is unique:
+
+(defthm lowest-terms-unique
+  (implies (and (posp n) (posp d) (equal (gcd n d) 1)
+                (posp p) (posp q) (equal (gcd p q) 1)
+                (equal (/ p q) (/ n d)))
+           (and (equal n p) (equal d q)))
   :rule-classes ())
 
 "It remains to be shown that the gcd of @('x') and @('y') is divisible by any common
@@ -457,7 +473,7 @@ This book contains proofs of two theorems of Euclid:
 		(= (gcd x y) 1))
 	   (equal (gcd x d) 1)))
 
-;; If x and y are nor relatively prime, then they have a common prime divisor:
+;; If x and y are not relatively prime, then they have a common prime divisor:
 
 (defund cpd (x y)
   (least-prime-divisor (gcd x y)))

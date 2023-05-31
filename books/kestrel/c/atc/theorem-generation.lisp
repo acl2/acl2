@@ -48,7 +48,8 @@
                                        (context atc-contextp)
                                        (expr exprp)
                                        (type typep)
-                                       (term pseudo-termp)
+                                       (term1 pseudo-termp)
+                                       (term2 pseudo-termp)
                                        (objdes pseudo-termp)
                                        (compst-var symbolp)
                                        (hints true-listp)
@@ -74,11 +75,15 @@
    (xdoc::p
     "The theorem says that
      @(tsee exec-expr-pure) called on the quoted expression
-     is the same as the term;
-     it also says that the term has the expression's type.
-     The term is untranslated, to make it more readable,
+     is the same as @('term1');
+     it also says that @('term2') has the expression's type.
+     Often @('term1') and @('term2') are the same,
+     but sometimes they differ,
+     e.g. when @('term1') is a @('-ptr') variable
+     while @('term2') is the same variable without @('-ptr').
+     The terms are untranslated, to make them more readable,
      in particular to eliminate quotes before numbers.
-     Term, expression, and type are passed as inputs.
+     Terms, expression, and type are passed as inputs.
      The theorem is contextualized,
      and further conditioned by the satisfaction of the guard of @('fn').")
    (xdoc::p
@@ -89,13 +94,14 @@
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
        (type-pred (type-to-recognizer type wrld))
-       (uterm (untranslate$ term nil state))
+       (uterm1 (untranslate$ term1 nil state))
+       (uterm2 (untranslate$ term2 nil state))
        (uobjdes (untranslate$ objdes nil state))
        (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
-                         (expr-value ,uterm ,uobjdes)))
+                         (expr-value ,uterm1 ,uobjdes)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var nil nil t wrld))
-       (formula2 `(,type-pred ,uterm))
+       (formula2 `(,type-pred ,uterm2))
        (formula2 (atc-contextualize formula2 context fn fn-guard
                                     nil nil nil nil wrld))
        (formula `(and ,formula1 ,formula2))
@@ -141,7 +147,8 @@
      The two terms are
      @('aterm') (for `ACL2 term') and @('cterm') (for `C term'),
      both passed as parameters to this ACL2 function
-     (unlike a single @('term') in @(tsee atc-gen-expr-pure-correct-thm)).
+     (unlike the terms @('term1') and @('term2')
+     in @(tsee atc-gen-expr-pure-correct-thm)).
      The two terms and their relation are slightly different
      for different kinds of boolean expression terms;
      see the callers of this ACL2 function for details.")
@@ -431,7 +438,8 @@
                 ident-fix-when-identp
                 identp-of-ident
                 equal-of-ident-and-ident
-                (:e str-fix)))
+                (:e str-fix)
+                read-object-of-add-var))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var rules
                              thm-index names-to-avoid wrld))
