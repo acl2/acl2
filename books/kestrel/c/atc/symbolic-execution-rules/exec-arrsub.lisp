@@ -157,8 +157,8 @@
     :parents nil
     (b* (((when (endp atypes)) (mv nil nil nil))
          ((mv name event) (atc-exec-arrsub-rules-gen-1 (car atypes)))
-         ((mv names-deprecated events)
-          (atc-exec-arrsub-rules-gen-loop-itypes (car atypes) itypes name))
+         ((mv names-deprecated events) (mv nil nil))
+          ;; (atc-exec-arrsub-rules-gen-loop-itypes (car atypes) itypes name))
          ((mv more-names more-names-deprecated more-events)
           (atc-exec-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
       (mv (append (list name) more-names)

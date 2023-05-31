@@ -207,8 +207,9 @@
      slongp-of-slong-array-read
      ullongp-of-ullong-array-read
      sllongp-of-sllong-array-read)
-   (atc-array-read-return-names-loop-array-types *nonchar-integer-types*
-                                                 *nonchar-integer-types*))
+   ;; (atc-array-read-return-names-loop-array-types *nonchar-integer-types*
+   ;;                                               *nonchar-integer-types*)
+   )
 
   :prepwork
 
@@ -257,8 +258,9 @@
      slong-arrayp-of-slong-array-write
      ullong-arrayp-of-ullong-array-write
      sllong-arrayp-of-sllong-array-write)
-   (atc-array-write-return-names-loop-array-types *nonchar-integer-types*
-                                                  *nonchar-integer-types*))
+   ;; (atc-array-write-return-names-loop-array-types *nonchar-integer-types*
+   ;;                                                *nonchar-integer-types*)
+   )
 
   :prepwork
 
@@ -472,8 +474,9 @@
      (:t slong-array-read)
      (:t ullong-array-read)
      (:t sllong-array-read))
-   (atc-array-read-type-presc-rules-loop-array-types *nonchar-integer-types*
-                                                     *nonchar-integer-types*))
+   ;; (atc-array-read-type-presc-rules-loop-array-types *nonchar-integer-types*
+   ;;                                                   *nonchar-integer-types*)
+   )
 
   :prepwork
 
@@ -521,8 +524,9 @@
      (:t slong-array-write)
      (:t ullong-array-write)
      (:t sllong-array-write))
-   (atc-array-write-type-presc-rules-loop-array-types *nonchar-integer-types*
-                                                      *nonchar-integer-types*))
+   ;; (atc-array-write-type-presc-rules-loop-array-types *nonchar-integer-types*
+   ;;                                                    *nonchar-integer-types*)
+   )
 
   :prepwork
 

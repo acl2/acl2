@@ -573,8 +573,8 @@
 
   (defval *atc-array-length-write-rules*
     (append
-     (atc-array-length-write-rules-loop-atypes *nonchar-integer-types*
-                                               *nonchar-integer-types*)
+     ;; (atc-array-length-write-rules-loop-atypes *nonchar-integer-types*
+     ;;                                           *nonchar-integer-types*)
      '(schar-array-length-of-schar-array-write
        uchar-array-length-of-uchar-array-write
        sshort-array-length-of-sshort-array-write
