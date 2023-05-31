@@ -136,14 +136,7 @@
      besides the fixtype of arrays of that type,
      we generate functions
      @('<type>-array-read') and @('<type>-array-write')
-     that take ACL2 integers as indices;
-     these functions do not directly represent C constructs,
-     but are useful to make the definition of the ones that do more concise.
-     We generate functions
-     @('<type>-array-read-<type1>') and @('<type>-array-write-<type1>'),
-     which represent C constructs:
-     that convert the index to an ACL2 integer
-     and then call the two functions above.
+     that take C integers as indices.
      We also generate convenience functions
      to test whether indices are in range
      and to return the length of the arrays:
@@ -157,14 +150,13 @@
 (define atc-def-integer-arrays ((type typep))
   :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
-  :short "Event to generate the core model of arrays of an integer type."
+  :short "Event to generate the model of arrays of an integer type."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here we generate the fixtype,
-     the operations that take ACL2 integer indices,
+    "We generate the fixtype
      and the operatiosn that take indices of any C integer types.
-     Note that indices are 0-indexed.
+     Note that indices are 0-based.
      We also generate the function that returns the length of an array,
      as an ACL2 integer.")
    (xdoc::p
@@ -582,12 +574,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-def-integer-arrays-loop ((etypes type-listp))
+  :guard (type-nonchar-integer-listp etypes)
+  :returns (events pseudo-event-form-listp)
+  :short "Events to generate the model of arrays
+          for the given array element types."
+  (cond ((endp etypes) nil)
+        (t (append (list (atc-def-integer-arrays (car etypes)))
+                   (atc-def-integer-arrays-loop (cdr etypes))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-event
+ `(progn ,@(atc-def-integer-arrays-loop *nonchar-integer-types*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Deprecated operations.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-def-integer-arrays-indices ((etype typep) (itype typep))
   :guard (and (type-nonchar-integerp etype)
               (type-nonchar-integerp itype))
   :returns (event pseudo-event-formp)
-  :short "Event to generate the part of the model of arrays of an integer type
-          that involves indices of an integer type."
+  :short "Event to generate deprecated array operations
+          that involve indices of specific integer types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -758,8 +770,7 @@
    (xdoc::p
     "This is the outer loop for generating our model of arrays."))
   (cond ((endp etypes) nil)
-        (t (append (list (atc-def-integer-arrays (car etypes)))
-                   (atc-def-integer-arrays-loop-inner (car etypes) itypes)
+        (t (append (atc-def-integer-arrays-loop-inner (car etypes) itypes)
                    (atc-def-integer-arrays-loop-outer (cdr etypes) itypes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
