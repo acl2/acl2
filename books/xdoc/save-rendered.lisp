@@ -177,7 +177,8 @@
                                   all-topics2)))
               all-topics3)))
           ((mv rendered state)
-           (time$ (render-topics all-topics all-topics state)))
+           (time$ (without-fancy-xdoc-tags
+                   (render-topics all-topics all-topics state))))
           (rendered (time$ (split-acl2-topics rendered nil nil nil)))
           (- (cw "Writing ~s0~%" outfile))
           ((mv channel state) (open-output-channel! outfile :character state))
@@ -211,9 +212,8 @@
           ((unless channel)
            (cw "can't open ~s0 for output." search-file)
            (acl2::silent-error state))
-          (state (time$ (without-fancy-xdoc-tags
-                         (acl2-doc-print-topic-index-lst rendered channel
-                                                         state))))
+          (state (time$
+                  (acl2-doc-print-topic-index-lst rendered channel state)))
           (state (close-output-channel channel state)))
        (value '(value-triple :ok))))))
 
