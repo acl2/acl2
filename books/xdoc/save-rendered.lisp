@@ -211,8 +211,9 @@
           ((unless channel)
            (cw "can't open ~s0 for output." search-file)
            (acl2::silent-error state))
-          (state (time$ (acl2-doc-print-topic-index-lst rendered channel
-                                                        state)))
+          (state (time$ (without-fancy-xdoc-tags
+                         (acl2-doc-print-topic-index-lst rendered channel
+                                                         state))))
           (state (close-output-channel channel state)))
        (value '(value-triple :ok))))))
 
