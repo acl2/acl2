@@ -70,6 +70,6 @@ std::deflist).</p>"
     (implies (symbol-listp syms)
              (pseudo-term-listp syms)))
 
-  (defthmd true-listp-when-pseudo-term-listp-rewrite
+  (defthmd true-listp-when-pseudo-term-listp
     (implies (pseudo-term-listp x)
              (true-listp x))))
