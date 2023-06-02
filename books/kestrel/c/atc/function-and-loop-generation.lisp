@@ -1976,7 +1976,7 @@
        ((when (not proofs-rest)) (mv nil nil nil))
        (type (atc-var-info->type info))
        ((unless (and (or (type-integerp type)
-                         ;; (type-case type :struct) ; temporarily
+                         ;; (type-case type :struct) ; temporarily disabled
                          (and (type-case type :pointer)
                               (type-integerp (type-pointer->to type)))
                          (and (type-case type :array)
@@ -2159,8 +2159,8 @@
        (flexible-thms (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
        (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
-       (type-of-value-thms
-        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
+       (type-of-value-quoted-thms
+        (atc-string-taginfo-alist-to-type-of-value-quoted-thms prec-tags))
        (expand-hints
         `(("Goal" :in-theory '(,fn-fun-env-thm
                                (:e fun-info->params)
@@ -2200,7 +2200,7 @@
                                type-of-value-when-ullongp
                                type-of-value-when-sllongp
                                type-of-value-when-value-pointer
-                               ,@type-of-value-thms
+                               ,@type-of-value-quoted-thms
                                not-flexible-array-member-p-when-ucharp
                                not-flexible-array-member-p-when-scharp
                                not-flexible-array-member-p-when-ushortp
