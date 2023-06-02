@@ -75,10 +75,6 @@
               (doublet-listp b)))
   :enable (doublet-listp length))
 
-(defruledl true-listp-when-pseudo-term-listp-rewrite
-  (implies (pseudo-term-listp x)
-           (true-listp x)))
-
 (defruledl iff-consp-when-true-listp
   (implies (true-listp x)
            (iff (consp x)
@@ -261,7 +257,7 @@
                type)))
     (mv type defobj-pred arg))
   :guard-hints
-  (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-rewrite
+  (("Goal" :in-theory (enable acl2::true-listp-when-pseudo-term-listp
                               iff-consp-when-true-listp
                               symbolp-of-car-of-pseudo-termp
                               pseudo-term-listp-of-cdr-of-pseudo-termp))))
