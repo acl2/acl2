@@ -75,10 +75,6 @@
               (doublet-listp b)))
   :enable (doublet-listp length))
 
-(defruledl true-listp-when-pseudo-term-listp-rewrite
-  (implies (pseudo-term-listp x)
-           (true-listp x)))
-
 (defruledl iff-consp-when-true-listp
   (implies (true-listp x)
            (iff (consp x)
@@ -261,7 +257,7 @@
                type)))
     (mv type defobj-pred arg))
   :guard-hints
-  (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-rewrite
+  (("Goal" :in-theory (enable acl2::true-listp-when-pseudo-term-listp
                               iff-consp-when-true-listp
                               symbolp-of-car-of-pseudo-termp
                               pseudo-term-listp-of-cdr-of-pseudo-termp))))
@@ -274,6 +270,7 @@
                             (formal symbolp)
                             (type typep)
                             (defobj-pred symbolp)
+                            (prec-tags atc-string-taginfo-alistp)
                             (names-to-avoid symbol-listp)
                             (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
@@ -301,7 +298,7 @@
   (b* ((name (pack fn '- formal))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (pred (type-to-recognizer type wrld))
+       (pred (atc-type-to-recognizer type prec-tags))
        (formula `(implies (,fn-guard ,@fn-formals)
                           (,pred ,formal)))
        (hints `(("Goal" :in-theory '(,fn-guard
@@ -439,7 +436,7 @@
                         guard fn arg)))
           ((mv event name names-to-avoid)
            (atc-gen-formal-thm fn fn-guard formals arg type defobj-pred
-                               names-to-avoid wrld))
+                               prec-tags names-to-avoid wrld))
           (events (cons event events))
           (externalp
            (b* ((info? (cdr (assoc-equal (symbol-name arg) prec-objs))))
@@ -833,7 +830,7 @@
                                                   0
                                                 nil)
                                               fn-call
-                                              wrld))
+                                              prec-tags))
        (conclusion
         (if (and (consp conjuncts)
                  (not (consp (cdr conjuncts))))
@@ -994,7 +991,7 @@
    (define atc-gen-fn-result-thm-aux2 ((results symbol-type-alistp)
                                        (index? maybe-natp)
                                        (fn-call pseudo-termp)
-                                       (wrld plist-worldp))
+                                       (prec-tags atc-string-taginfo-alistp))
      :returns conjuncts
      :parents nil
      (b* (((when (endp results)) nil)
@@ -1002,7 +999,7 @@
                          `(mv-nth ,index? ,fn-call)
                        fn-call))
           ((cons name type) (car results))
-          (type-conjunct `(,(type-to-recognizer type wrld) ,theresult))
+          (type-conjunct `(,(atc-type-to-recognizer type prec-tags) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
            (b* (((unless (type-case type :array)) nil)
@@ -1018,7 +1015,7 @@
                (atc-gen-fn-result-thm-aux2 (cdr results)
                                            (and index? (1+ index?))
                                            fn-call
-                                           wrld))))))
+                                           prec-tags))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1969,6 +1966,7 @@
      (1) all have integer types
      or pointer to integer types
      or arrays of integer types
+     or struct types (soon; temporarily disabled),
      and (2) are not external object.
      If the flag is @('nil'), we also return @('nil') as the nest,
      because it is not used in generated theorems in that case."))
@@ -1979,6 +1977,7 @@
        ((when (not proofs-rest)) (mv nil nil nil))
        (type (atc-var-info->type info))
        ((unless (and (or (type-integerp type)
+                         ;; (type-case type :struct) ; temporarily disabled
                          (and (type-case type :pointer)
                               (type-integerp (type-pointer->to type)))
                          (and (type-case type :array)
@@ -2109,6 +2108,7 @@
 (define atc-gen-init-scope-thms ((fn symbolp)
                                  (fn-guard symbolp)
                                  (typed-formals atc-symbol-varinfo-alistp)
+                                 (prec-tags atc-string-taginfo-alistp)
                                  (context-preamble true-listp)
                                  (prog-const symbolp)
                                  (fn-fun-env-thm symbolp)
@@ -2157,6 +2157,11 @@
                   (equal (init-scope (fun-info->params ,info-var)
                                      (list ,@init-formals))
                          ,omap-update-nest)))
+       (flexible-thms (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (type-of-value-quoted-thms
+        (atc-string-taginfo-alist-to-type-of-value-quoted-thms prec-tags))
        (expand-hints
         `(("Goal" :in-theory '(,fn-fun-env-thm
                                (:e fun-info->params)
@@ -2173,6 +2178,7 @@
                                valuep-when-slongp
                                valuep-when-ullongp
                                valuep-when-sllongp
+                               ,@valuep-thms
                                value-kind-when-ucharp
                                value-kind-when-scharp
                                value-kind-when-ushortp
@@ -2183,6 +2189,7 @@
                                value-kind-when-slongp
                                value-kind-when-ullongp
                                value-kind-when-sllongp
+                               ,@value-kind-thms
                                type-of-value-when-ucharp
                                type-of-value-when-scharp
                                type-of-value-when-ushortp
@@ -2194,6 +2201,7 @@
                                type-of-value-when-ullongp
                                type-of-value-when-sllongp
                                type-of-value-when-value-pointer
+                               ,@type-of-value-quoted-thms
                                not-flexible-array-member-p-when-ucharp
                                not-flexible-array-member-p-when-scharp
                                not-flexible-array-member-p-when-ushortp
@@ -2205,6 +2213,8 @@
                                not-flexible-array-member-p-when-ullongp
                                not-flexible-array-member-p-when-sllongp
                                not-flexible-array-member-p-when-value-pointer
+                               not-flexible-array-member-p-when-value-struct
+                               ,@flexible-thms
                                remove-flexible-array-member-when-absent
                                value-fix-when-valuep
                                (:e param-declon-to-ident+tyname)
@@ -2249,6 +2259,7 @@
                        ,@context-preamble
                        (,fn-guard ,@formals))
                   (scopep ,omap-update-nest)))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
        (scopep-hints
         `(("Goal" :in-theory '(scopep-of-update
                                (:e scopep)
@@ -2263,7 +2274,8 @@
                                valuep-when-ulongp
                                valuep-when-slongp
                                valuep-when-ullongp
-                               valuep-when-sllongp))))
+                               valuep-when-sllongp
+                               ,@valuep-thms))))
        ((mv scopep-event &)
         (evmac-generate-defthm scopep-thm
                                :formula scopep-formula
@@ -2283,6 +2295,7 @@
 (define atc-gen-push-init-thm ((fn symbolp)
                                (fn-guard symbolp)
                                (typed-formals atc-symbol-varinfo-alistp)
+                               (prec-tags atc-string-taginfo-alistp)
                                (context-preamble true-listp)
                                (omap-update-nest "An untranslated term.")
                                (compst-var symbolp)
@@ -2320,6 +2333,9 @@
                                       :scopes (list ,omap-update-nest))
                           ,compst-var)
                          ,add-var-nest)))
+       (flexible-thms (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (hints
         `(("Goal" :in-theory '(push-frame-of-one-nonempty-scope
                                push-frame-of-one-empty-scope
@@ -2334,6 +2350,7 @@
                                valuep-when-slongp
                                valuep-when-ullongp
                                valuep-when-sllongp
+                               ,@valuep-thms
                                not-flexible-array-member-p-when-ucharp
                                not-flexible-array-member-p-when-scharp
                                not-flexible-array-member-p-when-ushortp
@@ -2345,6 +2362,9 @@
                                not-flexible-array-member-p-when-ullongp
                                not-flexible-array-member-p-when-sllongp
                                not-flexible-array-member-p-when-value-pointer
+                               not-flexible-array-member-p-when-value-struct
+                               ,@flexible-thms
+                               ,@value-kind-thms
                                scopep-of-update
                                (:e scopep)
                                identp-of-ident))))
@@ -2361,6 +2381,7 @@
                               (fn-guard symbolp)
                               (fn-formals symbol-listp)
                               (typed-formals atc-symbol-varinfo-alistp)
+                              (prec-tags atc-string-taginfo-alistp)
                               (compst-var symbolp)
                               (context atc-contextp)
                               (names-to-avoid symbol-listp)
@@ -2401,7 +2422,7 @@
      as we update the symbol table in the course of generating code,
      we use positive indices as suffixes."))
   (b* (((mv scope events names-to-avoid)
-        (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals
+        (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals prec-tags
                                   compst-var context names-to-avoid wrld)))
     (mv (list scope) events names-to-avoid))
 
@@ -2410,6 +2431,7 @@
                                      (fn-guard symbolp)
                                      (fn-formals symbol-listp)
                                      (typed-formals atc-symbol-varinfo-alistp)
+                                     (prec-tags atc-string-taginfo-alistp)
                                      (compst-var symbolp)
                                      (context atc-contextp)
                                      (names-to-avoid symbol-listp)
@@ -2425,7 +2447,7 @@
           (type (atc-var-info->type info))
           (var-thm (atc-var-info->thm info))
           (externalp (atc-var-info->externalp info))
-          (type-pred (type-to-recognizer type wrld))
+          (type-pred (atc-type-to-recognizer type prec-tags))
           (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
            (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
@@ -2469,35 +2491,58 @@
           (not-flexible-array-member-p-when-type-pred
            (pack 'not-flexible-array-member-p-when- type-pred))
           (valuep-when-type-pred (pack 'valuep-when- type-pred))
+          ((mv valuep-when-struct
+               value-kind-when-struct
+               flexiblep-when-struct)
+           (if (type-case type :struct)
+               (b* ((info
+                     (cdr (assoc-equal (ident->name (type-struct->tag type))
+                                       prec-tags)))
+                    ((unless (atc-tag-infop info))
+                     (raise "Internal error: no info for struct type ~x0."
+                            type)
+                     (mv nil nil nil))
+                    (info (atc-tag-info->defstruct info)))
+                 (mv (defstruct-info->valuep-thm info)
+                     (defstruct-info->value-kind-thm info)
+                     (defstruct-info->flexiblep-thm info)))
+             (mv nil nil nil)))
           (hints
            `(("Goal"
-              :in-theory '(objdesign-of-var-of-add-var-iff
-                           read-object-of-objdesign-of-var-of-add-var
-                           ,var-thm
-                           ident-fix-when-identp
-                           identp-of-ident
-                           equal-of-ident-and-ident
-                           (:e str-fix)
-                           ,(if (or (type-case type :pointer)
-                                    (type-case type :array))
-                                'not-flexible-array-member-p-when-value-pointer
-                              not-flexible-array-member-p-when-type-pred)
-                           remove-flexible-array-member-when-absent
-                           value-fix-when-valuep
-                           ,@(and (or (type-case type :pointer)
-                                      (type-case type :array))
-                                  '(read-object-of-add-var
-                                    read-object-of-add-frame))
-                           ,@(and (not (type-case type :pointer))
-                                  (not (type-case type :array))
-                                  (list valuep-when-type-pred))))))
+              :in-theory
+              '(objdesign-of-var-of-add-var-iff
+                read-object-of-objdesign-of-var-of-add-var
+                ,var-thm
+                ident-fix-when-identp
+                identp-of-ident
+                equal-of-ident-and-ident
+                (:e str-fix)
+                ,@(case (type-kind type)
+                    ((:pointer :array)
+                     '(not-flexible-array-member-p-when-value-pointer))
+                    (:struct
+                     `(c::not-flexible-array-member-p-when-value-struct
+                       ,value-kind-when-struct
+                       ,flexiblep-when-struct))
+                    (t (list not-flexible-array-member-p-when-type-pred)))
+                remove-flexible-array-member-when-absent
+                value-fix-when-valuep
+                ,@(and (or (type-case type :pointer)
+                           (type-case type :array))
+                       '(read-object-of-add-var
+                         read-object-of-add-frame))
+                ,@(and (not (type-case type :pointer))
+                       (not (type-case type :array))
+                       (if (type-case type :struct)
+                           (list valuep-when-struct)
+                         (list valuep-when-type-pred)))))))
           ((mv event &) (evmac-generate-defthm name
                                                :formula formula
                                                :hints hints
                                                :enable nil))
           ((mv inscope-rest events-rest names-to-avoid)
            (atc-gen-init-inscope-aux fn fn-guard fn-formals
-                                     (cdr typed-formals)
+                                     (cdr typed-formals) prec-tags
                                      compst-var context names-to-avoid wrld)))
        (mv (cons (cons var
                        (make-atc-var-info :type type
@@ -2505,7 +2550,10 @@
                                           :externalp externalp))
                  inscope-rest)
            (cons event events-rest)
-           names-to-avoid)))))
+           names-to-avoid))
+     :guard-hints
+     (("Goal"
+       :in-theory (enable alistp-when-atc-string-taginfo-alistp-rewrite))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2601,6 +2649,7 @@
                                  (body-thm symbolp)
                                  (body-type typep)
                                  (body-limit pseudo-termp)
+                                 (prec-tags atc-string-taginfo-alistp)
                                  (names-to-avoid symbol-listp)
                                  state)
   :returns (mv (local-events pseudo-event-form-listp)
@@ -2636,7 +2685,7 @@
        (formals (formals+ fn wrld))
        (result-var (genvar$ 'atc "RESULT" nil formals state))
        (limit `(binary-+ '1 ,body-limit))
-       (type-pred (type-to-recognizer body-type wrld))
+       (type-pred (atc-type-to-recognizer body-type prec-tags))
        (lemma-formula
         `(implies (and (compustatep ,compst-var)
                        (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
@@ -2790,6 +2839,7 @@
             (atc-gen-init-scope-thms fn
                                      fn-guard
                                      typed-formals
+                                     prec-tags
                                      context-preamble
                                      prog-const
                                      fn-fun-env-thm
@@ -2807,6 +2857,7 @@
             (atc-gen-push-init-thm fn
                                    fn-guard
                                    typed-formals
+                                   prec-tags
                                    context-preamble
                                    omap-update-nest
                                    compst-var
@@ -2820,7 +2871,7 @@
        ((mv inscope init-inscope-events names-to-avoid)
         (if (and proofs
                  modular-proofs)
-            (atc-gen-init-inscope fn fn-guard formals typed-formals
+            (atc-gen-init-inscope fn fn-guard formals typed-formals prec-tags
                                   compst-var context names-to-avoid wrld)
           (mv (list typed-formals) nil names-to-avoid)))
        (body (ubody+ fn wrld))
@@ -2943,6 +2994,7 @@
                                                body.thm-name
                                                body.type
                                                body.limit
+                                               prec-tags
                                                names-to-avoid
                                                state)
                     (b* (((mv local-events exported-events name)

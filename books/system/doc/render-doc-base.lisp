@@ -224,10 +224,11 @@
         (mv (er hard 'render-topic
                 "Unexpected implementation error!")
             state))
+       ((mv - xdoc-tag-alist state) (xdoc-tag-alist state))
        (merged-tokens
         (reverse (merge-text tokens nil 0 nil
                              topic-to-rendered-table
-                             (f-get-global 'xdoc-tag-elide-alist state))))
+                             xdoc-tag-alist)))
        (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
        (terminal (str::trim (str::rchars-to-string acc))))
 
@@ -306,3 +307,32 @@
                             acl2-topics
                             acl2-pc-topics
                             (cons (car alist) other-topics)))))
+
+(defmacro without-fancy-xdoc-tags (form)
+
+; Form returns (mv * state).  This wrapper causes form to be printed in an
+; environment where documentation will be printed as plain text, without Select
+; Graphic Rendition (SGR) markers and without underscores etc.  We restore the
+; original environment even in the case of an error.
+
+; Form should not contain any of the variables bound by b* below.  We should
+; really use something like check-vars-not-free, but instead we'll just use a
+; "wfxt" prefix (based on the name of this macro).
+
+  `(b* (((mv - wfxt-val state)
+         (getenv$ "ACL2_XDOC_TAGS" state)))
+     (cond ((xdoc-tag-alist-fancy-p wfxt-val)
+            (b* ((wfxt-val (or wfxt-val ""))
+                 ((mv - wfxt-ans state)
+                  (acl2::acl2-unwind-protect
+                   "without-fancy-xdoc-tags"
+                   (prog2$ (setenv$ "ACL2_XDOC_TAGS" "PLAIN")
+                           (mv-let (wfxt-ans state)
+                             ,form
+                             (value wfxt-ans)))
+                   (prog2$ (setenv$ "ACL2_XDOC_TAGS" wfxt-val)
+                           state)
+                   (prog2$ (setenv$ "ACL2_XDOC_TAGS" wfxt-val)
+                           state))))
+              (mv wfxt-ans state)))
+           (t ,form))))

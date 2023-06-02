@@ -147,6 +147,7 @@
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -204,7 +205,7 @@
         (b* ((fixtype (integer-type-to-fixtype type))
              (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
              (fixtype-integerp (pack fixtype '-integerp))
-             (recognizer (type-to-recognizer type (w state)))
+             (recognizer (atc-type-to-recognizer type gin.prec-tags))
              (valuep-when-recognizer (pack 'valuep-when- recognizer))
              (recognizer-of-fixtype-from-integer
               (pack recognizer '-of- fixtype '-from-integer)))
@@ -239,6 +240,7 @@
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -344,14 +346,14 @@
                   names-to-avoid))
           (mv nil nil gin.thm-index gin.names-to-avoid)))
        (hints
-        (b* ((in-type-pred (type-to-recognizer in-type wrld))
+        (b* ((in-type-pred (atc-type-to-recognizer in-type gin.prec-tags))
              (valuep-when-in-type-pred (pack 'valuep-when- in-type-pred))
              (value-kind-when-in-type-pred
               (pack 'value-kind-when- in-type-pred))
              (op-name (pack (unop-kind op)))
              (exec-unary-when-op-and-in-type-pred
               (pack op-name '-value-when- in-type-pred))
-             (type-pred (type-to-recognizer out-type wrld))
+             (type-pred (atc-type-to-recognizer out-type gin.prec-tags))
              (valuep-when-type-pred (pack 'valuep-when- type-pred))
              (type-pred-of-fn (pack type-pred '-of- fn)))
           `(("Goal" :in-theory '(exec-expr-pure-when-unary
@@ -382,6 +384,7 @@
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        thm-index
                                        names-to-avoid
                                        state)))
@@ -503,8 +506,8 @@
                   names-to-avoid))
           (mv nil nil gin.thm-index gin.names-to-avoid)))
        (hints
-        (b* ((arg1-type-pred (type-to-recognizer arg1-type wrld))
-             (arg2-type-pred (type-to-recognizer arg2-type wrld))
+        (b* ((arg1-type-pred (atc-type-to-recognizer arg1-type gin.prec-tags))
+             (arg2-type-pred (atc-type-to-recognizer arg2-type gin.prec-tags))
              (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
              (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
              (value-kind-when-arg1-type-pred (pack 'value-kind-when-
@@ -513,7 +516,7 @@
                                                    arg2-type-pred))
              (exec-binary-strict-pure-when-op
               (pack 'exec-binary-strict-pure-when- op-name))
-             (type-pred (type-to-recognizer out-type wrld))
+             (type-pred (atc-type-to-recognizer out-type gin.prec-tags))
              (arg1-fixtype (integer-type-to-fixtype arg1-type))
              (arg2-fixtype (integer-type-to-fixtype arg2-type))
              (op-values-when-arg1-type
@@ -558,6 +561,7 @@
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        thm-index
                                        names-to-avoid
                                        state)))
@@ -676,11 +680,11 @@
                   names-to-avoid))
           (mv nil nil gin.thm-index gin.names-to-avoid)))
        (hints
-        (b* ((arg-type-pred (type-to-recognizer arg-type wrld))
+        (b* ((arg-type-pred (atc-type-to-recognizer arg-type gin.prec-tags))
              (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
              (exec-cast-of-out-type-when-arg-type-pred
               (pack 'exec-cast-of- (type-kind out-type) '-when- arg-type-pred))
-             (type-pred (type-to-recognizer out-type wrld))
+             (type-pred (atc-type-to-recognizer out-type gin.prec-tags))
              (type-pred-of-fn (pack type-pred '-of- fn))
              (valuep-when-type-pred (pack 'valuep-when- type-pred)))
           `(("Goal" :in-theory '(exec-expr-pure-when-cast
@@ -709,6 +713,7 @@
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        thm-index
                                        names-to-avoid
                                        state)))
@@ -760,7 +765,6 @@
      in case the term or its negation happens to be in context
      and thus gets rewritten to @('t') or @('nil')."))
   (b* (((reterr) (irr-pexpr-gout))
-       (wrld (w state))
        ((pexpr-gin gin) gin)
        ((unless (equal arg-type in-type))
         (reterr
@@ -786,7 +790,7 @@
        (cterm arg-term)
        ((unless (type-nonchar-integerp type))
         (reterr (raise "Internal error: non-integer type ~x0." type)))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type gin.prec-tags))
        (test-value-when-type-pred (pack 'test-value-when- type-pred))
        (booleanp-of-fn (pack 'booleanp-of- fn))
        (hints `(("Goal" :in-theory '(,arg-thm
@@ -810,6 +814,7 @@
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -884,9 +889,9 @@
           :thm-index gin.thm-index
           :names-to-avoid gin.names-to-avoid
           :proofs nil)))
-       (test-type-pred (type-to-recognizer test-type wrld))
+       (test-type-pred (atc-type-to-recognizer test-type gin.prec-tags))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type gin.prec-tags))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
        (value-kind-when-test-type-pred (pack 'value-kind-when- test-type-pred))
@@ -969,6 +974,7 @@
                                        gin.compst-var
                                        nil
                                        instructions
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -1031,8 +1037,8 @@
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
        (cterm `(sint-from-boolean ,term))
-       (arg1-type-pred (type-to-recognizer arg1-type wrld))
-       (arg2-type-pred (type-to-recognizer arg2-type wrld))
+       (arg1-type-pred (atc-type-to-recognizer arg1-type gin.prec-tags))
+       (arg2-type-pred (atc-type-to-recognizer arg2-type gin.prec-tags))
        (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
        (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
        (value-kind-when-arg1-type-pred (pack 'value-kind-when- arg1-type-pred))
@@ -1111,6 +1117,7 @@
                                        gin.compst-var
                                        nil
                                        instructions
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -1171,8 +1178,8 @@
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
        (cterm `(sint-from-boolean ,term))
-       (arg1-type-pred (type-to-recognizer arg1-type wrld))
-       (arg2-type-pred (type-to-recognizer arg2-type wrld))
+       (arg1-type-pred (atc-type-to-recognizer arg1-type gin.prec-tags))
+       (arg2-type-pred (atc-type-to-recognizer arg2-type gin.prec-tags))
        (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
        (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
        (value-kind-when-arg1-type-pred (pack 'value-kind-when- arg1-type-pred))
@@ -1256,6 +1263,7 @@
                                        gin.compst-var
                                        nil
                                        instructions
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -1335,6 +1343,7 @@
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -1400,7 +1409,6 @@
      we may need to choose the alternative approach sketched above,
      which in that case would be more uniform."))
   (b* (((reterr) (irr-pexpr-gout))
-       (wrld (w state))
        ((pexpr-gin gin) gin)
        ((unless (equal arg-type
                        (type-pointer type)))
@@ -1433,7 +1441,7 @@
                        arg-term)))
        (var-thm (atc-var-info->thm info))
        (hints
-        (b* ((type-pred (type-to-recognizer type wrld))
+        (b* ((type-pred (atc-type-to-recognizer type gin.prec-tags))
              (exec-indir-when-type-pred (pack 'exec-indir-when- type-pred))
              (type-read (pack (type-kind type) '-read))
              (type-read-when-type-pred (pack type-read '-when- type-pred)))
@@ -1460,6 +1468,7 @@
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -2221,7 +2230,7 @@
        (thm-name (pack gin.fn '-correct- pure.thm-index))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
-       (type-pred (type-to-recognizer pure.type wrld))
+       (type-pred (atc-type-to-recognizer pure.type gin.prec-tags))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
        (uterm* (untranslate$ pure.term nil state))

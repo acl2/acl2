@@ -13,6 +13,8 @@
 
 (include-book "defstruct")
 
+(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -33,7 +35,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod atc-tag-info
   :short "Fixtype of information associated to
@@ -70,6 +72,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-atc-tag-info
+  :short "Irrelevant information about a tag."
+  :type atc-tag-infop
+  :body (make-atc-tag-info :defstruct (irr-defstruct-info)
+                           :member-read-thms nil
+                           :member-write-thms nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defalist atc-string-taginfo-alist
   :short "Fixtype of alists from strings to tag information."
   :key-type string
@@ -86,7 +97,23 @@
              (atc-tag-infop (cdr (assoc-equal tag prec-tags))))
     :enable assoc-equal))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-get-tag-info ((tag identp) (prec-tags atc-string-taginfo-alistp))
+  :returns (info atc-tag-infop)
+  :short "Retrieve the information about a tag from a tag table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is always called on tag that are in the table,
+     so we thrown an internal error if the tag is not in the table."))
+  (b* ((info (cdr (assoc-equal (ident->name tag) prec-tags)))
+       ((unless (atc-tag-infop info))
+        (raise "Internal error: no information for tag ~x0." tag)
+        (irr-atc-tag-info)))
+    info))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-string-taginfo-alist-to-recognizers
   ((prec-tags atc-string-taginfo-alistp))
@@ -300,6 +327,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-type-of-value-quoted-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the quoted variant of the @(tsee type-of-value) theorems
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->type-of-value-quoted-thm
+              (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-type-of-value-quoted-thms
+              (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-flexiblep-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -338,3 +380,142 @@
        (more-thms
         (atc-string-taginfo-alist-to-member-write-thms (cdr prec-tags))))
     (append thms more-thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-recognizer ((type typep)
+                                (prec-tags atc-string-taginfo-alistp))
+  :returns (recognizer symbolp)
+  :short "ACL2 recognizer corresponding to a C type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee type-to-recognizer),
+     but it takes a tag table as argument instead of a world."))
+  (type-case
+   type
+   :void (raise "Internal error: type ~x0." type)
+   :char (raise "Internal error: type ~x0." type)
+   :schar 'scharp
+   :uchar 'ucharp
+   :sshort 'sshortp
+   :ushort 'ushortp
+   :sint 'sintp
+   :uint 'uintp
+   :slong 'slongp
+   :ulong 'ulongp
+   :sllong 'sllongp
+   :ullong 'ullongp
+   :struct (defstruct-info->recognizer
+             (atc-tag-info->defstruct
+              (atc-get-tag-info type.tag prec-tags)))
+   :pointer (type-case
+             type.to
+             :void (raise "Internal error: type ~x0." type)
+             :char (raise "Internal error: type ~x0." type)
+             :schar 'scharp
+             :uchar 'ucharp
+             :sshort 'sshortp
+             :ushort 'ushortp
+             :sint 'sintp
+             :uint 'uintp
+             :slong 'slongp
+             :ulong 'ulongp
+             :sllong 'sllongp
+             :ullong 'ullongp
+             :struct (defstruct-info->recognizer
+                       (atc-tag-info->defstruct
+                        (atc-get-tag-info type.to.tag prec-tags)))
+             :pointer (raise "Internal error: type ~x0." type)
+             :array (raise "Internal error: type ~x0." type))
+   :array (type-case
+           type.of
+           :void (raise "Internal error: type ~x0." type)
+           :char (raise "Internal error: type ~x0." type)
+           :schar 'schar-arrayp
+           :uchar 'uchar-arrayp
+           :sshort 'sshort-arrayp
+           :ushort 'ushort-arrayp
+           :sint 'sint-arrayp
+           :uint 'uint-arrayp
+           :slong 'slong-arrayp
+           :ulong 'ulong-arrayp
+           :sllong 'sllong-arrayp
+           :ullong 'ullong-arrayp
+           :struct (raise "Internal error: type ~x0." type)
+           :pointer (raise "Internal error: type ~x0." type)
+           :array (raise "Internal error: type ~x0." type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-valuep-thm ((type typep)
+                                (prec-tags atc-string-taginfo-alistp))
+  :returns (valuep-thm symbolp)
+  :short "Name of the theorems saying that @(tsee valuep) holds
+          when the recognizer for a type holds."
+  (if (type-case type :struct)
+      (defstruct-info->valuep-thm
+        (atc-tag-info->defstruct
+         (atc-get-tag-info (type-struct->tag type) prec-tags)))
+    (pack 'valuep-when- (atc-type-to-recognizer type prec-tags))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-value-kind-thm ((type typep)
+                                    (prec-tags atc-string-taginfo-alistp))
+  :returns (value-kind-thm symbolp)
+  :short "Name of the theorems asserting what @(tsee value-kind) is
+          when the recognizer for a type holds."
+  (if (type-case type :struct)
+      (defstruct-info->value-kind-thm
+        (atc-tag-info->defstruct
+         (atc-get-tag-info (type-struct->tag type) prec-tags)))
+    (pack 'valuep-kind-when- (atc-type-to-recognizer type prec-tags))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-type-of-value-thm ((type typep)
+                                       (prec-tags atc-string-taginfo-alistp))
+  :returns (type-of-value-thm symbolp)
+  :short "Name of the theorems asserting what @(tsee type-of-value) is
+          when the recognizer for a type holds."
+  (if (type-case type :struct)
+      (defstruct-info->type-of-value-thm
+        (atc-tag-info->defstruct
+         (atc-get-tag-info (type-struct->tag type) prec-tags)))
+    (pack 'type-of-value-when- (atc-type-to-recognizer type prec-tags))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-notflexarrmem-thms ((type typep)
+                                        (prec-tags atc-string-taginfo-alistp))
+  :returns (notflexarrmem-thms symbol-listp)
+  :short "Names of the theorems asserting that
+          @(tsee flexible-array-member-p) does not hold
+          on a value of a given type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For an integer type or integer array type,
+     this is just one theorem related to that type's recognizer.
+     For a pointer, it is just one theorem for pointers.
+     For a struct, it consists of the general theorem for structs,
+     which has a hypothesis saying that the struct
+     does not have a flexible array member,
+     plus the theorem asserting that the struct in question
+     does not have a flexible array member,
+     needed to relieve the hypothesis;
+     this is always used on structs without flexible array members."))
+  (cond ((or (type-integerp type)
+             (and (type-case type :array)
+                  (type-integerp (type-array->of type))))
+         (list (pack 'not-flexible-array-member-p-when-
+                     (atc-type-to-recognizer type prec-tags))))
+        ((type-case type :pointer)
+         (list 'not-flexible-array-member-p-when-value-pointer))
+        ((type-case type :struct)
+         (list 'not-flexible-array-member-p-when-value-struct
+               (defstruct-info->flexiblep-thm
+                 (atc-tag-info->defstruct
+                  (atc-get-tag-info (type-struct->tag type) prec-tags)))))
+        (t (raise "Internal error: unexpecte type ~x0." type))))

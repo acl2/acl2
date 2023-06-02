@@ -14,6 +14,7 @@
 (include-book "generation-contexts")
 (include-book "types-to-recognizers")
 (include-book "variable-tables")
+(include-book "tag-tables")
 
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -54,6 +55,7 @@
                                        (compst-var symbolp)
                                        (hints true-listp)
                                        (instructions true-listp)
+                                       (prec-tags atc-string-taginfo-alistp)
                                        (thm-index posp)
                                        (names-to-avoid symbol-listp)
                                        state)
@@ -93,7 +95,7 @@
        (name (pack fn '-correct- thm-index))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type prec-tags))
        (uterm1 (untranslate$ term1 nil state))
        (uterm2 (untranslate$ term2 nil state))
        (uobjdes (untranslate$ objdes nil state))
@@ -125,6 +127,7 @@
                                        (compst-var symbolp)
                                        (hints true-listp)
                                        (instructions true-listp)
+                                       (prec-tags atc-string-taginfo-alistp)
                                        (thm-index posp)
                                        (names-to-avoid symbol-listp)
                                        state)
@@ -173,7 +176,7 @@
        (name (pack fn '-correct- thm-index))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type prec-tags))
        (uaterm (untranslate$ aterm nil state))
        (ucterm (untranslate$ cterm nil state))
        (uobjdes (untranslate$ objdes nil state))
@@ -203,6 +206,7 @@
                              (new-context atc-contextp)
                              (compst-var symbolp)
                              (rules true-listp)
+                             (prec-tags atc-string-taginfo-alistp)
                              (thm-index posp)
                              (names-to-avoid symbol-listp)
                              (wrld plist-worldp))
@@ -257,11 +261,11 @@
        (scope (car inscope))
        ((mv new-scope events names-to-avoid)
         (atc-gen-new-inscope-aux fn fn-guard scope new-context compst-var
-                                 rules thm-index names-to-avoid wrld))
+                                 rules prec-tags thm-index names-to-avoid wrld))
        (scopes (cdr inscope))
        ((mv new-scopes more-events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard scopes new-context compst-var
-                             rules thm-index names-to-avoid wrld)))
+                             rules prec-tags thm-index names-to-avoid wrld)))
     (mv (cons new-scope new-scopes)
         (append events more-events)
         names-to-avoid))
@@ -273,6 +277,7 @@
                                     (new-context atc-contextp)
                                     (compst-var symbolp)
                                     (rules true-listp)
+                                    (prec-tags atc-string-taginfo-alistp)
                                     (thm-index posp)
                                     (names-to-avoid symbol-listp)
                                     (wrld plist-worldp))
@@ -289,7 +294,7 @@
           ((cons var info) (car scope))
           (type (atc-var-info->type info))
           (thm (atc-var-info->thm info))
-          (type-pred (type-to-recognizer type wrld))
+          (type-pred (atc-type-to-recognizer type prec-tags))
           (new-thm (pack fn '- var '-in-scope- thm-index))
           ((mv new-thm names-to-avoid)
            (fresh-logical-name-with-$s-suffix
@@ -326,7 +331,7 @@
           (rest (cdr scope))
           ((mv new-rest events names-to-avoid)
            (atc-gen-new-inscope-aux fn fn-guard rest new-context
-                                    compst-var rules thm-index
+                                    compst-var rules prec-tags thm-index
                                     names-to-avoid wrld)))
        (mv (acons var new-info new-rest)
            (cons event events)
@@ -343,6 +348,7 @@
                                (inscope atc-symbol-varinfo-alist-listp)
                                (context atc-contextp)
                                (compst-var symbolp)
+                               (prec-tags atc-string-taginfo-alistp)
                                (thm-index posp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
@@ -389,7 +395,7 @@
                 read-object-of-enter-scope))
        ((mv new-inscope events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var
-                             rules thm-index names-to-avoid wrld)))
+                             rules prec-tags thm-index names-to-avoid wrld)))
     (mv (cons nil new-inscope)
         new-context
         events
@@ -407,6 +413,7 @@
                                  (term "An untranslated term.")
                                  (term-thm symbolp)
                                  (compst-var symbolp)
+                                 (prec-tags atc-string-taginfo-alistp)
                                  (thm-index posp)
                                  (names-to-avoid symbol-listp)
                                  (wrld plist-worldp))
@@ -444,7 +451,7 @@
                 read-object-of-add-var))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var rules
-                             thm-index names-to-avoid wrld))
+                             prec-tags thm-index names-to-avoid wrld))
        (var-in-scope-thm (pack fn '- var '-in-scope- thm-index))
        (thm-index (1+ thm-index))
        ((mv var-in-scope-thm names-to-avoid)
@@ -452,7 +459,7 @@
                                            nil
                                            names-to-avoid
                                            wrld))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type prec-tags))
        (var-in-scope-formula1
         `(and (objdesign-of-var (ident ,(symbol-name var)) ,compst-var)
               (equal (read-object (objdesign-of-var (ident ,(symbol-name var))

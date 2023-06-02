@@ -650,7 +650,7 @@ update-doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/rendered-doc.ls
 # been super carefully thought out, so could change.
 books/system/doc/rendered-doc.lsp: check-books
 	rm -f books/system/doc/rendered-doc.lsp
-	cd books ; $(MAKE) USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
+	cd books ; (export ACL2_XDOC_TAGS=FANCY ; $(MAKE) USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2))
 
 .PHONY: STATS
 
