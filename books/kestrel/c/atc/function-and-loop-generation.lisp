@@ -270,6 +270,7 @@
                             (formal symbolp)
                             (type typep)
                             (defobj-pred symbolp)
+                            (prec-tags atc-string-taginfo-alistp)
                             (names-to-avoid symbol-listp)
                             (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
@@ -297,7 +298,7 @@
   (b* ((name (pack fn '- formal))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (pred (type-to-recognizer type wrld))
+       (pred (atc-type-to-recognizer type prec-tags))
        (formula `(implies (,fn-guard ,@fn-formals)
                           (,pred ,formal)))
        (hints `(("Goal" :in-theory '(,fn-guard
@@ -435,7 +436,7 @@
                         guard fn arg)))
           ((mv event name names-to-avoid)
            (atc-gen-formal-thm fn fn-guard formals arg type defobj-pred
-                               names-to-avoid wrld))
+                               prec-tags names-to-avoid wrld))
           (events (cons event events))
           (externalp
            (b* ((info? (cdr (assoc-equal (symbol-name arg) prec-objs))))
@@ -829,7 +830,7 @@
                                                   0
                                                 nil)
                                               fn-call
-                                              wrld))
+                                              prec-tags))
        (conclusion
         (if (and (consp conjuncts)
                  (not (consp (cdr conjuncts))))
@@ -990,7 +991,7 @@
    (define atc-gen-fn-result-thm-aux2 ((results symbol-type-alistp)
                                        (index? maybe-natp)
                                        (fn-call pseudo-termp)
-                                       (wrld plist-worldp))
+                                       (prec-tags atc-string-taginfo-alistp))
      :returns conjuncts
      :parents nil
      (b* (((when (endp results)) nil)
@@ -998,7 +999,7 @@
                          `(mv-nth ,index? ,fn-call)
                        fn-call))
           ((cons name type) (car results))
-          (type-conjunct `(,(type-to-recognizer type wrld) ,theresult))
+          (type-conjunct `(,(atc-type-to-recognizer type prec-tags) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
            (b* (((unless (type-case type :array)) nil)
@@ -1014,7 +1015,7 @@
                (atc-gen-fn-result-thm-aux2 (cdr results)
                                            (and index? (1+ index?))
                                            fn-call
-                                           wrld))))))
+                                           prec-tags))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2446,7 +2447,7 @@
           (type (atc-var-info->type info))
           (var-thm (atc-var-info->thm info))
           (externalp (atc-var-info->externalp info))
-          (type-pred (type-to-recognizer type wrld))
+          (type-pred (atc-type-to-recognizer type prec-tags))
           (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
            (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
@@ -2648,6 +2649,7 @@
                                  (body-thm symbolp)
                                  (body-type typep)
                                  (body-limit pseudo-termp)
+                                 (prec-tags atc-string-taginfo-alistp)
                                  (names-to-avoid symbol-listp)
                                  state)
   :returns (mv (local-events pseudo-event-form-listp)
@@ -2683,7 +2685,7 @@
        (formals (formals+ fn wrld))
        (result-var (genvar$ 'atc "RESULT" nil formals state))
        (limit `(binary-+ '1 ,body-limit))
-       (type-pred (type-to-recognizer body-type wrld))
+       (type-pred (atc-type-to-recognizer body-type prec-tags))
        (lemma-formula
         `(implies (and (compustatep ,compst-var)
                        (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
@@ -2992,6 +2994,7 @@
                                                body.thm-name
                                                body.type
                                                body.limit
+                                               prec-tags
                                                names-to-avoid
                                                state)
                     (b* (((mv local-events exported-events name)

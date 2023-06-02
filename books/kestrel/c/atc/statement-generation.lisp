@@ -280,6 +280,7 @@
                                  (fenv-var symbolp)
                                  (limit-var symbolp)
                                  (compst-term pseudo-termp)
+                                 (prec-tags atc-string-taginfo-alistp)
                                  (thm-index posp)
                                  (names-to-avoid symbol-listp)
                                  state)
@@ -329,7 +330,8 @@
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var limit-var item-limit t wrld))
        (formula (if result-term
-                    (b* ((type-pred (type-to-recognizer result-type wrld))
+                    (b* ((type-pred
+                          (atc-type-to-recognizer result-type prec-tags))
                          (formula2 `(,type-pred ,result-uterm))
                          (formula2 (atc-contextualize formula2 context
                                                       fn fn-guard
@@ -362,6 +364,7 @@
                                    (compst-var symbolp)
                                    (fenv-var symbolp)
                                    (limit-var symbolp)
+                                   (prec-tags atc-string-taginfo-alistp)
                                    (thm-index posp)
                                    (names-to-avoid symbol-listp)
                                    (proofs booleanp)
@@ -424,7 +427,7 @@
        (initer-formula
         (atc-contextualize initer-formula context fn fn-guard
                            compst-var limit-var initer-limit t wrld))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type prec-tags))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
                                             (:e initer-kind)
@@ -498,7 +501,7 @@
         (atc-gen-vardecl-inscope fn fn-guard inscope
                                  context var type
                                  (untranslate$ expr-term nil state)
-                                 expr-thm compst-var
+                                 expr-thm compst-var prec-tags
                                  thm-index names-to-avoid wrld)))
     (mv item
         item-limit
@@ -526,6 +529,7 @@
                                      (fenv-var symbolp)
                                      (limit-var symbolp)
                                      (compst-term pseudo-termp)
+                                     (prec-tags atc-string-taginfo-alistp)
                                      (thm-index posp)
                                      (names-to-avoid symbol-listp)
                                      state)
@@ -574,7 +578,7 @@
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var limit-var items-limit t wrld))
        (type-pred (and result-term
-                       (type-to-recognizer result-type wrld)))
+                       (atc-type-to-recognizer result-type prec-tags)))
        (formula (if result-term
                     (b* ((formula2 `(,type-pred ,result-uterm))
                          (formula2 (atc-contextualize formula2 context
@@ -677,7 +681,7 @@
                                     all-items-limit
                                     t
                                     wrld))
-       (type-pred (type-to-recognizer items-type wrld))
+       (type-pred (atc-type-to-recognizer items-type gin.prec-tags))
        (formula2 `(,type-pred ,uterm))
        (formula2 (atc-contextualize formula2
                                     gin.context
@@ -835,7 +839,7 @@
                           expr.limit)))
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
-       (type-pred (type-to-recognizer expr.type wrld))
+       (type-pred (atc-type-to-recognizer expr.type gin.prec-tags))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
@@ -891,7 +895,7 @@
                                  stmt stmt-limit stmt-thm-name
                                  expr.type expr.term
                                  gin.compst-var gin.fenv-var gin.limit-var
-                                 gin.compst-var
+                                 gin.compst-var gin.prec-tags
                                  thm-index names-to-avoid state))
        ((mv items
             items-limit
@@ -903,7 +907,7 @@
                                      item item-limit item-thm-name
                                      expr.type expr.term
                                      gin.compst-var gin.fenv-var gin.limit-var
-                                     gin.compst-var
+                                     gin.compst-var gin.prec-tags
                                      thm-index names-to-avoid state)))
     (retok (make-stmt-gout :items items
                            :type expr.type
@@ -1033,7 +1037,7 @@
        ((mv else-stmt-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          else-stmt-thm nil names-to-avoid wrld))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type gin.prec-tags))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (then-stmt-limit `(binary-+ '1 ,then-limit))
        (else-stmt-limit `(binary-+ '1 ,else-limit))
@@ -1250,7 +1254,7 @@
                                  stmt if-stmt-limit if-stmt-thm
                                  type term*
                                  gin.compst-var gin.fenv-var gin.limit-var
-                                 gin.compst-var
+                                 gin.compst-var gin.prec-tags
                                  thm-index names-to-avoid state))
        ((mv items
             items-limit
@@ -1262,7 +1266,7 @@
                                      item item-limit item-thm-name
                                      type term*
                                      gin.compst-var gin.fenv-var gin.limit-var
-                                     gin.compst-var
+                                     gin.compst-var gin.prec-tags
                                      thm-index names-to-avoid state)))
     (retok
      (make-stmt-gout
@@ -1530,6 +1534,7 @@
                                                gin.inscope
                                                then-context
                                                gin.compst-var
+                                               gin.prec-tags
                                                test.thm-index
                                                test.names-to-avoid
                                                wrld)
@@ -1574,6 +1579,7 @@
                                                gin.inscope
                                                else-context
                                                gin.compst-var
+                                               gin.prec-tags
                                                then.thm-index
                                                then.names-to-avoid
                                                wrld)
@@ -2439,6 +2445,7 @@
                                                gin.compst-var
                                                gin.fenv-var
                                                gin.limit-var
+                                               gin.prec-tags
                                                init.thm-index
                                                init.names-to-avoid
                                                init.proofs
