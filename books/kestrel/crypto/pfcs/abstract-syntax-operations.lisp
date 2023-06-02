@@ -76,7 +76,16 @@
   (cond ((endp exprs) nil)
         (t (set::union (expression-vars (car exprs))
                        (expression-list-vars (cdr exprs)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule expression-list-vars-of-expression-var-list
+    (equal (expression-list-vars (expression-var-list vars))
+           (set::mergesort (acl2::symbol-list-fix vars)))
+    :induct t
+    :enable (expression-vars
+             expression-var-list
+             set::mergesort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
