@@ -979,6 +979,7 @@ and so forth.  This only applies to visible options."
        (acc (xdoc::word-wrap-paragraph-aux x 0 (length x)
                                            *ind-col*
                                            *wrap-col*
+                                           *wrap-col*
                                            *ind-col*
                                            acc))
        (acc (xdoc::remove-spaces-from-front acc))
