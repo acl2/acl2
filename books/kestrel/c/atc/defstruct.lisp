@@ -208,6 +208,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-defstruct-info
+  :short "Irrelevant information about a shallowly embedded C structure."
+  :type defstruct-infop
+  :body (make-defstruct-info :tag (irr-ident)
+                             :members nil
+                             :flexiblep nil
+                             :recognizer nil
+                             :fixer nil
+                             :fixer-recognizer-thm nil
+                             :not-error-thm nil
+                             :valuep-thm nil
+                             :value-kind-thm nil
+                             :type-of-value-thm nil
+                             :type-of-value-quoted-thm nil
+                             :flexiblep-thm nil
+                             :call '(_)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defoption defstruct-info-option
   defstruct-info
   :short "Fixtype of
