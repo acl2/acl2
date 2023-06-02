@@ -300,6 +300,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-string-taginfo-alist-to-type-of-value-quoted-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the quoted variant of the @(tsee type-of-value) theorems
+          out of a tag information alist."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->type-of-value-quoted-thm
+              (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-type-of-value-quoted-thms
+              (cdr prec-tags))))
+    (cons thm thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-string-taginfo-alist-to-flexiblep-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
