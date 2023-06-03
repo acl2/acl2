@@ -487,6 +487,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-type-to-type-of-value-quoted?-thm ((type typep)
+                                               (prec-tags
+                                                atc-string-taginfo-alistp))
+  :returns (type-of-value-quoted-thm symbolp)
+  :short "Name of the theorems asserting what @(tsee type-of-value) is
+          when the recognizer for a type holds,
+          where the right-hand side is a quoted constant
+          if the type is a structure type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This returns the same as @(tsee atc-type-to-type-of-value-thm)
+     if the type is not a structure type."))
+  (if (type-case type :struct)
+      (defstruct-info->type-of-value-quoted-thm
+        (atc-tag-info->defstruct
+         (atc-get-tag-info (type-struct->tag type) prec-tags)))
+    (pack 'type-of-value-when- (atc-type-to-recognizer type prec-tags))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-type-to-notflexarrmem-thms ((type typep)
                                         (prec-tags atc-string-taginfo-alistp))
   :returns (notflexarrmem-thms symbol-listp)
