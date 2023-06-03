@@ -36,7 +36,7 @@
 
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp result state) where result is :yes, :no, :maybe (not currently used?), or :trivial.
-(defun submit-defthm-event-with-advice (defthm num-recs-per-model current-book-absolute-path improve-recsp print server-url models state)
+(defun submit-defthm-event-with-advice (defthm num-recs-per-model current-book-absolute-path improve-recsp print server-url timeout models state)
   (declare (xargs :guard (and (natp num-recs-per-model)
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
@@ -44,6 +44,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
+                              (natp timeout)
                               (help::model-namesp models))
                   :mode :program
                   :stobjs state))
@@ -70,7 +71,7 @@
                                     t ; avoid using a book to prove its own checkpoints
                                     improve-recsp
                                     print
-                                    server-url
+                                    server-url timeout
                                     nil ; debug
                                     100000 ; step-limit (TODO: give time/steps proportional to what was needed for the original theorem?)
                                     5 ; time-limit
@@ -118,7 +119,7 @@
 
 ;; Returns (mv erp yes-count no-count maybe-count trivial-count error-count state).
 ;throws an error if any event fails
-(defun submit-events-with-advice (events theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models
+(defun submit-events-with-advice (events theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url timeout models
                                          yes-count no-count maybe-count trivial-count error-count
                                          state)
   (declare (xargs :guard (and (true-listp events)
@@ -131,6 +132,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
+                              (natp timeout)
                               (help::model-namesp models))
                   :mode :program
                   :stobjs state))
@@ -141,7 +143,7 @@
           ;; It's a theorem for which we are to try advice:
           (b* ( ;; Try to prove it using advice:
                ((mv erp result state)
-                (submit-defthm-event-with-advice event num-recs-per-model current-book-absolute-path improve-recsp print server-url models state))
+                (submit-defthm-event-with-advice event num-recs-per-model current-book-absolute-path improve-recsp print server-url timeout models state))
                (- (and erp
                        (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)
                        )))
@@ -155,9 +157,9 @@
                      ((when erp)
                       (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                       (mv erp yes-count no-count maybe-count trivial-count error-count state)))
-                  (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models yes-count no-count maybe-count trivial-count error-count state))
+                  (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url timeout models yes-count no-count maybe-count trivial-count error-count state))
               ;; No error, so count the result:
-              (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models
+              (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url timeout models
                                          (if (eq :yes result) (+ 1 yes-count) yes-count)
                                          (if (eq :no result) (+ 1 no-count) no-count)
                                          (if (eq :maybe result) (+ 1 maybe-count) maybe-count)
@@ -173,7 +175,7 @@
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp yes-count no-count maybe-count trivial-count error-count state))
              (- (cw "~x0~%" (shorten-event event))))
-          (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models yes-count no-count maybe-count trivial-count error-count state))))))
+          (submit-events-with-advice (rest events) theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url timeout models yes-count no-count maybe-count trivial-count error-count state))))))
 
 (defun discard-events-before-first-advice-event (events theorems-to-try)
   (declare (xargs :guard (and (true-listp events)
@@ -207,6 +209,7 @@
                                        improve-recsp
                                        print
                                        server-url
+                                       timeout
                                        models
                                        state)
   (declare (xargs :guard (and (stringp filename)
@@ -217,6 +220,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
+                              (natp timeout)
                               (help::model-namesp models))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
@@ -253,7 +257,7 @@
        ((when erp) (mv erp (list 0 0 0 0 0) state))
        ;; Submit all the events, trying advice for each defthm in theorems-to-try:
        ((mv erp yes-count no-count maybe-count trivial-count error-count state)
-        (submit-events-with-advice events theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url models 0 0 0 0 0 state))
+        (submit-events-with-advice events theorems-to-try num-recs-per-model current-book-absolute-path improve-recsp print server-url timeout models 0 0 0 0 0 state))
        ((when erp) ; I suppose we could return partial results from this book instead
         (cw "Error: ~x0.~%" erp)
         (mv erp (list 0 0 0 0 0) state))
@@ -279,6 +283,7 @@
                                    improve-recsp
                                    print
                                    server-url
+                                   timeout
                                    models ; can be :all
                                    state)
   (declare (xargs :guard (and (stringp filename)
@@ -289,6 +294,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
+                              (natp timeout)
                               (or (eq :all models)
                                   (help::model-namesp models)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
@@ -306,7 +312,7 @@
        ((mv erp
             & ; counts
             state)
-        (replay-book-with-advice-fn-aux filename theorems-to-try num-recs-per-model improve-recsp print server-url models state))
+        (replay-book-with-advice-fn-aux filename theorems-to-try num-recs-per-model improve-recsp print server-url timeout models state))
        ((when erp) (mv erp nil state)))
     ;; No error:
     (mv nil '(value-triple :replay-succeeded) state)))
@@ -321,6 +327,7 @@
                                    (improve-recsp 't)
                                    (print 'nil)
                                    (server-url 'nil) ; nil means get from environment var
+                                   (timeout '40) ; for both connection timeout and read timeout
                                    (models ':all)
                                    )
-  `(make-event-quiet (replay-book-with-advice-fn ,filename ,theorems-to-try ,n ,improve-recsp ,print ,server-url ,models state)))
+  `(make-event-quiet (replay-book-with-advice-fn ,filename ,theorems-to-try ,n ,improve-recsp ,print ,server-url ,timeout ,models state)))
