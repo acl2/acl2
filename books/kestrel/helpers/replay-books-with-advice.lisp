@@ -10,7 +10,7 @@
 
 (in-package "ACL2") ; todo: change to HELP package
 
-(include-book "kestrel/helpers/replay-book-with-advice" :dir :system)
+(include-book "replay-book-with-advice")
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/utilities/shuffle-list2" :dir :system)
 
