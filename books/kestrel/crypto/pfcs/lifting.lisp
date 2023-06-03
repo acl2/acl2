@@ -235,64 +235,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-called-lemma-instance ((crel constrelp)
-                                        (params symbol-listp)
-                                        (prime symbolp))
-  :returns lemma-instance
-  :short "Calculate a lemma instance for a relation call."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "To prove the lifting theorem of a PFCS definition,
-     we need to use the lifting theorems of the PFCS relations
-     called by this definition.
-     There is one lemma instance for each call.
-     The variables of the lemma are instantiated
-     with the result of evaluating the actual arguments of the call."))
-  (b* (((constrel crel) crel)
-       (asg `(omap::from-lists ',params (list ,@params)))
-       (inst-pairs (lift-thm-called-lemma-instance-aux params asg prime))
-       (lemma-name (acl2::packn-pos (list 'definition-satp-of-
-                                          crel.name
-                                          '-to-shallow)
-                                    crel.name)))
-    `(:instance ,lemma-name ,@inst-pairs))
-
-  :prepwork
-  ((define lift-thm-called-lemma-instance-aux ((params symbol-listp)
-                                               asg
-                                               (prime symbolp))
-     :returns (doublets doublet-listp)
-     (b* (((when (endp params)) nil)
-          (param (car params))
-          (doublet `(,param (eval-expr ',(expression-var param) ,asg ,prime)))
-          (doublets (lift-thm-called-lemma-instance-aux
-                     (cdr params) asg prime)))
-       (cons doublet doublets))
-     :prepwork ((local (in-theory (enable doublet-listp length len)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lift-thm-called-lemma-instances ((crels constrel-setp)
-                                         (params symbol-listp)
-                                         (prime symbolp))
-  :returns (lemma-instances true-listp)
-  :short "Calculate lemma instances for a set of relation calls."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called on all the relations called by a PFCS definition
-     for which we need to prove the lifting theorem;
-     the resulting lemma instances are used in the proof."))
-  (b* (((when (set::empty crels)) nil)
-       (crel (set::head crels))
-       (instance (lift-thm-called-lemma-instance crel params prime))
-       (instances (lift-thm-called-lemma-instances
-                   (set::tail crels) params prime)))
-    (cons instance instances)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define lift-thm-called-lift-thms ((rels symbol-setp))
   :returns (called-lift-thms)
   :short "List of lifting theorems for a set of relations."
