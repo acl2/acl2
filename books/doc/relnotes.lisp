@@ -332,9 +332,16 @@
 
    (xdoc::p
     "General rules have been added to support reasoning about PFCSes
-     without having to deal explicitly with the proof trees
+     in a compositional way,
+     and without having to deal explicitly with the proof trees
      used to define the PFCS semantics.
      See @(see pfcs::proof-support) for details.")
+
+   (xdoc::p
+    "A proof-generating lifter from deeply to shallowly embedded PFCSes
+     has been added,
+     so that one can more easily reason about the shallowly embedded form
+     and mechanically transfer the reasoning to the deeply embedded form.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
