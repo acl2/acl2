@@ -1966,7 +1966,7 @@
      (1) all have integer types
      or pointer to integer types
      or arrays of integer types
-     or struct types (soon; temporarily disabled),
+     or struct types,
      and (2) are not external object.
      If the flag is @('nil'), we also return @('nil') as the nest,
      because it is not used in generated theorems in that case."))
@@ -1977,7 +1977,7 @@
        ((when (not proofs-rest)) (mv nil nil nil))
        (type (atc-var-info->type info))
        ((unless (and (or (type-integerp type)
-                         ;; (type-case type :struct) ; temporarily disabled
+                         (type-case type :struct)
                          (and (type-case type :pointer)
                               (type-integerp (type-pointer->to type)))
                          (and (type-case type :array)
@@ -2677,8 +2677,8 @@
                                 (mv ,result-var ,compst-var))
                          (,type-pred ,result-var)))))
        (valuep-when-type-pred (atc-type-to-valuep-thm body-type prec-tags))
-       (type-of-value-when-type-pred
-        (atc-type-to-type-of-value-thm body-type prec-tags))
+       (type-of-value-quoted?-when-type-pred
+        (atc-type-to-type-of-value-quoted?-thm body-type prec-tags))
        (lemma-hints
         `(("Goal" :in-theory '(exec-fun-open
                                not-zp-of-limit-variable
@@ -2693,10 +2693,12 @@
                                value-optionp-when-valuep
                                ,valuep-when-type-pred
                                type-of-value-option-when-valuep
-                               ,type-of-value-when-type-pred
+                               ,type-of-value-quoted?-when-type-pred
                                (:e fun-info->result)
                                (:e tyname-to-type)
-                               (:e ,(pack 'type- (type-kind body-type)))
+                               ,@(and (type-integerp body-type)
+                                      `((:e ,(pack 'type-
+                                                   (type-kind body-type)))))
                                ,pop-frame-thm
                                ,fn-def*
                                declar))))
