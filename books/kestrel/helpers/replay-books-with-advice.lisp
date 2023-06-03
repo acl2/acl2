@@ -91,6 +91,7 @@
                                         num-recs-per-model
                                         print
                                         server-url
+                                        timeout
                                         models
                                         yes-count no-count maybe-count trivial-count error-count
                                         done-book-count
@@ -101,6 +102,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              (natp timeout)
                               (help::model-namesp models)
                               (natp yes-count)
                               (natp no-count)
@@ -125,6 +127,7 @@
                                                         nil ; don't spend time trying to improve recs
                                                         print
                                                         server-url
+                                                        timeout
                                                         models
                                                         state)))
          (- (and erp (cw "WARNING: Error replaying ~x0.~%" book)))
@@ -142,10 +145,10 @@
                     ;; (cw "ADD HYP ADVICE FOUND : ~x0~%" maybe-count)
                     (cw "NO HINTS NEEDED : ~x0~%" trivial-count)
                     (cw "ERROR           : ~x0~%~%" error-count))))
-      (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir num-recs-per-model print server-url models yes-count no-count maybe-count trivial-count error-count done-book-count state))))
+      (replay-books-with-advice-fn-aux (rest book-to-theorems-alist) base-dir num-recs-per-model print server-url timeout models yes-count no-count maybe-count trivial-count error-count done-book-count state))))
 
 ;; Returns (mv erp event state).
-(defun replay-books-with-advice-fn (tests base-dir excluded-prefixes seed num-recs-per-model print server-url models num-tests state)
+(defun replay-books-with-advice-fn (tests base-dir excluded-prefixes seed num-recs-per-model print server-url timeout models num-tests state)
   (declare (xargs :guard (and (alistp tests)
                               (string-listp (strip-cars tests))
                               (symbol-listp (strip-cdrs tests))
@@ -157,6 +160,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              (natp timeout)
                               (or (eq :all models)
                                   (help::model-namep models) ; special case for a single model
                                   (help::model-namesp models))
@@ -188,7 +192,7 @@
        (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist (minstd-rand0-next seed)))
        (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist)))
        )
-    (replay-books-with-advice-fn-aux book-to-theorems-alist base-dir num-recs-per-model print server-url models 0 0 0 0 0 0 state)))
+    (replay-books-with-advice-fn-aux book-to-theorems-alist base-dir num-recs-per-model print server-url timeout models 0 0 0 0 0 0 state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; Rec names should not include slash or digits?
@@ -199,8 +203,9 @@
                                     (seed ':random)
                                     (n '10) ; num-recs-per-model
                                     (server-url 'nil) ; nil means get from environment var
+                                    (timeout '40) ; for both connection timeout and read timeout
                                     (models ':all) ; which ML models to use
                                     (num-books ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
                                     (print 'nil)
                                     )
-  `(make-event (replay-books-with-advice-fn ,tests ,base-dir ,excluded-prefixes ,seed ,n ,print ,server-url ,models ,num-books state)))
+  `(make-event (replay-books-with-advice-fn ,tests ,base-dir ,excluded-prefixes ,seed ,n ,print ,server-url ,timeout ,models ,num-books state)))
