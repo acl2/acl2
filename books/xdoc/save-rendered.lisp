@@ -80,6 +80,30 @@
             (princ$ " " channel state)
             (acl2-doc-print-fix-symbol-lst (cdr lst) channel state)))))
 
+(defun remove-sgr-1 (s i len acc)
+  (let ((p (search *sgr-prefix* s :start2 i)))
+    (cond
+     (p (let ((p2 (search "m" s :start2 (+ 2 p))))
+          (assert$
+           p2
+           (remove-sgr-1 s (1+ p2) len
+                         (concatenate 'string
+                                      acc
+                                      (subseq s i p))))))
+     (t (concatenate 'string acc (subseq s i len))))))
+
+(defun remove-sgr (s)
+
+; The acl2-doc search file, acl2-doc-search, needs to avoid having any SGR
+; control sequences, so that searches there can match up with searches in the
+; acl2-doc buffer, where those markings have been removed.  See comments in the
+; definition of sgr-prefix in display.lisp for more on SGR.
+
+  (let ((p (search *sgr-prefix* s :start2 0)))
+    (cond ((null p)
+           s)
+          (t (remove-sgr-1 s p (length s) (subseq s 0 p))))))
+
 (defun acl2-doc-print-topic-index (tuple channel state)
 
 ; Warning: Do not set the buffer to read-only here, because this
@@ -117,11 +141,11 @@
               (if (eq (nth 0 tuple) 'TOP)
                   state
                 (pprogn (princ$ ":DOC source: " channel state)
-                        (princ$ (nth 3 tuple) channel state)
+                        (princ$ (remove-sgr (nth 3 tuple)) channel state)
                         (newline channel state)))
             (pprogn (princ$ ":DOC source: ACL2 Sources" channel state)
                     (newline channel state)))
-          (princ$ (nth 2 tuple) channel state)
+          (princ$ (remove-sgr (nth 2 tuple)) channel state)
           (newline channel state)))
 
 (defun acl2-doc-print-topic-index-lst (tuple-lst channel state)
@@ -177,8 +201,7 @@
                                   all-topics2)))
               all-topics3)))
           ((mv rendered state)
-           (time$ (without-fancy-xdoc-tags
-                   (render-topics all-topics all-topics state))))
+           (time$ (render-topics all-topics all-topics state)))
           (rendered (time$ (split-acl2-topics rendered nil nil nil)))
           (- (cw "Writing ~s0~%" outfile))
           ((mv channel state) (open-output-channel! outfile :character state))

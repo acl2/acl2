@@ -89,24 +89,40 @@
     ("stv" "{STV display}" . nil)
    ))
 
-(defconst *escape-string*
-  (coerce (list (code-char 27)) 'string))
+(defun sgr-prefix (n)
 
-(defun prefix-with-escape (s)
-    (concatenate 'string *escape-string* s))
+; N is a string representation of a code as described below.
+
+; We use Select Graphic Rendition (SGR) control sequences to handle font tags;
+; see :DOC xdoc::terminal.  On the web page
+; https://en.wikipedia.org/wiki/ANSI_escape_code
+; we see that "ESC [" is the Control Sequence Introducer (CSI) and we see
+; under "SGR (Select Graphic Rendition) parameters" that a control seqeunce
+; is of the form CSI n m, where CSI is "ESC [" as above, n is a code, and m is
+; literally the character m as a terminator.  Note that n=0 ends the font
+; change.
+
+    (concatenate 'string *sgr-prefix* n "m"))
+
+(defconst *sgr-suffix*
+  (sgr-prefix "0"))
 
 (defconst *xdoc-tag-alist-fancy*
   ;; We leave "img" and "icon" in this list even though we process them in
   ;; merge-text below, because we don't want to process </img> or </icon>.
   (list*
-; Matt K. comment: The reason for "31" below is that in my Emacs, bold doesn't
-; much show up; with "31", the text is also red.
-   (list* "b" (prefix-with-escape "[31;1m") (prefix-with-escape "[0m"))
-   (list* "i" (prefix-with-escape "[3m") (prefix-with-escape "[0m"))
-   (list* "u" (prefix-with-escape "[4m") (prefix-with-escape "[0m"))
-   (list* "tt" (prefix-with-escape "[47m") (prefix-with-escape "[0m"))
-   (list* "v" (prefix-with-escape "[47m") (prefix-with-escape "[0m"))
-   (list* "em" (prefix-with-escape "[3m") (prefix-with-escape "[0m"))
+
+; See comments in modify-for-sgr.
+
+; For "b" we add "31;" as shown to get a red color, since bold doesn't
+; always show up well.
+
+   (list* "b" (sgr-prefix "31;1") *sgr-suffix*)
+   (list* "i" (sgr-prefix "3") *sgr-suffix*)
+   (list* "u" (sgr-prefix "4") *sgr-suffix*)
+   (list* "tt" (sgr-prefix "47") *sgr-suffix*)
+   (list* "v" (sgr-prefix "47") *sgr-suffix*)
+   (list* "em" (sgr-prefix "3") *sgr-suffix*)
    '(("color")
      ("sf")
      ("box")
@@ -182,6 +198,14 @@
                      (cons name (wormhole-data acl2::whs))))
                  nil))
 
+(defun left-bracket-start (text bound)
+  (let ((p (search "[" text :from-end t :end2 bound)))
+    (and p
+         (cond ((eql p 0) 0)
+               ((eql (char text (1- p)) *escape-char*)
+                (left-bracket-start text (1- p)))
+               (t p)))))
+
 (defun text-matches-mangle (text mangle topic-to-rendered-table)
 
 ; Text is xdoc source text ending with text of the form "[topic" (with a
@@ -235,7 +259,7 @@
 
 ;    See double-lt (see [<<]).
 
-  (let* ((bracket-posn (search "[" text :from-end t))
+  (let* ((bracket-posn (left-bracket-start text (length text)))
          (start (and bracket-posn
                      (1+ bracket-posn)))
          (rendered (and start ; optimization
@@ -436,7 +460,7 @@
                                  xdoc-tag-alist)))))
                 ((member-equal name '("see"))
                  (b* ((text (texttok-text (car acc)))
-                      (bracket-posn (search "[" text :from-end t))
+                      (bracket-posn (left-bracket-start text (length text)))
                       (match
                        (assert$
                         bracket-posn

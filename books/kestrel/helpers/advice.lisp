@@ -3004,15 +3004,16 @@
 ;; Sends an HTTP POST request containing the POST-DATA to the server at
 ;; SERVER-URL.  Parses the response as JSON.  Returns (mv erp
 ;; parsed-json-response state).
-(defund post-and-parse-response-as-json (server-url post-data debug state)
+(defund post-and-parse-response-as-json (server-url timeout post-data debug state)
   (declare (xargs :guard (and (stringp server-url)
+                              (natp timeout)
                               (acl2::string-string-alistp post-data)
                               (booleanp debug))
                   :stobjs state))
   (b* ((- (and debug (cw "POST data to be sent: ~X01.~%" post-data nil)))
        ((mv erp post-response state)
-        (htclient::post-light server-url post-data state '((:connect-timeout 40)
-                                                           (:read-timeout 40))))
+        (htclient::post-light server-url post-data state `((:connect-timeout ,timeout)
+                                                           (:read-timeout ,timeout))))
        ((when erp)
         (cw "~%Error received from HTTP POST:~%~@0.~%" erp)
         (mv erp nil state))
@@ -3233,13 +3234,14 @@
     (acons (first keys) val (acons-all-to-val (rest keys) val alist))))
 
 ;; Returns (mv erp recs state).
-(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses broken-theorem server-url debug print state)
+(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses broken-theorem server-url timeout debug print state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; broken-theorem is a thm or defthm form
                               (stringp server-url)
+                              (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
                   :mode :program ; because of make-numbered-checkpoint-entries
@@ -3271,7 +3273,7 @@
                ((mv server-start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
                ;; Send POST requqest to server and parse the response:
                ((mv erp parsed-response state)
-                (post-and-parse-response-as-json server-url post-data debug state))
+                (post-and-parse-response-as-json server-url timeout post-data debug state))
                ((when erp)
                 ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
                 (mv erp nil state))
@@ -3302,7 +3304,7 @@
 
 ;; Goes through the MODELS, getting recs from each.  Returns an alist from model names to rec-lists.
 ;; Returns (mv erp rec-alist state).
-(defun get-recs-from-models-aux (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print acc state)
+(defun get-recs-from-models-aux (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
                               (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
@@ -3310,6 +3312,7 @@
                               ;; theorem-body is an untranslated-term
                               ;; broken-theorem is a thm or defthm form
                               (stringp server-url)
+                              (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
                   :mode :program
@@ -3330,18 +3333,18 @@
                     (mv nil nil state) ; don't bother creating recs as they will be disallowed below
                   (make-recs-from-history num-recs-per-model print state))
               ;; It's a normal ML model:
-              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem server-url debug print state))))
+              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem server-url timeout debug print state))))
          ((when erp) (mv erp nil state))
          ;; Remove any recs that are disallowed (todo: drop this now?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
-      (get-recs-from-models-aux (rest models) num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print
+      (get-recs-from-models-aux (rest models) num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print
                                 ;; Associate this model with its recs in the result:
                                 (acons model recs acc)
                                 state))))
 
 ;; Returns an alist from model names to rec-lists.
 ;; Returns (mv erp rec-alist state).
-(defun get-recs-from-models (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print acc state)
+(defun get-recs-from-models (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
                               (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
@@ -3350,6 +3353,7 @@
                               ;;  broken-theorem is a thm or defthm form
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
                   :mode :program
@@ -3366,7 +3370,7 @@
         (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
         (mv :no-server nil state))
        (- (and print (cw "ACL2 advice server is ~s0.~%" server-url))))
-    (get-recs-from-models-aux models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print acc state)))
+    (get-recs-from-models-aux models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print acc state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3469,6 +3473,7 @@
                                  improve-recsp
                                  print
                                  server-url
+                                 timeout
                                  debug
                                  step-limit time-limit
                                  disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
@@ -3489,6 +3494,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              (natp timeout)
                               (booleanp debug)
                               (or (null step-limit)
                                   (natp step-limit))
@@ -3503,7 +3509,7 @@
                   :mode :program))
   (b* ((state (acl2::widen-margins state))
        ((mv erp recommendation-alist state)
-        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url debug print nil state))
+        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs recommendation-alist))
@@ -3567,6 +3573,7 @@
                              improve-recsp
                              print
                              server-url
+                             timeout
                              debug
                              step-limit time-limit
                              disallowed-rec-types
@@ -3588,6 +3595,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              (natp timeout)
                               (booleanp debug)
                               (or (null step-limit)
                                   (natp step-limit))
@@ -3629,6 +3637,7 @@
                                 improve-recsp
                                 print
                                 server-url
+                                timeout
                                 debug
                                 step-limit time-limit
                                 disallowed-rec-types
@@ -3646,6 +3655,7 @@
                          improve-recsp
                          print
                          server-url
+                         timeout
                          debug
                          step-limit time-limit
                          disallowed-rec-types
@@ -3662,6 +3672,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              (natp timeout)
                               (booleanp debug)
                               (or (eq :auto step-limit) ; means use *step-limit*
                                   (eq nil step-limit) ; means no limit
@@ -3705,6 +3716,7 @@
                               improve-recsp
                               print
                               server-url
+                              timeout
                               debug
                               step-limit time-limit
                               disallowed-rec-types
@@ -3733,6 +3745,7 @@
                          (improve-recsp 't)
                          (print 't)
                          (server-url 'nil)
+                         (timeout '40) ; for both connection timeout and read timeout
                          (debug 'nil)
                          (step-limit ':auto)
                          (time-limit ':auto)
@@ -3742,7 +3755,7 @@
                          (rule-classes '(:rewrite))
                          )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,server-url ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
@@ -3757,6 +3770,7 @@
                       improve-recsp
                       print
                       server-url
+                      timeout
                       debug
                       step-limit time-limit
                       disallowed-rec-types
@@ -3771,6 +3785,7 @@
                           (acl2::print-levelp print)
                           (or (null server-url) ; get url from environment variable
                               (stringp server-url))
+                          (natp timeout)
                           (booleanp debug)
                           (or (eq :auto step-limit)   ; means use *step-limit*
                               (eq nil step-limit)     ; means no limit
@@ -3814,6 +3829,7 @@
                               improve-recsp
                               print
                               server-url
+                              timeout
                               debug
                               step-limit time-limit
                               disallowed-rec-types
@@ -3837,6 +3853,7 @@
                       (n '10) ; num-recs-per-model
                       (print 't)
                       (server-url 'nil)
+                      (timeout '40) ; for both connection timeout and read timeout
                       (debug 'nil)
                       (step-limit ':auto)
                       (time-limit ':auto)
@@ -3847,7 +3864,7 @@
                       ;; no rule-classes
                       )
   `(acl2::make-event-quiet
-    (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,server-url ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
@@ -3862,6 +3879,7 @@
                   improve-recsp
                   print
                   server-url
+                  timeout
                   debug
                   step-limit time-limit
                   disallowed-rec-types
@@ -3873,6 +3891,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url)
                                   (stringp server-url))
+                              (natp timeout)
                               (acl2::checkpoint-list-guard t ;top-p
                                                      state)
                               (booleanp debug)
@@ -3950,6 +3969,7 @@
                                   improve-recsp
                                   print
                                   server-url
+                                  timeout
                                   debug
                                   step-limit time-limit
                                   disallowed-rec-types
@@ -3994,13 +4014,14 @@
                        (improve-recsp 't)
                        (print 't)
                        (server-url 'nil)
+                       (timeout '40) ; for both connection timeout and read timeout
                        (debug 'nil)
                        (step-limit ':auto)
                        (time-limit ':auto)
                        (disallowed-rec-types 'nil)
                        (max-wins ':auto)
                        (models ':all))
-  `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,server-url ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
+  `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,server-url ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::advice (&rest rest) `(advice ,@rest))
@@ -4028,6 +4049,7 @@
                                                improve-recsp ; whether to try to improve successful recommendations
                                                print
                                                server-url
+                                               ;; timeout: TODO add
                                                debug
                                                step-limit
                                                time-limit
@@ -4045,6 +4067,7 @@
                               (acl2::print-levelp print)
                               (or (null server-url) ; get url from environment variable
                                   (stringp server-url))
+                              ;; (natp timeout) ; todo
                               (booleanp debug)
                               (or (null step-limit)
                                   (natp step-limit))
@@ -4062,7 +4085,9 @@
                                  ,theorem-body
                                  ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
                                  ,@(and theorem-hints `(:hints ,theorem-hints)))
-                              server-url debug print nil state))
+                              server-url
+                              40 ; todo: timeout
+                              debug print nil state))
        ((when erp) (mv erp nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs recommendation-alist))
