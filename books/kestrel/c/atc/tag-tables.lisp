@@ -470,7 +470,7 @@
       (defstruct-info->value-kind-thm
         (atc-tag-info->defstruct
          (atc-get-tag-info (type-struct->tag type) prec-tags)))
-    (pack 'valuep-kind-when- (atc-type-to-recognizer type prec-tags))))
+    (pack 'value-kind-when- (atc-type-to-recognizer type prec-tags))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -487,6 +487,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-type-to-type-of-value-quoted?-thm ((type typep)
+                                               (prec-tags
+                                                atc-string-taginfo-alistp))
+  :returns (type-of-value-quoted-thm symbolp)
+  :short "Name of the theorems asserting what @(tsee type-of-value) is
+          when the recognizer for a type holds,
+          where the right-hand side is a quoted constant
+          if the type is a structure type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This returns the same as @(tsee atc-type-to-type-of-value-thm)
+     if the type is not a structure type."))
+  (if (type-case type :struct)
+      (defstruct-info->type-of-value-quoted-thm
+        (atc-tag-info->defstruct
+         (atc-get-tag-info (type-struct->tag type) prec-tags)))
+    (pack 'type-of-value-when- (atc-type-to-recognizer type prec-tags))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-type-to-notflexarrmem-thms ((type typep)
                                         (prec-tags atc-string-taginfo-alistp))
   :returns (notflexarrmem-thms symbol-listp)
@@ -496,9 +517,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For an integer type or integer array type,
+    "For an integer type,
      this is just one theorem related to that type's recognizer.
-     For a pointer, it is just one theorem for pointers.
+     For a pointer or an array, it is just one theorem for pointers.
      For a struct, it consists of the general theorem for structs,
      which has a hypothesis saying that the struct
      does not have a flexible array member,
@@ -506,16 +527,15 @@
      does not have a flexible array member,
      needed to relieve the hypothesis;
      this is always used on structs without flexible array members."))
-  (cond ((or (type-integerp type)
-             (and (type-case type :array)
-                  (type-integerp (type-array->of type))))
+  (cond ((type-integerp type)
          (list (pack 'not-flexible-array-member-p-when-
                      (atc-type-to-recognizer type prec-tags))))
-        ((type-case type :pointer)
+        ((or (type-case type :pointer)
+             (type-case type :array))
          (list 'not-flexible-array-member-p-when-value-pointer))
         ((type-case type :struct)
          (list 'not-flexible-array-member-p-when-value-struct
                (defstruct-info->flexiblep-thm
                  (atc-tag-info->defstruct
                   (atc-get-tag-info (type-struct->tag type) prec-tags)))))
-        (t (raise "Internal error: unexpecte type ~x0." type))))
+        (t (raise "Internal error: unexpected type ~x0." type))))

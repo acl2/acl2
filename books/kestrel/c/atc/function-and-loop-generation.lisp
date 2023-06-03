@@ -1966,7 +1966,7 @@
      (1) all have integer types
      or pointer to integer types
      or arrays of integer types
-     or struct types (soon; temporarily disabled),
+     or struct types,
      and (2) are not external object.
      If the flag is @('nil'), we also return @('nil') as the nest,
      because it is not used in generated theorems in that case."))
@@ -1977,7 +1977,7 @@
        ((when (not proofs-rest)) (mv nil nil nil))
        (type (atc-var-info->type info))
        ((unless (and (or (type-integerp type)
-                         ;; (type-case type :struct) ; temporarily disabled
+                         (type-case type :struct)
                          (and (type-case type :pointer)
                               (type-integerp (type-pointer->to type)))
                          (and (type-case type :array)
@@ -2488,25 +2488,10 @@
                                        nil
                                        wrld))
           (formula `(and ,formula1 ,formula2))
-          (not-flexible-array-member-p-when-type-pred
-           (pack 'not-flexible-array-member-p-when- type-pred))
-          (valuep-when-type-pred (pack 'valuep-when- type-pred))
-          ((mv valuep-when-struct
-               value-kind-when-struct
-               flexiblep-when-struct)
-           (if (type-case type :struct)
-               (b* ((info
-                     (cdr (assoc-equal (ident->name (type-struct->tag type))
-                                       prec-tags)))
-                    ((unless (atc-tag-infop info))
-                     (raise "Internal error: no info for struct type ~x0."
-                            type)
-                     (mv nil nil nil))
-                    (info (atc-tag-info->defstruct info)))
-                 (mv (defstruct-info->valuep-thm info)
-                     (defstruct-info->value-kind-thm info)
-                     (defstruct-info->flexiblep-thm info)))
-             (mv nil nil nil)))
+          (not-flexiblep-thms (atc-type-to-notflexarrmem-thms type prec-tags))
+          (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
+          (value-kind-when-type-pred
+           (atc-type-to-value-kind-thm type prec-tags))
           (hints
            `(("Goal"
               :in-theory
@@ -2517,25 +2502,15 @@
                 identp-of-ident
                 equal-of-ident-and-ident
                 (:e str-fix)
-                ,@(case (type-kind type)
-                    ((:pointer :array)
-                     '(not-flexible-array-member-p-when-value-pointer))
-                    (:struct
-                     `(c::not-flexible-array-member-p-when-value-struct
-                       ,value-kind-when-struct
-                       ,flexiblep-when-struct))
-                    (t (list not-flexible-array-member-p-when-type-pred)))
+                ,@not-flexiblep-thms
                 remove-flexible-array-member-when-absent
                 value-fix-when-valuep
                 ,@(and (or (type-case type :pointer)
                            (type-case type :array))
                        '(read-object-of-add-var
                          read-object-of-add-frame))
-                ,@(and (not (type-case type :pointer))
-                       (not (type-case type :array))
-                       (if (type-case type :struct)
-                           (list valuep-when-struct)
-                         (list valuep-when-type-pred)))))))
+                ,valuep-when-type-pred
+                ,value-kind-when-type-pred))))
           ((mv event &) (evmac-generate-defthm name
                                                :formula formula
                                                :hints hints
@@ -2701,8 +2676,9 @@
                                           ,limit-var)
                                 (mv ,result-var ,compst-var))
                          (,type-pred ,result-var)))))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
-       (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
+       (valuep-when-type-pred (atc-type-to-valuep-thm body-type prec-tags))
+       (type-of-value-quoted?-when-type-pred
+        (atc-type-to-type-of-value-quoted?-thm body-type prec-tags))
        (lemma-hints
         `(("Goal" :in-theory '(exec-fun-open
                                not-zp-of-limit-variable
@@ -2717,10 +2693,12 @@
                                value-optionp-when-valuep
                                ,valuep-when-type-pred
                                type-of-value-option-when-valuep
-                               ,type-of-value-when-type-pred
+                               ,type-of-value-quoted?-when-type-pred
                                (:e fun-info->result)
                                (:e tyname-to-type)
-                               (:e ,(pack 'type- (type-kind body-type)))
+                               ,@(and (type-integerp body-type)
+                                      `((:e ,(pack 'type-
+                                                   (type-kind body-type)))))
                                ,pop-frame-thm
                                ,fn-def*
                                declar))))
