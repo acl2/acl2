@@ -15,6 +15,9 @@
 (include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,6 +69,7 @@
    :mul (set::union (expression-vars expr.arg1)
                     (expression-vars expr.arg2)))
   :measure (expression-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,7 +80,16 @@
   (cond ((endp exprs) nil)
         (t (set::union (expression-vars (car exprs))
                        (expression-list-vars (cdr exprs)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule expression-list-vars-of-expression-var-list
+    (equal (expression-list-vars (expression-var-list vars))
+           (set::mergesort (acl2::symbol-list-fix vars)))
+    :induct t
+    :enable (expression-vars
+             expression-var-list
+             set::mergesort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

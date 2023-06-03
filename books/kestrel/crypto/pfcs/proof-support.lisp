@@ -104,7 +104,17 @@
       to resolve empty lists of constraints as alwasy satisfied.
       We also have a rule @(tsee constraint-list-satp-of-rev)
       that simplifies @(tsee rev) away,
-      since constraint satisfaction is not ordered-dependent."))
+      since constraint satisfaction is not ordered-dependent.")
+    (xdoc::li
+     "A rule that turns @(tsee constraint-satp) of a relation constraint
+      into @(tsee definition-satp) of the relation
+      and of the values that the arguments evaluate to.
+      This is useful for compositional proofs of PFCSes,
+      because by reducing the satisfaction of an inner relation call,
+      performed in the body of an outer relation,
+      to the satisfaction of the definition of the inner relation,
+      one can use properties proved about the inner relation
+      to prove properties about the outer relation."))
    (xdoc::p
     "More proof rules may be added here in the future,
      but it should be clear from the list above
@@ -655,3 +665,139 @@
            constraint-list-satp-of-atom
            constraint-list-satp-of-cons
            constraint-list-satp-of-append))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled constraint-satp-to-definition-satp
+  :short "Proof rule to turn relation constraint satisfaction
+          to definition satisfaction."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is useful for compostional reasoning,
+     as mentioned in @(see proof-support)."))
+  (implies (and (primep p)
+                (assignmentp asg)
+                (assignment-wfp asg p)
+                (constraint-case constr :relation)
+                (no-duplicatesp-equal (definition->para
+                                        (lookup-definition
+                                         (constraint-relation->name constr)
+                                         defs))))
+           (b* ((vals (eval-expr-list (constraint-relation->args constr)
+                                      asg
+                                      p)))
+             (implies (not (reserrp vals))
+                      (equal (constraint-satp constr defs asg p)
+                             (definition-satp
+                               (constraint-relation->name constr)
+                               defs
+                               vals
+                               p)))))
+  :use (only-if-part if-part)
+
+  :prep-lemmas
+
+  ((defruled only-if-part
+     (implies (and (primep p)
+                   (assignmentp asg)
+                   (assignment-wfp asg p)
+                   (constraint-case constr :relation)
+                   (no-duplicatesp-equal (definition->para
+                                          (lookup-definition
+                                           (constraint-relation->name constr)
+                                           defs))))
+              (b* ((vals (eval-expr-list (constraint-relation->args constr)
+                                         asg
+                                         p)))
+                (implies (not (reserrp vals))
+                         (implies (constraint-satp constr defs asg p)
+                                  (definition-satp
+                                    (constraint-relation->name constr)
+                                    defs
+                                    vals
+                                    p)))))
+     :enable (constraint-satp-of-relation
+              definition-satp
+              eval-expr-list-of-expression-var-list-and-omap-from-lists)
+     :expand (constraint-relation-satp (constraint-relation->name constr)
+                                       (constraint-relation->args constr)
+                                       defs asg p)
+     :use (:instance constraint-relation-satp-suff
+                     (name (constraint-relation->name constr))
+                     (args (expression-var-list
+                            (definition->para (lookup-definition
+                                               (constraint-relation->name constr)
+                                               defs))))
+                     (defs defs)
+                     (asg (omap::from-lists
+                           (definition->para (lookup-definition
+                                              (constraint-relation->name constr)
+                                              defs))
+                           (eval-expr-list (constraint-relation->args constr)
+                                           asg p)))
+                     (asgfree (constraint-relation-satp-witness
+                               (constraint-relation->name constr)
+                               (constraint-relation->args constr)
+                               defs asg p))))
+
+   (defruled if-part
+     (implies (and (primep p)
+                   (assignmentp asg)
+                   (assignment-wfp asg p)
+                   (constraint-case constr :relation)
+                   (no-duplicatesp-equal (definition->para
+                                          (lookup-definition
+                                           (constraint-relation->name constr)
+                                           defs))))
+              (b* ((vals (eval-expr-list (constraint-relation->args constr)
+                                         asg
+                                         p)))
+                (implies (not (reserrp vals))
+                         (implies (definition-satp
+                                    (constraint-relation->name constr)
+                                    defs
+                                    vals
+                                    p)
+                                  (constraint-satp constr defs asg p)))))
+     :enable (constraint-satp-of-relation
+              definition-satp
+              acl2::nat-listp-when-nat-list-resultp-and-not-reserrp
+              eval-expr-list-of-expression-var-list-and-omap-from-lists)
+     :expand (constraint-relation-satp
+              (constraint-relation->name constr)
+              (expression-var-list
+               (definition->para (lookup-definition
+                                  (constraint-relation->name constr)
+                                  defs)))
+              defs
+              (omap::from-lists
+               (definition->para (lookup-definition
+                                  (constraint-relation->name constr)
+                                  defs))
+               (eval-expr-list (constraint-relation->args constr)
+                               asg p))
+              p)
+     :use (:instance constraint-relation-satp-suff
+                     (name (constraint-relation->name constr))
+                     (args (constraint-relation->args constr))
+                     (defs defs)
+                     (asg asg)
+                     (asgfree (constraint-relation-satp-witness
+                               (constraint-relation->name constr)
+                               (expression-var-list
+                                (definition->para
+                                  (lookup-definition
+                                   (constraint-relation->name constr)
+                                   defs)))
+                               defs
+                               (omap::from-lists
+                                (definition->para
+                                  (lookup-definition
+                                   (constraint-relation->name constr)
+                                   defs))
+                                (eval-expr-list
+                                 (constraint-relation->args constr)
+                                 asg
+                                 p))
+                               p))))))
