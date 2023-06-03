@@ -49,7 +49,7 @@
      not only to a shallowly embedded version of it,
      but also to a theorem that relates the two.
      This is a form of lifting:
-     a deeply embedded definition is lifted into a shallowly embedded one.
+     a deeply embedded definition is lifted to a shallowly embedded one.
      The latter is easier to reason about,
      and anything proved about it
      can be extended to the deeply embedded definition
@@ -64,7 +64,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The lifter generates proof that make use of
+    "The lifter generates proofs that make use of
      certain rules about omaps and about some built-ins.
      To avoid a dependency on the libraries that contain those rules,
      here we create versions of these rules that are part of the lifter
@@ -140,7 +140,7 @@
      For each relation,
      whose definition is the @('def') parameter passed to this function,
      we need the hypothesis that looking up the relation in @('defs')
-     (the latter is the variable, in the generated theorem,
+     (which is the variable, in the generated theorem,
      holding the definitions with respect to which the semntics is given)
      yields @('def').
      We also need the cumulative hypotheses of the same form
