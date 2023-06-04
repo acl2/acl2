@@ -1962,12 +1962,7 @@
      See explanation just above.")
    (xdoc::p
     "We also return a flag saying whether modular proofs should be generated,
-     which currently is when the formals
-     (1) all have integer types
-     or pointer to integer types
-     or arrays of integer types
-     or struct types,
-     and (2) are not external object.
+     which currently is when the formals are not external objects.
      If the flag is @('nil'), we also return @('nil') as the nest,
      because it is not used in generated theorems in that case."))
   (b* (((when (endp typed-formals)) (mv nil nil t))
@@ -1976,14 +1971,7 @@
         (atc-gen-omap-update-formals (cdr typed-formals)))
        ((when (not proofs-rest)) (mv nil nil nil))
        (type (atc-var-info->type info))
-       ((unless (and (or (type-integerp type)
-                         (type-case type :struct)
-                         (and (type-case type :pointer)
-                              (type-integerp (type-pointer->to type)))
-                         (and (type-case type :array)
-                              (type-integerp (type-array->of type))))
-                     (not (atc-var-info->externalp info))))
-        (mv nil nil nil))
+       ((when (atc-var-info->externalp info)) (mv nil nil nil))
        (var/varptr (if (or (type-case type :pointer)
                            (type-case type :array))
                        (add-suffix-to-fn var "-PTR")
@@ -2047,36 +2035,37 @@
      the ACL2 function that is translated to a C function.")
    (xdoc::p
     "For each formal @('x')
-     whose C type is pointer to integer or array of integer,
+     whose C type is pointer or array,
      we generate a portion of the preamble saying that
      @('x-ptr') is a valid pointer value of the right type,
      the pointer's object designator is in allocated memory
      (for now; this will be generalized later),
      and reading the object yields @('x').
-     Thus, a formal that is a pointer to integer or array to integer
+     Thus, a formal that is a pointer or array
      is represented by two variables in the generated theorems:
      this is necessary because the ACL2 function
-     takes integers and arrays (not pointers),
-     but the C function takes pointers that point to the integers;
-     note that arrays are also handled by pointer in C.
-     In the theorems, we use the name of the formal as the integer or array,
+     takes integers and structures and arrays (not pointers),
+     but the C function takes pointers that point to integers and structures,
+     and pointers that point to the beginning of arrays.
+     In the theorems, we use the name of the formal
+     as the integer or structure or array,
      and we introduce a new name, with a @('-ptr') suffix, for the pointer.
      Note that, because of the restriction on portable ASCII C identifiers,
      dashes cannot occur in names of formals,
      and thus something ending in @('-ptr') cannot cause conflicts.
      The terms generated in the preamble constrain @('x-ptr') to be the pointer,
      and include a binding hypothesis that sets @('x') to be
-     the integer or array to which @('x-ptr') points to.
+     the integer or structure or array to which @('x-ptr') points to.
      There is also a binding hypothesis for a variable @('x-objdes')
      that is the object designator in @('x-ptr');
      note that it cannot conflict with other variables,
      for the same reason as @('x-ptr').")
    (xdoc::p
-    "Formals of integer type generate no preamble terms,
+    "Formals of integer and structure type generate no preamble terms,
      as they do not involve pointers.")
    (xdoc::p
     "For now we do not generate any preamble terms for
-     formals of other types than the ones discussed just above.
+     formals that represent external objects.
      We will do that soon,
      as we extend the reach of our new modular proof generation approach."))
   (b* (((when (endp typed-formals)) nil)
@@ -2088,8 +2077,6 @@
        (reftype (if (type-case type :pointer)
                     (type-pointer->to type)
                   (type-array->of type)))
-       ((unless (type-integerp reftype))
-        (atc-gen-context-preamble (cdr typed-formals) compst-var))
        (var-ptr (add-suffix-to-fn var "-PTR"))
        (var-objdes (add-suffix-to-fn var "-OBJDES"))
        (terms `((valuep ,var-ptr)
@@ -2162,6 +2149,8 @@
        (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
        (type-of-value-quoted-thms
         (atc-string-taginfo-alist-to-type-of-value-quoted-thms prec-tags))
+       (pointer-type-to-quoted-thms
+        (atc-string-taginfo-alist-to-pointer-type-to-quoted-thms prec-tags))
        (expand-hints
         `(("Goal" :in-theory '(,fn-fun-env-thm
                                (:e fun-info->params)
@@ -2202,6 +2191,7 @@
                                type-of-value-when-sllongp
                                type-of-value-when-value-pointer
                                ,@type-of-value-quoted-thms
+                               ,@pointer-type-to-quoted-thms
                                not-flexible-array-member-p-when-ucharp
                                not-flexible-array-member-p-when-scharp
                                not-flexible-array-member-p-when-ushortp
