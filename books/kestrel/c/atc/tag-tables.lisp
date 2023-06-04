@@ -381,6 +381,21 @@
         (atc-string-taginfo-alist-to-member-write-thms (cdr prec-tags))))
     (append thms more-thms)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-pointer-type-to-quoted-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the theorems to rewrite
+           the pointer types to the structure types to their quoted versions."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->pointer-type-to-quoted-thm
+              (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-pointer-type-to-quoted-thms
+              (cdr prec-tags))))
+    (cons thm thms)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-type-to-recognizer ((type typep)
@@ -453,10 +468,15 @@
   :returns (valuep-thm symbolp)
   :short "Name of the theorems saying that @(tsee valuep) holds
           when the recognizer for a type holds."
-  (if (type-case type :struct)
+  (if (or (type-case type :struct)
+          (and (type-case type :pointer)
+               (type-case (type-pointer->to type) :struct)))
       (defstruct-info->valuep-thm
         (atc-tag-info->defstruct
-         (atc-get-tag-info (type-struct->tag type) prec-tags)))
+         (atc-get-tag-info (if (type-case type :struct)
+                               (type-struct->tag type)
+                             (type-struct->tag (type-pointer->to type)))
+                           prec-tags)))
     (pack 'valuep-when- (atc-type-to-recognizer type prec-tags))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -466,10 +486,15 @@
   :returns (value-kind-thm symbolp)
   :short "Name of the theorems asserting what @(tsee value-kind) is
           when the recognizer for a type holds."
-  (if (type-case type :struct)
+  (if (or (type-case type :struct)
+          (and (type-case type :pointer)
+               (type-case (type-pointer->to type) :struct)))
       (defstruct-info->value-kind-thm
         (atc-tag-info->defstruct
-         (atc-get-tag-info (type-struct->tag type) prec-tags)))
+         (atc-get-tag-info (if (type-case type :struct)
+                               (type-struct->tag type)
+                             (type-struct->tag (type-pointer->to type)))
+                           prec-tags)))
     (pack 'value-kind-when- (atc-type-to-recognizer type prec-tags))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -479,10 +504,15 @@
   :returns (type-of-value-thm symbolp)
   :short "Name of the theorems asserting what @(tsee type-of-value) is
           when the recognizer for a type holds."
-  (if (type-case type :struct)
+  (if (or (type-case type :struct)
+          (and (type-case type :pointer)
+               (type-case (type-pointer->to type) :struct)))
       (defstruct-info->type-of-value-thm
         (atc-tag-info->defstruct
-         (atc-get-tag-info (type-struct->tag type) prec-tags)))
+         (atc-get-tag-info (if (type-case type :struct)
+                               (type-struct->tag type)
+                             (type-struct->tag (type-pointer->to type)))
+                           prec-tags)))
     (pack 'type-of-value-when- (atc-type-to-recognizer type prec-tags))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -500,10 +530,15 @@
    (xdoc::p
     "This returns the same as @(tsee atc-type-to-type-of-value-thm)
      if the type is not a structure type."))
-  (if (type-case type :struct)
+  (if (or (type-case type :struct)
+          (and (type-case type :pointer)
+               (type-case (type-pointer->to type) :struct)))
       (defstruct-info->type-of-value-quoted-thm
         (atc-tag-info->defstruct
-         (atc-get-tag-info (type-struct->tag type) prec-tags)))
+         (atc-get-tag-info (if (type-case type :struct)
+                               (type-struct->tag type)
+                             (type-struct->tag (type-pointer->to type)))
+                           prec-tags)))
     (pack 'type-of-value-when- (atc-type-to-recognizer type prec-tags))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -539,3 +574,27 @@
                  (atc-tag-info->defstruct
                   (atc-get-tag-info (type-struct->tag type) prec-tags)))))
         (t (raise "Internal error: unexpected type ~x0." type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-pointer-type-to-quoted-thms
+  ((type typep)
+   (prec-tags atc-string-taginfo-alistp))
+  :returns (pointer-type-to-quoted-thms symbol-listp)
+  :short "Names of the theorems for rewriting
+          the pointer type to the structut type
+          to quoted form."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the type is a pointer to structure type,
+     we return the singleton list of
+     the theorem that rewrites the type to quoted form.
+     Otherwise, we return the empty list."))
+  (if (and (type-case type :pointer)
+           (type-case (type-pointer->to type) :struct))
+      (list (defstruct-info->pointer-type-to-quoted-thm
+              (atc-tag-info->defstruct
+               (atc-get-tag-info (type-struct->tag (type-pointer->to type))
+                                 prec-tags))))
+    nil))
