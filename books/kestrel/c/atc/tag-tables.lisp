@@ -582,7 +582,7 @@
    (prec-tags atc-string-taginfo-alistp))
   :returns (pointer-type-to-quoted-thms symbol-listp)
   :short "Names of the theorems for rewriting
-          the pointer type to the structut type
+          the pointer type to the struct type
           to quoted form."
   :long
   (xdoc::topstring
