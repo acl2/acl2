@@ -1182,7 +1182,8 @@
             (confidence-percentp (* 100 x)))
    :hints (("Goal" :in-theory (enable confidence-percentp)))))
 
-;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may be :none.
+;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may
+;; be :none (and erp be nil) if a minor error is encountered.
 (defund parse-recommendation (rec rec-num source state)
   (declare (xargs :guard (and (acl2::parsed-json-valuep rec)
                               (natp rec-num)
@@ -1199,7 +1200,7 @@
          (book-map (acl2::lookup-equal "book_map" dict))
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
-          (cw "WARNING: When parsing book map: ~@0.~%" erp)
+          (cw "WARNING: When parsing book map: ~x0.~%" erp)
           (mv nil ; supressing this error for now
               :none state))
          ((when (or (not (rationalp confidence))
@@ -1218,10 +1219,10 @@
           (mv :bad-rec nil state))
          ((mv erp parsed-object state) (acl2::read-string-as-single-item object "ACL2" state))
          ((when erp)
-          (er hard? 'parse-recommendation "Error (~x0) parsing recommended action: ~x1." erp object)
-          (mv :parse-error nil state))
-         (name (concatenate 'string (model-to-nice-string source) "[" (acl2::nat-to-string rec-num) "]"))
-         )
+          (cw "Error (~x0) parsing recommended action: ~x1." erp object)
+          (mv nil ;; :none :parse-error
+              :none state))
+         (name (concatenate 'string (model-to-nice-string source) "[" (acl2::nat-to-string rec-num) "]")))
       (mv nil ; no error
           (make-rec name type-keyword parsed-object confidence-percent book-map)
           state))))
@@ -1636,13 +1637,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Tries to prove FORMULA by enabling ITEM-TO-ENABLE after submitting INCLUDE-BOOK-FORM.
+;; Tries to prove THEOREM-BODY by enabling ITEM-TO-ENABLE after submitting INCLUDE-BOOK-FORM.
 ;; The include-book is undone before this returns.
 ;; Returns (mv maybe-successful-rec state).
 ;; TODO: Consider trying the proof anyway, even if the include-book doesn't bring
 ;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
 (defun try-enable-with-include-book (include-book-form
-                                     formula        ; untranslated
+                                     theorem-body        ; untranslated
                                      item-to-enable ; a symbol or rune
                                      current-book-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
                                      avoid-current-bookp
@@ -1654,7 +1655,7 @@
                                      state)
   (declare (xargs :guard (and (consp include-book-form)
                               (eq 'include-book (car include-book-form)) ; strengthen?
-                              ;; formula is untranslated
+                              ;; theorem-body is untranslated
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
                               (booleanp avoid-current-bookp)
@@ -1700,12 +1701,12 @@
              ;; TTODO: Check if already enabled!
              (b* ( ; todo: ensure this is nice:
                   (hints-with-enable (acl2::add-enable*-to-hints hints (list item-to-enable)))
-                  ((mv provedp state) (prove$-no-error 'try-enable-with-include-book formula hints-with-enable otf-flg step-limit time-limit state)))
+                  ((mv provedp state) (prove$-no-error 'try-enable-with-include-book theorem-body hints-with-enable otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the enable hint.  Now, try again without the enable (just the include-book):
                    (b* (((mv provedp state)
                          (if improve-recsp
-                             (prove$-no-error 'try-enable-with-include-book formula
+                             (prove$-no-error 'try-enable-with-include-book theorem-body
                                               hints ; original hints
                                               otf-flg
                                               step-limit time-limit ; or base this on how many steps were taken when it succeeded
@@ -1732,11 +1733,11 @@
                                                           (list `(encapsulate ()
                                                                    (local ,include-book-form)
                                                                    (defthm ,defthm-copy-name
-                                                                     ,formula
+                                                                     ,theorem-body
                                                                      :rule-classes nil ; in case it's not a legal rule
                                                                      :hints ,hints ; we checked above that these hints work
                                                                      :otf-flg ,otf-flg)))
-                                                          formula
+                                                          theorem-body
                                                           `(("Goal" :by ,defthm-copy-name))
                                                           nil ; otf-flg
                                                           nil ; symbol-table
@@ -1746,7 +1747,7 @@
                                                       include-book-form ; action object for :add-library
                                                       ;; pre-commands:
                                                       (list include-book-form)
-                                                      formula
+                                                      theorem-body
                                                       hints ; original hints, no new enable
                                                       otf-flg
                                                       nil ; symbol-table
@@ -1764,11 +1765,11 @@
                                                       (list `(encapsulate ()
                                                                (local ,include-book-form)
                                                                (defthm ,defthm-copy-name
-                                                                 ,formula
+                                                                 ,theorem-body
                                                                  :rule-classes nil ; in case it's not a legal rule
                                                                  :hints ,hints-with-enable ; we checked above that these hints work
                                                                  :otf-flg ,otf-flg)))
-                                                      formula
+                                                      theorem-body
                                                       `(("Goal" :by ,defthm-copy-name))
                                                       nil ; otf-flg
                                                       ;; The book here may not be where the name-to-enable is actually defined:
@@ -1777,7 +1778,7 @@
                                                   :add-enable-hint
                                                   item-to-enable
                                                   (list include-book-form) ; pre-commands
-                                                  formula
+                                                  theorem-body
                                                   hints-with-enable
                                                   otf-flg
                                                   ;; The book here may not be where the name-to-enable is actually defined:
@@ -1787,11 +1788,11 @@
                  (mv nil nil state))))))))
     (mv maybe-successful-rec state)))
 
-;; Tries to find one of the INCLUDE-BOOK-FORMS that brings in the ITEM-TO-ENABLE and can prove FORMULA after enabling the ITEM-TO-ENABLE.
-;; Returns (mv maybe-successful-rec limit-reachedp state).
+;; Tries to find one of the INCLUDE-BOOK-FORMS that brings in the ITEM-TO-ENABLE and can prove THEOREM-BODY after enabling the ITEM-TO-ENABLE.
+;; Returns (mv maybe-successful-rec book-limit-reachedp state).
 ;; May improve the recommendation if the include-book alone suffices (without the enable).
 (defun try-enable-with-include-books (include-book-forms
-                                      formula        ; untranslated
+                                      theorem-body   ; untranslated
                                       item-to-enable ; may be a rune
                                       include-book-count ; number of include-books already tried
                                       maybe-max-include-book-count
@@ -1806,7 +1807,7 @@
                                       improve-recsp
                                       state)
   (declare (xargs :guard (and (true-listp include-book-forms) ; todo: strengthen
-                              ;; formula is untranslated
+                              ;; theorem-body is untranslated
                               (natp include-book-count)
                               (or (null maybe-max-include-book-count)
                                   (natp maybe-max-include-book-count))
@@ -1823,31 +1824,31 @@
                               (booleanp improve-recsp))
                   :stobjs state :mode :program))
   (if (endp include-book-forms)
-      (mv nil nil state)
+      (mv nil nil state) ; no rec, did not reach the limit
     (if (and maybe-max-include-book-count
              (<= maybe-max-include-book-count include-book-count))
-        (mv nil t state)
+        (mv nil t state) ; no rec, and we reached the limit
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-enable-with-include-book include-book-form formula item-to-enable current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
+            (try-enable-with-include-book include-book-form theorem-body item-to-enable current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-enable-with-include-books (rest include-book-forms)
-                                         formula
+                                         theorem-body
                                          item-to-enable
                                          (+ 1 include-book-count)
                                          maybe-max-include-book-count current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Tries to prove FORMULA by :use-ing ITEM-TO-ENABLE after submitting INCLUDE-BOOK-FORM.
+;; Tries to prove THEOREM-BODY by :use-ing ITEM-TO-ENABLE after submitting INCLUDE-BOOK-FORM.
 ;; The include-book is undone before this returns.
 ;; Returns (mv maybe-successful-rec state).
 ;; TODO: Consider trying the proof anyway, even if the include-book doesn't bring
 ;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
 (defun try-use-with-include-book (include-book-form
-                                  formula     ; untranslated
+                                  theorem-body     ; untranslated
                                   item-to-use ; a lemma-instance
                                   name-to-use ; extracted from the item-to-use
                                   current-book-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
@@ -1860,7 +1861,7 @@
                                   state)
   (declare (xargs :guard (and (consp include-book-form)
                               (eq 'include-book (car include-book-form)) ; strengthen?
-                              ;; formula is untranslated
+                              ;; theorem-body is untranslated
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
                               (booleanp avoid-current-bookp)
@@ -1902,12 +1903,12 @@
              (b* ( ; todo: ensure this is nice:
                   ;; todo: also disable the item, if appropriate
                   (hints-with-use (acl2::merge-hint-setting-into-goal-hint :use item-to-use hints))
-                  ((mv provedp state) (prove$-no-error 'try-use-with-include-book formula hints-with-use otf-flg step-limit time-limit state)))
+                  ((mv provedp state) (prove$-no-error 'try-use-with-include-book theorem-body hints-with-use otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the :use hint.  Now, try again without the :use (just the include-book):
                    (b* (((mv provedp state)
                          (if improve-recsp
-                             (prove$-no-error 'try-use-with-include-book formula
+                             (prove$-no-error 'try-use-with-include-book theorem-body
                                               hints ; original hints
                                               otf-flg
                                               step-limit time-limit ; or base this on how many steps were taken when it succeeded
@@ -1934,11 +1935,11 @@
                                                           (list `(encapsulate ()
                                                                    (local ,include-book-form)
                                                                    (defthm ,defthm-copy-name
-                                                                     ,formula
+                                                                     ,theorem-body
                                                                      :rule-classes nil ; in case it's not a legal rule
                                                                      :hints ,hints ; we checked above that these hints work
                                                                      :otf-flg ,otf-flg)))
-                                                          formula
+                                                          theorem-body
                                                           `(("Goal" :by ,defthm-copy-name))
                                                           nil ; otf-flg
                                                           nil ; symbol-table
@@ -1948,7 +1949,7 @@
                                                       include-book-form ; action object for :add-library
                                                       ;; pre-commands:
                                                       (list include-book-form)
-                                                      formula
+                                                      theorem-body
                                                       hints ; original hints, no new :use
                                                       otf-flg
                                                       nil ; symbol-table
@@ -1966,11 +1967,11 @@
                                                       (list `(encapsulate ()
                                                                (local ,include-book-form)
                                                                (defthm ,defthm-copy-name
-                                                                 ,formula
+                                                                 ,theorem-body
                                                                  :rule-classes nil ; in case it's not a legal rule
                                                                  :hints ,hints-with-use ; we checked above that these hints work
                                                                  :otf-flg ,otf-flg)))
-                                                      formula
+                                                      theorem-body
                                                       `(("Goal" :by ,defthm-copy-name))
                                                       nil ; otf-flg
                                                       ;; The book here may not be where the name-to-use is actually defined:
@@ -1980,7 +1981,7 @@
                                                   :add-use-hint
                                                   item-to-use
                                                   (list include-book-form) ; pre-commands
-                                                  formula
+                                                  theorem-body
                                                   hints-with-use
                                                   otf-flg
                                                   ;; The book here may not be where the name-to-use is actually defined:
@@ -1990,12 +1991,12 @@
                  (mv nil nil state))))))))
     (mv maybe-successful-rec state)))
 
-;; Tries to find one of the INCLUDE-BOOK-FORMS that brings in the ITEM-TO-USE and can prove FORMULA after :use-ing the ITEM-TO-USE.
+;; Tries to find one of the INCLUDE-BOOK-FORMS that brings in the ITEM-TO-USE and can prove THEOREM-BODY after :use-ing the ITEM-TO-USE.
 ;; Returns (mv maybe-successful-rec limit-reachedp state).
 ;; May improve the recommendation if the include-book alone suffices (without the :use).
 ;; TODO: Return an print how many books we found it in.
 (defun try-use-with-include-books (include-book-forms
-                                   formula           ; untranslated
+                                   theorem-body           ; untranslated
                                    item-to-use ; a lemma-instance
                                    name-to-use ; extracted from the item-to-use
                                    include-book-count ; number of include-books already tried
@@ -2011,7 +2012,7 @@
                                    improve-recsp
                                    state)
   (declare (xargs :guard (and (true-listp include-book-forms) ; todo: strengthen
-                              ;; formula is untranslated
+                              ;; theorem-body is untranslated
                               (natp include-book-count)
                               (or (null maybe-max-include-book-count)
                                   (natp maybe-max-include-book-count))
@@ -2036,14 +2037,220 @@
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-use-with-include-book include-book-form formula item-to-use name-to-use current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
+            (try-use-with-include-book include-book-form theorem-body item-to-use name-to-use current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-use-with-include-books (rest include-book-forms)
-                                      formula
+                                      theorem-body
                                       item-to-use name-to-use
                                       (+ 1 include-book-count)
                                       maybe-max-include-book-count current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tries to prove THEOREM-BODY by :induct ITEM-TO-ENABLE after submitting INCLUDE-BOOK-FORM.
+;; The include-book is undone before this returns.
+;; Returns (mv maybe-successful-rec state).
+;; TODO: Consider trying the proof anyway, even if the include-book doesn't bring
+;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
+(defun try-induct-with-include-book (include-book-form
+                                     theorem-body ; untranslated
+                                     induct-term  ; a term
+                                     name-to-induct ; extracted from the induct-term
+                                     current-book-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
+                                     avoid-current-bookp
+                                     theorem-name ; may be :thm
+                                     ;; args to prove$:
+                                     hints otf-flg step-limit time-limit
+                                     rec-name
+                                     improve-recsp
+                                     state)
+  (declare (xargs :guard (and (consp include-book-form)
+                              (eq 'include-book (car include-book-form)) ; strengthen?
+                              ;; theorem-body is untranslated
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
+                              (symbolp theorem-name)
+                              ;; hints are standard hints
+                              (booleanp otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
+                              (stringp rec-name)
+                              (booleanp improve-recsp))
+                  :stobjs state
+                  :mode :program))
+  (b* (((mv & ; ignore errors
+            maybe-successful-rec state)
+        (revert-world ;; ensures the include-book gets undone
+         (b* (        ; Try to include the recommended book:
+              ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+              ((when erp) ; can happen if there is a name clash
+               (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
+               (mv nil nil state))
+              ;; Check that we didn't bring in the current-book:
+              ((when (and avoid-current-bookp
+                          current-book-absolute-path
+                          (member-equal current-book-absolute-path (acl2::included-books-in-world (w state)))))
+               (cw "NOTE: Avoiding include-book, ~x0, that would bring in the current-book.~%" include-book-form)
+               (mv nil nil state))
+              ;; Check whether the include-book brought in the name being defined:
+              ;; todo: maybe check also back in the original world
+              ;; todo: do better if redundant!
+              (name-clashp (and (not (eq :thm theorem-name))
+                                (not (acl2::new-namep theorem-name (w state))))))
+           (if (not (acl2::recursivep name-to-induct nil (w state))) ; todo: generalize if the induct-term is not just a function call?
+               ;; The item either didn't get brought in or is the wrong kind of thing, so fail:
+               (prog2$ (cw "NOTE: After ~x0, ~x1 is undefined or unsuitable for :induct.~%" include-book-form name-to-induct) ;; todo: add debug arg and only print in that case
+                       (mv nil nil state))
+             ;; The include-book brought in the desired name (and that thing can be used with :induct), so now try the proof, with :induct item:
+             (b* ( ; todo: ensure this is nice:
+                  ;; todo: switch arg order of add-enable*-to-hints:
+                  (hints-with-induct (acl2::add-enable*-to-hints (acl2::merge-hint-setting-into-goal-hint :induct induct-term hints) (list `(:i ,name-to-induct))))
+                  ((mv provedp state) (prove$-no-error 'try-induct-with-include-book theorem-body hints-with-induct otf-flg step-limit time-limit state)))
+               (if provedp
+                   ;; We proved it with the :induct hint.  Now, try again without the :induct (just the include-book):
+                   (b* (((mv provedp state)
+                         (if improve-recsp
+                             (prove$-no-error 'try-induct-with-include-book theorem-body
+                                              hints ; original hints
+                                              otf-flg
+                                              step-limit time-limit ; or base this on how many steps were taken when it succeeded
+                                              state)
+                           (mv nil state))))
+                     (if provedp
+                         ;; Only the include-book was needed:
+                         ;; Turn the rec into an :add-library, because the library is what mattered:
+                         ;; todo: we could even try to see if a smaller library would work
+                         (let ((rec-name (concatenate 'string rec-name ".improved") ; we modified the rec
+                                         )
+                               (rec-type :add-library ;; Change the rec to :add-library since the hint didn't matter!
+                                         ))
+                           (mv nil
+                               (if name-clashp
+                                   (b* ((- (cw "NOTE: Working around name clash on ~x0.~%" theorem-name))
+                                        (defthm-copy-name (intern$ (concatenate 'string (symbol-name theorem-name) "-TEMP-FOR-PROOF-ADVICE") "HELP")))
+                                     (make-successful-rec rec-name
+                                                          rec-type
+                                                          include-book-form ; action object for :add-library
+                                                          ;; pre-commands:
+                                                          ;; since there is a name clash, we make a copy and prove the copy using the include-book
+                                                          ;; then we prove the desired theorem using the copy
+                                                          (list `(encapsulate ()
+                                                                   (local ,include-book-form)
+                                                                   (defthm ,defthm-copy-name
+                                                                     ,theorem-body
+                                                                     :rule-classes nil ; in case it's not a legal rule
+                                                                     :hints ,hints ; we checked above that these hints work
+                                                                     :otf-flg ,otf-flg)))
+                                                          theorem-body
+                                                          `(("Goal" :by ,defthm-copy-name))
+                                                          nil ; otf-flg
+                                                          nil ; symbol-table
+                                                          ))
+                                 (make-successful-rec rec-name
+                                                      rec-type
+                                                      include-book-form ; action object for :add-library
+                                                      ;; pre-commands:
+                                                      (list include-book-form)
+                                                      theorem-body
+                                                      hints ; original hints, no new :induct
+                                                      otf-flg
+                                                      nil ; symbol-table
+                                                      ))
+                               state))
+                       ;; Both the include-book and the :induct were needed:
+                       (mv nil
+                           (if name-clashp
+                               (b* ((- (cw "NOTE: Working around name clash on ~x0.~%" theorem-name))
+                                    (defthm-copy-name (intern$ (concatenate 'string (symbol-name theorem-name) "-TEMP-FOR-PROOF-ADVICE") "HELP")))
+                                 (make-successful-rec rec-name
+                                                      :add-induct-hint
+                                                      induct-term
+                                                      ;; pre-commands:
+                                                      (list `(encapsulate ()
+                                                               (local ,include-book-form)
+                                                               (defthm ,defthm-copy-name
+                                                                 ,theorem-body
+                                                                 :rule-classes nil ; in case it's not a legal rule
+                                                                 :hints ,hints-with-induct ; we checked above that these hints work
+                                                                 :otf-flg ,otf-flg)))
+                                                      theorem-body
+                                                      `(("Goal" :by ,defthm-copy-name))
+                                                      nil ; otf-flg
+                                                      ;; The book here may not be where the name-to-induct is actually defined:
+                                                      (acons name-to-induct (sysfile-from-include-book-form include-book-form) nil)
+                                                      ))
+                             (make-successful-rec rec-name
+                                                  :add-induct-hint
+                                                  induct-term
+                                                  (list include-book-form) ; pre-commands
+                                                  theorem-body
+                                                  hints-with-induct
+                                                  otf-flg
+                                                  ;; The book here may not be where the name-to-induct is actually defined:
+                                                  (acons name-to-induct (sysfile-from-include-book-form include-book-form) nil)))
+                           state)))
+                 ;; Failed to prove, even with the :induct (we could try without the induct, but it doesn't seem worth it):
+                 (mv nil nil state))))))))
+    (mv maybe-successful-rec state)))
+
+;; Tries to find one of the INCLUDE-BOOK-FORMS that brings in the INDUCT-TERM and can prove THEOREM-BODY after :induct with the INDUCT-TERM.
+;; Returns (mv maybe-successful-rec limit-reachedp state).
+;; May improve the recommendation if the include-book alone suffices (without the :induct).
+;; TODO: Return an print how many books we found it in.
+(defun try-induct-with-include-books (include-book-forms
+                                      theorem-body ; untranslated
+                                      induct-term  ; a term
+                                      name-to-induct ; extracted from the induct-term
+                                      include-book-count ; number of include-books already tried
+                                      maybe-max-include-book-count
+                                      current-book-absolute-path
+                                      avoid-current-bookp
+                                      theorem-name ; may be :thm
+                                      ;; args to prove$:
+                                      hints ; will be augmented with a :induct of the induct-term
+                                      otf-flg
+                                      step-limit time-limit
+                                      rec-name
+                                      improve-recsp
+                                      state)
+  (declare (xargs :guard (and (true-listp include-book-forms) ; todo: strengthen
+                              ;; theorem-body is untranslated
+                              (natp include-book-count)
+                              (or (null maybe-max-include-book-count)
+                                  (natp maybe-max-include-book-count))
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
+                              ;; hints are just regular hints
+                              (booleanp otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
+                              (stringp rec-name)
+                              (booleanp improve-recsp)
+                              (symbolp name-to-induct))
+                  :stobjs state :mode :program))
+  (if (endp include-book-forms)
+      (mv nil nil state)
+    (if (and maybe-max-include-book-count
+             (<= maybe-max-include-book-count include-book-count))
+        (mv nil t state)
+      (b* ((include-book-form (first include-book-forms))
+           ;; (- (cw "  Trying with ~x0.~%" form))
+           ((mv maybe-successful-rec state)
+            (try-induct-with-include-book include-book-form theorem-body induct-term name-to-induct current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
+        (if maybe-successful-rec
+            (mv maybe-successful-rec nil state)
+          (try-induct-with-include-books (rest include-book-forms)
+                                         theorem-body
+                                         induct-term name-to-induct
+                                         (+ 1 include-book-count)
+                                         maybe-max-include-book-count current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2360,7 +2567,7 @@
             (mv nil rec state))
         ;; RULE is not currently known, so try to find where it is defined:
         (b* ((book-map-keys (strip-cars book-map))
-             ((when (not (equal book-map-keys (list rule))))
+             ((when (not (equal book-map-keys (list rule)))) ; todo: relax this?
               (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil rule)
               (mv :bad-book-map nil state))
              (include-book-info (acl2::lookup-eq rule book-map))
@@ -2369,12 +2576,21 @@
               (mv :bad-book-info nil state))
              ;; todo: check for empty books-to-try (here and elsewhere?)
              (include-books-to-try include-book-info) ; renames for clarity
+             ((when (null include-books-to-try))
+              (and (acl2::print-level-at-least-tp print) (cw "fail (no books given to find ~x0 for enabling)~%" rule))
+              (mv nil nil state))
+             (- (if (acl2::print-level-at-least-verbosep print)
+                    (cw "(~x0 books given to find ~x1 for enabling: ~X23)~%" (len include-books-to-try) rule include-books-to-try nil)
+                  (if (acl2::print-level-at-least-tp print)
+                      (cw "(~x0 books given to find ~x1 for enabling)~%" (len include-books-to-try) rule)
+                    nil)))
              (max-books-to-try 3)
              ;; TODO: Would be nice to not bother if it is a definition that we don't have, but how to tell without including the book?
              ;; TODO: If, after including the book, the name to enable is a function, enabling it seems unlikely to help given that it didn't appear in the original proof.
              ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
-             ((mv maybe-successful-rec limit-reachedp state)
-              (try-enable-with-include-books (if (< max-books-to-try (len include-books-to-try)) (take max-books-to-try include-books-to-try) include-books-to-try) ;; todo: try more if we didn't find it?
+             ;; todo: try more if we didn't find it?
+             ((mv maybe-successful-rec book-limit-reachedp state)
+              (try-enable-with-include-books include-books-to-try
                                              theorem-body
                                              rule
                                              0 ; include-book-count
@@ -2393,7 +2609,7 @@
                            (cw-success-message maybe-successful-rec))
                       (mv nil maybe-successful-rec state))
             ;; failed:
-            (if limit-reachedp
+            (if book-limit-reachedp
                 (prog2$ (and (acl2::print-level-at-least-tp print)
                              ;; todo: clarify whether we even found an include-book that works:
                              (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) rule))
@@ -2456,7 +2672,10 @@
 ;; TODO: Do we need to guess a substitution for the :use hint?  Then change the rec before returning...
 ;; TTODO: Handle the case where the included book has a name clash with the desired-name (see what we do for add-enable-hint)
 (defun try-add-use-hint (item ; a lemma-instance
-                         book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state)
+                         book-map
+                         current-book-absolute-path avoid-current-bookp
+                         theorem-name theorem-body theorem-hints theorem-otf-flg
+                         step-limit time-limit rec improve-recsp print state)
   (declare (xargs :guard (and (book-mapp book-map)
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
@@ -2523,6 +2742,7 @@
              ;; TODO: If, after including the book, the name to :use is a function, :use-ing it seems unlikely to help given that it didn't appear in the original proof.
              ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
            ((mv maybe-successful-rec limit-reachedp state)
+            ;; TODO: We should also ensure that all names in the subst are defined when we try include-books:
             (try-use-with-include-books (if (< max-books-to-try (len include-books-to-try)) (take max-books-to-try include-books-to-try) include-books-to-try) ;; todo: try more if we didn't find it?
                                            theorem-body
                                            item
@@ -2580,6 +2800,7 @@
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring illegal recommendation to expand a symbol)~%"))
         (mv nil nil state))
        ;; todo: can it be a single term?:
+       ;; todo: can it be :lambdas?
        ((when (not (acl2::translatable-term-listp item (w state))))
         (and (acl2::print-level-at-least-tp print) (cw "fail (terms not all translatable: ~x0)~%" item)) ;; TTODO: Include any necessary books first
         (mv nil nil state))
@@ -2787,8 +3008,16 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: We need more than a symbol
-(defun try-add-induct-hint (item theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state)
-  (declare (xargs :guard (and ;; (symbolp item)
+(defun try-add-induct-hint (item
+                            book-map ; info on where the rule may be found
+                            current-book-absolute-path avoid-current-bookp
+                            theorem-name theorem-body theorem-hints theorem-otf-flg
+                            step-limit time-limit rec improve-recsp print state)
+  (declare (xargs :guard (and ;; item can be a term, or maybe just a symbol?
+                          (book-mapp book-map)
+                          (or (null current-book-absolute-path)
+                              (stringp current-book-absolute-path))
+                          (booleanp avoid-current-bookp)
                           (symbolp theorem-name)
                           ;; theorem-body is an untranslated term
                           ;; theorem-hints
@@ -2798,19 +3027,88 @@
                           (or (null time-limit)
                               (rationalp time-limit))
                           (recommendationp rec)
+                          (booleanp improve-recsp)
                           ;; print
                           )
-                  :stobjs state :mode :program)
-           (ignore theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec))
+                  :stobjs state :mode :program))
   (b* (((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :induct hint with ~x0)~%" item))
-        (mv nil nil state)))
+        (mv nil nil state))
+       (rec-name (nth 0 rec)))
     (if (symbolp item)
-        ;; TODO: Try looking for calls of the given symbol in the theorem (maybe just with arguments that are vars?):
+        ;; TODO: Try looking for calls of the given symbol in the theorem (or checkpoints?), maybe just one with arguments that are vars?:
         (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (need arguments of ~x0 to create :induct hint)~%" item))
                 (mv nil nil state))
-      ;; TODO: Flesh this out when ready:
-      (mv :unsupported-induct-hint nil state))))
+      ;; The item is a term:
+      (let ((induct-term item))
+        ;; TODO: Go look for books that may define the things in the term (should there usually be just one function?).
+        (if (not (and (consp induct-term)
+                      (symbolp (acl2::ffn-symb induct-term))
+                      (symbol-listp (acl2::fargs induct-term))))
+            (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (:induct hint, ~x0, is not a function applied to vars)~%" induct-term)) ; todo: generalize!
+                    (mv nil nil state))
+          (let ((name-to-induct (acl2::ffn-symb induct-term)))
+            (if (acl2::recursivep name-to-induct nil (w state)) ; todo: quit here is it is already defined but is not a recursive function
+                ;; Don't need to include and books:
+                (b* ((new-hints (acl2::add-enable*-to-hints (acl2::merge-hint-setting-into-goal-hint :induct induct-term theorem-hints) (list `(:i ,name-to-induct))))
+                     ((mv provedp state) (prove$-no-error 'try-add-induct-hint
+                                                          theorem-body
+                                                          new-hints
+                                                          theorem-otf-flg
+                                                          step-limit time-limit
+                                                          state))
+                     (rec (make-successful-rec rec-name
+                                               :add-induct-hint
+                                               induct-term
+                                               nil
+                                               theorem-body new-hints theorem-otf-flg
+                                               (symbol-table-for-event name-to-induct current-book-absolute-path (w state))))
+                     (- (and (acl2::print-level-at-least-tp print)
+                             (if provedp (cw-success-message rec) (cw "fail (:induct ~x0 didn't help)~%" induct-term)))))
+                  (mv nil (if provedp rec nil) state))
+              ;; NAME-TO-INDUCT is not in the current world, so try to find where it is defined:
+              (b* ((book-map-keys (strip-cars book-map))
+                   ((when (not (member-equal name-to-induct book-map-keys)))
+                    (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil name-to-induct)
+                    (mv :bad-book-map nil state))
+                   (include-book-info (acl2::lookup-eq name-to-induct book-map))
+                   ((when (eq :builtin include-book-info))
+                    (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" name-to-induct)
+                    (mv :bad-book-info nil state))
+                   ;; TODO: Filter out include-books that are known to clash with this tool?
+                   (include-books-to-try include-book-info) ; renames for clarity
+                   (max-books-to-try 3)
+                   ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
+                   ((mv maybe-successful-rec limit-reachedp state)
+                    ;; TODO: We should also ensure that all names in the induct-term are defined when we try include-books:
+                    (try-induct-with-include-books include-books-to-try
+                                                   theorem-body
+                                                   induct-term
+                                                   name-to-induct
+                                                   0 ; include-book-count
+                                                   max-books-to-try
+                                                   current-book-absolute-path
+                                                   avoid-current-bookp
+                                                   theorem-name
+                                                   theorem-hints ; will be augmented with a :induct of induct-term
+                                                   theorem-otf-flg
+                                                   step-limit time-limit
+                                                   rec-name
+                                                   improve-recsp
+                                                   state)))
+                (if maybe-successful-rec
+                    (prog2$ (and (acl2::print-level-at-least-tp print)
+                                 (cw-success-message maybe-successful-rec))
+                            (mv nil maybe-successful-rec state))
+                  ;; failed:
+                  (if limit-reachedp
+                      (prog2$ (and (acl2::print-level-at-least-tp print)
+                                   ;; todo: clarify whether we even found an include-book that works:
+                                   (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) name-to-induct))
+                              (mv nil nil state))
+                    (prog2$ (and (acl2::print-level-at-least-tp print)
+                                 (cw "fail (:induct ~x0 didn't help)~%" induct-term))
+                            (mv nil nil state))))))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-exact-hints (hints theorem-body theorem-otf-flg step-limit time-limit rec print state)
@@ -2889,7 +3187,7 @@
           (:add-enable-hint (try-add-enable-hint object book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
           (:add-expand-hint (try-add-expand-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-hyp (try-add-hyp object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
-          (:add-induct-hint (try-add-induct-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
+          (:add-induct-hint (try-add-induct-hint object book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
           (:add-library (try-add-library object current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-nonlinearp-hint (try-add-nonlinearp-hint object theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec print state))
           (:add-use-hint (try-add-use-hint object book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state))
