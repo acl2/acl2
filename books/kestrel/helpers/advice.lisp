@@ -388,6 +388,9 @@
 (defconst *ml-models*
   (strip-cars *ml-models-and-strings*))
 
+;; Ensures we don't have a model called :all
+(thm (not (member-equal :all *ml-models*)))
+
 (defconst *known-models-and-strings*
   (append *ml-models-and-strings*
           *non-ml-models-and-strings*))
