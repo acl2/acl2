@@ -1,7 +1,7 @@
 ; Test of propagate-iso. Isomorphism between (integer-range-p 0 10 x) and (integer-range-p 10 20 x)
 ; Like propagate-iso-tests.lisp but generates isomorphisms for types depending on primary isomorphism type.
 ;
-; Copyright (C) 2018-2020 Kestrel Institute
+; Copyright (C) 2018-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;

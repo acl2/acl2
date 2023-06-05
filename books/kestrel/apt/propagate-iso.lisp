@@ -1,7 +1,7 @@
 ; propagate-iso: A transformation to propagate an isomorphism from supplied isomorphic translations
 ;  of interface functions of a data type to their direct and indirect callers
 ;
-; Copyright (C) 2016-2020 Kestrel Institute
+; Copyright (C) 2016-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
