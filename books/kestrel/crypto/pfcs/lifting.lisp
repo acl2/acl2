@@ -719,7 +719,9 @@
                         (:e natp)
                         (:e no-duplicatesp-equal)
                         acl2::primep-forward-to-posp
-                        ,@type-presc-rules)
+                        ,@type-presc-rules
+                        pfield::natp-of-add
+                        pfield::natp-of-mul)
            :use ((:instance constraint-relation-satp-suff
                             (asgfree (omap::from-lists
                                       ',free
