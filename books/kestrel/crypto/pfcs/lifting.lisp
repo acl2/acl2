@@ -81,7 +81,7 @@
     :by omap::consp-of-in-iff-in)
 
   (defruled lift-rule-natp-of-mod
-    (implies (and (natp a)
+    (implies (and (integerp a)
                   (posp b))
              (natp (mod a b))))
 
