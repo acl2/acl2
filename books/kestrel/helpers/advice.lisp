@@ -125,6 +125,31 @@
   (or (acl2::defined-functionp sym wrld)
       (acl2::defthm-or-defaxiom-symbolp sym wrld)))
 
+;; Returns (mv erp name).
+(defun name-from-lemma-instance (lmi)
+  (declare (xargs :guard t))
+  (if (atom lmi)
+      (if (not (symbolp lmi))
+          (prog2$ (cw "ERROR: Lemma-instance is a non-symbol atom: ~x0.~%" lmi)
+                  (mv :bad-lemma-instance nil))
+        ;; Usual case:
+        (mv nil lmi))
+    (let ((sym (first lmi)))
+      (case sym
+        ((:rewrite :definition :linear) ;; todo: what else?
+         (if (consp (cdr lmi))
+             (mv nil (second lmi))
+           (prog2$ (cw "ERROR: Bad lemma-instance: ~x0.~%" lmi)
+                   (mv :bad-lemma-instance nil))))
+        ((:instance :functional-instance)
+         (if (consp (cdr lmi))
+             (name-from-lemma-instance (second lmi))
+           (prog2$ (cw "ERROR: Bad lemma-instance: ~x0.~%" lmi)
+                   (mv :bad-lemma-instance nil))))
+        ;; todo: handle other cases:
+        (otherwise (prog2$ (cw "WARNING: Unhandled lemma-instance: ~x0.~%" lmi)
+                           (mv :unhandled-lemma-instance nil)))))))
+
 ;; If NAME is a macro-alias, return what it represents.  Otherwise, return NAME.
 ;; TODO: Compare to (deref-macro-name name (macro-aliases wrld)).
 (defund handle-macro-alias (name wrld)
@@ -1823,7 +1848,8 @@
 ;; in the name-to-check, since the proof attempt may be cheap compared to the include-book.
 (defun try-use-with-include-book (include-book-form
                                   formula     ; untranslated
-                                  item-to-use ; symbol? rune? instance?
+                                  item-to-use ; a lemma-instance
+                                  name-to-use ; extracted from the item-to-use
                                   current-book-absolute-path ; immediately fail if the include-book causes this book to be brought in (nil means nothing to check)
                                   avoid-current-bookp
                                   theorem-name ; may be :thm
@@ -1849,11 +1875,7 @@
                               (booleanp improve-recsp))
                   :stobjs state
                   :mode :program))
-  (b* ((name-to-use (if (symbolp item-to-use)
-                        item-to-use
-                      (cadr item-to-use) ; must be a rune?
-                      ))
-       ((mv & ; ignore errors
+  (b* (((mv & ; ignore errors
             maybe-successful-rec state)
         (revert-world ;; ensures the include-book gets undone
          (b* (        ; Try to include the recommended book:
@@ -1971,9 +1993,11 @@
 ;; Tries to find one of the INCLUDE-BOOK-FORMS that brings in the ITEM-TO-USE and can prove FORMULA after :use-ing the ITEM-TO-USE.
 ;; Returns (mv maybe-successful-rec limit-reachedp state).
 ;; May improve the recommendation if the include-book alone suffices (without the :use).
+;; TODO: Return an print how many books we found it in.
 (defun try-use-with-include-books (include-book-forms
                                    formula           ; untranslated
-                                   item-to-use    ; may be a rune?
+                                   item-to-use ; a lemma-instance
+                                   name-to-use ; extracted from the item-to-use
                                    include-book-count ; number of include-books already tried
                                    maybe-max-include-book-count
                                    current-book-absolute-path
@@ -2001,7 +2025,8 @@
                               (or (null time-limit)
                                   (rationalp time-limit))
                               (stringp rec-name)
-                              (booleanp improve-recsp))
+                              (booleanp improve-recsp)
+                              (symbolp name-to-use))
                   :stobjs state :mode :program))
   (if (endp include-book-forms)
       (mv nil nil state)
@@ -2011,12 +2036,12 @@
       (b* ((include-book-form (first include-book-forms))
            ;; (- (cw "  Trying with ~x0.~%" form))
            ((mv maybe-successful-rec state)
-            (try-use-with-include-book include-book-form formula item-to-use current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
+            (try-use-with-include-book include-book-form formula item-to-use name-to-use current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state)))
         (if maybe-successful-rec
             (mv maybe-successful-rec nil state)
           (try-use-with-include-books (rest include-book-forms)
                                       formula
-                                      item-to-use
+                                      item-to-use name-to-use
                                       (+ 1 include-book-count)
                                       maybe-max-include-book-count current-book-absolute-path avoid-current-bookp theorem-name hints otf-flg step-limit time-limit rec-name improve-recsp state))))))
 
@@ -2430,39 +2455,42 @@
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Do we need to guess a substitution for the :use hint?  Then change the rec before returning...
 ;; TTODO: Handle the case where the included book has a name clash with the desired-name (see what we do for add-enable-hint)
-(defun try-add-use-hint (item book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state)
-  (declare (xargs :guard (and ;; (symbolp item)
-                          (book-mapp book-map)
-                          (or (null current-book-absolute-path)
-                              (stringp current-book-absolute-path))
-                          (booleanp avoid-current-bookp)
-                          (symbolp theorem-name)
-                          ;; theorem-body is an untranslated term
-                          ;; theorem-hints
-                          (booleanp theorem-otf-flg)
-                          (or (eq nil step-limit)
-                              (natp step-limit))
-                          (or (null time-limit)
-                              (rationalp time-limit))
-                          (recommendationp rec)
-                          (booleanp improve-recsp)
-                          ;; print
-                          )
+(defun try-add-use-hint (item ; a lemma-instance
+                         book-map current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit rec improve-recsp print state)
+  (declare (xargs :guard (and (book-mapp book-map)
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (booleanp avoid-current-bookp)
+                              (symbolp theorem-name)
+                              ;; theorem-body is an untranslated term
+                              ;; theorem-hints
+                              (booleanp theorem-otf-flg)
+                              (or (eq nil step-limit)
+                                  (natp step-limit))
+                              (or (null time-limit)
+                                  (rationalp time-limit))
+                              (recommendationp rec)
+                              (booleanp improve-recsp)
+                              ;; print
+                              )
                   :stobjs state
                   :mode :program))
-  (b* (((when (eq item 'acl2::other))
+  (b* (;; Handle some weird cases:
+       ((when (eq item 'acl2::other))
         (and (acl2::print-level-at-least-tp print) (cw "skip (skipping catch-all: ~x0)~%" item))
         (mv nil nil state))
        ((when (eq item 'acl2::unknown/untrained)) ;; A leidos model can return this
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not :use-ing ~x0)~%" item))
         (mv nil nil state))
-       ((when (not (symbolp item))) ; for now
-        (and (acl2::print-level-at-least-tp print) (cw "skip (unexpected object for :add-use-hint: ~x0)~%" item)) ; todo: add support for other lemma-instances
-        (mv nil nil state))
+       ;; Extract the name (symbol) of the lemma-instance:
+       ((mv erp name-to-use) (name-from-lemma-instance item))
+       ((when erp)
+        (cw "error (Unhandled lemma instance: ~x0)~%" item)
+        (mv erp nil state))
        (rec-name (nth 0 rec)))
-    (if (symbol-that-can-be-usedp item (w state)) ; todo: what if it's defined but can't be :used?
+    (if (symbol-that-can-be-usedp name-to-use (w state)) ; todo: what if it's defined but can't be :used?
         (b* (                                     ;; todo: ensure this is nice:
-             ;; todo: also disable the item, if appropriate
+             ;; todo: also disable the name-to-use, if appropriate
              (new-hints (acl2::merge-hint-setting-into-goal-hint :use item theorem-hints))
              ((mv provedp state) (prove$-no-error 'try-add-use-hint
                                                   theorem-body
@@ -2475,18 +2503,18 @@
                                        item
                                        nil
                                        theorem-body new-hints theorem-otf-flg
-                                       (symbol-table-for-event item current-book-absolute-path (w state))))
+                                       (symbol-table-for-event name-to-use current-book-absolute-path (w state))))
              (- (and (acl2::print-level-at-least-tp print)
                      (if provedp (cw-success-message rec) (cw "fail (:use ~x0 didn't help)~%" item)))))
           (mv nil (if provedp rec nil) state))
-      ;; ITEM is not in the current world, so try to find where it is defined:
+      ;; NAME-TO-USE is not in the current world, so try to find where it is defined:
       (b* ((book-map-keys (strip-cars book-map))
-           ((when (not (equal book-map-keys (list item))))
-            (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil item)
+           ((when (not (member-equal name-to-use book-map-keys)))
+            (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil name-to-use)
             (mv :bad-book-map nil state))
-           (include-book-info (acl2::lookup-eq item book-map))
+           (include-book-info (acl2::lookup-eq name-to-use book-map))
            ((when (eq :builtin include-book-info))
-            (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" item)
+            (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" name-to-use)
             (mv :bad-book-info nil state))
            ;; TODO: Filter out include-books that are known to clash with this tool?
            (include-books-to-try include-book-info) ; renames for clarity
@@ -2498,6 +2526,7 @@
             (try-use-with-include-books (if (< max-books-to-try (len include-books-to-try)) (take max-books-to-try include-books-to-try) include-books-to-try) ;; todo: try more if we didn't find it?
                                            theorem-body
                                            item
+                                           name-to-use
                                            0 ; include-book-count
                                            max-books-to-try
                                            current-book-absolute-path
@@ -2517,7 +2546,7 @@
           (if limit-reachedp
               (prog2$ (and (acl2::print-level-at-least-tp print)
                            ;; todo: clarify whether we even found an include-book that works:
-                           (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) item))
+                           (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) name-to-use))
                       (mv nil nil state))
             (prog2$ (and (acl2::print-level-at-least-tp print)
                          (cw "fail (:use ~x0 didn't help)~%" item))
