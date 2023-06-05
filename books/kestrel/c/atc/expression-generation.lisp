@@ -2231,8 +2231,10 @@
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
        (type-pred (atc-type-to-recognizer pure.type gin.prec-tags))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
-       (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
+       (valuep-when-type-pred
+        (atc-type-to-valuep-thm pure.type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm pure.type gin.prec-tags))
        (uterm* (untranslate$ pure.term nil state))
        (formula1 `(equal (exec-expr-call-or-pure ',pure.expr
                                                  ,gin.compst-var

@@ -475,9 +475,8 @@
                            nil nil nil nil wrld))
        (var-in-scope-formula `(and ,var-in-scope-formula1
                                    ,var-in-scope-formula2))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
-       (not-flexible-array-member-p-when-type-pred
-        (pack 'not-flexible-array-member-p-when- type-pred))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
+       (not-flexiblep-thms (atc-type-to-notflexarrmem-thms type prec-tags))
        (var-in-scope-hints
         `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
                                read-object-of-objdesign-of-var-of-add-var
@@ -486,7 +485,7 @@
                                equal-of-ident-and-ident
                                (:e str-fix)
                                remove-flexible-array-member-when-absent
-                               ,not-flexible-array-member-p-when-type-pred
+                               ,@not-flexiblep-thms
                                value-fix-when-valuep
                                ,valuep-when-type-pred
                                ,term-thm))))

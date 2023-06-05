@@ -187,6 +187,8 @@
    (args expression-list))
   :pred constrelp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defset constrel-set
   :short "Fixtype of osets of relation constraints."
   :elt-type constrel
@@ -194,6 +196,8 @@
   :pred constrel-setp
   :fix constrel-sfix
   :equiv constrel-sequiv)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-constrels ((constr constraintp))
   :returns (crels constrel-setp)
@@ -213,6 +217,8 @@
                               nil))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define constraint-list-constrels ((constrs constraint-listp))
   :returns (crels constrel-setp)
   :short "Set of relation constraints in a list of constraints."
@@ -224,5 +230,37 @@
   (cond ((endp constrs) nil)
         (t (set::union (constraint-constrels (car constrs))
                        (constraint-list-constrels (cdr constrs)))))
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define constraint-rels ((constr constraintp))
+  :returns (rels symbol-setp)
+  :short "Set of (names of) relations in a constraint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the empty set for an equality constraint;
+     for a relation constraint,
+     it is the singleton with that constraint relation.
+     This function is used to define @(tsee constraint-list-rels)."))
+  (constraint-case constr
+                   :equal nil
+                   :relation (set::insert constr.name nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define constraint-list-rels ((constrs constraint-listp))
+  :returns (rels symbol-setp)
+  :short "Set of (names of) relations in a list of constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We collect all the relation names."))
+  (cond ((endp constrs) nil)
+        (t (set::union (constraint-rels (car constrs))
+                       (constraint-list-rels (cdr constrs)))))
   :verify-guards :after-returns
   :hooks (:fix))

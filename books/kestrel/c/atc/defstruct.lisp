@@ -189,6 +189,11 @@
      "The name of the theorem asserting the value of
       the flexible array member flag.")
     (xdoc::li
+     "The name of the theorem asserting the equality of
+      @('(type-pointer (type-struct <tag>))')
+      to its quoted value,
+      where @('<tag>') is the tag of this structure type.")
+    (xdoc::li
      "The call of @(tsee defstruct).
       This supports redundancy checking.")))
   ((tag ident)
@@ -203,6 +208,7 @@
    (type-of-value-thm symbolp)
    (type-of-value-quoted-thm symbolp)
    (flexiblep-thm symbolp)
+   (pointer-type-to-quoted-thm symbolp)
    (call pseudo-event-form))
   :pred defstruct-infop)
 
@@ -223,6 +229,7 @@
                              :type-of-value-thm nil
                              :type-of-value-quoted-thm nil
                              :flexiblep-thm nil
+                             :pointer-type-to-quoted-thm nil
                              :call '(_)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -778,7 +785,8 @@
                (value-kind-thm symbolp)
                (type-of-value-thm symbolp)
                (type-of-value-quoted-thm symbolp)
-               (flexiblep-thm symbolp))
+               (flexiblep-thm symbolp)
+               (pointer-type-to-quoted-thm symbolp))
   :short "Generate the recognizer of
           the structures defined by the @(tsee defstruct)."
   :long
@@ -808,6 +816,8 @@
                    struct-tag-p))
        (flexiblep-when-struct-tag-p
         (packn-pos (list 'flexiblep-when- struct-tag-p) struct-tag-p))
+       (pointer-struct-tag-to-quoted
+        (packn-pos (list 'pointer-struct- tag '-to-quoted) struct-tag-p))
        (event
         `(define ,struct-tag-p (x)
            :guard-hints (("Goal" :in-theory
@@ -854,14 +864,21 @@
              (implies (,struct-tag-p x)
                       (equal (value-struct->flexiblep x)
                              ,flexiblep))
-             :in-theory '(,struct-tag-p)))))
+             :in-theory '(,struct-tag-p))
+           (defruled ,pointer-struct-tag-to-quoted
+             (equal (type-pointer (type-struct (ident ,(symbol-name tag))))
+                    ',(type-pointer (type-struct (ident (symbol-name tag)))))
+             :in-theory '((:e ident)
+                          (:e type-struct)
+                          (:e type-pointer))))))
     (mv event
         not-errorp-when-struct-tag-p
         valuep-when-struct-tag-p
         value-kind-when-struct-tag-p
         type-of-value-when-struct-tag-p
         type-of-value-quoted-when-struct-tag-p
-        flexiblep-when-struct-tag-p)))
+        flexiblep-when-struct-tag-p
+        pointer-struct-tag-to-quoted)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2346,7 +2363,8 @@
             value-kind-when-struct-tag-p
             type-of-value-when-struct-tag-p
             type-of-value-quoted-when-struct-tag-p
-            flexiblep-when-struct-tag-p)
+            flexiblep-when-struct-tag-p
+            pointer-struct-tag-to-quoted)
         (defstruct-gen-recognizer struct-tag-p tag members flexiblep))
        ((mv fixer-event
             fixer-recognizer-thm)
@@ -2373,6 +2391,7 @@
               :type-of-value-thm type-of-value-when-struct-tag-p
               :type-of-value-quoted-thm type-of-value-quoted-when-struct-tag-p
               :flexiblep-thm flexiblep-when-struct-tag-p
+              :pointer-type-to-quoted-thm pointer-struct-tag-to-quoted
               :call call))
        (table-event (defstruct-table-record-event (symbol-name tag) info))
        (label-event `(deflabel ,tag)))

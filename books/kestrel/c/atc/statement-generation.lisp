@@ -427,8 +427,7 @@
        (initer-formula
         (atc-contextualize initer-formula context fn fn-guard
                            compst-var limit-var initer-limit t wrld))
-       (type-pred (atc-type-to-recognizer type prec-tags))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
        (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
                                             (:e initer-kind)
                                             not-zp-of-limit-variable
@@ -457,7 +456,8 @@
                              (mv nil ,(untranslate$ new-compst nil state))))
        (item-formula (atc-contextualize item-formula context fn fn-guard
                                         compst-var limit-var item-limit t wrld))
-       (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
+       (type-of-value-when-type-pred
+        (atc-type-to-type-of-value-thm type prec-tags))
        (e-type `(:e ,(car (type-to-maker type))))
        (item-hints
         `(("Goal"
@@ -587,7 +587,8 @@
                       `(and ,formula1 ,formula2))
                   formula1))
        (valuep-when-type-pred (and result-term
-                                   (pack 'valuep-when- type-pred)))
+                                   (atc-type-to-valuep-thm result-type
+                                                           prec-tags)))
        (hints
         `(("Goal" :in-theory '(exec-block-item-list-when-consp
                                not-zp-of-limit-variable
@@ -840,7 +841,7 @@
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
        (type-pred (atc-type-to-recognizer expr.type gin.prec-tags))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (valuep-when-type-pred (atc-type-to-valuep-thm expr.type gin.prec-tags))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv stmt-thm-name names-to-avoid)
@@ -1038,7 +1039,7 @@
         (fresh-logical-name-with-$s-suffix
          else-stmt-thm nil names-to-avoid wrld))
        (type-pred (atc-type-to-recognizer type gin.prec-tags))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
        (then-stmt-limit `(binary-+ '1 ,then-limit))
        (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
