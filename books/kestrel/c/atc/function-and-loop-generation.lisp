@@ -15,6 +15,7 @@
 
 (include-book "../language/static-semantics")
 (include-book "../language/function-environments")
+(include-book "../language/computation-states")
 
 (include-book "kestrel/event-macros/screen-printing" :dir :system)
 (include-book "kestrel/std/system/add-suffix-to-fn-lst" :dir :system)
@@ -1956,29 +1957,33 @@
      these are the values that go into the initial scope,
      not the deferenced objects.")
    (xdoc::p
+    "However, formals that represent external objects are skipped.
+     This is because in C these are not function parameters.")
+   (xdoc::p
     "We also return the list of the @('<symbol>')s,
      some of which are the formals,
      while the others are the formals suffixed by @('-ptr').
      See explanation just above.")
    (xdoc::p
-    "We also return a flag saying whether modular proofs should be generated,
-     which currently is when the formals are not external objects.
-     If the flag is @('nil'), we also return @('nil') as the nest,
-     because it is not used in generated theorems in that case."))
+    "We also return a flag saying whether modular proofs
+     should be generated or not.
+     This is true iff there are no external objects;
+     we will add support for external objects soon."))
   (b* (((when (endp typed-formals)) (mv nil nil t))
        ((cons var info) (car typed-formals))
        ((mv omap-rest init-formals-rest proofs-rest)
         (atc-gen-omap-update-formals (cdr typed-formals)))
-       ((when (not proofs-rest)) (mv nil nil nil))
        (type (atc-var-info->type info))
-       ((when (atc-var-info->externalp info)) (mv nil nil nil))
+       (externalp (atc-var-info->externalp info))
        (var/varptr (if (or (type-case type :pointer)
                            (type-case type :array))
                        (add-suffix-to-fn var "-PTR")
                      var)))
-    (mv `(omap::update (ident ,(symbol-name var)) ,var/varptr ,omap-rest)
-        (cons var/varptr init-formals-rest)
-        t)))
+    (if externalp
+        (mv omap-rest init-formals-rest nil)
+      (mv `(omap::update (ident ,(symbol-name var)) ,var/varptr ,omap-rest)
+          (cons var/varptr init-formals-rest)
+          proofs-rest))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2010,6 +2015,7 @@
         `(add-frame (ident ,(symbol-name fn)) ,compst-var))
        ((cons var info) (car typed-formals))
        (type (atc-var-info->type info))
+       (externalp (atc-var-info->externalp info))
        (add-var-rest (atc-gen-add-var-formals fn
                                               (cdr typed-formals)
                                               compst-var))
@@ -2017,7 +2023,9 @@
                            (type-case type :array))
                        (add-suffix-to-fn var "-PTR")
                      var)))
-    `(add-var (ident ,(symbol-name var)) ,var/varptr ,add-var-rest)))
+    (if externalp
+        add-var-rest
+      `(add-var (ident ,(symbol-name var)) ,var/varptr ,add-var-rest))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2034,8 +2042,8 @@
      This is calculated from the typed formals of
      the ACL2 function that is translated to a C function.")
    (xdoc::p
-    "For each formal @('x')
-     whose C type is pointer or array,
+    "For each formal @('x') not representing an external object
+     and whose C type is pointer or array,
      we generate a portion of the preamble saying that
      @('x-ptr') is a valid pointer value of the right type,
      the pointer's object designator is in allocated memory
@@ -2061,32 +2069,40 @@
      note that it cannot conflict with other variables,
      for the same reason as @('x-ptr').")
    (xdoc::p
-    "Formals of integer and structure type generate no preamble terms,
-     as they do not involve pointers.")
+    "For each formal @('x') not representing an external object
+     and whose C type is not pointer or array (i.e. is integer of structure),
+     we generate no preamble terms.
+     This is because the ACL2 formal directly represents the C formal.")
    (xdoc::p
-    "For now we do not generate any preamble terms for
-     formals that represent external objects.
-     We will do that soon,
-     as we extend the reach of our new modular proof generation approach."))
+    "For each formal @('x') that represents an external object,
+     we generate a binding hypothesis saying that
+     @('x') equals @(tsee read-object) applied to
+     the object designator for the variable in static storage.
+     This is adequate whether the external object is an integer or an array."))
   (b* (((when (endp typed-formals)) nil)
        ((cons var info) (car typed-formals))
        (type (atc-var-info->type info))
-       ((unless (or (type-case type :pointer)
-                    (type-case type :array)))
-        (atc-gen-context-preamble (cdr typed-formals) compst-var))
-       (reftype (if (type-case type :pointer)
-                    (type-pointer->to type)
-                  (type-array->of type)))
-       (var-ptr (add-suffix-to-fn var "-PTR"))
-       (var-objdes (add-suffix-to-fn var "-OBJDES"))
-       (terms `((valuep ,var-ptr)
-                (equal (value-kind ,var-ptr) :pointer)
-                (value-pointer-validp ,var-ptr)
-                (equal ,var-objdes (value-pointer->designator ,var-ptr))
-                (equal (objdesign-kind ,var-objdes) :alloc)
-                (equal (value-pointer->reftype ,var-ptr)
-                       ,(type-to-maker reftype))
-                (equal ,var (read-object ,var-objdes ,compst-var))))
+       (externalp (atc-var-info->externalp info))
+       (terms
+        (if externalp
+            `((equal ,var
+                     (read-object (objdesign-static (ident ,(symbol-name var)))
+                                  ,compst-var)))
+          (if (member-eq (type-kind type) '(:pointer :array))
+              (b* ((var-ptr (add-suffix-to-fn var "-PTR"))
+                   (var-objdes (add-suffix-to-fn var "-OBJDES"))
+                   (reftype (if (type-case type :pointer)
+                                (type-pointer->to type)
+                              (type-array->of type))))
+                `((valuep ,var-ptr)
+                  (equal (value-kind ,var-ptr) :pointer)
+                  (value-pointer-validp ,var-ptr)
+                  (equal ,var-objdes (value-pointer->designator ,var-ptr))
+                  (equal (objdesign-kind ,var-objdes) :alloc)
+                  (equal (value-pointer->reftype ,var-ptr)
+                         ,(type-to-maker reftype))
+                  (equal ,var (read-object ,var-objdes ,compst-var))))
+            nil)))
        (more-terms (atc-gen-context-preamble (cdr typed-formals) compst-var)))
     (append terms more-terms)))
 
