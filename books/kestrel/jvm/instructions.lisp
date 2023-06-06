@@ -472,6 +472,13 @@
   :hints (("Goal" :induct t
            :in-theory (enable acl2::all-pcp revappend))))
 
+(defthm all-pcp-of-reverse
+  (implies (and (acl2::all-pcp x)
+                (true-listp x))
+           (acl2::all-pcp (acl2::reverse x)))
+  :hints (("Goal" ; :induct t
+           :in-theory (enable acl2::reverse))))
+
 (defthm pcp-of-car
   (implies (acl2::all-pcp pcs)
            (equal (pcp (car pcs))
