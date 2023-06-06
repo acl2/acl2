@@ -45,6 +45,7 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
+(local (include-book "kestrel/lists-light/resize-list" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
@@ -202,8 +203,16 @@
 
 ;; Returns an unsigned-byte-p 16
 (defund 2bytes-to-int (highbyte lowbyte)
-  (declare (type (unsigned-byte 8) highbyte lowbyte))
-  (bvcat 8 highbyte 8 lowbyte))
+  (declare (xargs :guard (and (unsigned-byte-p 8 highbyte)
+                              (unsigned-byte-p 8 lowbyte))
+                  :split-types t
+                  :guard-hints (("Goal" :in-theory (enable bvcat logapp))))
+           (type (unsigned-byte 8) highbyte lowbyte))
+  (mbe :logic (bvcat 8 highbyte 8 lowbyte) ; todo: do we even need this?
+       :exec (the (unsigned-byte 16)
+                  (+ (the (unsigned-byte 16)
+                          (* 256 highbyte))
+                     lowbyte))))
 
 (defthm unsigned-byte-p-of-2bytes-to-int
   (unsigned-byte-p 16 (2bytes-to-int highbyte lowbyte))

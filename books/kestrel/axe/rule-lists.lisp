@@ -591,7 +591,11 @@
 
      bvshl-of-0-arg2
      bvshl-of-0-arg3
+
      equal-of-bvplus-and-bvplus-cancel-arg2-arg2 ;sat feb 19 17:28:05 2011
+     equal-of-bvplus-and-bvplus-cancel-arg1-arg2
+     equal-of-bvplus-and-bvplus-cancel-arg2-arg1
+
      not-equal-bvchop-when-not-equal-bvchop      ;tue feb  8 12:55:33 2011
      bvmod-of-0-arg2
      slice-when-not-bvlt-free ;fri jan 28 18:39:08 2011
@@ -2105,12 +2109,12 @@
      nthcdr-of-bvplus-1
      +-of-minus-1-and-bv2
      +-of-minus-1-and-bv
-     equal-of-bvplus-and-bvplus-cancel-arg3-and-arg3
+     equal-of-bvplus-and-bvplus-cancel-arg3-and-arg3 ; todo: move to core-rules-bv
      equal-of-minval-and-bvplus-of-bvminus
      equal-of-minval-and-bvplus-of-bvminus-alt
 
      unsigned-byte-p-of-bvplus-minus-1
-     equal-of-bvplus-and-bvplus-cancel-arg2-and-arg3
+     equal-of-bvplus-and-bvplus-cancel-arg2-and-arg3 ; todo: move to core-rules-bv
      unsigned-byte-p-of-bvplus-1
 
      ;;CONSP-FROM-LEN ;new ;loops with LIST::LEN-OF-NON-CONSP

@@ -384,7 +384,7 @@
 ;;                (integerp y))
 ;;           (equal (bvminus size z (+ y (bvchop size x)))
 ;;                  (bvminus size z (+ y x))))
-;;  :hints (("Goal" :in-theory (e/d (bvminus) (bvminus-becomes-bvplus-of-bvuminus bvplus-of-plus bvplus-cancel-cross2 bvplus-cancel-cross)))))
+;;  :hints (("Goal" :in-theory (e/d (bvminus) (bvminus-becomes-bvplus-of-bvuminus bvplus-of-plus equal-of-bvplus-and-bvplus-cancel-arg1-arg2 equal-of-bvplus-and-bvplus-cancel-arg2-arg1)))))
 
 ;just turn the + into bvplus
 ;; (defthm bvuminus-of-plus-of-bvchop
