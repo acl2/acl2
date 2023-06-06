@@ -2824,23 +2824,24 @@
             init-formals
             modular-proofs
             names-to-avoid)
-        (atc-gen-init-scope-thms fn
-                                 fn-guard
-                                 typed-formals
-                                 prec-tags
-                                 context-preamble
-                                 prog-const
-                                 fn-fun-env-thm
-                                 compst-var
-                                 fenv-var
-                                 names-to-avoid
-                                 state))
+        (if proofs
+            (atc-gen-init-scope-thms fn
+                                     fn-guard
+                                     typed-formals
+                                     prec-tags
+                                     context-preamble
+                                     prog-const
+                                     fn-fun-env-thm
+                                     compst-var
+                                     fenv-var
+                                     names-to-avoid
+                                     state)
+          (mv '(_) nil '(_) nil nil nil nil names-to-avoid)))
        ((mv push-init-thm-event
             push-init-thm
             add-var-nest
             names-to-avoid)
-        (if (and proofs
-                 modular-proofs)
+        (if proofs
             (atc-gen-push-init-thm fn
                                    fn-guard
                                    typed-formals
@@ -3014,8 +3015,7 @@
                                        formals-events
                                        (list init-scope-expand-event)
                                        (list init-scope-scopep-event)
-                                       (and modular-proofs
-                                            (list push-init-thm-event))
+                                       (list push-init-thm-event)
                                        init-inscope-events
                                        body.events
                                        (and modular-proofs
