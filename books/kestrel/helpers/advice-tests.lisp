@@ -1,6 +1,6 @@
 ; Tests of the advice tool
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,7 +27,7 @@
     )
   )
 
-(deftest
+(deftest ; this turns on extensive guard checking and so is very slow
   (in-theory (disable append)) ; prevent proof of test2 with no hints
   (defthm-advice test2
     (equal (len (append x y))
