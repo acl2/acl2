@@ -327,21 +327,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-string-taginfo-alist-to-type-of-value-quoted-thms
-  ((prec-tags atc-string-taginfo-alistp))
-  :returns (thms symbol-listp)
-  :short "Project the quoted variant of the @(tsee type-of-value) theorems
-          out of a tag information alist."
-  (b* (((when (endp prec-tags)) nil)
-       (info (cdar prec-tags))
-       (thm (defstruct-info->type-of-value-quoted-thm
-              (atc-tag-info->defstruct info)))
-       (thms (atc-string-taginfo-alist-to-type-of-value-quoted-thms
-              (cdr prec-tags))))
-    (cons thm thms)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-string-taginfo-alist-to-flexiblep-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
@@ -380,6 +365,21 @@
        (more-thms
         (atc-string-taginfo-alist-to-member-write-thms (cdr prec-tags))))
     (append thms more-thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-string-taginfo-alist-to-type-to-quoted-thms
+  ((prec-tags atc-string-taginfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Project the theorems to rewrite
+           the structure types to their quoted versions."
+  (b* (((when (endp prec-tags)) nil)
+       (info (cdar prec-tags))
+       (thm (defstruct-info->type-to-quoted-thm
+              (atc-tag-info->defstruct info)))
+       (thms (atc-string-taginfo-alist-to-type-to-quoted-thms
+              (cdr prec-tags))))
+    (cons thm thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -517,32 +517,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-type-to-type-of-value-quoted?-thm ((type typep)
-                                               (prec-tags
-                                                atc-string-taginfo-alistp))
-  :returns (type-of-value-quoted-thm symbolp)
-  :short "Name of the theorems asserting what @(tsee type-of-value) is
-          when the recognizer for a type holds,
-          where the right-hand side is a quoted constant
-          if the type is a structure type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This returns the same as @(tsee atc-type-to-type-of-value-thm)
-     if the type is not a structure type."))
-  (if (or (type-case type :struct)
-          (and (type-case type :pointer)
-               (type-case (type-pointer->to type) :struct)))
-      (defstruct-info->type-of-value-quoted-thm
-        (atc-tag-info->defstruct
-         (atc-get-tag-info (if (type-case type :struct)
-                               (type-struct->tag type)
-                             (type-struct->tag (type-pointer->to type)))
-                           prec-tags)))
-    (pack 'type-of-value-when- (atc-type-to-recognizer type prec-tags))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-type-to-notflexarrmem-thms ((type typep)
                                         (prec-tags atc-string-taginfo-alistp))
   :returns (notflexarrmem-thms symbol-listp)
@@ -574,6 +548,29 @@
                  (atc-tag-info->defstruct
                   (atc-get-tag-info (type-struct->tag type) prec-tags)))))
         (t (raise "Internal error: unexpected type ~x0." type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-type-to-type-to-quoted-thms
+  ((type typep)
+   (prec-tags atc-string-taginfo-alistp))
+  :returns (type-to-quoted-thms symbol-listp)
+  :short "Names of the theorems for rewriting
+          the struct type
+          to quoted form."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the type is a structure type,
+     we return the singleton list of
+     the theorem that rewrites the type to quoted form.
+     Otherwise, we return the empty list."))
+  (if (type-case type :struct)
+      (list (defstruct-info->type-to-quoted-thm
+              (atc-tag-info->defstruct
+               (atc-get-tag-info (type-struct->tag type)
+                                 prec-tags))))
+    nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

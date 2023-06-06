@@ -2162,8 +2162,10 @@
        (flexible-thms (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
        (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
-       (type-of-value-quoted-thms
-        (atc-string-taginfo-alist-to-type-of-value-quoted-thms prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
+       (type-to-quoted-thms
+        (atc-string-taginfo-alist-to-type-to-quoted-thms prec-tags))
        (pointer-type-to-quoted-thms
         (atc-string-taginfo-alist-to-pointer-type-to-quoted-thms prec-tags))
        (expand-hints
@@ -2205,7 +2207,8 @@
                                type-of-value-when-ullongp
                                type-of-value-when-sllongp
                                type-of-value-when-value-pointer
-                               ,@type-of-value-quoted-thms
+                               ,@type-of-value-thms
+                               ,@type-to-quoted-thms
                                ,@pointer-type-to-quoted-thms
                                not-flexible-array-member-p-when-ucharp
                                not-flexible-array-member-p-when-scharp
@@ -2682,8 +2685,10 @@
                                 (mv ,result-var ,compst-var))
                          (,type-pred ,result-var)))))
        (valuep-when-type-pred (atc-type-to-valuep-thm body-type prec-tags))
-       (type-of-value-quoted?-when-type-pred
-        (atc-type-to-type-of-value-quoted?-thm body-type prec-tags))
+       (type-of-value-when-type-pred
+        (atc-type-to-type-of-value-thm body-type prec-tags))
+       (type-to-quoted-thm?
+        (atc-type-to-type-to-quoted-thms body-type prec-tags))
        (lemma-hints
         `(("Goal" :in-theory '(exec-fun-open
                                not-zp-of-limit-variable
@@ -2698,7 +2703,8 @@
                                value-optionp-when-valuep
                                ,valuep-when-type-pred
                                type-of-value-option-when-valuep
-                               ,type-of-value-quoted?-when-type-pred
+                               ,type-of-value-when-type-pred
+                               ,@type-to-quoted-thm?
                                (:e fun-info->result)
                                (:e tyname-to-type)
                                ,@(and (type-integerp body-type)
