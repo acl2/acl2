@@ -2188,8 +2188,8 @@
              bvxor-cancel
              bvxor-cancel-alt
 
-             bvplus-cancel-cross
-             bvplus-cancel-cross2
+             equal-of-bvplus-and-bvplus-cancel-arg2-arg1
+             equal-of-bvplus-and-bvplus-cancel-arg1-arg2
              unsigned-byte-p-of-nth
 
              <-of-constant-and-unary-minus
