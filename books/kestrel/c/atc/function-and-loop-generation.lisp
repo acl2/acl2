@@ -2141,7 +2141,6 @@
   (b* ((wrld (w state))
        ((mv omap-update-nest init-formals proofs)
         (atc-gen-omap-update-formals typed-formals))
-       ((unless proofs) (mv '(_) nil '(_) nil nil nil nil names-to-avoid))
        (formals (strip-cars typed-formals))
        (expand-thm (pack fn '-init-scope-expand))
        ((mv expand-thm names-to-avoid)
@@ -2293,7 +2292,7 @@
         scopep-thm
         omap-update-nest
         init-formals
-        t
+        proofs
         names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
