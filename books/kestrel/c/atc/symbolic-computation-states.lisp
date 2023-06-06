@@ -907,7 +907,7 @@
     "The theorems below about @(tsee read-var) are a bit different
      because @(tsee read-var) does not return a state, but a value instead.")
    (xdoc::p
-    "e first theorem turns @(tsee read-var) into @(tsee read-static-var)
+    "The first theorem turns @(tsee read-var) into @(tsee read-static-var)
      when we encounter @(tsee add-frame):
      since @(tsee add-frame) adds no variables in automatic storage,
      the variable must be in static storage.")
