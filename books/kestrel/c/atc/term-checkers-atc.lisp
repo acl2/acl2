@@ -252,7 +252,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-array-read ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (arr pseudo-termp)
                (sub pseudo-termp)
                (arr-type typep)
@@ -271,21 +272,28 @@
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp etype array read) (atc-check-symbol-3part term.fn))
+  (b* (((reterr) nil nil nil (irr-type) (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type) (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp fixtype array read) (atc-check-symbol-3part fn))
+       (elem-type (fixtype-to-integer-type fixtype))
        ((unless (and okp
+                     elem-type
                      (eq array 'array)
                      (eq read 'read)))
         (no))
-       (elem-type (fixtype-to-integer-type etype))
-       ((when (not elem-type)) (no))
-       (arr-type (make-type-array :of elem-type :size nil))
-       ((unless (list-lenp 2 term.args)) (no))
-       (arr (first term.args))
-       (sub (second term.args)))
-    (mv t arr sub arr-type elem-type))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an array read, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 2 args))
+        (reterr (raise "Internal error: ~x0 not applied to 2 arguments." fn)))
+       (arr (first args))
+       (sub (second args))
+       (arr-type (make-type-array :of elem-type :size nil)))
+    (retok t arr sub arr-type elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-array-read-arr

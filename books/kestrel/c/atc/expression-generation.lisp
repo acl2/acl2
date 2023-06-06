@@ -1638,7 +1638,7 @@
                                        type
                                        gin
                                        state)))
-         ((mv okp arr-term sub-term arr-type elem-type)
+         ((erp okp arr-term sub-term arr-type elem-type)
           (atc-check-array-read term))
          ((when okp)
           (b* (((erp (pexpr-gout arr))
