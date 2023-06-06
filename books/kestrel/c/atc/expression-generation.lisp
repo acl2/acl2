@@ -1677,7 +1677,7 @@
                     :thm-index sub.thm-index
                     :names-to-avoid sub.names-to-avoid
                     :proofs nil))))
-         ((mv okp arg-term tag member mem-type)
+         ((erp okp arg-term tag member mem-type)
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout arg))

@@ -381,7 +381,8 @@
 
 (define atc-check-struct-read-scalar ((term pseudo-termp)
                                       (prec-tags atc-string-taginfo-alistp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (arg pseudo-termp)
                (tag identp)
                (member identp)
@@ -401,11 +402,11 @@
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((acl2::fun (no))
-        (mv nil nil (irr-ident) (irr-ident) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp struct tag read member) (atc-check-symbol-4part term.fn))
+  (b* (((reterr) nil nil (irr-ident) (irr-ident) (irr-type))
+       ((acl2::fun (no)) (retok nil nil (irr-ident) (irr-ident) (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp struct tag read member) (atc-check-symbol-4part fn))
        ((unless (and okp
                      (equal (symbol-name struct) "STRUCT")
                      (equal (symbol-name read) "READ")))
@@ -414,19 +415,28 @@
        (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
        (info (atc-tag-info->defstruct info))
-       ((unless (member-eq term.fn (defstruct-info->reader-list info))) (no))
+       ((unless (member-eq fn (defstruct-info->reader-list info)))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a structure read ~
+                      for the structure type ~x1, ~
+                      but it is not among the readers ~
+                      associated to that structure type."
+                     fn tag)))
        (tag (defstruct-info->tag info))
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (member (symbol-name member))
-       ((unless (paident-stringp member)) (no))
+       ((unless (paident-stringp member))
+        (reterr (raise "Internal error: ~x0 is not a portable ASCII identifier."
+                       member)))
        (member (ident member))
        (mem-type (member-type-lookup member members))
-       ((unless mem-type) (no))
-       ((unless (type-integerp mem-type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
-       (arg (car term.args)))
-    (mv t arg tag member mem-type))
+       ((unless mem-type)
+        (reterr (raise "Internal error: type of ~x0 not found." member)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (car args)))
+    (retok t arg tag member mem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-read-scalar
