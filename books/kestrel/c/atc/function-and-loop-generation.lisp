@@ -2394,7 +2394,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to the typed formals alist,
+    "This symbol table consists of a list of two alists.
+     The first alist is for the block scope of the function,
+     and consists of the formal parameters.
+     The second alist is for the file scope;
+     it is currently empty, but it will be populated soon.")
+   (xdoc::p
+    "The block scope alist is similar to the typed formals alist,
      except that the theorem stored in each variable information
      says that reading the C variable from the computation state
      yields the ACL2 variable,
@@ -2429,7 +2435,7 @@
   (b* (((mv scope events names-to-avoid proofs)
         (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals prec-tags
                                   compst-var context names-to-avoid wrld)))
-    (mv (list scope) events names-to-avoid proofs))
+    (mv (list scope nil) events names-to-avoid proofs))
 
   :prepwork
   ((define atc-gen-init-inscope-aux ((fn symbolp)
