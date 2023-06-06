@@ -38,32 +38,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp events constant-pool).
+;; Returns (mv erp events constant-pool count).
 (defun events-for-classes-from-alist (alist ; maps paths to classes
                                       acc
                                       constant-pool ; stobj that makes class file parsing more efficient
-                                      )
+                                      count)
   (declare (xargs :guard (and (alistp alist)
                               (string-listp (strip-cars alist))
                               (byte-list-listp (strip-cdrs alist))
-                              (true-listp acc))
+                              (true-listp acc)
+                              (natp count))
                   :stobjs constant-pool))
   (if (endp alist)
-      (mv nil (reverse acc) constant-pool)
+      (mv nil (reverse acc) constant-pool count)
     (b* ((entry (first alist))
          (path (car entry)) ; we ignore the actual path (get the class name from the class file)
          )
       (if (or (string-starts-withp path "META-INF/") ; I've seen module-info.class under META-INF/
               (not (string-ends-withp path ".class")))
           ;; Skip since not a .class file we want:
-          (events-for-classes-from-alist (rest alist) acc constant-pool)
+          (events-for-classes-from-alist (rest alist) acc constant-pool count)
         (b* ((bytes (cdr entry))
              ;; Parse the bytes read:
              ((mv erp class-name class-info field-defconsts constant-pool)
               (parse-class-file-bytes bytes constant-pool))
              ((when erp)
               (er hard? 'events-for-classes-from-alist "Error parsing classfile for ~x0." path)
-              (mv erp nil constant-pool))
+              (mv erp nil constant-pool count))
              (events-for-class (events-for-class class-name
                                                  class-info
                                                  field-defconsts ; do we always want these?
@@ -71,11 +72,12 @@
           (events-for-classes-from-alist (rest alist)
                                          (cons `(progn ,@events-for-class)
                                                acc)
-                                         constant-pool))))))
+                                         constant-pool
+                                         (+ 1 count)))))))
 
 (defthm true-listp-of-mv-nth-1-of-events-for-classes-from-alist
   (implies (true-listp acc)
-           (true-listp (mv-nth 1 (events-for-classes-from-alist alist acc constant-pool)))))
+           (true-listp (mv-nth 1 (events-for-classes-from-alist alist acc constant-pool count)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -109,18 +111,17 @@
             (unzip jar-path paths byte-array-stobj state))))
        ((when erp) (mv erp nil state byte-array-stobj constant-pool))
        ;; Parse each of the class files and create events to register it:
-       ((mv erp events constant-pool)
-        (events-for-classes-from-alist path-to-decompressed-bytes-alist nil constant-pool))
-       ((when erp) (mv erp nil state byte-array-stobj constant-pool)))
+       ((mv erp events constant-pool count)
+        (events-for-classes-from-alist path-to-decompressed-bytes-alist nil constant-pool 0))
+       ((when erp) (mv erp nil state byte-array-stobj constant-pool))
+       (- (cw "Read ~x0 classes from ~x1~%." count jar-path)))
     (mv nil ; no error
         `(progn ,@events
                 ;; Record the fact that the containing book depends on this jar:
                 (table acl2::depends-on-table ,jar-path t)
                 ;; For redundancy checking (at least for now, the whole-form must be identical):
                 (table read-jar-table ',whole-form t)
-                ;; Print the name of the jar
-                ;; TODO: Print how many classes were loaded?
-                (value-triple ',jar-path))
+                (value-triple :invisible))
         state byte-array-stobj constant-pool)))
 
 ;; Read in a .jar file and register the given classes (or all classes if none
