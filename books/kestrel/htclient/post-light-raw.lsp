@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun post-light (url data state kwds)
-  ;; kwds is an alist from keyword arg to value
+  ;; kwds is a doublet-list mapping keyword args to values
   ;; The keyword args must be valid for dex:post (see https://quickdocs.org/dexador)
   ;; E.g., (post-light "https:..." <data> state '((:connect-timeout 30) (:read-timeout 30)))
   (if (not (live-state-p state))
