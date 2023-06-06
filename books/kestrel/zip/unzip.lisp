@@ -553,8 +553,9 @@
                                                   file-data
                                                 ;; must be :deflate, at least for now:
                                                 (decompress-bytes file-data decoded-compression-method))))
-                   ((when (not (byte-listp decompressed-file-bytes))) ; todo: optimize!
-                    (mv :bad-bytes nil)))
+                   ((when (not (byte-listp decompressed-file-bytes))) ; todo: optimize! needed for byte-list-listp-of-strip-cdrs-of-mv-nth-1-of-unzip-files below
+                    (mv :bad-bytes nil))
+                   )
                 (mv (erp-nil) (acons filename decompressed-file-bytes acc)))
             (mv (erp-nil) acc)))
          ((when erp) (mv erp nil)))
