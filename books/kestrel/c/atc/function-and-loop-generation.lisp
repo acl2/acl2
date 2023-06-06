@@ -2824,19 +2824,17 @@
             init-formals
             modular-proofs
             names-to-avoid)
-        (if proofs
-            (atc-gen-init-scope-thms fn
-                                     fn-guard
-                                     typed-formals
-                                     prec-tags
-                                     context-preamble
-                                     prog-const
-                                     fn-fun-env-thm
-                                     compst-var
-                                     fenv-var
-                                     names-to-avoid
-                                     state)
-          (mv '(_) nil '(_) nil nil nil nil names-to-avoid)))
+        (atc-gen-init-scope-thms fn
+                                 fn-guard
+                                 typed-formals
+                                 prec-tags
+                                 context-preamble
+                                 prog-const
+                                 fn-fun-env-thm
+                                 compst-var
+                                 fenv-var
+                                 names-to-avoid
+                                 state))
        ((mv push-init-thm-event
             push-init-thm
             add-var-nest
@@ -3014,10 +3012,10 @@
                                        (list fn-guard-event)
                                        fn-def*-events
                                        formals-events
+                                       (list init-scope-expand-event)
+                                       (list init-scope-scopep-event)
                                        (and modular-proofs
-                                            (list init-scope-expand-event
-                                                  init-scope-scopep-event
-                                                  push-init-thm-event))
+                                            (list push-init-thm-event))
                                        init-inscope-events
                                        body.events
                                        (and modular-proofs
