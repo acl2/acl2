@@ -388,6 +388,9 @@
 (defconst *ml-models*
   (strip-cars *ml-models-and-strings*))
 
+;; Ensures we don't have a model called :all
+(thm (not (member-equal :all *ml-models*)))
+
 (defconst *known-models-and-strings*
   (append *ml-models-and-strings*
           *non-ml-models-and-strings*))
@@ -3567,13 +3570,30 @@
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; broken-theorem is a thm or defthm form
-                              (stringp server-url)
+                              (or (null server-url) ; nil means get url from environment variable
+                                  (stringp server-url))
                               (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
                   :mode :program ; because of make-numbered-checkpoint-entries
                   :stobjs state))
   (b* ((model-string (model-to-string model))
+       ;; Get server info:
+       ((mv erp server-url state)
+        (if server-url
+            ;; Use the server-url if supplied (rare):
+            (mv nil server-url state)
+          ;; Use model-specific environment var, if set.  Otherwise, use the general environment var:
+          (b* (((mv erp server-url state)
+                (getenv$ (concatenate 'string "ACL2_ADVICE_SERVER_" (symbol-name model)) state)))
+            (if (or erp server-url)
+                (mv erp server-url state)
+              (getenv$ "ACL2_ADVICE_SERVER" state)))))
+       ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
+       ((when (not (stringp server-url)))
+        (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
+        (mv :no-server nil state))
+       (- (and print (cw "Server for ~x0 is ~s1.~%" model server-url)))
        ;; Send query to server:
        ((mv erp semi-parsed-recommendations state)
         (if (zp num-recs)
@@ -3638,7 +3658,8 @@
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; theorem-body is an untranslated-term
                               ;; broken-theorem is a thm or defthm form
-                              (stringp server-url)
+                              (or (null server-url) ; nil means get url from environment variable
+                                  (stringp server-url))
                               (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
@@ -3678,25 +3699,14 @@
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; theorem-body is an untranslated term (todo: translate outside this function?)
                               ;;  broken-theorem is a thm or defthm form
-                              (or (null server-url) ; get url from environment variable
+                              (or (null server-url) ; nil means get url from environment variable
                                   (stringp server-url))
                               (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
                   :mode :program
                   :stobjs state))
-  (b* ( ;; Get server info:
-       ((mv erp server-url state)
-        (if (null (set-difference-eq models *non-ml-models*))
-            (mv nil "NONE" state)
-          (if server-url
-              (mv nil server-url state)
-            (getenv$ "ACL2_ADVICE_SERVER" state))))
-       ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
-       ((when (not (stringp server-url)))
-        (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
-        (mv :no-server nil state))
-       (- (and print (cw "ACL2 advice server is ~s0.~%" server-url))))
+  (b* ()
     (get-recs-from-models-aux models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print acc state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
