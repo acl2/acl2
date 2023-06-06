@@ -519,8 +519,8 @@
 	   (equal (mod (* (a3 p) (a3 p)) p)
 	          (mod (* (root1 -1 p) (root1 -1 p) (b3 p) (b3 p)) p)))
   :hints (("Goal" :use (mod-a-b-4
-                        (:instance rtl:: mod-times-mod (rtl::n p) (rtl::a (a3 p)) (rtl::b (* (root1 -1 p) (b3 p))) (rtl::c (a3 p)))
-                        (:instance rtl:: mod-times-mod (rtl::n p) (rtl::a (a3 p)) (rtl::b (* (root1 -1 p) (b3 p))) (rtl::c (* (root1 -1 p) (b3 p))))))))
+                        (:instance rtl::mod-times-mod (rtl::n p) (rtl::a (a3 p)) (rtl::b (* (root1 -1 p) (b3 p))) (rtl::c (a3 p)))
+                        (:instance rtl::mod-times-mod (rtl::n p) (rtl::a (a3 p)) (rtl::b (* (root1 -1 p) (b3 p))) (rtl::c (* (root1 -1 p) (b3 p))))))))
 
 (local-defthmd mod-a-b-6
   (implies (and (primep p)
@@ -528,7 +528,7 @@
 	   (equal (mod (* (a3 p) (a3 p)) p)
 	          (mod (- (* (b3 p) (b3 p))) p)))
   :hints (("Goal" :use (mod-a-b-5 root1-minus-1
-                        (:instance rtl:: mod-mod-times (rtl::n p) (rtl::a (* (root1 -1 p) (root1 -1 p))) (rtl::b (* (b3 p) (b3 p))))))))
+                        (:instance rtl::mod-mod-times (rtl::n p) (rtl::a (* (root1 -1 p) (root1 -1 p))) (rtl::b (* (b3 p) (b3 p))))))))
 
 (local-defthmd mod-a-b-7
   (implies (and (primep p)
@@ -536,7 +536,7 @@
 	   (integerp (/ (+ (* (a3 p) (a3 p)) (* (b3 p) (b3 p)))
 	                p)))
   :hints (("Goal" :use (mod-a-b-6
-                        (:instance rtl:: mod-equal-int (rtl::n p) (rtl::a (* (a3 p) (a3 p))) (rtl::b (- (* (b3 p) (b3 p)))))))))
+                        (:instance rtl::mod-equal-int (rtl::n p) (rtl::a (* (a3 p) (a3 p))) (rtl::b (- (* (b3 p) (b3 p)))))))))
 
 ;; This is getting ridiculous.
 
