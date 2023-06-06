@@ -207,84 +207,6 @@
           *atc-apconvert-rules*
           *atc-object-designator-rules*))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-all-rules-deprecated*
-  :short "Variant of @(tsee *atc-all-rules*)
-          that has rules about deprecated array operations
-          instead of rules about new array operations."
-  ;; differences with *ATC-ALL-RULES* are marked below via 'diff' comments
-  (append *atc-symbolic-computation-state-rules*
-          *atc-tyname-to-type-rules*
-          *atc-type-kind-rules*
-          *atc-valuep-rules*
-          *atc-value-listp-rules*
-          *atc-value-optionp-rules*
-          *atc-value-kind-rules*
-          *atc-type-of-value-rules*
-          *atc-type-of-value-option-rules*
-          *atc-value-array->elemtype-rules*
-          *atc-array-length-rules*
-          *atc-array-length-write-rules*
-          *atc-static-variable-pointer-rules*
-          *atc-exec-ident-rules*
-          *atc-exec-const-rules*
-          *atc-exec-arrsub-rules-deprecated* ; diff
-          *atc-exec-unary-nonpointer-rules*
-          *atc-exec-indir-rules*
-          *atc-exec-cast-rules*
-          *atc-exec-binary-strict-pure-rules*
-          *atc-test-value-rules*
-          *atc-exec-expr-pure-rules*
-          *atc-exec-expr-pure-list-rules*
-          *atc-exec-expr-call-rules*
-          *atc-exec-expr-call-or-pure-rules*
-          *atc-exec-expr-asg-rules-deprecated* ; diff
-          *atc-exec-expr-call-or-asg-rules*
-          *atc-exec-fun-rules*
-          *atc-exec-stmt-rules*
-          *atc-exec-initer-rules*
-          *atc-init-value-to-value-rules*
-          *atc-exec-block-item-rules*
-          *atc-exec-block-item-list-rules*
-          *atc-init-scope-rules*
-          *atc-adjust-type-rules*
-          *atc-other-executable-counterpart-rules*
-          *atc-wrapper-rules*
-          *atc-distributivity-over-if-rewrite-rules*
-          *atc-identifier-rules*
-          *atc-integer-const-rules*
-          *atc-integer-size-rules*
-          *atc-integer-ops-1-return-rewrite-rules*
-          *atc-integer-ops-2-return-rewrite-rules*
-          *atc-integer-convs-return-rewrite-rules*
-          *atc-array-read-return-rewrite-rules*
-          *atc-array-write-return-rewrite-rules*
-          *atc-integer-ops-1-type-prescription-rules*
-          *atc-integer-ops-2-type-prescription-rules*
-          *atc-integer-convs-type-prescription-rules*
-          *atc-array-read-type-prescription-rules*
-          *atc-misc-rewrite-rules*
-          *atc-type-prescription-rules*
-          *atc-compound-recognizer-rules*
-          *integer-value-disjoint-rules*
-          *array-value-disjoint-rules*
-          *atc-sint-from-boolean*
-          *atc-boolean-from-sint*
-          *atc-integer-ifix-rules*
-          *atc-limit-rules*
-          *atc-not-error-rules*
-          *atc-value-result-fix-rules*
-          *atc-lognot-sint-rules*
-          *atc-boolean-from-integer-return-rules*
-          *atc-integer-constructors-return-rules*
-          *atc-computation-state-return-rules*
-          *atc-value-fix-rules*
-          *atc-flexible-array-member-rules*
-          *atc-pointed-integer-rules*
-          *atc-apconvert-rules*
-          *atc-object-designator-rules*))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; We define a theory for the rules because experiments show that
@@ -293,5 +215,3 @@
 ; We use this theory in the generated proofs (see generation.lisp).
 
 (deftheory atc-all-rules *atc-all-rules*)
-
-(deftheory atc-all-rules-deprecated *atc-all-rules-deprecated*)

@@ -2555,6 +2555,7 @@ lemma proved using the original generalized theorem.</p>
    :input-vars input-variable-list
    :input-var-bindings input-variable-binding-list
    :override-vars override-variable-list
+   :x-override-vars x-override-variable-list
    :override-var-bindings override-variable-binding-list
    :spec-override-vars override-variable-list
    :spec-override-var-bindings override-variable-binding-list
@@ -2562,6 +2563,7 @@ lemma proved using the original generalized theorem.</p>
    :output-parts output-part-list
    :hyp hypothesis-term
    :concl conclusion-term
+   :final-hyp hyp-term
    :enable rules-list
    :unsigned-byte-hyps nil
    :no-lemmas nil
@@ -2656,6 +2658,12 @@ overridden in the generalized theorem.  Each such variable must have a
 corresponding output sampling the same signal at the same time so as to support
 eliminating the override.</li>
 
+<li>@(':x-override-vars') (appended with @(':more-x-override-vars')) is a list
+of override-value variables that will be overriden to X in the lemma, and not
+mentioned in the final theorem; effectively, this asserts that these signals
+are not relevant to the current computation and prunes them out of the fanin
+cone by forcing them to X.</li>
+
 <li>@(':spec-override-vars') (appended with @(':more-spec-override-vars'))
 is a list of override-value variables of the SVTV
 to be overridden in both the FGL theorem and the resulting generalized theorem.
@@ -2683,6 +2691,10 @@ used in the expressions of input-bindings.</li>
 
 <li>@(':concl') is a term which may reference the same variables available to
 @(':hyp') as well as the output-vars.</li>
+
+<li>@(':final-hyp') is a term (default T) with is conjoined at the beginning of
+the hypotheses only of the final theorem. This is sometimes convenient for
+adding syntaxp or bind-free directives.</li>
 
 <li>@(':enable') is a list of rules to be included in the theory for the final
 generalized theorm, mainly useful when specifying @(':output-parts').</li>

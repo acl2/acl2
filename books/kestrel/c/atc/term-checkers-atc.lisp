@@ -43,17 +43,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-sint-from-boolean ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (arg pseudo-termp))
   :short "Check if a term may represent a conversion
           from an ACL2 boolean to a C @('int') value."
-  (b* (((acl2::fun (no)) (mv nil nil))
+  (b* (((reterr) nil nil)
+       ((acl2::fun (no)) (retok nil nil))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless (and okp
-                     (eq fn 'c::sint-from-boolean)
-                     (list-lenp 1 args)))
-        (no)))
-    (mv t (first args)))
+                     (eq fn 'sint-from-boolean)))
+        (no))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn))))
+    (retok t (first args)))
   ///
 
   (defret pseudo-term-count-of-atc-check-sint-from-boolean
@@ -65,7 +68,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-boolean-from-type ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
                (arg pseudo-termp)
                (in-type typep))
   :short "Check if a term may represent a conversion
@@ -75,18 +80,25 @@
    (xdoc::p
     "We also return the input C type of the conversion.
      The output type is known (boolean), and it is in fact an ACL2 type."))
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless okp) (no))
        ((mv okp boolean from type) (atc-check-symbol-3part fn))
+       (in-type (fixtype-to-integer-type type))
        ((unless (and okp
                      (eq boolean 'boolean)
-                     (eq from 'from)))
+                     (eq from 'from)
+                     in-type))
         (no))
-       (in-type (fixtype-to-integer-type type))
-       ((when (not in-type)) (no))
-       ((unless (list-lenp 1 args)) (no)))
-    (mv t (first args) in-type))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a conversion to boolean from integer, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn))))
+    (retok t fn (first args) in-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-boolean-from-type
@@ -98,18 +110,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-condexpr ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (test pseudo-termp)
                (then pseudo-termp)
                (else pseudo-termp))
   :short "Check if a term may represent a C conditional expression."
-  (b* (((acl2::fun (no)) (mv nil nil nil nil))
+  (b* (((reterr) nil nil nil nil)
+       ((acl2::fun (no)) (retok nil nil nil nil))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless (and okp
-                     (eq fn 'c::condexpr)
-                     (list-lenp 1 args)))
-        (no)))
-    (fty-check-if-call (first args)))
+                     (eq fn 'condexpr)))
+        (no))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (first args))
+       ((mv okp test then else) (fty-check-if-call arg))
+       ((when (not okp))
+        (reterr (msg "The function CONDEXPR is not applied to an IF, ~
+                      but instead to the term ~x0."
+                     arg))))
+    (retok t test then else))
   ///
 
   (defret pseudo-term-count-of-atc-check-condexpr.test
@@ -133,35 +154,50 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-integer-read ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
                (arg pseudo-termp)
                (type typep))
   :short "Check if a term may represent a read of an integer by pointer."
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp fixtype read) (atc-check-symbol-2part term.fn))
-       ((unless (and okp
-                     (eq read 'read)))
-        (no))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp fixtype read) (atc-check-symbol-2part fn))
        (type (fixtype-to-integer-type fixtype))
-       ((when (not type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
-       (arg (first term.args)))
-    (mv t arg type))
+       ((unless (and okp
+                     (eq read 'read)
+                     type))
+        (no))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a read of an integer by pointer, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (first args)))
+    (retok t fn arg type))
   ///
 
   (defret pseudo-term-count-of-atc-check-integer-read
     (implies yes/no
              (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-integer-read
+    (implies yes/no
+             (type-nonchar-integerp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-integer-write ((val pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (int pseudo-termp)
+  :returns (mv erp
+               (yes/no booleanp)
+               (fn symbolp)
+               (arg pseudo-termp)
                (type typep))
   :short "Check if a term may represent a write of an integer by pointer."
   :long
@@ -178,31 +214,46 @@
     "This ACL2 function takes as argument the value term of the @(tsee let),
      i.e. @('(<type>-write <int>)'),
      and checks if it has the expected form,
-     returning the integer type and the @('<int>') argument if successful."))
-  (b* (((acl2::fun (no)) (mv nil nil (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp fixtype write) (atc-check-symbol-2part val.fn))
-       ((unless (and okp
-                     (eq write 'write)))
-        (no))
+     returning, if successful,
+     the function @('<type>-write'),
+     the argument @('<int>'),
+     and the integer type."))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call val))
+       ((unless okp) (no))
+       ((mv okp fixtype write) (atc-check-symbol-2part fn))
        (type (fixtype-to-integer-type fixtype))
-       ((when (not type)) (no))
-       ((unless (list-lenp 1 val.args)) (no))
-       (int (first val.args)))
-    (mv t int type))
+       ((unless (and okp
+                     (eq write 'write)
+                     type))
+        (no))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a write of an integer by pointer, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (first args)))
+    (retok t fn arg type))
   ///
 
   (defret pseudo-term-count-of-atc-check-integer-write
     (implies yes/no
-             (< (pseudo-term-count int)
+             (< (pseudo-term-count arg)
                 (pseudo-term-count val)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-integer-write
+    (implies yes/no
+             (type-nonchar-integerp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-array-read ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (arr pseudo-termp)
                (sub pseudo-termp)
                (arr-type typep)
@@ -221,21 +272,28 @@
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp etype array read) (atc-check-symbol-3part term.fn))
+  (b* (((reterr) nil nil nil (irr-type) (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type) (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp fixtype array read) (atc-check-symbol-3part fn))
+       (elem-type (fixtype-to-integer-type fixtype))
        ((unless (and okp
+                     elem-type
                      (eq array 'array)
                      (eq read 'read)))
         (no))
-       (elem-type (fixtype-to-integer-type etype))
-       ((when (not elem-type)) (no))
-       (arr-type (make-type-array :of elem-type :size nil))
-       ((unless (list-lenp 2 term.args)) (no))
-       (arr (first term.args))
-       (sub (second term.args)))
-    (mv t arr sub arr-type elem-type))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an array read, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 2 args))
+        (reterr (raise "Internal error: ~x0 not applied to 2 arguments." fn)))
+       (arr (first args))
+       (sub (second args))
+       (arr-type (make-type-array :of elem-type :size nil)))
+    (retok t arr sub arr-type elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-array-read-arr
@@ -252,60 +310,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-array-read-deprecated ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (arr pseudo-termp)
-               (sub pseudo-termp)
-               (in-type1 typep)
-               (in-type2 typep)
-               (out-type typep))
-  :short "Check if a term may represent an array read."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the term is a call of one of the ACL2 functions
-     that represent C array read operations,
-     we return the two argument terms.")
-   (xdoc::p
-    "We also return the input and output C types of the array read.")
-   (xdoc::p
-    "If the term does not have the form explained above,
-     we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp etype array read itype) (atc-check-symbol-4part term.fn))
-       ((unless (and okp
-                     (eq array 'array)
-                     (eq read 'read)))
-        (no))
-       (out-type (fixtype-to-integer-type etype))
-       ((when (not out-type)) (no))
-       (in-type1 (make-type-array :of out-type :size nil))
-       (in-type2 (fixtype-to-integer-type itype))
-       ((when (not in-type2)) (no))
-       ((unless (list-lenp 2 term.args)) (no))
-       (arr (first term.args))
-       (sub (second term.args)))
-    (mv t arr sub in-type1 in-type2 out-type))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-array-read-deprecated-arr
-    (implies yes/no
-             (< (pseudo-term-count arr)
-                (pseudo-term-count term)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-array-read-deprecated-sub
-    (implies yes/no
-             (< (pseudo-term-count sub)
-                (pseudo-term-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-array-write ((var symbolp) (val pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (sub pseudo-termp)
                (elem pseudo-termp)
                (elem-type typep))
@@ -321,7 +328,7 @@
     "where @('<arr>') is a variable of pointer type to an integer type,
      which must occur identically as
      both the @(tsee let) variable
-     and as the first argument of @('<type1>-array-write-<type2>'),
+     and as the first argument of @('<type>-array-write'),
      @('<sub>') is an expression that yields the index of the element to write,
      @('<elem>') is an expression that yields the element to write,
      and @('...') represents the code that follows the array assignment.
@@ -331,23 +338,31 @@
      If they do, the components are returned for further processing.
      We also return the types of the index and element
      as gathered from the name of the array write function."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp etype array write) (atc-check-symbol-3part val.fn))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call val))
+       ((unless okp) (no))
+       ((mv okp fixtype array write) (atc-check-symbol-3part fn))
+       (elem-type (fixtype-to-integer-type fixtype))
        ((unless (and okp
+                     elem-type
                      (eq array 'array)
                      (eq write 'write)))
         (no))
-       (elem-type (fixtype-to-integer-type etype))
-       ((when (not elem-type)) (no))
-       ((unless (list-lenp 3 val.args)) (no))
-       (arr (first val.args))
-       (sub (second val.args))
-       (elem (third val.args)))
-    (if (eq arr var)
-        (mv t sub elem elem-type)
-      (no)))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an array write, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 3 args))
+        (reterr (raise "Internal error: ~x0 not applied to 3 arguments." fn)))
+       ((unless (equal (first args) var))
+        (reterr
+         (raise "Internal error: ~x0 is not applied to the variable ~x1."
+                fn var)))
+       (sub (second args))
+       (elem (third args)))
+    (retok t sub elem elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-array-write-sub
@@ -364,72 +379,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-array-write-deprecated ((var symbolp) (val pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (sub pseudo-termp)
-               (elem pseudo-termp)
-               (sub-type typep)
-               (elem-type typep))
-  :short "Check if a @(tsee let) binding may represent an array write."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "An array write, i.e. an assignment to an array element,
-     is represented by a @(tsee let) binding of the form")
-   (xdoc::codeblock
-    "(let ((<arr> (<type1>-array-write-<type2> <arr> <sub> <elem>))) ...)")
-   (xdoc::p
-    "where @('<arr>') is a variable of pointer type to an integer type,
-     which must occur identically as
-     both the @(tsee let) variable
-     and as the first argument of @('<type1>-array-write-<type2>'),
-     @('<sub>') is an expression that yields the index of the element to write,
-     @('<elem>') is an expression that yields the element to write,
-     and @('...') represents the code that follows the array assignment.
-     This function takes as arguments
-     the variable and value of a @(tsee let) binder,
-     and checks if they have the form described above.
-     If they do, the components are returned for further processing.
-     We also return the types of the index and element
-     as gathered from the name of the array write function."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type) (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp etype array write itype) (atc-check-symbol-4part val.fn))
-       ((unless (and okp
-                     (eq array 'array)
-                     (eq write 'write)))
-        (no))
-       (sub-type (fixtype-to-integer-type itype))
-       ((unless sub-type) (no))
-       (elem-type (fixtype-to-integer-type etype))
-       ((when (not elem-type)) (no))
-       ((unless (list-lenp 3 val.args)) (no))
-       (arr (first val.args))
-       (sub (second val.args))
-       (elem (third val.args)))
-    (if (eq arr var)
-        (mv t sub elem sub-type elem-type)
-      (no)))
-  ///
-
-  (defret pseudo-term-count-of-atc-check-array-write-deprecated-sub
-    (implies yes/no
-             (< (pseudo-term-count sub)
-                (pseudo-term-count val)))
-    :rule-classes :linear)
-
-  (defret pseudo-term-count-of-atc-check-array-write-deprecated-elem
-    (implies yes/no
-             (< (pseudo-term-count elem)
-                (pseudo-term-count val)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-struct-read-scalar ((term pseudo-termp)
                                       (prec-tags atc-string-taginfo-alistp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (arg pseudo-termp)
                (tag identp)
                (member identp)
@@ -449,11 +402,11 @@
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((acl2::fun (no))
-        (mv nil nil (irr-ident) (irr-ident) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp struct tag read member) (atc-check-symbol-4part term.fn))
+  (b* (((reterr) nil nil (irr-ident) (irr-ident) (irr-type))
+       ((acl2::fun (no)) (retok nil nil (irr-ident) (irr-ident) (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp struct tag read member) (atc-check-symbol-4part fn))
        ((unless (and okp
                      (equal (symbol-name struct) "STRUCT")
                      (equal (symbol-name read) "READ")))
@@ -462,19 +415,28 @@
        (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
        (info (atc-tag-info->defstruct info))
-       ((unless (member-eq term.fn (defstruct-info->reader-list info))) (no))
+       ((unless (member-eq fn (defstruct-info->reader-list info)))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a structure read ~
+                      for the structure type ~x1, ~
+                      but it is not among the readers ~
+                      associated to that structure type."
+                     fn tag)))
        (tag (defstruct-info->tag info))
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (member (symbol-name member))
-       ((unless (paident-stringp member)) (no))
+       ((unless (paident-stringp member))
+        (reterr (raise "Internal error: ~x0 is not a portable ASCII identifier."
+                       member)))
        (member (ident member))
        (mem-type (member-type-lookup member members))
-       ((unless mem-type) (no))
-       ((unless (type-integerp mem-type)) (no))
-       ((unless (list-lenp 1 term.args)) (no))
-       (arg (car term.args)))
-    (mv t arg tag member mem-type))
+       ((unless mem-type)
+        (reterr (raise "Internal error: type of ~x0 not found." member)))
+       ((unless (list-lenp 1 args))
+        (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
+       (arg (car args)))
+    (retok t arg tag member mem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-read-scalar
@@ -487,7 +449,8 @@
 
 (define atc-check-struct-read-array ((term pseudo-termp)
                                      (prec-tags atc-string-taginfo-alistp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (index pseudo-termp)
                (struct pseudo-termp)
                (tag identp)
@@ -510,10 +473,11 @@
    (xdoc::p
     "If the term does not have the right form,
      we return an indication of failure."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-ident) (irr-ident) (irr-type)))
-       ((unless (pseudo-term-case term :fncall)) (no))
-       ((pseudo-term-fncall term) term)
-       ((mv okp struct tag read member element) (atc-check-symbol-5part term.fn))
+  (b* (((reterr) nil nil nil (irr-ident) (irr-ident) (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-ident) (irr-ident) (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call term))
+       ((unless okp) (no))
+       ((mv okp struct tag read member element) (atc-check-symbol-5part fn))
        ((unless (and okp
                      (equal (symbol-name struct) "STRUCT")
                      (equal (symbol-name read) "READ")
@@ -523,22 +487,32 @@
        (info (cdr (assoc-equal tag prec-tags)))
        ((unless info) (no))
        (info (atc-tag-info->defstruct info))
-       ((unless (member-eq term.fn (defstruct-info->reader-element-list info)))
-        (no))
+       ((unless (member-eq fn (defstruct-info->reader-element-list info)))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of a structure read ~
+                      for the structure type ~x1, ~
+                      but it is not among the readers ~
+                      associated to that structure type."
+                     fn tag)))
        (tag (defstruct-info->tag info))
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (member (symbol-name member))
-       ((unless (paident-stringp member)) (no))
+       ((unless (paident-stringp member))
+        (reterr (raise "Internal error: ~x0 is not a portable ASCII identifier."
+                       member)))
        (member (ident member))
        (mem-type (member-type-lookup member members))
-       ((unless mem-type) (no))
-       ((unless (type-case mem-type :array)) (no))
+       ((unless mem-type)
+        (reterr (raise "Internal error: type of ~x0 not found." member)))
+       ((unless (type-case mem-type :array))
+        (reterr (raise "Internal error: type of ~x0 is not array." member)))
        (elem-type (type-array->of mem-type))
-       ((unless (list-lenp 2 term.args)) (no))
-       (index (first term.args))
-       (struct (second term.args)))
-    (mv t index struct tag member elem-type))
+       ((unless (list-lenp 2 args))
+        (reterr (raise "Internal error: ~x0 not applied to 2 arguments." fn)))
+       (index (first args))
+       (struct (second args)))
+    (retok t index struct tag member elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-read-array-index
@@ -558,7 +532,8 @@
 (define atc-check-struct-write-scalar ((var symbolp)
                                        (val pseudo-termp)
                                        (prec-tags atc-string-taginfo-alistp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (mem pseudo-termp)
                (tag identp)
                (member identp)
@@ -590,34 +565,37 @@
     "Similarly to @(tsee atc-check-struct-read-scalar),
      we consult the @('prec-tags') alist,
      which must contain the C structure type associated to the writer."))
-  (b* (((acl2::fun (no)) (mv nil nil (irr-ident) (irr-ident) (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp struct tag write member) (atc-check-symbol-4part val.fn))
+  (b* (((reterr) nil nil (irr-ident) (irr-ident) (irr-type))
+       ((acl2::fun (no)) (retok nil nil (irr-ident) (irr-ident) (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call val))
+       ((unless okp) (no))
+       ((mv okp struct tag write member) (atc-check-symbol-4part fn))
        ((unless (and okp
                      (equal (symbol-name struct) "STRUCT")
                      (equal (symbol-name write) "WRITE")))
         (no))
        (tag (symbol-name tag))
        (info (cdr (assoc-equal tag prec-tags)))
-       ((unless info) (no))
+       ((unless info)
+        (reterr (raise "Internal error: no structure with tag ~x0." tag)))
        (info (atc-tag-info->defstruct info))
-       ((unless (member-eq val.fn (defstruct-info->writer-list info))) (no))
+       ((unless (member-eq fn (defstruct-info->writer-list info)))
+        (reterr (raise "Internal error: no member writer ~x0." fn)))
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (tag (defstruct-info->tag info))
        (member (symbol-name member))
-       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
-       ((unless mem-type) (no))
-       ((unless (type-integerp mem-type)) (no))
-       ((unless (list-lenp 2 val.args)) (no))
-       (mem (first val.args))
-       (struct (second val.args)))
-    (if (equal struct var)
-        (mv t mem tag member mem-type)
-      (no)))
+       ((unless mem-type)
+        (reterr (raise "Internal error: no member type for ~x0." member)))
+       ((unless (list-lenp 2 args))
+        (reterr (raise "Internal error: ~x0 not applied to 2 arguments." fn)))
+       (mem (first args))
+       ((unless (equal (second args) var))
+        (reterr (raise "Internal error: ~x0 is not applied to the variable ~x1."
+                       fn var))))
+    (retok t mem tag member mem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-write-scalar
@@ -631,7 +609,8 @@
 (define atc-check-struct-write-array ((var symbolp)
                                       (val pseudo-termp)
                                       (prec-tags atc-string-taginfo-alistp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (index pseudo-termp)
                (elem pseudo-termp)
                (tag identp)
@@ -669,11 +648,11 @@
     "Similarly to @(tsee atc-check-struct-read-array),
      we consult the @('prec-tags') alist,
      which must contain the C structure type associated to the writer."))
-  (b* (((acl2::fun (no))
-        (mv nil nil nil (irr-ident) (irr-ident) (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp struct tag write member element) (atc-check-symbol-5part val.fn))
+  (b* (((reterr) nil nil nil (irr-ident) (irr-ident) (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-ident) (irr-ident) (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call val))
+       ((unless okp) (no))
+       ((mv okp struct tag write member element) (atc-check-symbol-5part fn))
        ((unless (and okp
                      (equal (symbol-name struct) "STRUCT")
                      (equal (symbol-name write) "WRITE")
@@ -681,27 +660,30 @@
         (no))
        (tag (symbol-name tag))
        (info (cdr (assoc-equal tag prec-tags)))
-       ((unless info) (no))
+       ((unless info)
+        (reterr (raise "Internal error: no structure with tag ~x0." tag)))
        (info (atc-tag-info->defstruct info))
-       ((unless (member-eq val.fn (defstruct-info->writer-element-list info)))
-        (no))
+       ((unless (member-eq fn (defstruct-info->writer-element-list info)))
+        (reterr (raise "Internal error: no member writer ~x0." fn)))
        (members (defstruct-member-info-list->memtype-list
                   (defstruct-info->members info)))
        (tag (defstruct-info->tag info))
        (member (symbol-name member))
-       ((unless (paident-stringp member)) (no))
        (member (ident member))
        (mem-type (member-type-lookup member members))
-       ((unless mem-type) (no))
-       ((unless (type-case mem-type :array)) (no))
+       ((unless mem-type)
+        (reterr (raise "Internal error: no member type for ~x0." member)))
+       ((unless (type-case mem-type :array))
+        (reterr (raise "Internal error: type of ~x0 is not array." member)))
        (elem-type (type-array->of mem-type))
-       ((unless (list-lenp 3 val.args)) (no))
-       (index (first val.args))
-       (mem (second val.args))
-       (struct (third val.args)))
-    (if (equal struct var)
-        (mv t index mem tag member elem-type)
-      (no)))
+       ((unless (list-lenp 3 args))
+        (reterr (raise "Internal error: ~x0 not applied to 3 arguments." fn)))
+       (index (first args))
+       (mem (second args))
+       ((unless (equal (third args) var))
+        (reterr (raise "Internal error: ~x0 is not applied to the variable ~x1."
+                       fn var))))
+    (retok t index mem tag member elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-write-array-index

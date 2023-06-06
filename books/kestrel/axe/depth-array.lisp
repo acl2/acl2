@@ -1,7 +1,7 @@
 ; Computing the depth of DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -90,9 +90,9 @@
 
 ;; Returns (mv depth-array largest-depth)
 ;go from node n down, tagging each node with its depth
-;nodes with no depth are irrelevant (that is, do not support the top node(s))
+;nodes with no depth are irrelevant (that is, do not support the starting node(s))
 ;the depth of a node is set when processing its parents
-;fixme use a worklist?
+;; TODO: Consider using a worklist
 (defund make-depth-array-aux (n
                              dag-array-name
                              dag-array
@@ -187,7 +187,7 @@
                          array-len))
   :hints (("Goal" :in-theory (enable aset1-list))))
 
-;; Returns (mv depth-array largest-depth)
+;; Returns (mv depth-array largest-depth). In the resulting depth-array, nodes that do not support any of the STARTING-NODES have a value of nil.
 ;fixme should we use depth 0 for the starting-nodes themselves?
 ;; the depth of a node is the shortest path to it from one of the designated nodes
 (defun make-depth-array-for-nodes (starting-nodes dag-array-name dag-array dag-len)
@@ -199,10 +199,7 @@
                               (all-< starting-nodes dag-len))))
   (let* ((max-nodenum (maxelem starting-nodes))
          (depth-array (make-empty-array 'depth-array (+ 1 max-nodenum)))
-         (depth-array (aset1-list 'depth-array depth-array starting-nodes 1))
-         ;; (depth-array (aset1 'depth-array depth-array smaller-nodenum 1))
-         ;; (depth-array (aset1 'depth-array depth-array larger-nodenum 1))
-         )
+         (depth-array (aset1-list 'depth-array depth-array starting-nodes 1)))
     (make-depth-array-aux max-nodenum dag-array-name dag-array 'depth-array depth-array dag-len 1)))
 
 (defthm alen1-of-mv-nth-0-of-make-depth-array-for-nodes

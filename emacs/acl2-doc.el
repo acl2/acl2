@@ -659,6 +659,27 @@ for confirmation."
          (acl2-doc-display-message (car *acl2-doc-history*)))
         (t (error "Empty history: No `where' to display!"))))
 
+(defun xdoc-tag-alist-fancy-p (val)
+
+;;; Keep this in sync with function xdoc-tag-alist-fancy-p in
+;;; books/system/doc/display.lisp.
+
+  (or (null val)
+      (equal val "")
+      (equal (upcase val) "FANCY")))
+
+(defun acl2-doc-handle-color ()
+
+;;; This function removes color indicators for Select Graphic Rendition (SGR)
+;;; in the current buffer.  If we want color, then we should use
+;;; ansi-color-apply-on-region to set color properties; if we want plain text
+;;; without color then we should use ansi-color-filter-region, which anyhow is
+;;; much more efficient than ansi-color-apply-on-region.
+
+  (if (xdoc-tag-alist-fancy-p (getenv "ACL2_XDOC_TAGS"))
+      (ansi-color-apply-on-region (point-min) (point-max))
+    (ansi-color-filter-region (point-min) (point-max))))
+
 (defun acl2-doc-display-basic (entry &optional extra)
 
 ;;; Entry is a history entry, hence of the form (point name parents
@@ -671,6 +692,7 @@ for confirmation."
   (setq buffer-read-only nil)
   (erase-buffer)
   (acl2-doc-print-topic (cdr entry))  ; entry is (cons position tuple)
+  (acl2-doc-handle-color)
   (setq buffer-read-only t)
   (goto-char (nth 0 entry))
   (push (car (cdr entry)) *acl2-doc-all-topics-rev*)
@@ -1283,11 +1305,18 @@ command is buffer-local like the \",\" command."
       (let ((acl2-doc-search-file-name (acl2-doc-search-file-name))
             (large-file-warning-threshold
              (acl2-doc-large-file-warning-threshold)))
+
+; We assume that acl2-doc-search-file was written without Select Graphic
+; Rendition (SGR) markings; see without-fancy-xdoc-tags and its use in
+; books/xdoc/save-rendered.lisp.
+
         (and acl2-doc-search-file-name
              (file-exists-p acl2-doc-search-file-name)
              (find-file-noselect acl2-doc-search-file-name)))
       (let ((buf (get-buffer-create *acl2-doc-search-buffer-name*))
-            (alist (acl2-doc-state-alist)))
+            (alist (acl2-doc-state-alist))
+            (large-file-warning-threshold nil)
+            (undo-outer-limit nil))
         (with-current-buffer
             buf
           (while alist
@@ -1295,6 +1324,11 @@ command is buffer-local like the \",\" command."
             (insert *acl2-doc-search-separator*)
             (insert "\n")
             (acl2-doc-print-topic (pop alist)))
+
+; Since we are writing the acl2-doc-search buffer in this case, we need to
+; remove Select Graphic Rendition (SGR) markings.
+
+          (acl2-doc-handle-color)
           (setq buffer-read-only t))
         buf)))
 
@@ -1494,21 +1528,6 @@ searching from the bottom if no link is below the cursor."
       (push (cadr (car x)) ans)
       (setq x (cdr x)))
     (reverse ans)))
-
-(defun acl2-doc-history-buffer ()
-;;; Return the history buffer, creating it first if necessary.
-  (or (get-buffer *acl2-doc-history-buffer-name*)
-      (let ((buf (get-buffer-create *acl2-doc-history-buffer-name*))
-            (alist (acl2-doc-state-alist)))
-        (with-current-buffer
-            buf
-          (while alist
-            (insert "\n")
-            (insert *acl2-doc-search-separator*)
-            (insert "\n")
-            (acl2-doc-print-topic (pop alist)))
-          (setq buffer-read-only t))
-        buf)))
 
 (defun acl2-doc-history ()
 

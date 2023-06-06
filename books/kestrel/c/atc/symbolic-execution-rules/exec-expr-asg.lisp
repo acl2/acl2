@@ -184,7 +184,7 @@
   :short "Code to generate the rules for executing
           assignments to array subscripting expressions."
 
-  (define atc-exec-expr-asg-arrsub-rules-gen-1 ((atype typep))
+  (define atc-exec-expr-asg-arrsub-rules-gen ((atype typep))
     :guard (type-nonchar-integerp atype)
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
@@ -272,119 +272,23 @@
                       :enable apconvert-expr-value)))))
       (mv name event)))
 
-  (define atc-exec-expr-asg-arrsub-rules-gen-2 ((atype typep)
-                                                (itype typep)
-                                                (genthm symbolp))
-    :guard (and (type-nonchar-integerp atype)
-                (type-nonchar-integerp itype))
-    :returns (mv (name symbolp)
-                 (event pseudo-event-formp))
-    :parents nil
-    (b* ((afixtype (integer-type-to-fixtype atype))
-         (ifixtype (integer-type-to-fixtype itype))
-         (apred (pack afixtype '-arrayp))
-         (epred (pack afixtype 'p))
-         (ipred (pack ifixtype 'p))
-         (atype-array-itype-index-okp (pack afixtype '-array-
-                                            ifixtype '-index-okp))
-         (atype-array-write-itype (pack afixtype '-array-write- ifixtype))
-         (name (pack 'exec-expr-asg-arrsub-when- apred '-and- ipred))
-         (formula
-          `(implies
-            (and (syntaxp (quotep e))
-                 (equal (expr-kind e) :binary)
-                 (equal (binop-kind (expr-binary->op e)) :asg)
-                 (equal left (expr-binary->arg1 e))
-                 (equal right (expr-binary->arg2 e))
-                 (equal (expr-kind left) :arrsub)
-                 (equal arr (expr-arrsub->arr left))
-                 (equal sub (expr-arrsub->sub left))
-                 (equal (expr-kind arr) :ident)
-                 (equal var (expr-ident->get arr))
-                 (not (zp limit))
-                 (equal arr-val (read-var var compst))
-                 (valuep arr-val)
-                 (equal ex
-                        (apconvert-expr-value
-                         (expr-value arr-val (objdesign-of-var var compst))))
-                 (expr-valuep ex)
-                 (equal ptr (expr-value->value ex))
-                 (value-case ptr :pointer)
-                 (value-pointer-validp ptr)
-                 (equal (value-pointer->reftype ptr)
-                        ,(type-to-maker atype))
-                 (equal array
-                        (read-object (value-pointer->designator ptr) compst))
-                 (,apred array)
-                 (equal eindex (exec-expr-pure sub compst))
-                 (expr-valuep eindex)
-                 (equal eindex1 (apconvert-expr-value eindex))
-                 (expr-valuep eindex1)
-                 (equal index (expr-value->value eindex1))
-                 (,ipred index)
-                 (,atype-array-itype-index-okp array index)
-                 (equal eval (exec-expr-pure right compst))
-                 (expr-valuep eval)
-                 (equal eval1 (apconvert-expr-value eval))
-                 (expr-valuep eval1)
-                 (equal val (expr-value->value eval1))
-                 (,epred val))
-            (equal (exec-expr-asg e compst fenv limit)
-                   (write-object (value-pointer->designator ptr)
-                                 (,atype-array-write-itype array index val)
-                                 compst))))
-         (event `(defruled ,name
-                   ,formula
-                   :enable (,genthm
-                            ,(pack atype-array-itype-index-okp '-alt-def)
-                            ,(pack atype-array-write-itype '-alt-def)))))
-      (mv name event)))
-
-  (define atc-exec-expr-asg-arrsub-rules-gen-loop-itypes ((atype typep)
-                                                          (itypes type-listp)
-                                                          (genthm symbolp))
-    :guard (and (type-nonchar-integerp atype)
-                (type-nonchar-integer-listp itypes))
+  (define atc-exec-expr-asg-arrsub-rules-gen-loop ((atypes type-listp))
+    :guard (type-nonchar-integer-listp atypes)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
-    (b* (((when (endp itypes)) (mv nil nil))
-         ((mv name event) (atc-exec-expr-asg-arrsub-rules-gen-2 atype
-                                                                (car itypes)
-                                                                genthm))
-         ((mv names events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes atype
-                                                          (cdr itypes)
-                                                          genthm)))
-      (mv (cons name names) (cons event events))))
-
-  (define atc-exec-expr-asg-arrsub-rules-gen-loop-atypes ((atypes type-listp)
-                                                          (itypes type-listp))
-    :guard (and (type-nonchar-integer-listp atypes)
-                (type-nonchar-integer-listp itypes))
-    :returns (mv (names symbol-listp)
-                 (names-deprecated symbol-listp)
-                 (events pseudo-event-form-listp))
-    :parents nil
-    (b* (((when (endp atypes)) (mv nil nil nil))
-         ((mv name event) (atc-exec-expr-asg-arrsub-rules-gen-1 (car atypes)))
-         ((mv names-deprecated events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop-itypes (car atypes)
-                                                          itypes
-                                                          name))
-         ((mv more-names more-names-deprecated more-events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
-      (mv (append (list name) more-names)
-          (append names-deprecated more-names-deprecated)
-          (append (list event) events more-events))))
+    (b* (((when (endp atypes)) (mv nil nil))
+         ((mv name event) (atc-exec-expr-asg-arrsub-rules-gen (car atypes)))
+         ((mv more-names more-events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop (cdr atypes))))
+      (mv (cons name more-names)
+          (cons event more-events))))
 
   (define atc-exec-expr-asg-arrsub-rules-gen-all ()
     :returns (event pseudo-event-formp)
     :parents nil
-    (b* (((mv names names-deprecated events)
-          (atc-exec-expr-asg-arrsub-rules-gen-loop-atypes
-           *nonchar-integer-types*
-           *nonchar-integer-types*)))
+    (b* (((mv names events)
+          (atc-exec-expr-asg-arrsub-rules-gen-loop *nonchar-integer-types*)))
       `(progn
          (defsection atc-exec-expr-asg-arrsub-rules
            :short "Rules for executing assignment expressions to
@@ -392,16 +296,6 @@
            ,@events
            (defval *atc-exec-expr-asg-arrsub-rules*
              '(,@names
-               (:e expr-kind)
-               (:e expr-arrsub->arr)
-               (:e expr-arrsub->sub)
-               (:e expr-binary->op)
-               (:e expr-binary->arg1)
-               (:e expr-binary->arg2)
-               (:e expr-ident->get)
-               (:e binop-kind)))
-           (defval *atc-exec-expr-asg-arrsub-rules-deprecated*
-             '(,@names-deprecated
                (:e expr-kind)
                (:e expr-arrsub->arr)
                (:e expr-arrsub->sub)
@@ -423,9 +317,4 @@
   (defval *atc-exec-expr-asg-rules*
     (append *atc-exec-expr-asg-ident-rules*
             *atc-exec-expr-asg-indir-rules*
-            *atc-exec-expr-asg-arrsub-rules*))
-
-  (defval *atc-exec-expr-asg-rules-deprecated*
-    (append *atc-exec-expr-asg-ident-rules*
-            *atc-exec-expr-asg-indir-rules*
-            *atc-exec-expr-asg-arrsub-rules-deprecated*)))
+            *atc-exec-expr-asg-arrsub-rules*)))

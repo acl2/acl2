@@ -15,6 +15,7 @@
 
 (include-book "../language/static-semantics")
 (include-book "../language/function-environments")
+(include-book "../language/computation-states")
 
 (include-book "kestrel/event-macros/screen-printing" :dir :system)
 (include-book "kestrel/std/system/add-suffix-to-fn-lst" :dir :system)
@@ -74,10 +75,6 @@
               (equal (len a) 2)
               (doublet-listp b)))
   :enable (doublet-listp length))
-
-(defruledl true-listp-when-pseudo-term-listp-rewrite
-  (implies (pseudo-term-listp x)
-           (true-listp x)))
 
 (defruledl iff-consp-when-true-listp
   (implies (true-listp x)
@@ -261,7 +258,7 @@
                type)))
     (mv type defobj-pred arg))
   :guard-hints
-  (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-rewrite
+  (("Goal" :in-theory (enable acl2::true-listp-when-pseudo-term-listp
                               iff-consp-when-true-listp
                               symbolp-of-car-of-pseudo-termp
                               pseudo-term-listp-of-cdr-of-pseudo-termp))))
@@ -274,6 +271,7 @@
                             (formal symbolp)
                             (type typep)
                             (defobj-pred symbolp)
+                            (prec-tags atc-string-taginfo-alistp)
                             (names-to-avoid symbol-listp)
                             (wrld plist-worldp))
   :returns (mv (event pseudo-event-formp)
@@ -301,7 +299,7 @@
   (b* ((name (pack fn '- formal))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-       (pred (type-to-recognizer type wrld))
+       (pred (atc-type-to-recognizer type prec-tags))
        (formula `(implies (,fn-guard ,@fn-formals)
                           (,pred ,formal)))
        (hints `(("Goal" :in-theory '(,fn-guard
@@ -439,7 +437,7 @@
                         guard fn arg)))
           ((mv event name names-to-avoid)
            (atc-gen-formal-thm fn fn-guard formals arg type defobj-pred
-                               names-to-avoid wrld))
+                               prec-tags names-to-avoid wrld))
           (events (cons event events))
           (externalp
            (b* ((info? (cdr (assoc-equal (symbol-name arg) prec-objs))))
@@ -633,7 +631,7 @@
      because we need to use it in events that are computed
      before the actual theorem can be computed
      (see @(tsee atc-gen-fundef))."))
-  (fresh-logical-name-with-$s-suffix (add-suffix fn "-FUN-ENV")
+  (fresh-logical-name-with-$s-suffix (add-suffix-to-fn fn "-FUN-ENV")
                                      nil
                                      names-to-avoid
                                      wrld))
@@ -833,16 +831,16 @@
                                                   0
                                                 nil)
                                               fn-call
-                                              wrld))
+                                              prec-tags))
        (conclusion
         (if (and (consp conjuncts)
                  (not (consp (cdr conjuncts))))
             (car conjuncts)
           `(and ,@conjuncts)))
-       (name (add-suffix fn
-                         (if (consp (cdr results))
-                             "-RESULTS"
-                           "-RESULT")))
+       (name (add-suffix-to-fn fn
+                               (if (consp (cdr results))
+                                   "-RESULTS"
+                                 "-RESULT")))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (guard (untranslate$ (uguard+ fn wrld) t state))
@@ -994,7 +992,7 @@
    (define atc-gen-fn-result-thm-aux2 ((results symbol-type-alistp)
                                        (index? maybe-natp)
                                        (fn-call pseudo-termp)
-                                       (wrld plist-worldp))
+                                       (prec-tags atc-string-taginfo-alistp))
      :returns conjuncts
      :parents nil
      (b* (((when (endp results)) nil)
@@ -1002,7 +1000,7 @@
                          `(mv-nth ,index? ,fn-call)
                        fn-call))
           ((cons name type) (car results))
-          (type-conjunct `(,(type-to-recognizer type wrld) ,theresult))
+          (type-conjunct `(,(atc-type-to-recognizer type prec-tags) ,theresult))
           (nonnil-conjunct? (and index? (list theresult)))
           (arraylength-conjunct?
            (b* (((unless (type-case type :array)) nil)
@@ -1018,7 +1016,7 @@
                (atc-gen-fn-result-thm-aux2 (cdr results)
                                            (and index? (1+ index?))
                                            fn-call
-                                           wrld))))))
+                                           prec-tags))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1477,6 +1475,7 @@
                                   (limit pseudo-termp)
                                   (deprecated keyword-listp)
                                   state)
+  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (exported-events pseudo-event-form-listp)
                (name symbolp :hyp (symbol-symbol-alistp fn-thms)))
@@ -1707,9 +1706,7 @@
        (extobj-recognizers (atc-string-objinfo-alist-to-recognizers prec-objs))
        (hints `(("Goal"
                  :in-theory (union-theories
-                             (theory ',(if (member-eq :arrays deprecated)
-                                           'atc-all-rules-deprecated
-                                         'atc-all-rules))
+                             (theory 'atc-all-rules)
                              '(not-errorp-when-expr-valuep
                                ,@not-error-thms
                                ,@valuep-thms
@@ -1733,9 +1730,7 @@
                  :expand (:lambdas))
                 (and stable-under-simplificationp
                      '(:in-theory (union-theories
-                                   (theory ',(if (member-eq :arrays deprecated)
-                                                 'atc-all-rules-deprecated
-                                               'atc-all-rules))
+                                   (theory 'atc-all-rules)
                                    '(,fn
                                      not-errorp-when-expr-valuep
                                      ,@not-error-thms
@@ -1937,12 +1932,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-omap-update-formals ((typed-formals atc-symbol-varinfo-alistp))
-  :returns (mv (term pseudo-termp
-                     :hyp (atc-symbol-varinfo-alistp typed-formals)
-                     :hints (("Goal"
-                              :induct t
-                              :in-theory (enable pseudo-termp))))
-               (all-integers-p booleanp))
+  :returns (mv (term "An untranslated term.")
+               (init-formals symbol-listp
+                             :hyp (atc-symbol-varinfo-alistp typed-formals))
+               (proofs booleanp))
   :short "Generate a term that is an @(tsee omap::update) nest
           for the formals of a function."
   :long
@@ -1955,31 +1948,49 @@
     "(omap::update (ident <string>) <symbol> (omap::update ... nil) ...)")
    (xdoc::p
     "where @('<string>') is the string for the name of the C formal
-     and @('<symbol>') is the symbol that is the corresponding ACL2 formal.")
+     and @('<symbol>') is the symbol that is
+     either the corresponding ACL2 formal
+     or the corresponding ACL2 formal with the @('-ptr') suffix.
+     The latter is for formals of pointer or array type:
+     as explained in @(tsee atc-gen-context-preamble),
+     the C values are represented by ACL2 variables of the form @('x-ptr'):
+     these are the values that go into the initial scope,
+     not the deferenced objects.")
    (xdoc::p
-    "We also return a flag saying whether
-     the formals all have integer types and are not external object,
-     or not."))
-  (b* (((when (endp typed-formals)) (mv nil t))
+    "However, formals that represent external objects are skipped.
+     This is because in C these are not function parameters.")
+   (xdoc::p
+    "We also return the list of the @('<symbol>')s,
+     some of which are the formals,
+     while the others are the formals suffixed by @('-ptr').
+     See explanation just above.")
+   (xdoc::p
+    "We also return a flag saying whether modular proofs
+     should be generated or not.
+     This is true iff there are no external objects;
+     we will add support for external objects soon."))
+  (b* (((when (endp typed-formals)) (mv nil nil t))
        ((cons var info) (car typed-formals))
-       ((mv omap-rest all-intp)
-        (atc-gen-omap-update-formals (cdr typed-formals))))
-    (mv `(omap::update (ident ',(symbol-name var)) ,var ,omap-rest)
-        (and (type-integerp (atc-var-info->type info))
-             (not (atc-var-info->externalp info))
-             all-intp))))
+       ((mv omap-rest init-formals-rest proofs-rest)
+        (atc-gen-omap-update-formals (cdr typed-formals)))
+       (type (atc-var-info->type info))
+       (externalp (atc-var-info->externalp info))
+       (var/varptr (if (or (type-case type :pointer)
+                           (type-case type :array))
+                       (add-suffix-to-fn var "-PTR")
+                     var)))
+    (if externalp
+        (mv omap-rest init-formals-rest nil)
+      (mv `(omap::update (ident ,(symbol-name var)) ,var/varptr ,omap-rest)
+          (cons var/varptr init-formals-rest)
+          proofs-rest))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-add-var-formals ((fn symbolp)
                                  (typed-formals atc-symbol-varinfo-alistp)
                                  (compst-var symbolp))
-  :returns (term pseudo-termp
-                 :hyp (and (symbolp compst-var)
-                           (atc-symbol-varinfo-alistp typed-formals))
-                 :hints (("Goal"
-                          :induct t
-                          :in-theory (enable pseudo-termp))))
+  :returns (term "An untranslated term.")
   :short "Generate a term that is an @(tsee add-var) nest
           for the formals of a function."
   :long
@@ -1994,22 +2005,114 @@
     "          (add-var ... (add-frame (ident <fn>) compst)...))")
    (xdoc::p
     "where @('<string>') is the string for the name of the C formal,
-     @('<symbol>') is the symbol that is the corresponding ACL2 formal,
+     @('<symbol>') is the symbol that is
+     either the corresponding ACL2 formal
+     or the corresponding ACL2 formal with the @('-ptr') suffix
+     (according to the criterion in @(tsee atc-gen-omap-update-formals)),
      and the nest ends with @('(add-frame (ident <fn>) compst)'),
      where @('<fn>') is the string for the function name."))
   (b* (((when (endp typed-formals))
-        `(add-frame (ident ',(symbol-name fn)) ,compst-var))
-       ((cons var &) (car typed-formals))
+        `(add-frame (ident ,(symbol-name fn)) ,compst-var))
+       ((cons var info) (car typed-formals))
+       (type (atc-var-info->type info))
+       (externalp (atc-var-info->externalp info))
        (add-var-rest (atc-gen-add-var-formals fn
                                               (cdr typed-formals)
-                                              compst-var)))
-    `(add-var (ident ',(symbol-name var)) ,var ,add-var-rest)))
+                                              compst-var))
+       (var/varptr (if (or (type-case type :pointer)
+                           (type-case type :array))
+                       (add-suffix-to-fn var "-PTR")
+                     var)))
+    (if externalp
+        add-var-rest
+      `(add-var (ident ,(symbol-name var)) ,var/varptr ,add-var-rest))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-context-preamble ((typed-formals atc-symbol-varinfo-alistp)
+                                  (compst-var symbolp))
+  :returns (terms true-listp)
+  :short "Generate a context preamble from the formals of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atc-context),
+     the logical contexts for the generated theorems
+     includes a preamble of premises that is a list of untranslated terms.
+     This is calculated from the typed formals of
+     the ACL2 function that is translated to a C function.")
+   (xdoc::p
+    "For each formal @('x') not representing an external object
+     and whose C type is pointer or array,
+     we generate a portion of the preamble saying that
+     @('x-ptr') is a valid pointer value of the right type,
+     the pointer's object designator is in allocated memory
+     (for now; this will be generalized later),
+     and reading the object yields @('x').
+     Thus, a formal that is a pointer or array
+     is represented by two variables in the generated theorems:
+     this is necessary because the ACL2 function
+     takes integers and structures and arrays (not pointers),
+     but the C function takes pointers that point to integers and structures,
+     and pointers that point to the beginning of arrays.
+     In the theorems, we use the name of the formal
+     as the integer or structure or array,
+     and we introduce a new name, with a @('-ptr') suffix, for the pointer.
+     Note that, because of the restriction on portable ASCII C identifiers,
+     dashes cannot occur in names of formals,
+     and thus something ending in @('-ptr') cannot cause conflicts.
+     The terms generated in the preamble constrain @('x-ptr') to be the pointer,
+     and include a binding hypothesis that sets @('x') to be
+     the integer or structure or array to which @('x-ptr') points to.
+     There is also a binding hypothesis for a variable @('x-objdes')
+     that is the object designator in @('x-ptr');
+     note that it cannot conflict with other variables,
+     for the same reason as @('x-ptr').")
+   (xdoc::p
+    "For each formal @('x') not representing an external object
+     and whose C type is not pointer or array (i.e. is integer of structure),
+     we generate no preamble terms.
+     This is because the ACL2 formal directly represents the C formal.")
+   (xdoc::p
+    "For each formal @('x') that represents an external object,
+     we generate a binding hypothesis saying that
+     @('x') equals @(tsee read-object) applied to
+     the object designator for the variable in static storage.
+     This is adequate whether the external object is an integer or an array."))
+  (b* (((when (endp typed-formals)) nil)
+       ((cons var info) (car typed-formals))
+       (type (atc-var-info->type info))
+       (externalp (atc-var-info->externalp info))
+       (terms
+        (if externalp
+            `((equal ,var
+                     (read-object (objdesign-static (ident ,(symbol-name var)))
+                                  ,compst-var)))
+          (if (member-eq (type-kind type) '(:pointer :array))
+              (b* ((var-ptr (add-suffix-to-fn var "-PTR"))
+                   (var-objdes (add-suffix-to-fn var "-OBJDES"))
+                   (reftype (if (type-case type :pointer)
+                                (type-pointer->to type)
+                              (type-array->of type))))
+                `((valuep ,var-ptr)
+                  (equal (value-kind ,var-ptr) :pointer)
+                  (value-pointer-validp ,var-ptr)
+                  (equal ,var-objdes (value-pointer->designator ,var-ptr))
+                  (equal (objdesign-kind ,var-objdes) :alloc)
+                  (equal (value-pointer->reftype ,var-ptr)
+                         ,(type-to-maker reftype))
+                  (equal ,var (read-object ,var-objdes ,compst-var))))
+            nil)))
+       (more-terms (atc-gen-context-preamble (cdr typed-formals) compst-var)))
+    (append terms more-terms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-init-scope-thms ((fn symbolp)
                                  (fn-guard symbolp)
                                  (typed-formals atc-symbol-varinfo-alistp)
+                                 (prec-tags atc-string-taginfo-alistp)
+                                 (context-preamble true-listp)
                                  (prog-const symbolp)
                                  (fn-fun-env-thm symbolp)
                                  (compst-var symbolp)
@@ -2020,8 +2123,9 @@
                (expand-thm symbolp)
                (scopep-event pseudo-event-formp)
                (scopep-thm symbolp)
-               (omap-update-nest pseudo-termp
-                                 :hyp (atc-symbol-varinfo-alistp typed-formals))
+               (omap-update-nest "An untranslated term.")
+               (init-formals symbol-listp
+                             :hyp (atc-symbol-varinfo-alistp typed-formals))
                (proofs booleanp)
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorems about
@@ -2033,10 +2137,10 @@
      and one theorem saying that the expansion satisfies @(tsee scopep).")
    (xdoc::p
     "We also return the @(tsee omap::update) nest term
-     that describes the initial scope, for use in subsequent theorems.."))
+     that describes the initial scope, for use in subsequent theorems."))
   (b* ((wrld (w state))
-       ((mv omap-update-nest proofs) (atc-gen-omap-update-formals typed-formals))
-       ((unless proofs) (mv '(_) nil '(_) nil nil nil names-to-avoid))
+       ((mv omap-update-nest init-formals proofs)
+        (atc-gen-omap-update-formals typed-formals))
        (formals (strip-cars typed-formals))
        (expand-thm (pack fn '-init-scope-expand))
        ((mv expand-thm names-to-avoid)
@@ -2050,10 +2154,20 @@
                        (equal ,info-var
                               (fun-env-lookup (ident ,(symbol-name fn))
                                               ,fenv-var))
+                       ,@context-preamble
                        (,fn-guard ,@formals))
                   (equal (init-scope (fun-info->params ,info-var)
-                                     (list ,@formals))
+                                     (list ,@init-formals))
                          ,omap-update-nest)))
+       (flexible-thms (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms prec-tags))
+       (type-to-quoted-thms
+        (atc-string-taginfo-alist-to-type-to-quoted-thms prec-tags))
+       (pointer-type-to-quoted-thms
+        (atc-string-taginfo-alist-to-pointer-type-to-quoted-thms prec-tags))
        (expand-hints
         `(("Goal" :in-theory '(,fn-fun-env-thm
                                (:e fun-info->params)
@@ -2070,6 +2184,7 @@
                                valuep-when-slongp
                                valuep-when-ullongp
                                valuep-when-sllongp
+                               ,@valuep-thms
                                value-kind-when-ucharp
                                value-kind-when-scharp
                                value-kind-when-ushortp
@@ -2080,6 +2195,7 @@
                                value-kind-when-slongp
                                value-kind-when-ullongp
                                value-kind-when-sllongp
+                               ,@value-kind-thms
                                type-of-value-when-ucharp
                                type-of-value-when-scharp
                                type-of-value-when-ushortp
@@ -2090,6 +2206,10 @@
                                type-of-value-when-slongp
                                type-of-value-when-ullongp
                                type-of-value-when-sllongp
+                               type-of-value-when-value-pointer
+                               ,@type-of-value-thms
+                               ,@type-to-quoted-thms
+                               ,@pointer-type-to-quoted-thms
                                not-flexible-array-member-p-when-ucharp
                                not-flexible-array-member-p-when-scharp
                                not-flexible-array-member-p-when-ushortp
@@ -2100,6 +2220,9 @@
                                not-flexible-array-member-p-when-slongp
                                not-flexible-array-member-p-when-ullongp
                                not-flexible-array-member-p-when-sllongp
+                               not-flexible-array-member-p-when-value-pointer
+                               not-flexible-array-member-p-when-value-struct
+                               ,@flexible-thms
                                remove-flexible-array-member-when-absent
                                value-fix-when-valuep
                                (:e param-declon-to-ident+tyname)
@@ -2121,6 +2244,7 @@
                                (:e type-slong)
                                (:e type-ullong)
                                (:e type-sllong)
+                               (:e type-pointer)
                                omap::in-of-update
                                (:e omap::in)
                                scopep-of-update
@@ -2140,8 +2264,10 @@
         (fresh-logical-name-with-$s-suffix scopep-thm nil names-to-avoid wrld))
        (scopep-formula
         `(implies (and (compustatep ,compst-var)
+                       ,@context-preamble
                        (,fn-guard ,@formals))
                   (scopep ,omap-update-nest)))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
        (scopep-hints
         `(("Goal" :in-theory '(scopep-of-update
                                (:e scopep)
@@ -2156,7 +2282,8 @@
                                valuep-when-ulongp
                                valuep-when-slongp
                                valuep-when-ullongp
-                               valuep-when-sllongp))))
+                               valuep-when-sllongp
+                               ,@valuep-thms))))
        ((mv scopep-event &)
         (evmac-generate-defthm scopep-thm
                                :formula scopep-formula
@@ -2167,7 +2294,8 @@
         scopep-event
         scopep-thm
         omap-update-nest
-        t
+        init-formals
+        proofs
         names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2175,16 +2303,15 @@
 (define atc-gen-push-init-thm ((fn symbolp)
                                (fn-guard symbolp)
                                (typed-formals atc-symbol-varinfo-alistp)
-                               (omap-update-nest pseudo-termp)
+                               (prec-tags atc-string-taginfo-alistp)
+                               (context-preamble true-listp)
+                               (omap-update-nest "An untranslated term.")
                                (compst-var symbolp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp)
-               (add-var-nest
-                pseudo-termp
-                :hyp (and (symbolp compst-var)
-                          (atc-symbol-varinfo-alistp typed-formals)))
+               (add-var-nest "An untranslated term.")
                (names-to-avoid symbol-listp
                                :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorem about
@@ -2207,12 +2334,16 @@
        (formal-thms (atc-var-info-list->thm-list (strip-cdrs typed-formals)))
        (formula
         `(implies (and (compustatep ,compst-var)
+                       ,@context-preamble
                        (,fn-guard ,@formals))
                   (equal (push-frame
                           (make-frame :function (ident ,(symbol-name fn))
                                       :scopes (list ,omap-update-nest))
                           ,compst-var)
                          ,add-var-nest)))
+       (flexible-thms (atc-string-taginfo-alist-to-flexiblep-thms prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms prec-tags))
+       (value-kind-thms (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
        (hints
         `(("Goal" :in-theory '(push-frame-of-one-nonempty-scope
                                push-frame-of-one-empty-scope
@@ -2227,6 +2358,7 @@
                                valuep-when-slongp
                                valuep-when-ullongp
                                valuep-when-sllongp
+                               ,@valuep-thms
                                not-flexible-array-member-p-when-ucharp
                                not-flexible-array-member-p-when-scharp
                                not-flexible-array-member-p-when-ushortp
@@ -2237,6 +2369,10 @@
                                not-flexible-array-member-p-when-slongp
                                not-flexible-array-member-p-when-ullongp
                                not-flexible-array-member-p-when-sllongp
+                               not-flexible-array-member-p-when-value-pointer
+                               not-flexible-array-member-p-when-value-struct
+                               ,@flexible-thms
+                               ,@value-kind-thms
                                scopep-of-update
                                (:e scopep)
                                identp-of-ident))))
@@ -2253,6 +2389,7 @@
                               (fn-guard symbolp)
                               (fn-formals symbol-listp)
                               (typed-formals atc-symbol-varinfo-alistp)
+                              (prec-tags atc-string-taginfo-alistp)
                               (compst-var symbolp)
                               (context atc-contextp)
                               (names-to-avoid symbol-listp)
@@ -2265,16 +2402,22 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is like the typed formals alist,
+    "This is similar to the typed formals alist,
      except that the theorem stored in each variable information
-     says that reading the variable from the computation state
-     yields the variable itself,
+     says that reading the C variable from the computation state
+     yields the ACL2 variable,
      and also that the variable has the applicable type.
      In contrast, the theorem stored
      in each variable information in the typed formals alist
-     only talks about the variable (i.e. formal parameter).")
+     only talks about the variable (i.e. formal parameter).
+     More precisely, if the C variable has pointer or array type,
+     the theorem says that reading the C variable
+     yields the @('-ptr') ACL2 variable (which contains a pointer value),
+     and in addition that dereferencing this pointer
+     yields the ACL2 variable that is the formal (an integer or an array).
+     That is, in the case of a pointer, there is an ``intermediate''.")
    (xdoc::p
-    "This ACL2 function goes throught the typed formals,
+    "This ACL2 function goes through the typed formals,
      and generates a corresponding variable table.
      Each theorem is contextualized to the initial computation state;
      this is what @('context') contains.
@@ -2287,7 +2430,7 @@
      as we update the symbol table in the course of generating code,
      we use positive indices as suffixes."))
   (b* (((mv scope events names-to-avoid)
-        (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals
+        (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals prec-tags
                                   compst-var context names-to-avoid wrld)))
     (mv (list scope) events names-to-avoid))
 
@@ -2296,6 +2439,7 @@
                                      (fn-guard symbolp)
                                      (fn-formals symbol-listp)
                                      (typed-formals atc-symbol-varinfo-alistp)
+                                     (prec-tags atc-string-taginfo-alistp)
                                      (compst-var symbolp)
                                      (context atc-contextp)
                                      (names-to-avoid symbol-listp)
@@ -2311,16 +2455,27 @@
           (type (atc-var-info->type info))
           (var-thm (atc-var-info->thm info))
           (externalp (atc-var-info->externalp info))
-          (type-pred (type-to-recognizer type wrld))
+          (type-pred (atc-type-to-recognizer type prec-tags))
           (name (pack fn '- var '-in-scope-0))
           ((mv name names-to-avoid)
            (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-          (formula1 `(and (objdesign-of-var (ident ,(symbol-name var)) compst)
+          (var/varptr (if (or (type-case type :pointer)
+                              (type-case type :array))
+                          (add-suffix-to-fn var "-PTR")
+                        var))
+          (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
+                                            ,compst-var)
                           (equal (read-object (objdesign-of-var
                                                (ident ,(symbol-name var))
-                                               compst)
-                                              compst)
-                                 ,var)))
+                                               ,compst-var)
+                                              ,compst-var)
+                                 ,var/varptr)
+                          ,@(and (or (type-case type :pointer)
+                                     (type-case type :array))
+                                 `((equal (read-object
+                                           ,(add-suffix-to-fn var "-OBJDES")
+                                           ,compst-var)
+                                          ,var)))))
           (formula1 (atc-contextualize formula1
                                        context
                                        fn
@@ -2341,28 +2496,36 @@
                                        nil
                                        wrld))
           (formula `(and ,formula1 ,formula2))
-          (not-flexible-array-member-p-when-type-pred
-           (pack 'not-flexible-array-member-p-when- type-pred))
-          (valuep-when-type-pred (pack 'valuep-when- type-pred))
+          (not-flexiblep-thms (atc-type-to-notflexarrmem-thms type prec-tags))
+          (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
+          (value-kind-when-type-pred
+           (atc-type-to-value-kind-thm type prec-tags))
           (hints
-           `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
-                                  read-object-of-objdesign-of-var-of-add-var
-                                  ,var-thm
-                                  ident-fix-when-identp
-                                  identp-of-ident
-                                  equal-of-ident-and-ident
-                                  (:e str-fix)
-                                  ,not-flexible-array-member-p-when-type-pred
-                                  remove-flexible-array-member-when-absent
-                                  value-fix-when-valuep
-                                  ,valuep-when-type-pred))))
+           `(("Goal"
+              :in-theory
+              '(objdesign-of-var-of-add-var-iff
+                read-object-of-objdesign-of-var-of-add-var
+                ,var-thm
+                ident-fix-when-identp
+                identp-of-ident
+                equal-of-ident-and-ident
+                (:e str-fix)
+                ,@not-flexiblep-thms
+                remove-flexible-array-member-when-absent
+                value-fix-when-valuep
+                ,@(and (or (type-case type :pointer)
+                           (type-case type :array))
+                       '(read-object-of-add-var
+                         read-object-of-add-frame))
+                ,valuep-when-type-pred
+                ,value-kind-when-type-pred))))
           ((mv event &) (evmac-generate-defthm name
                                                :formula formula
                                                :hints hints
                                                :enable nil))
           ((mv inscope-rest events-rest names-to-avoid)
            (atc-gen-init-inscope-aux fn fn-guard fn-formals
-                                     (cdr typed-formals)
+                                     (cdr typed-formals) prec-tags
                                      compst-var context names-to-avoid wrld)))
        (mv (cons (cons var
                        (make-atc-var-info :type type
@@ -2370,7 +2533,10 @@
                                           :externalp externalp))
                  inscope-rest)
            (cons event events-rest)
-           names-to-avoid)))))
+           names-to-avoid))
+     :guard-hints
+     (("Goal"
+       :in-theory (enable alistp-when-atc-string-taginfo-alistp-rewrite))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2451,6 +2617,8 @@
 (define atc-gen-fun-correct-thm ((fn symbolp)
                                  (fn-guard symbolp)
                                  (fn-def* symbolp)
+                                 (init-formals symbol-listp)
+                                 (context-preamble true-listp)
                                  (prog-const symbolp)
                                  (compst-var symbolp)
                                  (fenv-var symbolp)
@@ -2464,6 +2632,7 @@
                                  (body-thm symbolp)
                                  (body-type typep)
                                  (body-limit pseudo-termp)
+                                 (prec-tags atc-string-taginfo-alistp)
                                  (names-to-avoid symbol-listp)
                                  state)
   :returns (mv (local-events pseudo-event-form-listp)
@@ -2482,7 +2651,16 @@
      We use 1 more than the limit for the body as limit bound,
      because we need 1 to go from @(tsee exec-fun)
      to @(tsee exec-block-item-list),
-     which is what the body's theorem refers to."))
+     which is what the body's theorem refers to.")
+   (xdoc::p
+    "We enable @(tsee declar) in the generated hints
+     because the correctness theorem generated about the body of the function
+     (i.e. @('body-thm')) does not that have that wrapper.
+     We will need to add other wrappers like @(tsee assign) here,
+     when we extend modular proofs to handle those.
+     An alternative could be to include the wrappers
+     in the theorems about the statements that form the body,
+     and then we will not need to include them here."))
   (b* ((wrld (w state))
        (lemma-name (pack fn '-correct))
        ((mv lemma-name names-to-avoid) (fresh-logical-name-with-$s-suffix
@@ -2490,23 +2668,27 @@
        (formals (formals+ fn wrld))
        (result-var (genvar$ 'atc "RESULT" nil formals state))
        (limit `(binary-+ '1 ,body-limit))
-       (type-pred (type-to-recognizer body-type wrld))
+       (type-pred (atc-type-to-recognizer body-type prec-tags))
        (lemma-formula
         `(implies (and (compustatep ,compst-var)
                        (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
+                       ,@context-preamble
                        (,fn-guard ,@formals)
                        (integerp ,limit-var)
                        (>= ,limit-var ,limit))
                   (let ((,result-var (,fn ,@formals)))
                     (and (equal (exec-fun (ident ,(symbol-name fn))
-                                          (list ,@formals)
+                                          (list ,@init-formals)
                                           ,compst-var
                                           ,fenv-var
                                           ,limit-var)
                                 (mv ,result-var ,compst-var))
                          (,type-pred ,result-var)))))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
-       (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
+       (valuep-when-type-pred (atc-type-to-valuep-thm body-type prec-tags))
+       (type-of-value-when-type-pred
+        (atc-type-to-type-of-value-thm body-type prec-tags))
+       (type-to-quoted-thm?
+        (atc-type-to-type-to-quoted-thms body-type prec-tags))
        (lemma-hints
         `(("Goal" :in-theory '(exec-fun-open
                                not-zp-of-limit-variable
@@ -2522,9 +2704,12 @@
                                ,valuep-when-type-pred
                                type-of-value-option-when-valuep
                                ,type-of-value-when-type-pred
+                               ,@type-to-quoted-thm?
                                (:e fun-info->result)
                                (:e tyname-to-type)
-                               (:e ,(pack 'type- (type-kind body-type)))
+                               ,@(and (type-integerp body-type)
+                                      `((:e ,(pack 'type-
+                                                   (type-kind body-type)))))
                                ,pop-frame-thm
                                ,fn-def*
                                declar))))
@@ -2536,12 +2721,13 @@
        (formula
         `(implies (and (compustatep ,compst-var)
                        (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
+                       ,@context-preamble
                        ,(untranslate$ (uguard+ fn wrld) nil state)
                        (integerp ,limit-var)
                        (>= ,limit-var ,limit))
                   (let ((,result-var (,fn ,@formals)))
                     (and (equal (exec-fun (ident ,(symbol-name fn))
-                                          (list ,@formals)
+                                          (list ,@init-formals)
                                           ,compst-var
                                           ,fenv-var
                                           ,limit-var)
@@ -2622,12 +2808,12 @@
         (atc-gen-fn-def* fn names-to-avoid wrld))
        ((erp typed-formals formals-events names-to-avoid)
         (atc-typed-formals fn fn-guard prec-tags prec-objs names-to-avoid wrld))
-       (modular-proofs proofs)
        ((erp params) (atc-gen-param-declon-list typed-formals fn prec-objs))
        (formals (strip-cars typed-formals))
        (compst-var (genvar$ 'atc "COMPST" nil formals state))
        (fenv-var (genvar$ 'atc "FENV" nil formals state))
        (limit-var (genvar$ 'atc "LIMIT" nil formals state))
+       (context-preamble (atc-gen-context-preamble typed-formals compst-var))
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        ((mv init-scope-expand-event
@@ -2635,30 +2821,46 @@
             init-scope-scopep-event
             init-scope-scopep-thm
             omap-update-nest
+            init-formals
             modular-proofs
             names-to-avoid)
-        (if (and proofs
-                 modular-proofs)
-            (atc-gen-init-scope-thms fn fn-guard typed-formals prog-const
-                                     fn-fun-env-thm compst-var fenv-var
-                                     names-to-avoid state)
-          (mv '(_) nil '(_) nil nil nil names-to-avoid)))
+        (if proofs
+            (atc-gen-init-scope-thms fn
+                                     fn-guard
+                                     typed-formals
+                                     prec-tags
+                                     context-preamble
+                                     prog-const
+                                     fn-fun-env-thm
+                                     compst-var
+                                     fenv-var
+                                     names-to-avoid
+                                     state)
+          (mv '(_) nil '(_) nil nil nil nil names-to-avoid)))
        ((mv push-init-thm-event
             push-init-thm
             add-var-nest
             names-to-avoid)
         (if (and proofs
                  modular-proofs)
-            (atc-gen-push-init-thm fn fn-guard typed-formals omap-update-nest
-                                   compst-var names-to-avoid wrld)
+            (atc-gen-push-init-thm fn
+                                   fn-guard
+                                   typed-formals
+                                   prec-tags
+                                   context-preamble
+                                   omap-update-nest
+                                   compst-var
+                                   names-to-avoid
+                                   wrld)
           (mv '(_) nil nil names-to-avoid)))
        (premises (list (make-atc-premise-compustate :var compst-var
                                                     :term add-var-nest)))
-       (context (make-atc-context :preamble nil :premises premises))
+       (context (make-atc-context :preamble context-preamble
+                                  :premises premises))
        ((mv inscope init-inscope-events names-to-avoid)
         (if (and proofs
                  modular-proofs)
-            (atc-gen-init-inscope fn fn-guard formals typed-formals
+            (atc-gen-init-inscope fn fn-guard formals typed-formals prec-tags
                                   compst-var context names-to-avoid wrld)
           (mv (list typed-formals) nil names-to-avoid)))
        (body (ubody+ fn wrld))
@@ -2766,6 +2968,8 @@
                       (atc-gen-fun-correct-thm fn
                                                fn-guard
                                                fn-def*
+                                               init-formals
+                                               context-preamble
                                                prog-const
                                                compst-var
                                                fenv-var
@@ -2779,6 +2983,7 @@
                                                body.thm-name
                                                body.type
                                                body.limit
+                                               prec-tags
                                                names-to-avoid
                                                state)
                     (b* (((mv local-events exported-events name)
@@ -3119,7 +3324,7 @@
          :verify-guards nil
          :enable nil))
        (exec-stmt-while-for-fn-thm
-        (add-suffix exec-stmt-while-for-fn "-TO-EXEC-STMT-WHILE"))
+        (add-suffix-to-fn exec-stmt-while-for-fn "-TO-EXEC-STMT-WHILE"))
        ((mv exec-stmt-while-for-fn-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix exec-stmt-while-for-fn-thm
                                            nil
@@ -3355,6 +3560,7 @@
                                        (names-to-avoid symbol-listp)
                                        (deprecated keyword-listp)
                                        state)
+  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-test-thm symbolp)
                (updated-names-to-avoid symbol-listp
@@ -3388,7 +3594,7 @@
      eliminate the case that that check fails."))
   (b* ((wrld (w state))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
-       (correct-test-thm (add-suffix correct-thm "-TEST"))
+       (correct-test-thm (add-suffix-to-fn correct-thm "-TEST"))
        ((mv correct-test-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-test-thm
                                            nil
@@ -3422,9 +3628,7 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory ',(if (member-eq :arrays deprecated)
-                                           'atc-all-rules-deprecated
-                                         'atc-all-rules))
+                             (theory 'atc-all-rules)
                              '(not
                                not-errorp-when-expr-valuep
                                ,@not-error-thms
@@ -3531,6 +3735,7 @@
                                        (names-to-avoid symbol-listp)
                                        (deprecated keyword-listp)
                                        state)
+  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-body-thm symbolp)
                (updated-names-to-avoid symbol-listp
@@ -3547,7 +3752,7 @@
      instead of proving the whole loop, including its body."))
   (b* ((wrld (w state))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
-       (correct-body-thm (add-suffix correct-thm "-BODY"))
+       (correct-body-thm (add-suffix-to-fn correct-thm "-BODY"))
        ((mv correct-body-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-body-thm
                                            nil
@@ -3617,9 +3822,7 @@
        (hints `(("Goal"
                  :do-not-induct t
                  :in-theory (union-theories
-                             (theory ',(if (member-eq :arrays deprecated)
-                                           'atc-all-rules-deprecated
-                                         'atc-all-rules))
+                             (theory 'atc-all-rules)
                              '(,@not-error-thms
                                ,@valuep-thms
                                ,@value-kind-thms
@@ -3731,7 +3934,7 @@
      see the documentation of that function for motivation."))
   (b* ((wrld (w state))
        (correct-thm (cdr (assoc-eq fn fn-thms)))
-       (correct-lemma (add-suffix correct-thm "-LEMMA"))
+       (correct-lemma (add-suffix-to-fn correct-thm "-LEMMA"))
        ((mv correct-lemma names-to-avoid)
         (fresh-logical-name-with-$s-suffix correct-lemma
                                            nil

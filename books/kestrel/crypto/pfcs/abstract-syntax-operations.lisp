@@ -15,6 +15,9 @@
 (include-book "kestrel/fty/symbol-set" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,6 +69,7 @@
    :mul (set::union (expression-vars expr.arg1)
                     (expression-vars expr.arg2)))
   :measure (expression-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,7 +80,16 @@
   (cond ((endp exprs) nil)
         (t (set::union (expression-vars (car exprs))
                        (expression-list-vars (cdr exprs)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  ///
+
+  (defrule expression-list-vars-of-expression-var-list
+    (equal (expression-list-vars (expression-var-list vars))
+           (set::mergesort (acl2::symbol-list-fix vars)))
+    :induct t
+    :enable (expression-vars
+             expression-var-list
+             set::mergesort)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -174,6 +187,8 @@
    (args expression-list))
   :pred constrelp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defset constrel-set
   :short "Fixtype of osets of relation constraints."
   :elt-type constrel
@@ -181,6 +196,8 @@
   :pred constrel-setp
   :fix constrel-sfix
   :equiv constrel-sequiv)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-constrels ((constr constraintp))
   :returns (crels constrel-setp)
@@ -200,6 +217,8 @@
                               nil))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define constraint-list-constrels ((constrs constraint-listp))
   :returns (crels constrel-setp)
   :short "Set of relation constraints in a list of constraints."
@@ -211,5 +230,37 @@
   (cond ((endp constrs) nil)
         (t (set::union (constraint-constrels (car constrs))
                        (constraint-list-constrels (cdr constrs)))))
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define constraint-rels ((constr constraintp))
+  :returns (rels symbol-setp)
+  :short "Set of (names of) relations in a constraint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the empty set for an equality constraint;
+     for a relation constraint,
+     it is the singleton with that constraint relation.
+     This function is used to define @(tsee constraint-list-rels)."))
+  (constraint-case constr
+                   :equal nil
+                   :relation (set::insert constr.name nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define constraint-list-rels ((constrs constraint-listp))
+  :returns (rels symbol-setp)
+  :short "Set of (names of) relations in a list of constraints."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We collect all the relation names."))
+  (cond ((endp constrs) nil)
+        (t (set::union (constraint-rels (car constrs))
+                       (constraint-list-rels (cdr constrs)))))
   :verify-guards :after-returns
   :hooks (:fix))

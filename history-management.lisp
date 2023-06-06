@@ -1800,21 +1800,13 @@
       (and (consp act)
            (or (eq (car act) :warn)
                (eq (car act) :warn!))))
-    (let ((redefs
-           (scrunch-eq
-            (reverse
-             (collect-redefined
-              (cond ((and (consp wrld)
-                          (eq (caar wrld) 'event-landmark)
-                          (eq (cadar wrld) 'global-value))
-                     (cdr wrld))
-                    (t (er hard 'print-redefinition-warning
-                           "This function is supposed to be called on a world ~
-                             that starts at an event landmark, but this world ~
-                             starts with (~x0 ~x1 . val)."
-                           (caar wrld)
-                           (cadar wrld))))
-              nil)))))
+    (let* ((wrld (scan-to-event wrld))
+           (redefs
+            (scrunch-eq
+             (reverse
+              (collect-redefined
+               (cdr wrld)
+               nil)))))
       (cond (redefs
              (warning$ ctx ("Redef") "~&0 redefined.~%" redefs))
             (t state))))

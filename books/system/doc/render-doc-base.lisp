@@ -224,10 +224,11 @@
         (mv (er hard 'render-topic
                 "Unexpected implementation error!")
             state))
+       ((mv - xdoc-tag-alist state) (xdoc-tag-alist state))
        (merged-tokens
         (reverse (merge-text tokens nil 0 nil
                              topic-to-rendered-table
-                             (f-get-global 'xdoc-tag-elide-alist state))))
+                             xdoc-tag-alist)))
        (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
        (terminal (str::trim (str::rchars-to-string acc))))
 
@@ -306,3 +307,5 @@
                             acl2-topics
                             acl2-pc-topics
                             (cons (car alist) other-topics)))))
+
+

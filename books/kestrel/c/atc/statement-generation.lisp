@@ -280,6 +280,7 @@
                                  (fenv-var symbolp)
                                  (limit-var symbolp)
                                  (compst-term pseudo-termp)
+                                 (prec-tags atc-string-taginfo-alistp)
                                  (thm-index posp)
                                  (names-to-avoid symbol-listp)
                                  state)
@@ -329,7 +330,8 @@
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var limit-var item-limit t wrld))
        (formula (if result-term
-                    (b* ((type-pred (type-to-recognizer result-type wrld))
+                    (b* ((type-pred
+                          (atc-type-to-recognizer result-type prec-tags))
                          (formula2 `(,type-pred ,result-uterm))
                          (formula2 (atc-contextualize formula2 context
                                                       fn fn-guard
@@ -362,6 +364,7 @@
                                    (compst-var symbolp)
                                    (fenv-var symbolp)
                                    (limit-var symbolp)
+                                   (prec-tags atc-string-taginfo-alistp)
                                    (thm-index posp)
                                    (names-to-avoid symbol-listp)
                                    (proofs booleanp)
@@ -424,8 +427,7 @@
        (initer-formula
         (atc-contextualize initer-formula context fn fn-guard
                            compst-var limit-var initer-limit t wrld))
-       (type-pred (type-to-recognizer type wrld))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
        (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
                                             (:e initer-kind)
                                             not-zp-of-limit-variable
@@ -454,7 +456,8 @@
                              (mv nil ,(untranslate$ new-compst nil state))))
        (item-formula (atc-contextualize item-formula context fn fn-guard
                                         compst-var limit-var item-limit t wrld))
-       (type-of-value-when-type-pred (pack 'type-of-value-when- type-pred))
+       (type-of-value-when-type-pred
+        (atc-type-to-type-of-value-thm type prec-tags))
        (e-type `(:e ,(car (type-to-maker type))))
        (item-hints
         `(("Goal"
@@ -498,7 +501,7 @@
         (atc-gen-vardecl-inscope fn fn-guard inscope
                                  context var type
                                  (untranslate$ expr-term nil state)
-                                 expr-thm compst-var
+                                 expr-thm compst-var prec-tags
                                  thm-index names-to-avoid wrld)))
     (mv item
         item-limit
@@ -526,6 +529,7 @@
                                      (fenv-var symbolp)
                                      (limit-var symbolp)
                                      (compst-term pseudo-termp)
+                                     (prec-tags atc-string-taginfo-alistp)
                                      (thm-index posp)
                                      (names-to-avoid symbol-listp)
                                      state)
@@ -574,7 +578,7 @@
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var limit-var items-limit t wrld))
        (type-pred (and result-term
-                       (type-to-recognizer result-type wrld)))
+                       (atc-type-to-recognizer result-type prec-tags)))
        (formula (if result-term
                     (b* ((formula2 `(,type-pred ,result-uterm))
                          (formula2 (atc-contextualize formula2 context
@@ -583,7 +587,8 @@
                       `(and ,formula1 ,formula2))
                   formula1))
        (valuep-when-type-pred (and result-term
-                                   (pack 'valuep-when- type-pred)))
+                                   (atc-type-to-valuep-thm result-type
+                                                           prec-tags)))
        (hints
         `(("Goal" :in-theory '(exec-block-item-list-when-consp
                                not-zp-of-limit-variable
@@ -677,7 +682,7 @@
                                     all-items-limit
                                     t
                                     wrld))
-       (type-pred (type-to-recognizer items-type wrld))
+       (type-pred (atc-type-to-recognizer items-type gin.prec-tags))
        (formula2 `(,type-pred ,uterm))
        (formula2 (atc-contextualize formula2
                                     gin.context
@@ -835,8 +840,8 @@
                           expr.limit)))
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
-       (type-pred (type-to-recognizer expr.type wrld))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (type-pred (atc-type-to-recognizer expr.type gin.prec-tags))
+       (valuep-when-type-pred (atc-type-to-valuep-thm expr.type gin.prec-tags))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv stmt-thm-name names-to-avoid)
@@ -891,7 +896,7 @@
                                  stmt stmt-limit stmt-thm-name
                                  expr.type expr.term
                                  gin.compst-var gin.fenv-var gin.limit-var
-                                 gin.compst-var
+                                 gin.compst-var gin.prec-tags
                                  thm-index names-to-avoid state))
        ((mv items
             items-limit
@@ -903,7 +908,7 @@
                                      item item-limit item-thm-name
                                      expr.type expr.term
                                      gin.compst-var gin.fenv-var gin.limit-var
-                                     gin.compst-var
+                                     gin.compst-var gin.prec-tags
                                      thm-index names-to-avoid state)))
     (retok (make-stmt-gout :items items
                            :type expr.type
@@ -1033,8 +1038,8 @@
        ((mv else-stmt-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          else-stmt-thm nil names-to-avoid wrld))
-       (type-pred (type-to-recognizer type wrld))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
+       (type-pred (atc-type-to-recognizer type gin.prec-tags))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
        (then-stmt-limit `(binary-+ '1 ,then-limit))
        (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
@@ -1250,7 +1255,7 @@
                                  stmt if-stmt-limit if-stmt-thm
                                  type term*
                                  gin.compst-var gin.fenv-var gin.limit-var
-                                 gin.compst-var
+                                 gin.compst-var gin.prec-tags
                                  thm-index names-to-avoid state))
        ((mv items
             items-limit
@@ -1262,7 +1267,7 @@
                                      item item-limit item-thm-name
                                      type term*
                                      gin.compst-var gin.fenv-var gin.limit-var
-                                     gin.compst-var
+                                     gin.compst-var gin.prec-tags
                                      thm-index names-to-avoid state)))
     (retok
      (make-stmt-gout
@@ -1530,6 +1535,7 @@
                                                gin.inscope
                                                then-context
                                                gin.compst-var
+                                               gin.prec-tags
                                                test.thm-index
                                                test.names-to-avoid
                                                wrld)
@@ -1574,6 +1580,7 @@
                                                gin.inscope
                                                else-context
                                                gin.compst-var
+                                               gin.prec-tags
                                                then.thm-index
                                                then.names-to-avoid
                                                wrld)
@@ -1913,14 +1920,14 @@
               (atc-update-var-term-alist (list var)
                                          (list val-instance)
                                          gin.var-term-alist))
-             ((mv okp int-term type) (atc-check-integer-write val-term))
+             ((erp okp & arg-term type) (atc-check-integer-write val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
                     (reterr
                      (msg "The pointed integer write term ~x0 ~
                            to which ~x1 is bound ~
                            has the ~x2 wrapper, which is disallowed."
-                          int-term var wrapper?)))
+                          arg-term var wrapper?)))
                    ((unless (member-eq var gin.affect))
                     (reterr
                      (msg "The pointed integer ~x0 is being written to, ~
@@ -1950,7 +1957,7 @@
                            given that the code is guard-verified."
                           var ptr.type (type-pointer type))))
                    ((erp (pexpr-gout int))
-                    (atc-gen-expr-pure int-term
+                    (atc-gen-expr-pure arg-term
                                        (make-pexpr-gin
                                         :context gin.context
                                         :inscope gin.inscope
@@ -1970,7 +1977,7 @@
                            This is indicative of ~
                            unreachable code under the guards, ~
                            given that the code is guard-verified."
-                          int-term int.type type)))
+                          arg-term int.type type)))
                    (asg (make-expr-binary
                          :op (binop-asg)
                          :arg1 (make-expr-unary
@@ -2004,7 +2011,7 @@
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
-             ((mv okp sub-term elem-term elem-type)
+             ((erp okp sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
@@ -2123,126 +2130,7 @@
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
-             ((mv okp sub-term elem-term sub-type elem-type)
-              (atc-check-array-write-deprecated var val-term))
-             ((when (and okp (member-eq :arrays gin.deprecated)))
-              (b* (((unless (eq wrapper? nil))
-                    (reterr
-                     (msg "The array write term ~x0 to which ~x1 is bound ~
-                           has the ~x2 wrapper, which is disallowed."
-                          val-term var wrapper?)))
-                   ((unless (member-eq var gin.affect))
-                    (reterr
-                     (msg "The array ~x0 is being written to, ~
-                           but it is not among the variables ~x1 ~
-                           currently affected."
-                          var gin.affect)))
-                   ((erp (pexpr-gout arr))
-                    (atc-gen-expr-pure var
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs
-                                        :deprecated gin.deprecated)
-                                       state))
-                   ((erp (pexpr-gout sub))
-                    (atc-gen-expr-pure sub-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index arr.thm-index
-                                        :names-to-avoid arr.names-to-avoid
-                                        :proofs arr.proofs
-                                        :deprecated gin.deprecated)
-                                       state))
-                   ((erp (pexpr-gout elem))
-                    (atc-gen-expr-pure elem-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index sub.thm-index
-                                        :names-to-avoid sub.names-to-avoid
-                                        :proofs sub.proofs
-                                        :deprecated gin.deprecated)
-                                       state))
-                   ((unless (and (type-case arr.type :array)
-                                 (equal (type-array->of arr.type)
-                                        elem-type)))
-                    (reterr
-                     (msg "The array ~x0 of type ~x1 ~
-                           does not have the expected array type of ~x2. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var arr.type elem-type)))
-                   ((unless (equal sub.type sub-type))
-                    (reterr
-                     (msg "The array ~x0 of type ~x1 ~
-                           is being indexed with ~
-                           a subscript ~x2 of type x3, ~
-                           instead of type ~x4 as expected.
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var arr.type sub sub.type sub-type)))
-                   ((unless (equal elem.type elem-type))
-                    (reterr
-                     (msg "The array ~x0 of type ~x1 ~
-                           is being written to with ~
-                           an element ~x2 of type x3, ~
-                           instead of type ~x4 as expected.
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var arr.type elem elem.type elem-type)))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (make-expr-arrsub :arr arr.expr
-                                                 :sub sub.expr)
-                         :arg2 elem.expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
-                   ((erp (stmt-gout body))
-                    (atc-gen-stmt body-term
-                                  (change-stmt-gin
-                                   gin
-                                   :var-term-alist var-term-alist-body
-                                   :thm-index elem.thm-index
-                                   :names-to-avoid elem.names-to-avoid
-                                   :proofs nil)
-                                  state))
-                   (limit (pseudo-term-fncall 'binary-+
-                                              (list (pseudo-term-quote 4)
-                                                    body.limit))))
-                (retok (make-stmt-gout
-                        :items (cons item body.items)
-                        :type body.type
-                        :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :limit limit
-                        :events (append arr.events
-                                        sub.events
-                                        elem.events
-                                        body.events)
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
-             ((mv okp member-term tag member-name member-type)
+             ((erp okp member-term tag member-name member-type)
               (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
@@ -2348,7 +2236,7 @@
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
-             ((mv okp index-term elem-term tag member elem-type)
+             ((erp okp index-term elem-term tag member elem-type)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
@@ -2558,6 +2446,7 @@
                                                gin.compst-var
                                                gin.fenv-var
                                                gin.limit-var
+                                               gin.prec-tags
                                                init.thm-index
                                                init.names-to-avoid
                                                init.proofs

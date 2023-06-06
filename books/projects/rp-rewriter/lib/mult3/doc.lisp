@@ -42,27 +42,35 @@
 
 (include-book "centaur/fgl/portcullis" :dir :system)
 
-   
+(xdoc::defxdoc vescmul
+  :parents (rp-rewriter/applications)
+  :short "Verified Implementation of S-C-Rewriting algorithm for Multiplier
+  Verification"
+  :long "See @(see Multiplier-Verification)")
+
 (xdoc::defxdoc
- Multiplier-Verification
- :parents (rp-rewriter/applications)
- :short "An efficient library to verify large integer multiplier designs
+  Multiplier-Verification
+  :parents (rp-rewriter/applications)
+  :short "An efficient library to verify large integer multiplier designs
  following the S-C-Rewriting algorithm."
 
- :long  " <p> Implemented and verified  completely in ACL2, we  provide a new
+  :long  " <p> Implemented and verified  completely in ACL2, we  provide a new
  method to  verify complex integer  multiplier designs implemented  in (System)
- Verilog. With a very efficient proof-time scaling factor, this tool can verify
+ Verilog. With a very efficient proof-time scaling factor, this tool (VeSCmul) can verify
  integer  multipliers that  may  be implemented  with  Booth Encoding (e.g., radix-16),  various
  summation trees  such as Wallace  and Dadda,  and numerous final  stage adders
  such as carry-lookahead.  For example,  we can verify 64x64-bit multipliers in
  around  a  second;  128x128  in  2-4 seconds;  256x256  in  6-12  seconds  and
  1024x1024-bit  multipliers in  around  5-15  minutes as  tested  with
- thousands of 
+ thousands of
  different  designs.  This library  can  also  verify other  multiplier-centric
  designs such as multiply-accumulate and dot-product, or even be used in other
  verification flows to verify floating-point operations. Designs can be truncated,
  right-shifted, bit-masked, rounded, saturated, and input sizes can be
  arbitrary. This library now supports flattened designs.</p>
+
+<p> This method is called S-C-Rewriting and the tool is called VeSCmul (Verified Implementation of S-C-Rewriting algorithm for Multiplier
+  Verification)</p>
 
   <p>  The outline  of  this  new verification  method  first  appeared in  CAV
 2020 (Automated  and Scalable  Verification of  Integer Multipliers  by Mertcan
@@ -74,14 +82,16 @@ href=\"http://doi.org/10.34727/2021/isbn.978-3-85448-046-4_13\">
 http://doi.org/10.34727/2021/isbn.978-3-85448-046-4_13</a>). This method is also
 described in Mertcan Temel's (<a
 href=\"https://repositories.lib.utexas.edu/handle/2152/88056\">
-Ph.D. thesis</a>) from University of Texas at Austin. There might be more work
+Ph.D. thesis</a>) from University of Texas at Austin. These papers describe
+this method as working on hierarchical reasoning; however, VeSCmul now supports
+flattened designs as well. More papers  are
 coming soon.   </p>
 
 <p> Our framework currently supports  (System) Verilog. In one of our schemes,
 we use @(see sv::defsvtv$) (also see @(see sv::sv-tutorial)) to simulate
 designs. This SVTV system has been used for complex design at Centaur
-Technology and now at Intel Corporation. SVTV system flattens designs.</p>
-
+Technology and now at Intel Corporation. SVTV system flattens designs. It can
+support other simulators such as @(see SVL) but we only use SVTV now. </p>
 
 <p>  Our  library  uses  various  heuristics  and  modes  to  simplify  various
 designs. We give the users the  option to enable/disable some of the heuristics
@@ -94,17 +104,17 @@ help a proof attempt to go through, and in some cases, it may cause them to fail
 
 <h3>Quick Start</h3>
 
-<p> If you have a combinational multiplier design you need to verify, you can
+<p> If you have a combinational multiplier design you need to verify, you may
 follow these steps. </p>
 
 <ol>
-<li> Install ACL2. </li>
+<li> Install ACL2 and certify books. </li>
 <li> Start ACL2 and submit:
 <code> @('(include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)')
 </code>
 </li>
 
-<li> Parse the Verilog file you'd like. For example: 
+<li> Parse the Verilog file you'd like. For example:
 <code> @('
 (parse-and-create-svtv :file \"DT_SB4_HC_64_64_multgen.sv\"
                        :topmodule \"DT_SB4_HC_64_64\"
@@ -121,27 +131,34 @@ follow these steps. </p>
                                                    (logext 64 in2)))))
 ')
 </code>
+
+Here, @(see logext) sign-extends its argument, and @(see loghead) zero-extends it.
+
 </li>
 </ol>
 
+<p> See @(see parse-and-create-svtv) and @(see verify-svtv-of-mult) for more
+ways to use these tools. </p>
 
-<p>  We  deliver  various demos in more detail to  show  how  this  tool  can be  used  in  new
-designs. For the SVL system: @(see Multiplier-Verification-demo-1) shows  a very basic verification
+<p> Various demos in much more detail are present to  show  how  this  tool  can be  used  in  new
+designs.  @(see Multiplier-Verification-demo-1) shows  a very basic verification
 case  on  a  stand-alone  64x64-bit  Booth  Encoded  Dadda  multiplier.   @(see
 Multiplier-Verification-demo-2) shows  how this tool  can be used on  much more
 complex designs where a stand-alone integer multiplier is reused as a submodule
 for various operations  such as MAC dot-product and  merged multiplication. It
-also shows a simple verification case on a sequential circuit.  </p>
-
+also shows a simple verification case on a sequential circuit. Note that these
+demos are tailored for starting point for more  advanced uses and they do not use @(see
+parse-and-create-svtv) and @(see verify-svtv-of-mult) macros.   </p>
 
 <h3>Calling SAT Solver after rewriting is done </h3>
 
 <p> This library can be used to quickly generate counterexamples using an
 external SAT solver, or help finish proofs with a SAT solver when our library
-fails to finish the job.</p>
+fails to finish the job. By default, glucose is used as SAT solver. This can be
+configured to call a different SAT solver (see @(see fgl::fgl-solving).</p>
 
 <p> If you are using macros from Quick Start above, then \":then-fgl t\" argument as shown below will be enough to
-call a SAT solver after we finish with out rewriting:
+call FGL, which will invoke a SAT solver after VeSCmul finishes rewriting:
 <code> @('
 (verify-svtv-of-mult :name my-multiplier-example
                      :then-fgl t
@@ -153,25 +170,17 @@ call a SAT solver after we finish with out rewriting:
 </code>
 </p>
 
-<p> In other cases: you may include the book
-projects/rp-rewriter/lib/mult3/fgl, @(see FGL::FGL) book and use
-pass \":then-fgl t\" argument to rp::defthmrp-multiplier when proving
-conjectures.  This macro will use RP-Rewriter first to simplify conjectures and if the
-result is not 't, then it prepares it for FGL and then submits the simplified
-term to it. Then, FGL uses SAT solver to generate a counterexample or finalize
-the proof if it is a theorem.</p>
 
 
 "
-)
-
+  )
 
 (xdoc::defxdoc
- Multiplier-Verification-Heuristics
- :parents (Multiplier-Verification)
- :short "Some heuristics that can be enabled/disabled by the user for
+  Multiplier-Verification-Heuristics
+  :parents (Multiplier-Verification)
+  :short "Some heuristics that can be enabled/disabled by the user for
  @(see Multiplier-Verification)"
- :long   "<p>Our   @(see  Multiplier-Verification)  system   implements  various
+  :long   "<p>Our   @(see  Multiplier-Verification)  system   implements  various
  heuristics to efficiently  verify different designs. Some  of those heuristics
  are applied  for all the designs,  some are specific to  certain corner cases,
  and some are  just alternatives to others that might  prove more beneficial in
@@ -186,7 +195,6 @@ the proof if it is a theorem.</p>
  enabling/disabling  some  of  our  heuristics by  following  the  instructions
  below.  Beware that  these heuristics  and  related events  might change  over
  time. </p>
-
 
 <p> UNPACK-BOOTH-LATER <i>(disabled by default)</i> </p>
 
@@ -203,7 +211,6 @@ we recommend that you enable this heuristic: </p>
 
 <code> @('(rp:: enable-unpack-booth-later <t-or-nil>)') </code>
 
-
 <p>S-PATTERN1-REDUCE <i>(enabled by default)</i></p>
 
 <p> Enabled by default, this heuristic can cover some corner
@@ -218,7 +225,7 @@ it (rp::enable-s-pattern1-reduce t).
 <code> @('(rp::enable-s-pattern1-reduce <t-or-nil>)') </code>
 
 <p>PATTERN2-REDUCE <i>(enabled by default)</i></p>
-<p>            Similar       to     
+<p>            Similar       to
 S-PATTERN1-REDUCE. Enabled  by default. To  disable (rp::enable-pattern2-reduce
 nil), to enable (rp::enable-pattern2-reduce t) </p>
 
@@ -236,7 +243,6 @@ default. </p>
 
 <code> @('(rp::enable-pattern3-reduce <t-or-nil>)') </code>
 
-
 <p>RECOLLECT-PP <i>(disabled by default)</i></p>
 <p> We have discovered that after partial products are flatten (i.e., rewritten
  in algebraic form), the result can be shrunk by rewriting (collecting) some
@@ -246,11 +252,10 @@ and may or may not have any performance effect on other configurations. We have
 observed that it can have considerable advantages in proof-time and memory
 usage in larger multipliers (up to 30%). This setting is not thoroughly tested
 for comprehensiveness and it may cause failures in some cases so it is disabled
-by default.    
+by default.
 </p>
 
 <code> @('(rp::enable-recollect-pp <t-or-nil>)') </code>
-
 
 <p>UNPACK-BOOTH-LATER-HONS-COPY <i>(disabled by default)</i></p>
 <p> When enabled, this causes terms to be hons-copied in the meta function that
@@ -296,8 +301,7 @@ something and it
  is stalling, then it may be a good idea to decrease this number to see
 what is going on. </p>
 
-
-<p> UNDO-RW-AND-OPEN-UP-ADDERS <i>(disabled by default)</i> </p> 
+<p> UNDO-RW-AND-OPEN-UP-ADDERS <i>(disabled by default)</i> </p>
 <p> In some cases, our program might mistakenly mark some parts of a
 multiplier design as half-adder. If we proceed to keep assuming that this was
 correct, our proofs may fail. We implemented a system to undo some
@@ -309,32 +313,29 @@ heuristic may help:</p>
 
 ")
 
-
 (xdoc::defxdoc
- Multiplier-Verification-demo-1
- :parents (Multiplier-Verification)
- :short "First demo for @(see  Multiplier-Verification) showing how an isolated
+  Multiplier-Verification-demo-1
+  :parents (Multiplier-Verification)
+  :short "First demo for @(see  Multiplier-Verification) showing how an isolated
  integer multiplier is verified."
- :long " <p> Below is a demo that  shows how to input a multiplier design coded
+  :long " <p> Below is a demo that  showing every single event  to input a multiplier design coded
 in (System) Verilog into ACL2, and verify it efficiently. We choose a 64x64-bit
 Booth Encoded Dadda Tree multiplier with  Han-Carlson adder as our example.  If
 you  wish, you  can skip  to @(see  Multiplier-Verification-demo-2) for  a more
 complex arithmetic module.  </p>
-
 
 <p>   A shortened version of this demo   is      given   in
 @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/demo-1.lisp')
 </p>
 
 <p>
-1. Include the books to convert Verilog designs to SVL format.
+1. Include the books to parse Verilog designs and crete symbolic simulation vectors.
 </p>
 <code>
 (include-book \"centaur/sv/top\" :dir :system) ;; a big book; takes around 30 seconds
 (include-book \"centaur/vl/loader/top\" :dir :system) ;; takes around 10 seconds
 (include-book \"oslib/ls\" :dir :system)
 </code>
-
 
 <p> 2. Load VL design for  the modules in DT_SB4_HC_64_64_multgen.sv. This file
 is                                 located                                under
@@ -369,7 +370,6 @@ a 64x64 Signed,  Booth radix-4 encoded, Dadda Tree  integer multiplier.  <code>
 </code>
 </p>
 
-
 <p>
 4. Create the test vector for symbolic simulation:
 <code>
@@ -384,7 +384,6 @@ a 64x64 Signed,  Booth radix-4 encoded, Dadda Tree  integer multiplier.  <code>
 </code>
 
 </p>
-
 
 <p>
 5. Include the book that has the rewrite and meta rules
@@ -415,7 +414,7 @@ This proof takes about 1.5 seconds to finish.
 <p>Here, we first extract the output value from svtv-run function. Then on the
 right hand-side, we state the specification. Here numbers a and b are sign
 extended at 64th-bits and multiplied. Then the first 128-bit of the
-multiplication result is compared to the design's output. 
+multiplication result is compared to the design's output.
 
 </p>
 
@@ -428,24 +427,23 @@ For large multipliers, users may need to increase the stack size in ACL2 image
 tests, we have observed SBCL to be faster than CCL; however, for large
 multipliers garbage collector of CCL does a better job with @(see
 acl2::set-max-mem) and it can finish large proofs when SBCL terminates with memory
-errors. 
+errors.
 </p>
-
 
 <p>
 You may continue to @(see Multiplier-Verification-demo-2).
 </p>
 
 "
- )
+  )
 
 (xdoc::defxdoc
- Multiplier-Verification-demo-2
- :parents (Multiplier-Verification)
- :short  "The second  demo  for   @(see  Multiplier-Verification)  showing  how  an
+  Multiplier-Verification-demo-2
+  :parents (Multiplier-Verification)
+  :short  "The second  demo  for   @(see  Multiplier-Verification)  showing  how  an
  industrial-design-mimicking module  including a MAC, dot-product  and merged
  multipliers can be verified."
- :long "<p> In the first  demo (@(see Multiplier-Verification-demo-1)), we have
+  :long "<p> In the first  demo (@(see Multiplier-Verification-demo-1)), we have
  shown how  our tool can  be used  on an isolated  multiplier.  This is  a good
  starting  point;  however,  real-world  applications  of  integer  multipliers
  involve more intricate  design strategies. We tried to recreate  some of those
@@ -461,7 +459,6 @@ You may continue to @(see Multiplier-Verification-demo-2).
  without an accumulator). These operations  can be combinational or sequential,
  in which case  an accumulator is used to store  results across different clock
  cycles. </p>
-
 
 <p>  The fact  that  this multiplier  module reuses  the  same smaller  integer
  multipliers for different  modes of operations, the design  itself is slightly
@@ -488,7 +485,6 @@ multiplier modules:
 <code>
 (include-book \"projects/rp-rewriter/lib/mult3/svtv-top\" :dir :system)
 </code>
-
 
 <p> 2. Parse the System Verilog design. All events take a few
 seconds in total. </p>
@@ -518,7 +514,6 @@ seconds in total. </p>
      (mv sv-design good bad)))
 ')
 </code>
-
 
 <p> 3. The integrated multiplier module has an input signal called
 @('mode'). As the name implied, this signal determines the mode of operation
@@ -557,7 +552,7 @@ four-lanes-hi and one-lane should be set to 1.~%\")
               (t             (svl::sbits 3 2 3 mode)))))
     mode))
 ')
-</code> 
+</code>
 
 <p> 4.  We  are now ready to  verify the top module  for various multiplication
 modes. First,  we verify various  combinational modes (one-lane  64x64-bit MAC
@@ -586,7 +581,7 @@ signals to some free variables.
 </code>
 </p>
 
-<p> 
+<p>
 
  Below is our first correctness proof  of a multiplication mode. SVTV-run returns
 an association list  of all the variables stated in outputs above. In this case,
@@ -637,7 +632,6 @@ specification accordingly:
 ')
 </code>
 </p>
-
 
 <p> 5. Now, let's verify  the dot product operation. To make it more readable,  we split two of
 the input signals to four lanes. This conjecture, similarly, takes about a second to
@@ -811,7 +805,7 @@ higher end of the result.
 </code>
 </p>
 
-<p> 
+<p>
 
 8. Finally, let's  show our  framework on  a sequential  operation. The  design in
 integrated_multipliers.sv has an  accumulator that can store  the result across
@@ -909,8 +903,223 @@ product specification function as given below.
 </code>
 </p>
 
-
 ")
 
+(defxdoc parse-and-create-svtv
+  :parents (Multiplier-Verification vescmul)
+  :short "A macro to parse a combinational RTL design and create a simulation
+  test vector"
+  :long "<p><b> parse-and-create-svtv</b> can take the following arguments:</p>
+<ul>
+<li> <b>:file</b> has to be provided. It should be a string and point to the relative path to the
+  target Verilog file. </li>
+<li> <b>:topmodule</b> has to be provided. It should be a string and be the name of the top module
+  of the Verilog file. </li>
+<li> <b>:name</b>  is optional. It should be a symbol. It will be the name
+  of the objects generated for symbolic simulation vectors in ACL2. When not
+  provided, the program uses the topmodule for name.</li>
+<li> <b>:save-to-file</b> is optional. It should be a string and be used as a prefix for the outputting file name. When provided, it will
+  save the created simulation vectors to a file in a compact form (svexl) that
+  can be read later more quickly. When not provided, the simulation vector will
+  remain in the session (or in certificate files). </li>
 
+<li> <b>:modified-modules-file</b> is optional. When provided, it should be a string
+pointing to a Verilog file containing alternative definitions of adder modules
+that may be used to override the modules of the same name in the original
+design.
+<br />
+ This is useful
+for hierarchical reasoning for cases VeSCmul cannot detect certain adder
+patterns in some designs. This will create two simulation vectors: one for the
+original design and another for the modified version. @(see
+verify-svtv-of-mult) will later prove equivalance between the two versions
+using FGL (sat solver), and VeSCmul will be used to rewrite the modified
+version. In the end, a theorem stating the correctness of the original design
+will be saved.
+<br />
+VeSCmul is usually very good at finding adders automatically on its own in
+flattened designs, and
+hopefully, this option will not be necessary. However, should the need rise, we still
+keep hierarchical reasoning as an option.  </li>
+</ul>
+<br />
+<p> Example call 1:
+<code>
+@('
+(parse-and-create-svtv :file \"demo/DT_SB4_HC_64_64_multgen.sv\"
+                       :topmodule \"DT_SB4_HC_64_64\"
+                       :name my-multiplier-example
+                       :save-to-file \"parsed/\")
+')</code>
+</p>
+
+<p> Example call 2:
+<code>
+@('
+(parse-and-create-svtv :file \"demo/DT_SB4_HC_64_64_multgen.sv\"
+                       :topmodule \"DT_SB4_HC_64_64\"
+                       :name my-multiplier-example)
+')</code>
+</p>
+
+
+<p> Example call 3 (-somewhat- hierarchical reasoning):
+<code>
+@('
+;; Create a Verilog file that has an alternative definition for Han-Carlson
+;; vector adder used in the target multiplier. VeSCmul works well with the +
+;; operator.
+(write-string-to-file-event \"demo/modified-HC_128.v\"
+   \"module HC_128(input [127:0] IN1, input [127:0] IN2, output [128:0] OUT);
+     assign OUT = IN1+IN2;
+   endmodule\")
+;; Use this alternative definition to help the verification program 
+(parse-and-create-svtv :file \"demo/DT_SB4_HC_64_64_multgen.sv\"
+                       :modified-modules-file \"demo/modified-HC_128.v\"
+                       :topmodule \"DT_SB4_HC_64_64\"
+                       :name my-multiplier-example)
+;; verify-svtv-of-mult will later use this alternative definition to get help
+;; for  multiplier proofs. 
+')</code>
+</p>
+
+
+<p> You can proceed to @(see verify-svtv-of-mult) to run the verification
+event. </p>
+")
+
+(defxdoc verify-svtv-of-mult
+  :parents (Multiplier-Verification vescmul)
+  :short "A macro to verify a multiplier using @(see VeSCmul)  from an already crated simulation
+  test vector with @(see parse-and-create-svtv)"
+  :long "<p><b>verify-svtv-of-mult</b> can take the following arguments:</p>
+<ul>
+<li> <b>:name</b> has to be provided. It should be a symbol and be the name
+  corresponding to the name picked in @(see parse-and-create-svtv). </li>
+
+<li> <b>:concl</b> has to be provided. The body of the conjecture we aim to
+  proved. </li>
+
+<li> <b>:then-fgl</b>  is optional. To invoke FGL (calls a SAT solver) after
+  rewriter finishes. </li>
+
+<li> <b>:read-from-file</b> is optional. It should be a string be the value
+  corresponding to the one in the :save-to-file argument of @(see
+  parse-and-create-svtv). </li>
+
+<li> <b>:cases</b> is optional. A list of terms that can be used to casesplit
+  upon starting the program. May be useful for some corner cases. </li>
+<li> <b>:keep-going</b> is optional, should be t or nil. When set to t, the
+  program will not stop ACL2 if a proof-attempt fails. This is useful when
+  running a lot of experiments in the same file.</li>
+<li> <b>:print-message</b> is optional and should be a string if given. The
+  program will also generate a proof summary file after it's run. Users may
+  pass a custom message that will appear in the proof summary file.</li>
+</ul>
+<br />
+<p>verify-svtv-of-mult will create a proof-summary file under the
+generated-proof-summary directory showing the proof time and what the program
+verified about multiplier design.</p>
+
+<br />
+<p> Example call 1:
+<code>
+@('
+(verify-svtv-of-mult :name my-multiplier-example
+                     :concl (equal result
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2))))
+                     :read-from-file \"parsed/\")
+')</code>
+</p>
+
+<p> Example call 2:
+<code>
+@('
+(verify-svtv-of-mult :name my-multiplier-example
+                     :concl (equal result
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2)))))
+')</code>
+</p>
+
+<p> Example call 3:
+<code>
+@('
+;; Casesplit on 63th bits of in1 and in2. This may be helpful in some corner
+;; cases. 
+(verify-svtv-of-mult :name my-multiplier-example
+                     :cases ((logbitp 63 in1) (logbitp 63 in2))
+                     :concl (equal result
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2)))))
+')</code>
+
+</p>
+
+<p> Example call 4:
+<code>
+@('
+;; If VeSCmul cannot finish the proofs, this will call FGL after rewriting is done 
+(verify-svtv-of-mult :name my-multiplier-example
+                     :then-fgl t
+                     :concl (equal result
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2)))))
+')</code>
+
+</p>
+
+
+
+<br />
+<p>
+
+You  may also configure FGL. For example this will call kissat for SAT Solver:
+<code>
+@('
+(local
+ (progn
+   (defun my-sat-config ()
+     (declare (xargs :guard t))
+     (satlink::make-config :cmdline \"kissat \"
+                           :verbose t
+                           :mintime 1/2
+                           :remove-temps t))
+   (defattach fgl::fgl-satlink-config my-sat-config)))
+')
+</code>
+
+Or, this will perform AIG transform using incremental SAT solvers. You need to
+set up IPASIR library (see @(see
+ipasir::ipasir)). This can improve the performance in some cases such as
+equivalance checking during hierarchical reasoning scheme. 
+<code>
+@('
+(progn
+  (local (include-book \"centaur/ipasir/ipasir-backend\" :dir :system))
+  (local (include-book \"centaur/aignet/transforms\" :dir :system))
+  (local (defun transforms-config ()
+           (declare (Xargs :guard t))
+           #!aignet
+           (list (make-observability-config)
+                 (make-balance-config :search-higher-levels t
+                                      :search-second-lit t)
+                 (change-fraig-config *fraig-default-config*
+                                      :random-seed-name 'my-random-seed
+                                      :ctrex-queue-limit 256
+                                      :sim-words 1
+                                      :ctrex-force-resim nil
+                                      :ipasir-limit 64)
+                 )))
+
+  (local (define monolithic-sat-with-transforms ()
+           (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
+  (local (defattach fgl::fgl-toplevel-sat-check-config monolithic-sat-with-transforms)))
+')
+</code>
+
+</p>
+
+")
 

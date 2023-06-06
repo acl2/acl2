@@ -127,6 +127,7 @@
    spec-override-var-bindings
    override-vars
    override-var-bindings
+   x-override-vars
    input-vars
    input-var-bindings
    output-vars
@@ -135,6 +136,7 @@
    hyp
    lemma-hyp
    final-hyp
+   user-final-hyp
    concl
    run-before-concl
    svtv
@@ -238,7 +240,8 @@
                                               <input-vars>
                                               <override-tests>
                                               <override-bindings>
-                                              <override-vals>))
+                                              <override-vals>
+                                              <override-xes>))
                                  (run (:@ (and (not :use-ideal)
                                                (not :use-svtv-spec))
                                        (svtv-run (<svtv>)
@@ -277,12 +280,16 @@
                                           (append (alist-keys x.spec-override-var-bindings)
                                                   (alist-keys x.override-var-bindings)
                                                   x.spec-override-vars
-                                                  x.override-vars)
+                                                  x.override-vars
+                                                  x.x-override-vars)
                                           x.triple-val-alist x.triples-name))
                    (<override-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist
                                                     (append x.spec-override-var-bindings
                                                             x.override-var-bindings))))
                    (<override-vals> . (list . ,(svtv-genthm-var-alist-termlist (append x.spec-override-vars x.override-vars))))
+                   (<override-xes> . ',(pairlis$ x.x-override-vars
+                                                 (make-list (len x.x-override-vars)
+                                                            :initial-element (4vec-x))))
                    (<outputs-list> . ,x.output-vars))
      :splice-alist `((<run-before-concl> . ,(and x.run-before-concl (list x.run-before-concl)))
                      (<outputs> . ,x.output-vars)
@@ -461,10 +468,11 @@
                  (run <run>
                       )
                  ((svassocs <override-svassocs>) run))
-              (implies (and <hyps>
-                            <final-hyps>
+              (implies (and <user-final-hyps>
                             <input-binding-hyp>
                             <override-binding-hyp>
+                            <final-hyps>
+                            <hyps>
                             (svtv-override-triplemaplist-envs-match
                              (<triplemaps>) env <const-overrides>)
                             (:@ (or :use-ideal :use-svtv-spec)
@@ -547,6 +555,7 @@
        (<rule-classes> . ,x.rule-classes))
      :splice-alist
      `((<hyps> . ,(svtv-genthm-hyp-to-list x.hyp))
+       (<user-final-hyps> . ,(svtv-genthm-hyp-to-list x.user-final-hyp))
        (<final-hyps> . ,(svtv-genthm-hyp-to-list x.final-hyp))
        (<input-var-svassocs> . ,(svtv-genthm-qmark-svassocs (append x.input-vars (strip-cars x.input-var-bindings))))
        (<input-unbound-svassocs> . ,(svtv-genthm-qmark-svassocs x.input-vars))
@@ -609,7 +618,7 @@
 
 
 (defun svtv-generalized-thm-fn (name args state)
-  (declare (xargs :stobjs state))
+  (declare (xargs :stobjs state :mode :program))
   (b* ((defaults (table-alist 'svtv-generalized-thm-defaults (w state)))
        (ctx `(def-svtv-generalized-thm ,name))
        ((std::extract-keyword-args
@@ -628,6 +637,8 @@
          more-override-var-bindings
          override-vars
          more-override-vars
+         x-override-vars
+         more-x-override-vars
          input-vars
          more-input-vars
          input-var-bindings
@@ -640,6 +651,7 @@
          env-val-widths-hyp
          (hyp 't)
          (more-hyp 't)
+         (final-hyp 't)
          concl
          (run-before-concl 'nil)
          (lemma-defthm 'fgl::def-fgl-thm)
@@ -676,8 +688,9 @@
        (spec-override-vars (append spec-override-vars more-spec-override-vars))
        (override-var-bindings (append override-var-bindings more-override-var-bindings))
        (override-vars (append override-vars more-override-vars))
+       (x-override-vars (append x-override-vars more-x-override-vars))
        (output-vars (append output-vars more-output-vars))
-       
+
        (input-var-bindings (append input-var-bindings more-input-var-bindings))
        (input-vars (if (equal input-vars :all)
                        (b* ((all-ins (svtv->ins svtv-val))
@@ -690,8 +703,9 @@
                             (ovr-signals (append override-vars
                                                  (alist-keys override-var-bindings)
                                                  conditional-ovr-signals))
-                            (all-ins (acl2::hons-set-diff all-ins (append ovr-controls ovr-signals
-                                                                          (alist-keys input-var-bindings))))
+                            (all-ins (acl2::hons-set-diff all-ins
+                                                          (append ovr-controls ovr-signals
+                                                                  (alist-keys input-var-bindings))))
                             (all-ins (remove-duplicates-equal all-ins)))
                          all-ins)
                      (append input-vars more-input-vars)))
@@ -709,7 +723,7 @@
                            (masks (acl2::fal-extract inputs inmasks)))
                         `(and . ,(svtv-unsigned-byte-hyps masks)))
                     t))
-       (final-hyp 
+       (auto-final-hyp
         (cond (unsigned-byte-hyps
                (b* ((inmasks (svtv->inmasks svtv-val))
                     (inputs (append input-vars override-vars spec-override-vars))
@@ -736,6 +750,7 @@
        :name name
        :override-vars override-vars
        :override-var-bindings override-var-bindings
+       :x-override-vars x-override-vars
        :spec-override-vars spec-override-vars
        :spec-override-var-bindings spec-override-var-bindings
        :input-vars input-vars
@@ -746,7 +761,8 @@
        :enable enable
        :hyp (svtv-genthm-conjoin-hyps hyp more-hyp)
        :lemma-hyp lemma-hyp
-       :final-hyp final-hyp
+       :final-hyp auto-final-hyp
+       :user-final-hyp final-hyp
        :concl concl
        :run-before-concl run-before-concl
        :svtv svtv
