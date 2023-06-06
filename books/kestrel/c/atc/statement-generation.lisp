@@ -2130,7 +2130,7 @@
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
-             ((mv okp member-term tag member-name member-type)
+             ((erp okp member-term tag member-name member-type)
               (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
