@@ -1934,8 +1934,7 @@
 (define atc-gen-omap-update-formals ((typed-formals atc-symbol-varinfo-alistp))
   :returns (mv (term "An untranslated term.")
                (init-formals symbol-listp
-                             :hyp (atc-symbol-varinfo-alistp typed-formals))
-               (proofs booleanp))
+                             :hyp (atc-symbol-varinfo-alistp typed-formals)))
   :short "Generate a term that is an @(tsee omap::update) nest
           for the formals of a function."
   :long
@@ -1963,15 +1962,10 @@
     "We also return the list of the @('<symbol>')s,
      some of which are the formals,
      while the others are the formals suffixed by @('-ptr').
-     See explanation just above.")
-   (xdoc::p
-    "We also return a flag saying whether modular proofs
-     should be generated or not.
-     This is true iff there are no external objects;
-     we will add support for external objects soon."))
-  (b* (((when (endp typed-formals)) (mv nil nil t))
+     See explanation just above."))
+  (b* (((when (endp typed-formals)) (mv nil nil))
        ((cons var info) (car typed-formals))
-       ((mv omap-rest init-formals-rest proofs-rest)
+       ((mv omap-rest init-formals-rest)
         (atc-gen-omap-update-formals (cdr typed-formals)))
        (type (atc-var-info->type info))
        (externalp (atc-var-info->externalp info))
@@ -1980,10 +1974,9 @@
                        (add-suffix-to-fn var "-PTR")
                      var)))
     (if externalp
-        (mv omap-rest init-formals-rest nil)
+        (mv omap-rest init-formals-rest)
       (mv `(omap::update (ident ,(symbol-name var)) ,var/varptr ,omap-rest)
-          (cons var/varptr init-formals-rest)
-          proofs-rest))))
+          (cons var/varptr init-formals-rest)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2126,7 +2119,6 @@
                (omap-update-nest "An untranslated term.")
                (init-formals symbol-listp
                              :hyp (atc-symbol-varinfo-alistp typed-formals))
-               (proofs booleanp)
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the theorems about
           the initial scope of a function execution."
@@ -2139,7 +2131,7 @@
     "We also return the @(tsee omap::update) nest term
      that describes the initial scope, for use in subsequent theorems."))
   (b* ((wrld (w state))
-       ((mv omap-update-nest init-formals proofs)
+       ((mv omap-update-nest init-formals)
         (atc-gen-omap-update-formals typed-formals))
        (formals (strip-cars typed-formals))
        (expand-thm (pack fn '-init-scope-expand))
@@ -2295,7 +2287,6 @@
         scopep-thm
         omap-update-nest
         init-formals
-        proofs
         names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2397,7 +2388,8 @@
   :returns (mv (inscope atc-symbol-varinfo-alist-listp
                         :hyp (atc-symbol-varinfo-alistp typed-formals))
                (events pseudo-event-form-listp)
-               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid))
+               (proofs booleanp))
   :short "Generate the initial symbol table for a C function."
   :long
   (xdoc::topstring
@@ -2428,11 +2420,16 @@
      is motivated by the fact that these are the theorems
      for the initial symbol table;
      as we update the symbol table in the course of generating code,
-     we use positive indices as suffixes."))
-  (b* (((mv scope events names-to-avoid)
+     we use positive indices as suffixes.")
+   (xdoc::p
+    "We also return a flag saying whether modular proof generation
+     should proceed or not.
+     The flag is false iff there are some external objects,
+     support for which is forthcoming."))
+  (b* (((mv scope events names-to-avoid proofs)
         (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals prec-tags
                                   compst-var context names-to-avoid wrld)))
-    (mv (list scope) events names-to-avoid))
+    (mv (list scope) events names-to-avoid proofs))
 
   :prepwork
   ((define atc-gen-init-inscope-aux ((fn symbolp)
@@ -2448,9 +2445,10 @@
      (mv (inscope atc-symbol-varinfo-alistp
                   :hyp (atc-symbol-varinfo-alistp typed-formals))
          (events pseudo-event-form-listp)
-         (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+         (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid))
+         (proofs booleanp))
      :parents nil
-     (b* (((when (endp typed-formals)) (mv nil nil names-to-avoid))
+     (b* (((when (endp typed-formals)) (mv nil nil names-to-avoid t))
           ((cons var info) (car typed-formals))
           (type (atc-var-info->type info))
           (var-thm (atc-var-info->thm info))
@@ -2523,7 +2521,7 @@
                                                :formula formula
                                                :hints hints
                                                :enable nil))
-          ((mv inscope-rest events-rest names-to-avoid)
+          ((mv inscope-rest events-rest names-to-avoid proofs)
            (atc-gen-init-inscope-aux fn fn-guard fn-formals
                                      (cdr typed-formals) prec-tags
                                      compst-var context names-to-avoid wrld)))
@@ -2533,7 +2531,9 @@
                                           :externalp externalp))
                  inscope-rest)
            (cons event events-rest)
-           names-to-avoid))
+           names-to-avoid
+           (and (not externalp)
+                proofs)))
      :guard-hints
      (("Goal"
        :in-theory (enable alistp-when-atc-string-taginfo-alistp-rewrite))))))
@@ -2822,7 +2822,6 @@
             init-scope-scopep-thm
             omap-update-nest
             init-formals
-            modular-proofs
             names-to-avoid)
         (atc-gen-init-scope-thms fn
                                  fn-guard
@@ -2852,12 +2851,14 @@
                                                     :term add-var-nest)))
        (context (make-atc-context :preamble context-preamble
                                   :premises premises))
-       ((mv inscope init-inscope-events names-to-avoid)
-        (if (and proofs
-                 modular-proofs)
+       ((mv inscope
+            init-inscope-events
+            names-to-avoid
+            no-ext-objs-p)
+        (if proofs
             (atc-gen-init-inscope fn fn-guard formals typed-formals prec-tags
                                   compst-var context names-to-avoid wrld)
-          (mv (list typed-formals) nil names-to-avoid)))
+          (mv (list typed-formals) nil names-to-avoid nil)))
        (body (ubody+ fn wrld))
        ((erp affect)
         (atc-find-affected fn body typed-formals prec-fns wrld))
@@ -2891,7 +2892,7 @@
                        :thm-index 1
                        :names-to-avoid names-to-avoid
                        :proofs (and proofs
-                                    modular-proofs)
+                                    no-ext-objs-p)
                        :deprecated deprecated)
                       state))
        (names-to-avoid body.names-to-avoid)
@@ -2908,7 +2909,7 @@
          (raise "Internal error: ~
                  the function ~x0 has return type ~x1."
                 fn body.type)))
-       (modular-proofs (and modular-proofs
+       (modular-proofs (and no-ext-objs-p
                             body.proofs))
        ((mv pop-frame-event
             pop-frame-thm
@@ -3012,7 +3013,8 @@
                                        (list init-scope-expand-event)
                                        (list init-scope-scopep-event)
                                        (list push-init-thm-event)
-                                       init-inscope-events
+                                       (and no-ext-objs-p
+                                            init-inscope-events)
                                        body.events
                                        (and modular-proofs
                                             (list pop-frame-event))
