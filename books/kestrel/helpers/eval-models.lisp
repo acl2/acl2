@@ -52,7 +52,7 @@
        (member-eq (first x) help::*known-models*) ; model
        (natp (second x)) ; total-num-recs
        (or (null (third x)) ; first-working-rec-num-or-nil
-           (posp x))
+           (posp (third x)))
        (rationalp (fourth x)) ; time-to-find-first-working-rec
        ))
 
@@ -162,35 +162,62 @@
             (all-rationalp x))
    :hints (("Goal" :in-theory (enable all-rationalp)))))
 
-;;Returns (mv attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced).
-(defun tabulate-resuls-for-model (model result-alist attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
+(defund all-other-models-failedp (model model-results)
+  (declare (xargs :guard (and (keywordp model) ; todo: improve?
+                              (model-result-listp model-results))))
+  (if (endp model-results)
+      t
+    (let* ((model-result (first model-results))
+           (this-model (first model-result))
+           (first-working-rec-num-or-nil (third model-result)))
+      (if (eq model this-model)
+          ;; skip since we are only interested in whether other models could prove it
+          (all-other-models-failedp model (rest model-results))
+        (if (not first-working-rec-num-or-nil)
+            ;; this model didn't prove it, so keep looking:
+            (all-other-models-failedp model (rest model-results))
+          ;; we've found a different model that proved it, so MODEL is not the only one:
+          nil)))))
+
+;;Returns (mv attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced).
+(defun tabulate-resuls-for-model (model
+                                  result-alist
+                                  attempt-count
+                                  successful-attempt-count
+                                  unique-successful-attempt-count ; how many times only this model could prove a theorem
+                                  top-1-count top-10-count
+                                  successful-rec-nums-acc
+                                  total-recs-produced)
   (declare (xargs :guard (and (keywordp model) ; todo: improve?
                               (result-alistp result-alist)
                               (natp attempt-count)
                               (natp successful-attempt-count)
+                              (natp unique-successful-attempt-count)
                               (natp top-1-count)
                               (natp top-10-count)
                               (nat-listp successful-rec-nums-acc)
                               (natp total-recs-produced))
                   :guard-hints (("Goal" :expand (result-alistp result-alist)))))
   (if (endp result-alist)
-      (mv attempt-count successful-attempt-count top-1-count top-10-count
+      (mv attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count
           (merge-sort-< successful-rec-nums-acc)
           total-recs-produced)
     (b* ((result-entry (first result-alist))
          (model-results (cdr result-entry))
          (this-model-result (assoc-eq model model-results)))
       (if (not this-model-result) ; maybe print a warning?
-          (tabulate-resuls-for-model model (rest result-alist) attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
+          (tabulate-resuls-for-model model (rest result-alist) attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
         (let* ((total-recs (second this-model-result))
                (first-working-rec-num-or-nil (third this-model-result)) ; todo: also tabulate the times
                (successp first-working-rec-num-or-nil)
                (top-1 (and successp (<= first-working-rec-num-or-nil 1)))
                (top-10 (and successp (<= first-working-rec-num-or-nil 10))) ; todo: what if we don't even ask for 10, or there are not 10, or :add-hyp gets removed?
-               )
+               (unique-successp (and successp
+                                     (all-other-models-failedp model model-results))))
           (tabulate-resuls-for-model model (rest result-alist)
                                      (+ 1 attempt-count)
                                      (if successp (+ 1 successful-attempt-count) successful-attempt-count)
+                                     (if unique-successp (+ 1 unique-successful-attempt-count) unique-successful-attempt-count)
                                      (if top-1 (+ 1 top-1-count) top-1-count)
                                      (if top-10 (+ 1 top-10-count) top-10-count)
                                      (if successp
@@ -205,14 +232,16 @@
                  (result-alistp result-alist)
                  (natp attempt-count)
                  (natp successful-attempt-count)
+                 (natp unique-successful-attempt-count)
                  (natp top-1-count)
                  (natp top-10-count)
                  (nat-listp successful-rec-nums-acc)
                  (natp total-recs-produced))
-            (mv-let (attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced)
-              (tabulate-resuls-for-model model result-alist attempt-count successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
+            (mv-let (attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums total-recs-produced)
+              (tabulate-resuls-for-model model result-alist attempt-count successful-attempt-count unique-successful-attempt-count top-1-count top-10-count successful-rec-nums-acc total-recs-produced)
               (and (natp attempt-count)
                    (natp successful-attempt-count)
+                   (natp unique-successful-attempt-count)
                    (natp top-1-count)
                    (natp top-10-count)
                    (nat-listp successful-rec-nums)
@@ -383,14 +412,16 @@
   (declare (xargs :guard (and (keywordp model) ; tweak?
                               (result-alistp result-alist)
                               (posp num-recs-per-model))))
-  (b* (((mv attempt-count successful-attempt-count
+  (b* (((mv attempt-count successful-attempt-count unique-successful-attempt-count
             & & ; top-1-count top-10-count
             successful-rec-nums
             total-recs-produced)
-        (tabulate-resuls-for-model model result-alist 0 0 0 0 nil 0))
+        (tabulate-resuls-for-model model result-alist 0 0 0 0 0 nil 0))
        (successful-attempt-percentage (quotient-as-percent-string successful-attempt-count attempt-count))
+       (unique-successful-attempt-percentage (quotient-as-percent-string unique-successful-attempt-count attempt-count))
        (- (cw "Results for model ~x0 (~x1 theorem attempts, ~x2 total recs produced):~%" model attempt-count total-recs-produced))
        (- (cw "Success: ~x0 (~s1%)~%" successful-attempt-count successful-attempt-percentage))
+       (- (cw "Unique success: ~x0 (~s1%)~%" unique-successful-attempt-count unique-successful-attempt-percentage))
        ;; (- (cw "Nums of first successful recs: ~X01~%" successful-rec-nums nil))
        ;; (- (cw "Top-1 through top-10 counts: ~X01~%" (top-n-counts successful-rec-nums) nil))
 ;todo: print total recs produced?
