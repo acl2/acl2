@@ -1638,7 +1638,7 @@
                                        type
                                        gin
                                        state)))
-         ((mv okp arr-term sub-term arr-type elem-type)
+         ((erp okp arr-term sub-term arr-type elem-type)
           (atc-check-array-read term))
          ((when okp)
           (b* (((erp (pexpr-gout arr))
@@ -1677,7 +1677,7 @@
                     :thm-index sub.thm-index
                     :names-to-avoid sub.names-to-avoid
                     :proofs nil))))
-         ((mv okp arg-term tag member mem-type)
+         ((erp okp arg-term tag member mem-type)
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
@@ -1718,7 +1718,7 @@
                            arg.type
                            (type-struct tag)
                            (type-pointer (type-struct tag))))))))
-         ((mv okp index-term struct-term tag member elem-type)
+         ((erp okp index-term struct-term tag member elem-type)
           (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout index))
