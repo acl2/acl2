@@ -311,7 +311,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-array-write ((var symbolp) (val pseudo-termp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (sub pseudo-termp)
                (elem pseudo-termp)
                (elem-type typep))
@@ -327,7 +328,7 @@
     "where @('<arr>') is a variable of pointer type to an integer type,
      which must occur identically as
      both the @(tsee let) variable
-     and as the first argument of @('<type1>-array-write-<type2>'),
+     and as the first argument of @('<type>-array-write'),
      @('<sub>') is an expression that yields the index of the element to write,
      @('<elem>') is an expression that yields the element to write,
      and @('...') represents the code that follows the array assignment.
@@ -337,23 +338,31 @@
      If they do, the components are returned for further processing.
      We also return the types of the index and element
      as gathered from the name of the array write function."))
-  (b* (((acl2::fun (no)) (mv nil nil nil (irr-type)))
-       ((unless (pseudo-term-case val :fncall)) (no))
-       ((pseudo-term-fncall val) val)
-       ((mv okp etype array write) (atc-check-symbol-3part val.fn))
+  (b* (((reterr) nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
+       ((mv okp fn args) (fty-check-fn-call val))
+       ((unless okp) (no))
+       ((mv okp fixtype array write) (atc-check-symbol-3part fn))
+       (elem-type (fixtype-to-integer-type fixtype))
        ((unless (and okp
+                     elem-type
                      (eq array 'array)
                      (eq write 'write)))
         (no))
-       (elem-type (fixtype-to-integer-type etype))
-       ((when (not elem-type)) (no))
-       ((unless (list-lenp 3 val.args)) (no))
-       (arr (first val.args))
-       (sub (second val.args))
-       (elem (third val.args)))
-    (if (eq arr var)
-        (mv t sub elem elem-type)
-      (no)))
+       ((unless (equal (symbol-package-name fn) "C"))
+        (reterr (msg "Invalid function ~x0 encountered: ~
+                      it has the form of an array write, ~
+                      but it is not in the \"C\" package."
+                     fn)))
+       ((unless (list-lenp 3 args))
+        (reterr (raise "Internal error: ~x0 not applied to 3 arguments." fn)))
+       ((unless (equal (first args) var))
+        (reterr
+         (raise "Internal error: ~x0 is not applied to the variable ~x1."
+                fn var)))
+       (sub (second args))
+       (elem (third args)))
+    (retok t sub elem elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-array-write-sub

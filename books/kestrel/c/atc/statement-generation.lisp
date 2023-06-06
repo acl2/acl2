@@ -2011,7 +2011,7 @@
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
                         :proofs nil))))
-             ((mv okp sub-term elem-term elem-type)
+             ((erp okp sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
               (b* (((unless (eq wrapper? nil))
