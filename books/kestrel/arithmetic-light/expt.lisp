@@ -77,6 +77,28 @@
          ((> I 0) (* R (EXPT-double-induct R (+ I -1) (+ j -1))))
          (T (* (/ R) (EXPT-double-induct R (+ I 1) (+ j 1)))))))
 
+(defthm expt-of-0-arg1
+  (equal (expt 0 i)
+         (if (zip i)
+             1
+           0))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm expt-of-0-arg2
+  (equal (expt r 0)
+         1)
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm expt-of-1-arg1
+  (equal (expt 1 i)
+         1)
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm expt-of-1-arg2
+  (equal (expt r 1)
+         (fix r))
+  :hints (("Goal" :in-theory (enable expt))))
+
 ;try to enable?
 (defthmd expt-of-+
   (implies (and (integerp i1)
@@ -92,6 +114,21 @@
 ;           :expand (EXPT R (+ I1 I2))
            :expand (EXPT R (+ 1 I1 I2))
            :in-theory (enable expt zp))))
+
+;; Opposite of expt-of-+
+(defthmd *-of-expt-and-expt-same-base
+  (implies (and (integerp i1)
+                (integerp i2))
+           (equal (* (expt r i1) (expt r i2))
+                  (if (equal (fix r) 0)
+                      (if (and (equal i1 0)
+                               (equal i2 0))
+                          1 0)
+                    (expt r (+ i1 i2)))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
+(theory-invariant (incompatible (:rewrite expt-of-+)
+                                (:rewrite *-of-expt-and-expt-same-base)))
 
 ;todo: param names
 (defthm *-of-expt-combine-lemma
@@ -124,27 +161,7 @@
   :hints (("Goal" :cases ((equal 1 r))
            :in-theory (enable expt))))
 
-(defthm expt-of-0-arg1
-  (equal (expt 0 i)
-         (if (zip i)
-             1
-           0))
-  :hints (("Goal" :in-theory (enable expt))))
 
-(defthm expt-of-0-arg2
-  (equal (expt r 0)
-         1)
-  :hints (("Goal" :in-theory (enable expt))))
-
-(defthm expt-of-1-arg1
-  (equal (expt 1 i)
-         1)
-  :hints (("Goal" :in-theory (enable expt))))
-
-(defthm expt-of-1-arg2
-  (equal (expt r 1)
-         (fix r))
-  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm expt-of--1-arg1
   (implies (integerp i)
@@ -202,6 +219,14 @@
             (expt r2 i)))
   :hints (("Goal" :in-theory (enable expt))))
 
+(defthmd *-of-expt-and-expt-same-exponent
+  (equal (* (expt r1 i)
+            (expt r2 i))
+         (expt (* r1 r2) i)))
+
+(theory-invariant (incompatible (:rewrite expt-of-*)
+                                (:rewrite *-of-expt-and-expt-same-exponent)))
+
 (defthmd expt-monotone-strong
   (implies (and (< i j)
                 (< 1 r)
@@ -211,6 +236,24 @@
            (< (expt r i) (expt r j)))
   :hints (("Goal" :in-theory (enable expt-of-+ zip)
            :induct (EXPT-double-induct r i j))))
+
+(defthm <-of-expt-and-expt-linear
+  (implies (and (< i1 i2)
+                ;; prevent huge expt computations:
+                (syntaxp (and (not (and (quotep r)
+                                        (quotep i1)
+                                        (< 1000 (unquote i1))))
+                              (not (and (quotep r)
+                                        (quotep i2)
+                                        (< 1000 (unquote i2))))))
+                (< 1 r)
+                (rationalp r)
+                (integerp i1)
+                (integerp i2))
+           (< (expt r i1) (expt r i2)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt-monotone-strong)))
+  )
 
 (defthmd <-of-expt-and-expt-helper
   (implies (and (< (expt r i) (expt r j))
@@ -238,6 +281,11 @@
 (defthm expt-of-/
   (equal (expt (/ x y) i)
          (/ (expt x i) (expt y i)))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm expt-of-unary-/-arg1
+  (equal (expt (/ r) i)
+         (/ (expt r i)))
   :hints (("Goal" :in-theory (enable expt))))
 
 (defthm integerp-of-*-of-expt-and-expt
@@ -452,3 +500,88 @@
                         (:instance equal-of-expt-same-helper (r (- r)))
                         expt-when-<-of-0)
            :in-theory (disable EXPT-OF---ARG1))))
+
+(defthm expt-when-not-acl2-numberp-cheap
+  (implies (not (acl2-numberp r))
+           (equal (expt r i)
+                  (if (zip i) 1 0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthmd expt-of-*-arg2
+  (implies (and (integerp i1)
+                (integerp i2))
+           (equal (expt r (* i1 i2))
+                  (expt (expt r i1) i2)))
+  :hints (("Goal" :in-theory (enable (:i expt) expt-of-+))))
+
+;; (r^i1)^i2 = r^(i1*i2)
+(defthm expt-of-expt-arg1
+  (implies (and (integerp i1)
+                (integerp i2))
+           (equal (expt (expt r i1) i2)
+                  (expt r (* i1 i2))))
+  :hints (("Goal" :by expt-of-*-arg2)))
+
+(theory-invariant (incompatible (:rewrite expt-of-expt-arg1) (:rewrite expt-of-*-arg2)))
+
+;; Seems good to leave this version enabled, but I suppose
+(defthm expt-of-expt-arg1-constants
+  (implies (and (syntaxp (and (quotep i1)
+                              (quotep i2)
+                              ;; prevent huge calls to expt:
+                              (<= (* (unquote i1) (unquote i2)) 1000)))
+                (integerp i1)
+                (integerp i2))
+           (equal (expt (expt r i1) i2)
+                  (expt r (* i1 i2))))
+  :hints (("Goal" :by expt-of-*-arg2)))
+
+(defthm <-of-expt-and-expt-same-exponents
+  (implies (and (rationalp r1)
+                (<= 0 r1)
+                (rationalp r2)
+                (<= 0 r2)
+                (integerp i)
+                (<= 0 i) ; todo: gen?
+                )
+           (equal (< (expt r1 i) (expt r2 i))
+                  (if (equal 0 i)
+                      nil
+                    (< r1 r2))))
+  :hints (("subgoal *1/6" :cases ((< r1 r2)))
+          ("Goal" :in-theory (enable expt))))
+
+(defthm <-of-expt-and-expt-same-exponents-linear
+  (implies (and (< r1 r2)
+                (rationalp r1)
+                (<= 0 r1)
+                (rationalp r2)
+                (<= 0 r2)
+                (integerp i)
+                (< 0 i) ; todo: gen?
+                )
+           (< (expt r1 i) (expt r2 i)))
+  :rule-classes :linear)
+
+;gen?
+(defthm equal-of-expt-and-expt-same-exponent
+  (implies (and (rationalp r1)
+                (<= 0 r1)
+                (rationalp r2)
+                (<= 0 r2)
+                (integerp i)
+                (< 0 i) ;allow negative?
+                )
+           (equal (equal (expt r1 i) (expt r2 i))
+                  (equal r1 r2)))
+  :hints (("Goal" :cases ((< r1 r2) (< r2 r1)))))
+
+(defthm equal-of-expt-and-expt-same-base
+  (implies (and (rationalp r)
+                (< 1 r) ;todo: gen?
+                (integerp i1)
+                (integerp i2))
+           (equal (equal (expt r i1) (expt r i2))
+                  (equal i1 i2)))
+  :hints (("Goal" :cases ((< i1 i2) (< i2 i1)))))
