@@ -1296,7 +1296,7 @@
             (recommendation-listp (make-enable-recs-aux names num)))
    :hints (("Goal" :in-theory (enable recommendation-listp)))))
 
-;; TODO: Don't even make recs for things that are enabled?  Well, we handle that elsewhere.
+;; TODO: Don't even make recs for things that are enabled (in the theory, or by the current hints)?
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 ;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
 (defun make-enable-recs (formula num-recs print state)
