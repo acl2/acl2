@@ -2824,34 +2824,30 @@
             init-formals
             modular-proofs
             names-to-avoid)
-        (if proofs
-            (atc-gen-init-scope-thms fn
-                                     fn-guard
-                                     typed-formals
-                                     prec-tags
-                                     context-preamble
-                                     prog-const
-                                     fn-fun-env-thm
-                                     compst-var
-                                     fenv-var
-                                     names-to-avoid
-                                     state)
-          (mv '(_) nil '(_) nil nil nil nil names-to-avoid)))
+        (atc-gen-init-scope-thms fn
+                                 fn-guard
+                                 typed-formals
+                                 prec-tags
+                                 context-preamble
+                                 prog-const
+                                 fn-fun-env-thm
+                                 compst-var
+                                 fenv-var
+                                 names-to-avoid
+                                 state))
        ((mv push-init-thm-event
             push-init-thm
             add-var-nest
             names-to-avoid)
-        (if proofs
-            (atc-gen-push-init-thm fn
-                                   fn-guard
-                                   typed-formals
-                                   prec-tags
-                                   context-preamble
-                                   omap-update-nest
-                                   compst-var
-                                   names-to-avoid
-                                   wrld)
-          (mv '(_) nil nil names-to-avoid)))
+        (atc-gen-push-init-thm fn
+                               fn-guard
+                               typed-formals
+                               prec-tags
+                               context-preamble
+                               omap-update-nest
+                               compst-var
+                               names-to-avoid
+                               wrld))
        (premises (list (make-atc-premise-compustate :var compst-var
                                                     :term add-var-nest)))
        (context (make-atc-context :preamble context-preamble
