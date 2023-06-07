@@ -5,7 +5,7 @@ This directory contains Kestrel's open-source Axe toolkit.
 
 Tools of interest may include rewriter-basic.lisp and prover-basic.lisp.
 
-The jvm/ directory contains Axe lifters for JVM bytecode programs.
+The [jvm/](jvm) directory contains Axe lifters for JVM bytecode programs.
 
 The x86/ directory contains Axe lifters for x86 binary programs.
 
