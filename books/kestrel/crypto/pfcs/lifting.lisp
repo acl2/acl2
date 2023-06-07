@@ -281,7 +281,7 @@
                   (b* ((def (lookup-definition ',def-name defs))
                        ((unless def) nil)
                        (para (definition->para def))
-                       ((unless (= (len vals) (len para))) nil)
+                       ((unless (equal (len vals) (len para))) nil)
                        (asg (omap::from-lists para vals))
                        (constr (make-constraint-relation
                                 :name ',def-name
