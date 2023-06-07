@@ -99,6 +99,24 @@
          (fix r))
   :hints (("Goal" :in-theory (enable expt))))
 
+(defthmd expt-of-+-of--1-arg2
+  (implies (and (integerp i)
+                (acl2-numberp r))
+           (equal (expt r (+ -1 i))
+                  (if (equal 0 r)
+                      (if (equal 1 i) 1 0)
+                    (* (/ (fix r)) (expt r i)))))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthmd expt-of-+-of-1-arg2
+  (implies (and (integerp i)
+                (acl2-numberp r))
+           (equal (expt r (+ 1 i))
+                  (if (equal 0 r)
+                      (if (equal -1 i) 1 0)
+                    (* (fix r) (expt r i)))))
+  :hints (("Goal" :in-theory (enable expt))))
+
 ;try to enable?
 (defthmd expt-of-+
   (implies (and (integerp i1)
@@ -113,7 +131,7 @@
   :hints (("Goal" :induct (EXPT-double-induct r i1 2)
 ;           :expand (EXPT R (+ I1 I2))
            :expand (EXPT R (+ 1 I1 I2))
-           :in-theory (enable expt zp))))
+           :in-theory (enable expt zp expt-of-+-of--1-arg2))))
 
 ;; Opposite of expt-of-+
 (defthmd *-of-expt-and-expt-same-base
@@ -139,7 +157,8 @@
            (equal (* (expt r (+ -1 x))
                      (expt r (+ 1 y)))
                   (* (expt r x) (expt r y))))
-  :hints (("Goal" :in-theory (enable expt))))
+  :hints (("Goal" :in-theory (enable expt expt-of-+-of-1-arg2
+                                     expt-of-+-of--1-arg2))))
 
 (local
  (defthm integerp-of-expt-helper
