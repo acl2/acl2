@@ -231,7 +231,8 @@
 
     integerp-of--
     integerp-of-+
-    ))
+
+    integerp-when-unsigned-byte-p-free))
 
 (defun safe-trim-rules ()
   (declare (xargs :guard t))
@@ -2475,8 +2476,7 @@
    (booleanp-rules) ;new!
    (boolean-rules-safe) ;new!
    (type-rules)     ;very new (seems safe)
-   '(integerp-when-unsigned-byte-p-free ;tue jan 11 16:53:16 2011
-     equal-of-not-and-nil               ;tue jan 11 16:52:09 2011
+   '(equal-of-not-and-nil               ;tue jan 11 16:52:09 2011
      bvlt-of-bvchop-arg2
      bvlt-of-bvchop-arg3
      bvlt-tighten-free-and-free ;hope this is okay. fixme use polarities?
@@ -2745,7 +2745,6 @@
 (table axe-rule-priorities-table 'bvplus-of-bvuminus-same-2 -1)
 (table axe-rule-priorities-table 'bvplus-of-bvuminus-same-2-alt -1)
 
-
 (table axe-rule-priorities-table 'bvplus-becomes-ripple-carry-adder 10)
 ;new:
 (table axe-rule-priorities-table 'blast-bvmult-into-bvplus-constant-version-arg2 10)
@@ -2857,5 +2856,3 @@
         (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules-basic)) (w state))
         ;;we do need to blast the mult of a constant (and the resulting pluses??), it seems
         (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules3)) (w state))))
-
-;; (defun dups (x) (if (endp x) nil (if (member-eq (first x) (rest x)) (cons (first x) (dups (rest x))) (dups (rest x)))))

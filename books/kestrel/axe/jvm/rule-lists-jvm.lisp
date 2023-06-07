@@ -2481,7 +2481,6 @@
              equal-of-bvplus-constant-and-constant-alt
              nthcdr-of-take-becomes-subrange
              <-of-bvplus-same-32-1
-             integerp-when-unsigned-byte-p-free
              equal-of-append-arg1
              +-of-minus-constant-version
              bvlt-when-not-bvlt-one-more
