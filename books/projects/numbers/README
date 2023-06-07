@@ -55,3 +55,6 @@ number theory.  It includes the following ACL2 books:
 
   z2q
       A bijection from the integers to the rartionals
+
+  girard
+      An odd prime p is a sum of two squares iff (mod p 4) = 1.
