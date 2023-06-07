@@ -1290,8 +1290,18 @@
 ; With er defined, we may now define chk-ld-skip-proofsp.
 
 (defconst *ld-special-error*
+
+; Warning: If you change this value, consider also changing the value of
+; *state-global-error*.
+
   "~x1 is an illegal value for the state global variable ~x0.  See ~
    :DOC ~x0.")
+
+(defconst *state-global-error*
+
+; Since *ld-special-error* does not mention LD, we use its value here.
+
+  *ld-special-error*)
 
 (defun chk-ld-skip-proofsp (val ctx state)
   (declare (xargs :mode :program))
@@ -3271,6 +3281,20 @@
    (chk-proofs-co val 'set-proofs-co state)
    (pprogn
     (f-put-global 'proofs-co val state)
+    (value val))))
+
+(defun chk-trace-co (val ctx state)
+  (cond
+   ((and (symbolp val)
+         (open-output-channel-p val :character state))
+    (value nil))
+   (t (er soft ctx *state-global-error* 'trace-co val))))
+
+(defun set-trace-co (val state)
+  (er-progn
+   (chk-trace-co val 'set-trace-co state)
+   (pprogn
+    (f-put-global 'trace-co val state)
     (value val))))
 
 (defun illegal-state-ld-prompt (channel state)

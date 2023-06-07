@@ -21713,6 +21713,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     standard-oi
     standard-co
     proofs-co
+    trace-co
     ld-prompt
     ld-missing-input-ok
     ld-always-skip-top-level-locals

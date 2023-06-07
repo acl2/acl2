@@ -1644,7 +1644,8 @@
      (i.e. commutativity normalizes them, via its loop stopper)."))
 
   (defruled read-object-of-add-frame
-    (implies (equal (objdesign-kind objdes) :alloc)
+    (implies (or (equal (objdesign-kind objdes) :alloc)
+                 (equal (objdesign-kind objdes) :static))
              (equal (read-object objdes (add-frame fun compst))
                     (read-object objdes compst)))
     :enable (add-frame
