@@ -315,9 +315,13 @@
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 0) (1- (expt 2 64))))
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 1) (1- (expt 2 16))))
   (assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
+
+  (defun digit-logical-shift-right (digit sh)
+    (sb-bignum::%digit-logical-shift-right digit sh))
+  
   (let* ((x      #xfeedf00ddeadd00ddeadbeef99998888)
          (digit  (sb-bignum::%bignum-ref x 0))
-         (high32 (sb-bignum::%digit-logical-shift-right digit 32))
+         (high32 (digit-logical-shift-right digit 32))
          (low32  (logand digit #xFFFFFFFF)))
     (assert (typep high32 'fixnum))
     (assert (typep low32 'fixnum))
@@ -418,7 +422,7 @@
 ;          (format t "got high = #x~x, end is now ~d~%" high32 end)
 ;          (format t "Installing chunk ~d <-- #x~x,#x~x~%" u64pos high32 low32)
           (setf (sb-bignum::%bignum-ref ans u64pos)
-                (logior (sb-bignum::%ashl high32 32)
+                (logior (ash high32 32)
                         low32))
           (incf u64pos))
 

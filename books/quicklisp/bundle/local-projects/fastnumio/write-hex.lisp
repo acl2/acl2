@@ -426,7 +426,6 @@
               (setq chunk (ccl::uvref val pos))
               (write-hex-u32-with-leading-zeroes chunk stream))))))
 
-
 ; SBCL specific bignum printing.
 ;
 ; Note: SBCL on Linux X86-64 represents bignums as vectors of 64-bit 'digits',
@@ -442,10 +441,13 @@
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 0) (1- (expt 2 64))))
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 1) (1- (expt 2 16))))
   (assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
+  
+  (defun digit-logical-shift-right (digit sh)
+    (sb-bignum::%digit-logical-shift-right digit sh))
 
   (let* ((x      #xfeedf00ddeadd00ddeadbeef99998888)
          (digit  (sb-bignum::%bignum-ref x 0))
-         (high32 (sb-bignum::%digit-logical-shift-right digit 32))
+         (high32 (digit-logical-shift-right digit 32))
          (low32  (logand digit #xFFFFFFFF)))
     (assert (typep high32 'fixnum))
     (assert (typep low32 'fixnum))
@@ -543,7 +545,7 @@
 
   (declaim (inline write-nth-hex-bignum-digit-with-leading-zeroes))
   (defun write-nth-hex-bignum-digit-with-leading-zeroes (n val stream)
-    (let ((high32 (sb-bignum::%digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
+    (let ((high32 (digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
           (low32  (logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
       (declare (type (unsigned-byte 32) high32 low32))
       (write-hex-u32-with-leading-zeroes high32 stream)
@@ -553,7 +555,7 @@
   (defun write-nth-hex-bignum-digit-without-leading-zeroes (n val stream)
     ;; If digit is nonzero, we print it and return T.
     ;; If digit is zero,    we do not print anything and return NIL.
-    (let* ((high32 (sb-bignum::%digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
+    (let* ((high32 (digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
            (low32  (logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
       (declare (type (unsigned-byte 32) high32 low32))
       (if (eql high32 0)
