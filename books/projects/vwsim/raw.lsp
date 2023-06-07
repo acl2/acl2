@@ -163,7 +163,12 @@
                               (symbolp channel)
                               (open-output-channel-p1
                                channel :character state-state))))
-  #-acl2-loop-only
+;;; Matt K. mod: This file is loaded in raw-mode, inside the ACL2
+;;; read-eval-print loop.  Before 6/6/2023, feature :acl2-loop-only was false
+;;; inside that loop; now it's true.  Since we are redefining princ$ in raw
+;;; Lisp here, we want the "raw" code evaluated, so we no longer can afford the
+;;; restriction to #-acl2-loop-only.
+;;;  #-acl2-loop-only
   (cond ((live-state-p state-state)
          (cond ((and *wormholep*
                      (not (eq channel *standard-co*)))

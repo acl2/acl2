@@ -7,10 +7,9 @@ ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
  (TIME STEPS)
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
-ACL2 !>>(F-PUT-GLOBAL 'TRACE-CO
-                      (@ STANDARD-CO)
-                      STATE)
-<state>
+ACL2 !>>(ER-PROGN (SET-TRACE-CO (@ STANDARD-CO) STATE)
+                  (VALUE NIL))
+ NIL
 ACL2 !>>(DEFN F1 (X) (LIST (CAR (CONS X X))))
 
 Since F1 is non-recursive, its admission is trivial.  We observe that
