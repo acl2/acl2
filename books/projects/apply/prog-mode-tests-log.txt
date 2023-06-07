@@ -9,10 +9,8 @@ ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
 ACL2 !>>(IN-PACKAGE "ACL2")
  "ACL2"
-ACL2 !>>(F-PUT-GLOBAL 'TRACE-CO
-                      (@ STANDARD-CO)
-                      STATE)
-<state>
+ACL2 !>>(SET-TRACE-CO (@ STANDARD-CO) STATE)
+ ACL2-OUTPUT-CHANNEL::|/Users/kaufmann/acl2/temp2/books/projects/apply/prog-mode-tests-log.out-71|
 ACL2 !>>(INCLUDE-BOOK "projects/apply/loop"
                       :DIR :SYSTEM)
 

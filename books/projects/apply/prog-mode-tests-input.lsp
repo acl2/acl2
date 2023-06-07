@@ -3,7 +3,7 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 (in-package "ACL2")
-(f-put-global 'trace-co (@ standard-co) state)
+(set-trace-co (@ standard-co) state)
 (include-book "projects/apply/loop" :dir :system)
 
 ; This file tests apply$'s support for :program mode functions.  The goal is to

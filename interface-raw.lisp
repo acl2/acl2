@@ -9437,7 +9437,8 @@
    (let ((state *the-live-state*)
          #+(and gcl (not cltl2))
          (system::*break-enable* (debugger-enabledp *the-live-state*))
-         (*debug-io* *our-standard-io*))
+         (*debug-io* *our-standard-io*)
+         (*features* (cons :acl2-loop-only *features*)))
      (cond
       ((> *ld-level* 0)
        (when (raw-mode-p *the-live-state*)
@@ -9638,9 +9639,11 @@
      (spawn-extra-lispworks-listener)
      (values))))
 
-(defmacro lp! (&rest args)
-  `(let ((*features* (add-to-set-eq :acl2-loop-only *features*)))
-     (lp ,@args)))
+(defun lp! (&rest args)
+  (declare (ignore args))
+  (error "LP! is no longer supported or necessary.
+Evaluate (LP) to enter the ACL2 read-eval-print loop
+such that feature :acl2-loop-only is true."))
 
 ;                   COMPILING, SAVING, AND RESTORING
 

@@ -9,7 +9,7 @@
 ; (ld "memoize-invoke-input.lsp" :ld-error-action :continue :ld-pre-eval-print t)
 
 ; Redirect trace output to where the rest of the output is going:
-(f-put-global 'trace-co (@ standard-co) state)
+(set-trace-co (@ standard-co) state)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; A simple test
