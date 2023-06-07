@@ -371,3 +371,15 @@ the hypotheses of a conjecture aren't contradictory.</p>"
 
 (defmacro fgl-validity-check (params x)
   `(not (fgl-sat-check ,params (not ,x))))
+
+
+(define +carry ((c booleanp)
+                (x integerp)
+                (y integerp))
+  (+ (bool->bit c)
+     (lifix x)
+     (lifix y)))
+
+
+(define binary-minus ((x integerp) (y integerp))
+  (- (lifix x) (lifix y)))
