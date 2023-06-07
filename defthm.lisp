@@ -3476,6 +3476,34 @@
           (t (mv (flatten-ands-in-lit (fargn term 1))
                  (flatten-ands-in-lit (fargn term 2)))))))
 
+(defun warn-on-synp-hyps1 (hyps name rule-class ctx wrld state)
+  (cond ((endp hyps) state)
+        ((ffn-symb-p (car hyps) 'synp)
+         (let ((uhyp (untranslate (car hyps) t wrld)))
+           (warning$ ctx ("Syntaxp/Bind-free Hypotheses")
+                     "For the rule-class ~x0, ~#1~[syntaxp ~
+                      hypotheses~/bind-free hypotheses~/hypotheses calling ~
+                      synp~] receive no special treatment; they are always ~
+                      simply true.  Thus, for proposed rule ~x2 it is ~
+                      recommended to remove the hypothesis ~x3."
+                     rule-class
+                     (cond ((and (consp uhyp)
+                                 (eq (car uhyp) 'syntaxp))
+                            0)
+                           ((and (consp uhyp)
+                                 (eq (car uhyp) 'bind-free))
+                            1)
+                           (t 2))
+                     name
+                     uhyp)))
+        (t (warn-on-synp-hyps1 (cdr hyps) name rule-class ctx wrld state))))
+
+(defun warn-on-synp-hyps (hyps name rule-class ctx wrld state)
+  (cond ((or (null hyps)
+             (warning-off-p "Syntaxp/Bind-free Hypotheses" state))
+         state)
+        (t (warn-on-synp-hyps1 hyps name rule-class ctx wrld state))))
+
 (defun chk-acceptable-forward-chaining-rule (name match-free trigger-terms term
                                                   ctx ens wrld state)
 
@@ -3493,9 +3521,10 @@
    (destructure-forward-chaining-term term wrld)
    (let ((hyps-vars (all-vars1-lst hyps nil))
          (concls-vars (all-vars1-lst concls nil)))
-     (chk-triggers name match-free hyps trigger-terms
-                   hyps-vars concls-vars
-                   ctx ens wrld state))))
+     (pprogn (warn-on-synp-hyps hyps name :forward-chaining ctx wrld state)
+             (chk-triggers name match-free hyps trigger-terms
+                           hyps-vars concls-vars
+                           ctx ens wrld state)))))
 
 (defun putprop-forward-chaining-rules-lst
   (rune nume triggers hyps concls match-free wrld)
@@ -5803,13 +5832,15 @@
 ; return a ttree that records our dependencies on lemmas.
 
   (declare (ignore backchain-limit-lst))
-  (mv-let
-   (erp hyps concl ts vars ttree)
-   (destructure-type-prescription name typed-term term ens wrld)
-   (declare (ignore ts concl vars))
-   (cond
-    (erp (er soft ctx "~@0" erp))
-    (t (let* ((warned-non-rec-fns-alist
+  (mv-let (erp hyps concl ts vars ttree)
+    (destructure-type-prescription name typed-term term ens wrld)
+    (declare (ignore ts concl vars))
+    (cond
+     (erp (er soft ctx "~@0" erp))
+     (t
+      (pprogn
+       (warn-on-synp-hyps hyps name :type-prescription ctx wrld state)
+       (let* ((warned-non-rec-fns-alist
                (and (not (warning-disabled-p "Non-rec"))
                     (warned-non-rec-fns-alist-tp-hyps hyps ens wrld)))
               (warned-non-rec-fns (strip-cars warned-non-rec-fns-alist))
@@ -5888,7 +5919,7 @@
                       (if (null (cdr (forced-hyps inst-hyps))) 0 1)
                       (forced-hyps inst-hyps)))
            (t state))
-          (value ttree)))))))
+          (value ttree))))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  Symbol generation utilities
