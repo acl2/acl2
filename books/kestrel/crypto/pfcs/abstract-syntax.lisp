@@ -34,7 +34,7 @@
      which may be conjoined with equality constraints.
      A system of constraints is a collection of named relations,
      which are hierarchically organized,
-     and constraints that may reference the relations."))
+     and of constraints that may reference the relations."))
   :order-subtopics t
   :default-parent t)
 
