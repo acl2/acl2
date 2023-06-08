@@ -285,7 +285,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk constraint-relation-satp ((name symbolp)
+(define-sk constraint-relation-satp ((name stringp)
                                      (args expression-listp)
                                      (defs definition-listp)
                                      (asg assignmentp)
@@ -448,7 +448,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define constraint-relation-nofreevars-satp ((name symbolp)
+(define constraint-relation-nofreevars-satp ((name stringp)
                                              (args expression-listp)
                                              (defs definition-listp)
                                              (asg assignmentp)
