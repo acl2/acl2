@@ -827,12 +827,64 @@
     (ec-call (svtv-data-chase-defsvtv-args-fn defsvtv-args env svtv-data svtv-chase-data state))))
 
 
+(define svtv-chase$-compare-offsets-by-labels ((common-labels symbol-listp)
+                                               (labels1 symbol-listp)
+                                               (labels2 symbol-listp))
+  :guard (and (subsetp-eq common-labels labels1)
+              (subsetp-eq common-labels labels2))
+  :guard-hints (("goal" :expand ((:free (labels) (subsetp-equal common-labels labels)))))
+  :prepwork ((local (defthm acl2-numberp-when-natp
+                      (implies (natp x)
+                               (acl2-numberp x)))))
+  :returns (offsets integer-listp)
+  (if (atom common-labels)
+      nil
+    (cons (- (acl2::index-of (car common-labels) labels1)
+             (acl2::index-of (car common-labels) labels2))
+          (svtv-chase$-compare-offsets-by-labels (cdr common-labels) labels1 labels2))))
+
+(define svtv-chase$-compare-most-frequent-offset ((offsets integer-listp)
+                                                  (seen integer-listp)
+                                                  (most-frequent integerp)
+                                                  (frequency natp))
+  :returns (most-freq-offset integerp :rule-classes :type-prescription)
+  (b* (((when (atom offsets))
+        (lifix most-frequent))
+       (offset1 (car offsets))
+       ((when (member offset1 seen))
+        (svtv-chase$-compare-most-frequent-offset (cdr offsets) seen most-frequent frequency))
+       (count (count offset1 offsets))
+       ((when (<= count (lnfix frequency)))
+        (svtv-chase$-compare-most-frequent-offset (cdr offsets) (cons offset1 seen) most-frequent frequency)))
+    (svtv-chase$-compare-most-frequent-offset (cdr offsets) (cons offset1 seen) offset1 count)))
+   
+
+(define svtv-chase$-compare-decide-offset ((offset maybe-integerp)
+                                           (labels1 symbol-listp)
+                                           (labels2 symbol-listp))
+  :returns (final-offset integerp :rule-classes :type-prescription)
+  :prepwork ((local (defthm subsetp-equal-intersection-1
+                      (implies (subsetp-equal x z)
+                               (subsetp-equal (intersection-equal x y) z))))
+             (local (defthm subsetp-equal-intersection-2
+                      (implies (subsetp-equal y z)
+                               (subsetp-equal (intersection-equal x y) z)))))
+  (b* (((when offset)
+        (lifix offset))
+       (common-labels (remove-eq nil (intersection-eq labels1 labels2)))
+       ((unless common-labels) 0)
+       (offsets-by-label (svtv-chase$-compare-offsets-by-labels common-labels labels1 labels2)))
+    (svtv-chase$-compare-most-frequent-offset offsets-by-label nil 0 0)))
+       
+                                           
+
+
 (define svtv-chase$-compare-defsvtv-forms (&key
                                            form1
                                            (env1 svex-env-p)
                                            (form2)
                                            (env2 svex-env-p)
-                                           ((offset integerp) '0)
+                                           (offset)
                                            (svtv-data 'svtv-data)
                                            (svtv-chase-data 'svtv-chase-data)
                                            (state 'state))
@@ -849,6 +901,7 @@
        ((when err)
         (er hard? 'svtv-chase$ "Error recreating defsvtv-args object: ~@0~%" err)
         (mv err svtv-chase-data svtv-data state))
+       (defsvtv-args2 (defsvtv-args-expand-stages defsvtv-args2))
        ((mv err svtv-chase-data svtv-data)
         (svtv-data-defsvtv-args-setup-chase defsvtv-args env1))
        ((when err)
@@ -858,6 +911,9 @@
        ((when err)
         (mv err svtv-chase-data svtv-data state))
        (svtv-chase-data (set-svtv-chase-data->evaldata2 evaldata2 svtv-chase-data))
+       (offset (svtv-chase$-compare-decide-offset offset
+                                                  (svtv-chase-data->phaselabels svtv-chase-data)
+                                                  (subst nil 'acl2::? (defsvtv-args->labels defsvtv-args2))))
        (svtv-chase-data (set-svtv-chase-data->data2-offset offset svtv-chase-data))
        ((mv svtv-chase-data state) (svtv-chase$-repl)))
     (mv nil svtv-chase-data svtv-data state)))
@@ -900,7 +956,7 @@
                                 form2
                                 svtv2
                                 env2
-                                (offset '0)
+                                (offset)
                                 (svtv-data 'svtv-data)
                                 (svtv-chase-data 'svtv-chase-data)
                                 (state 'state))
@@ -928,7 +984,7 @@
                                 form2
                                 svtv2
                                 env2
-                                (offset '0)
+                                (offset)
                                 (svtv-data 'svtv-data)
                                 (svtv-chase-data 'svtv-chase-data))
   `(svtv-chase$-compare-aux
@@ -1407,6 +1463,10 @@ to align the time steps.  See the sample invocations below.</p>
    :offset 4)
  })
 
+<p>Since it is sometimes confusing to determine the correct offset between the
+two SVTVs, there is an automatic method for making that determination which
+considers the labels given to the stages, finding the offset that lines up the
+most labels if there are common labels between the two SVTVs.</p>
 
 ")
 
