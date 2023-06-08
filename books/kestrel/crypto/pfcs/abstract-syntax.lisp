@@ -34,7 +34,7 @@
      which may be conjoined with equality constraints.
      A system of constraints is a collection of named relations,
      which are hierarchically organized,
-     and constraints that may reference the relations."))
+     and of constraints that may reference the relations."))
   :order-subtopics t
   :default-parent t)
 
@@ -51,7 +51,7 @@
      does not depend on (the prime number that defines) the prime field.
      Semantically, integers are treated modulo the prime.")
    (xdoc::p
-    "We use (any) symbols for variables.")
+    "We use (any) strings for variables.")
    (xdoc::p
     "We include just two field operations for now: addition and multiplication.
      These suffice for arithmetic circuits.
@@ -65,7 +65,7 @@
      Some of these operations will introduce the issue of well-definedness,
      e.g. non-zero divisors."))
   (:const ((value int)))
-  (:var ((name symbol)))
+  (:var ((name string)))
   (:add ((arg1 expression) (arg2 expression)))
   (:mul ((arg1 expression) (arg2 expression)))
   :pred expressionp
@@ -90,13 +90,13 @@
    (xdoc::p
     "A constraint is either an equality of expressions,
      or the application of a named relation to argument expressions.
-     We use (any) symbols for relation names.")
+     We use (any) strings for relation names.")
    (xdoc::p
     "In the future, this may be extended with propositional connectives
      to combine equalities and applications of named relations."))
   (:equal ((left expression)
            (right expression)))
-  (:relation ((name symbol)
+  (:relation ((name string)
               (args expression-list)))
   :pred constraintp)
 
@@ -118,8 +118,8 @@
   (xdoc::topstring
    (xdoc::p
     "A relation definition consists of
-     the name of the relation (any symbol),
-     a list of formal parameters (any symbols),
+     the name of the relation (any string),
+     a list of formal parameters (any strings),
      and a body consisting of a list of constraints.
      The constraints are taken conjunctively;
      but see the discussion in @(tsee constraint)
@@ -127,8 +127,8 @@
      (in which case the body of a definition
      would presumably be just a single constraint,
      which may be a conjunction)."))
-  ((name symbol)
-   (para symbol-list)
+  ((name string)
+   (para string-list)
    (body constraint-list))
   :tag :definition
   :pred definitionp)

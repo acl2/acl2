@@ -25,6 +25,7 @@
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (in-theory (disable primep)))
 
@@ -113,19 +114,19 @@
      which are a superset of every possible prime field.
      This way, we can have a fixtype of assignments
      (recall that fixtypes cannot be parameterized, currently)."))
-  :key-type symbol
+  :key-type string
   :val-type nat
   :pred assignmentp
   ///
 
   (defrule natp-of-cdr-of-in-when-assignmentp-type
     (implies (and (assignmentp asg)
-                  (omap::in sym asg))
-             (natp (cdr (omap::in sym asg))))
+                  (omap::in str asg))
+             (natp (cdr (omap::in str asg))))
     :rule-classes :type-prescription)
 
   (defrule assignmentp-of-from-lists
-    (implies (and (symbol-listp keys)
+    (implies (and (string-listp keys)
                   (nat-listp vals)
                   (equal (len keys) (len vals)))
              (assignmentp (omap::from-lists keys vals)))
@@ -212,7 +213,7 @@
     :enable omap::delete*)
 
   (defrule assignment-wfp-of-from-lists
-    (implies (and (symbol-listp keys)
+    (implies (and (string-listp keys)
                   (fe-listp vals p)
                   (equal (len keys) (len vals)))
              (assignment-wfp (omap::from-lists keys vals) p))
@@ -277,7 +278,7 @@
   (verify-guards eval-expr)
 
   (defruled eval-expr-of-omap-update-of-var-not-in-expr
-    (implies (and (symbolp var)
+    (implies (and (stringp var)
                   (natp val)
                   (assignmentp asg)
                   (not (set::in var (expression-vars expr))))
@@ -332,7 +333,7 @@
     :hints (("Goal" :induct t :in-theory (enable len))))
 
   (defruled eval-expr-list-of-omap-udpate-of-var-not-in-exprs
-    (implies (and (symbolp var)
+    (implies (and (stringp var)
                   (natp val)
                   (assignmentp asg)
                   (not (set::in var (expression-list-vars exprs))))
@@ -344,7 +345,7 @@
              eval-expr-of-omap-update-of-var-not-in-expr))
 
   (defruled eval-expr-list-of-expression-var-list-and-omap-from-lists
-    (implies (and (symbol-listp vars)
+    (implies (and (string-listp vars)
                   (no-duplicatesp-equal vars)
                   (fe-listp vals p)
                   (equal (len vars)
@@ -510,7 +511,7 @@
              (left expression)
              (right expression)))
     (:relation ((asg assignment)
-                (name symbol)
+                (name string)
                 (args expression-list)
                 (sub proof-tree-list)
                 (asgfree assignment)))
@@ -795,7 +796,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define definition-satp ((name symbolp)
+(define definition-satp ((name stringp)
                          (defs definition-listp)
                          (vals (fe-listp vals p))
                          (p primep))

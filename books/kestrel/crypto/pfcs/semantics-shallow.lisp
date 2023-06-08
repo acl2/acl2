@@ -15,12 +15,31 @@
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/std/util/defund-sk" :dir :system)
+(include-book "std/strings/char-case" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
+
+(local (include-book "std/typed-lists/character-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define current-package+ (state)
+  :returns (package stringp)
+  (b* ((package (current-package state))
+       ((unless (and (stringp package)
+                     (not (equal package ""))))
+        (raise "Internal error: current package ~x0 is not a string." package)
+        "."))
+    package)
+  ///
+
+  (defret current-package+-not-empty
+    (not (equal package ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,7 +61,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-expression ((expr expressionp) (prime symbolp))
+(define name-to-symbol ((name stringp) state)
+  :returns (sym symbolp)
+  :short "Turn a PFCS relation or variable name into an ACL2 symbol."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The PFCS abstract syntax uses strings for relation and variable names.
+     These must be turned into symbols in the shallowly embedded semantics.
+     Here we define the mapping.")
+   (xdoc::p
+    "Assuming that PFCS relation and variable names
+     would normally consist of lowercase letters, digits, and underscores,
+     we map lowercase letters to uppercase letters,
+     digits to themselves,
+     and underscores to dashes;
+     we use the resulting string as name of the symbol,
+     which we put in the current package.
+     This way, idiomatic PFCS names are mapped to idiomatic ACL2 symbols.")
+   (xdoc::p
+    "This mapping is not bulletproof.
+     The current package may import symbols from the Lisp package, for example,
+     and a PFCS name may end up being mapped to a symbol in the Lisp package,
+     which cannot be used as an ACL2 name.
+     In the future, we may make this mapping more robust."))
+  (b* ((chars (str::explode name))
+       (new-chars (name-to-symbol-aux chars))
+       (new-string (str::implode new-chars)))
+    (intern$ new-string (current-package+ state)))
+
+  :prepwork
+  ((define name-to-symbol-aux ((chars character-listp))
+     :returns (new-chars character-listp)
+     :parents nil
+     (b* (((when (endp chars)) nil)
+          (char (car chars))
+          (new-char (if (equal char #\_)
+                        #\-
+                      (str::upcase-char char)))
+          (new-chars (name-to-symbol-aux (cdr chars))))
+       (cons new-char new-chars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection name-list-to-symbol-list (x state)
+  :guard (string-listp x)
+  :returns (symbols symbol-listp)
+  :short "Turn a list of PFCS relation or variable names
+          into a list of ACL2 symbols."
+  (name-to-symbol x state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define name-set-to-symbol-list ((names string-setp) state)
+  :returns (syms symbol-listp)
+  :short "Lift @(tsee name-to-symbol) to a mapping
+          from sets of strings to lists of symbols."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The order of the list is according to
+     the total order that osets are based on."))
+  (cond ((set::empty names) nil)
+        (t (cons (name-to-symbol (set::head names) state)
+                 (name-set-to-symbol-list (set::tail names) state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sesem-expression ((expr expressionp) (prime symbolp) state)
   :returns term
   :short "Shallowly embedded semantics of expressions."
   :long
@@ -56,9 +142,7 @@
    (xdoc::p
     "A constant is mapped to itself, reduced modulo the prime.")
    (xdoc::p
-    "A variable is mapped to itself,
-     but we ensure that it is distinct from the prime variable;
-     otherwise, we would be generating a malformed term.")
+    "A variable is mapped to a symbol, according to @(tsee name-to-symbol).")
    (xdoc::p
     "Additions and multiplications are mapped to calls of
      the corresponding prime field operations applied to
@@ -66,24 +150,19 @@
   (expression-case
    expr
    :const `(mod ,expr.value ,prime)
-   :var (if (eq expr.name prime)
-            (raise "The expression variable ~x0 ~
-                    is identical to ~
-                    the prime variable ~x1."
-                   expr.name prime)
-          expr.name)
-   :add `(add ,(sesem-expression expr.arg1 prime)
-              ,(sesem-expression expr.arg2 prime)
+   :var (name-to-symbol expr.name state)
+   :add `(add ,(sesem-expression expr.arg1 prime state)
+              ,(sesem-expression expr.arg2 prime state)
               ,prime)
-   :mul `(mul ,(sesem-expression expr.arg1 prime)
-              ,(sesem-expression expr.arg2 prime)
+   :mul `(mul ,(sesem-expression expr.arg1 prime state)
+              ,(sesem-expression expr.arg2 prime state)
               ,prime))
   :measure (expression-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-expression-list ((exprs expression-listp) (prime symbolp))
+(define sesem-expression-list ((exprs expression-listp) (prime symbolp) state)
   :returns (terms true-listp)
   :short "Shallowly embedded semantics of lists of expressions."
   :long
@@ -92,12 +171,12 @@
     "This lifts @(tsee sesem-expression) to lists.
      We obtain a list of terms."))
   (cond ((endp exprs) nil)
-        (t (cons (sesem-expression (car exprs) prime)
-                 (sesem-expression-list (cdr exprs) prime)))))
+        (t (cons (sesem-expression (car exprs) prime state)
+                 (sesem-expression-list (cdr exprs) prime state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-constraint ((constr constraintp) (prime symbolp))
+(define sesem-constraint ((constr constraintp) (prime symbolp) state)
   :returns term
   :short "Shallowly embedded semantics of a constraint."
   :long
@@ -110,14 +189,15 @@
      Note that we include the variable for the prime."))
   (constraint-case
    constr
-   :equal `(equal ,(sesem-expression constr.left prime)
-                  ,(sesem-expression constr.right prime))
-   :relation `(,constr.name ,@(sesem-expression-list constr.args prime)
-                            ,prime)))
+   :equal `(equal ,(sesem-expression constr.left prime state)
+                  ,(sesem-expression constr.right prime state))
+   :relation `(,(name-to-symbol constr.name state)
+               ,@(sesem-expression-list constr.args prime state)
+               ,prime)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-constraint-list ((constrs constraint-listp) (prime symbolp))
+(define sesem-constraint-list ((constrs constraint-listp) (prime symbolp) state)
   :returns (terms true-listp)
   :short "Shallowly embedded semantics of a list of constraints."
   :long
@@ -126,8 +206,8 @@
     "This lifts @(tsee sesem-constraint) to lists.
      We obtain a list of terms."))
   (cond ((endp constrs) nil)
-        (t (cons (sesem-constraint (car constrs) prime)
-                 (sesem-constraint-list (cdr constrs) prime)))))
+        (t (cons (sesem-constraint (car constrs) prime state)
+                 (sesem-constraint-list (cdr constrs) prime state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,7 +222,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-definition ((def definitionp) (prime symbolp))
+(define sesem-definition ((def definitionp) (prime symbolp) state)
   :returns (event pseudo-event-formp)
   :short "Shallowly embedded semantics of a definition."
   :long
@@ -155,7 +235,7 @@
      we generate a @(tsee defun).
      Otherwise, we generate a @(tsee defun-sk)
      with those free variables existentially quantified.
-     (More precisely, we generate @(tsee defund) or @(tsee defund-sk).")
+     (More precisely, we generate @(tsee defund) or @(tsee defund-sk)).")
    (xdoc::p
     "The existential quantification is the right semantics
      for the free variables in a relation's definition,
@@ -163,27 +243,20 @@
      However, the quantification is avoided
      if all the variables in the body are treated as parameters."))
   (b* (((definition def) def)
-       ((when (member-eq prime def.para))
-        (raise "The definition parameters ~x0 of ~x1 ~
-                include the prime variable ~x2."
-               def.para def.name prime)
-        '(_))
+       (pred-name (name-to-symbol def.name state))
        (free (definition-free-vars def))
-       ((when (set::in prime free))
-        (raise "The free variables ~x0 of ~x1 ~
-                include the prime variable ~x2."
-               free def.name prime)
-        '(_))
-       (body `(and ,@(sesem-constraint-list def.body prime))))
+       (quant (name-set-to-symbol-list free state))
+       (para (name-list-to-symbol-list def.para state))
+       (body `(and ,@(sesem-constraint-list def.body prime state))))
     (if free
-        `(defund-sk ,def.name (,@def.para ,prime)
-           (exists (,@free) (and ,@(sesem-gen-fep-terms free prime) ,body)))
-      `(defund ,def.name (,@def.para ,prime)
+        `(defund-sk ,pred-name (,@para ,prime)
+           (exists (,@quant) (and ,@(sesem-gen-fep-terms quant prime) ,body)))
+      `(defund ,pred-name (,@para ,prime)
          ,body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-definition-list ((defs definition-listp) (prime symbolp))
+(define sesem-definition-list ((defs definition-listp) (prime symbolp) state)
   :returns (events pseudo-event-form-listp)
   :short "Shallowly embedded semanics of a list of definitions."
   :long
@@ -191,5 +264,5 @@
    (xdoc::p
     "This is the list of events generated from the definitions."))
   (cond ((endp defs) nil)
-        (t (cons (sesem-definition (car defs) prime)
-                 (sesem-definition-list (cdr defs) prime)))))
+        (t (cons (sesem-definition (car defs) prime state)
+                 (sesem-definition-list (cdr defs) prime state)))))

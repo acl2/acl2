@@ -28,6 +28,7 @@
                          nat-list-resultp
                          pseudo-event-formp
                          pseudo-event-form-listp
+                         string-setp
                          symbol-fix
                          symbol-list
                          symbol-setp
@@ -41,4 +42,7 @@
                          pfield::fep
                          pfield::fe-listp
                          pfield::inv
-                         pfield::mul)))
+                         pfield::mul
+                         str::str-fix
+                         str::string-list
+                         str::string-list-fix)))

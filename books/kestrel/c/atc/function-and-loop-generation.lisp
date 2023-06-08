@@ -2376,9 +2376,236 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-init-inscope-static ((fn symbolp)
+                                     (fn-guard symbolp)
+                                     (typed-formals atc-symbol-varinfo-alistp)
+                                     (prec-tags atc-string-taginfo-alistp)
+                                     (compst-var symbolp)
+                                     (context atc-contextp)
+                                     (names-to-avoid symbol-listp)
+                                     (wrld plist-worldp))
+  :returns (mv (scope atc-symbol-varinfo-alistp
+                      :hyp (atc-symbol-varinfo-alistp typed-formals))
+               (events pseudo-event-form-listp)
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the static storage scope of
+          the initial symbol table for a C function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The initial symbol table consists of
+     a scope for static storage and a scope for automatic storage.
+     The former consists of the external objects passed as parameters
+     to the ACL2 function that represents the C function
+     (which in general is a subset of the external object in the program).")
+   (xdoc::p
+    "We go through the typed formals,
+     and we select the ones representing external objects,
+     generating an entry in the scope (alist) for each.")
+   (xdoc::p
+    "The @('-0') suffix that we use for the generated theorem name
+     is motivated by the fact that these are the theorems
+     for the initial symbol table;
+     as we update the symbol table in the course of generating code,
+     we use positive indices as suffixes."))
+  (b* (((when (endp typed-formals)) (mv nil nil names-to-avoid))
+       ((cons var info) (car typed-formals))
+       (type (atc-var-info->type info))
+       (var-thm (atc-var-info->thm info))
+       (externalp (atc-var-info->externalp info))
+       ((when (not externalp))
+        (atc-gen-init-inscope-static fn fn-guard (cdr typed-formals)
+                                     prec-tags compst-var context
+                                     names-to-avoid wrld))
+       (type-pred (atc-type-to-recognizer type prec-tags))
+       (name (pack fn '- var '-in-scope-0))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
+                                         ,compst-var)
+                       (equal (read-object (objdesign-of-var
+                                            (ident ,(symbol-name var))
+                                            ,compst-var)
+                                           ,compst-var)
+                              ,var)))
+       (formula1 (atc-contextualize formula1
+                                    context
+                                    fn
+                                    fn-guard
+                                    compst-var
+                                    nil
+                                    nil
+                                    t
+                                    wrld))
+       (formula2 `(,type-pred ,var))
+       (formula2 (atc-contextualize formula2
+                                    context
+                                    fn
+                                    fn-guard
+                                    nil
+                                    nil
+                                    nil
+                                    nil
+                                    wrld))
+       (formula `(and ,formula1 ,formula2))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
+       (hints
+        `(("Goal"
+           :in-theory
+           '(objdesign-of-var-of-add-var-iff
+             read-object-of-objdesign-of-var-of-add-var
+             ,var-thm
+             ident-fix-when-identp
+             identp-of-ident
+             equal-of-ident-and-ident
+             (:e str-fix)
+             ,valuep-when-type-pred
+             objdesign-of-var-of-add-frame-when-read-object-static
+             (:t objdesign-static)
+             read-object-of-add-frame
+             return-type-of-objdesign-static))))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil))
+       ((mv scope-rest events-rest names-to-avoid)
+        (atc-gen-init-inscope-static fn fn-guard (cdr typed-formals)
+                                     prec-tags compst-var context
+                                     names-to-avoid wrld)))
+    (mv (cons (cons var
+                    (make-atc-var-info :type type
+                                       :thm name
+                                       :externalp t))
+              scope-rest)
+        (cons event events-rest)
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-init-inscope-auto ((fn symbolp)
+                                   (fn-guard symbolp)
+                                   (typed-formals atc-symbol-varinfo-alistp)
+                                   (prec-tags atc-string-taginfo-alistp)
+                                   (compst-var symbolp)
+                                   (context atc-contextp)
+                                   (names-to-avoid symbol-listp)
+                                   (wrld plist-worldp))
+  :returns (mv (scope atc-symbol-varinfo-alistp
+                      :hyp (atc-symbol-varinfo-alistp typed-formals))
+               (events pseudo-event-form-listp)
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate the automatic storage scope of
+          the initial symbol tale for a C function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The initial symbol table consists of
+     a scope for static storage and a scope for automatic storage.
+     The latter consists of the ACL2 function parameters
+     that represent C function parameters (i.e. not external objects).")
+   (xdoc::p
+    "We go through the typed formals,
+     and we select the ones not representing external objects,
+     generating an entry in the scope (alist) for each.")
+   (xdoc::p
+    "The @('-0') suffix that we use for the generated theorem name
+     is motivated by the fact that these are the theorems
+     for the initial symbol table;
+     as we update the symbol table in the course of generating code,
+     we use positive indices as suffixes."))
+  (b* (((when (endp typed-formals)) (mv nil nil names-to-avoid))
+       ((cons var info) (car typed-formals))
+       (type (atc-var-info->type info))
+       (var-thm (atc-var-info->thm info))
+       (externalp (atc-var-info->externalp info))
+       ((when externalp)
+        (atc-gen-init-inscope-auto fn fn-guard (cdr typed-formals)
+                                   prec-tags compst-var context
+                                   names-to-avoid wrld))
+       (type-pred (atc-type-to-recognizer type prec-tags))
+       (name (pack fn '- var '-in-scope-0))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       (var/varptr (if (or (type-case type :pointer)
+                           (type-case type :array))
+                       (add-suffix-to-fn var "-PTR")
+                     var))
+       (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
+                                         ,compst-var)
+                       (equal (read-object (objdesign-of-var
+                                            (ident ,(symbol-name var))
+                                            ,compst-var)
+                                           ,compst-var)
+                              ,var/varptr)
+                       ,@(and (or (type-case type :pointer)
+                                  (type-case type :array))
+                              `((equal (read-object
+                                        ,(add-suffix-to-fn var "-OBJDES")
+                                        ,compst-var)
+                                       ,var)))))
+       (formula1 (atc-contextualize formula1
+                                    context
+                                    fn
+                                    fn-guard
+                                    compst-var
+                                    nil
+                                    nil
+                                    t
+                                    wrld))
+       (formula2 `(,type-pred ,var))
+       (formula2 (atc-contextualize formula2
+                                    context
+                                    fn
+                                    fn-guard
+                                    nil
+                                    nil
+                                    nil
+                                    nil
+                                    wrld))
+       (formula `(and ,formula1 ,formula2))
+       (not-flexiblep-thms (atc-type-to-notflexarrmem-thms type prec-tags))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm type prec-tags))
+       (hints
+        `(("Goal"
+           :in-theory
+           '(objdesign-of-var-of-add-var-iff
+             read-object-of-objdesign-of-var-of-add-var
+             ,var-thm
+             ident-fix-when-identp
+             identp-of-ident
+             equal-of-ident-and-ident
+             (:e str-fix)
+             ,@not-flexiblep-thms
+             remove-flexible-array-member-when-absent
+             value-fix-when-valuep
+             ,@(and (or (type-case type :pointer)
+                        (type-case type :array))
+                    '(read-object-of-add-var
+                      read-object-of-add-frame))
+             ,valuep-when-type-pred
+             ,value-kind-when-type-pred))))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil))
+       ((mv scope-rest events-rest names-to-avoid)
+        (atc-gen-init-inscope-auto fn fn-guard (cdr typed-formals)
+                                   prec-tags compst-var context
+                                   names-to-avoid wrld)))
+    (mv (cons (cons var
+                    (make-atc-var-info :type type
+                                       :thm name
+                                       :externalp nil))
+              scope-rest)
+        (cons event events-rest)
+        names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-init-inscope ((fn symbolp)
                               (fn-guard symbolp)
-                              (fn-formals symbol-listp)
                               (typed-formals atc-symbol-varinfo-alistp)
                               (prec-tags atc-string-taginfo-alistp)
                               (compst-var symbolp)
@@ -2388,161 +2615,22 @@
   :returns (mv (inscope atc-symbol-varinfo-alist-listp
                         :hyp (atc-symbol-varinfo-alistp typed-formals))
                (events pseudo-event-form-listp)
-               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid))
-               (proofs booleanp))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the initial symbol table for a C function."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This symbol table consists of a list of two alists.
-     The first alist is for the block scope of the function,
-     and consists of the formal parameters.
-     The second alist is for the file scope;
-     it is currently empty, but it will be populated soon.")
-   (xdoc::p
-    "The block scope alist is similar to the typed formals alist,
-     except that the theorem stored in each variable information
-     says that reading the C variable from the computation state
-     yields the ACL2 variable,
-     and also that the variable has the applicable type.
-     In contrast, the theorem stored
-     in each variable information in the typed formals alist
-     only talks about the variable (i.e. formal parameter).
-     More precisely, if the C variable has pointer or array type,
-     the theorem says that reading the C variable
-     yields the @('-ptr') ACL2 variable (which contains a pointer value),
-     and in addition that dereferencing this pointer
-     yields the ACL2 variable that is the formal (an integer or an array).
-     That is, in the case of a pointer, there is an ``intermediate''.")
-   (xdoc::p
-    "This ACL2 function goes through the typed formals,
-     and generates a corresponding variable table.
-     Each theorem is contextualized to the initial computation state;
-     this is what @('context') contains.
-     We return the variable table, along with the theorem events,
-     whose names are stored in the variable table.")
-   (xdoc::p
-    "The @('-0') suffix that we use for the generated theorem name
-     is motivated by the fact that these are the theorems
-     for the initial symbol table;
-     as we update the symbol table in the course of generating code,
-     we use positive indices as suffixes.")
-   (xdoc::p
-    "We also return a flag saying whether modular proof generation
-     should proceed or not.
-     The flag is false iff there are some external objects,
-     support for which is forthcoming."))
-  (b* (((mv scope events names-to-avoid proofs)
-        (atc-gen-init-inscope-aux fn fn-guard fn-formals typed-formals prec-tags
-                                  compst-var context names-to-avoid wrld)))
-    (mv (list scope nil) events names-to-avoid proofs))
-
-  :prepwork
-  ((define atc-gen-init-inscope-aux ((fn symbolp)
-                                     (fn-guard symbolp)
-                                     (fn-formals symbol-listp)
-                                     (typed-formals atc-symbol-varinfo-alistp)
-                                     (prec-tags atc-string-taginfo-alistp)
-                                     (compst-var symbolp)
-                                     (context atc-contextp)
-                                     (names-to-avoid symbol-listp)
-                                     (wrld plist-worldp))
-     :returns
-     (mv (inscope atc-symbol-varinfo-alistp
-                  :hyp (atc-symbol-varinfo-alistp typed-formals))
-         (events pseudo-event-form-listp)
-         (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid))
-         (proofs booleanp))
-     :parents nil
-     (b* (((when (endp typed-formals)) (mv nil nil names-to-avoid t))
-          ((cons var info) (car typed-formals))
-          (type (atc-var-info->type info))
-          (var-thm (atc-var-info->thm info))
-          (externalp (atc-var-info->externalp info))
-          (type-pred (atc-type-to-recognizer type prec-tags))
-          (name (pack fn '- var '-in-scope-0))
-          ((mv name names-to-avoid)
-           (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
-          (var/varptr (if (or (type-case type :pointer)
-                              (type-case type :array))
-                          (add-suffix-to-fn var "-PTR")
-                        var))
-          (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
-                                            ,compst-var)
-                          (equal (read-object (objdesign-of-var
-                                               (ident ,(symbol-name var))
-                                               ,compst-var)
-                                              ,compst-var)
-                                 ,var/varptr)
-                          ,@(and (or (type-case type :pointer)
-                                     (type-case type :array))
-                                 `((equal (read-object
-                                           ,(add-suffix-to-fn var "-OBJDES")
-                                           ,compst-var)
-                                          ,var)))))
-          (formula1 (atc-contextualize formula1
-                                       context
-                                       fn
-                                       fn-guard
-                                       compst-var
-                                       nil
-                                       nil
-                                       t
-                                       wrld))
-          (formula2 `(,type-pred ,var))
-          (formula2 (atc-contextualize formula2
-                                       context
-                                       fn
-                                       fn-guard
-                                       nil
-                                       nil
-                                       nil
-                                       nil
-                                       wrld))
-          (formula `(and ,formula1 ,formula2))
-          (not-flexiblep-thms (atc-type-to-notflexarrmem-thms type prec-tags))
-          (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
-          (value-kind-when-type-pred
-           (atc-type-to-value-kind-thm type prec-tags))
-          (hints
-           `(("Goal"
-              :in-theory
-              '(objdesign-of-var-of-add-var-iff
-                read-object-of-objdesign-of-var-of-add-var
-                ,var-thm
-                ident-fix-when-identp
-                identp-of-ident
-                equal-of-ident-and-ident
-                (:e str-fix)
-                ,@not-flexiblep-thms
-                remove-flexible-array-member-when-absent
-                value-fix-when-valuep
-                ,@(and (or (type-case type :pointer)
-                           (type-case type :array))
-                       '(read-object-of-add-var
-                         read-object-of-add-frame))
-                ,valuep-when-type-pred
-                ,value-kind-when-type-pred))))
-          ((mv event &) (evmac-generate-defthm name
-                                               :formula formula
-                                               :hints hints
-                                               :enable nil))
-          ((mv inscope-rest events-rest names-to-avoid proofs)
-           (atc-gen-init-inscope-aux fn fn-guard fn-formals
-                                     (cdr typed-formals) prec-tags
-                                     compst-var context names-to-avoid wrld)))
-       (mv (cons (cons var
-                       (make-atc-var-info :type type
-                                          :thm name
-                                          :externalp externalp))
-                 inscope-rest)
-           (cons event events-rest)
-           names-to-avoid
-           (and (not externalp)
-                proofs)))
-     :guard-hints
-     (("Goal"
-       :in-theory (enable alistp-when-atc-string-taginfo-alistp-rewrite))))))
+    "The initial symbol table consists of
+     a scope for static storage and a scope for automatic storage."))
+  (b* (((mv scope-static events-static names-to-avoid)
+        (atc-gen-init-inscope-static fn fn-guard typed-formals prec-tags
+                                     compst-var context names-to-avoid wrld))
+       ((mv scope-auto events-auto names-to-avoid)
+        (atc-gen-init-inscope-auto fn fn-guard typed-formals prec-tags
+                                   compst-var context names-to-avoid wrld)))
+    (mv (list scope-auto scope-static)
+        (append events-static events-auto)
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2859,15 +2947,14 @@
                                   :premises premises))
        ((mv inscope
             init-inscope-events
-            names-to-avoid
-            no-ext-objs-p)
-        (if proofs
-            (atc-gen-init-inscope fn fn-guard formals typed-formals prec-tags
-                                  compst-var context names-to-avoid wrld)
-          (mv (list typed-formals) nil names-to-avoid nil)))
+            names-to-avoid)
+        (atc-gen-init-inscope fn fn-guard typed-formals prec-tags
+                              compst-var context names-to-avoid wrld))
+       (no-ext-objs-p (and (consp inscope)
+                           (consp (cdr inscope))
+                           (not (cadr inscope))))
        (body (ubody+ fn wrld))
-       ((erp affect)
-        (atc-find-affected fn body typed-formals prec-fns wrld))
+       ((erp affect) (atc-find-affected fn body typed-formals prec-fns wrld))
        ((unless (atc-formal-affectable-listp affect typed-formals))
         (reterr
          (msg "At least one of the formals of ~x0 ~
@@ -3019,8 +3106,7 @@
                                        (list init-scope-expand-event)
                                        (list init-scope-scopep-event)
                                        (list push-init-thm-event)
-                                       (and no-ext-objs-p
-                                            init-inscope-events)
+                                       init-inscope-events
                                        body.events
                                        (and modular-proofs
                                             (list pop-frame-event))
@@ -3053,9 +3139,13 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite
-            alistp-when-atc-symbol-varinfo-alistp-rewrite
-            atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp))))
+    (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite
+          alistp-when-atc-symbol-varinfo-alistp-rewrite
+          atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp
+          true-listp-when-atc-symbol-varinfo-alist-listp-rewrite
+          symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp
+          alistp-when-atc-symbol-fninfo-alistp-rewrite)
+         ((:e tau-system)))))) ; <-- for speed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
