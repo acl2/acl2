@@ -146,7 +146,16 @@
   :true-listp t
   :elementp-of-nil t
   :pred atc-symbol-varinfo-alist-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :prepwork ((local (in-theory (enable nfix))))
+  ///
+
+  (defruled true-listp-when-atc-symbol-varinfo-alist-listp-rewrite
+    (implies (atc-symbol-varinfo-alist-listp x)
+             (true-listp x)))
+
+  (defruled symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp
+    (implies (atc-symbol-varinfo-alistp x)
+             (symbol-listp (strip-cars x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

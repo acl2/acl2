@@ -234,8 +234,8 @@
      and constructs an updated symbol table @('new-inscope') from it,
      with the same scopes and variables, but different theorems (see below).
      Callers of this ACL2 function can further update the returned symbol table;
-     for instance, when entering a scope,
-     the caller of this ACL2 function adds a new empty scope.")
+     for instance, when encountering a new variable declaration,
+     the caller of this ACL2 function adds the new variable.")
    (xdoc::p
     "The input context @('new-context') is already the new context,
      created by the caller of this ACL2 function
@@ -292,6 +292,10 @@
      :parents nil
      (b* (((when (endp scope)) (mv nil nil names-to-avoid))
           ((cons var info) (car scope))
+          ((when (atc-var-info->externalp info)) ; temporary
+           (atc-gen-new-inscope-aux fn fn-guard (cdr scope) new-context
+                                    compst-var rules prec-tags thm-index
+                                    names-to-avoid wrld))
           (type (atc-var-info->type info))
           (thm (atc-var-info->thm info))
           (type-pred (atc-type-to-recognizer type prec-tags))
