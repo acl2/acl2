@@ -292,6 +292,10 @@
      :parents nil
      (b* (((when (endp scope)) (mv nil nil names-to-avoid))
           ((cons var info) (car scope))
+          ((when (atc-var-info->externalp info)) ; temporary
+           (atc-gen-new-inscope-aux fn fn-guard (cdr scope) new-context
+                                    compst-var rules prec-tags thm-index
+                                    names-to-avoid wrld))
           (type (atc-var-info->type info))
           (thm (atc-var-info->thm info))
           (type-pred (atc-type-to-recognizer type prec-tags))
