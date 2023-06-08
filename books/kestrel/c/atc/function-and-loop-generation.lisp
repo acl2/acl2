@@ -2984,8 +2984,7 @@
                        :prec-objs prec-objs
                        :thm-index 1
                        :names-to-avoid names-to-avoid
-                       :proofs (and proofs
-                                    no-ext-objs-p)
+                       :proofs proofs
                        :deprecated deprecated)
                       state))
        (names-to-avoid body.names-to-avoid)

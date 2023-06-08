@@ -102,7 +102,10 @@
   (xdoc::topstring
    (xdoc::p
     "An ACL2 variable is translated to a C variable.
-     Its information is looked up in the symbol table."))
+     Its information is looked up in the symbol table.")
+   (xdoc::p
+    "If the variable has pointer or array type and is not an external object,
+     its correctness theorem equates it to the @('-ptr') variable."))
   (b* (((pexpr-gin gin) gin)
        (info (atc-get-var var gin.inscope))
        ((when (not info))
@@ -138,8 +141,10 @@
                                        gin.context
                                        expr
                                        type
-                                       (if (or (type-case type :pointer)
-                                               (type-case type :array))
+                                       (if (and (or (type-case type :pointer)
+                                                    (type-case type :array))
+                                                (not (atc-var-info->externalp
+                                                      info)))
                                            (add-suffix-to-fn var "-PTR")
                                          var)
                                        var
