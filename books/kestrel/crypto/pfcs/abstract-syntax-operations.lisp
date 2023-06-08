@@ -12,8 +12,10 @@
 
 (include-book "abstract-syntax")
 
-(include-book "kestrel/fty/symbol-set" :dir :system)
+(include-book "kestrel/fty/string-set" :dir :system)
 (include-book "std/util/deflist" :dir :system)
+
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -31,7 +33,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection expression-var-list (x)
-  :guard (symbol-listp x)
+  :guard (string-listp x)
   :returns (exprs expression-listp)
   :short "Lift @(tsee expression-var) to lists."
   (expression-var x)
@@ -58,7 +60,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expression-vars ((expr expressionp))
-  :returns (vars symbol-setp)
+  :returns (vars string-setp)
   :short "Set of variables in an expression."
   (expression-case
    expr
@@ -75,7 +77,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expression-list-vars ((exprs expression-listp))
-  :returns (vars symbol-setp)
+  :returns (vars string-setp)
   :short "Set of variables in a list of expressions."
   (cond ((endp exprs) nil)
         (t (set::union (expression-vars (car exprs))
@@ -85,7 +87,7 @@
 
   (defrule expression-list-vars-of-expression-var-list
     (equal (expression-list-vars (expression-var-list vars))
-           (set::mergesort (acl2::symbol-list-fix vars)))
+           (set::mergesort (string-list-fix vars)))
     :induct t
     :enable (expression-vars
              expression-var-list
@@ -94,7 +96,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-vars ((constr constraintp))
-  :returns (vars symbol-setp)
+  :returns (vars string-setp)
   :short "Set of variables in a constraint."
   (constraint-case
    constr
@@ -105,7 +107,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-list-vars ((constrs constraint-listp))
-  :returns (vars symbol-setp)
+  :returns (vars string-setp)
   :short "Set of variables in a list of constraints."
   (cond ((endp constrs) nil)
         (t (set::union (constraint-vars (car constrs))
@@ -115,7 +117,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define definition-free-vars ((def definitionp))
-  :returns (vars symbol-setp)
+  :returns (vars string-setp)
   :short "Set of free variables in a definition."
   :long
   (xdoc::topstring
@@ -151,7 +153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-definition ((name symbolp) (defs definition-listp))
+(define lookup-definition ((name stringp) (defs definition-listp))
   :returns (def? definition-optionp)
   :short "Look up a definition in a list of definitions."
   :long
@@ -167,8 +169,8 @@
      and thus the first one found (if any) is also the only one."))
   (b* (((when (endp defs)) nil)
        (def (car defs))
-       ((when (eq (definition->name def)
-                  (symbol-fix name)))
+       ((when (equal (definition->name def)
+                     (str-fix name)))
         (definition-fix def)))
     (lookup-definition name (cdr defs)))
   :hooks (:fix))
@@ -183,7 +185,7 @@
     "This is isomorphic to the @(':relation') kind of @(tsee constraint),
      but it is convenient to have a separate fixtype here,
      for certain purposes."))
-  ((name symbol)
+  ((name string)
    (args expression-list))
   :pred constrelp)
 
@@ -236,7 +238,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-rels ((constr constraintp))
-  :returns (rels symbol-setp)
+  :returns (rels string-setp)
   :short "Set of (names of) relations in a constraint."
   :long
   (xdoc::topstring
@@ -253,7 +255,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-list-rels ((constrs constraint-listp))
-  :returns (rels symbol-setp)
+  :returns (rels string-setp)
   :short "Set of (names of) relations in a list of constraints."
   :long
   (xdoc::topstring

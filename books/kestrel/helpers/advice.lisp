@@ -1187,6 +1187,9 @@
 
 ;; Returns (mv erp parsed-recommendation state) where parsed-recommendation may
 ;; be :none (and erp be nil) if a minor error is encountered.
+;; The REC should be a JSON object (i.e., a map) whose keys are
+;; "type", "object", "confidence", and "book_map".  The name given to
+;; the recommendation comes from the SOURCE.
 (defund parse-recommendation (rec rec-num source state)
   (declare (xargs :guard (and (acl2::parsed-json-valuep rec)
                               (natp rec-num)
@@ -2499,19 +2502,17 @@
        (wrld (w state))
        (rec-name (nth 0 rec))
        (rule-or-macro-alias rule)
-       (rule (handle-macro-alias rule wrld)) ; TODO: Handle the case of a macro-alias we don't know about
+       (rule (handle-macro-alias rule wrld)) ; TODO: What about a macro-alias we don't know about?
        )
     (if (function-symbolp rule wrld)
         ;; It's a function in the current world:
         (b* ((fn rule)
              ((when (not (acl2::logicp fn wrld)))
               (and (acl2::print-level-at-least-tp print) (cw "skip (Can't enable ~x0. Not in :logic mode.)~%" fn))
-              (mv nil nil state))
-             ((when (not (and
-                          ;; (acl2::defined-functionp fn wrld) ;todo
-                          )))
+              (mv nil nil state)) ; no error but no successful rec
+             ((when (not (acl2::fn-definedp fn wrld)))
               (and (acl2::print-level-at-least-tp print) (cw "skip (Can't enable ~x0. No body.)~%" fn))
-              (mv nil nil state))
+              (mv nil nil state)) ; no error but no successful rec
              ;; TODO: Consider whether to enable, say the :type-prescription rule
              (rune `(:definition ,fn))
              ;; Rule already enabled, so don't bother (TODO: I suppose if the :hints disable it, we could reverse that):
@@ -3595,7 +3596,7 @@
         (mv :no-server nil state))
        (- (and print (cw "Server for ~x0 is ~s1.~%" model server-url)))
        ;; Send query to server:
-       ((mv erp semi-parsed-recommendations state)
+       ((mv erp semi-parsed-recommendations state) ; semi-parsed means the JSON has been parsed
         (if (zp num-recs)
             (prog2$ (cw "Not asking server for recommendations since num-recs=0.")
                     (mv nil
@@ -3649,7 +3650,7 @@
         ml-recommendations
         state)))
 
-;; Goes through the MODELS, getting recs from each.  Returns an alist from model names to rec-lists.
+;; Goes through the MODELS, getting recs from each.  Returns an alist from model-names to rec-lists.
 ;; Returns (mv erp rec-alist state).
 (defun get-recs-from-models-aux (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
@@ -3692,6 +3693,7 @@
 
 ;; Returns an alist from model names to rec-lists.
 ;; Returns (mv erp rec-alist state).
+;; TODO: Get rid of this wrapper.
 (defun get-recs-from-models (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print acc state)
   (declare (xargs :guard (and (model-namesp models)
                               (natp num-recs-per-model)

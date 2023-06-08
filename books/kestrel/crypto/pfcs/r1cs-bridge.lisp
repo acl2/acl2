@@ -58,15 +58,19 @@
      an integer coefficient and a pseudo-variable.
      If the pseudo-variable is 1, we generate a constant with the coefficient.
      Otherwise, if the coefficient is 1 and the pseudo-variable is a symbol,
-     we generate a variable.
+     we generate a variable with the name of the symbol.
      Otherwise, we generate a multiplication
-     of the coefficient by the variable."))
+     of the coefficient by the variable.")
+   (xdoc::p
+    "This mapping works if the R1CS variables have distinct symbol names.
+     Otherwise, different R1CS variables could become the same PFCS variable.
+     We plan to make this mapping more robust at some point."))
   (b* ((coeff (first elem))
        (pvar (second elem)))
     (cond ((equal pvar 1) (expression-const coeff))
-          ((equal coeff 1) (expression-var pvar))
+          ((equal coeff 1) (expression-var (symbol-name pvar)))
           (t (make-expression-mul :arg1 (expression-const (first elem))
-                                  :arg2 (expression-var pvar)))))
+                                  :arg2 (expression-var (symbol-name pvar))))))
   ///
 
   (more-returns

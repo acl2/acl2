@@ -38,7 +38,7 @@
      theorems generated for symbolic execution of array member accesses.")
    (xdoc::p
     "The remaining rules are used in the modular proofs
-     aboud variables in symbol tables.")
+     about variables in symbol tables.")
    (xdoc::p
     "The constant that collects the rules also includes
      some rules proved elsewhere."))
@@ -99,6 +99,18 @@
              top-frame
              compustate-frames-number
              len))
+
+  (defruled objdesign-of-var-of-add-frame-when-read-object-static
+    (implies (valuep (read-object (objdesign-static var) compst))
+             (equal (objdesign-of-var var (add-frame fun compst))
+                    (objdesign-static var)))
+    :enable (objdesign-of-var
+             objdesign-of-var-aux
+             add-frame
+             push-frame
+             top-frame
+             read-object)
+    :disable omap::in-when-in-tail)
 
   (defruled read-object-of-objdesign-of-var-of-add-var
     (implies (objdesign-of-var var (add-var var2 val compst))
