@@ -312,6 +312,12 @@
      has been defined.")
 
    (xdoc::p
+    "The abstract syntax has been improved
+     by using strings instead of symbols
+     for names of relations and variables.
+     This is more consistent with the concrete syntax.")
+
+   (xdoc::p
     "The formal notion of system (in the PFCS sense) has been improved,
      to be more in line with the general notion of constraint system.")
 
