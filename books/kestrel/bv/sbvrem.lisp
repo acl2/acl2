@@ -1,7 +1,7 @@
 ; Signed bit-vector remainder
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -105,3 +105,9 @@
          0)
   :hints (("Goal" :cases ((posp size))
            :in-theory (enable sbvrem))))
+
+(defthm sbvrem-of-when-not-integerp-arg1
+  (implies (not (integerp x))
+           (equal (sbvrem size x y)
+                  0))
+  :hints (("Goal" :in-theory (enable sbvrem))))
