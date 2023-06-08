@@ -63,6 +63,7 @@
 (include-book "pseudo-event-form")
 (include-book "pseudo-event-form-list")
 (include-book "set")
+(include-book "string-set")
 (include-book "string-list-result")
 (include-book "string-result")
 (include-book "symbol-set")
