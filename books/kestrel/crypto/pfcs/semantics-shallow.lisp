@@ -115,7 +115,7 @@
 
 (define name-set-to-symbol-list ((names string-setp) state)
   :returns (syms symbol-listp)
-  :short "Lift @(tsee sesem-name) to a mapping
+  :short "Lift @(tsee name-to-symbol) to a mapping
           from sets of strings to lists of symbols."
   :long
   (xdoc::topstring
