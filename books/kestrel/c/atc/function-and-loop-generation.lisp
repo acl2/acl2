@@ -3106,8 +3106,7 @@
                                        (list init-scope-expand-event)
                                        (list init-scope-scopep-event)
                                        (list push-init-thm-event)
-                                       (and no-ext-objs-p
-                                            init-inscope-events)
+                                       init-inscope-events
                                        body.events
                                        (and modular-proofs
                                             (list pop-frame-event))
