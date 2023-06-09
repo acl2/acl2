@@ -118,6 +118,28 @@
 
 (include-book "xdoc/top" :dir :system)
 
+(include-book "show-diff-lines")
+
+(defun diff-msg (file1 file2 s1 s2)
+  (declare (type string file1 file2 s1 s2)
+           (xargs :guard-hints (("Goal" :in-theory (disable length)))))
+  (let* ((lines-before 5)
+         (lines-after 5)
+         (p (first-diff-position s1 s2)))
+    (msg "Showing (up to) ~x0 lines before and ~x1 lines after the line where ~
+          those files first differ.~|~%~
+          ############### ~s2 ###############~|~
+          ~s3~|~
+          ############### ~s4 ###############~|~
+          ~s5~|~
+          ##################################################~|"
+         lines-before
+         lines-after
+         file1
+         (surrounding-lines s1 p lines-before lines-after)
+         file2
+         (surrounding-lines s2 p lines-before lines-after))))
+
 (defun identical-files-p-fn (file1 file2 state)
   (declare (xargs :stobjs state
                   :guard (and (stringp file1)
@@ -138,8 +160,10 @@
       t)
      (t
       (er hard? ctx
-          "Files ~x0 and ~x1 differ."
-          file1 file2)))))
+          "Files ~x0 and ~x1 differ.~|~@2~|"
+          file1
+          file2
+          (diff-msg file1 file2 str1 str2))))))
 
 (defmacro identical-files-p (file1 file2)
   `(identical-files-p-fn ,file1 ,file2 state))

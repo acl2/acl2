@@ -154,6 +154,32 @@
             (acl2-doc-print-topic-index (car tuple-lst) channel state)
             (acl2-doc-print-topic-index-lst (cdr tuple-lst) channel state)))))
 
+(defmacro with-acl2-doc-images (form)
+
+; Form evaluates to (mv val state) and we return (value val), except that form
+; is evaluated in an environment where documentation will be printed to be
+; rendered with images.  We restore the original environment even in the case
+; of an error.
+
+; Form should not contain with wadi- variable bound by b* below.  We should
+; really use something like check-vars-not-free, but this will do.  ("Wadi" is
+; based on the name of this macro.)
+
+  `(b* (((mv - wadi-env-val state)
+         (getenv$ "ACL2_DOC_IMAGES" state))
+        ((mv - wadi-temp state)
+         (acl2::acl2-unwind-protect
+          "with-acl2-doc-images"
+          (prog2$ (setenv$ "ACL2_DOC_IMAGES" "t")
+                  (mv-let (wadi-temp state)
+                    ,form
+                    (value wadi-temp)))
+          (prog2$ (setenv$ "ACL2_DOC_IMAGES" (or wadi-env-val ""))
+                  state)
+          (prog2$ (setenv$ "ACL2_DOC_IMAGES" (or wadi-env-val "" ""))
+                  state))))
+     (value wadi-temp)))
+
 (defun save-rendered (outfile
                       header
                       topic-list-name
@@ -200,8 +226,9 @@
                                     (force-missing-parents all-topics2)
                                   all-topics2)))
               all-topics3)))
-          ((mv rendered state)
-           (time$ (render-topics all-topics all-topics state)))
+          ((er rendered)
+           (time$ (with-acl2-doc-images
+                   (render-topics all-topics all-topics state))))
           (rendered (time$ (split-acl2-topics rendered nil nil nil)))
           (- (cw "Writing ~s0~%" outfile))
           ((mv channel state) (open-output-channel! outfile :character state))
