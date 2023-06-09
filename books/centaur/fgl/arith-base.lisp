@@ -362,6 +362,10 @@ the hypotheses of a conjecture aren't contradictory.</p>"
   (declare (ignore params msg))
   nil)
 
+(defun run-counterexample (params msg)
+  (declare (ignore params msg))
+  nil)
+
 (defun fgl-pathcond-fix (x)
   (declare (xargs :guard t))
   x)
