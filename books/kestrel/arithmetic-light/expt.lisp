@@ -525,7 +525,7 @@
 
 (theory-invariant (incompatible (:rewrite expt-of-expt-arg1) (:rewrite expt-of-*-arg2)))
 
-;; Seems good to leave this version enabled, but I suppose
+;; Seems good to always leave this version enabled.
 (defthm expt-of-expt-arg1-constants
   (implies (and (syntaxp (and (quotep i1)
                               (quotep i2)
@@ -534,8 +534,7 @@
                 (integerp i1)
                 (integerp i2))
            (equal (expt (expt r i1) i2)
-                  (expt r (* i1 i2))))
-  :hints (("Goal" :by expt-of-*-arg2)))
+                  (expt r (* i1 i2)))))
 
 (defthm <-of-expt-and-expt-same-exponents
   (implies (and (rationalp r1)
