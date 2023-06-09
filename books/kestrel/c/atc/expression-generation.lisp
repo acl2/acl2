@@ -1491,6 +1491,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-array-read ((fn symbolp)
+                                 (arr-term pseudo-termp)
+                                 (arr-expr exprp)
+                                 (arr-type typep)
+                                 (arr-events pseudo-event-form-listp)
+                                 (arr-thm symbolp)
+                                 (sub-term pseudo-termp)
+                                 (sub-expr exprp)
+                                 (sub-type typep)
+                                 (sub-events pseudo-event-form-listp)
+                                 (sub-thm symbolp)
+                                 (elem-type typep)
+                                 (gin pexpr-ginp)
+                                 state)
+  (declare (ignore arr-thm sub-thm state))
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents an array read."
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (and (type-case arr-type :array)
+                     (equal (type-array->of arr-type) elem-type)
+                     (type-integerp sub-type)))
+        (reterr
+         (msg "The reading of a ~x0 array is applied to ~
+               an expression term ~x1 returning ~x2 ~
+               and to an expression term ~x3 returning ~x4, ~
+               but a ~x0 array and an integer operand are expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              elem-type arr-term arr-type sub-term sub-type)))
+       ((when (eq fn 'quote))
+        (reterr (raise "Internal error: function symbol is QUOTE.")))
+       (term `(,fn ,arr-term ,sub-term))
+       (expr (make-expr-arrsub :arr arr-expr :sub sub-expr)))
+    (retok (make-pexpr-gout
+            :expr expr
+            :type elem-type
+            :term term
+            :events (append arr-events sub-events)
+            :thm-name nil
+            :thm-index gin.thm-index
+            :names-to-avoid gin.names-to-avoid
+            :proofs nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -1643,7 +1690,7 @@
                                        type
                                        gin
                                        state)))
-         ((erp okp & arr-term sub-term elem-type)
+         ((erp okp fn arr-term sub-term elem-type)
           (atc-check-array-read term))
          ((when okp)
           (b* (((erp (pexpr-gout arr))
@@ -1653,29 +1700,27 @@
                                    (change-pexpr-gin
                                     gin
                                     :thm-index arr.thm-index
-                                    :names-to-avoid arr.names-to-avoid)
+                                    :names-to-avoid arr.names-to-avoid
+                                    :proofs arr.proofs)
                                    state))
-               ((unless (and (type-case arr.type :array)
-                             (equal (type-array->of arr.type) elem-type)
-                             (type-integerp sub.type)))
-                (reterr
-                 (msg "The reading of a ~x0 array is applied to ~
-                       an expression term ~x1 returning ~x2 ~
-                       and to an expression term ~x3 returning ~x4, ~
-                       but a ~x0 array and an integer operand are expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      elem-type arr-term arr.type sub-term sub.type))))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-arrsub :arr arr.expr
-                                            :sub sub.expr)
-                    :type elem-type
-                    :term term
-                    :events (append arr.events sub.events)
-                    :thm-name nil
-                    :thm-index sub.thm-index
-                    :names-to-avoid sub.names-to-avoid
-                    :proofs nil))))
+               (gin (change-pexpr-gin gin
+                                      :thm-index sub.thm-index
+                                      :names-to-avoid sub.names-to-avoid
+                                      :proofs sub.proofs)))
+            (atc-gen-expr-array-read fn
+                                     arr.term
+                                     arr.expr
+                                     arr.type
+                                     arr.events
+                                     arr.thm-name
+                                     sub.term
+                                     sub.expr
+                                     sub.type
+                                     sub.events
+                                     sub.thm-name
+                                     elem-type
+                                     gin
+                                     state)))
          ((erp okp arg-term tag member mem-type)
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
