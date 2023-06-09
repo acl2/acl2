@@ -65,24 +65,19 @@
 ;; TODO: Untranslate before printing (e.g., hyps)?
 
 (include-book "recommendations")
+(include-book "model-enable")
 (include-book "kestrel/utilities/book-of-event" :dir :system)
 (include-book "kestrel/utilities/checkpoints" :dir :system)
-(include-book "kestrel/utilities/nat-to-string" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/theory-hints" :dir :system)
-(include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
-(include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/included-books-in-world" :dir :system)
-(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "kestrel/hints/combine-hints" :dir :system)
-(include-book "kestrel/lists-light/firstn-def" :dir :system)
-(include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/world-light/world-since-boot-strap" :dir :system)
@@ -281,8 +276,7 @@
            (string-listp (rec-types-to-strings types)))
   :hints (("Goal" :in-theory (enable rec-types-to-strings))))
 
-
-
+;; TODO: Make this extensible:
 (defconst *non-ml-models-and-strings*
   '((:enable . "enable")
     (:history . "history")))
@@ -321,9 +315,6 @@
 (defconst *ready-models*
   *known-models* ; (remove-eq :leidos-run10.0 *known-models*)
   )
-
-(defconst *extra-rec-sources*
-  '(:enable :history))
 
 ;; Indicates one of the machine learning recommendation models.  Either one of
 ;; the known models, or a string representing some unknown model (gets passed
@@ -964,60 +955,6 @@
   (progn$ (cw "SUCCESS: ")
           (show-successful-recommendation rec)
           (cw "~%")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun make-enable-recs-aux (names num)
-  (declare (xargs :guard (and (symbol-listp names)
-                              (posp num))))
-  (if (endp names)
-      nil
-    (cons (make-rec (concatenate 'string "enable" (acl2::nat-to-string num))
-                    :add-enable-hint
-                    (first names) ; the name to enable
-                    5             ; confidence percentage (quite high) TODO: allow unknown?)
-                    nil ; book map ; todo: indicate that the name must be present?
-                    )
-          (make-enable-recs-aux (rest names) (+ 1 num)))))
-
-(local
- (defthm recommendation-listp-of-make-enable-recs-aux
-   (implies (symbol-listp names)
-            (recommendation-listp (make-enable-recs-aux names num)))
-   :hints (("Goal" :in-theory (enable recommendation-listp)))))
-
-;; TODO: Don't even make recs for things that are enabled (in the theory, or by the current hints)?
-;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
-;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
-(defun make-enable-recs (formula num-recs print state)
-  (declare (xargs :guard (and ;; formula is an untranslated term
-                          (natp num-recs))
-                  :stobjs state
-                  :mode :program ; because of acl2::translate-term
-                  ))
-  (b* ((wrld (w state))
-       (- (and (acl2::print-level-at-least-tp print)
-               (cw "Making ~x0 :enable recommendations: " ; the line is ended below when we print the time
-                   num-recs)))
-       (print-timep (acl2::print-level-at-least-tp print))
-       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
-       (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
-                                               ;; Don't bother wasting time with trying to enable implies
-                                               ;; (I suppose we could try it if implies is disabled):
-                                               '(implies)))
-       (recs-to-return ;; todo: how to choose when we can't return them all?:
-        (acl2::firstn num-recs (make-enable-recs-aux fns-to-try-enabling 1)))
-       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (- (and print-timep (prog2$ (acl2::print-to-hundredths (- done-time start-time))
-                                   (cw "s~%") ; s = seconds
-                                   ))))
-    (mv nil recs-to-return state)))
-
-;; (local
-;;  (defthm recommendation-listp-of-make-enable-recs
-;;    (implies (pseudo-termp formula)
-;;             (recommendation-listp (make-enable-recs formula wrld)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
