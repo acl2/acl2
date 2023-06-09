@@ -14257,15 +14257,6 @@
                                    MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                    MOD-OF-EXPT-OF-2)))))
 
-;see 0-<-*
-(defthm <-of-0-and-*
-  (implies (and (real/rationalp x)
-                (real/rationalp y))
-           (equal (< 0 (* x y))
-                  (and (not (equal x 0))
-                       (not (equal y 0))
-                       (equal (< 0 x) (< 0 y))))))
-
 ;gen the -1
 (defthm <-of-minus1-and-floor
   (implies (and (rationalp x)

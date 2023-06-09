@@ -20,6 +20,8 @@
 ; note that the rules associativity-of-*, commutativity-of-*, and unicity-of-1
 ; are built in to ACL2.
 
+;; TODO: Consider using real/rationalp in this book.
+
 (defthm integerp-of-*
   (implies (and (integerp x)
                 (integerp y))
@@ -109,6 +111,15 @@
   :hints (("Goal" :cases ((< x 0)
                           (and (< 0 X) (< Y 0))
                           (and (< 0 X) (< 0 Y))))))
+
+(defthm <-of-0-and-*
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (< 0 (* x y))
+                  (or (and (< x 0)
+                           (< y 0))
+                      (and (< 0 y)
+                           (< 0 x))))))
 
 ;; A stronger rewrite rule than <-of-*-and-*.  This is a cancellation rule.
 (defthm <-of-*-and-*-cancel
