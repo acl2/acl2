@@ -665,11 +665,14 @@
           (remove-hints-for-goal-spec goal-spec (rest hints))
         (cons hint (remove-hints-for-goal-spec goal-spec (rest hints)))))))
 
+(local (in-theory (enable natp))) ;todo
+
+;; WARNING: Keep this in sync with break-hint-setting-in-nth-way.
 (defun num-ways-to-break-hint-setting (keyword val)
   (declare (xargs :guard (keywordp keyword)))
   (case keyword
     (:by 1) ; can only remove the whole thing
-    (:cases 1) ; can only remove the whole thing
+    (:cases 1) ; can only remove the whole thing (todo: well, we could remove one case?)
     (:induct 1) ; can only remove the whole thing
     (:nonlinearp 1) ; can only remove the whole thing
     (:do-not (if (and (quotep val)
@@ -693,19 +696,9 @@
                     )))
     (otherwise 0)))
 
-(defun num-ways-to-break-hint-keyword-value-list (hint-keyword-value-list)
-  (declare (xargs :guard (keyword-value-listp hint-keyword-value-list)))
-  (if (endp hint-keyword-value-list)
-      0
-    (let ((keyword (car hint-keyword-value-list))
-          (val (cadr hint-keyword-value-list)))
-      (+ (num-ways-to-break-hint-setting keyword val)
-         (num-ways-to-break-hint-keyword-value-list (cddr hint-keyword-value-list))))))
-
-(local (in-theory (enable natp))) ;todo
-
 ;; n is 0-based and is known to be less than the number of ways to break the hint-setting.
 ;; Returns (mv breakage-type result), where RESULT is a list (possibly nil) to be spliced into the hint settings, replacing the KEYWORD and VAL.
+;; WARNING: Keep this in sync with num-ways-to-break-hint-setting.
 (defun break-hint-setting-in-nth-way (n keyword val)
   (declare (xargs :guard (and (natp n)
                               (keywordp keyword)
@@ -748,6 +741,15 @@
                           nil) ; can only remove the whole thing
                       ))))
     (otherwise (mv :error (er hard 'break-hint-setting-in-nth-way "Unhandled case")))))
+
+(defun num-ways-to-break-hint-keyword-value-list (hint-keyword-value-list)
+  (declare (xargs :guard (keyword-value-listp hint-keyword-value-list)))
+  (if (endp hint-keyword-value-list)
+      0
+    (let ((keyword (car hint-keyword-value-list))
+          (val (cadr hint-keyword-value-list)))
+      (+ (num-ways-to-break-hint-setting keyword val) ;; todo: generalize num-ways-to-break-hint-setting but filter here for hints the models know about.
+         (num-ways-to-break-hint-keyword-value-list (cddr hint-keyword-value-list))))))
 
 ;; Returns (mv breakage-type hint-keyword-value-list).
 ; n is 0-based
