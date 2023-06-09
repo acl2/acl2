@@ -83,7 +83,7 @@
   (mv-let (erp state)
     (submit-event-helper event print nil state)
     (if erp
-        (prog2$ (cw "ERROR submitting event ~X01.~%" event nil)
+        (prog2$ (cw "ERROR (~x0) submitting event ~X12.~%" erp event nil)
                 (mv :error-submitting-event state))
       (mv nil state))))
 
@@ -107,7 +107,42 @@
 ;;           (declare (ignore res erp2)) ; ERP determines whether we throw an error
 ;;           (mv erp state))))))
 
+;; Tries the EVENT and prints the MESSAGE if the event succeeds.
+;; Returns (mv improvement-foundp state).
+;; TODO: Make the limits customizable.
+(defun try-improved-event (event message state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (mv-let (erp val state)
+    (revert-world (submit-event-error-triple `(with-prover-step-limit 10 (with-prover-step-limit 10000 ,event)) nil state))
+    (declare (ignore val))
+    (if erp
+        ;; failure (don't print the message):
+        (mv nil state)
+      ;; success:
+      (prog2$ (cw "~s0" message)
+              (mv t state)))))
+
+;; Tries each event and, if it succeeds, prints the corresponding message.
+;; Returns (mv improvement-foundp state).
+;; Does not change the world.
+(defun try-improved-events (event-message-alist improvement-foundp state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (if (endp event-message-alist)
+      (mv improvement-foundp state)
+    (let* ((pair (first event-message-alist))
+           (event (car pair))
+           (message (cdr pair)))
+      (mv-let (improvedp state)
+        (try-improved-event event message state)
+        (try-improved-events (rest event-message-alist)
+                             (or improvedp improvement-foundp)
+                             state)))))
+
+;; Submits and improves the events.
 ;; Returns (mv erp state).
+;; TODO: Use limits based on how many steps were needed for the original proof.
 (defun improve-defthm-event (event rest-events print state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
@@ -122,27 +157,23 @@
           (term (second defthm-args))
           (keyword-value-list (rest (rest defthm-args)))
           (hintsp (assoc-keyword :hints keyword-value-list))
-          ;; TODO: Try deleting each hint separately
+          ;; TODO: Try deleting each hint separately. ;; see functions like break-hint-setting-in-nth-way.
           ;; TODO: Try deleting the :otf-flg
           ;; TODO: Try deleting/weakening hyps
-          (event-without-hints `(,defthm-variant ,name ,term ,@(remove-keyword :hints keyword-value-list))))
-     (if (not hintsp)
-         ;; No hints, so just submit the defthm:
-         (prog2$ (and print (cw "No improvement found.)~%"))
-                 (submit-event-helper event nil nil state))
-       ;; There are hints, so lets try without them:
-       (mv-let (erp val state)
-         (revert-world (submit-event-error-triple event-without-hints nil state))
-         (declare (ignore val))
-         (if erp
-             ;; The hints are needed, so submit the event unchanged:
-             ;; TODO: It's a pity to do it again here.
-             (prog2$ (cw "No improvement found.)~%")
-                     (submit-event-helper event nil nil state))
-           (prog2$ (cw "~%IMPROVEMENT: The hints on ~x0 are unnecessary.)~%" name)
-                   ;; The hints are not needed, so submit the defthm without them:
-                   ;; TODO: This means we submit the event twice -- can we do something other than call revert-world above?
-                   (submit-event-helper event-without-hints nil nil state))))))))
+          (event-without-hints `(,defthm-variant ,name ,term ,@(remove-keyword :hints keyword-value-list)))
+          (alist (if (not hintsp)
+                     nil ; nothing to do (currently)
+                   (acons event-without-hints
+                          (fms-to-string "IMPROVEMENT for ~x0: Drop the :hints.~%" (acons #\0 name nil))
+                          nil))))
+     (mv-let (improvement-foundp state)
+       (try-improved-events alist nil state)
+       (if (not improvement-foundp)
+           (prog2$ (and print (cw "No improvement found.)~%"))
+                   (submit-event-helper event nil nil state))
+         (prog2$ (and print (cw ")~%"))
+                 ;; TODO: This means we may submit the event twice -- can we do something other than call revert-world above?
+                 (submit-event-helper event-without-hints nil nil state)))))))
 
 ;; Returns (mv erp state).
 (defun improve-event (event rest-events print state)
@@ -159,11 +190,12 @@
        (if successp
            ;; This event can simply be skipped:  TODO: Still, try improving it (it may be a defthm, etc.)?
            ;; TODO: Skipping this may change the improvements we suggest on later events, so perhaps we should not skip it?
-           (prog2$ (cw "NOTE: The local event ~X01 can be skipped.~%" event nil)
+           ;; TODO: What if this is redundant, given stuff already in the world?
+           (prog2$ (cw "IMPROVEMENT: Drop the local event ~X01.~%" event nil)
                    (mv nil state))
          ;;failed to submit the rest of the events, so we can't just skip this one:
-         (progn$ ;; (cw "Note: The local event ~x0 cannot be skipped.~%" event)
-          (submit-event-expect-no-error event nil state)))))
+         (progn$ ;; (cw "(Note: The local event ~x0 cannot be skipped.)~%" event)
+                 (submit-event-expect-no-error event nil state)))))
     (defthm (improve-defthm-event event rest-events print state))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
@@ -183,9 +215,10 @@
         (improve-events (rest events) print state)))))
 
 ;; Returns (mv erp state).
-;; Example: (IMPROVE-BOOK "helper.lisp" state)
 ;; TODO: Add support for :dir
 ;; TODO: Set the CBD first
+;; TODO: Read in the .port file first, if it exists.
+;; TODO: Set induction depth limit to nil?
 (defun improve-book-fn (bookname ; no extension
                         print
                         state)
@@ -201,7 +234,11 @@
        (prog2$ (and print (cw "~x0 contains ~x1 events.~%" bookname (len events)))
                (improve-events events print state))))))
 
+;; Example: (IMPROVE-BOOK "helper")
 (defmacro improve-book (bookname ; no extension
                         &key
                         (print ':brief))
-  `(improve-book-fn ,bookname ,print state))
+  `(revert-world
+    (mv-let (erp state)
+      (improve-book-fn ,bookname ,print state)
+      (mv erp nil state))))
