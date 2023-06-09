@@ -1643,7 +1643,7 @@
                                        type
                                        gin
                                        state)))
-         ((erp okp arr-term sub-term arr-type elem-type)
+         ((erp okp arr-term sub-term elem-type)
           (atc-check-array-read term))
          ((when okp)
           (b* (((erp (pexpr-gout arr))
@@ -1656,22 +1656,16 @@
                                     :names-to-avoid arr.names-to-avoid)
                                    state))
                ((unless (and (type-case arr.type :array)
-                             (type-case arr-type :array)
-                             (equal (type-array->of arr.type)
-                                    (type-array->of arr-type))
-                             (or (equal (type-array->size arr.type)
-                                        (type-array->size arr-type))
-                                 (not (type-array->size arr.type))
-                                 (not (type-array->size arr-type)))
+                             (equal (type-array->of arr.type) elem-type)
                              (type-integerp sub.type)))
                 (reterr
                  (msg "The reading of a ~x0 array is applied to ~
                        an expression term ~x1 returning ~x2 ~
                        and to an expression term ~x3 returning ~x4, ~
-                       but a ~x0 and an integer operand is expected. ~
+                       but a ~x0 array and an integer operand are expected. ~
                        This is indicative of provably dead code, ~
                        given that the code is guard-verified."
-                      arr-type arr-term arr.type sub-term sub.type))))
+                      elem-type arr-term arr.type sub-term sub.type))))
             (retok (make-pexpr-gout
                     :expr (make-expr-arrsub :arr arr.expr
                                             :sub sub.expr)
