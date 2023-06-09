@@ -668,6 +668,35 @@ for confirmation."
       (equal val "")
       (equal (upcase val) "FANCY")))
 
+(defvar *acl2-manual-dir*
+  (concat *acl2-sources-dir*
+	  "books/doc/manual/"))
+
+(defvar *img-prefix*
+  (byte-to-string 25))
+
+(defvar *img-suffix*
+  (byte-to-string 26))
+
+(defun acl2-doc-handle-images (display-graphic-p)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((go t))
+      (while go
+	(let ((start (search-forward *img-prefix* nil t)))
+	  (cond
+	   (start
+	    (let* ((end (search-forward *img-suffix*))
+		   (src (buffer-substring start (1- end))))
+	      (delete-region (1- start) end)
+	      (cond
+	       (display-graphic-p
+		(insert-image
+		 (create-image (concat *acl2-manual-dir* src)))
+		(insert "\n"))
+	       (t (insert "{IMAGE}")))))
+	   (t (setq go nil))))))))
+
 (defun acl2-doc-handle-color ()
 
 ;;; This function removes color indicators for Select Graphic Rendition (SGR)
@@ -679,6 +708,10 @@ for confirmation."
   (if (xdoc-tag-alist-fancy-p (getenv "ACL2_XDOC_TAGS"))
       (ansi-color-apply-on-region (point-min) (point-max))
     (ansi-color-filter-region (point-min) (point-max))))
+
+(defun acl2-doc-fix-display (display-graphic-p)
+  (acl2-doc-handle-images display-graphic-p)
+  (acl2-doc-handle-color))
 
 (defun acl2-doc-display-basic (entry &optional extra)
 
@@ -692,7 +725,7 @@ for confirmation."
   (setq buffer-read-only nil)
   (erase-buffer)
   (acl2-doc-print-topic (cdr entry))  ; entry is (cons position tuple)
-  (acl2-doc-handle-color)
+  (acl2-doc-fix-display (display-graphic-p))
   (setq buffer-read-only t)
   (goto-char (nth 0 entry))
   (push (car (cdr entry)) *acl2-doc-all-topics-rev*)
@@ -1326,9 +1359,10 @@ command is buffer-local like the \",\" command."
             (acl2-doc-print-topic (pop alist)))
 
 ; Since we are writing the acl2-doc-search buffer in this case, we need to
-; remove Select Graphic Rendition (SGR) markings.
+; remove Select Graphic Rendition (SGR) markings.  We might as well
+; remove images too; presumably nobody is likely to search for them.
 
-          (acl2-doc-handle-color)
+          (acl2-doc-fix-display nil)
           (setq buffer-read-only t))
         buf)))
 

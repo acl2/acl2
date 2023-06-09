@@ -292,19 +292,17 @@
      :parents nil
      (b* (((when (endp scope)) (mv nil nil names-to-avoid))
           ((cons var info) (car scope))
-          ((when (atc-var-info->externalp info)) ; temporary
-           (atc-gen-new-inscope-aux fn fn-guard (cdr scope) new-context
-                                    compst-var rules prec-tags thm-index
-                                    names-to-avoid wrld))
           (type (atc-var-info->type info))
           (thm (atc-var-info->thm info))
+          (externalp (atc-var-info->externalp info))
           (type-pred (atc-type-to-recognizer type prec-tags))
           (new-thm (pack fn '- var '-in-scope- thm-index))
           ((mv new-thm names-to-avoid)
            (fresh-logical-name-with-$s-suffix
             new-thm nil names-to-avoid wrld))
-          (var/varptr (if (or (type-case type :pointer)
-                              (type-case type :array))
+          (var/varptr (if (and (or (type-case type :pointer)
+                                   (type-case type :array))
+                               (not externalp))
                           (add-suffix-to-fn var "-PTR")
                         var))
           (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
@@ -316,6 +314,7 @@
                                  ,var/varptr)
                           ,@(and (or (type-case type :pointer)
                                      (type-case type :array))
+                                 (not externalp)
                                  `((equal (read-object
                                            ,(add-suffix-to-fn var "-OBJDES")
                                            ,compst-var)

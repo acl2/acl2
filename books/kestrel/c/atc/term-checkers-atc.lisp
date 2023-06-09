@@ -254,9 +254,9 @@
 (define atc-check-array-read ((term pseudo-termp))
   :returns (mv erp
                (yes/no booleanp)
+               (fn symbolp)
                (arr pseudo-termp)
                (sub pseudo-termp)
-               (arr-type typep)
                (elem-type typep))
   :short "Check if a term may represent an array read."
   :long
@@ -266,14 +266,12 @@
      that represent C array read operations,
      we return the two argument terms.")
    (xdoc::p
-    "We also return the input array type
-     and the output element type
-     of the array read.")
+    "We also return the element type of the array.")
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((reterr) nil nil nil (irr-type) (irr-type))
-       ((acl2::fun (no)) (retok nil nil nil (irr-type) (irr-type)))
+  (b* (((reterr) nil nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil nil (irr-type)))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless okp) (no))
        ((mv okp fixtype array read) (atc-check-symbol-3part fn))
@@ -291,9 +289,8 @@
        ((unless (list-lenp 2 args))
         (reterr (raise "Internal error: ~x0 not applied to 2 arguments." fn)))
        (arr (first args))
-       (sub (second args))
-       (arr-type (make-type-array :of elem-type :size nil)))
-    (retok t arr sub arr-type elem-type))
+       (sub (second args)))
+    (retok t fn arr sub elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-array-read-arr
@@ -306,7 +303,11 @@
     (implies yes/no
              (< (pseudo-term-count sub)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-array-read
+    (implies yes/no
+             (type-nonchar-integerp elem-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

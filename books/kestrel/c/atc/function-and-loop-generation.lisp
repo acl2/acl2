@@ -2950,9 +2950,6 @@
             names-to-avoid)
         (atc-gen-init-inscope fn fn-guard typed-formals prec-tags
                               compst-var context names-to-avoid wrld))
-       (no-ext-objs-p (and (consp inscope)
-                           (consp (cdr inscope))
-                           (not (cadr inscope))))
        (body (ubody+ fn wrld))
        ((erp affect) (atc-find-affected fn body typed-formals prec-fns wrld))
        ((unless (atc-formal-affectable-listp affect typed-formals))
@@ -2984,8 +2981,7 @@
                        :prec-objs prec-objs
                        :thm-index 1
                        :names-to-avoid names-to-avoid
-                       :proofs (and proofs
-                                    no-ext-objs-p)
+                       :proofs proofs
                        :deprecated deprecated)
                       state))
        (names-to-avoid body.names-to-avoid)
@@ -3002,13 +2998,11 @@
          (raise "Internal error: ~
                  the function ~x0 has return type ~x1."
                 fn body.type)))
-       (modular-proofs (and no-ext-objs-p
-                            body.proofs))
        ((mv pop-frame-event
             pop-frame-thm
             names-to-avoid)
         (if (and proofs
-                 modular-proofs)
+                 body.proofs)
             (atc-gen-pop-frame-thm fn
                                    fn-guard
                                    context
@@ -3053,7 +3047,7 @@
                       fn-correct-exported-events
                       fn-correct-thm
                       names-to-avoid)
-                  (if modular-proofs
+                  (if body.proofs
                       (atc-gen-fun-correct-thm fn
                                                fn-guard
                                                fn-def*
@@ -3108,7 +3102,7 @@
                                        (list push-init-thm-event)
                                        init-inscope-events
                                        body.events
-                                       (and modular-proofs
+                                       (and body.proofs
                                             (list pop-frame-event))
                                        fn-result-events
                                        fn-correct-local-events

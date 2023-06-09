@@ -225,10 +225,11 @@
                 "Unexpected implementation error!")
             state))
        ((mv - xdoc-tag-alist state) (xdoc-tag-alist state))
+       ((mv imgp state) (render-images state))
        (merged-tokens
         (reverse (merge-text tokens nil 0 nil
                              topic-to-rendered-table
-                             xdoc-tag-alist)))
+                             xdoc-tag-alist imgp)))
        (acc (tokens-to-terminal merged-tokens 70 nil nil nil))
        (terminal (str::trim (str::rchars-to-string acc))))
 
