@@ -641,7 +641,7 @@ refernced below as a &ldquo;fancy environment&rdquo;:<br/>An attempt is made to
 use a font that conveys the intention, as follows.
 
 <ul>
- <li>@('<b>..</b>'): bold text, in red to help it to stand out</li>
+ <li>@('<b>..</b>'): bold text, often red or blue to help it to stand out</li>
  <li>@('<i>..</i>'): italics</li>
  <li>@('<em>..</em>'): italics</li>
  <li>@('<u>..</u>'): underlined</li>
