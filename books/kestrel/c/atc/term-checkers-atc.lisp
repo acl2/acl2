@@ -303,7 +303,11 @@
     (implies yes/no
              (< (pseudo-term-count sub)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-array-read
+    (implies yes/no
+             (type-nonchar-integerp elem-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
