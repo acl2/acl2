@@ -264,50 +264,14 @@
     ("add-library" . :add-library)
 
     ("add-hyp" . :add-hyp) ; can change the meaning of the theorem!
-    ))
 
-;; todo: rename (not necessarily about ml)?
-(defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
+    ("exact-hints" . :exact-hints)))
 
-(defund ml-rec-typep (type)
-  (declare (xargs :guard t))
-  (member-eq type *ml-rec-types*))
-
-(defthm ml-rec-typep-forward-to-symbolp
-  (implies (ml-rec-typep type)
-           (symbolp type))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable ml-rec-typep member-equal))))
-
-(defund ml-rec-type-listp (types)
-  (declare (xargs :guard t))
-  (if (not (consp types))
-      (null types)
-    (and (ml-rec-typep (first types))
-         (ml-rec-type-listp (rest types)))))
-
-(defthm ml-rec-type-listp-of-cdr
-  (implies (ml-rec-type-listp types)
-           (ml-rec-type-listp (cdr types)))
-  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
-
-(defthm ml-rec-typep-of-car
-  (implies (and (ml-rec-type-listp types)
-                (consp types))
-           (ml-rec-typep (car types)))
-  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
-
-(defthm ml-rec-type-listp-forward-to-symbol-listp
-  (implies (ml-rec-type-listp types)
-           (symbol-listp types))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
-
-(defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
+(defconst *rec-types* (strip-cdrs *rec-to-symbol-alist*))
 
 (defund rec-typep (type)
   (declare (xargs :guard t))
-  (member-eq type *all-rec-types*))
+  (member-eq type *rec-types*))
 
 (defthm rec-typep-forward-to-symbolp
   (implies (rec-typep type)
@@ -327,35 +291,43 @@
            (rec-type-listp (cdr types)))
   :hints (("Goal" :in-theory (enable rec-type-listp))))
 
+(defthm rec-typep-of-car
+  (implies (and (rec-type-listp types)
+                (consp types))
+           (rec-typep (car types)))
+  :hints (("Goal" :in-theory (enable rec-type-listp))))
+
 (defthm rec-type-listp-forward-to-symbol-listp
   (implies (rec-type-listp types)
            (symbol-listp types))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable rec-type-listp))))
 
-(defund ml-rec-type-to-string (type)
-  (declare (xargs :guard (ml-rec-typep type)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund rec-type-to-string (type)
+  (declare (xargs :guard (rec-typep type)))
   (car (rassoc type *rec-to-symbol-alist*)))
 
-(defthm stringp-of-ml-rec-type-to-string
-  (implies (ml-rec-typep type)
-           (stringp (ml-rec-type-to-string type)))
-  :hints (("Goal" :in-theory (enable ml-rec-type-to-string
-                                     ml-rec-typep
+(defthm stringp-of-rec-type-to-string
+  (implies (rec-typep type)
+           (stringp (rec-type-to-string type)))
+  :hints (("Goal" :in-theory (enable rec-type-to-string
+                                     rec-typep
                                      member-equal))))
 
-(defund ml-rec-types-to-strings (types)
-  (declare (xargs :guard (ml-rec-type-listp types)
-                  :guard-hints (("Goal" :in-theory (enable ml-rec-type-listp)))))
+(defund rec-types-to-strings (types)
+  (declare (xargs :guard (rec-type-listp types)
+                  :guard-hints (("Goal" :in-theory (enable rec-type-listp)))))
   (if (endp types)
       nil
-    (cons (ml-rec-type-to-string (first types))
-          (ml-rec-types-to-strings (rest types)))))
+    (cons (rec-type-to-string (first types))
+          (rec-types-to-strings (rest types)))))
 
-(defthm string-listp-of-ml-rec-types-to-strings
-  (implies (ml-rec-type-listp types)
-           (string-listp (ml-rec-types-to-strings types)))
-  :hints (("Goal" :in-theory (enable ml-rec-types-to-strings))))
+(defthm string-listp-of-rec-types-to-strings
+  (implies (rec-type-listp types)
+           (string-listp (rec-types-to-strings types)))
+  :hints (("Goal" :in-theory (enable rec-types-to-strings))))
 
 (defund confidence-percentp (p)
   (declare (xargs :guard t))
@@ -3614,7 +3586,7 @@
                                         (acons "broken-theorem" (fms-to-string "~X01" (acons #\0 broken-theorem (acons #\1 nil nil))) ;; todo: should we translate this?
                                                (make-numbered-checkpoint-entries 0 checkpoint-clauses)))))
                ;; Turn off certain recommendation types (TODO: Could a generative model return something like :exact-hints?):
-               (post-data (acons-all-to-val (ml-rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types))
+               (post-data (acons-all-to-val (rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types)) ; todo: drop this?  can the models handle disallowed unknown rec types?
                                             "off"
                                             post-data))
                (print-timep (acl2::print-level-at-least-tp print))
