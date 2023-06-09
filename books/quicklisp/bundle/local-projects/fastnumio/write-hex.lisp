@@ -441,14 +441,23 @@
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 0) (1- (expt 2 64))))
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 1) (1- (expt 2 16))))
   (assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
-  
-  (defun digit-logical-shift-right (digit sh)
-    (sb-bignum::%digit-logical-shift-right digit sh))
+
+  ;; (declaim (inline digit-logical-shift-right))
+  ;; (defun digit-logical-shift-right (digit sh)
+  ;;   (sb-bignum::%digit-logical-shift-right digit sh))
+
+  (declaim (inline high32-bits))
+  (defun high32-bits (i)
+    (ldb (byte 32 32) i))
+
+  (declaim (inline low32-bits))
+  (defun low32-bits (i)
+    (ldb (byte 32 0) i))
 
   (let* ((x      #xfeedf00ddeadd00ddeadbeef99998888)
          (digit  (sb-bignum::%bignum-ref x 0))
-         (high32 (digit-logical-shift-right digit 32))
-         (low32  (logand digit #xFFFFFFFF)))
+         (high32 (high32-bits digit))
+         (low32  (low32-bits digit)))
     (assert (typep high32 'fixnum))
     (assert (typep low32 'fixnum))
     (assert (typep high32 '(unsigned-byte 32)))
@@ -545,8 +554,8 @@
 
   (declaim (inline write-nth-hex-bignum-digit-with-leading-zeroes))
   (defun write-nth-hex-bignum-digit-with-leading-zeroes (n val stream)
-    (let ((high32 (digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
-          (low32  (logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
+    (let ((high32 (high32-bits (sb-bignum::%bignum-ref val n)))
+          (low32  (low32-bits (sb-bignum::%bignum-ref val n))))
       (declare (type (unsigned-byte 32) high32 low32))
       (write-hex-u32-with-leading-zeroes high32 stream)
       (write-hex-u32-with-leading-zeroes low32 stream)))
@@ -555,9 +564,10 @@
   (defun write-nth-hex-bignum-digit-without-leading-zeroes (n val stream)
     ;; If digit is nonzero, we print it and return T.
     ;; If digit is zero,    we do not print anything and return NIL.
-    (let* ((high32 (digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
-           (low32  (logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
-      (declare (type (unsigned-byte 32) high32 low32))
+    (let* ((high32 (high32-bits (sb-bignum::%bignum-ref val n)))
+           (low32  (low32-bits (sb-bignum::%bignum-ref val n))))
+      (declare (type (unsigned-byte 32)
+                     high32 low32))
       (if (eql high32 0)
           (if (eql low32 0)
               nil

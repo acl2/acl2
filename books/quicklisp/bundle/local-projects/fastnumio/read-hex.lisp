@@ -316,12 +316,12 @@
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 1) (1- (expt 2 16))))
   (assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
 
-  (defun digit-logical-shift-right (digit sh)
-    (sb-bignum::%digit-logical-shift-right digit sh))
+  (defun high32-bits (i)
+    (ldb (byte 32 32) i))
   
   (let* ((x      #xfeedf00ddeadd00ddeadbeef99998888)
          (digit  (sb-bignum::%bignum-ref x 0))
-         (high32 (digit-logical-shift-right digit 32))
+         (high32 (high32-bits digit))
          (low32  (logand digit #xFFFFFFFF)))
     (assert (typep high32 'fixnum))
     (assert (typep low32 'fixnum))
