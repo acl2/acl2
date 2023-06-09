@@ -62,7 +62,7 @@
 
 ;; Reads in the indicated Java bytecode .class file and creates a defconst
 ;; containing the parsed contents of the class.  Also adds the class to the
-;; global-class-table.
+;; global-class-alist.
 (defmacro read-class (&whole whole-form
                              class-file
                              &key

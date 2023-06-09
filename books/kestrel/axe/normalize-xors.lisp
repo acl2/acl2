@@ -70,6 +70,8 @@
                            rational-listp
                            strip-cdrs)))
 
+(local (in-theory (disable RATIONAL-LISTP MAXELEM))) ;prevent inductions
+
 (local (in-theory (enable consp-of-cdr
                           nth-of-cdr
                           myquotep-of-nth-when-all-dargp
@@ -78,6 +80,13 @@
                           natp-of-+-of-1
                           rationalp-when-integerp
                           )))
+
+
+(defthmd integer-listp-rewrite
+  (equal (integer-listp x)
+         (and (all-integerp x)
+              (true-listp x)))
+  :hints (("Goal" :in-theory (enable integer-listp all-integerp))))
 
 ;move
 (local
@@ -107,8 +116,6 @@
   (implies (consp (nth n x))
            (consp x))
   :rule-classes :forward-chaining)
-
-;(local (in-theory (enable ALL-myquotep))) ;todo
 
 ;move
 (defthm <-of-maxelem-and-maxelem-of-cdr
@@ -196,6 +203,8 @@
            (bounded-darg-listp (merge-sort-< items) bound))
   :hints (("Goal" :in-theory (enable merge-sort-<))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Check that ITEMS are strictly decreasing.
 ;; Note that this implies that ITEMS contains no duplicates.
 (defund decreasingp (items)
@@ -224,6 +233,15 @@
   :hints (("Goal" :in-theory (enable decreasingp))))
 
 (local (in-theory (enable maxelem-when-decreasingp)))
+
+(defthm <-of-nth-1-and-nth-0-when-decreasingp
+  (implies (and (decreasingp l)
+                (consp (cdr l)))
+           (< (nth 1 l)
+              (nth 0 l)))
+  :hints (("Goal" :in-theory (enable decreasingp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;list should be sorted in decreasing order
 ;the bitxor/bvxor of everything in the return value should be equal to the bitxor/bvxor of ITEM and everything in LIST
@@ -297,6 +315,8 @@
                 (integer-listp list))
            (decreasingp (insert-into-sorted-list-and-remove-dups item list)))
   :hints (("Goal" :in-theory (enable decreasingp insert-into-sorted-list-and-remove-dups))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;(def-typed-acl2-array translation-arrayp (natp val) :DEFAULT-SATISFIES-PREDP nil)
 
@@ -438,14 +458,7 @@
 ;; if it's a bitxor, remove it and add its children (removing duplicates caused by those additions)
 ;; at any point, the original nest equals the xor of the output so far (accumulated-constant and acc) with the xor of everything in the pending-list
 
-(local (in-theory (disable RATIONAL-LISTP MAXELEM))) ;prevent inductions
 
-(defthm <-of-nth-1-and-nth-0-when-decreasingp
-  (implies (and (decreasingp l)
-                (consp (cdr l)))
-           (< (nth 1 l)
-              (nth 0 l)))
-  :hints (("Goal" :in-theory (enable decreasingp))))
 
 ;slow?
 (defthm <-of-0-when-<-free
@@ -668,11 +681,6 @@
            (bitp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (quotep pseudo-dag-arrayp)))))
 
-(defthmd integer-listp-rewrite
-  (equal (integer-listp x)
-         (and (all-integerp x)
-              (true-listp x)))
-  :hints (("Goal" :in-theory (enable integer-listp all-integerp))))
 
 ;; KEEP IN SYNC WITH BVXOR-NEST-LEAVES
 ;nodenum is the root of a bitxor nest
