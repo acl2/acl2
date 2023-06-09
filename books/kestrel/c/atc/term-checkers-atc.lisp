@@ -254,6 +254,7 @@
 (define atc-check-array-read ((term pseudo-termp))
   :returns (mv erp
                (yes/no booleanp)
+               (fn symbolp)
                (arr pseudo-termp)
                (sub pseudo-termp)
                (elem-type typep))
@@ -269,8 +270,8 @@
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((reterr) nil nil nil (irr-type))
-       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
+  (b* (((reterr) nil nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil nil (irr-type)))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless okp) (no))
        ((mv okp fixtype array read) (atc-check-symbol-3part fn))
@@ -289,7 +290,7 @@
         (reterr (raise "Internal error: ~x0 not applied to 2 arguments." fn)))
        (arr (first args))
        (sub (second args)))
-    (retok t arr sub elem-type))
+    (retok t fn arr sub elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-array-read-arr
