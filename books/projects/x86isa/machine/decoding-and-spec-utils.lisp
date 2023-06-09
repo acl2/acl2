@@ -2033,10 +2033,10 @@ reference made from privilege level 3.</blockquote>"
   </ol>
   </p>
 
-  <p><img src='res/images/Vol-1-Table-3-3-small.png' width='8%'
+  <p><img src='res/x86isa/Vol-1-Table-3-3-small.png' width='8%'
   height='8%' />
 
-  <p><img src='res/images/Vol-1-Table-3-4-small.png' width='8%'
+  <p><img src='res/x86isa/Vol-1-Table-3-4-small.png' width='8%'
   height='8%' />
 
   The first image above has been captured from Volume 1: Basic Architecture,
