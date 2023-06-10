@@ -402,28 +402,28 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable expt)))))
 
-(local
- ;; gen to compare a product with any constant, given a bound on one factor
- (defthm not-equal-of-1-helper
-   (implies (and (< x 1)
-                 (< y 1)
-                 (rationalp x)
-                 (<= 0 x)
-                 (rationalp y)
-                 (<= 0 y))
-            (not (equal (* x y) 1)))
-   :hints (("Goal" :nonlinearp t))))
+;; (local
+;;  ;; gen to compare a product with any constant, given a bound on one factor
+;;  (defthm not-equal-of-1-helper
+;;    (implies (and (< x 1)
+;;                  (< y 1)
+;;                  (rationalp x)
+;;                  (<= 0 x)
+;;                  (rationalp y)
+;;                  (<= 0 y))
+;;             (not (equal (* x y) 1)))
+;;    :hints (("Goal" :nonlinearp t))))
 
-(local
- (defthm not-equal-of-1-helper-2
-   (implies (and (< 1 x)
-                 (< 1 y)
-                 (rationalp x)
-                 (<= 0 x)
-                 (rationalp y)
-                 (<= 0 y))
-            (not (equal (* x y) 1)))
-   :hints (("Goal" :nonlinearp t))))
+;; (local
+;;  (defthm not-equal-of-1-helper-2
+;;    (implies (and (< 1 x)
+;;                  (< 1 y)
+;;                  (rationalp x)
+;;                  (<= 0 x)
+;;                  (rationalp y)
+;;                  (<= 0 y))
+;;             (not (equal (* x y) 1)))
+;;    :hints (("Goal" :nonlinearp t))))
 
 (local
  (defthm <-of-expt-same-linear
@@ -458,13 +458,11 @@
                                 (:instance  <-of-1-and-expt-linear-alt (i (+ 1 i)))
                                 <-of-1-and-expt-linear
                                 (:instance <-of-expt-same-linear (i (+ 1 i))))
-           :cases ((equal 1 i)
-                   (and (not (equal 1 i)) (< r 1))
-                   (and (not (equal 1 i)) (> r 1)))
+
            :nonlinearp t)
-          ("Goal" :in-theory (enable expt zip)
+          ("Goal" :in-theory (enable expt)
            :induct t
-           :nonlinearp t)))
+           )))
 
 (local
  (defthmd equal-of-expt-same-helper
