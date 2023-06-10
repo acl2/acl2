@@ -7904,8 +7904,26 @@
             (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
             (the$ ,array-etype
-                  (,vref (the ,simple-type ,fld)
-                         (the (and fixnum (integer 0 *)) i))))
+                  ,(let ((type1
+
+; Here is a workaround for CCL bug #446
+; (https://github.com/Clozure/ccl/issues/446).  We need #-acl2-loop-only
+; because subtypep isn't defined in ACL2.  It might not be difficult to define
+; it, at least for current purposes, but ideally CCL will be fixed soon and
+; this hack can be retired.  When that happens, also remove
+; defstobj-field-fns-raw-defs from *initial-program-fns-with-raw-code*.
+
+                          #+(and ccl (not acl2-loop-only))
+                          (if (and simple-type
+                                   (subtypep array-etype 'integer)
+                                   (not (subtypep array-etype 'fixnum))
+                                   (not (subtypep array-etype '(integer 0 *))))
+                              `(simple-array * ,(caddr type))
+                            simple-type)
+                          #-(and ccl (not acl2-loop-only))
+                          simple-type))
+                     `(,vref (the ,type1 ,fld)
+                             (the (and fixnum (integer 0 *)) i)))))
            (,updater-name
             (i v ,var)
             (declare (type (and fixnum (integer 0 *)) i)

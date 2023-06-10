@@ -14056,6 +14056,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-cbd-fn1
     read-hons-copy-lambda-object-culprit ; reads wormhole data from oracle
     #+acl2-devel ilks-plist-worldp
+    defstobj-field-fns-raw-defs ; CCL bug #446
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
