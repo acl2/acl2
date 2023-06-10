@@ -22293,7 +22293,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           :exec
                           ,(xxxjoin 'intersection-eql-exec vars)))
                (t ; (equal test 'equal)
-                `(xxxjoin 'intersection-equal ,args))))))))
+                (xxxjoin 'intersection-equal args))))))))
 
 #+acl2-loop-only
 (defmacro set-enforce-redundancy (x)
