@@ -285,6 +285,7 @@
                ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
                (submit-event-helper event nil nil state))))))
 
+;; Submit EVENT, after printing suggestions for improving it.
 ;; Returns (mv erp state).
 (defun improve-event (event rest-events print state)
   (declare (xargs :guard (and (true-listp rest-events)
@@ -306,12 +307,13 @@
          ;;failed to submit the rest of the events, so we can't just skip this one:
          (progn$ ;; (cw "(Note: The local event ~x0 cannot be skipped.)~%" event)
                  (submit-event-expect-no-error event nil state)))))
-    (defthm (improve-defthm-event event rest-events print state))
+    ((defthm defthmd) (improve-defthm-event event rest-events print state))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
     (t (submit-event-expect-no-error event nil state))))
 
-;; Returns (mv erp state)
+;; Submits each event, after printing suggestions for improving it.
+;; Returns (mv erp state).
 (defun improve-events (events print state)
   (declare (xargs :guard (true-listp events)
                   :mode :program
@@ -344,7 +346,8 @@
        (prog2$ (and print (cw "~x0 contains ~x1 events.~%" bookname (len events)))
                (improve-events events print state))))))
 
-;; Example: (IMPROVE-BOOK "helper")
+;; Example: (IMPROVE-BOOK "helper").  This makes no changes to the world, just
+;; prints suggestions for improvement.
 (defmacro improve-book (bookname ; no extension
                         &key
                         (print ':brief))
