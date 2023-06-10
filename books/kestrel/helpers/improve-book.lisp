@@ -25,7 +25,9 @@
 ;; TODO: Add the ability to suppress slow stuff (like dropping a local event or an include-book and trying the entire file).
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
-(include-book "kestrel/utilities/submit-events" :dir :system)
+(include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
+(include-book "kestrel/lists-light/remove-nth" :dir :system)
+(include-book "kestrel/hints/remove-hints" :dir :system)
 
 ;move
 ;; Returns (mv erp nil state).
@@ -114,7 +116,7 @@
   (declare (xargs :stobjs state
                   :mode :program))
   (mv-let (erp val state)
-    (revert-world (submit-event-error-triple `(with-prover-step-limit 10 (with-prover-step-limit 10000 ,event)) nil state))
+    (revert-world (submit-event-error-triple `(with-prover-time-limit 10 (with-prover-step-limit 100000 ,event)) nil state))
     (declare (ignore val))
     (if erp
         ;; failure (don't print the message):
@@ -140,6 +142,115 @@
                              (or improvedp improvement-foundp)
                              state)))))
 
+;; Returns an alist mapping reduced lists to string descriptions
+(defun remove-and-label-nth-items (n lim items)
+  (declare (xargs :guard (and (natp n)
+                              (natp lim)
+                              (true-listp items))
+                  :mode :program))
+  (if (or (not (mbt (natp n)))
+          (not (mbt (natp lim)))
+          (<= lim n))
+      nil
+    (let* ((remove-item (nth n items))
+           (new-list (remove-nth n items)))
+      (acons new-list
+             (fms-to-string "  Drop ~x0." (acons #\0 remove-item nil))
+             (remove-and-label-nth-items (+ 1 n) lim items)))))
+
+;; Returns an alist mapping theorems to try to string descriptions
+(defun theorems-with-new-hints (defthm-variant name term alist)
+  (declare (xargs :mode :program))
+  (if (endp alist)
+      nil
+    (let* ((pair (first alist))
+           (new-hints (car pair))
+           (description (cdr pair)))
+      (acons `(,defthm-variant ,name ,term :hints ,new-hints)
+             description
+             (theorems-with-new-hints defthm-variant name term (rest alist))))))
+
+;; Returns an alist from new keyword-value-lists to decsriptions
+(defun remove-hint-parts-and-label-aux (n ways keyword-value-list goal-name)
+  (declare (xargs :mode :program))
+  (if (or (not (mbt (natp n)))
+          (not (mbt (natp ways)))
+          (<= ways n))
+      nil
+    (mv-let (breakage-type new-keyword-value-list)
+      (break-hint-keyword-value-list-in-nth-way n keyword-value-list)
+      (acons new-keyword-value-list
+             ;; the breakage-type currently include the "remove":
+             (fms-to-string "  For ~x0: ~x1" (acons #\0 goal-name (acons #\1 breakage-type nil)))
+             (remove-hint-parts-and-label-aux (+ 1 n) ways keyword-value-list goal-name)))))
+
+;; Returns an alist from new keyword-value-lists to decsriptions
+(defun remove-hint-parts-and-label (keyword-value-list goal-name)
+  (declare (xargs :mode :program))
+  (let ((ways (num-ways-to-break-hint-keyword-value-list keyword-value-list)))
+    (remove-hint-parts-and-label-aux 0 ways keyword-value-list goal-name)))
+
+(defun replace-hints-for-goal-name (hints goal-name new-keyword-value-list)
+  (declare (xargs :guard (and (true-listp hints)
+                              (stringp goal-name)
+                              (keyword-value-listp new-keyword-value-list))
+                   :mode :program))
+  (if (endp hints)
+      nil
+    (let ((hint (first hints)))
+      (if (and (consp hint)
+               (equal goal-name (car hint)) ; could allow case to differ, in general but not needed now
+               )
+          (cons (cons (car hint) new-keyword-value-list)
+                (rest hints) ; i suppose we could replace later, if there are dups
+                )
+        (cons hint (replace-hints-for-goal-name (rest hints) goal-name new-keyword-value-list))))))
+
+;; Returns an alist from new hint-lists to decsriptions
+(defun replace-hint-with-each (alist-with-new-keyword-value-lists goal-name all-hints)
+  (declare (xargs :mode :program))
+  (if (endp alist-with-new-keyword-value-lists)
+      nil
+    (let* ((pair (first alist-with-new-keyword-value-lists))
+           (new-keyword-value-list (car pair))
+           (description (cdr pair))
+           (new-hints (replace-hints-for-goal-name all-hints goal-name new-keyword-value-list)))
+      (acons new-hints
+             description
+             (replace-hint-with-each (rest alist-with-new-keyword-value-lists) goal-name all-hints)))))
+
+;; Goes through the HINTS. For each, may use many replacements for it.
+;; Returns an alist mapping reduced hint-lists to string descriptions.
+;; RES is an alist from hint-lists to descriptions
+(defun remove-and-label-hint-parts (hints theorem-name all-hints res)
+  (declare (xargs :guard (and (true-listp hints)
+                              (symbolp theorem-name)
+                              (true-listp all-hints)
+                              (alistp res))
+                  :mode :program))
+  (if (endp hints)
+      (reverse res)
+    (let* ((hint (first hints)))
+      (if (not (and (consp hint)
+                    (stringp (car hint))))
+          ;; not a regular hint, so nothing to do
+          (remove-and-label-hint-parts (rest hints) theorem-name all-hints res)
+        ;; regular hint:
+        (let* ((goal-name (car hint))
+               (keyword-value-list (cdr hint))
+               (alist-with-new-keyword-value-lists (remove-hint-parts-and-label keyword-value-list goal-name))
+               (alist-with-replacements-for-hint (replace-hint-with-each alist-with-new-keyword-value-lists goal-name all-hints)))
+          (remove-and-label-hint-parts (rest hints) theorem-name all-hints (append alist-with-replacements-for-hint res)))))))
+
+;; Returns an alist mapping theorems with reduced lists to string descriptions of what was removed.
+(defun defthms-with-removed-hints (defthm-variant name term hints)
+  (declare (xargs :mode :program))
+  (let* ((len (len hints))
+         (hint-lists-to-try (append (remove-and-label-nth-items 0 len hints) ;remove entire hints like ("goal ...)
+                                    (remove-and-label-hint-parts hints name hints nil) ; remove parts of hints
+                                    )))
+    (theorems-with-new-hints defthm-variant name term hint-lists-to-try)))
+
 ;; Submits and improves the events.
 ;; Returns (mv erp state).
 ;; TODO: Use limits based on how many steps were needed for the original proof.
@@ -157,23 +268,22 @@
           (term (second defthm-args))
           (keyword-value-list (rest (rest defthm-args)))
           (hintsp (assoc-keyword :hints keyword-value-list))
-          ;; TODO: Try deleting each hint separately. ;; see functions like break-hint-setting-in-nth-way.
           ;; TODO: Try deleting the :otf-flg
           ;; TODO: Try deleting/weakening hyps
           (event-without-hints `(,defthm-variant ,name ,term ,@(remove-keyword :hints keyword-value-list)))
           (alist (if (not hintsp)
                      nil ; nothing to do (currently)
-                   (acons event-without-hints
-                          (fms-to-string "IMPROVEMENT for ~x0: Drop the :hints.~%" (acons #\0 name nil))
-                          nil))))
+                   (let ((hints (cadr hintsp)))
+                     (acons event-without-hints
+                            (fms-to-string "IMPROVEMENT for ~x0: Drop the :hints.~%" (acons #\0 name nil))
+                            (defthms-with-removed-hints defthm-variant name term hints))))))
      (mv-let (improvement-foundp state)
        (try-improved-events alist nil state)
-       (if (not improvement-foundp)
-           (prog2$ (and print (cw "No improvement found.)~%"))
-                   (submit-event-helper event nil nil state))
-         (prog2$ (and print (cw ")~%"))
-                 ;; TODO: This means we may submit the event twice -- can we do something other than call revert-world above?
-                 (submit-event-helper event-without-hints nil nil state)))))))
+       (prog2$ (if (not improvement-foundp)
+                   (and print (cw "No improvement found.)~%"))
+                 (and print (cw ")~%")))
+               ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
+               (submit-event-helper event nil nil state))))))
 
 ;; Returns (mv erp state).
 (defun improve-event (event rest-events print state)
