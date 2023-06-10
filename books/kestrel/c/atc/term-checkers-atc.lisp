@@ -384,6 +384,7 @@
                                       (prec-tags atc-string-taginfo-alistp))
   :returns (mv erp
                (yes/no booleanp)
+               (fn symbolp)
                (arg pseudo-termp)
                (tag identp)
                (member identp)
@@ -403,8 +404,8 @@
    (xdoc::p
     "If the term does not have the form explained above,
      we return an indication of failure."))
-  (b* (((reterr) nil nil (irr-ident) (irr-ident) (irr-type))
-       ((acl2::fun (no)) (retok nil nil (irr-ident) (irr-ident) (irr-type)))
+  (b* (((reterr) nil nil nil (irr-ident) (irr-ident) (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-ident) (irr-ident) (irr-type)))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless okp) (no))
        ((mv okp struct tag read member) (atc-check-symbol-4part fn))
@@ -437,7 +438,7 @@
        ((unless (list-lenp 1 args))
         (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
        (arg (car args)))
-    (retok t arg tag member mem-type))
+    (retok t fn arg tag member mem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-read-scalar
