@@ -1668,6 +1668,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-struct-read-scalar ((fn symbolp)
+                                         (arg-term pseudo-termp)
+                                         (arg-expr exprp)
+                                         (arg-type typep)
+                                         (arg-events pseudo-event-form-listp)
+                                         (arg-thm symbolp)
+                                         (tag identp)
+                                         (member identp)
+                                         (mem-type typep)
+                                         (gin pexpr-ginp)
+                                         state)
+  (declare (ignore arg-thm state))
+  :guard (type-nonchar-integerp mem-type)
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a structure scalar read."
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       (term `(,fn ,arg-term)))
+    (cond ((equal arg-type (type-struct tag))
+           (retok (make-pexpr-gout
+                   :expr (make-expr-member :target arg-expr
+                                           :name member)
+                   :type mem-type
+                   :term term
+                   :events arg-events
+                   :thm-name nil
+                   :thm-index gin.thm-index
+                   :names-to-avoid gin.names-to-avoid
+                   :proofs nil)))
+          ((equal arg-type (type-pointer (type-struct tag)))
+           (retok (make-pexpr-gout
+                   :expr (make-expr-memberp :target arg-expr
+                                            :name member)
+                   :type mem-type
+                   :term term
+                   :events arg-events
+                   :thm-name nil
+                   :thm-index gin.thm-index
+                   :names-to-avoid gin.names-to-avoid
+                   :proofs nil)))
+          (t (reterr
+              (msg "The reading of a ~x0 structure with member ~x1 ~
+                    is applied to ~
+                    an expression term ~x2 returning ~x3, ~
+                    but a an operand of type ~x4 or ~x5 ~
+                    is expected. ~
+                    This is indicative of provably dead code, ~
+                    given that the code is guard-verified."
+                   tag
+                   member
+                   arg-term
+                   arg-type
+                   (type-struct tag)
+                   (type-pointer (type-struct tag)))))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -1855,43 +1914,22 @@
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
-                (atc-gen-expr-pure arg-term gin state)))
-            (cond ((equal arg.type (type-struct tag))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-member :target arg.expr
-                                                   :name member)
-                           :type mem-type
-                           :term term
-                           :events arg.events
-                           :thm-name nil
-                           :thm-index arg.thm-index
-                           :names-to-avoid arg.names-to-avoid
-                           :proofs nil)))
-                  ((equal arg.type (type-pointer (type-struct tag)))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-memberp :target arg.expr
-                                                    :name member)
-                           :type mem-type
-                           :term term
-                           :events arg.events
-                           :thm-name nil
-                           :thm-index arg.thm-index
-                           :names-to-avoid arg.names-to-avoid
-                           :proofs nil)))
-                  (t (reterr
-                      (msg "The reading of a ~x0 structure with member ~x1 ~
-                            is applied to ~
-                            an expression term ~x2 returning ~x3, ~
-                            but a an operand of type ~x4 or ~x5 ~
-                            is expected. ~
-                            This is indicative of provably dead code, ~
-                            given that the code is guard-verified."
-                           tag
-                           member
-                           arg-term
-                           arg.type
-                           (type-struct tag)
-                           (type-pointer (type-struct tag))))))))
+                (atc-gen-expr-pure arg-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg.thm-index
+                                      :names-to-avoid arg.names-to-avoid
+                                      :proofs arg.proofs)))
+            (atc-gen-expr-struct-read-scalar fn
+                                             arg-term
+                                             arg.expr
+                                             arg.type
+                                             arg.events
+                                             arg.thm-name
+                                             tag
+                                             member
+                                             mem-type
+                                             gin
+                                             state)))
          ((erp okp index-term struct-term tag member elem-type)
           (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)

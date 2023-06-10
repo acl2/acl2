@@ -435,6 +435,9 @@
        (mem-type (member-type-lookup member members))
        ((unless mem-type)
         (reterr (raise "Internal error: type of ~x0 not found." member)))
+       ((unless (type-nonchar-integerp mem-type))
+        (reterr (raise "Internal error: scalar member ~x0 has type ~x1."
+                       member mem-type)))
        ((unless (list-lenp 1 args))
         (reterr (raise "Internal error: ~x0 not applied to 1 argument." fn)))
        (arg (car args)))
@@ -445,7 +448,11 @@
     (implies yes/no
              (< (pseudo-term-count arg)
                 (pseudo-term-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret type-nonchar-integerp-of-atc-check-struct-read-scalar
+    (implies yes/no
+             (type-nonchar-integerp mem-type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
