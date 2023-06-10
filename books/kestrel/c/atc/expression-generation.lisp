@@ -1513,10 +1513,7 @@
   (xdoc::topstring
    (xdoc::p
     "We generate a theorem to show that the @('okp') predicate is satisfied,
-     and a theorem about the expression itself.")
-   (xdoc::p
-    "For now we only generate proofs for arrays that are not external objects.
-     Support for arrays that are external objects is forthcoming."))
+     and a theorem about the expression itself."))
   (b* (((reterr) (irr-pexpr-gout))
        (wrld (w state))
        ((pexpr-gin gin) gin)
@@ -1591,41 +1588,54 @@
        ((unless info)
         (reterr (raise "Internal error: variable ~x0 not found in scope."
                        arr-term)))
-       ((when (atc-var-info->externalp info))
-        (retok (make-pexpr-gout
-                :expr expr
-                :type elem-type
-                :term term
-                :events (append arr-events sub-events)
-                :thm-name nil
-                :thm-index gin.thm-index
-                :names-to-avoid gin.names-to-avoid
-                :proofs nil)))
        (var-thm (atc-var-info->thm info))
+       (externalp (atc-var-info->externalp info))
        ((unless (type-nonchar-integerp sub-type))
         (reterr (raise "Internal error: non-integer index ~x0." sub-term)))
        (sub-fixtype (integer-type-to-fixtype sub-type))
        (sub-type-pred (pack sub-fixtype 'p))
        (cintegerp-when-type-pred (pack 'cintegerp-when- sub-type-pred))
        (elem-type-pred-of-fn (pack elem-fixtype 'p-of- fn))
+       (apconvert-expr-value-when-elem-arrayp
+        (pack 'apconvert-expr-value-when- elem-fixtype '-arrayp))
+       (return-type-of-elem-type (pack 'return-type-of-type- elem-fixtype))
        (hints
-        `(("Goal" :in-theory '(exec-expr-pure-when-arrsub
-                               (:e expr-kind)
-                               (:e expr-arrsub->arr)
-                               (:e expr-arrsub->sub)
-                               ,arr-thm
-                               ,sub-thm
-                               expr-valuep-of-expr-value
-                               ,exec-arrsub-when-elemtype-arrayp
-                               apconvert-expr-value-when-not-value-array
-                               expr-value->value-of-expr-value
-                               value-fix-when-valuep
-                               ,var-thm
-                               ,cintegerp-when-type-pred
-                               ,okp-lemma-name
-                               ,elem-type-pred-of-fn))))
-       (objdes `(objdesign-element ,(add-suffix-to-fn arr-term "-OBJDES")
-                                   (integer-from-cinteger ,sub-term)))
+        `(("Goal"
+           :in-theory '(exec-expr-pure-when-arrsub
+                        (:e expr-kind)
+                        (:e expr-arrsub->arr)
+                        (:e expr-arrsub->sub)
+                        ,arr-thm
+                        ,sub-thm
+                        expr-valuep-of-expr-value
+                        ,exec-arrsub-when-elemtype-arrayp
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep
+                        ,var-thm
+                        ,cintegerp-when-type-pred
+                        ,okp-lemma-name
+                        ,elem-type-pred-of-fn
+                        ,@(if externalp
+                              `(,apconvert-expr-value-when-elem-arrayp
+                                objdesignp-when-objdesign-optionp
+                                objdesign-optionp-of-objdesign-of-var
+                                return-type-of-value-pointer
+                                value-pointer-validp-of-value-pointer
+                                return-type-of-pointer-valid
+                                value-pointer->reftype-of-value-pointer
+                                type-fix-when-typep
+                                value-pointer->designator-of-value-pointer
+                                pointer-valid->get-of-pointer-valid
+                                objdesign-fix-when-objdesignp
+                                ,return-type-of-elem-type)
+                            `(apconvert-expr-value-when-not-value-array))))))
+       (objdes
+        (if externalp
+            `(objdesign-element
+              (objdesign-of-var (ident ',(symbol-name arr-term)) ,gin.compst-var)
+              (integer-from-cinteger ,sub-term))
+          `(objdesign-element ,(add-suffix-to-fn arr-term "-OBJDES")
+                              (integer-from-cinteger ,sub-term))))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
@@ -1654,6 +1664,65 @@
                       :thm-index thm-index
                       :names-to-avoid names-to-avoid
                       :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-struct-read-scalar ((fn symbolp)
+                                         (arg-term pseudo-termp)
+                                         (arg-expr exprp)
+                                         (arg-type typep)
+                                         (arg-events pseudo-event-form-listp)
+                                         (arg-thm symbolp)
+                                         (tag identp)
+                                         (member identp)
+                                         (mem-type typep)
+                                         (gin pexpr-ginp)
+                                         state)
+  (declare (ignore arg-thm state))
+  :guard (type-nonchar-integerp mem-type)
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a structure scalar read."
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       (term `(,fn ,arg-term)))
+    (cond ((equal arg-type (type-struct tag))
+           (retok (make-pexpr-gout
+                   :expr (make-expr-member :target arg-expr
+                                           :name member)
+                   :type mem-type
+                   :term term
+                   :events arg-events
+                   :thm-name nil
+                   :thm-index gin.thm-index
+                   :names-to-avoid gin.names-to-avoid
+                   :proofs nil)))
+          ((equal arg-type (type-pointer (type-struct tag)))
+           (retok (make-pexpr-gout
+                   :expr (make-expr-memberp :target arg-expr
+                                            :name member)
+                   :type mem-type
+                   :term term
+                   :events arg-events
+                   :thm-name nil
+                   :thm-index gin.thm-index
+                   :names-to-avoid gin.names-to-avoid
+                   :proofs nil)))
+          (t (reterr
+              (msg "The reading of a ~x0 structure with member ~x1 ~
+                    is applied to ~
+                    an expression term ~x2 returning ~x3, ~
+                    but a an operand of type ~x4 or ~x5 ~
+                    is expected. ~
+                    This is indicative of provably dead code, ~
+                    given that the code is guard-verified."
+                   tag
+                   member
+                   arg-term
+                   arg-type
+                   (type-struct tag)
+                   (type-pointer (type-struct tag)))))))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1841,47 +1910,26 @@
                                      elem-type
                                      gin
                                      state)))
-         ((erp okp arg-term tag member mem-type)
+         ((erp okp & arg-term tag member mem-type)
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
-                (atc-gen-expr-pure arg-term gin state)))
-            (cond ((equal arg.type (type-struct tag))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-member :target arg.expr
-                                                   :name member)
-                           :type mem-type
-                           :term term
-                           :events arg.events
-                           :thm-name nil
-                           :thm-index arg.thm-index
-                           :names-to-avoid arg.names-to-avoid
-                           :proofs nil)))
-                  ((equal arg.type (type-pointer (type-struct tag)))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-memberp :target arg.expr
-                                                    :name member)
-                           :type mem-type
-                           :term term
-                           :events arg.events
-                           :thm-name nil
-                           :thm-index arg.thm-index
-                           :names-to-avoid arg.names-to-avoid
-                           :proofs nil)))
-                  (t (reterr
-                      (msg "The reading of a ~x0 structure with member ~x1 ~
-                            is applied to ~
-                            an expression term ~x2 returning ~x3, ~
-                            but a an operand of type ~x4 or ~x5 ~
-                            is expected. ~
-                            This is indicative of provably dead code, ~
-                            given that the code is guard-verified."
-                           tag
-                           member
-                           arg-term
-                           arg.type
-                           (type-struct tag)
-                           (type-pointer (type-struct tag))))))))
+                (atc-gen-expr-pure arg-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg.thm-index
+                                      :names-to-avoid arg.names-to-avoid
+                                      :proofs arg.proofs)))
+            (atc-gen-expr-struct-read-scalar fn
+                                             arg-term
+                                             arg.expr
+                                             arg.type
+                                             arg.events
+                                             arg.thm-name
+                                             tag
+                                             member
+                                             mem-type
+                                             gin
+                                             state)))
          ((erp okp index-term struct-term tag member elem-type)
           (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)
