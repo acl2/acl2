@@ -1513,10 +1513,7 @@
   (xdoc::topstring
    (xdoc::p
     "We generate a theorem to show that the @('okp') predicate is satisfied,
-     and a theorem about the expression itself.")
-   (xdoc::p
-    "For now we only generate proofs for arrays that are not external objects.
-     Support for arrays that are external objects is forthcoming."))
+     and a theorem about the expression itself."))
   (b* (((reterr) (irr-pexpr-gout))
        (wrld (w state))
        ((pexpr-gin gin) gin)
@@ -1591,41 +1588,54 @@
        ((unless info)
         (reterr (raise "Internal error: variable ~x0 not found in scope."
                        arr-term)))
-       ((when (atc-var-info->externalp info))
-        (retok (make-pexpr-gout
-                :expr expr
-                :type elem-type
-                :term term
-                :events (append arr-events sub-events)
-                :thm-name nil
-                :thm-index gin.thm-index
-                :names-to-avoid gin.names-to-avoid
-                :proofs nil)))
        (var-thm (atc-var-info->thm info))
+       (externalp (atc-var-info->externalp info))
        ((unless (type-nonchar-integerp sub-type))
         (reterr (raise "Internal error: non-integer index ~x0." sub-term)))
        (sub-fixtype (integer-type-to-fixtype sub-type))
        (sub-type-pred (pack sub-fixtype 'p))
        (cintegerp-when-type-pred (pack 'cintegerp-when- sub-type-pred))
        (elem-type-pred-of-fn (pack elem-fixtype 'p-of- fn))
+       (apconvert-expr-value-when-elem-arrayp
+        (pack 'apconvert-expr-value-when- elem-fixtype '-arrayp))
+       (return-type-of-elem-type (pack 'return-type-of-type- elem-fixtype))
        (hints
-        `(("Goal" :in-theory '(exec-expr-pure-when-arrsub
-                               (:e expr-kind)
-                               (:e expr-arrsub->arr)
-                               (:e expr-arrsub->sub)
-                               ,arr-thm
-                               ,sub-thm
-                               expr-valuep-of-expr-value
-                               ,exec-arrsub-when-elemtype-arrayp
-                               apconvert-expr-value-when-not-value-array
-                               expr-value->value-of-expr-value
-                               value-fix-when-valuep
-                               ,var-thm
-                               ,cintegerp-when-type-pred
-                               ,okp-lemma-name
-                               ,elem-type-pred-of-fn))))
-       (objdes `(objdesign-element ,(add-suffix-to-fn arr-term "-OBJDES")
-                                   (integer-from-cinteger ,sub-term)))
+        `(("Goal"
+           :in-theory '(exec-expr-pure-when-arrsub
+                        (:e expr-kind)
+                        (:e expr-arrsub->arr)
+                        (:e expr-arrsub->sub)
+                        ,arr-thm
+                        ,sub-thm
+                        expr-valuep-of-expr-value
+                        ,exec-arrsub-when-elemtype-arrayp
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep
+                        ,var-thm
+                        ,cintegerp-when-type-pred
+                        ,okp-lemma-name
+                        ,elem-type-pred-of-fn
+                        ,@(if externalp
+                              `(,apconvert-expr-value-when-elem-arrayp
+                                objdesignp-when-objdesign-optionp
+                                objdesign-optionp-of-objdesign-of-var
+                                return-type-of-value-pointer
+                                value-pointer-validp-of-value-pointer
+                                return-type-of-pointer-valid
+                                value-pointer->reftype-of-value-pointer
+                                type-fix-when-typep
+                                value-pointer->designator-of-value-pointer
+                                pointer-valid->get-of-pointer-valid
+                                objdesign-fix-when-objdesignp
+                                ,return-type-of-elem-type)
+                            `(apconvert-expr-value-when-not-value-array))))))
+       (objdes
+        (if externalp
+            `(objdesign-element
+              (objdesign-of-var (ident ',(symbol-name arr-term)) ,gin.compst-var)
+              (integer-from-cinteger ,sub-term))
+          `(objdesign-element ,(add-suffix-to-fn arr-term "-OBJDES")
+                              (integer-from-cinteger ,sub-term))))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
                                        gin.fn-guard
