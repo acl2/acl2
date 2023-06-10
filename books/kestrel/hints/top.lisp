@@ -11,3 +11,4 @@
 (in-package "ACL2")
 
 (include-book "combine-hints")
+(include-book "remove-hints")
