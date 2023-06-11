@@ -26,8 +26,19 @@
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
+(include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
+
+(defun print-to-string (item)
+  (declare (xargs :mode :program))
+  (mv-let (col string)
+    (fmt1-to-string "~X01" (acons #\0 item (acons #\1 nil nil)) 0
+                    :fmt-control-alist
+                    `((fmt-soft-right-margin . 10000)
+                      (fmt-hard-right-margin . 10000)))
+    (declare (ignore col))
+    string))
 
 ;move
 ;; Returns (mv erp nil state).
@@ -67,6 +78,7 @@
     (mv erp nil state)))
 
 ;; Returns (mv successp state).  Doesn't change the world (because it reverts it after submitting the events).
+;; TODO: Suppress error printing here.
 (defun events-would-succeedp (events print state)
   (declare (xargs :guard (and (true-listp events)
                               (member-eq print '(nil :brief :verbose)))
@@ -155,7 +167,7 @@
     (let* ((remove-item (nth n items))
            (new-list (remove-nth n items)))
       (acons new-list
-             (fms-to-string "  Drop ~x0." (acons #\0 remove-item nil))
+             (concatenate 'string (newline-string) "  Drop " (print-to-string remove-item))
              (remove-and-label-nth-items (+ 1 n) lim items)))))
 
 ;; Returns an alist mapping theorems to try to string descriptions
@@ -170,6 +182,28 @@
              description
              (theorems-with-new-hints defthm-variant name term (rest alist))))))
 
+;; Returns a string
+(defun decode-breakage-type (bt)
+  (declare (xargs :guard (consp bt)
+                  :mode :program))
+  (let ((type (car bt))
+        (arg (cadr bt)))
+    (case type
+      (:remove-by (concatenate 'string "Drop :by " (print-to-string arg)))
+      (:remove-cases (concatenate 'string "Drop :cases " (print-to-string arg)))
+      (:remove-induct (concatenate 'string "Drop :induct " (print-to-string arg)))
+      (:remove-nonlinearp (concatenate 'string "Drop :nonlinearp  " (print-to-string arg)))
+      (:remove-do-not (concatenate 'string "Drop :do-not " (print-to-string arg)))
+      (:remove-do-not-item (concatenate 'string "Drop :do-not item " (print-to-string arg)))
+      (:remove-expand (concatenate 'string "Drop :expand " (print-to-string arg)))
+      (:remove-expand-item (concatenate 'string "Drop :expand item " (print-to-string arg)))
+      (:remove-use (concatenate 'string "Drop :use " (print-to-string arg)))
+      (:remove-use-item (concatenate 'string "Drop :use item " (print-to-string arg)))
+      (:remove-enable-item (concatenate 'string "Drop :enable item " (print-to-string arg)))
+      (:remove-disable-item (concatenate 'string "Drop :disable item " (print-to-string arg)))
+      (:remove-in-theory (concatenate 'string "Drop :in-theory " (print-to-string arg)))
+      (otherwise (er hard? 'decode-breakage-type "Unknown breakage type: ~x0." bt)))))
+
 ;; Returns an alist from new keyword-value-lists to decsriptions
 (defun remove-hint-parts-and-label-aux (n ways keyword-value-list goal-name)
   (declare (xargs :mode :program))
@@ -181,7 +215,7 @@
       (break-hint-keyword-value-list-in-nth-way n keyword-value-list)
       (acons new-keyword-value-list
              ;; the breakage-type currently include the "remove":
-             (fms-to-string "  For ~x0: ~x1" (acons #\0 goal-name (acons #\1 breakage-type nil)))
+             (concatenate 'string (newline-string) "  For \"" goal-name "\": " (decode-breakage-type breakage-type))
              (remove-hint-parts-and-label-aux (+ 1 n) ways keyword-value-list goal-name)))))
 
 ;; Returns an alist from new keyword-value-lists to decsriptions
@@ -261,7 +295,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (prog2$
-   (and print (cw "(Attempting to improve ~x0: " (first (rest event))))
+   (and print (cw "(For ~x0: " (first (rest event))))
    (let* ((defthm-variant (first event))
           (defthm-args (rest event))
           (name (first defthm-args))
@@ -275,7 +309,7 @@
                      nil ; nothing to do (currently)
                    (let ((hints (cadr hintsp)))
                      (acons event-without-hints
-                            (fms-to-string "IMPROVEMENT for ~x0: Drop the :hints.~%" (acons #\0 name nil))
+                            (concatenate 'string (newline-string) "  Drop all :hints.") ; todo: if this works, don't try individual hints
                             (defthms-with-removed-hints defthm-variant name term hints))))))
      (mv-let (improvement-foundp state)
        (try-improved-events alist nil state)
@@ -299,11 +333,11 @@
      (mv-let (successp state)
        (events-would-succeedp rest-events nil state)
        (if successp
-           ;; This event can simply be skipped:  TODO: Still, try improving it (it may be a defthm, etc.)?
-           ;; TODO: Skipping this may change the improvements we suggest on later events, so perhaps we should not skip it?
+           ;; This event could be skipped:  TODO: Still, try improving it (it may be a defthm, etc.)?
            ;; TODO: What if this is redundant, given stuff already in the world?
-           (prog2$ (cw "IMPROVEMENT: Drop the local event ~X01.~%" event nil)
-                   (mv nil state))
+           (prog2$ (cw "~%Drop the local event ~X01.~%" event nil)
+                   ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
+                   (submit-event-expect-no-error event nil state))
          ;;failed to submit the rest of the events, so we can't just skip this one:
          (progn$ ;; (cw "(Note: The local event ~x0 cannot be skipped.)~%" event)
                  (submit-event-expect-no-error event nil state)))))
