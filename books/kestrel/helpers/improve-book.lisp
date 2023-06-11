@@ -27,6 +27,7 @@
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
 (include-book "kestrel/utilities/strings" :dir :system)
+(include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
 
@@ -199,8 +200,8 @@
       (:remove-expand-item (concatenate 'string "Drop :expand item " (print-to-string arg)))
       (:remove-use (concatenate 'string "Drop :use " (print-to-string arg)))
       (:remove-use-item (concatenate 'string "Drop :use item " (print-to-string arg)))
-      (:remove-enable-item (concatenate 'string "Drop :enable item " (print-to-string arg)))
-      (:remove-disable-item (concatenate 'string "Drop :disable item " (print-to-string arg)))
+      (:remove-enable-item (concatenate 'string "Drop enable item " (print-to-string arg)))
+      (:remove-disable-item (concatenate 'string "Drop disable item " (print-to-string arg)))
       (:remove-in-theory (concatenate 'string "Drop :in-theory " (print-to-string arg)))
       (otherwise (er hard? 'decode-breakage-type "Unknown breakage type: ~x0." bt)))))
 
@@ -353,7 +354,7 @@
            ;; Somehow avoid suggesting to drop books that introduce names used
            ;; in macros (they will seem like they can be dropped, unless the
            ;; book contains an actual call of the macro).
-           (prog2$ (cw "~%Drop ~x0.~%" event nil)
+           (prog2$ (cw "Drop ~x0.~%" event nil)
                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                    (submit-event-expect-no-error event nil state))
          ;;failed to submit the rest of the events, so we can't just skip this one:
@@ -395,8 +396,12 @@
      (read-objects-from-file (concatenate 'string bookname ".lisp") state)
      (if erp
          (mv erp state)
-       (prog2$ (and print (cw "~x0 contains ~x1 events.~%" bookname (len events)))
-               (improve-events events print state))))))
+       (prog2$ (and print (cw "~x0 contains ~x1 events.~%~%" bookname (len events)))
+               (let ((state (widen-margins state)))
+                 (mv-let (erp state)
+                   (improve-events events print state)
+                   (let ((state (unwiden-margins state)))
+                     (mv erp state)))))))))
 
 ;; Example: (IMPROVE-BOOK "helper").  This makes no changes to the world, just
 ;; prints suggestions for improvement.
