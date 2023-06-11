@@ -340,6 +340,24 @@
                    (submit-event-expect-no-error event nil state))
          ;;failed to submit the rest of the events, so we can't just skip this one:
          (progn$ ;; (cw "(Note: The local event ~x0 cannot be skipped.)~%" event)
+          (submit-event-expect-no-error event nil state)))))
+    (include-book
+     ;; For an include-book, try skipping it and see if the rest of the events
+     ;; work.
+     (mv-let (successp state)
+       (events-would-succeedp rest-events nil state)
+       (if successp
+           ;; This event could be skipped: (but that might break books that use
+           ;; this book) TODO: Also try reducing what is included?  TODO: What
+           ;; if this is redundant, given stuff already in the world?  TODO:
+           ;; Somehow avoid suggesting to drop books that introduce names used
+           ;; in macros (they will seem like they can be dropped, unless the
+           ;; book contains an actual call of the macro).
+           (prog2$ (cw "~%Drop ~x0.~%" event nil)
+                   ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
+                   (submit-event-expect-no-error event nil state))
+         ;;failed to submit the rest of the events, so we can't just skip this one:
+         (progn$ ;; (cw "(Note: The event ~x0 cannot be skipped.)~%" event)
                  (submit-event-expect-no-error event nil state)))))
     ((defthm defthmd) (improve-defthm-event event rest-events print state))
     ;; TODO: Try dropping include-books.
