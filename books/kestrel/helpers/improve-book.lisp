@@ -14,13 +14,10 @@
 
 ;; TODO: Support adding a hook to run on each kind of event.
 ;; TODO: Time the events and alert the user when improvements slow things down.
-;; TODO: Set the cbd if needed
-;; TODO: Collect the suggested improvements and print them at the end.
-;; TODO: Detect redundant include-books
-;; TODO: Call the linter
+;; TODO: Call the linter?
 ;; TODO: Time each type of event and print a report
 ;; TODO: Start by making sure we can replay the book (and time it).
-;; TODO: Special treatment for any books used to define this tool (will be redundant)
+;; TODO: Special treatment for any books used to define this tool (will be redundant, don't recommend dropping their include-books, even withn local)
 ;; TODO: Add the ability to run on many files
 ;; TODO: Add the ability to suppress slow stuff (like dropping a local event or an include-book and trying the entire file).
 
@@ -28,8 +25,10 @@
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
+(include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
+(include-book "replay-book-helpers") ; todo: reduce, for load-port...
 
 (defun print-to-string (item)
   (declare (xargs :mode :program))
@@ -61,7 +60,9 @@
   (if (endp events)
       (mv nil state)
     (mv-let (erp state)
-      (submit-event-helper (first events) print nil state)
+      (submit-event-helper (first events)
+                           nil ;print
+                           nil state)
       (if erp
           (mv erp state)
         (submit-and-check-events (rest events) print state)))))
@@ -200,8 +201,8 @@
       (:remove-expand-item (concatenate 'string "Drop :expand item " (print-to-string arg)))
       (:remove-use (concatenate 'string "Drop :use " (print-to-string arg)))
       (:remove-use-item (concatenate 'string "Drop :use item " (print-to-string arg)))
-      (:remove-enable-item (concatenate 'string "Drop enable item " (print-to-string arg)))
-      (:remove-disable-item (concatenate 'string "Drop disable item " (print-to-string arg)))
+      (:remove-enable-item (concatenate 'string "Drop enable of " (print-to-string arg)))
+      (:remove-disable-item (concatenate 'string "Drop disable of " (print-to-string arg)))
       (:remove-in-theory (concatenate 'string "Drop :in-theory " (print-to-string arg)))
       (otherwise (er hard? 'decode-breakage-type "Unknown breakage type: ~x0." bt)))))
 
@@ -304,7 +305,7 @@
           (keyword-value-list (rest (rest defthm-args)))
           (hintsp (assoc-keyword :hints keyword-value-list))
           ;; TODO: Try deleting the :otf-flg
-          ;; TODO: Try deleting/weakening hyps
+          ;; TODO: Try deleting/weakening hyps (see the linter?)
           (event-without-hints `(,defthm-variant ,name ,term ,@(remove-keyword :hints keyword-value-list)))
           (alist (if (not hintsp)
                      nil ; nothing to do (currently)
@@ -331,35 +332,39 @@
     (local
      ;; For a local event, try skipping it and see if the rest of the events
      ;; work.  If so, deleting the event should be safe, since the event is local.
-     (mv-let (successp state)
-       (events-would-succeedp rest-events nil state)
-       (if successp
-           ;; This event could be skipped:  TODO: Still, try improving it (it may be a defthm, etc.)?
-           ;; TODO: What if this is redundant, given stuff already in the world?
-           (prog2$ (cw "~%Drop the local event ~X01.~%" event nil)
-                   ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
-                   (submit-event-expect-no-error event nil state))
-         ;;failed to submit the rest of the events, so we can't just skip this one:
-         (progn$ ;; (cw "(Note: The local event ~x0 cannot be skipped.)~%" event)
-          (submit-event-expect-no-error event nil state)))))
+     (prog2$
+      (cw "(Attempting to drop ~x0:" event) ; todo: extract a name to print here, or eviscerate
+      (mv-let (successp state)
+        (events-would-succeedp rest-events nil state)
+        (if successp
+            ;; This event could be skipped:  TODO: Still, try improving it (it may be a defthm, etc.)?
+            ;; TODO: What if this is redundant, given stuff already in the world?
+            (prog2$ (cw "~%  Drop ~X01.)~%" event nil)
+                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
+                    (submit-event-expect-no-error event nil state))
+          ;;failed to submit the rest of the events, so we can't just skip this one:
+          (progn$ (cw " Cannot be dropped.)~%" event)
+                  (submit-event-expect-no-error event nil state))))))
     (include-book
      ;; For an include-book, try skipping it and see if the rest of the events
      ;; work.
-     (mv-let (successp state)
-       (events-would-succeedp rest-events nil state)
-       (if successp
-           ;; This event could be skipped: (but that might break books that use
-           ;; this book) TODO: Also try reducing what is included?  TODO: What
-           ;; if this is redundant, given stuff already in the world?  TODO:
-           ;; Somehow avoid suggesting to drop books that introduce names used
-           ;; in macros (they will seem like they can be dropped, unless the
-           ;; book contains an actual call of the macro).
-           (prog2$ (cw "Drop ~x0.~%" event nil)
-                   ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
-                   (submit-event-expect-no-error event nil state))
-         ;;failed to submit the rest of the events, so we can't just skip this one:
-         (progn$ ;; (cw "(Note: The event ~x0 cannot be skipped.)~%" event)
-                 (submit-event-expect-no-error event nil state)))))
+     (prog2$
+      (cw "(Attempting to drop ~x0:" event)
+      (mv-let (successp state)
+        (events-would-succeedp rest-events nil state)
+        (if successp
+            ;; This event could be skipped: (but that might break books that use
+            ;; this book) TODO: Also try reducing what is included?  TODO: What
+            ;; if this is redundant, given stuff already in the world?  TODO:
+            ;; Somehow avoid suggesting to drop books that introduce names used
+            ;; in macros (they will seem like they can be dropped, unless the
+            ;; book contains an actual call of the macro).
+            (prog2$ (cw "~%  Drop ~x0.)~%" event nil)
+                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
+                    (submit-event-expect-no-error event nil state))
+          ;;failed to submit the rest of the events, so we can't just skip this one:
+          (progn$ (cw " Cannot be dropped.)~%" event)
+                  (submit-event-expect-no-error event nil state))))))
     ((defthm defthmd) (improve-defthm-event event rest-events print state))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
@@ -379,36 +384,62 @@
           (mv erp state)
         (improve-events (rest events) print state)))))
 
+;; Returns state
+(defun set-cbd-simple (cbd state)
+  (declare (xargs :guard (stringp cbd)
+                  :stobjs state
+                  :mode :program))
+  (mv-let (erp val state)
+    (set-cbd-fn cbd state)
+    (declare (ignore val))
+    (if erp
+        (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
+                state)
+      state)))
+
 ;; Returns (mv erp state).
-;; TODO: Add support for :dir
-;; TODO: Set the CBD first
-;; TODO: Read in the .port file first, if it exists.
 ;; TODO: Set induction depth limit to nil?
+;; TODO: Remove a .lisp extension if supplied.
+;; TODO: Better message when book does not exist.
 (defun improve-book-fn (bookname ; no extension
+                        dir
                         print
                         state)
   (declare (xargs :guard (stringp bookname)
                   :mode :program ; because this calls submit-events
                   :stobjs state))
-  (prog2$
-   (and print (cw "~%Attempting to improve ~x0.~%" bookname))
-   (mv-let (erp events state)
-     (read-objects-from-file (concatenate 'string bookname ".lisp") state)
-     (if erp
-         (mv erp state)
-       (prog2$ (and print (cw "~x0 contains ~x1 events.~%~%" bookname (len events)))
-               (let ((state (widen-margins state)))
-                 (mv-let (erp state)
-                   (improve-events events print state)
-                   (let ((state (unwiden-margins state)))
-                     (mv erp state)))))))))
+  (let* ((old-cbd (cbd-fn state))
+         (dir (if (eq dir :cbd) "." dir))
+         ;; todo: remove call to canonical-pathname if extend-pathname is changed to handle stuff like (extend-pathname "." "../foo" state):
+         (full-book-path (extend-pathname (canonical-pathname dir t state) bookname state)) ; no extension
+         ;; Get the book's dir:
+         (full-book-dir (dir-of-path full-book-path)))
+    (prog2$
+     (and print (cw "~%Attempting to improve ~x0.~%" full-book-path))
+     (let* ( ;; We set the CBD so that the book is replayed in its own directory:
+            (state (set-cbd-simple full-book-dir state))
+            ;; Load the .port file, so that packages (especially) exist:
+            (state (load-port-file-if-exists full-book-path state)))
+       (mv-let (erp events state)
+         (read-objects-from-file (concatenate 'string full-book-path ".lisp") state)
+         (if erp
+             (let ((state (set-cbd-simple old-cbd state)))
+               (mv erp state))
+           (prog2$ (and print (cw "~x0 contains ~x1 events.~%~%" bookname (len events)))
+                   (let ((state (widen-margins state)))
+                     (mv-let (erp state)
+                       (improve-events events print state)
+                       (let* ((state (unwiden-margins state))
+                              (state (set-cbd-simple old-cbd state)))
+                         (mv erp state)))))))))))
 
 ;; Example: (IMPROVE-BOOK "helper").  This makes no changes to the world, just
 ;; prints suggestions for improvement.
 (defmacro improve-book (bookname ; no extension
                         &key
-                        (print ':brief))
+                        (print ':brief)
+                        (dir ':cbd))
   `(revert-world
     (mv-let (erp state)
-      (improve-book-fn ,bookname ,print state)
+      (improve-book-fn ,bookname ,dir ,print state)
       (mv erp nil state))))
