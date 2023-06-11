@@ -60,6 +60,7 @@
 ;; n is 0-based and is known to be less than the number of ways to break the hint-setting.
 ;; Returns (mv breakage-type result), where RESULT is a list (possibly nil) to be spliced into the hint settings, replacing the KEYWORD and VAL.
 ;; WARNING: Keep this in sync with num-ways-to-break-hint-setting.
+;; WANRING: Keep this in sync with decode-breakage-type.
 (defun break-hint-setting-in-nth-way (n keyword val)
   (declare (xargs :guard (and (natp n)
                               (keywordp keyword)
