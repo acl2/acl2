@@ -1679,25 +1679,89 @@
                                          (mem-type typep)
                                          (gin pexpr-ginp)
                                          state)
-  (declare (ignore arg-thm state))
   :guard (type-nonchar-integerp mem-type)
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents a structure scalar read."
   (b* (((reterr) (irr-pexpr-gout))
        ((pexpr-gin gin) gin)
-       (term `(,fn ,arg-term)))
+       (term `(,fn ,arg-term))
+       ((unless (symbolp arg-term))
+        (reterr (raise "Internal error: ~
+                        structure read ~x0 applied to non-variable ~x1."
+                       fn arg-term))))
     (cond ((equal arg-type (type-struct tag))
-           (retok (make-pexpr-gout
-                   :expr (make-expr-member :target arg-expr
-                                           :name member)
-                   :type mem-type
-                   :term term
-                   :events arg-events
-                   :thm-name nil
-                   :thm-index gin.thm-index
-                   :names-to-avoid gin.names-to-avoid
-                   :proofs nil)))
+           (b* ((expr (make-expr-member :target arg-expr :name member))
+                ((when (not gin.proofs))
+                 (retok (make-pexpr-gout
+                         :expr expr
+                         :type mem-type
+                         :term term
+                         :events arg-events
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid
+                         :proofs nil)))
+                (recognizer (atc-type-to-recognizer arg-type gin.prec-tags))
+                (exec-member-read-when-struct-tag-p-and-member
+                 (pack 'exec-member-read-when-
+                       recognizer
+                       '-and-
+                       (ident->name member)))
+                (info (atc-get-var arg-term gin.inscope))
+                ((unless info)
+                 (reterr (raise "Internal error: variable ~x0 not found."
+                                arg-term)))
+                (var-thm (atc-var-info->thm info))
+                (mem-typep (atc-type-to-recognizer mem-type gin.prec-tags))
+                (mem-type-of-fn (packn-pos (list mem-typep '-of- fn) fn))
+                (hints
+                 `(("Goal"
+                    :in-theory '(exec-expr-pure-when-member
+                                 (:e expr-kind)
+                                 (:e expr-member->target)
+                                 (:e expr-member->name)
+                                 ,arg-thm
+                                 expr-valuep-of-expr-value
+                                 ,exec-member-read-when-struct-tag-p-and-member
+                                 exec-member-of-const-identifier
+                                 (:e identp)
+                                 (:e ident->name)
+                                 objdesign-option-fix-when-objdesign-optionp
+                                 objdesign-optionp-of-objdesign-of-var
+                                 ,var-thm
+                                 ,mem-type-of-fn))))
+                (objdes
+                 `(objdesign-member
+                   (objdesign-of-var (ident ',(symbol-name arg-term))
+                                     ,gin.compst-var)
+                   (ident ',(ident->name member))))
+                ((mv thm-event thm-name thm-index names-to-avoid)
+                 (atc-gen-expr-pure-correct-thm gin.fn
+                                                gin.fn-guard
+                                                gin.context
+                                                expr
+                                                mem-type
+                                                term
+                                                term
+                                                objdes
+                                                gin.compst-var
+                                                hints
+                                                nil
+                                                gin.prec-tags
+                                                gin.thm-index
+                                                gin.names-to-avoid
+                                                state)))
+             (retok
+              (make-pexpr-gout :expr expr
+                               :type mem-type
+                               :term term
+                               :events (append arg-events
+                                               (list thm-event))
+                               :thm-name thm-name
+                               :thm-index thm-index
+                               :names-to-avoid names-to-avoid
+                               :proofs t))))
           ((equal arg-type (type-pointer (type-struct tag)))
            (retok (make-pexpr-gout
                    :expr (make-expr-memberp :target arg-expr
@@ -1910,7 +1974,7 @@
                                      elem-type
                                      gin
                                      state)))
-         ((erp okp & arg-term tag member mem-type)
+         ((erp okp fn arg-term tag member mem-type)
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
