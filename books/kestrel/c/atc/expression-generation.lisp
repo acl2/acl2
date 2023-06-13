@@ -1889,10 +1889,7 @@
                                               :target struct-expr
                                               :name member)
                                         :sub index-expr))
-                ((when (or (not gin.proofs)
-                           (defstruct-info->flexiblep ; not supported yet
-                             (atc-tag-info->defstruct
-                              (atc-get-tag-info tag gin.prec-tags)))))
+                ((when (not gin.proofs))
                  (retok (make-pexpr-gout
                          :expr expr
                          :type elem-type
