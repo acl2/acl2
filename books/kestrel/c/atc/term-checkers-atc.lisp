@@ -460,6 +460,7 @@
                                      (prec-tags atc-string-taginfo-alistp))
   :returns (mv erp
                (yes/no booleanp)
+               (fn symbolp)
                (index pseudo-termp)
                (struct pseudo-termp)
                (tag identp)
@@ -473,7 +474,7 @@
     "If the term is a call of the ACL2 function
      that represent the C structure read operation
      for elements of array members,
-     we return the argument terms (index and structure),
+     we return the reader, the argument terms (index and structure),
      the tag name, and the name of the member.
      The C structure type of the reader must be in the preceding tags;
      we consult the alist to retrieve the relevant information.")
@@ -482,8 +483,9 @@
    (xdoc::p
     "If the term does not have the right form,
      we return an indication of failure."))
-  (b* (((reterr) nil nil nil (irr-ident) (irr-ident) (irr-type))
-       ((acl2::fun (no)) (retok nil nil nil (irr-ident) (irr-ident) (irr-type)))
+  (b* (((reterr) nil nil nil nil (irr-ident) (irr-ident) (irr-type))
+       ((acl2::fun (no))
+        (retok nil nil nil nil (irr-ident) (irr-ident) (irr-type)))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless okp) (no))
        ((mv okp struct tag read member element) (atc-check-symbol-5part fn))
@@ -521,7 +523,7 @@
         (reterr (raise "Internal error: ~x0 not applied to 2 arguments." fn)))
        (index (first args))
        (struct (second args)))
-    (retok t index struct tag member elem-type))
+    (retok t fn index struct tag member elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-read-array-index

@@ -2047,7 +2047,7 @@
                                              mem-type
                                              gin
                                              state)))
-         ((erp okp index-term struct-term tag member elem-type)
+         ((erp okp & index-term struct-term tag member elem-type)
           (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout index))
