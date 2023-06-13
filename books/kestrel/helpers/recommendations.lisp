@@ -20,6 +20,9 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 
+#+:non-standard-analysis
+(local (defthm realp-when-rationalp (implies (rationalp x) (acl2::realp x))))
+
 (defconst *rec-to-symbol-alist*
   '(;; For these, training data is obtained by removing the entire "hint
     ;; setting" (e.g., the entire ":by XXX"):
