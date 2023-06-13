@@ -154,6 +154,8 @@
     (xdoc::li
      "A flag saying whether the structure type has a flexible array member.")
     (xdoc::li
+     "The fixtype of the structures.")
+    (xdoc::li
      "The recognizer of the structures.")
     (xdoc::li
      "The fixer of the structures.")
@@ -193,6 +195,7 @@
   ((tag ident)
    (members defstruct-member-info-list)
    (flexiblep bool)
+   (fixtype symbol)
    (recognizer symbolp)
    (fixer symbolp)
    (fixer-recognizer-thm symbolp)
@@ -214,6 +217,7 @@
   :body (make-defstruct-info :tag (irr-ident)
                              :members nil
                              :flexiblep nil
+                             :fixtype nil
                              :recognizer nil
                              :fixer nil
                              :fixer-recognizer-thm nil
@@ -2463,7 +2467,8 @@
             fixer-recognizer-thm)
         (defstruct-gen-fixer struct-tag-fix struct-tag-p tag members flexiblep))
        (fixtype-event (defstruct-gen-fixtype
-                        struct-tag struct-tag-p
+                        struct-tag
+                        struct-tag-p
                         struct-tag-fix
                         struct-tag-equiv))
        (constructor-event
@@ -2481,6 +2486,7 @@
               :tag tag-ident
               :members member-infos
               :flexiblep flexiblep
+              :fixtype struct-tag
               :recognizer struct-tag-p
               :fixer struct-tag-fix
               :fixer-recognizer-thm fixer-recognizer-thm
