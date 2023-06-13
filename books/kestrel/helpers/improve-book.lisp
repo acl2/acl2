@@ -20,6 +20,8 @@
 ;; TODO: Special treatment for any books used to define this tool (will be redundant, don't recommend dropping their include-books, even withn local)
 ;; TODO: Add the ability to run on many files
 ;; TODO: Add the ability to suppress slow stuff (like dropping a local event or an include-book and trying the entire file).
+;; TODO: Improve hints for defuns
+;; TOOD: Suppress suggestions to drop set-default-parents and things to disable built-in rules.
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
@@ -385,6 +387,7 @@
         (improve-events (rest events) print state)))))
 
 ;; Returns state
+;move
 (defun set-cbd-simple (cbd state)
   (declare (xargs :guard (stringp cbd)
                   :stobjs state
@@ -396,6 +399,14 @@
         (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
                 state)
       state)))
+
+;; Drop-in replacement for extend-pathname that doesn't fail on stuff like
+;; (extend-pathname "." "../foo" state).
+;move
+(defund extend-pathname$ (dir filename state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (extend-pathname (canonical-pathname dir t state) filename state))
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
@@ -410,8 +421,7 @@
                   :stobjs state))
   (let* ((old-cbd (cbd-fn state))
          (dir (if (eq dir :cbd) "." dir))
-         ;; todo: remove call to canonical-pathname if extend-pathname is changed to handle stuff like (extend-pathname "." "../foo" state):
-         (full-book-path (extend-pathname (canonical-pathname dir t state) bookname state)) ; no extension
+         (full-book-path (extend-pathname$ dir bookname state)) ; no extension
          ;; Get the book's dir:
          (full-book-dir (dir-of-path full-book-path)))
     (prog2$
