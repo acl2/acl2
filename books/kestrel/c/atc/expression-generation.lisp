@@ -1714,7 +1714,7 @@
                                 arg-term)))
                 (var-thm (atc-var-info->thm info))
                 (mem-typep (atc-type-to-recognizer mem-type gin.prec-tags))
-                (mem-type-of-fn (packn-pos (list mem-typep '-of- fn) fn))
+                (mem-typep-of-fn (packn-pos (list mem-typep '-of- fn) fn))
                 (hints
                  `(("Goal"
                     :in-theory '(exec-expr-pure-when-member
@@ -1730,7 +1730,7 @@
                                  objdesign-option-fix-when-objdesign-optionp
                                  objdesign-optionp-of-objdesign-of-var
                                  ,var-thm
-                                 ,mem-type-of-fn))))
+                                 ,mem-typep-of-fn))))
                 (objdes
                  `(objdesign-member
                    (objdesign-of-var (ident ',(symbol-name arg-term))
@@ -1763,16 +1763,69 @@
                                :names-to-avoid names-to-avoid
                                :proofs t))))
           ((equal arg-type (type-pointer (type-struct tag)))
-           (retok (make-pexpr-gout
-                   :expr (make-expr-memberp :target arg-expr
-                                            :name member)
-                   :type mem-type
-                   :term term
-                   :events arg-events
-                   :thm-name nil
-                   :thm-index gin.thm-index
-                   :names-to-avoid gin.names-to-avoid
-                   :proofs nil)))
+           (b* ((expr (make-expr-memberp :target arg-expr :name member))
+                ((when (not gin.proofs))
+                 (retok (make-pexpr-gout
+                         :expr expr
+                         :type mem-type
+                         :term term
+                         :events arg-events
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid
+                         :proofs nil)))
+                (arg-type (type-pointer->to arg-type))
+                (recognizer (atc-type-to-recognizer arg-type gin.prec-tags))
+                (exec-memberp-read-when-struct-point-p-and-x
+                 (pack 'exec-memberp-read-when-
+                       recognizer
+                       '-and-
+                       (ident->name member)))
+                (mem-typep (atc-type-to-recognizer mem-type gin.prec-tags))
+                (mem-typep-of-fn (packn-pos (list mem-typep '-of- fn) fn))
+                (hints
+                 `(("Goal"
+                    :in-theory '(exec-expr-pure-when-memberp
+                                 (:e expr-kind)
+                                 (:e expr-memberp->target)
+                                 (:e expr-memberp->name)
+                                 ,arg-thm
+                                 expr-valuep-of-expr-value
+                                 ,exec-memberp-read-when-struct-point-p-and-x
+                                 exec-memberp-of-const-identifier
+                                 (:e identp)
+                                 (:e ident->name)
+                                 read-object-of-add-var
+                                 read-object-of-add-frame
+                                 ,mem-typep-of-fn))))
+                (objdes `(objdesign-member
+                          ,(add-suffix-to-fn arg-term "-OBJDES")
+                          (ident ',(ident->name member))))
+                ((mv thm-event thm-name thm-index names-to-avoid)
+                 (atc-gen-expr-pure-correct-thm gin.fn
+                                                gin.fn-guard
+                                                gin.context
+                                                expr
+                                                mem-type
+                                                term
+                                                term
+                                                objdes
+                                                gin.compst-var
+                                                hints
+                                                nil
+                                                gin.prec-tags
+                                                gin.thm-index
+                                                gin.names-to-avoid
+                                                state)))
+             (retok (make-pexpr-gout :expr expr
+                                     :type mem-type
+                                     :term term
+                                     :events (append arg-events
+                                                     (list thm-event))
+                                     :thm-name thm-name
+                                     :thm-index thm-index
+                                     :names-to-avoid names-to-avoid
+                                     :proofs t))))
           (t (reterr
               (msg "The reading of a ~x0 structure with member ~x1 ~
                     is applied to ~
