@@ -1844,6 +1844,85 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-expr-struct-read-array ((fn symbolp)
+                                        (index-term pseudo-termp)
+                                        (index-expr exprp)
+                                        (index-type typep)
+                                        (index-events pseudo-event-form-listp)
+                                        (index-thm symbolp)
+                                        (struct-term pseudo-termp)
+                                        (struct-expr exprp)
+                                        (struct-type typep)
+                                        (struct-events pseudo-event-form-listp)
+                                        (struct-thm symbolp)
+                                        (tag identp)
+                                        (member identp)
+                                        (elem-type typep)
+                                        (gin pexpr-ginp)
+                                        state)
+  (declare (ignore index-thm struct-thm state))
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a structure array read."
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       ((unless (type-integerp index-type))
+        (reterr
+         (msg "The reading of a ~x0 structure with array member ~x1 ~
+               is applied to an index expression term ~x2 returning ~x3, ~
+               but a C integer operand is expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              (type-struct tag)
+              member
+              index-term
+              index-type)))
+       ((when (eq fn 'quote))
+        (reterr (raise "Internal error: QUOTE function.")))
+       (term `(,fn ,index-term ,struct-term)))
+    (cond ((equal struct-type (type-struct tag))
+           (retok (make-pexpr-gout
+                   :expr (make-expr-arrsub
+                          :arr (make-expr-member
+                                :target struct-expr
+                                :name member)
+                          :sub index-expr)
+                   :type elem-type
+                   :term term
+                   :events (append index-events struct-events)
+                   :thm-name nil
+                   :thm-index gin.thm-index
+                   :names-to-avoid gin.names-to-avoid
+                   :proofs nil)))
+          ((equal struct-type (type-pointer (type-struct tag)))
+           (retok (make-pexpr-gout
+                   :expr (make-expr-arrsub
+                          :arr (make-expr-memberp
+                                :target struct-expr
+                                :name member)
+                          :sub index-expr)
+                   :type elem-type
+                   :term term
+                   :events (append index-events struct-events)
+                   :thm-name nil
+                   :thm-index gin.thm-index
+                   :names-to-avoid gin.names-to-avoid
+                   :proofs nil)))
+          (t (reterr
+              (msg "The reading of ~x0 structure with array member ~x1 ~
+                    is applied to an expression term ~x2 returning ~x3, ~
+                    but an operand of type ~x4 or ~x5 is expected. ~
+                    This is indicative of provably dead code, ~
+                    given that the code is guard-verified."
+                   tag
+                   member
+                   struct-term
+                   struct-type
+                   (type-struct tag)
+                   (type-pointer (type-struct tag))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-pure/bool
   :short "Mutually recursive ACL2 functions to
           generate pure C expressions from ACL2 terms."
@@ -2047,72 +2126,39 @@
                                              mem-type
                                              gin
                                              state)))
-         ((erp okp & index-term struct-term tag member elem-type)
+         ((erp okp fn index-term struct-term tag member elem-type)
           (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout index))
                 (atc-gen-expr-pure index-term gin state))
-               ((unless (type-integerp index.type))
-                (reterr
-                 (msg "The reading of ~x0 structure with member ~x1 ~
-                       is applied to ~
-                       an index expression term ~x2 returning ~x3, ~
-                       but a C integer operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      (type-struct tag)
-                      member
-                      index-term
-                      index.type)))
                ((erp (pexpr-gout struct))
                 (atc-gen-expr-pure struct-term
                                    (change-pexpr-gin
                                     gin
                                     :thm-index index.thm-index
                                     :names-to-avoid index.names-to-avoid)
-                                   state)))
-            (cond ((equal struct.type (type-struct tag))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-arrsub
-                                  :arr (make-expr-member
-                                        :target struct.expr
-                                        :name member)
-                                  :sub index.expr)
-                           :type elem-type
-                           :term term
-                           :events (append index.events struct.events)
-                           :thm-name nil
-                           :thm-index struct.thm-index
-                           :names-to-avoid struct.names-to-avoid
-                           :proofs nil)))
-                  ((equal struct.type (type-pointer (type-struct tag)))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-arrsub
-                                  :arr (make-expr-memberp
-                                        :target struct.expr
-                                        :name member)
-                                  :sub index.expr)
-                           :type elem-type
-                           :term term
-                           :events (append index.events struct.events)
-                           :thm-name nil
-                           :thm-index struct.thm-index
-                           :names-to-avoid struct.names-to-avoid
-                           :proofs nil)))
-                  (t (reterr
-                      (msg "The reading of ~x0 structure with member ~x1 ~
-                            is applied to ~
-                            an expression term ~x2 returning ~x3, ~
-                            but an operand of type ~x4 or ~x5 ~
-                            is expected. ~
-                            This is indicative of provably dead code, ~
-                            given that the code is guard-verified."
-                           tag
-                           member
-                           struct-term
-                           struct.type
-                           (type-struct tag)
-                           (type-pointer (type-struct tag))))))))
+                                   state))
+               (gin (change-pexpr-gin
+                     gin
+                     :thm-index struct.thm-index
+                     :names-to-avoid struct.names-to-avoid
+                     :proofs (and index.proofs struct.proofs))))
+            (atc-gen-expr-struct-read-array fn
+                                            index.term
+                                            index.expr
+                                            index.type
+                                            index.events
+                                            index.thm-name
+                                            struct.term
+                                            struct.expr
+                                            struct.type
+                                            struct.events
+                                            struct.thm-name
+                                            tag
+                                            member
+                                            elem-type
+                                            gin
+                                            state)))
          ((erp okp arg-term) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-bool arg-term gin state)))
