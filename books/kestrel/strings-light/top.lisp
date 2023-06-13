@@ -25,6 +25,8 @@
 (include-book "string-starts-withp")
 (include-book "add-prefix-to-strings")
 (include-book "strip-prefix-from-string")
+(include-book "strip-suffix-from-string")
+(include-book "strip-suffix-from-strings") ; or move to typed-lists-light
 (include-book "strcar")
 (include-book "strcdr")
 (include-book "strnthcdr")
