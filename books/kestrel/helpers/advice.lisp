@@ -64,27 +64,20 @@
 
 ;; TODO: Untranslate before printing (e.g., hyps)?
 
+(include-book "recommendations")
+(include-book "model-enable")
 (include-book "kestrel/utilities/book-of-event" :dir :system)
 (include-book "kestrel/utilities/checkpoints" :dir :system)
-(include-book "kestrel/utilities/nat-to-string" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/theory-hints" :dir :system)
-(include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
 (include-book "kestrel/utilities/read-string" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
-(include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
-(include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/included-books-in-world" :dir :system)
-(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "kestrel/hints/combine-hints" :dir :system)
-(include-book "kestrel/lists-light/firstn-def" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
-(include-book "kestrel/alists-light/lookup-eq-def" :dir :system)
-(include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/world-light/world-since-boot-strap" :dir :system)
@@ -102,12 +95,16 @@
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
-(local (include-book "kestrel/alists-light/lookup-eq" :dir :system))
+;(local (include-book "kestrel/alists-light/lookup-eq" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 
 (local (in-theory (disable member-equal len true-listp nth reverse mv-nth)))
+
+(local (in-theory (enable stringp-of-nth-0-when-recommendationp
+                          rationalp-of-nth-3-when-recommendationp
+                          true-listp-when-recommendationp)))
 
 ;; ;; Returns all disabled runes associate with NAME.
 ;; ;; Like disabledp but hygienic, also doesn't end in "p" since not a predicate.
@@ -229,92 +226,6 @@
            (fms-to-string "~X01" (acons #\0 (first checkpoint-clauses) (acons #\1 nil nil)))
            (make-numbered-checkpoint-entries (+ 1 current-number) (rest checkpoint-clauses)))))
 
-(defconst *rec-to-symbol-alist*
-  '(;; For these, training data is obtained by removing the entire "hint
-    ;; setting" (e.g., the entire ":by XXX"):
-    ("add-by-hint" . :add-by-hint) ; rare
-    ("add-cases-hint" . :add-cases-hint) ; rare
-    ("add-induct-hint" . :add-induct-hint)
-    ("add-nonlinearp-hint" . :add-nonlinearp-hint) ; very rare
-
-    ;; For these, gathering training data always involves removing individual
-    ;; items to :use or :expand:
-    ("add-expand-hint" . :add-expand-hint)
-    ("add-use-hint" . :add-use-hint)
-
-    ;; For :in-theory, gathering training data involves either removing
-    ;; individual items to enable or disable (when the :in-theory is an enable,
-    ;; disable, or e/d), or else removing the whole :in-theory:
-    ("add-disable-hint" . :add-disable-hint)
-    ("add-enable-hint" . :add-enable-hint)
-
-    ;; For :do-not, gathering training data involves either removing individual
-    ;; items (if the :do-not is given a quoted list of symbols), or else
-    ;; removing the whole :do-not:
-    ("add-do-not-hint" . :add-do-not-hint)
-
-    ;; Confusingly named: Does not indicate a :use hint and the "lemma" is
-    ;; often a defun.  Gathering training data involves artificially "knocking
-    ;; out" rules used in a successful proof.  This is often treated like
-    ;; add-enable-hint.
-    ("use-lemma" . :use-lemma)
-
-    ;; Gathering training data involves artificially "knocking out" supporting
-    ;; books used in a successful proof.
-    ("add-library" . :add-library)
-
-    ("add-hyp" . :add-hyp) ; can change the meaning of the theorem!
-    ))
-
-;; todo: rename (not necessarily about ml)?
-(defconst *ml-rec-types* (strip-cdrs *rec-to-symbol-alist*))
-
-(defund ml-rec-typep (type)
-  (declare (xargs :guard t))
-  (member-eq type *ml-rec-types*))
-
-(defthm ml-rec-typep-forward-to-symbolp
-  (implies (ml-rec-typep type)
-           (symbolp type))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable ml-rec-typep member-equal))))
-
-(defund ml-rec-type-listp (types)
-  (declare (xargs :guard t))
-  (if (not (consp types))
-      (null types)
-    (and (ml-rec-typep (first types))
-         (ml-rec-type-listp (rest types)))))
-
-(defthm ml-rec-type-listp-of-cdr
-  (implies (ml-rec-type-listp types)
-           (ml-rec-type-listp (cdr types)))
-  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
-
-(defthm ml-rec-typep-of-car
-  (implies (and (ml-rec-type-listp types)
-                (consp types))
-           (ml-rec-typep (car types)))
-  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
-
-(defthm ml-rec-type-listp-forward-to-symbol-listp
-  (implies (ml-rec-type-listp types)
-           (symbol-listp types))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable ml-rec-type-listp))))
-
-(defconst *all-rec-types* (cons :exact-hints *ml-rec-types*))
-
-(defund rec-typep (type)
-  (declare (xargs :guard t))
-  (member-eq type *all-rec-types*))
-
-(defthm rec-typep-forward-to-symbolp
-  (implies (rec-typep type)
-           (symbolp type))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable rec-typep member-equal))))
-
 (defund rec-type-listp (types)
   (declare (xargs :guard t))
   (if (not (consp types))
@@ -327,42 +238,45 @@
            (rec-type-listp (cdr types)))
   :hints (("Goal" :in-theory (enable rec-type-listp))))
 
+(defthm rec-typep-of-car
+  (implies (and (rec-type-listp types)
+                (consp types))
+           (rec-typep (car types)))
+  :hints (("Goal" :in-theory (enable rec-type-listp))))
+
 (defthm rec-type-listp-forward-to-symbol-listp
   (implies (rec-type-listp types)
            (symbol-listp types))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable rec-type-listp))))
 
-(defund ml-rec-type-to-string (type)
-  (declare (xargs :guard (ml-rec-typep type)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund rec-type-to-string (type)
+  (declare (xargs :guard (rec-typep type)))
   (car (rassoc type *rec-to-symbol-alist*)))
 
-(defthm stringp-of-ml-rec-type-to-string
-  (implies (ml-rec-typep type)
-           (stringp (ml-rec-type-to-string type)))
-  :hints (("Goal" :in-theory (enable ml-rec-type-to-string
-                                     ml-rec-typep
+(defthm stringp-of-rec-type-to-string
+  (implies (rec-typep type)
+           (stringp (rec-type-to-string type)))
+  :hints (("Goal" :in-theory (enable rec-type-to-string
+                                     rec-typep
                                      member-equal))))
 
-(defund ml-rec-types-to-strings (types)
-  (declare (xargs :guard (ml-rec-type-listp types)
-                  :guard-hints (("Goal" :in-theory (enable ml-rec-type-listp)))))
+(defund rec-types-to-strings (types)
+  (declare (xargs :guard (rec-type-listp types)
+                  :guard-hints (("Goal" :in-theory (enable rec-type-listp)))))
   (if (endp types)
       nil
-    (cons (ml-rec-type-to-string (first types))
-          (ml-rec-types-to-strings (rest types)))))
+    (cons (rec-type-to-string (first types))
+          (rec-types-to-strings (rest types)))))
 
-(defthm string-listp-of-ml-rec-types-to-strings
-  (implies (ml-rec-type-listp types)
-           (string-listp (ml-rec-types-to-strings types)))
-  :hints (("Goal" :in-theory (enable ml-rec-types-to-strings))))
+(defthm string-listp-of-rec-types-to-strings
+  (implies (rec-type-listp types)
+           (string-listp (rec-types-to-strings types)))
+  :hints (("Goal" :in-theory (enable rec-types-to-strings))))
 
-(defund confidence-percentp (p)
-  (declare (xargs :guard t))
-  (and (rationalp p)
-       (<= 0 p)
-       (<= p 100)))
-
+;; TODO: Make this extensible:
 (defconst *non-ml-models-and-strings*
   '((:enable . "enable")
     (:history . "history")))
@@ -401,9 +315,6 @@
 (defconst *ready-models*
   *known-models* ; (remove-eq :leidos-run10.0 *known-models*)
   )
-
-(defconst *extra-rec-sources*
-  '(:enable :history))
 
 ;; Indicates one of the machine learning recommendation models.  Either one of
 ;; the known models, or a string representing some unknown model (gets passed
@@ -484,252 +395,7 @@
 ;;    :rule-classes :forward-chaining
 ;;    :hints (("Goal" :in-theory (enable rec-sourcesp)))))
 
-;; todo: rename to pre-events?
-(defund pre-commandsp (pre-commands)
-  (declare (xargs :guard t))
-  (true-listp pre-commands))
-
-(defund include-book-formp (form)
-  (declare (xargs :guard t))
-  (and (consp form)
-       (true-listp form)
-       (eq 'include-book (car form))
-       (stringp (cadr form))
-       ;; todo: what else?
-       ))
-
-(defund include-book-form-listp (forms)
-  (declare (xargs :guard t))
-  (if (atom forms)
-      (null forms)
-    (and (include-book-formp (first forms))
-         (include-book-form-listp (rest forms)))))
-
-(local
- (defthm include-book-form-listp-forward-to-true-listp
-   (implies (include-book-form-listp forms)
-            (true-listp forms))
-   :rule-classes :forward-chaining
-   :hints (("Goal" :in-theory (enable include-book-form-listp)))))
-
-(defthm include-book-form-listp-of-union-equal
-  (implies (and (include-book-form-listp info1)
-                (include-book-form-listp info2))
-           (include-book-form-listp (union-equal info1 info2)))
-  :hints (("Goal" :in-theory (enable include-book-form-listp union-equal))))
-
-(defund include-book-infop (info)
-  (declare (xargs :guard t))
-  (or (eq :builtin info)
-      (include-book-form-listp info)))
-
-(local
- (defthm true-listp-when-include-book-infop
-   (implies (include-book-infop info)
-            (equal (true-listp info)
-                   (not (equal :builtin info))))
-   :hints (("Goal" :in-theory (enable include-book-infop)))))
-
-(defund include-book-info-listp (infos)
-  (declare (xargs :guard t))
-  (if (atom infos)
-      (null infos)
-    (and (include-book-infop (first infos))
-         (include-book-info-listp (rest infos)))))
-
-(local
- (defthm include-book-info-listp-forward-to-true-listp
-   (implies (include-book-info-listp infos)
-            (true-listp infos))
-   :rule-classes :forward-chaining
-   :hints (("Goal" :in-theory (enable include-book-info-listp)))))
-
-(defund book-mapp (book-map)
-  (declare (xargs :guard t))
-  (and (symbol-alistp book-map)
-       (include-book-info-listp (strip-cdrs book-map))))
-
-(local
- (defthm book-mapp-forward-to-alistp
-   (implies (book-mapp book-map)
-            (alistp book-map))
-   :rule-classes :forward-chaining
-   :hints (("Goal" :in-theory (enable book-mapp)))))
-
-(defthm book-mapp-of-pairlis$
-  (implies (and (symbol-listp keys)
-                (include-book-info-listp vals))
-           (book-mapp (pairlis$ keys vals)))
-  :hints (("Goal" :in-theory (enable book-mapp include-book-info-listp))))
-
-(local
- (defthm include-book-infop-of-lookup-equal
-   (implies (book-mapp book-map)
-            (include-book-infop (acl2::lookup-equal key book-map)))
-   :hints (("Goal" :in-theory (enable book-mapp acl2::lookup-equal assoc-equal include-book-info-listp)))))
-
-(local
- (defthm symbol-listp-of-strip-cars-when-book-mapp
-   (implies (book-mapp book-map)
-            (symbol-listp (strip-cars book-map)))
-   :hints (("Goal" :in-theory (enable book-mapp)))))
-
-;; todo: strengthen
-(defund recommendationp (rec)
-  (declare (xargs :guard t))
-  (and (true-listp rec)
-       (= 5 (len rec))
-       (let ((name (nth 0 rec))
-             (type (nth 1 rec))
-             ;; (object (nth 2 rec))
-             (confidence-percent (nth 3 rec))
-             (book-map (nth 4 rec)))
-         (and (stringp name)
-              (rec-typep type)
-              ;; object
-              (confidence-percentp confidence-percent)
-              (book-mapp book-map)))))
-
-(local
- (defthm recommendationp-forward-to-true-listp
-   (implies (recommendationp rec)
-            (true-listp rec))
-   :rule-classes :forward-chaining
-   :hints (("Goal" :in-theory (enable recommendationp)))))
-
-(local
- (defthm true-listp-when-recommendationp
-   (implies (recommendationp rec)
-            (true-listp rec))
-   :hints (("Goal" :in-theory (enable recommendationp)))))
-
-(local
- (defthm stringp-of-nth-0-when-recommendationp
-   (implies (recommendationp rec)
-            (stringp (nth 0 rec)))
-   :hints (("Goal" :in-theory (enable recommendationp)))))
-
-(local
- (defthm rec-typep-of-nth-1-when-recommendationp
-   (implies (recommendationp rec)
-            (rec-typep (nth 1 rec)))
-   :hints (("Goal" :in-theory (enable recommendationp)))))
-
-(local
- (defthm rationalp-of-nth-3-when-recommendationp
-   (implies (recommendationp rec)
-            (rationalp (nth 3 rec)))
-   :hints (("Goal" :in-theory (enable recommendationp)))))
-
-(local
- (defthm confidence-percentp-of-nth-3-when-recommendationp
-   (implies (recommendationp rec)
-            (confidence-percentp (nth 3 rec)))
-   :hints (("Goal" :in-theory (enable recommendationp)))))
-
-(local
- (defthm book-mapp-of-nth-4-when-recommendationp
-   (implies (recommendationp rec)
-            (book-mapp (nth 4 rec)))
-   :hints (("Goal" :in-theory (enable recommendationp)))))
-
-;; (local
-;;  (defthm true-listp-of-nth-6-when-recommendationp
-;;    (implies (recommendationp rec)
-;;             (true-listp (nth 6 rec)))
-;;    :hints (("Goal" :in-theory (enable recommendationp)))))
-
-;; (local
-;;  (defthm rec-sourcesp-of-nth-6-when-recommendationp
-;;    (implies (recommendationp rec)
-;;             (rec-sourcesp (nth 6 rec)))
-;;    :hints (("Goal" :in-theory (enable recommendationp)))))
-
-(defund make-rec (name type object confidence-percent book-map)
-  (declare (xargs :guard (and (stringp name)
-                              (rec-typep type)
-                              ;; object
-                              (confidence-percentp confidence-percent)
-                              (book-mapp book-map))))
-  (list name type object confidence-percent book-map))
-
-(defthm recommendationp-of-make-rec
-  (equal (recommendationp (make-rec name type object confidence-percent book-map))
-         (and (stringp name)
-              (rec-typep type)
-              ;; object
-              (confidence-percentp confidence-percent)
-              (book-mapp book-map)))
-  :hints (("Goal" :in-theory (enable make-rec recommendationp))))
-
-(defun show-recommendation (rec)
-  (declare (xargs :guard (recommendationp rec)))
-  (let* ((name (nth 0 rec))
-         (type (nth 1 rec))
-         (object (nth 2 rec))
-         (confidence-percent (nth 3 rec))
-         ;; (book-map (car (nth 4 rec)))
-         )
-    (cw "~s0: Try ~x1 with ~x2 (conf: ~x3%).~%" name type object (floor confidence-percent 1))))
-
-(defund recommendation-listp (recs)
-  (declare (xargs :guard t))
-  (if (atom recs)
-      (null recs)
-    (and (recommendationp (first recs))
-         (recommendation-listp (rest recs)))))
-
-(local
- (defthm recommendation-listp-forward-to-true-listp
-   (implies (recommendation-listp recs)
-            (true-listp recs))
-   :rule-classes :forward-chaining
-   :hints (("Goal" :in-theory (enable recommendation-listp)))))
-
-(defthm recommendation-listp-of-remove-equal
-  (implies (recommendation-listp recs)
-           (recommendation-listp (remove-equal rec recs)))
-  :hints (("Goal" :in-theory (enable recommendation-listp))))
-
-(defthm recommendation-listp-of-revappend
-  (implies (and (recommendation-listp recs1)
-                (recommendation-listp recs2))
-           (recommendation-listp (revappend recs1 recs2)))
-  :hints (("Goal" :in-theory (enable recommendation-listp revappend))))
-
-(defthm recommendation-listp-of-reverse
-  (implies (recommendation-listp recs)
-           (recommendation-listp (reverse recs)))
-  :hints (("Goal" :in-theory (enable recommendation-listp reverse))))
-
-(defthm recommendation-listp-of-cdr
-  (implies (recommendation-listp recs)
-           (recommendation-listp (cdr recs)))
-  :hints (("Goal" :in-theory (enable recommendation-listp))))
-
-(defun show-recommendations-aux (recs)
-  (declare (xargs :guard (recommendation-listp recs)
-                  :guard-hints (("Goal" :in-theory (enable recommendation-listp)))))
-  (if (endp recs)
-      nil
-    (prog2$ (show-recommendation (first recs))
-            (show-recommendations-aux (rest recs)))))
-
-;; Returns state because of the margin widening.
-(defun show-recommendations (recs state)
-  (declare (xargs :guard (recommendation-listp recs)
-                  :stobjs state))
-  (let ((state (acl2::widen-margins state)))
-    (progn$ (show-recommendations-aux recs)
-            (let ((state (acl2::unwiden-margins state)))
-              state))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund rec-confidence> (rec1 rec2)
-  (declare (xargs :guard (and (recommendationp rec1)
-                              (recommendationp rec2))))
-  (> (nth 3 rec1) (nth 3 rec2)))
 
 (acl2::defmergesort merge-recs-by-confidence merge-sort-recs-by-confidence rec-confidence> recommendationp :extra-theorems nil)
 
@@ -1098,6 +764,18 @@
                (eq :builtin item))
            (include-book-form-or-builtin-listp (rest items))))))
 
+(defthm include-book-form-or-builtin-listp-of-revappend
+  (implies (and (include-book-form-or-builtin-listp items1)
+                (include-book-form-or-builtin-listp items2))
+           (include-book-form-or-builtin-listp (revappend items1 items2)))
+  :hints (("Goal" :in-theory (enable include-book-form-or-builtin-listp
+                                     revappend))))
+
+(defthm include-book-form-or-builtin-listp-of-reverse
+  (implies (include-book-form-or-builtin-listp items)
+           (include-book-form-or-builtin-listp (reverse items)))
+  :hints (("Goal" :in-theory (enable reverse))))
+
 (defthm include-book-form-listp-when-include-book-form-or-builtin-listp
   (implies (and (include-book-form-or-builtin-listp items)
                 (not (member-equal :builtin items)))
@@ -1277,60 +955,6 @@
   (progn$ (cw "SUCCESS: ")
           (show-successful-recommendation rec)
           (cw "~%")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun make-enable-recs-aux (names num)
-  (declare (xargs :guard (and (symbol-listp names)
-                              (posp num))))
-  (if (endp names)
-      nil
-    (cons (make-rec (concatenate 'string "enable" (acl2::nat-to-string num))
-                    :add-enable-hint
-                    (first names) ; the name to enable
-                    5             ; confidence percentage (quite high) TODO: allow unknown?)
-                    nil ; book map ; todo: indicate that the name must be present?
-                    )
-          (make-enable-recs-aux (rest names) (+ 1 num)))))
-
-(local
- (defthm recommendation-listp-of-make-enable-recs-aux
-   (implies (symbol-listp names)
-            (recommendation-listp (make-enable-recs-aux names num)))
-   :hints (("Goal" :in-theory (enable recommendation-listp)))))
-
-;; TODO: Don't even make recs for things that are enabled (in the theory, or by the current hints)?
-;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
-;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
-(defun make-enable-recs (formula num-recs print state)
-  (declare (xargs :guard (and ;; formula is an untranslated term
-                          (natp num-recs))
-                  :stobjs state
-                  :mode :program ; because of acl2::translate-term
-                  ))
-  (b* ((wrld (w state))
-       (- (and (acl2::print-level-at-least-tp print)
-               (cw "Making ~x0 :enable recommendations: " ; the line is ended below when we print the time
-                   num-recs)))
-       (print-timep (acl2::print-level-at-least-tp print))
-       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
-       (fns-to-try-enabling (set-difference-eq (acl2::defined-fns-in-term translated-formula wrld)
-                                               ;; Don't bother wasting time with trying to enable implies
-                                               ;; (I suppose we could try it if implies is disabled):
-                                               '(implies)))
-       (recs-to-return ;; todo: how to choose when we can't return them all?:
-        (acl2::firstn num-recs (make-enable-recs-aux fns-to-try-enabling 1)))
-       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (- (and print-timep (prog2$ (acl2::print-to-hundredths (- done-time start-time))
-                                   (cw "s~%") ; s = seconds
-                                   ))))
-    (mv nil recs-to-return state)))
-
-;; (local
-;;  (defthm recommendation-listp-of-make-enable-recs
-;;    (implies (pseudo-termp formula)
-;;             (recommendation-listp (make-enable-recs formula wrld)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3383,70 +3007,6 @@
            (recommendationp (find-equivalent-rec rec recs)))
   :hints (("Goal" :in-theory (enable find-equivalent-rec recommendation-listp))))
 
-;; for now, if one is :builtin, we just take the other (but should that ever happen?)
-(defund combine-include-book-infos (info1 info2)
-  (declare (xargs :guard (and (include-book-infop info1)
-                              (include-book-infop info2))))
-  (if (eq :builtin info1)
-      info2
-    (if (eq :builtin info2)
-        info1
-      (union-equal info1 info2))))
-
-(local
- (defthm include-book-infop-of-combine-include-book-infos
-   (implies (and (include-book-infop info1)
-                 (include-book-infop info2))
-            (include-book-infop (combine-include-book-infos info1 info2)))
-   :hints (("Goal" :in-theory (enable include-book-infop
-                                      combine-include-book-infos)))))
-
-(defund combine-book-maps-aux (keys map1 map2 acc)
-  (declare (xargs :guard (and (symbol-listp keys)
-                              (book-mapp map1)
-                              (book-mapp map2)
-                              (alistp acc))))
-  (if (endp keys)
-      acc
-    (let* ((key (first keys))
-           (info1 (acl2::lookup-eq key map1))
-           (info2 (acl2::lookup-eq key map2))
-           (val (if (not info1)
-                    info2
-                  (if (not info2)
-                      info1
-                    (combine-include-book-infos info1 info2)))))
-      (combine-book-maps-aux (rest keys) map1 map2
-                             (acons key
-                                    val
-                                    acc)))))
-
-(local
- (defthm book-mapp-of-combine-book-maps-aux
-   (implies (and (symbol-listp keys)
-                 (book-mapp map1)
-                 (book-mapp map2)
-                 (book-mapp acc))
-            (book-mapp (combine-book-maps-aux keys map1 map2 acc)))
-   :hints (("Goal" :in-theory (enable combine-book-maps-aux book-mapp include-book-info-listp
-                                      ;include-book-infop
-                                      )))))
-
-(defund combine-book-maps (map1 map2)
-  (declare (xargs :guard (and (book-mapp map1)
-                              (book-mapp map2))))
-  (combine-book-maps-aux (union-eq (strip-cars map1) (strip-cars map2))
-                         map1
-                         map2
-                         nil))
-
-(local
- (defthm book-mapp-of-combine-book-maps
-   (implies (and (book-mapp map1)
-                 (book-mapp map2))
-            (book-mapp (combine-book-maps map1 map2)))
-   :hints (("Goal" :in-theory (enable combine-book-maps)))))
-
 ;; Can this be slow?
 (defun merge-rec-into-recs (rec recs)
   (declare (xargs :guard (and (recommendationp rec)
@@ -3614,7 +3174,7 @@
                                         (acons "broken-theorem" (fms-to-string "~X01" (acons #\0 broken-theorem (acons #\1 nil nil))) ;; todo: should we translate this?
                                                (make-numbered-checkpoint-entries 0 checkpoint-clauses)))))
                ;; Turn off certain recommendation types (TODO: Could a generative model return something like :exact-hints?):
-               (post-data (acons-all-to-val (ml-rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types))
+               (post-data (acons-all-to-val (rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types)) ; todo: drop this?  can the models handle disallowed unknown rec types?
                                             "off"
                                             post-data))
                (print-timep (acl2::print-level-at-least-tp print))
