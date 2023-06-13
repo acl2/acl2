@@ -7651,6 +7651,20 @@
 (defmacro stobj-hash-table-element-type (type)
   `(or (cadddr ,type) t))
 
+#+(and ccl (not acl2-loop-only))
+(defvar *ccl-issue-446*
+
+; This variable is true when CCL Issue #446 is unresolved in the current
+; CCL-based ACL2.  It is based on (deftest ccl.issue#446 ...) in:
+; https://github.com/Clozure/ccl-tests/blob/5957b07b93a988099866b69d591990fb016f038a/ansi-tests/ccl.lsp
+
+  (let ((ar (make-array 10 :element-type '(signed-byte 63) :initial-element 0)))
+    (setf (aref ar 0) #x-7FFFFFFE47AFEF96)
+    (not (= #x-7FFFFFFE47AFEF96
+            (aref (the (simple-array (signed-byte 64) (10))
+                       ar)
+                  0)))))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -7915,6 +7929,7 @@
 
                           #+(and ccl (not acl2-loop-only))
                           (if (and simple-type
+                                   *ccl-issue-446*
                                    (subtypep array-etype 'integer)
                                    (not (subtypep array-etype 'fixnum))
                                    (not (subtypep array-etype '(integer 0 *))))
