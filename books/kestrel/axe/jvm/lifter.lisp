@@ -5674,7 +5674,7 @@
               ;; (- (cw "(paramnum-name-alist: ~x0)~%" (reverse paramnum-name-alist))) ;todo: drop?
 
               ;; Submit the events right now, so we can reason about the new functions (e.g., to prove that array lengths are unchanged)
-              (state (submit-events defuns-and-theorems state))
+              (state (submit-events-brief defuns-and-theorems state))
               (generated-events-acc (append generated-events-acc defuns-and-theorems)) ;; new stuff comes at the end
               (postlude-alist (g :postlude-alist options))
               (postlude-event (lookup-loop-function loop-function-name loop-designator postlude-alist nil)) ;often a progn, or nil if there is none

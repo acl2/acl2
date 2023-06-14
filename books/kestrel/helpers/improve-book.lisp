@@ -1,6 +1,6 @@
 ; Replaying the events in a book (perhaps with changes).
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
+;; STATUS: Working prototype
 
 ;; TODO: Support adding a hook to run on each kind of event.
 ;; TODO: Time the events and alert the user when improvements slow things down.
@@ -21,15 +21,26 @@
 ;; TODO: Add the ability to run on many files
 ;; TODO: Add the ability to suppress slow stuff (like dropping a local event or an include-book and trying the entire file).
 ;; TODO: Improve hints for defuns
+;; TODO: Detect :guard-debug
 ;; TOOD: Suppress suggestions to drop set-default-parents and things to disable built-in rules.
+;; TODO: Handle verify-guards
+;; TODO: Handle progn
+;; TODO: Handle encapsulate
+;; TOOD: Handle defsection
+;; TODO: Handle define (prepwork, ///, etc.)
+;; TODO: Handle defrule
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/split-path" :dir :system)
+(include-book "kestrel/utilities/linter" :dir :system)
+(include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
+(include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
+(include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
 
 (defun print-to-string (item)
@@ -289,7 +300,7 @@
                                     )))
     (theorems-with-new-hints defthm-variant name term hint-lists-to-try)))
 
-;; Submits and improves the events.
+;; Submits and improves the event.
 ;; Returns (mv erp state).
 ;; TODO: Use limits based on how many steps were needed for the original proof.
 (defun improve-defthm-event (event rest-events print state)
@@ -303,25 +314,25 @@
    (let* ((defthm-variant (first event))
           (defthm-args (rest event))
           (name (first defthm-args))
-          (term (second defthm-args))
+          (body (second defthm-args))
           (keyword-value-list (rest (rest defthm-args)))
           (hintsp (assoc-keyword :hints keyword-value-list))
           ;; TODO: Try deleting the :otf-flg
           ;; TODO: Try deleting/weakening hyps (see the linter?)
-          (event-without-hints `(,defthm-variant ,name ,term ,@(remove-keyword :hints keyword-value-list)))
+          (event-without-hints `(,defthm-variant ,name ,body ,@(remove-keyword :hints keyword-value-list)))
           (alist (if (not hintsp)
                      nil ; nothing to do (currently)
                    (let ((hints (cadr hintsp)))
                      (acons event-without-hints
                             (concatenate 'string (newline-string) "  Drop all :hints.") ; todo: if this works, don't try individual hints
-                            (defthms-with-removed-hints defthm-variant name term hints))))))
+                            (defthms-with-removed-hints defthm-variant name body hints))))))
      (mv-let (improvement-foundp state)
        (try-improved-events alist nil state)
-       (prog2$ (if (not improvement-foundp)
-                   (and print (cw "No improvement found.)~%"))
-                 (and print (cw ")~%")))
-               ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
-               (submit-event-helper event nil nil state))))))
+       (declare (ignore improvement-foundp)) ;todo: don't bother to return this
+       (let ((state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
+         (prog2$ (and print (cw ")~%"))
+                 ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
+                 (submit-event-helper event nil nil state)))))))
 
 ;; Submit EVENT, after printing suggestions for improving it.
 ;; Returns (mv erp state).
@@ -453,3 +464,51 @@
     (mv-let (erp state)
       (improve-book-fn ,bookname ,dir ,print state)
       (mv erp nil state))))
+
+(defttag improve-book) ; for sys-call+
+
+;; Looks for .lisp files in the current subtree.
+;; Returns (mv book-paths state).
+(defun books-in-subtree (state)
+  (declare (xargs :stobjs state))
+  (mv-let (erp val state)
+    (sys-call+ "find" '("." "-name" "*.lisp") state)
+    (if erp
+        (prog2$ (er hard? 'books-in-subtree "Failed to find books: ~x0." erp)
+                (mv nil state))
+      (mv (strip-suffix-from-strings ".lisp" (split-string-repeatedly val #\Newline))
+          state))))
+
+(defun improve-books-fn-aux (books print dir state)
+  (declare (xargs :stobjs state :mode :program))
+  (if (endp books)
+      state
+    (prog2$
+     (cw "~%~%(TRYING TO IMPROVE ~x0~%" (first books))
+     (mv-let (erp val state)
+       (improve-book (first books)
+                     :print print
+                     :dir dir)
+       (declare (ignore val))
+       (if erp
+           (prog2$ (er hard? 'improve-books-fn-aux "Error improving ~x0." (first books))
+                   state)
+         (prog2$
+          (cw ")~%")
+          (improve-books-fn-aux (rest books) print dir state)))))))
+
+(defun improve-books-fn (print dir state)
+  (declare (xargs :stobjs state :mode :program))
+  (let* ((dir (if (eq dir :cbd) "." dir))
+         (full-dir (canonical-pathname dir t state))
+         (state (set-cbd-simple full-dir state)))
+    (mv-let (books state)
+      (books-in-subtree state)
+      (improve-books-fn-aux books print dir state))))
+
+
+;; Tries to improve all .lisp files in the current subtree.
+(defmacro improve-books (&key
+                         (print ':brief)
+                         (dir ':cbd))
+  `(make-event (improve-books-fn ',print ',dir state)))

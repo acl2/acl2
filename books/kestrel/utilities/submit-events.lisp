@@ -1,7 +1,7 @@
 ; Utilities for submitting events to ACL2
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -167,8 +167,11 @@
 ;;   (declare (xargs :mode :program :stobjs state))
 ;;   (submit-event-brief event state))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;returns state
 ;throws an error if any event fails
+;; todo: maybe rename to submit-events
 (defun submit-events-aux (events print state)
   (declare (xargs :guard (member-eq print '(nil :brief :verbose))
                   :mode :program
@@ -183,7 +186,7 @@
 ;returns state
 ;throws an error if any event fails
 ; This uses :brief printing.
-(defun submit-events (events state)
+(defun submit-events-brief (events state)
   (declare (xargs :mode :program :stobjs state))
   (let ((more-than-one-eventp (and (consp events) (consp (cdr events)))))
     (progn$ (and more-than-one-eventp (cw "(Submitting ~x0 events:~%" (len events)))
