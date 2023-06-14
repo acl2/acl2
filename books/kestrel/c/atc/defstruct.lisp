@@ -588,7 +588,12 @@
                        (b* ((memtype (car (last memtypes)))
                             (type (member-type->type memtype)))
                          (and (type-case type :array)
-                              (not (type-array->size type)))))))
+                              (not (type-array->size type))))))
+       ((when (and flexiblep
+                   (not (consp (cdr members)))))
+        (er-soft+ ctx t irrelevant
+                  "Since there is a flexible array member, ~
+                   there must be at least another member.")))
     (acl2::value (list tag tag-ident memtypes flexiblep nil)))
   ///
   (more-returns
