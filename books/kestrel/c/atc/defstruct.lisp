@@ -99,16 +99,16 @@
       of the writer in @('writer-element').
       This is @('nil') for an integer member.")))
   ((memtype member-type)
-   (reader symbolp)
-   (reader-element symbolp)
-   (writer symbolp)
-   (writer-element symbolp)
-   (checker symbolp)
-   (length symbolp)
-   (reader-return-thm symbolp)
-   (reader-element-return-thm symbolp)
-   (writer-return-thm symbolp)
-   (writer-element-return-thm symbolp))
+   (reader symbol)
+   (reader-element symbol)
+   (writer symbol)
+   (writer-element symbol)
+   (checker symbol)
+   (length symbol)
+   (reader-return-thm symbol)
+   (reader-element-return-thm symbol)
+   (writer-return-thm symbol)
+   (writer-element-return-thm symbol))
   :pred defstruct-member-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -154,6 +154,8 @@
     (xdoc::li
      "A flag saying whether the structure type has a flexible array member.")
     (xdoc::li
+     "The fixtype of the structures.")
+    (xdoc::li
      "The recognizer of the structures.")
     (xdoc::li
      "The fixer of the structures.")
@@ -193,16 +195,17 @@
   ((tag ident)
    (members defstruct-member-info-list)
    (flexiblep bool)
-   (recognizer symbolp)
-   (fixer symbolp)
-   (fixer-recognizer-thm symbolp)
-   (not-error-thm symbolp)
-   (valuep-thm symbolp)
-   (value-kind-thm symbolp)
-   (type-of-value-thm symbolp)
-   (flexiblep-thm symbolp)
-   (type-to-quoted-thm symbolp)
-   (pointer-type-to-quoted-thm symbolp)
+   (fixtype symbol)
+   (recognizer symbol)
+   (fixer symbol)
+   (fixer-recognizer-thm symbol)
+   (not-error-thm symbol)
+   (valuep-thm symbol)
+   (value-kind-thm symbol)
+   (type-of-value-thm symbol)
+   (flexiblep-thm symbol)
+   (type-to-quoted-thm symbol)
+   (pointer-type-to-quoted-thm symbol)
    (call pseudo-event-form))
   :pred defstruct-infop)
 
@@ -214,6 +217,7 @@
   :body (make-defstruct-info :tag (irr-ident)
                              :members nil
                              :flexiblep nil
+                             :fixtype nil
                              :recognizer nil
                              :fixer nil
                              :fixer-recognizer-thm nil
@@ -584,7 +588,12 @@
                        (b* ((memtype (car (last memtypes)))
                             (type (member-type->type memtype)))
                          (and (type-case type :array)
-                              (not (type-array->size type)))))))
+                              (not (type-array->size type))))))
+       ((when (and flexiblep
+                   (not (consp (cdr members)))))
+        (er-soft+ ctx t irrelevant
+                  "Since there is a flexible array member, ~
+                   there must be at least another member.")))
     (acl2::value (list tag tag-ident memtypes flexiblep nil)))
   ///
   (more-returns
@@ -2463,7 +2472,8 @@
             fixer-recognizer-thm)
         (defstruct-gen-fixer struct-tag-fix struct-tag-p tag members flexiblep))
        (fixtype-event (defstruct-gen-fixtype
-                        struct-tag struct-tag-p
+                        struct-tag
+                        struct-tag-p
                         struct-tag-fix
                         struct-tag-equiv))
        (constructor-event
@@ -2481,6 +2491,7 @@
               :tag tag-ident
               :members member-infos
               :flexiblep flexiblep
+              :fixtype struct-tag
               :recognizer struct-tag-p
               :fixer struct-tag-fix
               :fixer-recognizer-thm fixer-recognizer-thm

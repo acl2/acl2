@@ -465,7 +465,8 @@
                (struct pseudo-termp)
                (tag identp)
                (member identp)
-               (elem-type typep))
+               (elem-type typep)
+               (flexiblep booleanp))
   :short "Check if a term may represent a structure read
           of an element of an array member."
   :long
@@ -483,9 +484,9 @@
    (xdoc::p
     "If the term does not have the right form,
      we return an indication of failure."))
-  (b* (((reterr) nil nil nil nil (irr-ident) (irr-ident) (irr-type))
+  (b* (((reterr) nil nil nil nil (irr-ident) (irr-ident) (irr-type) nil)
        ((acl2::fun (no))
-        (retok nil nil nil nil (irr-ident) (irr-ident) (irr-type)))
+        (retok nil nil nil nil (irr-ident) (irr-ident) (irr-type) nil))
        ((mv okp fn args) (fty-check-fn-call term))
        ((unless okp) (no))
        ((mv okp struct tag read member element) (atc-check-symbol-5part fn))
@@ -519,11 +520,12 @@
        ((unless (type-case mem-type :array))
         (reterr (raise "Internal error: type of ~x0 is not array." member)))
        (elem-type (type-array->of mem-type))
+       (flexiblep (not (type-array->size mem-type)))
        ((unless (list-lenp 2 args))
         (reterr (raise "Internal error: ~x0 not applied to 2 arguments." fn)))
        (index (first args))
        (struct (second args)))
-    (retok t fn index struct tag member elem-type))
+    (retok t fn index struct tag member elem-type flexiblep))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-read-array-index

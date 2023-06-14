@@ -5318,6 +5318,9 @@
 
 ; See error-fms-channel.  Here we also print extra newlines.
 
+; Note that this function does not suppress error output except in the case
+; that the summary string is inhibited (see :DOC set-inhibit-er).
+
 ; Keep in sync with error-fms-cw.
 
   (let ((chan (f-get-global 'standard-co state)))

@@ -139,7 +139,8 @@
        if present, the positive integer specifies the size of the array type;
        if absent, the array type has unspecified size.
        The positive integer may be absent only if the member is the last one,
-       in which case it represents a flexible array member [C:6.7.2.1/18].
+       in which case it represents a flexible array member [C:6.7.2.1/18];
+       in this case, there must be at least another member.
        The aforementioned upper bound on the size
        is so that the size of the array type
        is representable as a C integer constant.")))

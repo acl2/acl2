@@ -2861,10 +2861,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   alist~%~s"
                  ctx str alist)))
        (t
-        (when (not (and (f-get-global 'inhibit-er-hard state)
-                        (member 'error
-                                (f-get-global 'inhibit-output-lst state)
-                                :test #'eq)))
+        (when (not (inhibit-er-hard state))
           (let ((*standard-output* *error-output*)
                 (*wormholep* nil))
             (error-fms t ctx summary str alist state)))
@@ -7712,7 +7709,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (msgp x)))
 
 (defun with-output-fn (ctx0 args off on gag-mode stack summary-on summary-off
-                            evisc ctx kwds)
+                            evisc inhibit-er-hard ctx kwds)
   (declare (xargs :mode :program
                   :guard (and (true-listp args)
                               (or (symbol-listp off)
@@ -7743,7 +7740,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ((eq (car args) :ctx)
           (cond ((ctxp (cadr args))
                  (with-output-fn ctx0 (cddr args) off on gag-mode stack
-                                 summary-on summary-off evisc (cadr args)
+                                 summary-on summary-off evisc inhibit-er-hard
+                                 (cadr args)
                                  (cons (car args) kwds)))
                 (t (hard-error ctx0
                                illegal-value-string
@@ -7751,14 +7749,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      (cons #\1 :ctx))))))
          ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
           (with-output-fn ctx0 (cddr args) off on gag-mode stack
-                          summary-on summary-off (cadr args) ctx
+                          summary-on summary-off (cadr args) inhibit-er-hard
+                          ctx
                           (cons (car args) kwds)))
          ((eq (car args) :gag-mode)
           (cond
            ((member-eq (cadr args)
                        '(t :goals nil)) ; keep in sync with set-gag-mode
             (with-output-fn ctx0 (cddr args) off on (cadr args) stack
-                            summary-on summary-off evisc ctx
+                            summary-on summary-off evisc inhibit-er-hard ctx
                             (cons (car args) kwds)))
            (t (hard-error ctx0
                           illegal-value-string
@@ -7767,9 +7766,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ((and (eq (car args) :off)
                (eq (cadr args) :all!))
           (with-output-fn ctx0
-                          (list* :off :all :gag-mode nil (cddr args))
+                          (list* :off :all :gag-mode nil :inhibit-er-hard t
+                                 (cddr args))
                           off on gag-mode stack summary-on summary-off
-                          evisc ctx kwds))
+                          evisc inhibit-er-hard ctx kwds))
          ((member-eq (car args) '(:on :off))
           (let ((val (with-output-on-off-arg (cadr args) *valid-output-names*)))
             (cond
@@ -7780,17 +7780,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 (cons #\1 (car args)))))
              ((eq (car args) :on)
               (with-output-fn ctx0 (cddr args) off val
-                              gag-mode stack summary-on summary-off evisc ctx
+                              gag-mode stack summary-on summary-off evisc
+                              inhibit-er-hard ctx
                               (cons (car args) kwds)))
              (t ; (eq (car args) :off)
               (with-output-fn ctx0 (cddr args) val on
-                              gag-mode stack summary-on summary-off evisc ctx
+                              gag-mode stack summary-on summary-off evisc
+                              inhibit-er-hard ctx
                               (cons (car args) kwds))))))
          ((eq (car args) :stack)
           (cond
            ((member-eq (cadr args) '(:push :pop))
             (with-output-fn ctx0 (cddr args) off on gag-mode (cadr args)
-                            summary-on summary-off evisc ctx
+                            summary-on summary-off evisc inhibit-er-hard ctx
                             (cons (car args) kwds)))
            (t (hard-error ctx0
                           illegal-value-string
@@ -7805,12 +7807,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      (cons #\1 (car args)))))
                   ((eq (car args) :summary-on)
                    (with-output-fn ctx0 (cddr args) off on gag-mode stack
-                                   val summary-off evisc ctx
+                                   val summary-off evisc inhibit-er-hard ctx
                                    (cons (car args) kwds)))
                   (t ; (eq (car args) :summary-off)
                    (with-output-fn ctx0 (cddr args) off on gag-mode stack
-                                   summary-on val evisc ctx
+                                   summary-on val evisc inhibit-er-hard ctx
                                    (cons (car args) kwds))))))
+         ((eq (car args) :inhibit-er-hard)
+          (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                          summary-on summary-off evisc (cadr args) ctx
+                          (cons (car args) kwds)))
          (t
           (hard-error ctx0
                       "~x0 is not a legal keyword for a call of with-output.  ~
@@ -7827,6 +7833,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t
     (let* ((ctx-p (member-eq :ctx kwds))
            (evisc-p (member-eq :evisc kwds))
+           (inhibit-er-hard-p (member-eq :inhibit-er-hard kwds))
            (gag-p (member-eq :gag-mode kwds))
            (on-p (member-eq :on kwds))
            (off-p (member-eq :off kwds))
@@ -7839,6 +7846,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (,@
                (and ctx-p
                     `((global-ctx ,ctx)))
+               ,@
+               (and inhibit-er-hard-p
+                    `((inhibit-er-hard ,inhibit-er-hard)))
                ,@
                (and (or gag-p
                         (eq stack :pop))
@@ -7884,7 +7894,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(if (eq (ld-skip-proofsp state) 'include-book)
        ,(car (last args))
      ,(let ((val (with-output-fn 'with-output args
-                                 nil nil nil nil nil nil nil nil nil)))
+                                 nil nil nil nil nil nil nil nil nil nil)))
         (or val
 
 ; If val is nil, then we have presumably already aborted with an error.  But
@@ -15591,6 +15601,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   `(progn (f-put-global ,key ,value ,st)
           nil))
+
+(defun inhibit-er-hard (state)
+  (declare (xargs :stobjs state :mode :program))
+  (and (f-get-global 'inhibit-er-hard state)
+       (member-eq 'error
+                  (f-get-global 'inhibit-output-lst state))))
 
 ; We now define state-global-let*, which lets us "bind" state
 ; globals.
