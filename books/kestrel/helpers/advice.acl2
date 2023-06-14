@@ -12,6 +12,12 @@
 
 (include-book "kestrel/big-data/packages" :dir :system)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "portcullis") ;; for the HELP package
+
+;; Additional packages (TODO: Clean this up):
+
 ;TODO: REMOVE:
 (defpkg "LABEL" '(nil t))
 ; (defpkg "JVM" '(nil t)) ; TODO: clash!
@@ -252,10 +258,6 @@
   (set-difference-eq (union-eq *acl2-exports*
                                *common-lisp-symbols-from-main-lisp-package*)
                      '(push pop pc program step)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(include-book "portcullis") ;; for the HELP package
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
