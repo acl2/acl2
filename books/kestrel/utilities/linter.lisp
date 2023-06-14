@@ -1,6 +1,6 @@
 ; A linter for ACL2
 ;
-; Copyright (C) 2018-2020 Kestrel Institute
+; Copyright (C) 2018-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1035,11 +1035,11 @@
 
 ;; Returns state.
 (defun lint-defthm (name ;assume-guards
+                    body ; translated
                     suppress step-limit state)
   (declare (xargs :stobjs state
                   :mode :program))
-  (b* ((body (defthm-body name (w state)))
-       ;;optimize this?
+  (b* (;;optimize this?
        (untouchable-fns-in-body (intersection-eq (all-fnnames body)
                                                  (global-val 'untouchable-fns (w state))))
        ((when untouchable-fns-in-body)
@@ -1059,14 +1059,16 @@
                       nil ;type-alist
                       nil ;iff-flag todo
                       name
-                      suppress state))
+                      (add-to-set-eq :equality-variant suppress) ; don't suggest using things other than equal, since this is a defthm
+                      state))
        ;; Check the conclusion, including checking for ground terms ,etc:
        (- (lint-term conclusion
                      nil ;empty substitution
                      nil ;type-alist
                      nil ;iff-flag todo
                      name
-                     (cons :resolvable-test suppress) ; don't report clearly true conjuncts in the conclusion (what about true disjuncts?)
+                     (add-to-set-eq :equality-variant ; don't suggest using things other than equal, since this is a defthm
+                                    (add-to-set-eq :resolvable-test suppress)) ; don't report clearly true conjuncts in the conclusion (what about true disjuncts?)
                      state))
        (non-synp-hyps (drop-calls-of 'synp hyps))
        (non-synp-hyps (drop-calls-of 'axe-syntaxp non-synp-hyps))
@@ -1109,6 +1111,7 @@
            (state (if checkp
                       (progn$ (cw "~s0 ~x1.~%" (describe-event-location name (w state)) name)
                               (lint-defthm name ;assume-guards
+                                           (defthm-body name (w state))
                                            suppress step-limit state))
                     state)))
       (lint-defthms (rest names) ;assume-guards
