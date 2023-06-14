@@ -1,7 +1,7 @@
 ; Utilities for querying the ACL2 logical world.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2015-2017, Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -272,8 +272,8 @@
 (defmacro check-arities (term)
   `(check-arities-fn ,term state))
 
-;;assumes defthm-name is the name of a theorem in the world. ;todo:
-;;make a separate version that checks that
+;; Returns the (translated) body of DEFTHM-NAME, which must be the name of a
+;; theorem in the world.
 (defund defthm-body (defthm-name wrld)
   (declare (xargs :guard (and (symbolp defthm-name)
                               (plist-worldp wrld))))
