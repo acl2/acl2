@@ -12,3 +12,4 @@
 
 (include-book "combine-hints")
 (include-book "remove-hints")
+(include-book "goal-specs")

@@ -1,5 +1,3 @@
-(in-package "ACL2")
-
 ; Utilities for removing hints and parts of hints
 ;
 ; Copyright (C) 2022-2023 Kestrel Institute
@@ -10,8 +8,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "kestrel/utilities/theory-hints" :dir :system) ; for hint-has-goal-specp, todo: factor out
+(in-package "ACL2")
+
 (include-book "kestrel/hints/combine-hints" :dir :system)
+(include-book "kestrel/hints/goal-specs" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 
