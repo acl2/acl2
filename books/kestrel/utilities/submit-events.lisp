@@ -105,6 +105,7 @@
                ((inhibit-output-lst
                  (union-eq (f-get-global 'inhibit-output-lst state)
                            additional-output-types-to-inhibit))
+                (inhibit-er-hard (if print nil t)) ; suppress even hard errors
                 (print-clause-ids (if print t nil)) ; compare to what set-gag-mode-fn does
                 (gag-mode (if print nil t)) ; compare to what set-gag-mode-fn does
                 (saved-output-token-lst (if print nil :all)) ; compare to what set-gag-mode-fn does
