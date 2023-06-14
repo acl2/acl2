@@ -35,6 +35,8 @@
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/split-path" :dir :system)
+(include-book "kestrel/utilities/linter" :dir :system)
+(include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
 (include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
@@ -298,7 +300,7 @@
                                     )))
     (theorems-with-new-hints defthm-variant name term hint-lists-to-try)))
 
-;; Submits and improves the events.
+;; Submits and improves the event.
 ;; Returns (mv erp state).
 ;; TODO: Use limits based on how many steps were needed for the original proof.
 (defun improve-defthm-event (event rest-events print state)
@@ -312,25 +314,25 @@
    (let* ((defthm-variant (first event))
           (defthm-args (rest event))
           (name (first defthm-args))
-          (term (second defthm-args))
+          (body (second defthm-args))
           (keyword-value-list (rest (rest defthm-args)))
           (hintsp (assoc-keyword :hints keyword-value-list))
           ;; TODO: Try deleting the :otf-flg
           ;; TODO: Try deleting/weakening hyps (see the linter?)
-          (event-without-hints `(,defthm-variant ,name ,term ,@(remove-keyword :hints keyword-value-list)))
+          (event-without-hints `(,defthm-variant ,name ,body ,@(remove-keyword :hints keyword-value-list)))
           (alist (if (not hintsp)
                      nil ; nothing to do (currently)
                    (let ((hints (cadr hintsp)))
                      (acons event-without-hints
                             (concatenate 'string (newline-string) "  Drop all :hints.") ; todo: if this works, don't try individual hints
-                            (defthms-with-removed-hints defthm-variant name term hints))))))
+                            (defthms-with-removed-hints defthm-variant name body hints))))))
      (mv-let (improvement-foundp state)
        (try-improved-events alist nil state)
-       (prog2$ (if (not improvement-foundp)
-                   (and print (cw "No improvement found.)~%"))
-                 (and print (cw ")~%")))
-               ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
-               (submit-event-helper event nil nil state))))))
+       (declare (ignore improvement-foundp)) ;todo: don't bother to return this
+       (let ((state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
+         (prog2$ (and print (cw ")~%"))
+                 ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
+                 (submit-event-helper event nil nil state)))))))
 
 ;; Submit EVENT, after printing suggestions for improving it.
 ;; Returns (mv erp state).
