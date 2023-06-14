@@ -15,18 +15,18 @@
 (include-book "kestrel/hints/goal-specs" :dir :system)
 ; (include-book "tools/rulesets" :dir :system) ; not strictly needed
 
-(defun e/d-runes-in-theory-hint (val enable-runes disable-runes)
-  (declare (xargs :guard (and (true-listp val)
+(defun e/d-runes-in-theory-expression (expr enable-runes disable-runes)
+  (declare (xargs :guard (and (true-listp expr)
                               (true-listp enable-runes)
                               (true-listp disable-runes))))
-  (if (null val)                        ; nil is apparently legal
-      val
-    (if (not (consp val))
-        (er hard? 'e/d-runes-in-theory-hint "Unsupported :in-theory hint: ~x0." val)
-      (let ((fn (ffn-symb val)))
+  (if (null expr) ; nil is apparently legal
+      expr
+    (if (not (consp expr))
+        (er hard? 'e/d-runes-in-theory-expression "Unsupported :in-theory hint: ~x0." expr)
+      (let ((fn (ffn-symb expr)))
         (if (member fn '(enable disable e/d enable* disable* e/d*))
             (b* (((mv old-enabled old-disabled star-p)
-                  (case-match val
+                  (case-match expr
                     (('enable . enabled)
                      (mv enabled nil nil))
                     (('enable* . enabled)
@@ -39,15 +39,15 @@
                      (if (and (true-listp enabled)
                               (true-listp (car disabledl)))
                          (mv enabled (car disabledl) nil)
-                       (prog2$ (er hard? 'e/d-runes-in-theory-hint "Illegal ~x0: ~x1" fn val)
+                       (prog2$ (er hard? 'e/d-runes-in-theory-expression "Illegal ~x0: ~x1" fn expr)
                                (mv nil nil nil))))
                     (('e/d* enabled . disabledl) ; can the disabled list be omitted?
                      (if (and (true-listp enabled)
                               (true-listp (car disabledl)))
                          (mv enabled (car disabledl) t)
-                       (prog2$ (er hard? 'e/d-runes-in-theory-hint "Illegal ~x0: ~x1" fn val)
+                       (prog2$ (er hard? 'e/d-runes-in-theory-expression "Illegal ~x0: ~x1" fn expr)
                                (mv nil nil nil))))
-                    (& (prog2$ (er hard? 'e/d-runes-in-theory-hint "Illegal ~x0: ~x1" fn val)
+                    (& (prog2$ (er hard? 'e/d-runes-in-theory-expression "Illegal ~x0: ~x1" fn expr)
                                (mv nil nil nil)))))
                  (new-enabled (append old-enabled enable-runes))
                  (new-disabled (append old-disabled disable-runes)))
@@ -57,32 +57,23 @@
                     `(,(if star-p 'disable* 'disable) ,@new-disabled)
                   `(,(if star-p 'e/d* 'e/d) ,new-enabled ,new-disabled))))
           (if (equal fn 'quote)
-              (if (true-listp (second val))
-                  `(quote ,(union-equal (set-difference-equal (second val) disable-runes)
+              (if (true-listp (second expr))
+                  `(quote ,(union-equal (set-difference-equal (second expr) disable-runes)
                                         enable-runes))
-                (er hard? 'e/d-runes-in-theory-hint "Illegal in-theory expression: ~x0" val))
-           (if (and (eq fn 'append)
-                    (null disable-runes)
-                    (consp (second val))
-                    (eq (car (second val)) 'quote)
-                    (true-listp (second val)))
-               `(append ,(e/d-runes-in-theory-hint (second val) enable-runes ())
-                        ,@(cddr val))
-             (let* ((enable-term (if enable-runes
-                                        `(union-theories ,val ',enable-runes)
-                                      val)))
-                  (if disable-runes
-                      `(set-difference-theories ,enable-term ',disable-runes)
-                    enable-term)))))))))
-
-(defun e/d-runes-in-hint-value (key val enable-runes disable-runes)
-  (declare (xargs :guard (and (keywordp key)
-                              (true-listp enable-runes)
-                              (true-listp disable-runes))))
-  (if (and (eq :in-theory key)
-           (true-listp val))
-      (e/d-runes-in-theory-hint val enable-runes disable-runes)
-    val))
+                (er hard? 'e/d-runes-in-theory-expression "Illegal in-theory expression: ~x0" expr))
+            (if (and (eq fn 'append)
+                     (null disable-runes)
+                     (consp (second expr))
+                     (eq (car (second expr)) 'quote)
+                     (true-listp (second expr)))
+                `(append ,(e/d-runes-in-theory-expression (second expr) enable-runes ())
+                         ,@(cddr expr))
+              (let* ((enable-term (if enable-runes
+                                      `(union-theories ,expr ',enable-runes)
+                                    expr)))
+                (if disable-runes
+                    `(set-difference-theories ,enable-term ',disable-runes)
+                  enable-term)))))))))
 
 (defund e/d-runes-in-hint-keyword-value-list (keyword-value-list enable-runes disable-runes)
   (declare (xargs :guard (and (keyword-value-listp keyword-value-list)
@@ -92,9 +83,15 @@
   (if (endp keyword-value-list)
       nil
     (let* ((key (first keyword-value-list))
-           (val (second keyword-value-list))
-           (new-val (e/d-runes-in-hint-value key val enable-runes disable-runes)))
-      (cons key (cons new-val (e/d-runes-in-hint-keyword-value-list (rest (rest keyword-value-list)) enable-runes disable-runes))))))
+           (val (second keyword-value-list)))
+      (if (not (eq :in-theory key))
+          (cons key (cons val (e/d-runes-in-hint-keyword-value-list (rest (rest keyword-value-list)) enable-runes disable-runes)))
+        (if (not (true-listp val))
+            (er hard? 'e/d-runes-in-hint-keyword-value-list "Bad theory expression: ~x0." val)
+          (cons key
+                (cons (e/d-runes-in-theory-expression val enable-runes disable-runes)
+                      (rest (rest keyword-value-list)) ; don't recur, since duplicate hint keywords are prohibited
+                      )))))))
 
 ;; can the enable-items and disable-items both be empty?
 (defun make-in-theory-hint-setting (enable-items disable-items)
