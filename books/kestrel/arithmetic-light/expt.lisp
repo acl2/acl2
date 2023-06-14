@@ -22,8 +22,14 @@
 (local (include-book "plus"))
 (local (include-book "floor"))
 (local (include-book "even-and-odd"))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (in-theory (disable expt))
+
+;; Note that there are several built-in :type-prescription rules about expt:
+;; (:type-prescription expt)
+;; rationalp-expt-type-prescription
+;; expt-type-prescription-non-zero-base
 
 (defthm integerp-of-expt
   (implies (and (integerp r)
@@ -31,35 +37,44 @@
            (integerp (expt r i)))
   :hints (("Goal" :in-theory (enable expt))))
 
-;; Note that RATIONALP-EXPT-TYPE-PRESCRIPTION and
-;; EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE are built-in.
-
 (defthm natp-of-expt
   (implies (and (natp r)
                 (<= 0 i))
            (natp (expt r i)))
-  :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable expt))))
-
-(defthm integerp-of-expt-type
-  (implies (and (integerp r)
-                (<= 0 i))
-           (integerp (expt r i)))
-  :rule-classes :type-prescription)
 
 (defthm <-of-0-and-expt
   (implies (and (< 0 r)
                 (rationalp r))
            (< 0 (expt r i)))
-  :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable zip expt))))
 
 (defthm <=-of-0-and-expt
   (implies (and (<= 0 r)
                 (rationalp r))
            (<= 0 (expt r i)))
-  :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable zip expt))))
+
+(local
+ ;; induction function that subtracts 2 each time
+ (defun ind-sub2 (i)
+   (if (or (zip i)
+           (equal 1 i)
+           (equal -1 i))
+       i
+     (if (< i 0)
+         (ind-sub2 (+ 2 i))
+       (ind-sub2 (+ -2 i))))))
+
+(defthm <-of-expt-and-0
+  (implies (and (rationalp r)
+                (integerp i))
+           (equal (< (expt r i) 0)
+                  (and (< r 0)
+                       (not (evenp i)))))
+  :hints (("Goal" :induct (ind-sub2 i)
+           :expand (expt r i)
+           :in-theory (enable expt zip))))
 
 (defthm equal-of-0-and-expt
   (equal (equal 0 (expt r i))
@@ -69,13 +84,56 @@
               ))
   :hints (("Goal" :in-theory (enable zip expt))))
 
-(local
- (DEFUN EXPT-double-induct (R I j)
-   (DECLARE (XARGS :MEASURE (ABS (IFIX I))))
-   (COND ((ZIP I) j)
-         ((= (FIX R) 0) 0)
-         ((> I 0) (* R (EXPT-double-induct R (+ I -1) (+ j -1))))
-         (T (* (/ R) (EXPT-double-induct R (+ I 1) (+ j 1)))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm integerp-of-expt-type
+  (implies (and (integerp r)
+                (<= 0 i))
+           (integerp (expt r i)))
+  :rule-classes :type-prescription)
+
+(defthm <-of-0-and-expt-type
+  (implies (and (< 0 r)
+                (rationalp r))
+           (< 0 (expt r i)))
+  :rule-classes :type-prescription)
+
+(defthm <=-of-0-and-expt-type
+  (implies (and (<= 0 r)
+                (rationalp r))
+           (<= 0 (expt r i)))
+  :rule-classes :type-prescription)
+
+;; the base can be positive or negative
+(defthm expt-type-even-exponent-1
+  (implies (and (evenp i)
+                (not (equal r 0))
+                (rationalp r))
+           (< 0 (expt r i)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :induct (ind-sub2 i)
+           :expand (expt r i))))
+
+;; the base can be positive, negative, or 0
+(defthm expt-type-even-exponent-2
+  (implies (and (evenp i)
+                (rationalp r))
+           (<= 0 (expt r i)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :induct (ind-sub2 i)
+           :expand (expt r i)
+           :in-theory (enable expt))))
+
+;; The cases of positive r and non-negative r are covered elsewhere.
+(defthm expt-type-odd-exponent-negative-base
+  (implies (and (not (evenp i))
+                (< r 0)
+                (rationalp r)
+                (integerp i))
+           (< (expt r i) 0))
+  :rule-classes :type-prescription)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm expt-of-0-arg1
   (equal (expt 0 i)
@@ -99,6 +157,32 @@
          (fix r))
   :hints (("Goal" :in-theory (enable expt))))
 
+(defthmd expt-of-+-of--1-arg2
+  (implies (and (integerp i)
+                (acl2-numberp r))
+           (equal (expt r (+ -1 i))
+                  (if (equal 0 r)
+                      (if (equal 1 i) 1 0)
+                    (* (/ (fix r)) (expt r i)))))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthmd expt-of-+-of-1-arg2
+  (implies (and (integerp i)
+                (acl2-numberp r))
+           (equal (expt r (+ 1 i))
+                  (if (equal 0 r)
+                      (if (equal -1 i) 1 0)
+                    (* (fix r) (expt r i)))))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(local
+ (DEFUN EXPT-double-induct (R I j)
+   (DECLARE (XARGS :MEASURE (ABS (IFIX I))))
+   (COND ((ZIP I) j)
+         ((= (FIX R) 0) 0)
+         ((> I 0) (* R (EXPT-double-induct R (+ I -1) (+ j -1))))
+         (T (* (/ R) (EXPT-double-induct R (+ I 1) (+ j 1)))))))
+
 ;try to enable?
 (defthmd expt-of-+
   (implies (and (integerp i1)
@@ -113,7 +197,7 @@
   :hints (("Goal" :induct (EXPT-double-induct r i1 2)
 ;           :expand (EXPT R (+ I1 I2))
            :expand (EXPT R (+ 1 I1 I2))
-           :in-theory (enable expt zp))))
+           :in-theory (enable expt zp expt-of-+-of--1-arg2))))
 
 ;; Opposite of expt-of-+
 (defthmd *-of-expt-and-expt-same-base
@@ -139,7 +223,8 @@
            (equal (* (expt r (+ -1 x))
                      (expt r (+ 1 y)))
                   (* (expt r x) (expt r y))))
-  :hints (("Goal" :in-theory (enable expt))))
+  :hints (("Goal" :in-theory (enable expt expt-of-+-of-1-arg2
+                                     expt-of-+-of--1-arg2))))
 
 (local
  (defthm integerp-of-expt-helper
@@ -160,8 +245,6 @@
                       (<= 0 i))))
   :hints (("Goal" :cases ((equal 1 r))
            :in-theory (enable expt))))
-
-
 
 (defthm expt-of--1-arg1
   (implies (integerp i)
@@ -196,13 +279,14 @@
 
 (defthm <-of-1-and-expt-gen
   (implies (and (< 1 r)
-                (integerp n)
+                (integerp i)
                 (rationalp r)
                 )
-           (equal (< 1 (expt r n))
-                  (< 0 n)))
-  :hints (("Subgoal *1/4" :cases ((< 1 N)))
-          ("Goal" :in-theory (enable expt))))
+           (equal (< 1 (expt r i))
+                  (< 0 i)))
+  :hints (("Goal" :in-theory (e/d (expt)
+                                  (commutativity-2-of-*
+                                   )))))
 
 ;where should this go?
 (defthm floor-of-expt-2-and-2
@@ -549,30 +633,167 @@
   :hints (("subgoal *1/6" :cases ((< r1 r2)))
           ("Goal" :in-theory (enable expt))))
 
+(defthm <-of-expt-and-expt-same-exponents-negative
+  (implies (and (< i 0) ; this case
+                (rationalp r1)
+                (<= 1 r1) ; note this
+                (rationalp r2)
+                (<= 1 r2) ; note this
+                (integerp i))
+           (equal (< (expt r1 i) (expt r2 i))
+                  (< r2 r1)))
+  :hints (("subgoal *1/8" :cases ((< r2 r1)))
+          ("Goal" :in-theory (enable expt))))
+
+(defthm <-of-expt-and-expt-same-exponents-middle
+  (implies (and (< i 0) ; this case
+                (rationalp r1)
+                (< 0 r1) ; note this
+                (< r1 1) ; note this
+                (rationalp r2)
+                (< 0 r2) ; note this
+                (< r2 1) ; note this
+                (integerp i))
+           (equal (< (expt r1 i) (expt r2 i))
+                  (< r2 r1)))
+  :hints (("subgoal *1/8" :cases ((< r2 r1)))
+          ("Goal" :in-theory (enable expt))))
+
+;; this is not a very good :type-prescription rule
+;; (defthm <-of-1-and-expt-type-1
+;;   (implies (and (< i 0)
+;;                 (< r 1)
+;;                 (< 0 r) ;gen
+;;                 (rationalp r)
+;;                 (integerp i))
+;;            (< 1 (expt r i)))
+;;   :rule-classes :type-prescription
+;;   :hints (("Goal" :in-theory (enable expt))))
+
+;; negative exponent, r in (0,1)
+(defthm expt-when-negative-exponent-linear-1
+  (implies (and (< i 0)
+                (< r 1)
+                (< 0 r)
+                (rationalp r)
+                (integerp i))
+           (< 1 (expt r i)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt))))
+
+;; negative exponent, r in (0,1]
+(defthm expt-when-negative-exponent-linear-2
+  (implies (and (<= i 0) ; allows i=0 since conclusion uses <=
+                (<= r 1)
+                (< 0 r)
+                (rationalp r)
+                (integerp i))
+           (<= 1 (expt r i)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt))))
+
+;; negative exponent, r > 1
+;todo: why can't this be a :type-prescription rule?
+(defthm expt-when-negative-exponent-linear-3
+  (implies (and (< i 0)
+                (< 1 r)
+                (rationalp r)
+                (integerp i))
+           (< (expt r i) 1))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt))))
+
+;; negative exponent, r >= 1
+(defthm expt-when-negative-exponent-linear-4
+  (implies (and (<= i 0) ; allows i=0 since conclusion uses <=
+                (<= 1 r)
+                (rationalp r)
+                (integerp i))
+           (<= (expt r i) 1))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm <-of-expt-and-expt-same-exponents-gen
+  (implies (and (< 0 r1) ; todo
+                (< 0 r2) ; todo
+                (rationalp r1)
+                (rationalp r2)
+                (integerp i))
+           (equal (< (expt r1 i) (expt r2 i))
+                  (if (equal 0 i)
+                      nil ; both sides are equal to 1
+                    (if (< 0 i)
+                        (< r1 r2)
+                      ;; i is negative:
+                      (< r2 r1)))))
+  :hints (("Goal" :cases ((equal i 0)
+                          (and (not (equal i 0)) (<= 1 r1) (not (<= 1 r2)))
+                          (and (not (equal i 0)) (<= 1 r1) (<= 1 r2))
+                          (and (not (equal i 0)) (not (<= 1 r1)) (not (<= 1 r2)))
+                          (and (not (equal i 0)) (not (<= 1 r1)) (<= 1 r2))))))
+
 (defthm <-of-expt-and-expt-same-exponents-linear
-  (implies (and (< r1 r2)
+  (implies (and (< 0 i) ; this case
+                (< r1 r2)
                 (rationalp r1)
                 (<= 0 r1)
                 (rationalp r2)
                 (<= 0 r2)
-                (integerp i)
-                (< 0 i) ; todo: gen?
-                )
+                (integerp i))
            (< (expt r1 i) (expt r2 i)))
   :rule-classes :linear)
 
+(defthm <-of-expt-and-expt-same-exponents-linear-negative-exponent
+  (implies (and (< i 0) ; this case
+                (< r1 r2)
+                (rationalp r1)
+                (< 0 r1)
+                (rationalp r2)
+                (< 0 r2)
+                (integerp i)
+                )
+           (< (expt r2 i) (expt r1 i)))
+  :rule-classes :linear
+  :hints (("Goal" :cases ((equal 0 r1)))))
+
 ;gen?
+(local
+ (defthm equal-of-expt-and-expt-same-exponent-helper
+   (implies (and (<= 0 r1)
+                 (<= 0 r2)
+                 (rationalp r1)
+                 (rationalp r2)
+                 (integerp i))
+            (equal (equal (expt r1 i) (expt r2 i))
+                   (if (equal i 0)
+                       t
+                     (equal r1 r2))))
+   :hints (("Goal" :cases ((and (= 0 r1) (< i 0))
+                           (and (= 0 r2) (< i 0))
+                           (and (not (= 0 r1)) (not (= 0 r2)) (< r1 r2) (< i 0))
+                           (and (not (= 0 r1)) (not (= 0 r2)) (= r1 r2) (< i 0))
+                           (and (not (= 0 r1)) (not (= 0 r2)) (< r2 r1) (< i 0))
+                           (and (< r1 r2) (< 0 i))
+                           (and (= r1 r2) (< 0 i))
+                           (and (< r2 r1) (< 0 i))
+                           )))))
+
 (defthm equal-of-expt-and-expt-same-exponent
   (implies (and (rationalp r1)
-                (<= 0 r1)
                 (rationalp r2)
-                (<= 0 r2)
-                (integerp i)
-                (< 0 i) ;allow negative?
-                )
+                (integerp i))
            (equal (equal (expt r1 i) (expt r2 i))
-                  (equal r1 r2)))
-  :hints (("Goal" :cases ((< r1 r2) (< r2 r1)))))
+                  (if (equal i 0)
+                      t ; since both sides are equal to 1
+                    (if (evenp i)
+                        (equal (abs r1) (abs r2))
+                      (equal r1 r2)))))
+  :hints (("Goal" :cases ((evenp i))
+           :in-theory (disable equal-of-expt-and-expt-same-exponent-helper)
+           :use ((:instance equal-of-expt-and-expt-same-exponent-helper)
+                 (:instance equal-of-expt-and-expt-same-exponent-helper (r1 (- r1)) (r2 (- r2)))
+                 (:instance equal-of-expt-and-expt-same-exponent-helper (r1 (- r1)) (r2 r2))
+                 (:instance equal-of-expt-and-expt-same-exponent-helper (r1 r1) (r2 (- r2)))))))
 
 (defthm equal-of-expt-and-expt-same-base
   (implies (and (rationalp r)
