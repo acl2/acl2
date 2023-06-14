@@ -81,7 +81,6 @@
                           rationalp-when-integerp
                           )))
 
-
 (defthmd integer-listp-rewrite
   (equal (integer-listp x)
          (and (all-integerp x)
@@ -1117,23 +1116,22 @@
            (bounded-darg-listp (bvxor-nest-leaves nodenum size dag-array dag-len translation-array) bound))
   :hints (("Goal" :in-theory (enable bvxor-nest-leaves))))
 
-(local (in-theory (disable myquotep)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array).
 ;check this over..
-;; TODO: Consider storing the leaves for each discovered XOR node in the old-dag as we go, bottom-up, and using that to make each leave computation faster.
+;; TODO: Consider storing the leaves for each discovered XOR node in the old-dag as we go, bottom-up, and using that to make each leaf computation faster.
 (defund normalize-xors-aux (n ;counts up from 0 to old-dag-len
                             ;;the DAG we are copying (and normalizing xor nests as we go):
                             old-dag-array old-dag-len old-dag-parent-array
                             ;;the new DAG (initially empty):
                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                            translation-array ;maps nodenums in old-dag-array to equivalent nodes (or quoteps?) in dag-array
+                            translation-array ;maps nodenums in old-dag-array to equivalent nodenums/quoteps in dag-array
                             print)
   (declare (xargs :guard (and (natp n)
-                              (natp old-dag-len)
-                              (<= n old-dag-len)
                               ;;stuff about the old dag (can't use wf-dagp since dag-constant-alist and dag-variable-alist are missing):
                               (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
+                              (<= n old-dag-len)
                               (bounded-dag-parent-arrayp 'normalize-xors-old-parent-array old-dag-parent-array old-dag-len)
                               (equal (alen1 'normalize-xors-old-array old-dag-array)
                                      (alen1 'normalize-xors-old-parent-array old-dag-parent-array))
@@ -1389,11 +1387,10 @@
 ;;            (renaming-arrayp-aux 'translation-array (mv-nth 5 (normalize-xors-aux n dag-array dag-len dag-parent-array dag-parent-array-name new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-dag-array-name new-dag-parent-array-name translation-array print)) (+ -1 dag-len)))
 ;;   :hints (("Goal" :in-theory (enable NORMALIZE-XORS-AUX))))
 
-;TODO: Consider making a version that returns an array, to avoid the caller having to convert so much between lists and arrays.
-;dag should not be a quotep or empty
+;TODO: Consider making a version that returns a dag-array, to avoid the caller having to convert so much between lists and arrays.
 ;Returns (mv erp dag-or-quotep changep) where the result is either a new dag whose top node is equal to the top node of DAG, or a quotep equal to the top node of DAG
 (defund normalize-xors (dag print)
-  (declare (xargs :guard (and (pseudo-dagp dag)
+  (declare (xargs :guard (and (pseudo-dagp dag) ; not empty, not a quotep
                               (<= (* 2 (len dag)) 2147483646) ;todo
                               )
                   :guard-hints (("Goal" :in-theory (e/d (top-nodenum-of-dag) (pseudo-dag-arrayp natp quotep))))))
@@ -1882,11 +1879,6 @@
 ;;                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))
 
 ;; (skip- proofs (verify-guards add-term-to-dag))
-
-;; we prefer nth of dargs
-(defthmd car-of-dargs
-  (equal (car (dargs expr))
-         (nth 0 (dargs expr))))
 
 ;move
 (DEFTHM rationalp-OF-NTH-WHEN-ALL-INTEGERP
