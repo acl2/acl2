@@ -273,10 +273,11 @@
   (and (true-listp rec)
        (= 5 (len rec))
        (let ((name (nth 0 rec))
-             (type (nth 1 rec))
-             ;; (object (nth 2 rec))
+             (type (nth 1 rec)) ; action type
+             ;; (object (nth 2 rec)) ; action object
              (confidence-percent (nth 3 rec))
-             (book-map (nth 4 rec)))
+             (book-map (nth 4 rec)) ; maps symbols to books that may define them
+             )
          (and (stringp name)
               (rec-typep type)
               ;; object
