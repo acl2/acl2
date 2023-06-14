@@ -95,16 +95,35 @@
            (new-val (e/d-runes-in-hint-value key val enable-runes disable-runes)))
       (cons key (cons new-val (e/d-runes-in-hint-keyword-value-list (rest (rest keyword-value-list)) enable-runes disable-runes))))))
 
+;; can the enable-items and disable-items both be empty?
+(defun make-in-theory-hint-setting (enable-items disable-items)
+  (declare (xargs :guard (and (true-listp enable-items)
+                              (true-listp disable-items))))
+  (if (null enable-items)
+      `(disable ,@disable-items) ; might not be any disable-items
+    (if (null disable-items)
+        `(enable ,@enable-items)
+      `(e/d ,enable-items ,disable-items))))
+
+;; Enable and disable the given items in HINT.
+;; TODO: Rename in analogy with add-enable*/disable*-to-hint
 (defun e/d-runes-in-hint (hint enable-runes disable-runes)
   (declare (xargs :guard (and (true-listp enable-runes)
                               (true-listp disable-runes))))
   (if (and (consp hint)
-           (stringp (first hint))
-           (keyword-value-listp (rest hint)))
-      (let ((goal-name (first hint))
+           (stringp (first hint)))
+      ;; common hint:
+      (let ((goal-spec (first hint))
             (keyword-value-list (rest hint)))
-        (cons goal-name (e/d-runes-in-hint-keyword-value-list keyword-value-list enable-runes disable-runes)))
-    hint))
+        (if (not (keyword-value-listp keyword-value-list))
+            (er hard? 'e/d-runes-in-hint "Bad hint: ~x0." hint)
+          (let ((in-theory (assoc-keyword :in-theory keyword-value-list)))
+            (if (not in-theory)
+                `(,goal-spec ,@keyword-value-list :in-theory ,(make-in-theory-hint-setting enable-runes disable-runes))
+              `(,goal-spec ,@(e/d-runes-in-hint-keyword-value-list keyword-value-list enable-runes disable-runes))))))
+    ;; computed hint:
+    hint ; todo
+    ))
 
 (defund e/d-runes-in-hints-aux (hints enable-runes disable-runes)
   (declare (xargs :guard (and (true-listp hints)
@@ -233,6 +252,16 @@
                     (rest (rest keyword-value-list)) ; don't recur, since duplicate hint keywords are prohibited
                     ))))))
 
+;; can the enable-items and disable-items both be empty?
+(defun make-in-theory-hint-setting* (enable*-items disable*-items)
+  (declare (xargs :guard (and (true-listp enable*-items)
+                              (true-listp disable*-items))))
+  (if (null enable*-items)
+      `(disable* ,@disable*-items) ; might not be any disable-items
+    (if (null disable*-items)
+        `(enable* ,@enable*-items)
+      `(e/d* ,enable*-items ,disable*-items))))
+
 ;; Ensures that the ENABLE*-ITEMS/DISABLE*-ITEMS, which are suitable for
 ;; passing to ENABLE*/DISABLE*, are enabled/disabled in the HINT (TODO: except
 ;; for computed hints?).  Note that the enabling is done first, then the
@@ -246,9 +275,12 @@
       ;; common hint:
       (let ((goal-spec (first hint))
             (keyword-value-list (rest hint)))
-        (if (not (keyword-value-listp (rest hint)))
+        (if (not (keyword-value-listp keyword-value-list))
             (er hard? 'add-enable*/disable*-to-hint "Bad hint: ~x0." hint)
-          (cons goal-spec (add-enable*/disable*-to-hint-keyword-value-list keyword-value-list enable*-items disable*-items))))
+          (let ((in-theory (assoc-keyword :in-theory keyword-value-list)))
+            (if (not in-theory)
+                `(,goal-spec ,@keyword-value-list :in-theory ,(make-in-theory-hint-setting* enable*-items disable*-items))
+              `(,goal-spec ,@(add-enable*/disable*-to-hint-keyword-value-list keyword-value-list enable*-items disable*-items))))))
     ;; computed hint:
     hint ; todo
     ))

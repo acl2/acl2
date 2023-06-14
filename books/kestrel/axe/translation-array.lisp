@@ -1,7 +1,7 @@
 ; Renumbering DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -210,6 +210,7 @@
 ;;;
 
 ;; A stronger version of translation-arrayp-aux.
+;; TODO: Remove -aux from name.
 (defund bounded-translation-arrayp-aux (top-nodenum-to-check array bound)
   (declare (xargs :measure (nfix (+ 1 top-nodenum-to-check))
                   :guard (and (array1p 'translation-array array)
