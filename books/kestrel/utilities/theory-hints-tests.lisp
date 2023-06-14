@@ -14,6 +14,64 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)
 
+(assert-equal
+ (enable-runes-in-hints '(("Goal" :use blah)) '(f2))
+ '(("Goal" :use blah :in-theory (enable f2))))
+
+(assert-equal
+ (enable-runes-in-hints '(("Goal" :in-theory (enable f1))) '(f2))
+ '(("Goal" :in-theory (enable f1 f2))))
+
+;; TODO: Not right if f1 is a theory that includes f2.
+(assert-equal
+ (enable-runes-in-hints '(("Goal" :in-theory (disable f1))) '(f2))
+ '(("Goal" :in-theory (e/d (f2) (f1)))))
+
+;; TODO: Not right if f2 is a theory that includes f3.
+(assert-equal
+ (enable-runes-in-hints '(("Goal" :in-theory (e/d (f1) (f2)))) '(f3))
+ '(("Goal" :in-theory (e/d (f1 f3) (f2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal
+ (disable-runes-in-hints '(("Goal" :use blah)) '(f2))
+ '(("Goal" :use blah :in-theory (disable f2))))
+
+(assert-equal
+ (disable-runes-in-hints '(("Goal" :in-theory (enable f1))) '(f2))
+ '(("Goal" :in-theory (e/d (f1) (f2)))))
+
+(assert-equal
+ (disable-runes-in-hints '(("Goal" :in-theory (disable f1))) '(f2))
+ '(("Goal" :in-theory (disable f1 f2))))
+
+(assert-equal
+ (disable-runes-in-hints '(("Goal" :in-theory (e/d (f1) (f2)))) '(f3))
+ '(("Goal" :in-theory (e/d (f1) (f2 f3)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal
+ (e/d-runes-in-hints '(("Goal" :use blah)) '(f1) '(f2))
+ '(("Goal" :use blah :in-theory (e/d (f1) (f2)))))
+
+(assert-equal
+ (e/d-runes-in-hints '(("Goal" :in-theory (enable f1))) '(f2) '(f3))
+ '(("Goal" :in-theory (e/d (f1 f2) (f3)))))
+
+;; TODO: May not be right if f2 is a theory that includes f1
+(assert-equal
+ (e/d-runes-in-hints '(("Goal" :in-theory (disable f1))) '(f2) '(f3))
+ '(("Goal" :in-theory (e/d (f2) (f1 f3)))))
+
+;; TODO: May not be right if f3 is a theory that includes f2
+(assert-equal
+ (e/d-runes-in-hints '(("Goal" :in-theory (e/d (f1) (f2)))) '(f3) '(f4))
+ '(("Goal" :in-theory (e/d (f1 f3) (f2 f4)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-ruleset foo '(posp endp))
 (def-ruleset bar '(natp))
 
