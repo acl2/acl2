@@ -9489,8 +9489,9 @@
                       t)
          (cond
           (erp #-acl2-loop-only
-               (progn (error-fms t user-untranslate "Untranslate"
-                                 (car val) (cdr val) *the-live-state*)
+               (progn (when (not (inhibit-er-hard *the-live-state*))
+                        (error-fms t user-untranslate "Untranslate"
+                                   (car val) (cdr val) *the-live-state*))
                       (er hard 'untranslate
                           "Please fix ~x0 (see message above and see :doc ~
                            user-defined-functions-table)."
@@ -9517,8 +9518,9 @@
                       t)
          (cond
           (erp #-acl2-loop-only
-               (progn (error-fms t user-untranslate-lst "Untranslate"
-                                 (car val) (cdr val) *the-live-state*)
+               (progn (when (not (inhibit-er-hard *the-live-state*))
+                        (error-fms t user-untranslate-lst "Untranslate"
+                                   (car val) (cdr val) *the-live-state*))
                       (er hard 'untranslate-lst
                           "Please fix ~x0 (see message above and see :doc ~
                            user-defined-functions-table)."
@@ -26096,12 +26098,13 @@
 ; (defconst *x* `(lambda (x) (return-last 'progn '(lambda$ (x) x) x))).
 
                             (cond
-                             (erp (pprogn
-                                   (error-fms nil ctx "Translate"
-                                              (car val) (cdr val) state)
-                                   (er-soft ctx "Translate"
-                                            "~@0 could not be evaluated."
-                                            msg)))
+                             (erp (mv-let
+                                    (erp0 val0 state)
+                                    (er-soft ctx "Translate" "~@0" val)
+                                    (declare (ignore erp0 val0))
+                                    (er-soft ctx "Translate"
+                                             "~@0 could not be evaluated."
+                                             msg)))
                              (t (value (cons term val))))))
                          (t (er-soft ctx "Translate" "~@0"
                                      (prohibition-of-loop$-and-lambda$-msg
@@ -26186,12 +26189,17 @@
                             safe-mode gc-off nil aok)
                       (cond
                        (erp (prog2$
+                             (and (not (member-eq
+                                        'error
+                                        (f-get-global 'inhibit-output-lst
+                                                      state)))
 
 ; We use nil in the error-fms-cw call below for the summary, since we are not
 ; controlling the summary string that will be used for the subsequent er-cmp.
 ; Maybe with a little effort we could do better.
 
-                             (error-fms-cw nil ctx nil (car val) (cdr val))
+                                  (error-fms-cw nil ctx nil
+                                                (car val) (cdr val)))
                              (er-cmp ctx
                                      "~@0 could not be evaluated."
                                      msg)))
