@@ -32651,8 +32651,8 @@
                (cond (w (rebuild-expansion w (ultimate-expansion y)))
                      (t x))))))
 
-(defun make-event-fn (form expansion? check-expansion on-behalf-of whole-form
-                           state)
+(defun make-event-fn (form expansion? check-expansion on-behalf-of
+                           save-event-data whole-form state)
   (let ((ctx (make-event-ctx whole-form))
         #-acl2-loop-only
         (old-kpa (known-package-alist state)))
@@ -32980,7 +32980,9 @@
                                     (maybe-add-event-landmark state))
                                    (t (value nil)))
                              (value result)))))))))))))))
-     :event-type 'make-event)))
+     :event-type (if save-event-data
+                     'make-event-save-event-data
+                   'make-event))))
 
 (defun get-check-invariant-risk (state)
   (let ((pair (assoc-eq :check-invariant-risk
