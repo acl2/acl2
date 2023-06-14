@@ -14,8 +14,8 @@
 (include-book "replay-books-with-advice") ; todo: factor out common stuff: clear-keys-with-matching-prefixes
 (include-book "advice")
 (include-book "kestrel/utilities/split-path" :dir :system)
+(include-book "kestrel/hints/remove-hints" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
-(include-book "kestrel/lists-light/remove-nth" :dir :system)
 (local (include-book "kestrel/axe/merge-sort-less-than-rules" :dir :system)) ; todo: move
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -653,123 +653,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund remove-hints-for-goal-spec (goal-spec hints)
-  (declare (xargs :guard (and (stringp goal-spec)
-                              (standard-string-p goal-spec)
-                              (true-listp hints))))
-  (if (endp hints)
-      nil
-    (let ((hint (first hints)))
-      (if (hint-has-goal-specp hint goal-spec)
-          ;; Keep going, as there may be more matches:
-          (remove-hints-for-goal-spec goal-spec (rest hints))
-        (cons hint (remove-hints-for-goal-spec goal-spec (rest hints)))))))
-
-(defun num-ways-to-break-hint-setting (keyword val)
-  (declare (xargs :guard (keywordp keyword)))
-  (case keyword
-    (:by 1) ; can only remove the whole thing
-    (:cases 1) ; can only remove the whole thing
-    (:induct 1) ; can only remove the whole thing
-    (:nonlinearp 1) ; can only remove the whole thing
-    (:do-not (if (and (quotep val)
-                      (consp (cdr val)))
-                 ;; can remove each thing in the list:
-                 (len (unquote val))
-               1 ; can only remove the whole thing
-               ))
-    (:expand (len (acl2::desugar-expand-hint val)))
-    (:use (len (acl2::desugar-use-hint val)))
-    (:in-theory (if (or (call-of 'acl2::enable val)
-                        (call-of 'acl2::disable val))
-                    (len (fargs val))
-                  (if (call-of 'acl2::e/d val)
-                      (let ((lists (fargs val)))
-                        ;; Only mess with the first 2:
-                        (+ (if (< 0 (len lists)) (len (first lists)) 0)
-                           (if (< 1 (len lists)) (len (second lists)) 0)))
-                    ;; TODO: Handle enable*, disable*, and e/d*:
-                    1 ; can only remove the whole thing
-                    )))
-    (otherwise 0)))
-
-(defun num-ways-to-break-hint-keyword-value-list (hint-keyword-value-list)
-  (declare (xargs :guard (keyword-value-listp hint-keyword-value-list)))
-  (if (endp hint-keyword-value-list)
-      0
-    (let ((keyword (car hint-keyword-value-list))
-          (val (cadr hint-keyword-value-list)))
-      (+ (num-ways-to-break-hint-setting keyword val)
-         (num-ways-to-break-hint-keyword-value-list (cddr hint-keyword-value-list))))))
-
 (local (in-theory (enable natp))) ;todo
 
-;; n is 0-based and is known to be less than the number of ways to break the hint-setting.
-;; Returns (mv breakage-type result), where RESULT is a list (possibly nil) to be spliced into the hint settings, replacing the KEYWORD and VAL.
-(defun break-hint-setting-in-nth-way (n keyword val)
-  (declare (xargs :guard (and (natp n)
-                              (keywordp keyword)
-                              (< n (num-ways-to-break-hint-setting keyword val)))
-                  :guard-hints (("Goal" :in-theory (enable natp)))))
-  (case keyword
-    (:by (mv :remove-by nil))                 ; can only remove the whole thing
-    (:cases (mv :remove-cases nil))           ; can only remove the whole thing
-    (:induct (mv :remove-induct nil))         ; can only remove the whole thing
-    (:nonlinearp (mv :remove-nonlinearp nil)) ; can only remove the whole thing
-    (:do-not (if (and (quotep val)
-                      (consp (cdr val)))
-                 ;; remove one thing in the list:
-                 (mv :remove-do-not-item
-                     (list :do-not (kwote (remove-nth n (unquote val)))))
-               (mv :remove-do-not nil) ; can only remove the whole thing
-               ))
-    (:expand (mv :remove-expand-item
-                 (list :expand (remove-nth n (acl2::desugar-expand-hint val)))))
-    (:use (mv :remove-use-item
-              (list :use (remove-nth n (acl2::desugar-use-hint val)))))
-    (:in-theory (if (call-of 'acl2::enable val)
-                    (mv :remove-enable-item
-                        (list :in-theory `(,(ffn-symb val) ,@(remove-nth n (fargs val)))))
-                  (if (call-of 'acl2::disable val)
-                      (mv :remove-disable-item
-                          (list :in-theory `(,(ffn-symb val) ,@(remove-nth n (fargs val)))))
-                    (if (call-of 'acl2::e/d val)
-                        (let ((lists (fargs val)))
-                          (if (< n (len (first lists)))
-                              (mv :remove-enable-item ; or we could indicate it was in an e/d
-                                  (list :in-theory `(e/d ,(remove-nth n (first lists)) ,@(rest lists))))
-                            ;; Only mess with the first 2, so it must be in the second one:
-                            (mv :remove-disable-item ; or we could indicate it was in an e/d
-                                (list :in-theory `(e/d ,(first lists)
-                                                       ,(remove-nth (- n (len (first lists))) (second lists))
-                                                       ,@(rest (rest lists)))))))
-                      ;; TODO: Handle enable*, disable*, and e/d*:
-                      (mv :remove-in-theory
-                          nil) ; can only remove the whole thing
-                      ))))
-    (otherwise (mv :error (er hard 'break-hint-setting-in-nth-way "Unhandled case")))))
-
-;; Returns (mv breakage-type hint-keyword-value-list).
-; n is 0-based
-(defun break-hint-keyword-value-list-in-nth-way (n hint-keyword-value-list)
-  (declare (xargs :guard (and (natp n)
-                              (keyword-value-listp hint-keyword-value-list)
-                              (< n (num-ways-to-break-hint-keyword-value-list hint-keyword-value-list)))
-                  :measure (len hint-keyword-value-list)))
-  (if (endp hint-keyword-value-list)
-      (mv :error (er hard? 'break-hint-keyword-value-list-in-nth-way "Ran out of hint settings!"))
-    (let ((keyword (car hint-keyword-value-list))
-          (val (cadr hint-keyword-value-list)))
-      (let ((ways (num-ways-to-break-hint-setting keyword val)))
-        (if (< n ways)
-            (mv-let (breakage-type result)
-              (break-hint-setting-in-nth-way n keyword val)
-              (mv breakage-type
-                  (append result (cddr hint-keyword-value-list))))
-          (mv-let (breakage-type new-cddr)
-            (break-hint-keyword-value-list-in-nth-way (- n ways) (cddr hint-keyword-value-list))
-            (mv breakage-type
-                (cons keyword (cons val new-cddr)))))))))
 
 ;; Returns (mv breakage-type hint-keyword-value-list rand).
 (defun randomly-break-hint-keyword-value-list (hint-keyword-value-list rand)

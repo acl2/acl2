@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(local (include-book "plus"))
-(local (include-book "minus"))
+;(local (include-book "plus"))
+;(local (include-book "minus"))
 (local (include-book "less-than"))
 (local (include-book "realpart"))
 (local (include-book "imagpart"))

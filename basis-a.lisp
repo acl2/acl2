@@ -7651,6 +7651,20 @@
 (defmacro stobj-hash-table-element-type (type)
   `(or (cadddr ,type) t))
 
+#+(and ccl (not acl2-loop-only))
+(defvar *ccl-issue-446*
+
+; This variable is true when CCL Issue #446 is unresolved in the current
+; CCL-based ACL2.  It is based on (deftest ccl.issue#446 ...) in:
+; https://github.com/Clozure/ccl-tests/blob/5957b07b93a988099866b69d591990fb016f038a/ansi-tests/ccl.lsp
+
+  (let ((ar (make-array 10 :element-type '(signed-byte 63) :initial-element 0)))
+    (setf (aref ar 0) #x-7FFFFFFE47AFEF96)
+    (not (= #x-7FFFFFFE47AFEF96
+            (aref (the (simple-array (signed-byte 64) (10))
+                       ar)
+                  0)))))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -7904,8 +7918,27 @@
             (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
             (the$ ,array-etype
-                  (,vref (the ,simple-type ,fld)
-                         (the (and fixnum (integer 0 *)) i))))
+                  ,(let ((type1
+
+; Here is a workaround for CCL bug #446
+; (https://github.com/Clozure/ccl/issues/446).  We need #-acl2-loop-only
+; because subtypep isn't defined in ACL2.  It might not be difficult to define
+; it, at least for current purposes, but ideally CCL will be fixed soon and
+; this hack can be retired.  When that happens, also remove
+; defstobj-field-fns-raw-defs from *initial-program-fns-with-raw-code*.
+
+                          #+(and ccl (not acl2-loop-only))
+                          (if (and simple-type
+                                   *ccl-issue-446*
+                                   (subtypep array-etype 'integer)
+                                   (not (subtypep array-etype 'fixnum))
+                                   (not (subtypep array-etype '(integer 0 *))))
+                              `(simple-array * ,(caddr type))
+                            simple-type)
+                          #-(and ccl (not acl2-loop-only))
+                          simple-type))
+                     `(,vref (the ,type1 ,fld)
+                             (the (and fixnum (integer 0 *)) i)))))
            (,updater-name
             (i v ,var)
             (declare (type (and fixnum (integer 0 *)) i)

@@ -1,6 +1,6 @@
 ; Top book for helpers/ directory
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "helper")
 (include-book "deps")
 (include-book "improve-book")
+(include-book "recommendations")
 (include-book "advice")
 (include-book "replay-book-helpers")
 (include-book "replay-book")
