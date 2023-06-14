@@ -14,6 +14,8 @@
 
 (include-book "kestrel/c/atc/defstruct" :dir :system)
 
+(include-book "std/testing/must-fail" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Some tests for DEFSTRUCT.
@@ -62,3 +64,10 @@
     (|i| c::uint)
     (|j| c::sint)
     (|k| (c::uchar))))
+
+(must-fail
+ (c::defstruct |empty|))
+
+(must-fail
+ (c::defstruct |only_flexible_array_member|
+   (|fam| (c::sllong))))
