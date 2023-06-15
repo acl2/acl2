@@ -76,7 +76,7 @@
 (include-book "kestrel/utilities/read-string" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
-(include-book "kestrel/utilities/included-books-in-world" :dir :system)
+(include-book "kestrel/utilities/all-included-books" :dir :system)
 (include-book "kestrel/hints/combine-hints" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
@@ -1205,7 +1205,7 @@
 ;;          (mv nil ; suppresses error
 ;;              nil state))
 ;;         ;; Check that we didn't bring in the book-to-avoid:
-;;         ((when (member-equal book-to-avoid-absolute-path (acl2::included-books-in-world (w state))))
+;;         ((when (member-equal book-to-avoid-absolute-path (acl2::all-included-books (w state))))
 ;;          (cw "NOTE: Avoiding include-book, ~x0, that would bring in the book-to-avoid.~%" include-book-form)
 ;;          (mv nil nil state))
 ;;         ;; The include-book brought in the desired name, so now try the proof:
@@ -1315,7 +1315,7 @@
               ;; Check that we didn't bring in the current-book:
               ((when (and avoid-current-bookp
                           current-book-absolute-path
-                          (member-equal current-book-absolute-path (acl2::included-books-in-world (w state)))))
+                          (member-equal current-book-absolute-path (acl2::all-included-books (w state)))))
                (cw "NOTE: Avoiding include-book, ~x0, that would bring in the current-book.~%" include-book-form)
                (mv nil nil state))
               ;; Check whether the include-book brought in the name being defined:
@@ -1517,7 +1517,7 @@
               ;; Check that we didn't bring in the current-book:
               ((when (and avoid-current-bookp
                           current-book-absolute-path
-                          (member-equal current-book-absolute-path (acl2::included-books-in-world (w state)))))
+                          (member-equal current-book-absolute-path (acl2::all-included-books (w state)))))
                (cw "NOTE: Avoiding include-book, ~x0, that would bring in the current-book.~%" include-book-form)
                (mv nil nil state))
               ;; Check whether the include-book brought in the name being defined:
@@ -1723,7 +1723,7 @@
               ;; Check that we didn't bring in the current-book:
               ((when (and avoid-current-bookp
                           current-book-absolute-path
-                          (member-equal current-book-absolute-path (acl2::included-books-in-world (w state)))))
+                          (member-equal current-book-absolute-path (acl2::all-included-books (w state)))))
                (cw "NOTE: Avoiding include-book, ~x0, that would bring in the current-book.~%" include-book-form)
                (mv nil nil state))
               ;; Check whether the include-book brought in the name being defined:
@@ -1926,7 +1926,7 @@
               ;; Check that we didn't bring in the current-book:
               ((when (and avoid-current-bookp
                           current-book-absolute-path
-                          (member-equal current-book-absolute-path (acl2::included-books-in-world (w state)))))
+                          (member-equal current-book-absolute-path (acl2::all-included-books (w state)))))
                (cw "NOTE: Avoiding include-book, ~x0, that would bring in the current-book.~%" include-book-form)
                (mv nil nil state))
               )

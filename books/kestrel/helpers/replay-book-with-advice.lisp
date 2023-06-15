@@ -227,7 +227,7 @@
   (b* ( ;; We must avoid including the current book (or an other book that includes it) when trying to find advice:
        (current-book-absolute-path (canonical-pathname filename nil state))
        ((when (member-equal current-book-absolute-path
-                            (included-books-in-world (w state))))
+                            (all-included-books (w state))))
         (cw "WARNING: Can't replay ~s0 because it is already included in the world.~%" filename)
         (mv :book-already-included (list 0 0 0 0 0) state))
        ((mv dir &) (split-path filename))
