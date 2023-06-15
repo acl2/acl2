@@ -94,12 +94,12 @@
      (i) an @(tsee if) whose test is not @(tsee mbt) or
      (ii) a call of a (preceding) target function."))
   (case-match term
-    (('if test . &) (and (case-match test
-                           ((fn . &) (not (member-eq fn '(mbt))))
-                           (& t))))
+    (('if test . &) (b* (((mv mbtp &) (check-mbt-call test)))
+                      (not mbtp)))
     ((fn . &) (and (symbolp fn)
                    (consp (assoc-eq fn prec-fns))))
-    (& nil)))
+    (& nil))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
