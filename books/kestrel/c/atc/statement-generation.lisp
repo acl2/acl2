@@ -91,11 +91,11 @@
      because we examine the term in full detail
      when recursively generating C code from it.
      In essence, here we check that the term is either
-     (i) an @(tsee if) whose test is not @(tsee mbt) or @(tsee mbt$) or
+     (i) an @(tsee if) whose test is not @(tsee mbt) or
      (ii) a call of a (preceding) target function."))
   (case-match term
     (('if test . &) (and (case-match test
-                           ((fn . &) (not (member-eq fn '(mbt mbt$))))
+                           ((fn . &) (not (member-eq fn '(mbt))))
                            (& t))))
     ((fn . &) (and (symbolp fn)
                    (consp (assoc-eq fn prec-fns))))
@@ -927,26 +927,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-mbt/mbt$-block-items ((mbt/mbt$
-                                       (member-eq mbt/mbt$ '(mbt mbt$)))
-                                      (test-term pseudo-termp)
-                                      (then-term pseudo-termp)
-                                      (else-term pseudo-termp)
-                                      (then-items block-item-listp)
-                                      (then-type typep)
-                                      (then-limit pseudo-termp)
-                                      (then-thm symbolp)
-                                      (then-events pseudo-event-form-listp)
-                                      (gin stmt-ginp)
-                                      state)
+(define atc-gen-mbt-block-items ((test-term pseudo-termp)
+                                 (then-term pseudo-termp)
+                                 (else-term pseudo-termp)
+                                 (then-items block-item-listp)
+                                 (then-type typep)
+                                 (then-limit pseudo-termp)
+                                 (then-thm symbolp)
+                                 (then-events pseudo-event-form-listp)
+                                 (gin stmt-ginp)
+                                 state)
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a list of block items
-          from an ACL2 conditional with an @(tsee mbt) or @(tsee mbt$) test."
+          from an ACL2 conditional with an @(tsee mbt) test."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A statement term may be an ACL2 @(tsee if)
-     with an @(tsee mbt) or @(tsee mbt$) test.
+    "A statement term may be an ACL2 @(tsee if) with an @(tsee mbt) test.
      In this case, this represents the same as the `then' branch.
      Thus, @(tsee atc-gen-stmt), when encountering an @(tsee if) of this form,
      processes the `then' branch, obtaining
@@ -976,17 +973,16 @@
      It is proved using the correctness theorem for the `then' branch,
      and enabling the lemma described in the paragraph just above.")
    (xdoc::p
-    "Since @('(mbt$ x)') expands to @('(mbt (if x t nil))'),
-     and since @(tsee if)s are turned into @(tsee if*)s,
-     if the test of the conditional was @('(mbt$ x)'),
-     we turn into @('(mbt (if* x t nil))')."))
+    "Since @(tsee atc-gen-fn-def*) replaces every @(tsee if) with @(tsee if*)
+     in the whole body of the function,
+     we need to perform this replacement in both the test and `else' branch,
+     because these are not recursively processed to generate code."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
-       (test (if (eq mbt/mbt$ 'mbt)
-                 `(mbt ,(fty-if-to-if* test-term))
-               `(mbt (if* ,test-term 't 'nil))))
-       (term `(if* ,test ,then-term ,else-term))
+       (test-term `(mbt ,(fty-if-to-if* test-term)))
+       (else-term (fty-if-to-if* else-term))
+       (term `(if* ,test-term ,then-term ,else-term))
        ((when (not gin.proofs))
         (retok (make-stmt-gout :items then-items
                                :type then-type
@@ -998,7 +994,7 @@
                                :thm-index gin.thm-index
                                :names-to-avoid gin.names-to-avoid
                                :proofs nil)))
-       (lemma-name (pack gin.fn '-if- mbt/mbt$ '- gin.thm-index))
+       (lemma-name (pack gin.fn '-if-mbt- gin.thm-index))
        ((mv lemma-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                         lemma-name nil gin.names-to-avoid wrld))
        (thm-index (1+ gin.thm-index))
@@ -1451,11 +1447,13 @@
      as described in the user documentation.")
    (xdoc::p
     "If the term is a conditional, there are two cases.
-     If the test is @(tsee mbt) or @(tsee mbt$),
-     we discard test and `else' branch
-     and recursively translate the `then' branch;
-     the limit is the same as the `then' branch.
-     Otherwise, we generate an @('if') statement
+     If the test is @(tsee mbt),
+     we recursively generate code just for the `then' branch,
+     and then we delegate the rest to a separate function;
+     note that we do not extend the context with the test,
+     because the test is redundant, implied by the guard.
+     If the test is not @(tsee mbt),
+     we generate an @('if') statement
      (as a singleton block item list),
      with recursively generated compound statements as branches;
      the test expression is generated from the test term;
@@ -1638,29 +1636,23 @@
        ((stmt-gin gin) gin)
        ((mv okp test-term then-term else-term) (fty-check-if-call term))
        ((when okp)
-        (b* (((mv mbt/mbt$ test-arg-term)
-              (b* (((mv mbtp arg) (check-mbt-call test-term))
-                   ((when mbtp) (mv 'mbt arg))
-                   ((mv mbt$p arg) (check-mbt$-call test-term))
-                   ((when mbt$p) (mv 'mbt$ arg)))
-                (mv nil nil)))
-             ((when mbt/mbt$)
+        (b* (((mv mbtp test-arg-term) (check-mbt-call test-term))
+             ((when mbtp)
               (b* (((erp (stmt-gout then)) (atc-gen-stmt then-term gin state))
                    (gin (change-stmt-gin gin
                                          :thm-index then.thm-index
                                          :names-to-avoid then.names-to-avoid
                                          :proofs then.proofs)))
-                (atc-gen-mbt/mbt$-block-items mbt/mbt$
-                                              test-arg-term
-                                              then-term
-                                              else-term
-                                              then.items
-                                              then.type
-                                              then.limit
-                                              then.thm-name
-                                              then.events
-                                              gin
-                                              state)))
+                (atc-gen-mbt-block-items test-arg-term
+                                         then-term
+                                         else-term
+                                         then.items
+                                         then.type
+                                         then.limit
+                                         then.thm-name
+                                         then.events
+                                         gin
+                                         state)))
              ((erp (pexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-pexpr-gin
@@ -3096,7 +3088,7 @@
     "This is called on loop terms (see user documentation).")
    (xdoc::p
     "The term must be an @(tsee if).
-     If the test is an @(tsee mbt) or @(tsee mbt$),
+     If the test is an @(tsee mbt),
      test and `else' branch are ignored,
      while the `then' branch is recursively processed.
      Otherwise, the test must be an expression term returning a boolean
@@ -3158,8 +3150,6 @@
               gin.fn term)))
        ((mv mbtp &) (check-mbt-call test-term))
        ((when mbtp) (atc-gen-loop-stmt then-term gin state))
-       ((mv mbt$p &) (check-mbt$-call test-term))
-       ((when mbt$p) (atc-gen-loop-stmt then-term gin state))
        ((erp (pexpr-gout test))
         (atc-gen-expr-bool test-term
                            (make-pexpr-gin
