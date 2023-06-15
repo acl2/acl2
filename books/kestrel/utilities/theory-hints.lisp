@@ -132,6 +132,7 @@
     (cons (e/d-runes-in-hint (first hints) enable-runes disable-runes)
           (e/d-runes-in-hints-aux (rest hints) enable-runes disable-runes))))
 
+;; TODO: These are not necessarily runes.
 (defun enable-runes-in-hints (hints enable-runes)
   (declare (xargs :guard (and (true-listp hints)
                               (true-listp enable-runes))))
@@ -139,20 +140,20 @@
       `(("Goal" :in-theory (enable ,@enable-runes)))
     (e/d-runes-in-hints-aux hints enable-runes ())))
 
-(defun disable-runes-in-hints (hints disable-runes)
-  (declare (xargs :guard (and (true-listp hints)
-                              (true-listp disable-runes))))
-  (if (endp hints)                      ; No hints given
-      `(("Goal" :in-theory (disable ,@disable-runes)))
-    (e/d-runes-in-hints-aux hints () disable-runes)))
+;; (defun disable-runes-in-hints (hints disable-runes)
+;;   (declare (xargs :guard (and (true-listp hints)
+;;                               (true-listp disable-runes))))
+;;   (if (endp hints)                      ; No hints given
+;;       `(("Goal" :in-theory (disable ,@disable-runes)))
+;;     (e/d-runes-in-hints-aux hints () disable-runes)))
 
-(defun e/d-runes-in-hints (hints enable-runes disable-runes)
-  (declare (xargs :guard (and (true-listp hints)
-                              (true-listp enable-runes)
-                              (true-listp disable-runes))))
-  (if (endp hints)                      ; No hints given
-      `(("Goal" :in-theory (e/d ,@enable-runes ,@disable-runes)))
-    (e/d-runes-in-hints-aux hints enable-runes disable-runes)))
+;; (defun e/d-runes-in-hints (hints enable-runes disable-runes)
+;;   (declare (xargs :guard (and (true-listp hints)
+;;                               (true-listp enable-runes)
+;;                               (true-listp disable-runes))))
+;;   (if (endp hints)                      ; No hints given
+;;       `(("Goal" :in-theory (e/d ,@enable-runes ,@disable-runes)))
+;;     (e/d-runes-in-hints-aux hints enable-runes disable-runes)))
 
 (defun parse-enable-disable-e/d (e/d-term)
   (declare (xargs :guard (true-listp e/d-term)))
@@ -165,6 +166,7 @@
      (mv enabled (car disabledl)))
     (& (mv nil nil))))
 
+;; TODO: These are not necessarily runes.
 (defun enable-disable-runes-in-hints (hints e/d-term)
   (declare (xargs :guard (and (true-listp hints)
                               (true-listp e/d-term))))
@@ -178,11 +180,6 @@
                                       '(("Goal" :in-theory (enable))))
                                   enable-runes disable-runes)
         (er hard? 'e/d-term "Illegal enabling/disabling term: ~x0" e/d-term)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; move these?
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
