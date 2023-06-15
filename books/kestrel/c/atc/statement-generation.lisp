@@ -927,6 +927,150 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-mbt/mbt$-block-items ((mbt/mbt$
+                                       (member-eq mbt/mbt$ '(mbt mbt$)))
+                                      (test-term pseudo-termp)
+                                      (then-term pseudo-termp)
+                                      (else-term pseudo-termp)
+                                      (then-items block-item-listp)
+                                      (then-type typep)
+                                      (then-limit pseudo-termp)
+                                      (then-thm symbolp)
+                                      (then-events pseudo-event-form-listp)
+                                      (gin stmt-ginp)
+                                      state)
+  :returns (mv erp (gout stmt-goutp))
+  :short "Generate a list of block items
+          from an ACL2 conditional with an @(tsee mbt) or @(tsee mbt$) test."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A statement term may be an ACL2 @(tsee if)
+     with an @(tsee mbt) or @(tsee mbt$) test.
+     In this case, this represents the same as the `then' branch.
+     Thus, @(tsee atc-gen-stmt), when encountering an @(tsee if) of this form,
+     processes the `then' branch, obtaining
+     a list of block items and other results,
+     which are all passed to this function,
+     along with the three argument terms of the @(tsee if).")
+   (xdoc::p
+    "Here we generate two theorems.")
+   (xdoc::p
+    "The first one is a lemma that says that the ACL2 conditional
+     is equal to its `then' branch under the guard
+     and under all the contextual assumptions that involve ACL2 terms
+     (i.e. not involving computation states).
+     We use @(tsee if*) for the ACL2 conditional,
+     consistently with other ACL2 conditionals that we translate to C,
+     to avoid unwanted case splits.
+     This lemma is proved using the guard theorem,
+     and enabling the guard function,
+     @(tsee if*), @(tsee test*), and @(tsee declar),
+     just like in the @('okp') theorems
+     generated for expressions (e.g. see atc-gen-expr-unary).")
+   (xdoc::p
+    "The second is the correctness theorem for the ACL2 conditional.
+     It is just like the one for the `then' branch,
+     except that it has the conditional (with @(tsee if*))
+     instead of the `then' term.
+     It is proved using the correctness theorem for the `then' branch,
+     and enabling the lemma described in the paragraph just above.")
+   (xdoc::p
+    "Since @('(mbt$ x)') expands to @('(mbt (if x t nil))'),
+     and since @(tsee if)s are turned into @(tsee if*)s,
+     if the test of the conditional was @('(mbt$ x)'),
+     we turn into @('(mbt (if* x t nil))')."))
+  (b* (((reterr) (irr-stmt-gout))
+       ((stmt-gin gin) gin)
+       (wrld (w state))
+       (test (if (eq mbt/mbt$ 'mbt)
+                 `(mbt ,(fty-if-to-if* test-term))
+               `(mbt (if* ,test-term 't 'nil))))
+       (term `(if* ,test ,then-term ,else-term))
+       ((when (not gin.proofs))
+        (retok (make-stmt-gout :items then-items
+                               :type then-type
+                               :term term
+                               :context gin.context
+                               :limit then-limit
+                               :events then-events
+                               :thm-name nil
+                               :thm-index gin.thm-index
+                               :names-to-avoid gin.names-to-avoid
+                               :proofs nil)))
+       (lemma-name (pack gin.fn '-if- mbt/mbt$ '- gin.thm-index))
+       ((mv lemma-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                        lemma-name nil gin.names-to-avoid wrld))
+       (thm-index (1+ gin.thm-index))
+       (lemma-formula `(equal ,term ,then-term))
+       (lemma-formula (untranslate$ lemma-formula nil state))
+       (lemma-formula (atc-contextualize lemma-formula
+                                         gin.context
+                                         gin.fn
+                                         gin.fn-guard
+                                         nil
+                                         nil
+                                         nil
+                                         nil
+                                         wrld))
+       (lemma-hints `(("Goal"
+                       :in-theory '(,gin.fn-guard if* test* declar)
+                       :use (:guard-theorem ,gin.fn))))
+       ((mv lemma-event &)
+        (evmac-generate-defthm lemma-name
+                               :formula lemma-formula
+                               :hints lemma-hints
+                               :enable nil))
+       (thm-name (pack gin.fn '-correct- thm-index))
+       ((mv thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (formula1 `(equal (exec-block-item-list ',then-items
+                                               ,gin.compst-var
+                                               ,gin.fenv-var
+                                               ,gin.limit-var)
+                         (mv ,term ,gin.compst-var)))
+       (formula1 (atc-contextualize formula1
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    gin.limit-var
+                                    then-limit
+                                    t
+                                    wrld))
+       (type-pred (atc-type-to-recognizer then-type gin.prec-tags))
+       (formula2 `(,type-pred ,term))
+       (formula2 (atc-contextualize formula2
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    nil
+                                    nil
+                                    nil
+                                    nil
+                                    wrld))
+       (formula `(and ,formula1 ,formula2))
+       (hints `(("Goal" :use ,then-thm :in-theory '(,lemma-name))))
+       ((mv thm-event &) (evmac-generate-defthm thm-name
+                                                :formula formula
+                                                :hints hints
+                                                :enable nil)))
+    (retok (make-stmt-gout :items then-items
+                           :type then-type
+                           :term term
+                           :context gin.context
+                           :limit then-limit
+                           :events (append then-events
+                                           (list lemma-event
+                                                 thm-event))
+                           :thm-name thm-name
+                           :thm-index thm-index
+                           :names-to-avoid names-to-avoid
+                           :proofs t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-if/ifelse-stmt ((term pseudo-termp)
                                 (test-term pseudo-termp)
                                 (then-term pseudo-termp)
@@ -1494,14 +1638,29 @@
        ((stmt-gin gin) gin)
        ((mv okp test-term then-term else-term) (fty-check-if-call term))
        ((when okp)
-        (b* (((mv mbtp &) (check-mbt-call test-term))
-             ((when mbtp)
-              (b* (((erp gout) (atc-gen-stmt then-term gin state)))
-                (retok (change-stmt-gout gout :proofs nil))))
-             ((mv mbt$p &) (check-mbt$-call test-term))
-             ((when mbt$p)
-              (b* (((erp gout) (atc-gen-stmt then-term gin state)))
-                (retok (change-stmt-gout gout :proofs nil))))
+        (b* (((mv mbt/mbt$ test-arg-term)
+              (b* (((mv mbtp arg) (check-mbt-call test-term))
+                   ((when mbtp) (mv 'mbt arg))
+                   ((mv mbt$p arg) (check-mbt$-call test-term))
+                   ((when mbt$p) (mv 'mbt$ arg)))
+                (mv nil nil)))
+             ((when mbt/mbt$)
+              (b* (((erp (stmt-gout then)) (atc-gen-stmt then-term gin state))
+                   (gin (change-stmt-gin gin
+                                         :thm-index then.thm-index
+                                         :names-to-avoid then.names-to-avoid
+                                         :proofs then.proofs)))
+                (atc-gen-mbt/mbt$-block-items mbt/mbt$
+                                              test-arg-term
+                                              then-term
+                                              else-term
+                                              then.items
+                                              then.type
+                                              then.limit
+                                              then.thm-name
+                                              then.events
+                                              gin
+                                              state)))
              ((erp (pexpr-gout test))
               (atc-gen-expr-bool test-term
                                  (make-pexpr-gin
