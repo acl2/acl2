@@ -12,7 +12,11 @@
 
 (local (in-theory (disable global-val)))
 
-;; Returns a list of absolute pathnames
+;; Returns a list of all books included in WRLD, including books brought in
+;; indirectly via other include-books.  Returns a list of full-book-strings
+;; (absolute pathnames, including the .lisp extensions).
+;; Previously, this removed duplicates, but that doesn't seem necessary.
+;; Another version of this sorted the result, but that doesn't seem necessary.
 (defund all-included-books (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
   (let ((include-book-alist (global-val 'include-book-alist wrld)))
@@ -21,7 +25,6 @@
       (let ((book-names (strip-cars include-book-alist)))
         (if (not (book-name-listp book-names))
             (er hard? 'all-included-books "Ill-formed include-book-alist (some car is not a book-name): ~x0." include-book-alist)
-          (remove-duplicates-equal
-           (book-name-lst-to-filename-lst book-names
-                                          (project-dir-alist wrld)
-                                          'top-level)))))))
+          (book-name-lst-to-filename-lst book-names
+                                         (project-dir-alist wrld)
+                                         'top-level))))))

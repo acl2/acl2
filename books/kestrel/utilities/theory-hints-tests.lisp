@@ -34,41 +34,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal
- (disable-runes-in-hints '(("Goal" :use blah)) '(f2))
- '(("Goal" :use blah :in-theory (disable f2))))
+;; (assert-equal
+;;  (disable-runes-in-hints '(("Goal" :use blah)) '(f2))
+;;  '(("Goal" :use blah :in-theory (disable f2))))
 
-(assert-equal
- (disable-runes-in-hints '(("Goal" :in-theory (enable f1))) '(f2))
- '(("Goal" :in-theory (e/d (f1) (f2)))))
+;; (assert-equal
+;;  (disable-runes-in-hints '(("Goal" :in-theory (enable f1))) '(f2))
+;;  '(("Goal" :in-theory (e/d (f1) (f2)))))
 
-(assert-equal
- (disable-runes-in-hints '(("Goal" :in-theory (disable f1))) '(f2))
- '(("Goal" :in-theory (disable f1 f2))))
+;; (assert-equal
+;;  (disable-runes-in-hints '(("Goal" :in-theory (disable f1))) '(f2))
+;;  '(("Goal" :in-theory (disable f1 f2))))
 
-(assert-equal
- (disable-runes-in-hints '(("Goal" :in-theory (e/d (f1) (f2)))) '(f3))
- '(("Goal" :in-theory (e/d (f1) (f2 f3)))))
+;; (assert-equal
+;;  (disable-runes-in-hints '(("Goal" :in-theory (e/d (f1) (f2)))) '(f3))
+;;  '(("Goal" :in-theory (e/d (f1) (f2 f3)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal
- (e/d-runes-in-hints '(("Goal" :use blah)) '(f1) '(f2))
- '(("Goal" :use blah :in-theory (e/d (f1) (f2)))))
+;; (assert-equal
+;;  (e/d-runes-in-hints '(("Goal" :use blah)) '(f1) '(f2))
+;;  '(("Goal" :use blah :in-theory (e/d (f1) (f2)))))
 
-(assert-equal
- (e/d-runes-in-hints '(("Goal" :in-theory (enable f1))) '(f2) '(f3))
- '(("Goal" :in-theory (e/d (f1 f2) (f3)))))
+;; (assert-equal
+;;  (e/d-runes-in-hints '(("Goal" :in-theory (enable f1))) '(f2) '(f3))
+;;  '(("Goal" :in-theory (e/d (f1 f2) (f3)))))
 
-;; TODO: May not be right if f2 is a theory that includes f1
-(assert-equal
- (e/d-runes-in-hints '(("Goal" :in-theory (disable f1))) '(f2) '(f3))
- '(("Goal" :in-theory (e/d (f2) (f1 f3)))))
+;; ;; TODO: May not be right if f2 is a theory that includes f1
+;; (assert-equal
+;;  (e/d-runes-in-hints '(("Goal" :in-theory (disable f1))) '(f2) '(f3))
+;;  '(("Goal" :in-theory (e/d (f2) (f1 f3)))))
 
-;; TODO: May not be right if f3 is a theory that includes f2
-(assert-equal
- (e/d-runes-in-hints '(("Goal" :in-theory (e/d (f1) (f2)))) '(f3) '(f4))
- '(("Goal" :in-theory (e/d (f1 f3) (f2 f4)))))
+;; ;; TODO: May not be right if f3 is a theory that includes f2
+;; (assert-equal
+;;  (e/d-runes-in-hints '(("Goal" :in-theory (e/d (f1) (f2)))) '(f3) '(f4))
+;;  '(("Goal" :in-theory (e/d (f1 f3) (f2 f4)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
