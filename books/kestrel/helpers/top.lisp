@@ -17,6 +17,8 @@
 (include-book "deps")
 (include-book "improve-book")
 (include-book "recommendations")
+(include-book "model-enable")
+(include-book "model-history")
 (include-book "advice")
 (include-book "replay-book-helpers")
 (include-book "replay-book")
