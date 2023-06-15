@@ -1,6 +1,8 @@
+#!/bin/bash
+
 # Example script for call-axe-script
 #
-# Copyright (C) 2021 Kestrel Institute
+# Copyright (C) 2021-2023 Kestrel Institute
 #
 # License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 #
@@ -10,4 +12,4 @@
 
 # A trivial script that just calls ls, for testing call-axe-script
 
-ls -l ${1}
+ls -l "${1}"
