@@ -1644,7 +1644,7 @@
                                          :names-to-avoid then.names-to-avoid
                                          :proofs then.proofs)))
                 (atc-gen-mbt-block-items test-arg-term
-                                         then-term
+                                         then.term
                                          else-term
                                          then.items
                                          then.type
