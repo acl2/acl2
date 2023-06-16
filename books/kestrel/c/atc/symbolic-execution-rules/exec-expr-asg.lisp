@@ -34,6 +34,12 @@
 
 (defsection atc-exec-expr-asg-ident-rules
   :short "Rules for executing assignment expressions to identifier expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first one is used in the large symbolic execution.")
+   (xdoc::p
+    "The second one is for the new modular proof approach."))
 
   (defruled exec-expr-asg-ident
     (implies (and (syntaxp (quotep e))
@@ -57,6 +63,29 @@
              exec-expr-pure
              exec-ident
              write-object-of-objdesign-of-var-to-write-var))
+
+  (defruled exec-expr-asg-ident-via-object
+    (implies (and (syntaxp (quotep e))
+                  (equal (expr-kind e) :binary)
+                  (equal (binop-kind (expr-binary->op e)) :asg)
+                  (not (zp limit))
+                  (equal e1 (expr-binary->arg1 e))
+                  (equal (expr-kind e1) :ident)
+                  (equal val+compst1
+                         (exec-expr-call-or-pure (expr-binary->arg2 e)
+                                                 compst
+                                                 fenv
+                                                 (1- limit)))
+                  (equal val (mv-nth 0 val+compst1))
+                  (equal compst1 (mv-nth 1 val+compst1))
+                  (valuep val)
+                  (equal objdes (objdesign-of-var (expr-ident->get e1) compst1))
+                  objdes)
+             (equal (exec-expr-asg e compst fenv limit)
+                    (write-object objdes val compst1)))
+    :enable (exec-expr-asg
+             exec-expr-pure
+             exec-ident))
 
   (defval *atc-exec-expr-asg-ident-rules*
     '(exec-expr-asg-ident
