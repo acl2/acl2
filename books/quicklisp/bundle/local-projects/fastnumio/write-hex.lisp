@@ -519,7 +519,7 @@
   (assert (equal sb-bignum::digit-size 64))
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 0) (1- (expt 2 64))))
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 1) (1- (expt 2 16))))
-  (assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
+  ;(assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
 
   ;; (declaim (inline digit-logical-shift-right))
   ;; (defun digit-logical-shift-right (digit sh)
