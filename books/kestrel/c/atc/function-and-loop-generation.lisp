@@ -713,10 +713,10 @@
       as proved by the same theorems for the preceding functions.")
     (xdoc::li
      "An @(tsee if) returns the same as its branches,
-      when the test is not @(tsee mbt) or @(tsee mbt$).")
+      when the test is not @(tsee mbt).")
     (xdoc::li
      "An @(tsee if) return the same as its `then' branch,
-      when the test is @(tsee mbt) or @(tsee mbt$),
+      when the test is @(tsee mbt),
       because the guard excludes the `else' branch from consideration.")
     (xdoc::li
      "An @(tsee mv) returns C values,
@@ -742,7 +742,7 @@
      The theorems about structure readers and writers
      are taken from the alist of the preceding structure tags.")
    (xdoc::p
-    "In the absence of @(tsee mbt) or @(tsee mbt$),
+    "In the absence of @(tsee mbt),
      we would not need all of the guard as hypothesis,
      but only the part that constrains the formal parameters to be C values.
      These hypotheses are needed when the function returns them;
@@ -752,7 +752,7 @@
      This is because ATC, when generating C code,
      ensures that the ACL2 terms follow the C typing rules,
      whether the terms are reachable under the guards or not.
-     However, in the presence of @(tsee mbt) or @(tsee mbt$),
+     However, in the presence of @(tsee mbt),
      we need the guard to exclude the `else' branches,
      which are otherwise unconstrained.")
    (xdoc::p
@@ -1853,7 +1853,7 @@
     "In checking that the terms at the leaves have the same form,
      we allow @('ret') to vary, but the other parts must coincide.")
    (xdoc::p
-    "When we encounter @(tsee if)s with @(tsee mbt) or @(tsee mbt$) tests,
+    "When we encounter @(tsee if)s with @(tsee mbt) tests,
      we recursively process the `then' branch, skipping the `else' branch.
      This is because only the `then' branch represents C code."))
   (b* (((reterr) nil)
@@ -1865,12 +1865,6 @@
                                              typed-formals
                                              prec-fns
                                              wrld))
-             ((mv mbt$p &) (check-mbt$-call test))
-             ((when mbt$p) (atc-find-affected fn
-                                              then
-                                              typed-formals
-                                              prec-fns
-                                              wrld))
              ((erp then-affected) (atc-find-affected fn
                                                      then
                                                      typed-formals

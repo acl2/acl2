@@ -1867,8 +1867,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro make-event (&whole event-form
                              form
                              &key
-                             expansion? check-expansion on-behalf-of)
-  (declare (ignore form on-behalf-of))
+                             expansion? check-expansion on-behalf-of
+                             save-event-data)
+  (declare (ignore form on-behalf-of save-event-data))
   (cond ((consp check-expansion)
          check-expansion)
         (expansion?)
@@ -10304,7 +10305,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro make-event (&whole event-form
                              form
                              &key
-                             expansion? check-expansion on-behalf-of)
+                             expansion? check-expansion on-behalf-of
+                             save-event-data)
 
 ; Essay on Make-event
 
@@ -10360,12 +10362,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; include-book form, it uses the expansion-alist from the book's certificate if
 ; there is an up-to-date certificate.
 
+; Finally, here is an outline of how we handle save-event-data.  We exempt the
+; symbol, save-event-data, from membership in the list
+; *protected-system-state-globals*, so that its global value will persist after
+; make-event expansion.  Then in print-summary we ensure that this global value
+; is preserved after printing the make-event summary.
+
   (declare (xargs :guard t))
 ; Keep this in sync with the -acl2-loop-only definition.
   `(make-event-fn ',form
                   ',expansion?
                   ',check-expansion
                   ',on-behalf-of
+                  ',save-event-data
                   ',event-form
                   state))
 

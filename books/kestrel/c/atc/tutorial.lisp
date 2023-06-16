@@ -1669,7 +1669,7 @@
 
 (def-atc-tutorial-page conditionals-with-mbt
 
-  "Treatment of ACL2 conditionals with @(tsee mbt) or @(tsee mbt$)"
+  "Treatment of ACL2 conditionals with @(tsee mbt)"
 
   (xdoc::p
    "After describing how ACL2 conditionals
@@ -1681,17 +1681,15 @@
 
   (xdoc::p
    "These are ACL2 conditionals whose tests are
-    calls of @(tsee mbt) or @(tsee mbt$):
+    calls of @(tsee mbt) (or @(tsee mbt$), which expands to @(tsee mbt)):
     only their `then' branches represent (and are translated to) C code;
     tests and `else' branches are ignored.")
 
   (xdoc::p
    "The argument of the built-in macro @(tsee mbt)
     must be provably equal to @('t') for guard verification to succeed.
-    Similarly, the argument of the library macro @(tsee mbt$)
-    must be provably different from @('nil') for guard verification to succeed.
-    In fact, their execution is effectively skipped in guard-verified ACL2 code.
-    In particular, when they appear in an @(tsee if) test,
+    In fact, its execution is effectively skipped in guard-verified ACL2 code.
+    In particular, when it appears in an @(tsee if) test,
     the `then' branch is always executed and the `else' branch is ignored.")
 
   (xdoc::p
@@ -1713,13 +1711,13 @@
   (xdoc::p
    "Given the above, it should be clear why ATC ignores
     (i.e. does not generate any C code for)
-    @(tsee mbt) or @(tsee mbt$) tests of @(tsee if)s
+    @(tsee mbt) tests of @(tsee if)s
     and corresponding `else' branches,
     treating this kind of conditionals
     as if they were just their `then' branches.")
 
   (xdoc::p
-   "Conditionals with @(tsee mbt) or @(tsee mbt$) tests
+   "Conditionals with @(tsee mbt) tests
     are sometimes used in recursive ACL2 functions
     to ensure that termination can be proved.
     Recall that termination proofs ignore guards,
@@ -1729,7 +1727,7 @@
     expressed in the logic).")
 
   (xdoc::p
-   "Another circumstance in which @(tsee mbt) or @(tsee mbt$) may arise
+   "Another circumstance in which @(tsee mbt) may arise
     is via certain APT transformations.
     For instance, the @(tsee apt::restrict) transformation
     generates a new function whose body has the form
@@ -1739,7 +1737,7 @@
     namely by using APT to refine a specification into
     forms that represent C code as recognized by ATC.
     It is therefore quite possible that these APT transformations
-    produce @(tsee if)s with @(tsee mbt) or @(tsee mbt$) tests,
+    produce @(tsee if)s with @(tsee mbt) tests,
     which make their way to ATC.")
 
   (xdoc::p

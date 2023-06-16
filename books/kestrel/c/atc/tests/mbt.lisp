@@ -13,9 +13,11 @@
 
 (include-book "kestrel/c/atc/atc" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!)))
 
+(include-book "kestrel/std/basic/mbt-dollar" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Some examples to test that IF tests with MBT or MBT$
+; Some examples to test that IF tests with MBT
 ; have their tests and 'else' branches ignored.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

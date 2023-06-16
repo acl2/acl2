@@ -12081,7 +12081,8 @@
                                      ',otf-flg))
                            (value '(value-triple :invisible)))
                  :expansion? (value-triple :invisible)
-                 :on-behalf-of :quiet!)))
+                 :on-behalf-of :quiet!
+                 :save-event-data t)))
 
 ; Note:  During boot-strapping the thm macro is unavailable because it is
 ; not one of the *initial-event-defmacros*.

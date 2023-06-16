@@ -611,7 +611,7 @@
        the computation in the body of the loop represented by @('fn').")
      (xdoc::li
       "A call of @(tsee if) on
-       (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
+       (i) a test of the form @('(mbt ...)'),
        (ii) a `then' branch that is
        a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars'), and
@@ -791,7 +791,7 @@
        that precedes @('fn') in the list of targets @('(t1 ... tp)')
        whose body term returns @('void') and affects @('var')
        or an @(tsee if) whose test is an expression term returning boolean
-       (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
+       (not a test @('(mbt ...)')), and
        @('body') is a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents the C code represented by @('term'),
@@ -860,7 +860,7 @@
        that precedes @('fn') in the list of targets @('(t1 ... tp)')
        whose body term returns @('void') and affects @('(var1 ... varn)')
        or an @(tsee if) whose test is an expression term returning boolean
-       (not a test @('(mbt ...)') or @('(mbt$ ...)')), and
+       (not a test @('(mbt ...)'), and
        @('body') is a statement term for @('fn') with loop flag @('L')
        returning @('T') and affecting @('vars').
        This represents the C code represented by @('term'),
@@ -904,7 +904,7 @@
     (xdoc::ul
      (xdoc::li
       "A call of @(tsee if) on
-       (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
+       (i) a test of the form @('(mbt ...)'),
        (ii) a `then' branch that is
        a loop term for @('fn') affecting @('vars'), and
        (iii) an `else' branch that may be any ACL2 term.
@@ -1268,7 +1268,7 @@
       then each function body is a nested C scope,
       and then each @(tsee if) branch whose test is
       an expression term returning a boolean
-      (i.e. whose test is not @(tsee mbt) or @(tsee mbt$))
+      (i.e. whose test is not @(tsee mbt)
       is a further nested C scope.
       The conditions are the following:")
     (xdoc::ul
@@ -1378,11 +1378,8 @@
       "An untranslated term @('(mbt x)') is translated to")
      (xdoc::codeblock
       "(return-last \'acl2::mbe1-raw \'t x)")
-
      (xdoc::p
-      "An untranslated term @('(mbt$ x)') is translated to")
-     (xdoc::codeblock
-      "(return-last \'acl2::mbe1-raw \'t (if x \'t \'nil))")
+      "Since @(tsee mbt$) expands to @(tsee mbt), the former can be used too.")
 
      (xdoc::p
       "An untranslated term @('(mv var1 ... varn)') is translated to")

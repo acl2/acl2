@@ -2973,7 +2973,11 @@
      ((global-val 'include-book-path wrld)
       (clear-event-data state))
      (t
-      (let ((steps (prover-steps state)))
+      (let* ((steps (prover-steps state))
+             (make-event-save-event-data-p
+              (eq event-type 'make-event-save-event-data))
+             (old-event-data (and make-event-save-event-data-p ; optimization
+                                  (f-get-global 'last-event-data state))))
         (pprogn
          (clear-event-data state)
          (prog2$ (clear-warning-summaries) state)
@@ -3085,24 +3089,41 @@
 ; in case the proof was aborted without printing this part of the summary.
 
                state)
-              (pprogn
-               (cond (erp
-                      (pprogn
-                       (print-failure erp event-type acc-ttree ctx state)
-                       (cond
-                        ((f-get-global 'proof-tree state)
-                         (io? proof-tree nil state
-                              (ctx)
-                              (pprogn (f-put-global 'proof-tree-ctx
-                                                    (cons :failed ctx)
-                                                    state)
-                                      (print-proof-tree state))))
-                        (t state))))
-                     (t (pprogn
-                         #+acl2-par
-                         (erase-acl2p-checkpoints-for-summary state)
-                         state)))
-               (f-put-global 'proof-tree nil state))))))))))))
+              (cond (erp
+                     (pprogn
+                      (print-failure erp
+                                     (if make-event-save-event-data-p
+                                         'make-event
+                                       event-type)
+                                     acc-ttree ctx state)
+                      (cond
+                       ((f-get-global 'proof-tree state)
+                        (io? proof-tree nil state
+                             (ctx)
+                             (pprogn (f-put-global 'proof-tree-ctx
+                                                   (cons :failed ctx)
+                                                   state)
+                                     (print-proof-tree state))))
+                       (t state))))
+                    (t (pprogn
+                        #+acl2-par
+                        (erase-acl2p-checkpoints-for-summary state)
+                        state)))
+              (if make-event-save-event-data-p
+
+; One could argue that it it is inefficient to make the calls of put-event-data
+; above (either lexically above, or within function calls), since we are about
+; to smash last-event-data.  But we expect that this
+; make-event-save-event-data-p case is relatively rare, so we'd rather pay that
+; price here than complicate the code and do the extra checks necessary to
+; prevent those put-event-data calls.  Note in particular that we are
+; introducing the :save-event-data option of make-event to support thm, and the
+; only changes for thm are to save old-event-data above and do the following
+; assignment, which are very cheap additions.
+
+                  (f-put-global 'last-event-data old-event-data state)
+                state)
+              (f-put-global 'proof-tree nil state)))))))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)
 
@@ -3960,6 +3981,7 @@
             trace-co              ;;; see just above
             trace-specs           ;;; see just above
             giant-lambda-object   ;;; see just above
+            last-event-data       ;;; see the Essay on Make-event
             show-custom-keyword-hint-expansion
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
