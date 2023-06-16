@@ -935,6 +935,7 @@
                                  (then-limit pseudo-termp)
                                  (then-thm symbolp)
                                  (then-events pseudo-event-form-listp)
+                                 (then-context atc-contextp)
                                  (gin stmt-ginp)
                                  state)
   :returns (mv erp (gout stmt-goutp))
@@ -987,7 +988,7 @@
         (retok (make-stmt-gout :items then-items
                                :type then-type
                                :term term
-                               :context gin.context
+                               :context (atc-context nil nil)
                                :limit then-limit
                                :events then-events
                                :thm-name nil
@@ -1055,7 +1056,7 @@
     (retok (make-stmt-gout :items then-items
                            :type then-type
                            :term term
-                           :context gin.context
+                           :context then-context
                            :limit then-limit
                            :events (append then-events
                                            (list lemma-event
@@ -1651,6 +1652,7 @@
                                          then.limit
                                          then.thm-name
                                          then.events
+                                         then.context
                                          gin
                                          state)))
              ((erp (pexpr-gout test))
