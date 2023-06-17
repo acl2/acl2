@@ -517,6 +517,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-stmt-var-asg ((var symbolp)
+                                         (var-info? atc-var-info-optionp)
+                                         (val-term pseudo-termp)
+                                         (gin stmt-ginp)
+                                         state)
+  :returns (mv erp
+               (item block-itemp)
+               (limit pseudo-termp)
+               (events pseudo-event-form-listp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
+  :short "Generate a C block item statement that consists of
+          an assignment to a variable."
+  (b* (((reterr) (irr-block-item) nil nil 1 nil)
+       ((stmt-gin gin) gin)
+       ((unless var-info?)
+        (reterr (raise "Internal error: no information for variable ~x0." var)))
+       (var-info var-info?)
+       (prev-type (atc-var-info->type var-info))
+       ((erp (expr-gout rhs))
+        (atc-gen-expr val-term
+                      (make-expr-gin
+                       :context gin.context
+                       :var-term-alist gin.var-term-alist
+                       :inscope gin.inscope
+                       :fn gin.fn
+                       :fn-guard gin.fn-guard
+                       :compst-var gin.compst-var
+                       :fenv-var gin.fenv-var
+                       :limit-var gin.limit-var
+                       :prec-fns gin.prec-fns
+                       :prec-tags gin.prec-tags
+                       :thm-index gin.thm-index
+                       :names-to-avoid gin.names-to-avoid
+                       :proofs gin.proofs
+                       :deprecated gin.deprecated)
+                      state))
+       ((unless (equal prev-type rhs.type))
+        (reterr
+         (msg "The type ~x0 of the term ~x1 ~
+               assigned to the LET variable ~x2 ~
+               of the function ~x3 ~
+               differs from the type ~x4 ~
+               of a variable with the same symbol in scope."
+              rhs.type val-term var gin.fn prev-type)))
+       ((when (consp rhs.affect))
+        (reterr
+         (msg "The term ~x0 to which the variable ~x1 is bound ~
+               must not affect any variables, ~
+               but it affects ~x2 instead."
+              val-term var rhs.affect)))
+       ((when (type-case rhs.type :array))
+        (reterr
+         (msg "The term ~x0 to which the variable ~x1 is bound ~
+               must not have a C array type, ~
+               but it has type ~x2 instead."
+              val-term var rhs.type)))
+       ((when (type-case rhs.type :pointer))
+        (reterr
+         (msg "The term ~x0 to which the variable ~x1 is bound ~
+               must not have a C pointer type, ~
+               but it has type ~x2 instead."
+              val-term var rhs.type)))
+       (asg (make-expr-binary
+             :op (binop-asg)
+             :arg1 (expr-ident (make-ident :name (symbol-name var)))
+             :arg2 rhs.expr))
+       (stmt (stmt-expr asg))
+       (item (block-item-stmt stmt)))
+    (retok item rhs.limit rhs.events rhs.thm-index rhs.names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-block-item-list-one ((fn symbolp)
                                      (fn-guard symbolp)
                                      (context atc-contextp)
@@ -2643,68 +2716,23 @@
                      to modify a non-assignable variable ~x1."
                     gin.fn var)))
              ((when (eq wrapper? 'assign))
-              (b* (((unless info?)
-                    (reterr
-                     (raise "Internal error: no information for variable ~x0."
-                            var)))
-                   (prev-type (atc-var-info->type info?))
-                   ((erp (expr-gout rhs))
-                    (atc-gen-expr val-term
-                                  (make-expr-gin
-                                   :context gin.context
-                                   :var-term-alist gin.var-term-alist
-                                   :inscope gin.inscope
-                                   :fn gin.fn
-                                   :fn-guard gin.fn-guard
-                                   :compst-var gin.compst-var
-                                   :fenv-var gin.fenv-var
-                                   :limit-var gin.limit-var
-                                   :prec-fns gin.prec-fns
-                                   :prec-tags gin.prec-tags
-                                   :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs
-                                   :deprecated gin.deprecated)
-                                  state))
-                   ((unless (equal prev-type rhs.type))
-                    (reterr
-                     (msg "The type ~x0 of the term ~x1 ~
-                           assigned to the LET variable ~x2 ~
-                           of the function ~x3 ~
-                           differs from the type ~x4 ~
-                           of a variable with the same symbol in scope."
-                          rhs.type val-term var gin.fn prev-type)))
-                   ((when (consp rhs.affect))
-                    (reterr
-                     (msg "The term ~x0 to which the variable ~x1 is bound ~
-                           must not affect any variables, ~
-                           but it affects ~x2 instead."
-                          val-term var rhs.affect)))
-                   ((when (type-case rhs.type :array))
-                    (reterr
-                     (msg "The term ~x0 to which the variable ~x1 is bound ~
-                           must not have a C array type, ~
-                           but it has type ~x2 instead."
-                          val-term var rhs.type)))
-                   ((when (type-case rhs.type :pointer))
-                    (reterr
-                     (msg "The term ~x0 to which the variable ~x1 is bound ~
-                           must not have a C pointer type, ~
-                           but it has type ~x2 instead."
-                          val-term var rhs.type)))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (expr-ident (make-ident :name (symbol-name var)))
-                         :arg2 rhs.expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
+              (b* (((erp asg-item
+                         asg-limit
+                         asg-events
+                         thm-index
+                         names-to-avoid)
+                    (atc-gen-block-item-stmt-var-asg var
+                                                     info?
+                                                     val-term
+                                                     gin
+                                                     state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body
-                                   :thm-index rhs.thm-index
-                                   :names-to-avoid rhs.names-to-avoid
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
                                    :proofs nil)
                                   state))
                    (type body.type)
@@ -2713,14 +2741,14 @@
                            (list (pseudo-term-quote 6)
                                  (pseudo-term-fncall
                                   'binary-+
-                                  (list rhs.limit body.limit))))))
+                                  (list asg-limit body.limit))))))
                 (retok (make-stmt-gout
-                        :items (cons item body.items)
+                        :items (cons asg-item body.items)
                         :type type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
-                        :events (append rhs.events body.events)
+                        :events (append asg-events body.events)
                         :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid
