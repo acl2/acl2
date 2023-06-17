@@ -517,11 +517,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-stmt-var-asg ((var symbolp)
-                                         (var-info? atc-var-info-optionp)
-                                         (val-term pseudo-termp)
-                                         (gin stmt-ginp)
-                                         state)
+(define atc-gen-block-item-var-asg ((var symbolp)
+                                    (var-info? atc-var-info-optionp)
+                                    (val-term pseudo-termp)
+                                    (gin stmt-ginp)
+                                    state)
   :returns (mv erp
                (item block-itemp)
                (limit pseudo-termp)
@@ -2721,11 +2721,11 @@
                          asg-events
                          thm-index
                          names-to-avoid)
-                    (atc-gen-block-item-stmt-var-asg var
-                                                     info?
-                                                     val-term
-                                                     gin
-                                                     state))
+                    (atc-gen-block-item-var-asg var
+                                                info?
+                                                val-term
+                                                gin
+                                                state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
