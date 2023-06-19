@@ -284,9 +284,8 @@
   :rule-classes :linear)
 
 (defthm expo-abs
-  (equal (expo (abs x)) (expo x))
-  :hints (("Goal" :use (expo-minus)
-                  :in-theory (e/d (expo) (expo-minus)))))
+  (implies (rationalp x)
+           (equal (expo (abs x)) (expo x))))
 
 (defthmd bits-expo-rel
   (implies (natp x)
