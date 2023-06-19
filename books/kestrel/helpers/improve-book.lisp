@@ -18,7 +18,6 @@
 ;; TODO: Time each type of event and print a report
 ;; TODO: Start by making sure we can replay the book (and time it).
 ;; TODO: Special treatment for any books used to define this tool (will be redundant, don't recommend dropping their include-books, even withn local)
-;; TODO: Add the ability to run on many files
 ;; TODO: Add the ability to suppress slow stuff (like dropping a local event or an include-book and trying the entire file).
 ;; TODO: Improve hints for defuns
 ;; TODO: Detect :guard-debug
@@ -469,6 +468,7 @@
 
 ;; Looks for .lisp files in the current subtree.
 ;; Returns (mv book-paths state).
+;move
 (defun books-in-subtree (state)
   (declare (xargs :stobjs state))
   (mv-let (erp val state)
