@@ -69,7 +69,8 @@
  right-shifted, bit-masked, rounded, saturated, and input sizes can be
  arbitrary. This library now supports flattened designs.</p>
 
-<p> This method is called S-C-Rewriting and the tool is called VeSCmul (Verified Implementation of S-C-Rewriting algorithm for Multiplier
+<p> This method is called S-C-Rewriting and the tool is called VeSCmul
+(Verified Implementation of S-C-Rewriting algorithm for Multiplier
   Verification)</p>
 
   <p>  The outline  of  this  new verification  method  first  appeared in  CAV
@@ -140,22 +141,25 @@ Here, @(see logext) sign-extends its argument, and @(see loghead) zero-extends i
 <p> See @(see parse-and-create-svtv) and @(see verify-svtv-of-mult) for more
 ways to use these tools. </p>
 
+
+<p> Including projects/rp-rewriter/lib/mult3/top everytime can take a long time
+(almost a minute). However, you can save an executable with that book in it to
+quickly pull up this multiplier verification library. See (@see acl2::save-exec).</p> 
+
 <p> Various demos in much more detail are present to  show  how  this  tool  can be  used  in  new
 designs.  @(see Multiplier-Verification-demo-1) shows  a very basic verification
 case  on  a  stand-alone  64x64-bit  Booth  Encoded  Dadda  multiplier.   @(see
 Multiplier-Verification-demo-2) shows  how this tool  can be used on  much more
 complex designs where a stand-alone integer multiplier is reused as a submodule
 for various operations  such as MAC dot-product and  merged multiplication. It
-also shows a simple verification case on a sequential circuit. Note that these
-demos are tailored for starting point for more  advanced uses and they do not use @(see
-parse-and-create-svtv) and @(see verify-svtv-of-mult) macros.   </p>
+also shows a simple verification case on a sequential circuit.  </p>
 
 <h3>Calling SAT Solver after rewriting is done </h3>
 
 <p> This library can be used to quickly generate counterexamples using an
 external SAT solver, or help finish proofs with a SAT solver when our library
 fails to finish the job. By default, glucose is used as SAT solver. This can be
-configured to call a different SAT solver (see @(see fgl::fgl-solving).</p>
+configured to call a different SAT solver (see @(see fgl::fgl-solving)).</p>
 
 <p> If you are using macros from Quick Start above, then \":then-fgl t\" argument as shown below will be enough to
 call FGL, which will invoke a SAT solver after VeSCmul finishes rewriting:
@@ -318,15 +322,103 @@ heuristic may help:</p>
   :parents (Multiplier-Verification)
   :short "First demo for @(see  Multiplier-Verification) showing how an isolated
  integer multiplier is verified."
-  :long " <p> Below is a demo that  showing every single event  to input a multiplier design coded
-in (System) Verilog into ACL2, and verify it efficiently. We choose a 64x64-bit
+  :long " <p> Below is a demo to verify a multiplier design coded
+in (System) Verilog. We choose a 64x64-bit
 Booth Encoded Dadda Tree multiplier with  Han-Carlson adder as our example.  If
 you  wish, you  can skip  to @(see  Multiplier-Verification-demo-2) for  a more
 complex arithmetic module.  </p>
 
-<p>   A shortened version of this demo   is      given   in
-@('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/demo-1.lisp')
+
+<p>
+1. Include the books to parse Verilog designs and crete symbolic simulation vectors.
+
+<code>
+(include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)
+</code>
+
+Including this book can take a long time (around a minute). However, we can save an executable
+that has this image already loaded. You can either follow the instructions at
+@(see save-exec) or download a <a
+href=\"https://temelmertcan.github.io/vescmul.zip\">package</a> that does that
+for you. This package also includes some demo files.
+
 </p>
+
+
+<p> 2. Parse the design.
+ <code>
+@('
+(parse-and-create-svtv :name my-multiplier-example
+                       :file \"DT_SB4_HC_64_64_multgen.sv\"
+                       :topmodule \"DT_SB4_HC_64_64\")
+')
+</code>
+
+This verilog file is located in @('<ACL2-DIRECTORY>/books/projects/rp-rewriter/lib/mult3/demo').
+
+</p>
+
+<p>
+3. Verify the design. 
+<code>@('
+(verify-svtv-of-mult :name my-multiplier-example 
+                     :concl (equal result 
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2)))))
+')</code>
+
+Here, the variables are case-insensitive and they correspond to input/output
+names in the original design. For example, \"result\" is the output signal
+name, and \"in1\" and \"in2\" are input signals. This design performs 64x64-bit
+signed multiplication; therefore, the inputs are sign-extended with @(see
+logext) and the first 128-bit of multiplication is taken with @(see
+loghead). This proof takes about 1.5 seconds to finish. 
+</p>
+
+<p> @(see verify-svtv-of-mult) event will also create a file under the
+generated-proof-summary directory showing what the program proved and how long
+it took. This can be handy when running many experiments. Alternatively, if you
+would like to view what is proved you can run the following command in an
+interactive session:
+<code>@(':pe my-multiplier-example-correct')</code>
+</p>
+
+<p> @(see parse-and-create-svtv) and @(see verify-svtv-of-mult) have other
+options that may be useful in some cases. </p>
+
+<p> This program  is tested for multipliers up to  1024x1024; and they each finished
+in a matter of minutes on our machines. However, verifying large multiplier may
+require users to increase the  the stack size in ACL2 image
+(e.g., saved_acl2 under you ACL2 directory) and run the proofs again. What it
+should be increased to depends on your system (e.g., memory), and it is best to
+test and tune various options until you do not get an error. That is
+straightforward for systems with large memory (e.g., 32gb). In our
+tests, we have observed SBCL to be faster than CCL; however, for large
+multipliers garbage collector of CCL does a better job with @(see
+acl2::set-max-mem) and it can finish large proofs when SBCL terminates with memory
+errors.
+</p>
+
+<p>
+You may continue to @(see Multiplier-Verification-demo-2).
+</p>
+
+"
+  )
+
+(xdoc::defxdoc
+  Multiplier-Verification-demo-1-expanded
+  :parents (Multiplier-Verification-demo-1)
+  :short "Expanded events for the first demo for @(see  Multiplier-Verification) showing how an isolated
+ integer multiplier is verified."
+  :long " <p> Below is a demo that  showing every single event  to input a multiplier design coded
+in (System) Verilog into ACL2, and verify it efficiently. We choose a 64x64-bit
+Booth Encoded Dadda Tree multiplier with  Han-Carlson adder as our example.  If
+you  wish, you  can skip  to @(see  Multiplier-Verification-demo-2) for  a more
+complex arithmetic module. What is different here than @(see
+  Multiplier-Verification-demo-1) is that this one does not use the @(see
+  parse-and-create-svtv) and @(see verify-svtv-of-mult) macros but deliver the
+  events individually. This may be useful to some users.  </p>
 
 <p>
 1. Include the books to parse Verilog designs and crete symbolic simulation vectors.
@@ -431,7 +523,7 @@ errors.
 </p>
 
 <p>
-You may continue to @(see Multiplier-Verification-demo-2).
+You may continue to @(see Multiplier-Verification-demo-2-expanded).
 </p>
 
 "
@@ -441,6 +533,369 @@ You may continue to @(see Multiplier-Verification-demo-2).
   Multiplier-Verification-demo-2
   :parents (Multiplier-Verification)
   :short  "The second  demo  for   @(see  Multiplier-Verification)  showing  how  an
+ industrial-design-mimicking module  including a MAC, dot-product  and merged
+ multipliers can be verified."
+  :long "<p> In the first  demo (@(see Multiplier-Verification-demo-1)), we have
+ shown how  our tool can  be used  on an isolated  multiplier.  This is  a good
+ starting  point;  however,  real-world  applications  of  integer  multipliers
+ involve more intricate  design strategies. We tried to recreate  some of those
+ strategies  and   compiled  a   more  complex   multiplier  module   given  in
+ @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv'). You
+ may            find            this           file            on            <a
+ href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv\"
+ target=\"_blank\"> GitHub </a> as well.   This module allocates four identical
+ 33x33-bit  signed  multipliers,  two  final  stage  adders  and  some  smaller
+ reduction  trees to  perform  different multiplier  operations. These  include
+ signed/unsigned  four-laned 32x32-bit  multiply-add (or  multiply-accumulate),
+ one-lane  64x64-bit  multiply-add,  4-32x32-bit  dot-product  modes  (with  or
+ without an accumulator). These operations  can be combinational or sequential,
+ in which case  an accumulator is used to store  results across different clock
+ cycles. </p>
+
+<p>  The fact  that  this multiplier  module reuses  the  same smaller  integer
+ multipliers for different  modes of operations, the design  itself is slightly
+ more  complicated   which  may   cause  further  challenges   to  verification
+ systems.  Therefore, we  show  how our  tool  can handle  such  cases and  our
+ framework to verify them with a similar efficiency as stand-alone multipliers.
+ The    same    events    we    give     below    are    also    included    in
+ @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/demo-2.lisp'). </p>
+
+<p>
+1. Include the books to parse Verilog designs and crete symbolic simulation vectors.
+
+<code>
+(include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)
+</code>
+
+Including this book can take a long time (around a minute). However, we can save an executable
+that has this image already loaded. You can either follow the instructions at
+@(see save-exec) or download a <a
+href=\"https://temelmertcan.github.io/vescmul.zip\">package</a> that does that
+for you. This package also includes some demo files.
+
+</p>
+
+<p> 2. The integrated multiplier module has an input signal called
+@('mode'). As the name implied, this signal determines the mode of operation
+(e.g., dot-product or  4-lane multiplication) that the module needs  to run. We
+create a  new function to calculate  the value  of this
+signal. This will make  our proofs more readable and easier  to manage. You may
+find a description of how this signal should be assigned in the comments in the
+Verilog file.
+
+<code>
+@('
+(define calculate-mode-value (&key
+                              (acc-on 'nil)
+                              (reload-acc 'nil)
+                              (signed 'nil)
+                              (dot-product 'nil)
+                              (four-lanes-lo 'nil)
+                              (four-lanes-hi 'nil)
+                              (one-lane 'nil))
+  (b* (((unless (= 1 (+ (if dot-product 1 0) ;; check for illegal combination
+                        (if four-lanes-lo 1 0)
+                        (if four-lanes-hi 1 0)
+                        (if one-lane 1 0))))
+        -1)
+       (mode 0)
+       (mode (install-bit 0 (if acc-on 0 1) mode))
+       (mode (install-bit 1 (if reload-acc 0 1) mode))
+       (mode (install-bit 2 (if signed 0 1) mode))
+       (mode
+        (cond (dot-product   (part-install 0 mode :low 3 :width 2))
+              (four-lanes-lo (part-install 1 mode :low 3 :width 2))
+              (four-lanes-hi (part-install 2 mode :low 3 :width 2))
+              (t             (part-install 3 mode :low 3 :width 2)))))
+    mode))
+')
+</code>
+
+</p>
+
+<p> 3. Parse the design and create the simulation vector to test out cases that
+can be simulated combinationally.
+<code>
+@('
+(parse-and-create-svtv :name integrated_multipliers-combinational-modes
+                       :file \"integrated_multipliers.sv\"
+                       :topmodule \"Integrated_Multiplier\")
+')
+</code>
+</p>
+
+<p> 4.  We  are now ready to  verify the top module  for various multiplication
+modes. First,  we verify various  combinational modes (one-lane  64x64-bit MAC
+4-32x32-bit  dot-product, and four-lane  32x32-bit  multiplication  with lower  and
+higher half truncation), then we show verification for a sequential mode
+(accumulated dot-product).  </p>
+
+<p>
+ Below is our first correctness proof  of a multiplication mode. In this case
+ it is signed one-lane mode, which is expected to implement  [in3  +  in2*in1  (both
+sign-extended)] and the complete result is  truncated at 128 bits. We set the
+ mode signals value in the hypothesis with the :hyp argument. We pass a custom
+ name to the theorem that will be submitted with the :thm-name argument. 
+<code>
+ @('
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
+
+                     :thm-name signed-one-lane-mult-correct
+                     :hyp (equal mode (calculate-mode-value :one-lane t
+                                                            :signed t))
+                     :concl (equal result
+                                   (loghead 128 (+ (* (logext 64 in1)
+                                                      (logext 64 in2))
+                                                   in3))))
+')
+</code>
+</p>
+
+<p>
+
+We  can  prove  the  same  for  the mode  for  unsigned  numbers  by  changing  the
+specification accordingly:
+<code>
+@('
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
+
+                     :thm-name unsigned-one-lane-mult-correct
+                     :hyp (equal mode (calculate-mode-value :one-lane t
+                                                            :signed nil))
+                     :concl (equal result
+                                   (loghead 128 (+ (* (loghead 64 in1)
+                                                      (loghead 64 in2))
+                                                   in3))))
+')
+</code>
+</p>
+
+<p> 5. Now, let's verify  the dot product operation. To make it more readable,  we split two of
+the input signals to four lanes. This conjecture, similarly, takes about a second to
+prove. We omit the proofs for unsigned here for brevity.
+
+<code>
+@('
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
+
+                     :thm-name signed-comb-dot-product-is-correct
+                     :hyp (equal mode (calculate-mode-value :dot-product t
+                                                            :signed t))
+                     :concl (equal result
+                                   (loghead 128 (+ (* (logext 32 (nth-slice32 0 in1))
+                                                      (logext 32 (nth-slice32 0 in2)))
+                                                   (* (logext 32 (nth-slice32 1 in1))
+                                                      (logext 32 (nth-slice32 1 in2)))
+                                                   (* (logext 32 (nth-slice32 2 in1))
+                                                      (logext 32 (nth-slice32 2 in2)))
+                                                   (* (logext 32 (nth-slice32 3 in1))
+                                                      (logext 32 (nth-slice32 3 in2)))
+                                                   in3))))
+')
+</code>
+
+</p>
+
+<p> 6. Another mode is four-lane multiplication that truncate at the lower half of
+ multiplication.   Similarly,  we  define   new  input  and  output  simulation
+ patterns, splitting all three inputs and the output to four lanes:
+
+<code>
+@('
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
+
+                     :thm-name signed-four-lanes-lo-is-correct
+                     :hyp (equal mode (calculate-mode-value :four-lanes-lo t
+                                                            :signed t))
+                     :concl (equal result
+                                   (merge-4-u32s
+                                    ;; most significant portion first.
+                                    (loghead 32
+                                             (+ (* (nth-slice32 3 in1)
+                                                   (nth-slice32 3 in2))
+                                                (nth-slice32 3 in3)))
+                                    (loghead 32
+                                             (+ (* (nth-slice32 2 in1)
+                                                   (nth-slice32 2 in2))
+                                                (nth-slice32 2 in3)))
+                                    (loghead 32
+                                             (+ (* (nth-slice32 1 in1)
+                                                   (nth-slice32 1 in2))
+                                                (nth-slice32 1 in3)))
+                                    (loghead 32
+                                             (+ (* (nth-slice32 0 in1)
+                                                   (nth-slice32 0 in2))
+                                                (nth-slice32 0 in3))))))
+')
+</code>
+
+We can  prove a  similar lemma  for unsigned  mode as  well (omittied in this
+  doc).</p>
+
+<p> 7. We have
+another combinational  mode that is  four-lane multiplication that  truncate at
+the higher  half.  Function @(see logtail)  right shift  numbers.  In
+this case, we right shift the multiplication  result by 32 bits to retrieve the
+higher end of the result.
+
+<code>
+@('
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
+
+                     :thm-name signed-four-lanes-hi-is-correct
+                     :hyp (equal mode (calculate-mode-value :four-lanes-hi t
+                                                            :signed t))
+                     :concl (equal result
+                                   (merge-4-u32s
+                                    ;; as   in   Verilog  concatenation,   most
+                                    ;; significant portion first.
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (logext 32 (nth-slice32 3 in1))
+                                                            (logext 32 (nth-slice32 3 in2))))
+                                                (nth-slice32 3 in3)))
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (logext 32 (nth-slice32 2 in1))
+                                                            (logext 32 (nth-slice32 2 in2))))
+                                                (nth-slice32 2 in3)))
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (logext 32 (nth-slice32 1 in1))
+                                                            (logext 32 (nth-slice32 1 in2))))
+                                                (nth-slice32 1 in3)))
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (logext 32 (nth-slice32 0 in1))
+                                                            (logext 32 (nth-slice32 0 in2))))
+                                                (nth-slice32 0 in3))))))
+')
+</code>
+</p>
+
+<p>
+
+8. Finally, let's  show our  framework on  a sequential  operation. The  design in
+integrated_multipliers.sv has an  accumulator that can store  the result across
+different clock  cycles. We can  use this feature to  increase the size  of dot
+product. So we  create a simulation pattern where we  load the accumulator with
+an initial  value, and perform two  dot-product operations in two  clock cycles
+and accumulate the  result. So we create  a 8-32x32-bit dot product  out of the
+existing 4-32x32-bit one.
+
+<code>
+@('
+(parse-and-create-svtv :name integrated_multipliers-sequential-mode
+                       :file \"integrated_multipliers.sv\"
+                       :topmodule \"Integrated_Multiplier\"
+
+                       ;; Define the clock: (clk signal should continuously toggle)
+                       :cycle-phases (list (sv::make-svtv-cyclephase :constants '((\"clk\" . 0))
+                                                                     :inputs-free t
+                                                                     :outputs-captured t)
+                                           (sv::make-svtv-cyclephase :constants '((\"clk\" . 1))))
+                       :stages
+                       (;; reload the ACC in the first clock cycle
+                        (:label reload-acc
+                                :inputs ((\"IN3\" acc-init-val)
+                                         (\"mode\" mode-init-val)))
+                        ;; Feed some values in the second clock cycle for dot product
+                        (:label 1st-vectors
+                                :inputs ((\"IN1\" in1-1)
+                                         (\"IN2\" in2-1)
+                                         ;; keep the mode value the same in the next cycles.
+                                         (\"mode\" mode :hold t))
+                                :outputs ((\"result\" result1)))
+                        ;; Feed more values for dot-product.
+                        (:label 2nd-vectors
+                                :inputs ((\"IN1\" in1-2)
+                                         (\"IN2\" in2-2))
+                                :outputs ((\"result\" result2)))))
+')
+</code>
+
+The call for @(see parse-and-create-svtv) is more complicated here as we need
+to define what happens in each clock cycle. With the :cycle-phases argument we
+tell the program what signal represents the clock in a given design. In this
+case it is \"clk\". This defines stages (each clock cycle), and we describe how
+the design should be simulated at each stage. The first clock cycle will be
+used to load the accumulator. The second and third clock cycles will be used to
+feed in the input vectors for dot-product. The lane width for dot-product is
+32-bits. The input signals \"IN1\" and \"IN2\" are 128-bit wide, storing
+4-lanes of data. We bind those signals to free variables (e.g., in1-1) which will be refered
+to in the proofs we will run below.  
+
+</p>
+<p> The users of our tool can also define custom functions to define
+specification. This can help with readability. As an example, we define the
+spec function below.
+
+<code>
+@('
+(define dot-product32 ((in1 integerp)
+                       (in2 integerp)
+                       (signed booleanp)
+                       (dot-size natp))
+  (if (zp dot-size)
+      0
+    (+ (if signed
+           (* (logext 32 in1)
+              (logext 32 in2))
+         (* (loghead 32 in1)
+            (loghead 32 in2)))
+       (dot-product32 (logtail 32 in1)
+                      (logtail 32 in2)
+                      signed
+                      (1- dot-size))))
+  ///
+  ;; tell the rewriter to expand the definition of this spec function.
+  (add-rp-rule dot-product32))
+')
+</code>
+</p>
+
+<p> Then, we can state the correctness for the 8-32x32-bit dot product mode as:
+<code>
+@('
+(verify-svtv-of-mult :name integrated_multipliers-sequential-mode
+
+                     :thm-name signed-dot-product-with-acc-is-correct
+                     :hyp (and
+                           ;; set the first mode value to reload ACC.
+                           (equal mode-init-val (calculate-mode-value :acc-on t
+                                                                      :dot-product t
+                                                                      :reload-acc t))
+                           ;; mode  in  the following  clock  cycle  is set  to
+                           ;; dot-product accumulate
+                           (equal mode (calculate-mode-value :dot-product t
+                                                             :acc-on t
+                                                             :signed t)))
+                     ;; we can validate the value of the output in different cycles:
+                     :concl (and (equal result1
+                                        (loghead 128
+                                                 (+ (dot-product32 in1-1 in2-1 t 4)
+                                                    acc-init-val)))
+                                 (equal result2
+                                        (loghead 128
+                                                 (+ (dot-product32 in1-1 in2-1 t 4)
+                                                    (dot-product32 in1-2 in2-2 t 4)
+                                                    acc-init-val)))))
+')
+</code>
+
+Note that the conclusion has a conjunct of two expressions. This is optional
+and only here to show the flexibility of our program. \"result1\" refers to the
+value of the output signal at the second clock cycle, and \"result2\" refers to
+the value of the output signal at the third clock cycle. 
+
+</p>
+
+")
+
+(xdoc::defxdoc
+  Multiplier-Verification-demo-2-expanded
+  :parents (Multiplier-Verification-demo-2)
+  :short  "Expanded events for the second  demo  for   @(see  Multiplier-Verification)  showing  how  an
  industrial-design-mimicking module  including a MAC, dot-product  and merged
  multipliers can be verified."
   :long "<p> In the first  demo (@(see Multiplier-Verification-demo-1)), we have
@@ -931,18 +1386,26 @@ design.
  This is useful
 for hierarchical reasoning for cases VeSCmul cannot detect certain adder
 patterns in some designs. This will create two simulation vectors: one for the
-original design and another for the modified version. @(see
-verify-svtv-of-mult) will later prove equivalance between the two versions
-using FGL (sat solver), and VeSCmul will be used to rewrite the modified
-version. In the end, a theorem stating the correctness of the original design
+original design and another for the modified version. VeSCmul will be used to verify the modified
+version. And @(see
+verify-svtv-of-mult) macro will also prove equivalance between the two versions
+with a SAT solver (through FGL).  In the end, a theorem stating the correctness of the original design
 will be saved.
 <br />
-VeSCmul is usually very good at finding adders automatically on its own in
-flattened designs, and
+VeSCmul is usually very good at finding adders  on its own, and
 hopefully, this option will not be necessary. However, should the need rise, we still
 keep hierarchical reasoning as an option.  </li>
+
+<li> <b>:stages</b> is optional. Users can opt to define the stages that will
+be passed to @(see sv::defsvtv$). It is especially useful for sequential
+circuits. Unless specified, the program will assume the given design is
+combinational and bind input and output signals automatically to the variables
+of the same case-insensitive names.</li>
+<li> <b>:cycle-phases</b> is optional. Will be passed to @(see
+sv::defsvtv$). It is relevant for sequential circuits only. </li>
+
 </ul>
-<br />
+
 <p> Example call 1:
 <code>
 @('
@@ -963,7 +1426,7 @@ keep hierarchical reasoning as an option.  </li>
 </p>
 
 
-<p> Example call 3 (-somewhat- hierarchical reasoning):
+<p> Example call 3 (providing hints with hierarchical reasoning):
 <code>
 @('
 ;; Create a Verilog file that has an alternative definition for Han-Carlson
@@ -990,38 +1453,49 @@ event. </p>
 
 (defxdoc verify-svtv-of-mult
   :parents (Multiplier-Verification vescmul)
-  :short "A macro to verify a multiplier using @(see VeSCmul)  from an already crated simulation
+  :short "A macro to verify a multiplier using @(see VeSCmul)  from an already created simulation
   test vector with @(see parse-and-create-svtv)"
   :long "<p><b>verify-svtv-of-mult</b> can take the following arguments:</p>
 <ul>
 <li> <b>:name</b> has to be provided. It should be a symbol and be the name
   corresponding to the name picked in @(see parse-and-create-svtv). </li>
 
-<li> <b>:concl</b> has to be provided. The body of the conjecture we aim to
-  proved. </li>
+<li> <b>:concl</b> has to be provided. The body of the conjecture to
+  be proved. </li>
+
+<li> <b>:thm-name</b> is optional. It will be the name of the final theorem
+  proved. When provided, it should be a symbol. When not provided, the program
+  will automatically calculate a thm-name by append \"-correct\" to the name
+  provided with the :name argument. </li>
+
+<li> <b>:hyp</b> is optional. A term that will be used as hypothesis when
+verifying a multiplier. It can be useful when setting some control signals or
+when assuming some simulation conditions. </li>
 
 <li> <b>:then-fgl</b>  is optional. To invoke FGL (calls a SAT solver) after
-  rewriter finishes. </li>
+  rewriter finishes. FGL is configurable, for example, to call the desired SAT
+  solver and/or perform AIG transforms. See below.  </li>
 
 <li> <b>:read-from-file</b> is optional. It should be a string be the value
   corresponding to the one in the :save-to-file argument of @(see
   parse-and-create-svtv). </li>
 
 <li> <b>:cases</b> is optional. A list of terms that can be used to casesplit
-  upon starting the program. May be useful for some corner cases. </li>
+  upon starting the program. Casesplit hints may be useful for some corner cases. </li>
 <li> <b>:keep-going</b> is optional, should be t or nil. When set to t, the
   program will not stop ACL2 if a proof-attempt fails. This is useful when
-  running a lot of experiments in the same file.</li>
+  running a lot of experiments in the same file, and you expect that some may
+  fail to prove.</li>
 <li> <b>:print-message</b> is optional and should be a string if given. The
-  program will also generate a proof summary file after it's run. Users may
-  pass a custom message that will appear in the proof summary file.</li>
+  program will also generate a proof summary file after it has run. Users may
+  pass a custom message through this argument that will appear in the proof summary file.</li>
 </ul>
-<br />
+
 <p>verify-svtv-of-mult will create a proof-summary file under the
 generated-proof-summary directory showing the proof time and what the program
 verified about multiplier design.</p>
 
-<br />
+
 <p> Example call 1:
 <code>
 @('
@@ -1107,12 +1581,15 @@ equivalance checking during hierarchical reasoning scheme.
                                       :search-second-lit t)
                  (change-fraig-config *fraig-default-config*
                                       :random-seed-name 'my-random-seed
-                                      :ctrex-queue-limit 256
+                                      :ctrex-queue-limit 8
                                       :sim-words 1
                                       :ctrex-force-resim nil
-                                      :ipasir-limit 64)
+                                      :ipasir-limit 4
+                                      :initial-sim-rounds 2
+                                      :initial-sim-words 2
+                                      :ipasir-recycle-count 2000)
                  )))
-
+  (local (defattach fgl::fgl-aignet-transforms-config transforms-config))
   (local (define monolithic-sat-with-transforms ()
            (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
   (local (defattach fgl::fgl-toplevel-sat-check-config monolithic-sat-with-transforms)))

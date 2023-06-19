@@ -596,8 +596,7 @@
             cur
           t))))
   ///
-  (memoize 'svex-has-more-than-one-var-p
-           :condition '(eq (sv::svex-kind x) :call)))
+  (memoize 'svex-has-more-than-one-var-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1933,8 +1932,7 @@
   ///
   (verify-guards clear-adder-fnc-from-unfloat)
 
-  (memoize 'clear-adder-fnc-from-unfloat
-           :condition '(eq (sv::svex-kind svex) :call)))
+  (memoize 'clear-adder-fnc-from-unfloat))
 
 (define create-unfloat-for-adder-fnc (arg)
   :returns (res sv::Svex-p :hyp (sv::Svex-p arg))
@@ -2252,7 +2250,8 @@
 
   (verify-guards replace-adder-patterns-in-svex)
 
-  (memoize 'replace-adder-patterns-in-svex :condition '(eq (sv::svex-kind x) :call))
+  (memoize 'replace-adder-patterns-in-svex ;; :condition '(eq (sv::svex-kind x) :call)
+           )
 
   (defret-mutual replace-adder-patterns-in-svex-is-correct
     (defret <fn>-is-correct
@@ -2359,7 +2358,8 @@
     (verify-guards fix-order-of-fa/ha-s-args)
 
     (memoize 'fix-order-of-fa/ha-s-args
-             :condition '(eq (sv::svex-kind x) :call))
+             ;; :condition '(eq (sv::svex-kind x) :call)
+             )
 
     (defret-mutual <fn>-is-correct
       (defret <fn>-is-correct
@@ -3924,7 +3924,8 @@
     (verify-guards simplify-to-find-fa-c-patterns-fn)
 
     (memoize 'simplify-to-find-fa-c-patterns-fn
-             :condition '(eq (sv::svex-kind x) :call))
+             ;; :condition '(eq (sv::svex-kind x) :call)
+             )
 
     (local
      (defthm id-of-bitor-lemma
@@ -4086,7 +4087,8 @@
                              ()))))
 
   (memoize 'wrap-pp-with-id-aux
-           :condition '(eq (sv::svex-kind x) :call))
+           ;; :condition '(eq (sv::svex-kind x) :call)
+           )
   )
 
 (define wrap-pp-with-id-alist-aux ((svex-alist sv::svex-alist-p)
@@ -4196,7 +4198,8 @@
                              ()))))
 
   (memoize 'extract-svex-from-id
-           :condition '(eq (sv::svex-kind x) :call))
+            ;; :condition '(eq (sv::svex-kind x) :call)
+            )
   )
 
 (define extract-svex-from-id-alist ((svex-alist sv::svex-alist-p))
@@ -4450,7 +4453,8 @@
                       (global-zero-fa-c-chain-extra-arg-lst nil))
              :in-theory (e/d () ()))))
   (memoize 'global-zero-fa-c-chain-extra-arg
-           :condition '(eq (sv::svex-kind svex) :call))
+            ;; :condition '(eq (sv::svex-kind svex) :call)
+            )
   )
 
 (define global-zero-fa-c-chain-extra-arg-alist ((alist sv::svex-alist-p)
@@ -4599,7 +4603,8 @@
                :in-theory (e/d (SV::SVEX-CALL->ARGS) ()))))
 
     (memoize 'fix-order-of-fa/ha-chain-args-fn
-             :condition '(eq (sv::svex-kind x) :call))
+             ;; :condition '(eq (sv::svex-kind x) :call)
+             )
 
     (defret-mutual <fn>-is-correct
       (defret <fn>-is-correct
@@ -6718,7 +6723,8 @@
   (verify-guards ppx-simplify-fn)
 
   (memoize 'ppx-simplify-fn
-           :condition '(eq (sv::svex-kind svex) :call))
+           ;; :condition '(eq (sv::svex-kind svex) :call)
+           )
 
   (defret-mutual ppx-simplify-correct
     (defret <fn>-is-correct
@@ -7860,7 +7866,8 @@ pattern
              :in-theory (e/d () ()))))
 
   (memoize 'remove-ha-under-gates
-           :condition '(eq (sv::svex-kind svex) :call))
+           ;; :condition '(eq (sv::svex-kind svex) :call)
+           )
 
   (defret-mutual correctness
     (defret <fn>-is-correct
@@ -7992,7 +7999,8 @@ pattern
   ///
   (verify-guards remove-unpaired-fa-s-aux-fn)
   (memoize 'remove-unpaired-fa-s-aux-fn
-           :condition '(eq (sv::svex-kind svex) :call))
+           ;; :condition '(eq (sv::svex-kind svex) :call)
+           )
 
   (defret-mutual correctness
     (defret <fn>-is-correct
@@ -8117,7 +8125,8 @@ pattern
   (verify-guards merge-fa-s-c-chains-fn)
 
   (memoize 'merge-fa-s-c-chains
-           :condition '(eq (sv::svex-kind x) :call))
+           ;; :condition '(eq (sv::svex-kind x) :call)
+           )
 
   (local
    (defthm sv::4vec-part-select-of-fa-chains/s-c-spec-lemma
@@ -8387,7 +8396,8 @@ pattern
   ///
   (verify-guards add-ha-c-for-shifted-search)
   (memoize 'add-ha-c-for-shifted-search
-           :condition '(eq (sv::svex-kind x) :call))
+           ;; :condition '(eq (sv::svex-kind x) :call)
+           )
   ;; no need to verify anything. 
   
 
@@ -8451,7 +8461,8 @@ pattern
   ///
   (verify-guards add-ha-c-for-shifted)
   (memoize 'add-ha-c-for-shifted
-           :condition '(eq (sv::svex-kind x) :call))
+           ;; :condition '(eq (sv::svex-kind x) :call)
+           )
 
   (defret-mutual <fn>-is-correct
     (defret <fn>-is-correct
@@ -8616,13 +8627,34 @@ pattern
                  :do-not-induct t
                  :in-theory (e/d () ())))))))
 
+(define vescmul-clear-memoize-tables ()
+  (progn$ (clear-memoize-table 's-order)
+          (clear-memoize-table 'adder-pattern-match)
+          (clear-memoize-table 'clear-adder-fnc-from-unfloat)
+          (clear-memoize-table 'replace-adder-patterns-in-svex)
+          (clear-memoize-table 'fix-order-of-fa/ha-s-args)
+          (clear-memoize-table ''svl::bitand/or/xor-cancel-repeated)
+          (clear-memoize-table 'simplify-to-find-fa-c-patterns-fn)
+          (clear-memoize-table 'wrap-pp-with-id-aux)
+          (clear-memoize-table 'add-ha-c-for-shifted)
+          (clear-memoize-table 'extract-svex-from-id)
+          (clear-memoize-table 'global-zero-fa-c-chain-extra-arg)
+          (clear-memoize-table 'fix-order-of-fa/ha-chain-args-fn)
+          (clear-memoize-table 'ppx-simplify-fn)
+          (clear-memoize-table 'remove-ha-under-gates)
+          (clear-memoize-table 'remove-unpaired-fa-s-aux-fn)
+          (clear-memoize-table 'merge-fa-s-c-chains)
+          (clear-memoize-table 'add-ha-c-for-shifted-search)))
+
 (define rewrite-adders-in-svex-alist ((term)
                                       (context rp-term-listp))
   :returns (mv res-term res-dont-rw)
   :guard-debug t
   (case-match term
     (('sv::svex-alist-eval ('quote svex-alist) env-orig)
-     (b* ((env (rp::ex-from-rp env-orig))
+     (b* ((- (vescmul-clear-memoize-tables))
+          
+          (env (rp::ex-from-rp env-orig))
           ((mv falistp env) (case-match env
                               (('falist ('quote x) &) (mv t x))
                               (& (mv nil env))))
@@ -9627,6 +9659,10 @@ svex-alist)
   (implies (not (consp x))
            (and (equal (car x) nil)
                 (equal (cdr x) nil))))
+
+
+
+
 
 (progn
   (defun defthm-with-temporary-warrants-fn (thm-name thm-body args

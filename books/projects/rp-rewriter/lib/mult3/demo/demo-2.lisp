@@ -37,54 +37,29 @@
 
 (in-package "RP")
 
-;; To load the verilog designs:
-(include-book "centaur/sv/top" :dir :system) ;; a big book; takes around 30 seconds
-(include-book "centaur/vl/loader/top" :dir :system) ;; takes around 10 seconds
-(include-book "oslib/ls" :dir :system)
+(include-book "projects/rp-rewriter/lib/mult3/top" :dir :system)
 
 (value-triple (acl2::set-max-mem (* 10 (expt 2 30))))
 
 (set-waterfall-parallelism nil)
-
-;; for correctness proof of multiplier
-(include-book "projects/rp-rewriter/lib/mult3/svtv-top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Example:   integrated_multipliers.sv  (Multiply-accumulate,   Dot-product,
 ;; Four-lane mult with truncation) (sequential or combinational)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Load VL Design.
-(acl2::defconsts
-  (*mult2-vl-design* state)
-  (b* (((mv loadresult state)
-        (vl::vl-load (vl::make-vl-loadconfig
-                      :start-files '("integrated_multipliers.sv")))))
-    (mv (vl::vl-loadresult->design loadresult) state)))
-
-;; Load SV design.
-(acl2::defconsts
-  (*mult2-sv-design*)
-  (b* (((mv errmsg sv-design & &)
-        (vl::vl-design->sv-design "Integrated_Multiplier"
-                                  *mult2-vl-design*
-                                  (vl::make-vl-simpconfig))))
-    (and errmsg
-         (acl2::raise "~@0~%" errmsg))
-    sv-design))
-
-;; We read the comments given in the integrated_multipliers.sv file,
-;; and create the function below in order to calculate the value of "mode"
-;; in a user-friendly fashion.  This  helps determine  the value  of
-;; "mode" signal in the Integrated_Multiplier module.
-(define control-mode (&key
-                      (acc-on 'nil)
-                      (reload-acc 'nil)
-                      (signed 'nil)
-                      (dot-product 'nil)
-                      (four-lanes-lo 'nil)
-                      (four-lanes-hi 'nil)
-                      (one-lane 'nil))
+;; This module has a control signal  called "mode". This signal determines what
+;; operation this  module is  to perform.   We read the  comments given  in the
+;; integrated_multipliers.sv file,  and create the  function below in  order to
+;; calculate the  value of "mode"  in a  user-friendly fashion for  our proofs.
+(define calculate-mode-value (&key
+                              (acc-on 'nil)
+                              (reload-acc 'nil)
+                              (signed 'nil)
+                              (dot-product 'nil)
+                              (four-lanes-lo 'nil)
+                              (four-lanes-hi 'nil)
+                              (one-lane 'nil))
   (b* (((unless (= 1 (+ (if dot-product 1 0)
                         (if four-lanes-lo 1 0)
                         (if four-lanes-hi 1 0)
@@ -94,393 +69,308 @@ four-lanes-hi and one-lane should be set to 1.~%")
             (hard-error 'control-mode "" nil)
             0))
        (mode 0)
-       (mode (svl::sbits 0 1 (if acc-on 0 1) mode))
-       (mode (svl::sbits 1 1 (if reload-acc 0 1) mode))
-       (mode (svl::sbits 2 1 (if signed 0 1) mode))
+       (mode (install-bit 0 (if acc-on 0 1) mode))
+       (mode (install-bit 1 (if reload-acc 0 1) mode))
+       (mode (install-bit 2 (if signed 0 1) mode))
        (mode
-        (cond (dot-product   (svl::sbits 3 2 0 mode))
-              (four-lanes-lo (svl::sbits 3 2 1 mode))
-              (four-lanes-hi (svl::sbits 3 2 2 mode))
-              (t             (svl::sbits 3 2 3 mode)))))
+        (cond (dot-product   (part-install 0 mode :low 3 :width 2))
+              (four-lanes-lo (part-install 1 mode :low 3 :width 2))
+              (four-lanes-hi (part-install 2 mode :low 3 :width 2))
+              (t             (part-install 3 mode :low 3 :width 2)))))
     mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Proof 1 - Mode = one-lane: Signed One lane (64x64-bit) multiplication
-(sv::defsvtv one-lane-mult2-svtv
-  :mod *mult2-sv-design*
-  :inputs '(("clk" 0)
-            ("IN1" in1)
-            ("IN2" in2)
-            ("IN3" in3)
-            ("mode" mode))
-  :outputs
-  '(("result" result)))
-
-;; above  event creates  the function  "one-lane-mult2-svtv-autoins-fn". If  we
-;; choose  to use  it  in the  proof  below, then  we  should have  RP-Rewriter
-;; recognize its definition rule.
-(add-rp-rule one-lane-mult2-svtv-autoins-fn)
-
-(defthmrp-multiplier signed-one-lane-mult-is-correct
-  (implies (and (integerp in1)
-                (integerp in2)
-                (integerp in3))
-           (equal (sv::svtv-run (one-lane-mult2-svtv)
-                                (one-lane-mult2-svtv-autoins
-                                 :mode (control-mode :one-lane t
-                                                     :signed t)))
-                  `((result . ,(loghead 128 (+ (* (logext 64 in1)
-                                                  (logext 64 in2))
-                                               in3)))))))
-
-;; Unsigned One lane (64x64-bit) multiplication
-(defthmrp-multiplier unsigned-one-lane-mult-is-correct
-  (implies (and (integerp in1)
-                (integerp in2)
-                (integerp in3))
-           (equal (sv::svtv-run (one-lane-mult2-svtv)
-                                (one-lane-mult2-svtv-autoins
-                                 :mode (control-mode :one-lane t
-                                                     :signed nil)))
-                  `((result . ,(loghead 128 (+ (* (loghead 64 in1)
-                                                  (loghead 64 in2))
-                                               in3)))))))
+;; parse design for combinational modes
+(parse-and-create-svtv :name integrated_multipliers-combinational-modes
+                       :file "integrated_multipliers.sv"
+                       :topmodule "Integrated_Multiplier")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Proof 2 - Mode = dot-product. Dot Product (combinational)
-(sv::defsvtv dotproduct-mult2-svtv
-  :mod *mult2-sv-design*
-  :inputs '(("clk" 0)
-            ("IN1[31:0]" in1_0)
-            ("IN2[31:0]" in2_0)
-            ("IN1[63:32]" in1_1)
-            ("IN2[63:32]" in2_1)
-            ("IN1[95:64]" in1_2)
-            ("IN2[95:64]" in2_2)
-            ("IN1[127:96]" in1_3)
-            ("IN2[127:96]" in2_3)
-            ("IN3" in3)
-            ("mode" mode))
-  :outputs '(("result" result)))
+;; Proof 1,2 - Mode = one-lane: Signed One lane (64x64-bit) multiplication
 
-(add-rp-rule dotproduct-mult2-svtv-autoins-fn)
+;; one lane mode, signed
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
 
-(defthmrp-multiplier
-  signed-dot-product-is-correct
-  (implies (and (integerp in1_0)
-                (integerp in2_0)
-                (integerp in1_1)
-                (integerp in2_1)
-                (integerp in1_2)
-                (integerp in2_2)
-                (integerp in1_3)
-                (integerp in2_3)
-                (integerp in3))
-           (equal (sv::svtv-run (dotproduct-mult2-svtv)
-                                (dotproduct-mult2-svtv-autoins
-                                 :mode (control-mode :dot-product t
-                                                     :signed t)))
-                  `((result . ,(loghead 128 (+ (* (logext 32 in1_0)
-                                                  (logext 32 in2_0))
-                                               (* (logext 32 in1_1)
-                                                  (logext 32 in2_1))
-                                               (* (logext 32 in1_2)
-                                                  (logext 32 in2_2))
-                                               (* (logext 32 in1_3)
-                                                  (logext 32 in2_3))
-                                               in3)))))))
+                     :thm-name signed-one-lane-mult-correct
+                     :hyp (equal mode (calculate-mode-value :one-lane t
+                                                            :signed t))
+                     :concl (equal result
+                                   (loghead 128 (+ (* (logext 64 in1)
+                                                      (logext 64 in2))
+                                                   in3))))
+;; one lane mode, unsigned
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
 
-;; Unsigned
-(defthmrp-multiplier
-  unsigned-dot-product-is-correct
-  (implies (and (integerp in1_0)
-                (integerp in2_0)
-                (integerp in1_1)
-                (integerp in2_1)
-                (integerp in1_2)
-                (integerp in2_2)
-                (integerp in1_3)
-                (integerp in2_3)
-                (integerp in3))
-           (equal (sv::svtv-run (dotproduct-mult2-svtv)
-                                (dotproduct-mult2-svtv-autoins
-                                 :mode (control-mode :dot-product t
-                                                     :signed nil)))
-                  `((result . ,(loghead 128 (+ (* (loghead 32 in1_0)
-                                                  (loghead 32 in2_0))
-                                               (* (loghead 32 in1_1)
-                                                  (loghead 32 in2_1))
-                                               (* (loghead 32 in1_2)
-                                                  (loghead 32 in2_2))
-                                               (* (loghead 32 in1_3)
-                                                  (loghead 32 in2_3))
-                                               in3)))))))
+                     :thm-name unsigned-one-lane-mult-correct
+                     :hyp (equal mode (calculate-mode-value :one-lane t
+                                                            :signed nil))
+                     :concl (equal result
+                                   (loghead 128 (+ (* (loghead 64 in1)
+                                                      (loghead 64 in2))
+                                                   in3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Proof 3 - mode = four-lanes-lo: Four Lanes Truncate Lower Half
-(sv::defsvtv four-lanes-mult2-svtv
-  :mod *mult2-sv-design*
-  :inputs '(("clk" 0)
-            ("IN1[31:0]"   in1_0)
-            ("IN2[31:0]"   in2_0)
-            ("IN1[63:32]"  in1_1)
-            ("IN2[63:32]"  in2_1)
-            ("IN1[95:64]"  in1_2)
-            ("IN2[95:64]"  in2_2)
-            ("IN1[127:96]" in1_3)
-            ("IN2[127:96]" in2_3)
-            ("IN3[31:0]"   in3_0)
-            ("IN3[63:32]"  in3_1)
-            ("IN3[95:64]"  in3_2)
-            ("IN3[127:96]" in3_3)
-            ("mode"        mode))
-  :outputs '(("result[31:0]"   result0)
-             ("result[63:32]"  result1)
-             ("result[95:64]"  result2)
-             ("result[127:96]" result3)))
+;; Proof 3,4 - Mode = dot-product. Dot Product (combinational)
 
-(add-rp-rule four-lanes-mult2-svtv-autoins-fn)
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
 
-(defthmrp-multiplier
-  signed-four-lanes-lo-is-correct
-  (implies (and (integerp in1_0)
-                (integerp in2_0)
-                (integerp in3_0)
+                     :thm-name signed-comb-dot-product-is-correct
+                     :hyp (equal mode (calculate-mode-value :dot-product t
+                                                            :signed t))
+                     :concl (equal result
+                                   (loghead 128 (+ (* (logext 32 (nth-slice32 0 in1))
+                                                      (logext 32 (nth-slice32 0 in2)))
+                                                   (* (logext 32 (nth-slice32 1 in1))
+                                                      (logext 32 (nth-slice32 1 in2)))
+                                                   (* (logext 32 (nth-slice32 2 in1))
+                                                      (logext 32 (nth-slice32 2 in2)))
+                                                   (* (logext 32 (nth-slice32 3 in1))
+                                                      (logext 32 (nth-slice32 3 in2)))
+                                                   in3))))
 
-                (integerp in1_1)
-                (integerp in2_1)
-                (integerp in3_1)
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
 
-                (integerp in1_2)
-                (integerp in2_2)
-                (integerp in3_2)
-
-                (integerp in1_3)
-                (integerp in2_3)
-                (integerp in3_3))
-           (equal (sv::svtv-run (four-lanes-mult2-svtv)
-                                (four-lanes-mult2-svtv-autoins
-                                 :mode (control-mode :four-lanes-lo t
-                                                     :signed t)))
-                  `((result0 . ,(loghead 32 (+ (* (logext 32 in1_0)
-                                                  (logext 32 in2_0))
-                                               in3_0)))
-                    (result1 . ,(loghead 32 (+ (* (logext 32 in1_1)
-                                                  (logext 32 in2_1))
-                                               in3_1)))
-                    (result2 . ,(loghead 32 (+ (* (logext 32 in1_2)
-                                                  (logext 32 in2_2))
-                                               in3_2)))
-                    (result3 . ,(loghead 32 (+ (* (logext 32 in1_3)
-                                                  (logext 32 in2_3))
-                                               in3_3)))))))
-
-(defthmrp-multiplier
-  unsigned-four-lanes-lo-is-correct
-  (implies (and (integerp in1_0)
-                (integerp in2_0)
-                (integerp in3_0)
-
-                (integerp in1_1)
-                (integerp in2_1)
-                (integerp in3_1)
-
-                (integerp in1_2)
-                (integerp in2_2)
-                (integerp in3_2)
-
-                (integerp in1_3)
-                (integerp in2_3)
-                (integerp in3_3))
-           (equal (sv::svtv-run (four-lanes-mult2-svtv)
-                                (four-lanes-mult2-svtv-autoins
-                                 :mode (control-mode :four-lanes-lo t
-                                                     :signed nil)))
-                  `((result0 . ,(loghead 32 (+ (* (loghead 32 in1_0)
-                                                  (loghead 32 in2_0))
-                                               in3_0)))
-                    (result1 . ,(loghead 32 (+ (* (loghead 32 in1_1)
-                                                  (loghead 32 in2_1))
-                                               in3_1)))
-                    (result2 . ,(loghead 32 (+ (* (loghead 32 in1_2)
-                                                  (loghead 32 in2_2))
-                                               in3_2)))
-                    (result3 . ,(loghead 32 (+ (* (loghead 32 in1_3)
-                                                  (loghead 32 in2_3))
-                                               in3_3)))))))
+                     :thm-name unsigned-comb-dot-product-is-correct
+                     :hyp (equal mode (calculate-mode-value :dot-product t
+                                                            :signed nil))
+                     :concl (equal result
+                                   (loghead 128 (+ (* (nth-slice32 0 in1)
+                                                      (nth-slice32 0 in2))
+                                                   (* (nth-slice32 1 in1)
+                                                      (nth-slice32 1 in2))
+                                                   (* (nth-slice32 2 in1)
+                                                      (nth-slice32 2 in2))
+                                                   (* (nth-slice32 3 in1)
+                                                      (nth-slice32 3 in2))
+                                                   in3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Proof 4 - mode = four-lanes-hi: Four Lanes Truncate Higher Half
+;; Proof 5,6 - mode = four-lanes-lo: Four Lanes multiplication of lower halves
 
-(defthmrp-multiplier
-  signed-four-lanes-hi-is-correct
-  (implies (and (integerp in1_0)
-                (integerp in2_0)
-                (integerp in3_0)
+;; signed or  unsigned modes  return the  same as values  are truncated  at the
+;; first half.
 
-                (integerp in1_1)
-                (integerp in2_1)
-                (integerp in3_1)
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
 
-                (integerp in1_2)
-                (integerp in2_2)
-                (integerp in3_2)
+                     :thm-name signed-four-lanes-lo-is-correct
+                     :hyp (equal mode (calculate-mode-value :four-lanes-lo t
+                                                            :signed t))
+                     :concl (equal result
+                                   (merge-4-u32s
+                                    ;; most significant portion first.
+                                    (loghead 32
+                                             (+ (* (nth-slice32 3 in1)
+                                                   (nth-slice32 3 in2))
+                                                (nth-slice32 3 in3)))
+                                    (loghead 32
+                                             (+ (* (nth-slice32 2 in1)
+                                                   (nth-slice32 2 in2))
+                                                (nth-slice32 2 in3)))
+                                    (loghead 32
+                                             (+ (* (nth-slice32 1 in1)
+                                                   (nth-slice32 1 in2))
+                                                (nth-slice32 1 in3)))
+                                    (loghead 32
+                                             (+ (* (nth-slice32 0 in1)
+                                                   (nth-slice32 0 in2))
+                                                (nth-slice32 0 in3))))))
 
-                (integerp in1_3)
-                (integerp in2_3)
-                (integerp in3_3))
-           (equal (sv::svtv-run (four-lanes-mult2-svtv)
-                                (four-lanes-mult2-svtv-autoins
-                                 :mode (control-mode :four-lanes-hi t
-                                                     :signed t)))
-                  `((result0 . ,(loghead 32 (+ (ash (* (logext 32 in1_0)
-                                                       (logext 32 in2_0))
-                                                    -32)
-                                               in3_0)))
-                    (result1 . ,(loghead 32 (+ (ash (* (logext 32 in1_1)
-                                                       (logext 32 in2_1))
-                                                    -32)
-                                               in3_1)))
-                    (result2 . ,(loghead 32 (+ (ash (* (logext 32 in1_2)
-                                                       (logext 32 in2_2))
-                                                    -32)
-                                               in3_2)))
-                    (result3 . ,(loghead 32 (+ (ash (* (logext 32 in1_3)
-                                                       (logext 32 in2_3))
-                                                    -32)
-                                               in3_3))))))
-  )
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
 
-(defthmrp-multiplier
-  unsigned-four-lanes-hi-is-correct
-  (implies (and (integerp in1_0)
-                (integerp in2_0)
-                (integerp in3_0)
-
-                (integerp in1_1)
-                (integerp in2_1)
-                (integerp in3_1)
-
-                (integerp in1_2)
-                (integerp in2_2)
-                (integerp in3_2)
-
-                (integerp in1_3)
-                (integerp in2_3)
-                (integerp in3_3))
-           (equal (sv::svtv-run (four-lanes-mult2-svtv)
-                                (four-lanes-mult2-svtv-autoins
-                                 :mode (control-mode :four-lanes-hi t
-                                                     :signed nil)))
-                  `((result0 . ,(loghead 32 (+ (ash (* (loghead 32 in1_0)
-                                                       (loghead 32 in2_0))
-                                                    -32)
-                                               in3_0)))
-                    (result1 . ,(loghead 32 (+ (ash (* (loghead 32 in1_1)
-                                                       (loghead 32 in2_1))
-                                                    -32)
-                                               in3_1)))
-                    (result2 . ,(loghead 32 (+ (ash (* (loghead 32 in1_2)
-                                                       (loghead 32 in2_2))
-                                                    -32)
-                                               in3_2)))
-                    (result3 . ,(loghead 32 (+ (ash (* (loghead 32 in1_3)
-                                                       (loghead 32 in2_3))
-                                                    -32)
-                                               in3_3))))))
-  )
+                     :thm-name unsigned-four-lanes-lo-is-correct
+                     :hyp (equal mode (calculate-mode-value :four-lanes-lo t
+                                                            :signed nil))
+                     :concl (equal result
+                                   (merge-4-u32s
+                                    ;; most significant portion first.
+                                    (loghead 32
+                                             (+ (* (nth-slice32 3 in1)
+                                                   (nth-slice32 3 in2))
+                                                (nth-slice32 3 in3)))
+                                    (loghead 32
+                                             (+ (* (nth-slice32 2 in1)
+                                                   (nth-slice32 2 in2))
+                                                (nth-slice32 2 in3)))
+                                    (loghead 32
+                                             (+ (* (nth-slice32 1 in1)
+                                                   (nth-slice32 1 in2))
+                                                (nth-slice32 1 in3)))
+                                    (loghead 32
+                                             (+ (* (nth-slice32 0 in1)
+                                                   (nth-slice32 0 in2))
+                                                (nth-slice32 0 in3))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Proof 2-5: Dot Product (Sequential)
+;; Proof 7,8  - mode =  four-lanes-hi: Four  Lanes of multiplication  of higher
+;; halves
 
-;; With the simulation  pattern below, the accumulator (acc) will  be reset and
-;; loaded with "acc-init-val".  Then we perform 8 multiplications  in two clock
-;; cycles, sum them and accumulate the results in acc.
-(sv::defsvtv sequential-dotproduct-mult2-svtv
-  :mod *mult2-sv-design*
-  :inputs `(("clk" 0 1 ~)
-            ("IN1[31:0]"   _ _ in1[0] _ in1[4])
-            ("IN2[31:0]"   _ _ in2[0] _ in2[4])
-            ("IN1[63:32]"  _ _ in1[1] _ in1[5])
-            ("IN2[63:32]"  _ _ in2[1] _ in2[5])
-            ("IN1[95:64]"  _ _ in1[2] _ in1[6])
-            ("IN2[95:64]"  _ _ in2[2] _ in2[6])
-            ("IN1[127:96]" _ _ in1[3] _ in1[7])
-            ("IN2[127:96]" _ _ in2[3] _ in2[7])
-            ("IN3" acc-init-val)
-            ("mode" ,(control-mode :acc-on t
-                                   :dot-product t
-                                   :reload-acc t)
-             mode mode mode mode))
-  :outputs '(("result" _ _ _ _ result)))
+;; signed
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
 
-;; In  this  part,  we  show  how   our  method  can  be  used  for  sequential
-;; circuits. The  design in integrated_multiplier.sv has  an accumulator, which
-;; we  can  use  to  create  an 8-32x32-bit  dot  product  out  of  4-32x32-bit
-;; dot-product module.
-(define dot-product-spec ((in1-lst integer-listp)
-                          (in2-lst integer-listp)
-                          (dot-product-size natp)
-                          (signed booleanp)
-                          (acc-init-val integerp)
-                          (acc-size natp))
-  :verify-guards nil
-  :guard (and (equal dot-product-size (len in1-lst))
-              (equal dot-product-size (len in2-lst)))
-  (if (zp dot-product-size)
-      (loghead acc-size acc-init-val)
-    (let* ((dot-product-size (1- dot-product-size)))
-      (loghead acc-size
-               (+ (if signed
-                      (* (logext 32 (nth dot-product-size in1-lst))
-                         (logext 32 (nth dot-product-size in2-lst)))
-                    (* (loghead 32 (nth dot-product-size in1-lst))
-                       (loghead 32 (nth dot-product-size in2-lst))))
-                  (dot-product-spec in1-lst
-                                    in2-lst
-                                    dot-product-size
-                                    signed
-                                    acc-init-val
-                                    acc-size)))))
+                     :thm-name signed-four-lanes-hi-is-correct
+                     :hyp (equal mode (calculate-mode-value :four-lanes-hi t
+                                                            :signed t))
+                     :concl (equal result
+                                   (merge-4-u32s
+                                    ;; as   in   Verilog  concatenation,   most
+                                    ;; significant portion first.
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (logext 32 (nth-slice32 3 in1))
+                                                            (logext 32 (nth-slice32 3 in2))))
+                                                (nth-slice32 3 in3)))
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (logext 32 (nth-slice32 2 in1))
+                                                            (logext 32 (nth-slice32 2 in2))))
+                                                (nth-slice32 2 in3)))
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (logext 32 (nth-slice32 1 in1))
+                                                            (logext 32 (nth-slice32 1 in2))))
+                                                (nth-slice32 1 in3)))
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (logext 32 (nth-slice32 0 in1))
+                                                            (logext 32 (nth-slice32 0 in2))))
+                                                (nth-slice32 0 in3))))))
+
+;; unsigned
+(verify-svtv-of-mult :name integrated_multipliers-combinational-modes
+
+                     :thm-name unsigned-four-lanes-hi-is-correct
+                     :hyp (equal mode (calculate-mode-value :four-lanes-hi t
+                                                            :signed nil))
+                     :concl (equal result
+                                   (merge-4-u32s
+                                    ;; most significant portion first.
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (nth-slice32 3 in1)
+                                                            (nth-slice32 3 in2)))
+                                                (nth-slice32 3 in3)))
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (nth-slice32 2 in1)
+                                                            (nth-slice32 2 in2)))
+                                                (nth-slice32 2 in3)))
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (nth-slice32 1 in1)
+                                                            (nth-slice32 1 in2)))
+                                                (nth-slice32 1 in3)))
+                                    (loghead 32
+                                             (+ (logtail 32
+                                                         (* (nth-slice32 0 in1)
+                                                            (nth-slice32 0 in2)))
+                                                (nth-slice32 0 in3))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Now let's verify a sequential mode.
+
+;; Goal: Create a different simulation vector for sequential simulation. We set
+;; up the simulation vector  such that in the first clock  cycle, we reload the
+;; accumulator (ACC)  with a  value (free  variable).  Then  in the  next clock
+;; cycles, we  feed different values  for IN1 an IN2  inputs. We will  tell the
+;; module  to  dot-product  these  values  and accumulate  the  result  in  ACC
+;; register.  As  each lane is  32-bit wide, and  IN1-IN2 are 128-bit  wide, we
+;; will have a 8-point dot-product accumulated onto an ACC register after the 2
+;; clock cycles.  Potentially, this can be  increased to more clock  cycles for
+;; larger dot-product.
+(parse-and-create-svtv :name integrated_multipliers-sequential-mode
+                       :file "integrated_multipliers.sv"
+                       :topmodule "Integrated_Multiplier"
+
+                       ;; Define the clock: (clk signal should continuously toggle)
+                       :cycle-phases (list (sv::make-svtv-cyclephase :constants '(("clk" . 0))
+                                                                     :inputs-free t
+                                                                     :outputs-captured t)
+                                           (sv::make-svtv-cyclephase :constants '(("clk" . 1))))
+                       :stages
+                       (;; reload the ACC in the first clock cycle
+                        (:label reload-acc
+                                :inputs (("IN3" acc-init-val)
+                                         ("mode" mode-init-val)))
+                        ;; Feed some values in the second clock cycle for dot product
+                        (:label 1st-vectors
+                                :inputs (("IN1" in1-1)
+                                         ("IN2" in2-1)
+                                         ;; keep the mode value the same in the next cycles.
+                                         ("mode" mode :hold t))
+                                :outputs (("result" result1)))
+                        ;; Feed more values for dot-product.
+                        (:label 2nd-vectors
+                                :inputs (("IN1" in1-2)
+                                         ("IN2" in2-2))
+                                :outputs (("result" result2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Proof 9,10: Dot Product (Sequential)
+
+;; For a better readablity, we can define a spec function:
+(define dot-product32 ((in1 integerp)
+                       (in2 integerp)
+                       (signed booleanp)
+                       (dot-size natp))
+  (if (zp dot-size)
+      0
+    (+ (if signed
+           (* (logext 32 in1)
+              (logext 32 in2))
+         (* (loghead 32 in1)
+            (loghead 32 in2)))
+       (dot-product32 (logtail 32 in1)
+                      (logtail 32 in2)
+                      signed
+                      (1- dot-size))))
   ///
-  ;; We need to add the definition rule of this function to RP-Rewriter so that
-  ;; it can know to expand it.
-  (add-rp-rule dot-product-spec))
+  ;; tell the rewriter to expand the definition of this spec function.
+  (add-rp-rule dot-product32))
 
-(add-rp-rule sequential-dotproduct-mult2-svtv-autohyps)
-(add-rp-rule sequential-dotproduct-mult2-svtv-autoins)
+;; signed
+(verify-svtv-of-mult :name integrated_multipliers-sequential-mode
 
-;; finally the proof:
-(defthmrp-multiplier
-  signed-dot-product-with-acc-is-correct
-  (implies (and (equal signed t)
-                (equal acc-size 128)
-                (equal dot-product-size 8)
-                (equal mode (control-mode :dot-product t
-                                          :acc-on t
-                                          :signed signed))
-                (sequential-dotproduct-mult2-svtv-autohyps))
-           (equal
-            (sv::svtv-run (sequential-dotproduct-mult2-svtv)
-                          (sequential-dotproduct-mult2-svtv-autoins))
-            `((result . ,(dot-product-spec (list in1[0] in1[1] in1[2] in1[3] in1[4] in1[5] in1[6] in1[7])
-                                           (list in2[0] in2[1] in2[2] in2[3] in2[4] in2[5] in2[6] in2[7])
-                                           dot-product-size ;
-                                           signed acc-init-val acc-size))))))
+                     :thm-name signed-dot-product-with-acc-is-correct
+                     :hyp (and
+                           ;; set the first mode value to reload ACC.
+                           (equal mode-init-val (calculate-mode-value :acc-on t
+                                                                      :dot-product t
+                                                                      :reload-acc t))
+                           ;; mode  in  the following  clock  cycle  is set  to
+                           ;; dot-product accumulate
+                           (equal mode (calculate-mode-value :dot-product t
+                                                             :acc-on t
+                                                             :signed t)))
+                     ;; we can validate the value of the output in different cycles:
+                     :concl (and (equal result1
+                                        (loghead 128
+                                                 (+ (dot-product32 in1-1 in2-1 t 4)
+                                                    acc-init-val)))
+                                 (equal result2
+                                        (loghead 128
+                                                 (+ (dot-product32 in1-1 in2-1 t 4)
+                                                    (dot-product32 in1-2 in2-2 t 4)
+                                                    acc-init-val)))))
 
-(defthmrp-multiplier
-  unsigned-dot-product-with-acc-is-correct
-  (implies (and (equal signed nil)
-                (equal acc-size 128)
-                (equal dot-product-size 8)
-                (equal mode (control-mode :dot-product t
-                                          :acc-on t
-                                          :signed signed))
-                (sequential-dotproduct-mult2-svtv-autohyps))
-           (equal
-            (sv::svtv-run (sequential-dotproduct-mult2-svtv)
-                          (sequential-dotproduct-mult2-svtv-autoins))
-            `((result . ,(dot-product-spec (list in1[0] in1[1] in1[2] in1[3] in1[4] in1[5] in1[6] in1[7])
-                                           (list in2[0] in2[1] in2[2] in2[3] in2[4] in2[5] in2[6] in2[7])
-                                           dot-product-size ;
-                                           signed acc-init-val acc-size))))))
+;; unsigned
+(verify-svtv-of-mult :name integrated_multipliers-sequential-mode
+
+                     :thm-name unsigned-dot-product-with-acc-is-correct
+                     :hyp (and
+                           ;; set the first mode value to reload ACC.
+                           (equal mode-init-val (calculate-mode-value :acc-on t
+                                                                      :dot-product t
+                                                                      :reload-acc t))
+                           ;; mode  in  the following  clock  cycle  is set  to
+                           ;; dot-product accumulate
+                           (equal mode (calculate-mode-value :dot-product t
+                                                             :acc-on t
+                                                             :signed nil)))
+                     :concl (equal result2
+                                   (loghead 128
+                                            (+ (dot-product32 in1-1 in2-1 nil 4)
+                                               (dot-product32 in1-2 in2-2 nil 4)
+                                               acc-init-val))))

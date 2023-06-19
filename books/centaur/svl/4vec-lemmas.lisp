@@ -6776,14 +6776,13 @@ lognot)
                              sv::4vec->upper
                              ) ())))))
 
-(local
- (DEFTHMd separate-num-to-vector-with-loghead
-   (IMPLIES (AND (NATP SIZE)
+(defthmd separate-num-to-vector-with-loghead
+  (implies (and (natp size)
                  (integerp y))
-            (EQUAL
-             (LOGAPP SIZE (loghead size Y)
-                     (ASH Y (- SIZE)))
-             y))))
+           (equal
+            (logapp size (loghead size y)
+                    (ash y (- size)))
+            y)))
 
 (local
  (defthm equivalence-of-4vec-and-integerp
