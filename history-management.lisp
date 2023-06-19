@@ -1812,14 +1812,14 @@
             (t state))))
    (t state)))
 
-(defun clear-event-data (state)
-  (f-put-global 'last-event-data nil state))
+(defun get-event-data-1 (key event-data)
+  (cdr (assoc-eq key event-data)))
 
 (defun get-event-data (key state)
 
 ; See :DOC get-event-data.
 
-  (cdr (assoc key (f-get-global 'last-event-data state))))
+  (get-event-data-1 key (f-get-global 'last-event-data state)))
 
 (defun put-event-data (key val state)
 
@@ -2914,7 +2914,62 @@
                         (declare (ignore col))
                         state)))))))))))
 
-(defun print-summary (erp noop-flg event-type ctx state)
+(defmacro saving-event-data (form)
+
+; Form must evaluate to an error triple.
+
+; It seems unnecessary to free any fast-alists after calling this macro.  The
+; event-data-fal fast-alist should persist so that we can make queries, up to
+; the time that we run saving-event-data again -- which will generally replace
+; the existing event-data-fal.  There is also a read-event-data-fal fast-alist,
+; but it is stored as an entry in the event-data-fal fast-alist (see "cached"
+; in old-and-new-event-data-fal), so it can be expected to disappear when we
+; call saving-event-data again -- at least, (fast-alist-summary) has shown this
+; to be the case.
+
+  `(er-progn (assign event-data-fal 'event-data-fal)
+             ,form))
+
+(defun eval-hidden-packages (known-package-alist state)
+  (cond ((endp known-package-alist) (value nil))
+        (t (let ((entry (car known-package-alist)))
+             (cond ((package-entry-hidden-p entry)
+                    (er-progn (trans-eval
+                               `(defpkg ,(package-entry-name entry)
+                                  ',(package-entry-imports entry)
+                                  nil ; doc
+                                  ',(package-entry-book-path entry)
+                                  nil)
+                               'eval-hidden-packages
+                               state
+                               nil)
+                              (eval-hidden-packages (cdr known-package-alist)
+                                                    state)))
+                   (t (eval-hidden-packages (cdr known-package-alist)
+                                            state)))))))
+
+(defmacro with-packages-unhidden (form)
+  `(revert-world
+    (er-progn (eval-hidden-packages (known-package-alist state) state)
+              ,form)))
+
+(defun event-data-name (event-data event-type)
+  (cond ((eq event-type 'verify-guards)
+; In this special case we don't want to use the namex, because it's 0.
+         (let ((name (cadr (get-event-data-1 'event event-data))))
+           (and (symbolp name) ; not a lambda
+                name)))
+        (t (let ((namex ; as with get-event-data, but without state
+                  (get-event-data-1 'namex event-data)))
+             (cond ((symbolp namex) namex)
+                   ((and (consp namex) (symbolp (car namex)))
+                    (car namex))
+                   (t nil))))))
+
+(defun clear-event-data (state)
+  (f-put-global 'last-event-data nil state))
+
+(defun print-summary (erp noop-flg event-type event ctx state)
 
 ; This function prints the Summary paragraph.  Part of that paragraph includes
 ; the timers.  Time accumulated before entry to this function is charged to
@@ -2991,6 +3046,9 @@
                  (t state)))
          (put-event-data 'prover-steps-counted steps state)
          (put-event-data 'form ctx state)
+         (if event
+             (put-event-data 'event event state)
+           state)
          (increment-timer 'other-time state)
          (put-event-data 'time
                          (list (car (get-timer 'prove-time state))
@@ -3109,7 +3167,8 @@
                         #+acl2-par
                         (erase-acl2p-checkpoints-for-summary state)
                         state)))
-              (if make-event-save-event-data-p
+              (f-put-global 'proof-tree nil state)))))
+         (if make-event-save-event-data-p
 
 ; One could argue that it it is inefficient to make the calls of put-event-data
 ; above (either lexically above, or within function calls), since we are about
@@ -3121,9 +3180,38 @@
 ; only changes for thm are to save old-event-data above and do the following
 ; assignment, which are very cheap additions.
 
-                  (f-put-global 'last-event-data old-event-data state)
-                state)
-              (f-put-global 'proof-tree nil state)))))))))))
+             (f-put-global 'last-event-data old-event-data state)
+           state)
+         (if (and (not (eq (ld-skip-proofsp state)
+                           'include-book)) ; so not encapsulate pass 2
+                  event-type ; optimization for reasonably common case
+                  (member-eq event-type
+                             '(defthm defun verify-guards thm)))
+             (let* ((info (f-get-global 'certify-book-info state))
+                    (channel (and info
+                                  (access certify-book-info info
+                                          :event-data-channel)))
+                    (event-data (f-get-global 'last-event-data state))
+                    (edf (f-get-global 'event-data-fal state)))
+               (cond ((or channel edf)
+                      (let ((name (event-data-name event-data event-type)))
+                        (pprogn (if channel
+                                    (print-object$ (cons name event-data)
+                                                   channel
+                                                   state)
+                                  state)
+                                (if edf
+                                    (f-put-global
+                                     'event-data-fal
+                                     (hons-acons
+                                      name
+                                      (cons event-data
+                                            (cdr (hons-get name edf)))
+                                      edf)
+                                     state)
+                                  state))))
+                     (t state)))
+           state)))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)
 
@@ -3981,7 +4069,8 @@
             trace-co              ;;; see just above
             trace-specs           ;;; see just above
             giant-lambda-object   ;;; see just above
-            last-event-data       ;;; see the Essay on Make-event
+            last-event-data       ;;; see just above
+            event-data-fal        ;;; see just above
             show-custom-keyword-hint-expansion
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
@@ -4365,7 +4454,7 @@
                                        form))
                               (t (value val)))))))))
 
-(defmacro with-ctx-summarized (ctx body &key event-type)
+(defmacro with-ctx-summarized (ctx body &key event-type event)
 
 ; A typical use of this macro by an event creating function is:
 
@@ -4417,7 +4506,7 @@
                        (pprogn
                         (print-summary erp
                                        (equal saved-wrld (w state))
-                                       ,event-type
+                                       ,event-type ,event
                                        ctx state)
                         (er-progn
                          (xtrans-eval-state-fn-attachment

@@ -1451,7 +1451,10 @@
     (& nil)))
 
 (defrec certify-book-info
-  (cert-op . full-book-name)
+
+; See the defun of cert-op for values of cert-op.
+
+  (cert-op full-book-name . event-data-channel)
   nil) ; could replace with t sometime
 
 (defrec useless-runes
@@ -1516,10 +1519,17 @@
          (and (eq (access useless-runes useless-runes :tag) 'THEORY)
               (access useless-runes useless-runes :data)))))
 
-(defun useless-runes-filename (full-book-string)
+(defconst *dot-sys-dir*
+  #-non-standard-analysis ".sys"
+  #+non-standard-analysis ".sysr")
 
-; This is analogous to expansion-filename, but for the file containing
-; useless-runes information.  See expansion-filename.
+(defun dot-sys-filename (full-book-string suffix)
+
+; This is analogous to expansion-filename, but for creating an absolute
+; pathname for the book indicated by full-book-string, with the indicated
+; suffix at the end, and for subdirectory .sys (or, for ACL2(r), .sysr).  This
+; code was originally for the function useless-runes-filename, and comments
+; below focus on that use; but now we also use it for event-data-filename.
 
   (let ((len (length full-book-string))
         (posn (search *directory-separator-string* full-book-string
@@ -1527,7 +1537,7 @@
     (assert$ (and (equal (subseq full-book-string (- len 5) len) ".lisp")
                   posn)
              (concatenate 'string
-                          (subseq full-book-string 0 posn)
+                          (subseq full-book-string 0 (1+ posn))
 
 ; Currently, the function useless-runes-value avoids creation of useless-runes
 ; files with ACL2(r).  If that is changed, the designation below of distinct
@@ -1544,10 +1554,15 @@
 ; it's also not clear that there's much reason to change either one at this
 ; point.
 
-                          #-non-standard-analysis "/.sys"
-                          #+non-standard-analysis "/.sysr"
+                          *dot-sys-dir*
                           (subseq full-book-string posn (- len 5))
-                          "@useless-runes.lsp"))))
+                          suffix))))
+
+(defun useless-runes-filename (full-book-string)
+  (dot-sys-filename full-book-string "@useless-runes.lsp"))
+
+(defun event-data-filename (full-book-string)
+  (dot-sys-filename full-book-string "@event-data.lsp"))
 
 (defun active-useless-runes-filename (state)
 

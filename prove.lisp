@@ -7934,66 +7934,12 @@
    (pprogn (f-put-global 'last-step-limit step-limit state)
            (mv erp val state))))
 
-(defun print-summary-on-error (state)
-
-; This function is called only when a proof attempt causes an error rather than
-; merely returning (mv non-nil val state); see prove-loop0.  We formerly called
-; this function pstack-and-gag-state, but now we also print the runes, and
-; perhaps we will print additional information in the future.
-
-; An alternative approach, which might avoid the need for this function, is
-; represented by the handling of *acl2-time-limit* in our-abort.  The idea
-; would be to continue automatically from the interrupt, but with a flag saying
-; that the proof should terminate immediately.  Then any proof procedure that
-; checks for this flag would return with some sort of error.  If no such proof
-; procedure is invoked, then a second interrupt would immediately take effect.
-; An advantage of such an alternative approach is that it would use a normal
-; control flow, updating suitable state globals so that a normal call of
-; print-summary could be made.  We choose, however, not to pursue this
-; approach, since it might risk annoying users who find that they need to
-; provide two interrupts, and because it seems inherently a bit tricky and
-; perhaps easy to get wrong.
-
-; We conclude with remarks for the case that waterfall parallelism is enabled.
-
-; When the user has to interrupt a proof twice before it quits, the prover will
-; call this function.  Based on observation by Rager, the pstack tends to be
-; long and irrelevant in this case.  So, we disable the printing of the pstack
-; when waterfall parallelism is enabled and waterfall-printing is something
-; other than :full.  We considered not involving the current value for
-; waterfall-printing, but using the :full setting is a strange thing to begin
-; with.  So, we make the decision that if a user goes to the effort to use the
-; :full waterfall-printing mode, that maybe they'd like to see the pstack after
-; all.
-
-; The below #+acl2-par change in definition also results in not printing
-; gag-state under these conditions.  However, this is effectively a no-op,
-; because the parallel waterfall does not save anything to gag-state anyway.
-
-  (let ((chan (proofs-co state))
-        (acc-ttree (f-get-global 'accumulated-ttree state)))
-    (pprogn
-     (clear-event-data state)
-     (io? summary nil state (chan acc-ttree)
-          (pprogn
-           (newline chan state)
-           (print-rules-and-hint-events-summary acc-ttree state)
-           (print-system-attachments-summary state)))
-     (cond
-      #+acl2-par
-      ((and (f-get-global 'waterfall-parallelism state)
-            (not (eql (f-get-global 'waterfall-printing state) :full)))
-       state)
-      (t
-       (pprogn
-        (io? summary nil state (chan)
-             (fms "Here is the current pstack [see :DOC pstack]:"
-                  nil chan state nil))
-        (mv-let (erp val state)
-                (io? summary nil (mv erp val state) nil
-                     (pstack))
-                (declare (ignore erp val))
-                (save-and-print-gag-state state))))))))
+(defun print-summary-on-error (ctx state)
+  (print-summary t   ; erp
+                 t   ; noop-flg
+                 nil ; event-type
+                 nil ; event
+                 ctx state))
 
 (defun prove-loop0 (clauses pspv hints ens wrld ctx state)
 
@@ -8015,7 +7961,7 @@
                     (prove-loop1 0 nil clauses pspv hints ens wrld ctx
                                  state)
                     (mv nil (cons erp val) state))
-            (print-summary-on-error state)
+            (print-summary-on-error ctx state)
             state)
            (cond (interrupted-p (mv t nil state))
                  (t (mv (car erp-val) (cdr erp-val) state))))))

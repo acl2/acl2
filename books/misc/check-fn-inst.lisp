@@ -47,7 +47,8 @@
                                   (list* :functional-instance
                                          (list :theorem form)
                                          ',subst))))
-                          'nil))
+                          'nil
+                          nil))
                 (value '(value-triple nil)))))
 
 ; Examples

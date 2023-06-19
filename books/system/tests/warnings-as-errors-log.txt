@@ -489,12 +489,15 @@ ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
 see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 
+Summary
+Form:  ( DEFTHM FOO ...)
 Rules: NIL
 
-Here is the current pstack [see :DOC pstack]:
-(WATERFALL)
-
 *** Note: No checkpoints to print. ***
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(WARNING PROOF-TREE))
  (WARNING PROOF-TREE)
 ACL2 !>>(DEFTHM FOO
@@ -531,12 +534,15 @@ ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
 see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 
+Summary
+Form:  ( DEFTHM FOO ...)
 Rules: NIL
 
-Here is the current pstack [see :DOC pstack]:
-(WATERFALL)
-
 *** Note: No checkpoints to print. ***
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
 <state>
 ACL2 !>>(DEFTHM FOO
@@ -589,12 +595,15 @@ ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
 see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 
+Summary
+Form:  ( DEFTHM FOO ...)
 Rules: NIL
 
-Here is the current pstack [see :DOC pstack]:
-(WATERFALL)
-
 *** Note: No checkpoints to print. ***
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL '("USE")
                                 STATE)
 <state>
