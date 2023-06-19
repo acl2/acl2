@@ -163,7 +163,7 @@
            (equal (car (car (mv-nth 1 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))))
                   (+ -1 (len (mv-nth 1 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))))))
   :hints (("Goal" :use (:instance CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP
-                                  (dag-lst (mv-nth 1 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))))
+                                  (dag (mv-nth 1 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))))
            :in-theory (disable CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP))))
 
 (defthm <=-of-len-of-mv-nth-1-of-drop-non-supporters-array-node-list

@@ -2246,7 +2246,7 @@
                                  *maximum-1-d-array-length*)
                               (natp slack-amount)
                               (<= slack-amount 2147483646))
-                  :guard-hints (("Goal" :use (:instance bounded-natp-alistp-when-pseudo-dagp (dag-lst dag))
+                  :guard-hints (("Goal" :use (:instance bounded-natp-alistp-when-pseudo-dagp)
                                  :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap
                                                   array-len-with-slack)
                                                  (bounded-natp-alistp-when-pseudo-dagp))))

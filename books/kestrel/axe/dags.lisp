@@ -355,13 +355,13 @@
                        (pseudo-dagp-aux (rest dag) (+ -1 current-nodenum)))))))))
 
 (defthm true-listp-when-pseudo-dagp-aux
-  (implies (pseudo-dagp-aux dag-lst current-nodenum)
-           (true-listp dag-lst))
+  (implies (pseudo-dagp-aux dag current-nodenum)
+           (true-listp dag))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
 (defthm alistp-when-pseudo-dagp-aux
-  (implies (pseudo-dagp-aux dag-lst current-nodenum)
-           (alistp dag-lst))
+  (implies (pseudo-dagp-aux dag current-nodenum)
+           (alistp dag))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
 (defthm pseudo-dagp-aux-of-cdr
@@ -403,18 +403,18 @@
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux nthcdr))))
 
 (defthm car-of-car-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
+  (implies (and (pseudo-dagp-aux dag top-nodenum)
                 (natp top-nodenum))
-           (equal (car (car dag-lst))
+           (equal (car (car dag))
                   top-nodenum))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
 (defthm bounded-natp-alistp-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
+  (implies (and (pseudo-dagp-aux dag top-nodenum)
                 (< top-nodenum bound)
                 (natp top-nodenum)
                 (natp bound))
-           (bounded-natp-alistp dag-lst bound))
+           (bounded-natp-alistp dag bound))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux bounded-natp-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -521,10 +521,10 @@
            :in-theory (enable pseudo-dagp-aux))))
 
 (defthm len-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
+  (implies (and (pseudo-dagp-aux dag top-nodenum)
                 (natp top-nodenum))
-           (equal (len dag-lst)
-                  (+ 1 (car (car dag-lst)))))
+           (equal (len dag)
+                  (+ 1 (car (car dag)))))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
 (defthm pseudo-dagp-of-nthcdr
@@ -601,7 +601,8 @@
 ;;
 
 (defun dag-vars-aux (dag acc)
-  (declare (xargs :guard (alistp dag)))
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (symbol-listp acc))))
   (if (endp dag)
       acc
     (let* ((entry (car dag))
@@ -613,14 +614,14 @@
 
 (defthm symbol-listp-of-dag-vars-aux
   (implies (and (symbol-listp acc)
-                (weak-dagp dag))
+                (weak-dagp-aux dag))
            (symbol-listp (dag-vars-aux dag acc)))
   :hints (("Goal" :in-theory (enable weak-dagp dag-exprp))))
 
 ;; The result is not necessarily sorted
 (defund dag-vars (dag)
   (declare (xargs :guard (or (quotep dag)
-                             (alistp dag))))
+                             (weak-dagp dag))))
   (if (quotep dag)
       nil
     (dag-vars-aux dag nil)))
@@ -643,8 +644,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun dag-fns-aux (dag acc)
-  (declare (xargs :guard (and (true-listp dag)
-                              (weak-dagp-aux dag)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
                               (symbol-listp acc))
                   :guard-hints (("Goal" :in-theory (enable dag-exprp
                                                            symbolp-of-car-when-dag-exprp)))))
@@ -659,7 +659,7 @@
 
 (defthm symbol-listp-of-dag-fns-aux
   (implies (and (symbol-listp acc)
-                (weak-dagp dag))
+                (weak-dagp-aux dag))
            (symbol-listp (dag-fns-aux dag acc)))
   :hints (("Goal" :in-theory (enable weak-dagp dag-exprp))))
 
@@ -681,8 +681,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund dag-fns-include-any-aux (dag fns)
-  (declare (xargs :guard (and (true-listp dag)
-                              (weak-dagp-aux dag)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
                               (symbol-listp fns)
                               (not (member-eq 'quote fns)))
                   :guard-hints (("Goal" :in-theory (enable dag-exprp
@@ -734,17 +733,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;deprecate? maybe not. first add the functionality to get-subdag?
-(defund drop-nodes-past (nodenum dag-lst)
+(defund drop-nodes-past (nodenum dag)
   (declare (xargs :guard (and (natp nodenum)
-                              (weak-dagp-aux dag-lst))))
+                              (weak-dagp-aux dag))))
 
-  (if (endp dag-lst)
+  (if (endp dag)
       nil
-    (let* ((entry (car dag-lst))
+    (let* ((entry (car dag))
            (nodenum2 (car entry)))
       (if (< nodenum nodenum2)
-          (drop-nodes-past nodenum (cdr dag-lst))
-        dag-lst))))
+          (drop-nodes-past nodenum (cdr dag))
+        dag))))
 
 ;; ;does not include inlined constants
 ;; (defund dag-constants-aux (dag acc)
@@ -813,45 +812,45 @@
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthm max-key-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
+  (implies (and (pseudo-dagp-aux dag top-nodenum)
                 (acl2-numberp max-so-far) ;may not be needed
                 (natp top-nodenum))
-           (equal (max-key dag-lst max-so-far)
-                  (max (car (car dag-lst))
+           (equal (max-key dag max-so-far)
+                  (max (car (car dag))
                        max-so-far)))
   :hints (("Goal" ;:cases ()
            :do-not '(generalize)
            :in-theory (enable pseudo-dagp-aux max-key))))
 
 (defthm max-key-when-pseudo-dagp
-  (implies (and (pseudo-dagp dag-lst)
+  (implies (and (pseudo-dagp dag)
                 (acl2-numberp max-so-far) ;may not be needed
                 )
-           (equal (max-key dag-lst max-so-far)
-                  (max (car (car dag-lst))
+           (equal (max-key dag max-so-far)
+                  (max (car (car dag))
                        max-so-far)))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthm nth-0-of-nth-0-when-pseudo-dagp-cheap
-  (implies (pseudo-dagp dag-lst)
-           (equal (nth 0 (nth 0 dag-lst))
-                  (+ -1 (len dag-lst))))
+  (implies (pseudo-dagp dag)
+           (equal (nth 0 (nth 0 dag))
+                  (+ -1 (len dag))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthm assoc-equal-when-PSEUDO-DAGP-AUX
- (IMPLIES (AND (PSEUDO-DAGP-AUX DAG-LST m)
+ (IMPLIES (AND (PSEUDO-DAGP-AUX DAG m)
                (<= N m)
                (natp N)
                (natp m))
-          (ASSOC-EQUAL N DAG-LST))
+          (ASSOC-EQUAL N DAG))
  :hints (("Goal" :in-theory (enable PSEUDO-DAGP-AUX))))
 
 (defthmd assoc-equal-when-PSEUDO-DAGP
-  (IMPLIES (AND (PSEUDO-DAGP DAG-LST)
-                (<= N (CAR (CAR DAG-LST)))
+  (IMPLIES (AND (PSEUDO-DAGP DAG)
+                (<= N (CAR (CAR DAG)))
                 (natp N))
-           (ASSOC-EQUAL N DAG-LST))
+           (ASSOC-EQUAL N DAG))
   :hints (("Goal" :in-theory (enable PSEUDO-DAGP))))
 
 (defthm dag-exprp-of-lookup-equal-when-pseudo-dagp-aux
@@ -975,8 +974,8 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
 
 (defthm pseudo-dagp-aux-forward-to-true-listp
-  (implies (pseudo-dagp-aux dag-lst current-nodenum)
-           (true-listp dag-lst))
+  (implies (pseudo-dagp-aux dag current-nodenum)
+           (true-listp dag))
   :rule-classes :forward-chaining)
 
 (defthm pseudo-dagp-aux-of-cons-of-cons
@@ -1095,8 +1094,8 @@
 ;;   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 (defthm bounded-natp-alistp-when-pseudo-dagp
-  (implies (pseudo-dagp dag-lst)
-           (bounded-natp-alistp dag-lst (len dag-lst)))
+  (implies (pseudo-dagp dag)
+           (bounded-natp-alistp dag (len dag)))
   :hints (("Goal" :in-theory (enable pseudo-dagp pseudo-dagp-aux bounded-natp-alistp))))
 
 (defthm bounded-natp-alistp-when-pseudo-dagp-gen
@@ -1112,15 +1111,15 @@
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthmd car-of-car-when-pseudo-dagp
-  (implies (pseudo-dagp dag-lst)
-           (equal (car (car dag-lst))
-                  (+ -1 (len dag-lst))))
+  (implies (pseudo-dagp dag)
+           (equal (car (car dag))
+                  (+ -1 (len dag))))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthmd car-of-car-when-pseudo-dagp-cheap
-  (implies (pseudo-dagp dag-lst)
-           (equal (car (car dag-lst))
-                  (+ -1 (len dag-lst))))
+  (implies (pseudo-dagp dag)
+           (equal (car (car dag))
+                  (+ -1 (len dag))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
@@ -1183,22 +1182,22 @@
 ;todo: limit?
 ;move
 (defthm consp-of-car-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
+  (implies (and (pseudo-dagp-aux dag top-nodenum)
                 (natp top-nodenum)
                 )
-           (consp (car dag-lst)))
+           (consp (car dag)))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
 (defthm consp-of-car-when-pseudo-dagp-aux-2
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
-                (consp dag-lst))
-           (consp (car dag-lst)))
+  (implies (and (pseudo-dagp-aux dag top-nodenum)
+                (consp dag))
+           (consp (car dag)))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
 (defthm natp-of-car-of-car-when-pseudo-dagp-aux-2
-  (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
+  (implies (and (pseudo-dagp-aux dag top-nodenum)
                 (natp top-nodenum))
-           (natp (car (car dag-lst))))
+           (natp (car (car dag))))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
 (defthm consp-of-car-when-pseudo-dagp
@@ -1331,16 +1330,16 @@
 
 ;; ;drop?
 ;; (defthm pseudo-dagp-aux-of-cdr-lemma
-;;   (implies (and (pseudo-dagp-aux dag-lst (car (car dag-lst)))
-;;                 (equal (car (car dag-lst)) (+ -1 (len dag-lst)))
-;;                 (< 1 (len dag-lst))
-;;                 (true-listp dag-lst))
-;;            (pseudo-dagp-aux (cdr dag-lst) (car (cadr dag-lst))))
-;;   :hints (("Goal" :expand ((pseudo-dagp-aux dag-lst (car (car dag-lst)))
-;;                            (PSEUDO-DAGP-AUX (CDR DAG-LST)
-;;                                             (CAR (CADR DAG-LST)))
-;;                            (PSEUDO-DAGP-AUX (CDR DAG-LST)
-;;                                             (+ -1 (CAR (CAR DAG-LST))))))))
+;;   (implies (and (pseudo-dagp-aux dag (car (car dag)))
+;;                 (equal (car (car dag)) (+ -1 (len dag)))
+;;                 (< 1 (len dag))
+;;                 (true-listp dag))
+;;            (pseudo-dagp-aux (cdr dag) (car (cadr dag))))
+;;   :hints (("Goal" :expand ((pseudo-dagp-aux dag (car (car dag)))
+;;                            (PSEUDO-DAGP-AUX (CDR DAG)
+;;                                             (CAR (CADR DAG)))
+;;                            (PSEUDO-DAGP-AUX (CDR DAG)
+;;                                             (+ -1 (CAR (CAR DAG))))))))
 
 ;; (defthmd integerp-of-car-of-car-when-pseudo-dagp-aux
 ;;   (implies (and (pseudo-dagp-aux dag nodenum)
@@ -1354,10 +1353,10 @@
 ;; ;todo: some of this stuff is not needed
 
 ;; (defthm PSEUDO-DAGP-AUX-of-cdr-lemma2
-;;   (implies (and (PSEUDO-DAGP-AUX REV-DAG-LST (+ -1 (LEN REV-DAG-LST)))
-;;                 (consp REV-DAG-LST))
-;;            (PSEUDO-DAGP-AUX (CDR REV-DAG-LST) (+ -2 (LEN REV-DAG-LST))))
-;;   :hints (("Goal" :expand (PSEUDO-DAGP-AUX REV-DAG-LST (+ -1 (LEN REV-DAG-LST)))
+;;   (implies (and (PSEUDO-DAGP-AUX REV-DAG (+ -1 (LEN REV-DAG)))
+;;                 (consp REV-DAG))
+;;            (PSEUDO-DAGP-AUX (CDR REV-DAG) (+ -2 (LEN REV-DAG))))
+;;   :hints (("Goal" :expand (PSEUDO-DAGP-AUX REV-DAG (+ -1 (LEN REV-DAG)))
 ;;            :in-theory (disable LEN-WHEN-PSEUDO-DAGP-AUX))))
 
 ;; (local (in-theory (disable LEN-WHEN-PSEUDO-DAGP-AUX))) ;looped!
