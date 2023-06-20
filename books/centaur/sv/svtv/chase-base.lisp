@@ -350,6 +350,27 @@
        
 
 
+;; Non-X-monotonic
+;; Results in a 1 at bits where the inputs differ, 0 where they don't
+(define 4vec-bitdiff ((x 4vec-p)
+                      (y 4vec-p))
+  :returns (bitdiff 4vec-p)
+  (b* (((4vec x)) ((4vec y)))
+    (2vec (logior (logxor x.upper y.upper)
+                  (logxor x.lower y.lower)))))
+
+(define 4veclist-bitdiff ((x 4veclist-p)
+                          (y 4veclist-p))
+  :guard (eql (len x) (len y))
+  :returns (diffs 4veclist-p)
+  (if (or (atom x) (atom y))
+      nil
+    (cons (4vec-bitdiff (car x) (car y))
+          (4veclist-bitdiff (cdr x) (cdr y))))
+  ///
+  (defret len-of-<fn>
+    (equal (len diffs)
+           (min (len x) (len y)))))
 
 
 (define svtv-chase-deps ((var svar-p)
@@ -363,6 +384,7 @@
   :returns (mv (type symbolp :rule-classes :type-prescription)
                (vars 4vmask-alist-p)
                (vars2 4vmask-alist-p)
+               (diffs svex-env-p)
                (expr svex-p))
   (b* (((svtv-chase-data svtv-chase-data))
        (phase (lnfix phase))
@@ -380,25 +402,37 @@
 
        ((when (or (eq type :input)
                   (eq type :initst)))
-        (mv type nil nil (svex-var var)))
+        (mv type nil nil nil (svex-var var)))
 
        ((when (eq type :prevst))
-        (mv type (list (cons var (sparseint-ash mask rsh))) (list (cons var (sparseint-ash mask rsh))) (svex-var var)))
+        (mv type (list (cons var (sparseint-ash mask rsh))) (list (cons var (sparseint-ash mask rsh)))
+            nil ;; diffs?
+            (svex-var var)))
 
        (expr (svex-fastlookup var svtv-chase-data.assigns))
 
        ((unless expr)
-        (mv :error nil nil (svex-x)))
+        (mv :error nil nil nil (svex-x)))
 
+       
+       
        (mask-al (svtv-chase-expr-deps expr phase rsh mask svtv-chase-data.evaldata))
-       (mask-al2 (and svtv-chase-data.evaldata2
-                      (let ((phase2  (+ phase svtv-chase-data.data2-offset)))
-                        (and (<= 0 phase2)
-                             (svtv-chase-expr-deps expr phase2 rsh mask svtv-chase-data.evaldata2)))))
+       ((mv mask-al2 diffs)
+        (if svtv-chase-data.evaldata2
+            (let ((phase2  (+ phase svtv-chase-data.data2-offset)))
+              (if (<= 0 phase2)
+                  (mv (svtv-chase-expr-deps expr phase2 rsh mask svtv-chase-data.evaldata2)
+                      (b* ((expr-vars (svex-collect-vars expr))
+                           (expr-var-vals1 (svtv-chase-evallist expr-vars phase svtv-chase-data.evaldata))
+                           (expr-var-vals2 (svtv-chase-evallist expr-vars phase2 svtv-chase-data.evaldata2))
+                           (diffs (4veclist-bitdiff expr-var-vals1 expr-var-vals2)))
+                        (pairlis$ expr-vars diffs)))
+                (mv nil nil)))
+          (mv nil nil)))
        
        (vars (svex-mask-alist-to-4vmask-alist mask-al))
        (vars2 (svex-mask-alist-to-4vmask-alist mask-al2)))
-    (mv type vars vars2 expr))
+    (mv type vars vars2 diffs expr))
   ///
   ;; (local (defthm svar-addr-p-lookup-in-svar-map
   ;;          (implies (And (svarlist-addr-p (svar-map-vars x))
@@ -1125,26 +1159,34 @@
 
 (define svtv-chase-mask-alists-sort-vars ((vars svarlist-p)
                                           (masks 4vmask-alist-p)
-                                          (masks2 4vmask-alist-p))
-  :returns (mv (overlap svarlist-p)
+                                          (masks2 4vmask-alist-p)
+                                          (diffs svex-env-p))
+  :returns (mv (diff-overlap svarlist-p)
+               (overlap svarlist-p)
                (both svarlist-p)
                (first svarlist-p)
                (second svarlist-p))
-  (b* (((when (atom vars)) (mv nil nil nil nil))
+  :prepwork ((local (in-theory (disable svarlist-p-when-subsetp-equal logand member-equal hons-assoc-equal))))
+  (b* (((when (atom vars)) (mv nil nil nil nil nil))
        (var1 (svar-fix (car vars)))
        (mask1 (or (cdr (hons-get var1 (4vmask-alist-fix masks))) 0))
        (mask2 (or (cdr (hons-get var1 (4vmask-alist-fix masks2))) 0))
-       ((mv overlap both first second)
-        (svtv-chase-mask-alists-sort-vars (cdr vars) masks masks2))
-       ((when (not (sparseint-equal 0 (sparseint-bitand mask1 mask2))))
-        (mv (cons var1 overlap) both first second))
+       (diff (or (cdr (hons-get var1 (svex-env-fix diffs))) 0))
+       ((mv diff-overlap overlap both first second)
+        (svtv-chase-mask-alists-sort-vars (cdr vars) masks masks2 diffs))
+       (mask-overlap (sparseint-bitand mask1 mask2))
+       ((when (not (sparseint-equal 0 mask-overlap)))
+        (b* ((masked-diff (4vec-bitand (2vec (sparseint-val mask-overlap)) diff)))
+          (if (eql masked-diff 0)
+              (mv diff-overlap (cons var1 overlap) both first second)
+            (mv (cons var1 diff-overlap) overlap both first second))))
        ((when (not (sparseint-equal 0 mask1)))
         (if (sparseint-equal 0 mask2)
-            (mv overlap both (cons var1 first) second)
-          (mv overlap (cons var1 both) first second)))
+            (mv diff-overlap overlap both (cons var1 first) second)
+          (mv diff-overlap overlap (cons var1 both) first second)))
        ((when (not (sparseint-equal 0 mask2)))
-        (mv overlap both first (cons var1 second))))
-    (mv overlap both first second)))
+        (mv diff-overlap overlap both first (cons var1 second))))
+    (mv diff-overlap overlap both first second)))
 
 
 (local
@@ -1154,7 +1196,8 @@
  (fty::deflist svarlist :elt-type svar :true-listp t :elementp-of-nil nil))
 
 (define svtv-chase-mask-alists-sorted-vars ((masks 4vmask-alist-p)
-                                            (masks2 4vmask-alist-p))
+                                            (masks2 4vmask-alist-p)
+                                            (diffs svex-env-p))
   :prepwork ((local (defthm true-listp-when-svarlist-p-rw
                       (implies (svarlist-p x) (true-listp x)))))
   :returns (sorted-vars svarlist-p)
@@ -1162,9 +1205,9 @@
        (masks2 (4vmask-alist-fix masks2))
        ((when (atom masks2)) (mergesort (alist-keys masks)))
        (vars (union (mergesort (alist-keys masks)) (mergesort (alist-keys masks2))))
-       ((mv overlap both first second)
-        (svtv-chase-mask-alists-sort-vars vars masks masks2)))
-    (append overlap both first second)))
+       ((mv diff-overlap overlap both first second)
+        (svtv-chase-mask-alists-sort-vars vars masks masks2 diffs)))
+    (append diff-overlap overlap both first second)))
 
 (define svtv-chase-mask-intersect-alist ((vars svarlist-p)
                                          (masks 4vmask-alist-p)
@@ -1209,10 +1252,10 @@
                                      (msg "~x0" phase)
                                    (msg "~x0 = ~x1" pair phase))))
                           nil nil)))
-       ((mv type mask-alist mask-alist2 expr)
+       ((mv type mask-alist mask-alist2 diffs expr)
         (svtv-chase-deps var phase rsh mask))
        ((acl2::with-fast mask-alist mask-alist2))
-       (vars (svtv-chase-mask-alists-sorted-vars mask-alist mask-alist2))
+       (vars (svtv-chase-mask-alists-sorted-vars mask-alist mask-alist2 diffs))
        (deps-lines
         (b* (((when (eq type :error))
               (list (3col4vecline "Error! Somehow this signal wasn't what we expected." nil nil)))
