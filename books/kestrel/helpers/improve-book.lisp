@@ -333,7 +333,26 @@
                  ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
                  (submit-event-helper event nil nil state)))))))
 
-;; Submit EVENT, after printing suggestions for improving it.
+;; Returns (mv erp state).
+(defun improve-defun-event (event rest-events print state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state)
+           (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
+           (ignore print) ;todo
+           )
+  (mv-let (erp state)
+    (submit-event-helper event nil nil state)
+    (if erp
+        (mv erp state)
+      (let* ((fn (cadr event))
+             (state (lint-defun fn t ;assume-guards
+                                nil ; suppress
+                                100000 ;step-limit
+                                state)))
+        (mv nil state)))))
+
+;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
 (defun improve-event (event rest-events print state)
   (declare (xargs :guard (and (true-listp rest-events)
@@ -345,7 +364,7 @@
      ;; For a local event, try skipping it and see if the rest of the events
      ;; work.  If so, deleting the event should be safe, since the event is local.
      (prog2$
-      (cw "(Attempting to drop ~x0:" event) ; todo: extract a name to print here, or eviscerate
+      (cw "(Working on ~x0:" event) ; todo: extract a name to print here, or eviscerate
       (mv-let (successp state)
         (events-would-succeedp rest-events nil state)
         (if successp
@@ -361,7 +380,7 @@
      ;; For an include-book, try skipping it and see if the rest of the events
      ;; work.
      (prog2$
-      (cw "(Attempting to drop ~x0:" event)
+      (cw "(Working on ~x0:" event)
       (mv-let (successp state)
         (events-would-succeedp rest-events nil state)
         (if successp
@@ -378,6 +397,7 @@
           (progn$ (cw " Cannot be dropped.)~%" event)
                   (submit-event-expect-no-error event nil state))))))
     ((defthm defthmd) (improve-defthm-event event rest-events print state))
+    ((defun defund) (improve-defun-event event rest-events print state))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
     (t (submit-event-expect-no-error event nil state))))
