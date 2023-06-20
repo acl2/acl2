@@ -14,6 +14,7 @@
 
 ;; This version does not support embedded dags
 
+(include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 (include-book "dag-array-builders2")
 (include-book "interpreted-function-alistp")
 (include-book "axe-trees")

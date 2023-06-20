@@ -28,6 +28,7 @@
 ;; TODO: Consider not returning (mv hit val).  Instead, duplicate the code after the mv-let in each branch?
 
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
+(include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 (include-book "dags")
 (include-book "dag-arrays") ;for guards of GET-VALS-OF-ARGS-ARRAY
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)

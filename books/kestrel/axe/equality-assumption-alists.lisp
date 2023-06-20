@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "equality-pairs")
 (include-book "term-equal-dag")
 (include-book "axe-trees")
