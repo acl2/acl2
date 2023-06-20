@@ -152,7 +152,9 @@ case  on  a  stand-alone  64x64-bit  Booth  Encoded  Dadda  multiplier.   @(see
 Multiplier-Verification-demo-2) shows  how this tool  can be used on  much more
 complex designs where a stand-alone integer multiplier is reused as a submodule
 for various operations  such as MAC dot-product and  merged multiplication. It
-also shows a simple verification case on a sequential circuit.  </p>
+also shows a simple verification case on a sequential circuit. Finally, @(see
+Multiplier-Verification-demo-3) shows how hierarchical reasoning may be used if
+it every becomes necessary to help vescmul. </p>
 
 <h3>Calling SAT Solver after rewriting is done </h3>
 
@@ -380,7 +382,7 @@ generated-proof-summary directory showing what the program proved and how long
 it took. This can be handy when running many experiments. Alternatively, if you
 would like to view what is proved you can run the following command in an
 interactive session:
-<code>@(':pe my-multiplier-example-correct')</code>
+<code>@(':pe my-multiplier-example-is-correct')</code>
 </p>
 
 <p> @(see parse-and-create-svtv) and @(see verify-svtv-of-mult) have other
@@ -1360,6 +1362,166 @@ product specification function as given below.
 
 ")
 
+(xdoc::defxdoc
+  Multiplier-Verification-demo-3
+  :parents (Multiplier-Verification)
+  :short  "The third  demo  for   @(see  Multiplier-Verification)  showing  how  an
+ a hierarchical reasoning hint may be passed for designs whose adders may not
+  be automatically identified."
+  :long "<p> VeSCmul  may  not  always be  able  to  find  adder  components in  a  given
+design. However, our system still supports hierarhical reasoning, and we can
+provide hierarhical  reasoning hints to  help the  program. Below is  a demo
+showing  how it  can  be achieved  for a  64x64-bit  multiplier with  7-to-3
+compressor    tree.     This    module    is    given    in    this    file:
+  @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/homma-7-to-3-64x64-signed-carry-select.v'). You
+ may            find            this           file            on            <a
+ href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/homma-7-to-3-64x64-signed-carry-select.v\"
+ target=\"_blank\"> GitHub </a> as well.</p>
+
+
+<p>1. As  a hierarchical reasonign  hint, we offer alternative  definitions for
+ some of the  adder modules in this design. Particularly,  we redefined 7to3,
+ 6to3, 5to3,  and 4to3  compressor modules.  So first, we  create a  new file
+ contaning those better defitions.
+
+<code>
+@('
+
+(defwarrant str::fast-string-append-lst)
+(defwarrant str::int-to-dec-string$inline)
+
+(write-string-to-file-event
+ \"better-homma-7-3.v\"
+ ;; homma  designs for  some  reason repeat  the same  module  many times  with
+ ;; different names. So below creates a  better copy of some adder modules with
+ ;; a loop.
+ (string-append-lst
+  (append
+   (loop$ for x from 0 to 123 collect                           
+         (str::cat \"module UB7_3C\" (str::intstr x) \" (output S1, S2, S3, input X1,X2,X3,X4,X5,X6,X7);
+     wire car1,car2,sum1,sum2,car3;
+     // make it look like a group of full-adders:
+     assign {car1,sum1} = (X1+X2+X3);
+     assign {car2,sum2} = (X5+X6+X7);
+     assign {car3,S3} = (X4+sum1+sum2);
+     assign {S1,S2} = car1+car2+car3;
+endmodule
+\"))
+   (loop$ for x from 0 to 123 collect                           
+         (str::cat \"module UB6_3C\" (str::intstr x) \" (output S1, S2, S3, input X1,X2,X3,X4,X5,X6);
+     wire car1,car2,sum1,sum2,car3;
+     // make it look like a group of full-adders:
+     assign {car1,sum1} = (X1+X2+X3);
+     assign {car2,sum2} = (X4+X5+X6);
+     assign {car3,S3} = (sum1+sum2);
+     assign {S1,S2} = car1+car2+car3;
+endmodule
+\"))
+
+   (loop$ for x from 0 to 123 collect                           
+         (str::cat \"module UB5_3C\" (str::intstr x) \" (output S1, S2, S3, input X1,X2,X3,X4,X5);
+     wire car1,car2,sum1,sum2,car3;
+     // make it look like a group of full-adders:
+     assign {car1,sum1} = (X1+X2+X3);
+     assign {car2,sum2} = (X4+X5);
+     assign {car3,S3} = (sum1+sum2);
+     assign {S1,S2} = car1+car2+car3;
+endmodule
+\"))
+
+   (loop$ for x from 0 to 123 collect                           
+         (str::cat \"module UB4_3C\" (str::intstr x) \" (output S1, S2, S3, input X1,X2,X3,X4);
+     wire car1,car2,sum1,sum2,car3;
+     // make it look like a group of full-adders:
+     assign {car1,sum1} = (X1+X2+X3);
+     assign {car3,S3} = (sum1+X4);
+     assign {S1,S2} = car1+car3;
+endmodule
+\")))))
+')
+</code>
+</p>
+
+
+<p>
+2. Parse the  design. This  program will
+parse and  create two  simulation vectors  for the design.  One will  be the
+simulation of the  original design, and the other will  be similation of the
+design whose adder modules are  replaced with the ones in better-homma-7-3.v
+file. verify-svtv-of-mult will later perform equivalance checking between
+the two to make sure that the two designs are functionally equivalant. 
+
+<code>
+@('
+(parse-and-create-svtv :file \"homma-7-to-3-64x64-signed-carry-select.v\"
+                       :topmodule \"Multiplier_63_0_6000\"
+                       :name homma-7-to-3
+                       :modified-modules-file \"better-homma-7-3.v\")
+')
+</code>
+</p>
+
+<p>
+ 3. Verify the design.  verify-svtv-of-mult will perform equivalance checking
+ between  the  modified  and  original  design first  using  FGL.   For  fast
+ equivalance checking, we set up AIG transforms which will use an incremental
+ SAT     solver.      Make    sure     you     have     IPASIR    set     up:
+ @(see ipasir::ipasir).
+ After equivalance checking, vescmul will  use the modified version to verify
+ the multiplier and  once proved, state a theorem for  the correctness of the
+ unmodified, original design.
+
+</p>
+<p>
+Set up AIG trannsforms for fast  equiv checking. Tweaking the parameters can
+affect the proof-time result a lot.
+<code>
+@('
+(progn
+  (local (include-book \"centaur/ipasir/ipasir-backend\" :dir :system))
+  (local (include-book \"centaur/aignet/transforms\" :dir :system))
+  (local (defun transforms-config ()
+           (declare (Xargs :guard t))
+           #!aignet
+           (list (make-observability-config)
+                 (make-balance-config :search-higher-levels t
+                                      :search-second-lit t)
+                 (change-fraig-config *fraig-default-config*
+                                      :random-seed-name 'my-random-seed
+                                      :ctrex-queue-limit 8
+                                      :sim-words 1
+                                      :ctrex-force-resim nil
+                                      :ipasir-limit 4
+                                      :initial-sim-rounds 2
+                                      :initial-sim-words 2
+                                      :ipasir-recycle-count 2000)
+                 )))
+  (local (defattach fgl::fgl-aignet-transforms-config transforms-config))
+  (local (define monolithic-sat-with-transforms ()
+           (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
+  (local (defattach fgl::fgl-toplevel-sat-check-config monolithic-sat-with-transforms)))
+')
+</code>
+</p>
+<p> Finally, call verify:
+<code>
+@('
+(verify-svtv-of-mult :name homma-7-to-3
+                     :concl (equal p
+                                   (loghead 128 (* (logext 64 in1)
+                                                   (logext 64 in2)))))
+')
+</code>
+</p>
+
+
+<p> This should take a few seconds to run all the proofs. You can see the generated proof summary file or run:
+<code>@(':pe homma-7-to-3-is-correct')</code> to see what is proved. We have a
+final corectness theorem based on the original design.
+</p>
+"
+  )
+
 (defxdoc parse-and-create-svtv
   :parents (Multiplier-Verification vescmul)
   :short "A macro to parse a combinational RTL design and create a simulation
@@ -1465,7 +1627,7 @@ event. </p>
 
 <li> <b>:thm-name</b> is optional. It will be the name of the final theorem
   proved. When provided, it should be a symbol. When not provided, the program
-  will automatically calculate a thm-name by append \"-correct\" to the name
+  will automatically calculate a thm-name by append \"-is-correct\" to the name
   provided with the :name argument. </li>
 
 <li> <b>:hyp</b> is optional. A term that will be used as hypothesis when
