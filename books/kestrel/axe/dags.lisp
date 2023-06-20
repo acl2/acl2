@@ -15,12 +15,11 @@
 ;; This books contains notions related to DAGs represented as alists.  See also
 ;; dag-arrays.lisp.
 
-(include-book "kestrel/sequences/defforall" :dir :system)
+;(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
-(include-book "kestrel/alists-light/lookup-eq" :dir :system)
-(include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
+;(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/utilities/printing" :dir :system) ;for print-list
 (include-book "kestrel/utilities/mv-nth" :dir :system) ; could make local, but many other books may need this
