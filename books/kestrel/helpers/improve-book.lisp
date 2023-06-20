@@ -64,31 +64,33 @@
 
 ;; Submits the EVENTS.  If an error is encountered, it is returned and further events are ignored.
 ;; Returns (mv erp state).
-(defun submit-and-check-events (events print state)
+(defun submit-and-check-events (events skip-proofsp print state)
   (declare (xargs :guard (and (true-listp events)
+                              (booleanp skip-proofsp)
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (if (endp events)
       (mv nil state)
     (mv-let (erp state)
-      (submit-event-helper (first events)
+      (submit-event-helper (if skip-proofsp (first events) `(skip-proofs ,(first events)))
                            nil ;print
                            nil state)
       (if erp
           (mv erp state)
-        (submit-and-check-events (rest events) print state)))))
+        (submit-and-check-events (rest events) skip-proofsp print state)))))
 
 ;; Returns (mv erp nil state).  This version returns an error-triple, so it can
 ;; be used with revert-world.
 ;; TODO: use a prover-step-limit for these!  Maybe call get-event-data on the original events.
-(defun submit-and-check-events-error-triple (events print state)
+(defun submit-and-check-events-error-triple (events skip-proofsp print state)
   (declare (xargs :guard (and (true-listp events)
+                              (booleanp skip-proofsp)
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
-    (submit-and-check-events events print state)
+    (submit-and-check-events events skip-proofsp print state)
     (mv erp nil state)))
 
 ;; Returns (mv successp state).  Doesn't change the world (because it reverts it after submitting the events).
@@ -98,10 +100,21 @@
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
+  ;; First, try the events with skip-proofs, so this can fail fast (todo: can we
+  ;; force hints to be checked even when proofs are skipped?):
   (mv-let (erp res state)
-    (revert-world (submit-and-check-events-error-triple events print state))
+    (revert-world (submit-and-check-events-error-triple events t print state))
     (declare (ignore res))
-    (mv (not erp) state)))
+    (if erp
+        (mv nil state) ; some event gave an error
+      ;; Try again for real (without skip-proofs):
+      (mv-let (erp res state)
+        (revert-world (submit-and-check-events-error-triple events nil print state))
+        (declare (ignore res))
+        (if erp
+            (mv nil state) ; some event gave an error
+          (mv t state)     ; all events succeeded
+          )))))
 
 ;; Returns (mv erp state).
 (defun submit-event-expect-no-error (event print state)
