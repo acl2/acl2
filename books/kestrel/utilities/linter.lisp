@@ -691,14 +691,19 @@
                 state)
       state)))
 
+;; Applies the linter to FN, which should be a function that exists in (w state).
 ;; Returns state.
 (defun lint-defun (fn assume-guards suppress step-limit state)
-  (declare (xargs :stobjs state
+  (declare (xargs :guard (and (symbolp fn)
+                              (booleanp assume-guards)
+                              (keyword-listp suppress) ;strengthen?
+                              (natp step-limit))
+                  :stobjs state
                   :mode :program))
-  (b* ((body (fn-body fn t (w state)))
+  (b* ((body (fn-body fn t (w state))) ; translated
        ;; (formals (fn-formals fn (w state)))
        (event (my-get-event fn (w state)))
-       (declares (and (defun-or-mutual-recursion-formp event)
+       (declares (and (defun-or-mutual-recursion-formp event) ; todo: what if not (e.g., a define?)
                       (get-declares-from-event fn event)))
        (xargs (get-xargs-from-declares declares))
        (guard-debug-res (assoc-keyword :guard-debug xargs))
@@ -712,6 +717,7 @@
     (progn$ (and (not (member-eq :guard-debug suppress))
                  guard-debug-res
                  (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
+            ;; Apply the linter to the guard:
             (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninterseting
                  (lint-term guard
                              nil ;empty substitution
@@ -719,6 +725,7 @@
                              t   ;iff-flag
                              (concatenate 'string "guard of " (symbol-to-string fn))
                              suppress state))
+            ;; Apply the linter to the body:
             (lint-term body
                         nil ;empty substitution
                         type-alist
