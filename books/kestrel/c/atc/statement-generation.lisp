@@ -530,6 +530,12 @@
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to a variable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We increase the limit by one,
+     because that is what it takes, in @(tsee exec-expr-asg),
+     to go to @(tsee exec-expr-call-or-pure)."))
   (b* (((reterr) (irr-block-item) nil nil 1 nil)
        ((stmt-gin gin) gin)
        ((unless var-info?)
@@ -585,8 +591,9 @@
              :arg1 (expr-ident (make-ident :name (symbol-name var)))
              :arg2 rhs.expr))
        (stmt (stmt-expr asg))
-       (item (block-item-stmt stmt)))
-    (retok item rhs.limit rhs.events rhs.thm-index rhs.names-to-avoid)))
+       (item (block-item-stmt stmt))
+       (limit `(binary-+ '1 ,rhs.limit)))
+    (retok item limit rhs.events rhs.thm-index rhs.names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2738,7 +2745,7 @@
                    (type body.type)
                    (limit (pseudo-term-fncall
                            'binary-+
-                           (list (pseudo-term-quote 6)
+                           (list (pseudo-term-quote 5)
                                  (pseudo-term-fncall
                                   'binary-+
                                   (list asg-limit body.limit))))))
