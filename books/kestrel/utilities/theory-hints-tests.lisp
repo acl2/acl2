@@ -14,6 +14,23 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)
 
+(assert-equal (enable-items-in-theory-expression nil '(a b (:r c))) ''(a b (:r c)))
+(assert-equal (enable-items-in-theory-expression '(enable foo bar) '(a b (:r c))) '(enable foo bar a b (:r c)))
+(assert-equal (enable-items-in-theory-expression '(enable* foo bar) '(a b (:r c))) '(enable* foo bar a b (:r c)))
+(assert-equal (enable-items-in-theory-expression '(disable foo bar) '(a b (:r c))) '(e/d nil (foo bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression '(disable* foo bar) '(a b (:r c))) '(e/d* nil (foo bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression ''(foo bar) '(a b (:r c))) ''(foo bar a b (:r c)))
+
+(assert-equal (disable-items-in-theory-expression nil '(a b (:r c))) 'nil)
+(assert-equal (disable-items-in-theory-expression '(enable foo bar) '(a b (:r c))) '(e/d (foo bar) (a b (:r c))))
+(assert-equal (disable-items-in-theory-expression '(enable* foo bar) '(a b (:r c))) '(e/d* (foo bar) (a b (:r c))))
+(assert-equal (disable-items-in-theory-expression '(disable foo bar) '(a b (:r c))) '(disable foo bar a b (:r c)))
+(assert-equal (disable-items-in-theory-expression '(disable* foo bar) '(a b (:r c))) '(disable* foo bar a b (:r c)))
+(assert-equal (disable-items-in-theory-expression ''(foo bar) '(a b (:r c))) '(set-difference-theories '(foo bar) '(a b (:r c))))
+
+(assert-equal (disable-items-in-hint '("Goal" :use foo :in-theory (enable bar)) '(baz baz2)) '("Goal" :use foo :in-theory (e/d (bar) (baz baz2))))
+(assert-equal (disable-items-in-hint '("Goal" :use foo) '(baz baz2)) '("Goal" :use foo :in-theory (disable baz baz2)))
+
 (assert-equal
  (enable-runes-in-hints '(("Goal" :use blah)) '(f2))
  '(("Goal" :use blah :in-theory (enable f2))))
