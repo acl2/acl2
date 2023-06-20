@@ -17,6 +17,7 @@
 
 (include-book "dag-array-builders2")
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
+(include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp2" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
