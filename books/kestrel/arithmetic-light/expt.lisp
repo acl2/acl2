@@ -286,6 +286,7 @@
                   (< 0 i)))
   :hints (("Goal" :in-theory (e/d (expt)
                                   (commutativity-2-of-*
+                                   iff ; saves 3 seconds
                                    )))))
 
 ;where should this go?
