@@ -42,6 +42,7 @@
 (include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
 (include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
+(include-book "speed-up")
 
 (defun print-to-string (item)
   (declare (xargs :mode :program))
@@ -329,10 +330,16 @@
      (mv-let (improvement-foundp state)
        (try-improved-events alist nil state)
        (declare (ignore improvement-foundp)) ;todo: don't bother to return this
+       ;; Apply the linter:
        (let ((state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
-         (prog2$ (and print (cw ")~%"))
-                 ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
-                 (submit-event-helper event nil nil state)))))))
+         ;; Try to speed up the proof:
+         (mv-let (erp state)
+           (try-to-speed-up-defthm-fn event state)
+           (if erp
+               (mv erp state)
+             (prog2$ (and print (cw ")~%"))
+                     ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
+                     (submit-event-helper event nil nil state)))))))))
 
 ;; Submit EVENT, after printing suggestions for improving it.
 ;; Returns (mv erp state).
