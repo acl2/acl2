@@ -16,9 +16,28 @@
 
 ;; STATUS: Working but needs to be generalized to support more kinds of hints.
 
-(include-book "theory-hints")
-(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
-;(include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system) ;; TODO: Use newer utils
+
+;; todo: factor these out:
+
+(defun use-hint-instancep (val)
+  (declare (xargs :guard t))
+  (or (symbolp val) ;just a lemma name
+      (and (true-listp val) ;; ex: (:instance foo (x (bar y)) (y (baz z)))
+           (consp val)
+           (member (ffn-symb val) '(:instance :functional-instance))
+           (<= 1 (len (fargs val)))
+           (use-hint-instancep (farg1 val)) ; nested instance
+           (var-untranslated-term-pairsp (cdr (fargs val))))))
+
+(defun use-hint-instance-listp (vals)
+  (declare (xargs :guard t))
+  (if (atom vals)
+      (null vals)
+    (and (use-hint-instancep (first vals))
+         (use-hint-instance-listp (rest vals)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Leaves SYM unchanged if it has no entry in RENAMING-ALIST.
 (defun apply-renaming-to-symbol (sym renaming-alist)
@@ -56,23 +75,6 @@
       nil
     (cons (apply-renaming-to-symbol-or-rune (first items) renaming-alist)
           (apply-renaming-to-symbols-or-runes (rest items) renaming-alist))))
-
-(defun use-hint-instancep (val)
-  (declare (xargs :guard t))
-  (or (symbolp val) ;just a lemma name
-      (and (true-listp val) ;; ex: (:instance foo (x (bar y)) (y (baz z)))
-           (consp val)
-           (member (ffn-symb val) '(:instance :functional-instance))
-           (<= 1 (len (fargs val)))
-           (use-hint-instancep (farg1 val)) ; nested instance
-           (var-untranslated-term-pairsp (cdr (fargs val))))))
-
-(defun use-hint-instance-listp (vals)
-  (declare (xargs :guard t))
-  (if (atom vals)
-      (null vals)
-    (and (use-hint-instancep (first vals))
-         (use-hint-instance-listp (rest vals)))))
 
 (defun apply-renaming-to-use-hint-instance (val renaming-alist)
   (declare (xargs :guard (and (use-hint-instancep val)
