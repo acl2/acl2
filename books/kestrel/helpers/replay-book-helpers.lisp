@@ -20,7 +20,7 @@
 ;; todo: factor out
 (defund read-objects-from-book (filename state)
   (declare (xargs :guard (stringp filename) ; includes the .lisp extension
-                  :mode :program ; because of in-package-fn
+                  :mode :program            ; because of in-package-fn
                   :stobjs state))
   ;; First read just the in-package form:
   (mv-let (erp first-form state)
@@ -31,27 +31,14 @@
                     (eq 'in-package (car first-form))))
           (prog2$ (er hard? 'read-objects-from-book "ERROR: Expected an in-package form but got ~x0." first-form)
                   (mv :missing-in-package nil state))
-        (let ((original-package (current-package state))
-              (book-package (cadr first-form)))
-          ;; Temporarily set the package to the one for the book:
-          (mv-let (erp value state)
-            (in-package-fn book-package state)
-            (declare (ignore value))
-            (if erp
+        (let ((book-package (cadr first-form)))
+          ;; Read the book contents after temporarily setting the package to book-package:
+          (mv-let (erp forms state)
+            (read-objects-from-file-with-pkg filename book-package state)
+            (if erp ; error reading forms
                 (mv erp nil state)
-              (mv-let (erp forms state)
-                ;; This read uses the current package (i.e., book-package) for the symbols:
-                (read-objects-from-file filename state)
-                ;; Undo the temporary in-package:
-                (mv-let (erp2 value state)
-                  (in-package-fn original-package state)
-                  (declare (ignore value))
-                  (if erp2 ; error resetting package
-                      (mv erp2 nil state)
-                    (if erp ; error reading forms
-                        (mv erp nil state)
-                      ;; No error:
-                      (mv nil forms state))))))))))))
+              ;; No error:
+              (mv nil forms state))))))))
 
 ;; Returns state.
 (defun load-port-file-if-exists (book-path ; no extension
