@@ -39,6 +39,7 @@
 ;(include-book "transformation-table")
 ;(include-book "simplify-defun-impl")    ; just for generalize-to-lambda and fn-ubody
 (include-book "../sequences/defmap")
+(include-book "../sequences/deffilter")
 (include-book "../std/system/pseudo-event-landmark-listp")
 
 (include-book "misc/install-not-normalized" :dir :system)
@@ -1034,13 +1035,16 @@
                                            fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info))))
     (('LET binds let-body)
      (let ((subst-let-body (sublis-var-untranslated-term (doublets-to-alist binds) let-body)))
-       (support-thms-for-defun-aux subst-let-body hyps n fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info)))
+       (support-thms-for-defun-aux subst-let-body hyps n fun fun1 head-tm fn-renaming fn-infos
+                                   iso-infos propiso-info)))
     (('LET* () let-body)
-     (support-thms-for-defun-aux let-body hyps n fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info))
+     (support-thms-for-defun-aux let-body hyps n fun fun1 head-tm fn-renaming fn-infos
+                                 iso-infos propiso-info))
     (('LET* ((v val) . r-binds) let-body)
      (let ((new-let* (sublis-var-untranslated-term (acons v val ())
                                                    `(let* ,r-binds ,let-body))))
-       (support-thms-for-defun-aux new-let* hyps n fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info)))
+       (support-thms-for-defun-aux new-let* hyps n fun fun1 head-tm fn-renaming fn-infos
+                                   iso-infos propiso-info)))
     ;; ((mv . mvs))  ;; ??
     (& (b* ((thm-name (pack$ fun1 "--" n))
             (body-tm (rename-fns-and-expand-lambdas-in-untranslated-term old-body-tm fn-renaming))
@@ -1103,7 +1107,8 @@
   ;;              (events true-list-listp))
   :mode :program
   (let* ((local-thms (and recursive
-                          (support-thms-for-defun-aux old-body-tm hyps 0 fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info)))
+                          (support-thms-for-defun-aux old-body-tm hyps 0 fun fun1 head-tm fn-renaming
+                                                      fn-infos iso-infos propiso-info)))
          (num-results (len ret-sig))
          (length-thm-name (and (> num-results 1)
                                (pack$ fun "--LEN")))
@@ -1129,8 +1134,8 @@
                                     (events true-list-listp))
   :guard-hints (("Goal" :in-theory (enable iso-info-alist-p defmapping-infop)))
   (b* (((mv new-iso-pred-events convert-old-to-new-fn convert-new-to-old-fn new-iso-osi-theorems iso-infos)
-        (make-new-iso-pred-events iso-source-pred iso-target-pred formals old-pred-body new-pred-body recursivep
-                                  iso-infos events))
+        (make-new-iso-pred-events iso-source-pred iso-target-pred formals old-pred-body new-pred-body
+                                  recursivep iso-infos events))
        ((unless new-iso-pred-events)
         (mv nil nil iso-infos))
        (add-to-iso-osi-ruleset-form (add-iso-osi-theorem-event new-iso-osi-theorems propiso-info)))
@@ -1145,7 +1150,7 @@
                             (list iso-source-pred))
                fn-infos)
         iso-infos)))
-  
+
 ; Generate events for propagating the iso refinement
 ; to a function introduced via DEFUN and not via DEFINE-SK.
 
@@ -1341,7 +1346,9 @@
                                       ;; (when-not-proved (print "fn iso: prove failed!"))
                                       (succeed (bash ,@hints))
                                       ;; (when-not-proved (print "fn iso: bash failed!"))
-                                      (repeat (bash ("Goal" :in-theory (disable* ,(propiso-info->osi-ruleset-name propiso-info)))))))))))
+                                      (repeat
+                                        (bash ("Goal" :in-theory
+                                                      (disable* ,(propiso-info->osi-ruleset-name propiso-info)))))))))))
        (local-events (if new-iso-pred-p local-events (cons event local-events)))
        ;; add theory invariant to prevent the two theorems
        ;; from being enabled at the same time:
@@ -1356,7 +1363,7 @@
             (let* ((body (nice-body body0 world))
                    (body1 (rename-fns-and-expand-lambdas-in-untranslated-term body fn-renaming1)))
               (make-new-iso-pred-events-1 fun fun1 formals
-                                          body  ;(acl2::expand-lets-untranslated-term body world t) 
+                                          body  ;(acl2::expand-lets-untranslated-term body world t)
                                           body1  ;(acl2::expand-lets-untranslated-term body1 world t)
                                           recursivep
                                           fn-infos iso-infos propiso-info events))
@@ -1616,7 +1623,9 @@
                                     ;; (when-not-proved (print "thm: prove failed!"))
                                     (succeed (bash ,@new-hints))
                                     ;; (when-not-proved (print "thm: bash failed!"))
-                                    (repeat (bash ("Goal" :in-theory (disable* ,(propiso-info->iso-ruleset-name propiso-info)))))
+                                    (repeat
+                                      (bash ("Goal" :in-theory
+                                                    (disable* ,(propiso-info->iso-ruleset-name propiso-info)))))
                                    )))))
        (events (cons event events))
        (typed-fn (type-theorem-p head))
@@ -1685,10 +1694,11 @@
                       ;; ignore functions that are part of propagate-iso form or involved in a morphism
                       (mv last-defuned-fn fn-renaming renaming fn-infos iso-infos world events)
                     (if (std::find-define-sk-guts fun world)
-                        (propagate-iso-define-sk fun fn-renaming renaming fn-infos iso-infos world propiso-info events ;; state
+                        (propagate-iso-define-sk fun fn-renaming renaming fn-infos
+                                                 iso-infos world propiso-info events ;; state
                         )
-                      (propagate-iso-defun fun last-defuned-fn fn-renaming renaming fn-infos iso-infos world propiso-info
-                                           dont-verify-guards events eventup state)))))
+                      (propagate-iso-defun fun last-defuned-fn fn-renaming renaming fn-infos iso-infos
+                                           world propiso-info dont-verify-guards events eventup state)))))
             (defuns
               (prog2$ (raise "Event tuple ~x0 not supported." eventup)
                       (mv nil nil nil nil nil nil nil)))
@@ -1696,8 +1706,8 @@
              (let ((thm (acl2::access-event-tuple-namex eventup)))
                (if (iso-or-osi-thmp thm fn-infos)
                    (mv last-defuned-fn fn-renaming renaming fn-infos iso-infos world events)
-                 (propagate-iso-defaxiom/defthm thm last-defuned-fn fn-renaming renaming fn-infos iso-infos world propiso-info
-                                                eventup events state))))
+                 (propagate-iso-defaxiom/defthm thm last-defuned-fn fn-renaming renaming fn-infos iso-infos
+                                                world propiso-info eventup events state))))
             (verify-guards
               (let* ((form (acl2::access-event-tuple-form eventup))
                      (fun (cadr form)))
@@ -1767,7 +1777,6 @@
            (mv t nil)))
 
 (define check-fn-infos1 (fn-info (iso-infos iso-info-alist-p) (world plist-worldp))
-  :guard-debug t
   (case-match fn-info
     ((fn-i t-fn-i iso-thm osi-thm arg-types (quote~ =>) result-ty)
      (cond ((not (and (symbolp fn-i)
