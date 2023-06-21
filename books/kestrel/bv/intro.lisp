@@ -1,6 +1,6 @@
 ; Rules to introduce BV ops
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,8 @@
 (include-book "bvxor")
 (include-book "bvplus")
 (include-book "bvminus")
+(local (include-book "logxor-b"))
+(local (include-book "logior-b"))
 
 ;; We'll keep these disabled as they may conflict with opening up the BV
 ;; functions.

@@ -13,6 +13,8 @@
 
 (include-book "rules")
 (include-book "bvashr")
+(local (include-book "logior"))
+(local (include-book "logxor"))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "rules0"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))

@@ -1,7 +1,7 @@
 ; Rules that deal with both bvcat and other operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,7 @@
 (include-book "bvminus")
 (include-book "bvuminus")
 (include-book "bvif")
+(local (include-book "logior-b"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 (defthm bvand-of-bvcat-low-arg2
