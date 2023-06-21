@@ -80,16 +80,18 @@
                                          (cw " of ")
                                          (print-to-hundredths time-to-beat)
                                          (cw " seconds (~x0%))~%" percent-saved))
-                               (progn$ (cw "  (Minimal speedup: disable ~x0 to save " rule-to-drop)
-                                       (print-to-hundredths savings)
-                                       (cw " of ")
-                                       (print-to-hundredths time-to-beat)
-                                       (cw " seconds (~x0%))~%" percent-saved))))
-                         (progn$ (cw "  (Slower: disable ~x0: " rule-to-drop)
-                                 (print-to-hundredths time)
-                                 (cw " vs ")
-                                 (print-to-hundredths time-to-beat)
-                                 (cw " seconds)~%"))))
+                               (progn$ ;; (cw "  (Minimal speedup: disable ~x0 to save " rule-to-drop)
+                                       ;; (print-to-hundredths savings)
+                                       ;; (cw " of ")
+                                       ;; (print-to-hundredths time-to-beat)
+                                       ;; (cw " seconds (~x0%))~%" percent-saved)
+                                       )))
+                         (progn$ ;; (cw "  (Slower: disable ~x0: " rule-to-drop)
+                                 ;; (print-to-hundredths time)
+                                 ;; (cw " vs ")
+                                 ;; (print-to-hundredths time-to-beat)
+                                 ;; (cw " seconds)~%")
+                                 )))
                   (try-to-drop-rules (rest rules) body hints otf-flg time-to-beat state)))))))
 
 ;; Prints suggested ways to speed up a theorem.  EVENT should be a defthm (or a variant, like defthmd).
@@ -108,7 +110,7 @@
          (otf-flg (cdr otf-flgp))
          (instructionsp (assoc-keyword :instructions keyword-value-list)))
     (if instructionsp
-        (prog2$ (cw "Not trying to speed up ~x0 because it uses :instructions." name) ; todo: elsewhere, could try to prove without instructions
+        (progn$ ;; (cw "Not trying to speed up ~x0 because it uses :instructions." name) ; todo: elsewhere, could try to prove without instructions
                 (mv nil state))
       ;; Record the start time:
       (mv-let (start-time state)
@@ -132,9 +134,9 @@
                           (mv :failed state))
                 (let* ((elapsed-time (- end-time start-time)))
                   (if (< elapsed-time 1/100)
-                      (progn$ (cw "(Not trying to speed up ~x0 because it only takes " name)
-                              (print-to-hundredths elapsed-time)
-                              (cw " seconds)~%")
+                      (progn$ ;; (cw "(Not trying to speed up ~x0 because it only takes " name)
+                              ;; (print-to-hundredths elapsed-time)
+                              ;; (cw " seconds)~%")
                               (mv nil state))
                     ;; Get the list of runes used in the proof:
                     (let* ((runes-used (get-event-data 'rules state))
