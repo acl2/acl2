@@ -13,6 +13,7 @@
 
 
 (include-book "lift-iso")
+(include-book "../sequences/defforall")
 
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)

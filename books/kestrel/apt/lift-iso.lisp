@@ -20,10 +20,8 @@
 (include-book "kestrel/utilities/reconstruct-macros" :dir :system)
 (include-book "kestrel/utilities/make-or-nice" :dir :system)
 (include-book "kestrel/utilities/make-and-nice" :dir :system)
-(include-book "../sequences/deffilter")
 (include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
-
 
 (set-state-ok t)
 
@@ -32,7 +30,7 @@
 (program)
 
 (defun get-def (fn wrld ev)
-  
+
 ; We return the definition of fn in wrld, if any, without the leading defun.
 ; If there is no such definition, we return nil.
 
@@ -372,7 +370,6 @@
                                                                    (cons ,*unknown-value*
                                                                          (cons ,*unknown-value* ,c-term)))
                                               formal))
-        
         (otherwise *unknown-value*)))))
 
 ;;; Derived isomorphism functions
@@ -393,19 +390,21 @@
       (('NOT ('CDDR !formal))
        `(cons ,*unknown-value* (cons ,*unknown-value* 'nil)))
       (('OR t1 t2)
-       (merge-convert-exprs-for-or t1
-                                   (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
-                                   (convert-fn-for-new-iso-fn t2 pred-name formal convert-fn-name new-to-old-p iso-infos)))
+       (merge-convert-exprs-for-or
+         t1
+         (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
+         (convert-fn-for-new-iso-fn t2 pred-name formal convert-fn-name new-to-old-p iso-infos)))
       (('AND . r-tms)
        (merge-convert-exprs-for-and
         (convert-fns-for-new-iso-fn r-tms pred-name formal convert-fn-name new-to-old-p iso-infos)))
       (('IF t1 'T t2)
        (if (equal t2 'NIL)
            (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
-         (merge-convert-exprs-for-or t1
-                                     (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
-                                     (convert-fn-for-new-iso-fn t2 pred-name formal convert-fn-name new-to-old-p iso-infos))))
-      (('IF t1 t2 'NIL)                   ; TODO: check if this is sufficient for n-ary AND. E.g. ('IF t1 ('IF t2 t3 'NIL) 'NIL)
+         (merge-convert-exprs-for-or
+           t1
+           (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
+           (convert-fn-for-new-iso-fn t2 pred-name formal convert-fn-name new-to-old-p iso-infos))))
+      (('IF t1 t2 'NIL)  ; TODO: check if this is sufficient for n-ary AND. E.g. ('IF t1 ('IF t2 t3 'NIL) 'NIL)
        (if (equal t2 'T)
            (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
          (merge-convert-exprs-for-and
@@ -415,7 +414,8 @@
             ,(convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
           ,(convert-fn-for-new-iso-fn t2 pred-name formal convert-fn-name new-to-old-p iso-infos)))
       (('COND . cond-pairs)
-       `(cond ,@(convert-cond-pairs-for-new-iso-fn cond-pairs pred-name formal convert-fn-name new-to-old-p iso-infos)))
+       `(cond ,@(convert-cond-pairs-for-new-iso-fn cond-pairs pred-name formal convert-fn-name
+                                                   new-to-old-p iso-infos)))
       ;; (('LET binds . let-body-lst)
       ;;  (let ((subst-let-body (sublis-var-untranslated-term (doublets-to-alist binds) (car (last let-body-lst)))))
       ;;    (convert-fn-for-new-iso-fn subst-let-body pred-name formal convert-fn-name new-to-old-p iso-infos)))
@@ -430,7 +430,7 @@
                             (lookup-osi-info f iso-infos))))
          (if (not (null iso-info))
              (partial-cons-form-from-destructors arg `(,(iso-info-convert-fn iso-info new-to-old-p) ,arg)
-                                      formal)
+                                                 formal)
            *unhandled-case*)))
       (& *unhandled-case*)))
 
@@ -472,7 +472,8 @@
                             (convert-fn-for-new-iso-fn t2 pred-name formal convert-fn-name new-to-old-p iso-infos))))))
         (((p1 p2) . r-cond-pairs)
          (cons (list p1 (convert-fn-for-new-iso-fn p2 pred-name formal convert-fn-name new-to-old-p iso-infos))
-               (convert-cond-pairs-for-new-iso-fn r-cond-pairs pred-name formal convert-fn-name new-to-old-p iso-infos))))))
+               (convert-cond-pairs-for-new-iso-fn r-cond-pairs pred-name formal convert-fn-name
+                                                  new-to-old-p iso-infos))))))
 ) ; convert-fn/s-for-new-iso-fn
 
 (define convert-fn-for-new-iso-fn0 (old-body
@@ -484,7 +485,7 @@
   (let ((raw-body (convert-fn-for-new-iso-fn old-body pred-name formal convert-fn-name new-to-old-p iso-infos)))
     (fill-in-unknowns-by-old raw-body formal)))
 
-(defun restrict-body (body guard-term)
+(defund restrict-body (body guard-term)
   (declare (xargs :guard t))
   (case-match body
     (('and . conds)
@@ -500,7 +501,7 @@
               nil)))))
 
 ;; Match structure of restrict-body
-(defun equal-ignoring-mbt (t1 t2)
+(defund equal-ignoring-mbt (t1 t2)
   (declare (xargs :guard t))
   (or (equal t1 t2)
       (let ((t1-t2 (list t1 t2)))
@@ -523,7 +524,6 @@
 
 (define name-from-term (tm)
   :returns (nm stringp)
-  :guard-debug t
   (if (symbolp tm)
       (symbol-name tm)
     (if (consp tm)
@@ -552,7 +552,7 @@
   (define term-with-subst-and-name (tm (formal variablep)
                                        (convert-fn-name symbolp)
                                        (thm-name stringp))
-    :returns (mv args 
+    :returns (mv args
                  (ret-thm-nm stringp :hyp :guard)
                  (condns true-listp))
     (if (equal tm formal)
@@ -575,7 +575,7 @@
   (define terms-with-subst-and-name (tms (formal variablep)
                                          (convert-fn-name symbolp)
                                          (thm-name stringp))
-    :returns (mv args 
+    :returns (mv args
                  (ret-thm-nm stringp :hyp :guard)
                  (condns true-listp))
     (if (atom tms)
@@ -596,6 +596,8 @@
   ///
   (verify-guards term-with-subst-and-name)
 )  ; term/s-with-subst-and-name
+
+(local (in-theory (disable default-cdr sublis assoc-equal default-car)))
 
 
 (defines type-theorems-for-new-iso-fn/-lst
@@ -621,7 +623,8 @@
        (type-theorems-for-new-iso-fn-lst r-tms formal convert-fn-name renaming-pred use-old-convert-fns-p
                                          condns thm-name new-to-old-p iso-infos))
       (('IF p t1 'NIL)
-       (type-theorems-for-new-iso-fn-lst (list p t1) formal convert-fn-name renaming-pred use-old-convert-fns-p
+       (type-theorems-for-new-iso-fn-lst (list p t1)
+                                         formal convert-fn-name renaming-pred use-old-convert-fns-p
                                          condns thm-name new-to-old-p iso-infos))
       (('IF p t1 t2)
        (append (type-theorems-for-new-iso-fn t2 formal convert-fn-name renaming-pred use-old-convert-fns-p
@@ -680,10 +683,11 @@
                                                  formal convert-fn-name renaming-pred use-old-convert-fns-p
                                                  (cons (first (car cond-pairs)) condns)
                                                  thm-name new-to-old-p iso-infos)
-                   (type-theorems-for-new-iso-fn-cond-pairs (cdr cond-pairs)
-                                                            formal convert-fn-name renaming-pred use-old-convert-fns-p
-                                                            (cons (acl2::negate-form (first (car cond-pairs))) condns)
-                                                            thm-name new-to-old-p iso-infos))))))
+                   (type-theorems-for-new-iso-fn-cond-pairs
+                     (cdr cond-pairs)
+                     formal convert-fn-name renaming-pred use-old-convert-fns-p
+                     (cons (acl2::negate-form (first (car cond-pairs))) condns)
+                     thm-name new-to-old-p iso-infos))))))
   (define type-theorems-for-new-iso-fn-lst (old-body-tms
                                             (formal variablep)
                                             (convert-fn-name symbolp)
@@ -923,8 +927,9 @@ Example: int10-map-p-->-int20-map-p
                        :hints (:beta-of-alpha
                                (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred
                                                            ,convert-old-to-new-fn ,convert-new-to-old-fn)))
-                               :alpha-of-beta (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred
-                                                                          ,convert-old-to-new-fn ,convert-new-to-old-fn)))
+                               :alpha-of-beta (("Goal" :in-theory
+                                                       (enable ,iso-source-pred ,iso-target-pred
+                                                               ,convert-old-to-new-fn ,convert-new-to-old-fn)))
                                :alpha-image (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred
                                                                         ,convert-old-to-new-fn)))
                                :beta-image (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred
@@ -1046,7 +1051,6 @@ Example: int10-map-p-->-int20-map-p
     (& body)))
 
 (defines normalize-predicate-term
-  :guard-debug t
   (define normalize-predicate-term (tm)
     (if (atom tm)
         tm
@@ -1070,7 +1074,8 @@ Example: int10-map-p-->-int20-map-p
           (('cond (p 't) . r-cond-pairs)
            (acl2::make-or-nice (list p (normalize-predicate-term `(cond ,@r-cond-pairs)))))
           (('cond (p 'nil) . r-cond-pairs)
-           (acl2::make-and-nice (list (acl2::negate-form p) (normalize-predicate-term `(cond ,@r-cond-pairs)))))
+           (acl2::make-and-nice (list (acl2::negate-form p)
+                                      (normalize-predicate-term `(cond ,@r-cond-pairs)))))
           (& tm)))))
   (define normalize-predicate-term-lst (tms)
     (if (atom tms)
