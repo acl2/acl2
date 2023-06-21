@@ -1,6 +1,8 @@
+#!/bin/bash
+
 # A script to call the Formal Unit Tester
 #
-# Copyright (C) 2020-2021 Kestrel Institute
+# Copyright (C) 2020-2023 Kestrel Institute
 # Copyright (C) 2016-2020 Kestrel Technology, LLC
 #
 # License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -8,8 +10,6 @@
 # Author: Eric Smith (eric.smith@kestrel.edu)
 
 ################################################################################
-
-#!/bin/bash
 
 #Check the number of arguments supplied:
 if [ $# -ne 1 ]
@@ -31,7 +31,7 @@ JAVA_FILE="$1" #arg1 is a file containing paths of class files in the BASE_DIR (
 #OUTPUT_DIR="$3" # arg3 is the directory where the ACL2 books for the classs will go (each file name will be a fully qualified class name).
 
 #echo "(ACL2 is: ${ACL2})"
-acl2executable=${ACL2}
+#acl2executable=${ACL2}
 
 #old (no saved image, slow to do the include-book):
 #(echo '(with-output :off :all (ld "'${THISSCRIPTDIR}'/fut.lsp")) (with-output :off :all (include-book "'${THISSCRIPTDIR}'/fut" :ttags :all)) (fut "'${FILE_WITH_PATHS_TO_CLASSES}'" "'${BASE_DIR}'" "'${OUTPUT_DIR}'"  "'${KESTREL_ACL2}'")' | ${acl2executable})

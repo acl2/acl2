@@ -18,7 +18,6 @@
 ;; TODO: Time each type of event and print a report
 ;; TODO: Start by making sure we can replay the book (and time it).
 ;; TODO: Special treatment for any books used to define this tool (will be redundant, don't recommend dropping their include-books, even withn local)
-;; TODO: Add the ability to run on many files
 ;; TODO: Add the ability to suppress slow stuff (like dropping a local event or an include-book and trying the entire file).
 ;; TODO: Improve hints for defuns
 ;; TODO: Detect :guard-debug
@@ -42,6 +41,7 @@
 (include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
 (include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
+(include-book "speed-up")
 
 (defun print-to-string (item)
   (declare (xargs :mode :program))
@@ -329,12 +329,37 @@
      (mv-let (improvement-foundp state)
        (try-improved-events alist nil state)
        (declare (ignore improvement-foundp)) ;todo: don't bother to return this
+       ;; Apply the linter:
        (let ((state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
-         (prog2$ (and print (cw ")~%"))
-                 ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
-                 (submit-event-helper event nil nil state)))))))
+         ;; Try to speed up the proof:
+         (mv-let (erp state)
+           (try-to-speed-up-defthm-fn event state)
+           (if erp
+               (mv erp state)
+             (prog2$ (and print (cw ")~%"))
+                     ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
+                     (submit-event-helper event nil nil state)))))))))
 
-;; Submit EVENT, after printing suggestions for improving it.
+;; Returns (mv erp state).
+(defun improve-defun-event (event rest-events print state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state)
+           (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
+           (ignore print) ;todo
+           )
+  (mv-let (erp state)
+    (submit-event-helper event nil nil state)
+    (if erp
+        (mv erp state)
+      (let* ((fn (cadr event))
+             (state (lint-defun fn t ;assume-guards
+                                nil ; suppress
+                                100000 ;step-limit
+                                state)))
+        (mv nil state)))))
+
+;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
 (defun improve-event (event rest-events print state)
   (declare (xargs :guard (and (true-listp rest-events)
@@ -346,7 +371,7 @@
      ;; For a local event, try skipping it and see if the rest of the events
      ;; work.  If so, deleting the event should be safe, since the event is local.
      (prog2$
-      (cw "(Attempting to drop ~x0:" event) ; todo: extract a name to print here, or eviscerate
+      (cw "(Working on ~x0:" event) ; todo: extract a name to print here, or eviscerate
       (mv-let (successp state)
         (events-would-succeedp rest-events nil state)
         (if successp
@@ -362,7 +387,7 @@
      ;; For an include-book, try skipping it and see if the rest of the events
      ;; work.
      (prog2$
-      (cw "(Attempting to drop ~x0:" event)
+      (cw "(Working on ~x0:" event)
       (mv-let (successp state)
         (events-would-succeedp rest-events nil state)
         (if successp
@@ -379,6 +404,7 @@
           (progn$ (cw " Cannot be dropped.)~%" event)
                   (submit-event-expect-no-error event nil state))))))
     ((defthm defthmd) (improve-defthm-event event rest-events print state))
+    ((defun defund) (improve-defun-event event rest-events print state))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
     (t (submit-event-expect-no-error event nil state))))
@@ -469,6 +495,7 @@
 
 ;; Looks for .lisp files in the current subtree.
 ;; Returns (mv book-paths state).
+;move
 (defun books-in-subtree (state)
   (declare (xargs :stobjs state))
   (mv-let (erp val state)

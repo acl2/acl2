@@ -26,6 +26,7 @@
 
 ;; todo: consider putting back some printing like that done by add-function-call-expr-to-dag-array-with-memo
 
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "wf-dagp")
 (include-book "numeric-lists")
 (include-book "make-dag-constant-alist")
