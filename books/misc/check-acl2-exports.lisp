@@ -213,7 +213,9 @@
 
     SET-TABLE-GUARD
     WITH-CURRENT-PACKAGE
-
+    SAVING-EVENT-DATA
+    OLD-AND-NEW-EVENT-DATA
+    RUNES-DIFF
   ))
 
 (defconst *special-ops*

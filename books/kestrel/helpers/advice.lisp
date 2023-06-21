@@ -2181,7 +2181,7 @@
         (and (acl2::print-level-at-least-tp print) (cw "skip (Not disabling since already disabled: ~x0)~%" rule))
         (mv nil nil state))
        ;; todo: ensure this is nice:
-       (new-hints (acl2::add-disable*-to-hints theorem-hints (list rule)))
+       (new-hints (acl2::disable-items-in-hints theorem-hints (list rule) t)) ; t means use disable*
        ((mv provedp state) (prove$-no-error 'try-add-disable-hint
                                             theorem-body
                                             new-hints

@@ -12001,7 +12001,9 @@
                                   name
                                   ttree4
                                   nil :protect ctx wrld4
-                                  state)))))))))))))))
+                                  state)))))))))))))
+   :event-type 'defthm
+   :event event-form))
 
 (defun defthm-fn (name term state
                        rule-classes
@@ -12024,46 +12026,53 @@
      event-form
      #+:non-standard-analysis std-p)))
 
-(defun thm-fn (term state hints otf-flg)
-  (er-progn
-   (with-ctx-summarized
-    (make-ctx-for-event
-     (list* 'THM term (if (or hints otf-flg) '(irrelevant) nil))
-     "( THM ...)")
-    (cond
-     ((member-eq (ld-skip-proofsp state)
-                 '(include-book include-book-with-locals initialize-acl2))
-      (value nil))
-     (t
-      (let ((wrld (w state))
-            (ens (ens state)))
-        (er-let* ((hints (translate-hints+ 'thm
-                                           hints
-                                           (default-hints wrld)
-                                           ctx wrld state)))
-          (er-let* ((tterm (translate term t t t ctx wrld state))
+(defun thm-fn (term state hints otf-flg event-form)
+  (let ((event-form (or event-form
+                        `(thm ,term
+                              ,@(and hints `(:hints ,hints))
+                              ,@(and otf-flg `(:otf-flg ,otf-flg))))))
+    (er-progn
+     (with-ctx-summarized
+      (make-ctx-for-event
+       event-form
+       "( THM ...)")
+      (cond
+       ((member-eq (ld-skip-proofsp state)
+                   '(include-book include-book-with-locals initialize-acl2))
+        (value nil))
+       (t
+        (let ((wrld (w state))
+              (ens (ens state)))
+          (er-let* ((hints (translate-hints+ 'thm
+                                             hints
+                                             (default-hints wrld)
+                                             ctx wrld state)))
+            (er-let* ((tterm (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-                    (ttree (prove tterm
-                                  (make-pspv ens wrld state
-                                             :displayed-goal term
-                                             :otf-flg otf-flg)
-                                  hints ens wrld ctx state)))
+                      (ttree (prove tterm
+                                    (make-pspv ens wrld state
+                                               :displayed-goal term
+                                               :otf-flg otf-flg)
+                                    hints ens wrld ctx state)))
 
-            (pprogn
+              (pprogn
 ; Set accumulated-ttree to the ttree returned by prove, as is done in
 ; install-event; see the comment there.
-             (f-put-global 'accumulated-ttree ttree state)
-             (value nil))))))))
-   (pprogn (io? prove nil state
-                nil
-                (fms (if (ld-skip-proofsp state)
-                         "Proof skipped.~%"
-                       "Proof succeeded.~%")
-                     nil
-                     (proofs-co state) state nil))
-           (value :invisible))))
+               (f-put-global 'accumulated-ttree ttree state)
+               (value nil)))))))
+      :event-type 'thm
+      :event event-form)
+     (pprogn (io? prove nil state
+                  nil
+                  (fms (if (ld-skip-proofsp state)
+                           "Proof skipped.~%"
+                         "Proof succeeded.~%")
+                       nil
+                       (proofs-co state) state nil))
+             (value :invisible)))))
 
-(defmacro thm (term &key hints otf-flg)
+(defmacro thm (&whole event-form
+                      term &key hints otf-flg)
 
 ; We started using make-event here in January, 2019.  Instead of defining
 ; thm-fn above and generating a call of it below, we could presumably generate
@@ -12078,7 +12087,8 @@
                              (thm-fn ',term
                                      state
                                      ',hints
-                                     ',otf-flg))
+                                     ',otf-flg
+                                     ',event-form))
                            (value '(value-triple :invisible)))
                  :expansion? (value-triple :invisible)
                  :on-behalf-of :quiet!

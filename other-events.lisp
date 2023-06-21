@@ -15894,29 +15894,6 @@
                                :initial-element '(value-triple nil)))
           (remove-smaller-keys-from-sorted-alist index expansion-alist)))
 
-(defun eval-hidden-packages (known-package-alist state)
-  (cond ((endp known-package-alist) (value nil))
-        (t (let ((entry (car known-package-alist)))
-             (cond ((package-entry-hidden-p entry)
-                    (er-progn (trans-eval
-                               `(defpkg ,(package-entry-name entry)
-                                  ',(package-entry-imports entry)
-                                  nil ; doc
-                                  ',(package-entry-book-path entry)
-                                  nil)
-                               'eval-hidden-packages
-                               state
-                               nil)
-                              (eval-hidden-packages (cdr known-package-alist)
-                                                    state)))
-                   (t (eval-hidden-packages (cdr known-package-alist)
-                                            state)))))))
-
-(defmacro with-packages-unhidden (form)
-  `(revert-world
-    (er-progn (eval-hidden-packages (known-package-alist state) state)
-              ,form)))
-
 (defun read-useless-runes2 (r alist fal filename ctx state)
 
 ; See read-useless-runes1.
@@ -16543,10 +16520,28 @@
 
   (compress-cltl-command-stack-rec (reverse stack) nil))
 
+(defun event-data-channel (full-book-string write-event-data
+                                             write-event-data-p ctx state)
+  (er-let* ((write-event-data (if write-event-data-p
+                                  (value write-event-data)
+                                (getenv! "ACL2_WRITE_EVENT_DATA" state))))
+    (cond
+     ((null write-event-data) (value nil))
+     (t (let ((filename (event-data-filename full-book-string)))
+          (mv-let (channel state)
+            (open-output-channel filename :object state)
+            (cond ((null channel)
+                   (er soft ctx
+                       "Unable to open output channel for writing event-data ~
+                        to file ~x0"
+                       filename))
+                  (t (value channel)))))))))
+
 (defun certify-book-fn (user-book-name k compile-flg defaxioms-okp
                                        skip-proofs-okp ttags ttagsx ttagsxp
                                        acl2x write-port pcert
                                        useless-runes-r/w useless-runes-r/w-p
+                                       write-event-data write-event-data-p
                                        state)
 
 ; For a discussion of the addition of hidden defpkg events to the portcullis,
@@ -16715,10 +16710,21 @@
                                  nil    ; irrelevant value for ttags-seen
                                  :quiet ; ttags in cert. world: already reported
                                  ctx state))
+                         (event-data-channel
+                          (if (member-eq cert-op
+                                         '(t :convert-pcert
+                                             :create+convert-pcert))
+                              (event-data-channel full-book-string
+                                                  write-event-data
+                                                  write-event-data-p
+                                                  ctx state)
+                            (value nil)))
                          (certify-book-info-0
                           (value (make certify-book-info
                                        :full-book-name full-book-name
-                                       :cert-op cert-op))))
+                                       :cert-op cert-op
+                                       :event-data-channel
+                                       event-data-channel))))
                  (state-global-let*
                   ((compiler-enabled (f-get-global 'compiler-enabled state))
                    (port-file-enabled (f-get-global 'port-file-enabled state))
@@ -17230,6 +17236,11 @@
                                    (pprogn
                                     (update-useless-runes old-useless-runes
                                                           state)
+                                    (if event-data-channel
+                                        (close-output-channel
+                                         event-data-channel
+                                         state)
+                                      state)
                                     (print-certify-book-step-3 index
                                                                port-index
                                                                port-non-localp
@@ -17700,7 +17711,8 @@
                         (acl2x 'nil)
                         (write-port ':default)
                         (pcert ':default)
-                        (useless-runes 'nil useless-runes-p))
+                        (useless-runes 'nil useless-runes-p)
+                        (write-event-data 'nil write-event-data-p))
   (declare (xargs :guard (and (booleanp acl2x)
                               (member-eq compile-flg
                                          '(nil t :all
@@ -17724,6 +17736,8 @@
         (list 'quote pcert)
         (list 'quote useless-runes)
         (list 'quote useless-runes-p)
+        (list 'quote write-event-data)
+        (list 'quote write-event-data-p)
         'state))
 
 (defmacro certify-book! (user-book-name &optional
@@ -34990,6 +35004,131 @@
                                                 (list table-event))))))))
                :on-behalf-of :quiet!)
               ,@(memoize-partial-calls tuples)))))))
+
+(defun read-event-data-fal-1 (alist fal)
+  (cond ((endp alist) fal)
+        (t
+         (let* ((key (caar alist))
+                (val (cdar alist))
+                (old (cdr (hons-get key fal))))
+           (read-event-data-fal-1 (cdr alist)
+                                  (hons-acons key (cons val old) fal))))))
+
+(defun first-non-string-key-pair (fal)
+  (cond ((atom fal) nil)
+        ((stringp (caar fal))
+         (first-non-string-key-pair (cdr fal)))
+        (t (car fal))))
+
+(defun old-and-new-event-data-fal (book-string dir ctx state)
+  (let ((current-event-data-fal (f-get-global 'event-data-fal state)))
+    (cond
+     ((null current-event-data-fal)
+      (er soft ctx
+          "No event-data-fal has been saved in this session.  See :DOC ~
+           saving-event-data."))
+     (t
+      (mv-let (full-book-string full-book-name directory-name familiar-name)
+        (parse-book-name (or dir (cbd)) book-string nil ctx state)
+        (declare (ignore full-book-name directory-name familiar-name))
+        (let* ((cached (cdr (hons-get full-book-string current-event-data-fal))))
+          (cond
+           (cached (value (cons cached current-event-data-fal)))
+           (t
+            (let ((event-data-filename
+                   (event-data-filename full-book-string)))
+              (with-packages-unhidden
+               (mv-let (channel state)
+                 (open-input-channel event-data-filename :object state)
+                 (cond
+                  (channel
+                   (mv-let (alist state)
+                     (read-file-iterate-safe channel nil state)
+                     (let ((file-event-data-fal
+                            (read-event-data-fal-1 alist 'read-event-data-fal)))
+                       (pprogn
+                        (close-input-channel channel state)
+                        (let ((new-event-data-fal
+                               (hons-acons full-book-string
+                                           file-event-data-fal
+                                           current-event-data-fal)))
+                          (pprogn
+                           (f-put-global 'event-data-fal ; cache the result
+                                         new-event-data-fal
+                                         state)
+                           (value (cons file-event-data-fal
+                                        new-event-data-fal))))))))
+                  (t (er soft ctx
+                         "Unable to open file ~x0 for reading event-data."
+                         event-data-filename))))))))))))))
+
+(defun old-and-new-event-data-fn (book-string name namep dir ctx state)
+  (er-let* ((old/new (old-and-new-event-data-fal book-string dir ctx state)))
+    (let* ((old (car old/new))
+           (new (cdr old/new))
+           (pair (and (not namep)
+                      (first-non-string-key-pair new)))
+           (name (if namep name (car pair)))
+           (old-event-data-lst (cdr (hons-get name old)))
+           (old-len (length old-event-data-lst))
+           (new-event-data-lst (if pair
+                                   (cdr pair)
+                                 (cdr (hons-get name new))))
+           (new-len (length new-event-data-lst)))
+      (cond ((< old-len new-len)
+             (pprogn
+              (warning$ ctx "Event-data"
+                        "The number of events named ~x0 in the current ~
+                         session, which is ~x1, exceeds the number of events, ~
+                         ~x2, that are named ~x0 in the given file.  Thus no ~
+                         result is available."
+                        name new-len old-len)
+              (value nil)))
+            ((= new-len 0)
+             (er soft ctx
+                 "No events named ~x0 were saved in the current session.  ~
+                  Thus no result is available."
+                 name))
+            (t ; e.g., old = (e0 e1 e2 e3 ...), new = (f2 f3 ...)
+             (value (cons (nth (- old-len new-len) old-event-data-lst)
+                          (car new-event-data-lst))))))))
+
+(defmacro old-and-new-event-data (book-string &key (name 'nil namep) dir)
+
+; When name is nil, this returns an error triple whose value is a pair (cons
+; old-event-data new-event-data), where new-event-data is the latest event-data
+; saved by saving-event-data and old-event-data is the corresponding event-data
+; from the given book (as determined by book-string and, optionally, dir, which
+; is a directory name or a keyword representing a directory).  If name is
+; non-nil then we provide such event-data associated most recently with name in
+; the current session.
+
+  `(old-and-new-event-data-fn ,book-string ,name ,namep ,dir
+                              'old-and-new-event-data state))
+
+(defun runes-diff-fn (book-string name namep dir ctx state)
+  (er-let* ((old/new (old-and-new-event-data-fn book-string name namep dir ctx
+                                                state)))
+    (let* ((old (car old/new))
+           (new (cdr old/new))
+           (old-runes (get-event-data-1 'rules old))
+           (new-runes (get-event-data-1 'rules new))
+           (old-diff (set-difference-equal old-runes new-runes))
+           (new-diff (set-difference-equal new-runes old-runes)))
+      (value (list (list :old old-diff) (list :new new-diff))))))
+
+(defmacro runes-diff (book-string &key (name 'nil namep) dir)
+
+; See old-and-new-event-data.  Here we return (value (list (list :old
+; runes-old) (list :new runes-new))), where runes-old lists the runes from the
+; old event-data that are not in the new event-data, and runes-new is analogous
+; (new but not old).
+
+; Of course, there may be more convenient ways to return this information
+; programmatically, for runes or other fields.  The code for this macro (and
+; runes-diff-fn) shows one way to get such information.
+
+  `(runes-diff-fn ,book-string ,name ,namep ,dir 'runes-diff state))
 
 ; Essay on Correctness of Evaluation with Stobjs
 

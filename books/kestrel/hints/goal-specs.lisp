@@ -28,6 +28,19 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable hint-has-goal-specp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund some-hint-has-goal-specp (hints target-goal-spec)
+  (declare (xargs :guard (and (true-listp hints)
+                              (stringp target-goal-spec)
+                              (standard-string-p target-goal-spec))))
+  (if (endp hints)
+      nil
+    (or (hint-has-goal-specp (first hints) target-goal-spec)
+        (some-hint-has-goal-specp (rest hints) target-goal-spec))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Gets the hint-keyword-value-list (e.g., (:use XXX :in-theory YYY)) for the
 ;; given goal-spec (e.g., "Goal").
 (defund hint-keyword-value-list-for-goal-spec (goal-spec hints)

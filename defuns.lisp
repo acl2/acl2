@@ -5791,7 +5791,9 @@
                                 nil
                                 nil
                                 (car pair)
-                                state))))))))))))
+                                state)))))))))
+    :event-type 'verify-guards
+    :event event-form)))
 
 ; That completes the implementation of verify-guards.  We now return
 ; to the development of defun itself.
@@ -11888,7 +11890,8 @@
                 (install-event-defuns names event-form def-lst0 symbol-class
                                       reclassifyingp non-executablep pair ctx wrld
                                       state)))))))))))
-   :event-type 'defun))
+   :event-type 'defun
+   :event event-form))
 
 (defun defun-fn (def state event-form #+:non-standard-analysis std-p)
 
