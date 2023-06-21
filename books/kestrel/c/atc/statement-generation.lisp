@@ -541,7 +541,12 @@
     "We further increase the limit by one
      for the theorem about @(tsee exec-expr-call-or-asg),
      because that is what it takes, in  @(tsee exec-expr-call-or-asg),
-     to go to @(tsee exec-expr-asg)."))
+     to go to @(tsee exec-expr-asg).")
+   (xdoc::p
+    "We further increase the limit by one
+     for the theorem about @(tsee exec-stmt),
+     because that is what it takes, in @(tsee exec-stmt),
+     to go to @(tsee exec-expr-call-or-asg)."))
   (b* (((reterr) (irr-block-item) nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -601,9 +606,10 @@
        (item (block-item-stmt stmt))
        (asg-limit `(binary-+ '1 ,rhs.limit))
        (expr-limit `(binary-+ '1 ,asg-limit))
+       (stmt-limit `(binary-+ '1 ,expr-limit))
        ((when (or (not rhs.proofs)
                   (atc-var-info->externalp var-info))) ; <- temporary
-        (retok item expr-limit rhs.events rhs.thm-index rhs.names-to-avoid))
+        (retok item stmt-limit rhs.events rhs.thm-index rhs.names-to-avoid))
        (asg-thm-name (pack gin.fn '-correct- rhs.thm-index))
        ((mv asg-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
@@ -694,9 +700,43 @@
                                                  :formula expr-formula
                                                  :hints expr-hints
                                                  :enable nil))
+       (stmt-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv stmt-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         stmt-thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (stmt-formula `(equal (exec-stmt ',stmt
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
+                             (mv nil
+                                 (update-var (ident ,(symbol-name var))
+                                             ,rhs.term
+                                             ,gin.compst-var))))
+       (stmt-formula (atc-contextualize stmt-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        stmt-limit
+                                        t
+                                        wrld))
+       (stmt-hints
+        `(("Goal" :in-theory '(exec-stmt-when-expr
+                               (:e stmt-kind)
+                               not-zp-of-limit-variable
+                               (:e stmt-expr->get)
+                               ,expr-thm-name
+                               compustatep-of-update-var))))
+       ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
+                                                 :formula stmt-formula
+                                                 :hints stmt-hints
+                                                 :enable nil))
        (events (append rhs.events
                        (list asg-event
-                             expr-event))))
+                             expr-event
+                             stmt-event))))
     (retok item expr-limit events thm-index names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2849,7 +2889,7 @@
                    (type body.type)
                    (limit (pseudo-term-fncall
                            'binary-+
-                           (list (pseudo-term-quote 4)
+                           (list (pseudo-term-quote 3)
                                  (pseudo-term-fncall
                                   'binary-+
                                   (list asg-limit body.limit))))))
