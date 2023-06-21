@@ -538,6 +538,7 @@
      to go to @(tsee exec-expr-call-or-pure)."))
   (b* (((reterr) (irr-block-item) nil nil 1 nil)
        ((stmt-gin gin) gin)
+       (wrld (w state))
        ((unless var-info?)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
        (var-info var-info?)
@@ -592,8 +593,69 @@
              :arg2 rhs.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (limit `(binary-+ '1 ,rhs.limit)))
-    (retok item limit rhs.events rhs.thm-index rhs.names-to-avoid)))
+       (limit `(binary-+ '1 ,rhs.limit))
+       ((when (or (not rhs.proofs)
+                  (atc-var-info->externalp var-info))) ; <- temporary
+        (retok item limit rhs.events rhs.thm-index rhs.names-to-avoid))
+       (thm-name (pack gin.fn '-correct- rhs.thm-index))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil rhs.names-to-avoid wrld))
+       (thm-index (1+ rhs.thm-index))
+       (formula `(equal (exec-expr-asg ',asg
+                                       ,gin.compst-var
+                                       ,gin.fenv-var
+                                       ,gin.limit-var)
+                        (update-var (ident ,(symbol-name var))
+                                    ,rhs.term
+                                    ,gin.compst-var)))
+       (formula (atc-contextualize formula
+                                   gin.context
+                                   gin.fn
+                                   gin.fn-guard
+                                   gin.compst-var
+                                   gin.limit-var
+                                   limit
+                                   t
+                                   wrld))
+       (valuep-when-type (atc-type-to-valuep-thm rhs.type gin.prec-tags))
+       (type-of-value-when-type
+        (atc-type-to-type-of-value-thm rhs.type gin.prec-tags))
+       (hints
+        `(("Goal"
+           :in-theory '(exec-expr-asg-ident-via-object
+                        (:e expr-kind)
+                        (:e expr-binary->op)
+                        (:e expr-binary->arg1)
+                        (:e expr-binary->arg2)
+                        (:e binop-kind)
+                        not-zp-of-limit-variable
+                        ,rhs.thm-name
+                        mv-nth-of-cons
+                        (:e zp)
+                        ,valuep-when-type
+                        objdesign-of-var-of-const-identifier
+                        (:e identp)
+                        (:e ident->name)
+                        (:e expr-ident->get)
+                        ,(atc-var-info->thm var-info)
+                        write-object-of-objdesign-of-var-to-write-var
+                        write-var-to-update-var
+                        compustate-frames-number-of-add-var-not-zero
+                        compustate-frames-number-of-enter-scope-not-zero
+                        compustate-frames-number-of-add-frame-not-zero
+                        write-var-okp-of-add-var
+                        write-var-okp-of-enter-scope
+                        ident-fix-when-identp
+                        identp-of-ident
+                        equal-of-ident-and-ident
+                        (:e str-fix)
+                        ,type-of-value-when-type))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil))
+       (events (append rhs.events (list event))))
+    (retok item limit events thm-index names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
