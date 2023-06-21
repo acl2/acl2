@@ -1,4 +1,4 @@
-; lift-iso: A transformation to lift an isomprphism to a predicate that is true
+; lift-iso: A transformation to lift an isomorphism to a predicate that is true
 ; of some structure one or more components is subject to the original isomprphism
 ;
 ; Copyright (C) 2023 Kestrel Institute

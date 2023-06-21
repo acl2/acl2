@@ -8,9 +8,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file documents lift-iso a transformation to lift an isomorphism from
-; to a predicate is true of some structure one or more components is subject
-; to the original isomprphism
+; This file documents lift-iso, a transformation to lift an isomorphism
+; to a predicate that is true of some structure where one or more components is subject
+; to the original isomorphism
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
