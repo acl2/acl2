@@ -30,6 +30,7 @@
 
 (include-book "propagate-iso")
 (include-book "propagate-iso-doc")
+(include-book "lift-iso-doc")
 
 (include-book "restrict")
 (include-book "restrict-doc")
