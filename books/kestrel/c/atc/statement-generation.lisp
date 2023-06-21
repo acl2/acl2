@@ -610,6 +610,9 @@
        ((when (or (not rhs.proofs)
                   (atc-var-info->externalp var-info))) ; <- temporary
         (retok item stmt-limit rhs.events rhs.thm-index rhs.names-to-avoid))
+       (compst-term `(update-var (ident ',(symbol-name var))
+                                 ,rhs.term
+                                 ,gin.compst-var))
        (asg-thm-name (pack gin.fn '-correct- rhs.thm-index))
        ((mv asg-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
@@ -619,9 +622,7 @@
                                            ,gin.compst-var
                                            ,gin.fenv-var
                                            ,gin.limit-var)
-                            (update-var (ident ,(symbol-name var))
-                                        ,rhs.term
-                                        ,gin.compst-var)))
+                            ,compst-term))
        (asg-formula (atc-contextualize asg-formula
                                        gin.context
                                        gin.fn
@@ -677,9 +678,7 @@
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
                                                     ,gin.limit-var)
-                             (update-var (ident ,(symbol-name var))
-                                         ,rhs.term
-                                         ,gin.compst-var)))
+                             ,compst-term))
        (expr-formula (atc-contextualize expr-formula
                                         gin.context
                                         gin.fn
@@ -709,10 +708,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv nil
-                                 (update-var (ident ,(symbol-name var))
-                                             ,rhs.term
-                                             ,gin.compst-var))))
+                             (mv nil ,compst-term)))
        (stmt-formula (atc-contextualize stmt-formula
                                         gin.context
                                         gin.fn
@@ -733,11 +729,30 @@
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
+       ((mv item item-limit item-event ?item-thm-name thm-index names-to-avoid)
+        (atc-gen-block-item-stmt gin.fn
+                                 gin.fn-guard
+                                 gin.context
+                                 stmt
+                                 stmt-limit
+                                 stmt-thm-name
+                                 (irr-type)
+                                 nil
+                                 gin.compst-var
+                                 gin.fenv-var
+                                 gin.limit-var
+                                 compst-term
+                                 gin.prec-tags
+                                 thm-index
+                                 names-to-avoid
+                                 state))
        (events (append rhs.events
                        (list asg-event
                              expr-event
-                             stmt-event))))
-    (retok item expr-limit events thm-index names-to-avoid)))
+                             stmt-event
+                             item-event))))
+    (retok item item-limit events thm-index names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2889,7 +2904,7 @@
                    (type body.type)
                    (limit (pseudo-term-fncall
                            'binary-+
-                           (list (pseudo-term-quote 3)
+                           (list (pseudo-term-quote 2)
                                  (pseudo-term-fncall
                                   'binary-+
                                   (list asg-limit body.limit))))))
