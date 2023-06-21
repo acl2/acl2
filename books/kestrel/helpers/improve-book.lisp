@@ -468,7 +468,7 @@
             ;; Load the .port file, so that packages (especially) exist:
             (state (load-port-file-if-exists full-book-path state)))
        (mv-let (erp events state)
-         (read-objects-from-file (concatenate 'string full-book-path ".lisp") state)
+         (read-objects-from-book (concatenate 'string full-book-path ".lisp") state)
          (if erp
              (let ((state (set-cbd-simple old-cbd state)))
                (mv erp state))
