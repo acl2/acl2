@@ -17,8 +17,9 @@
 ;; Read forms from FILENAME but require the first form to be an IN-PACKAGE form
 ;; used for interpreting symbols in the rest of the forms.  Returns (mv erp
 ;; forms state).
+;; todo: factor out
 (defund read-objects-from-book (filename state)
-  (declare (xargs :guard (stringp filename)
+  (declare (xargs :guard (stringp filename) ; includes the .lisp extension
                   :mode :program ; because of in-package-fn
                   :stobjs state))
   ;; First read just the in-package form:
@@ -41,13 +42,13 @@
               (mv-let (erp forms state)
                 ;; This read uses the current package (i.e., book-package) for the symbols:
                 (read-objects-from-file filename state)
-                (if erp
-                    (mv erp nil state)
-                  ;; Undo the temporary in-package:
-                  (mv-let (erp value state)
-                    (in-package-fn original-package state)
-                    (declare (ignore value))
-                    (if erp
+                ;; Undo the temporary in-package:
+                (mv-let (erp2 value state)
+                  (in-package-fn original-package state)
+                  (declare (ignore value))
+                  (if erp2 ; error resetting package
+                      (mv erp2 nil state)
+                    (if erp ; error reading forms
                         (mv erp nil state)
                       ;; No error:
                       (mv nil forms state))))))))))))
