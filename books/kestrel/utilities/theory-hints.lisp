@@ -121,7 +121,7 @@
                       (rest (rest keyword-value-list)) ; don't recur, since duplicate hint keywords are prohibited
                       )))))))
 
-;; Returns a hint, such as ("Goal" :in-theory (disable fo)).
+;; Returns a hint, such as ("Goal" :in-theory (disable foo)).
 (defund disable-items-in-hint (hint disable-items)
   (declare (xargs :guard (true-listp disable-items)))
   (if (and (consp hint)
@@ -148,9 +148,13 @@
 (defun disable-items-in-hints (hints disable-items)
   (declare (xargs :guard (and (true-listp hints)
                               (true-listp disable-items))))
-  (if (endp hints) ; No hints given, so add one to do the disable (TODO: What if only subgoal hints are given?)
-      `(("Goal" :in-theory (disable ,@disable-items)))
-    (disable-items-in-hints-aux hints disable-items)))
+  (let ((new-hints (disable-items-in-hints-aux hints disable-items)))
+    (if (some-hint-has-goal-specp hints "Goal")
+        new-hints
+      ;; If there is no hint on Goal, we need to add one, to ensure that the
+      ;; disable-items are in fact disabled for the whole proof (this includes
+      ;; the case of no hints at all):
+      (cons `("Goal" :in-theory (disable ,@disable-items)) new-hints))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

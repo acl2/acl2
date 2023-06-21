@@ -31,6 +31,10 @@
 (assert-equal (disable-items-in-hint '("Goal" :use foo :in-theory (enable bar)) '(baz baz2)) '("Goal" :use foo :in-theory (e/d (bar) (baz baz2))))
 (assert-equal (disable-items-in-hint '("Goal" :use foo) '(baz baz2)) '("Goal" :use foo :in-theory (disable baz baz2)))
 
+(assert-equal (disable-items-in-hints '(("Goal" :use foo)) '(baz baz2)) '(("Goal" :use foo :in-theory (disable baz baz2))))
+(assert-equal (disable-items-in-hints '(("Subgoal 1" :use foo)) '(baz baz2)) '(("Goal" :in-theory (disable baz baz2)) ("Subgoal 1" :use foo :in-theory (disable baz baz2))))
+(assert-equal (disable-items-in-hints nil '(baz baz2)) '(("Goal" :in-theory (disable baz baz2))))
+
 (assert-equal
  (enable-runes-in-hints '(("Goal" :use blah)) '(f2))
  '(("Goal" :use blah :in-theory (enable f2))))
