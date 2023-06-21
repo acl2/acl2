@@ -35,6 +35,7 @@
 
 (include-book "lift-iso")
 (include-book "../utilities/hints")
+(include-book "../utilities/theory-hints")
 (include-book "kestrel/utilities/event-tuples-between" :dir :system)
 ;(include-book "transformation-table")
 ;(include-book "simplify-defun-impl")    ; just for generalize-to-lambda and fn-ubody
