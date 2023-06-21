@@ -92,7 +92,7 @@
                                  (cw " seconds)~%"))))
                   (try-to-drop-rules (rest rules) body hints otf-flg time-to-beat state)))))))
 
-;; Prints suggestd ways to speed up a theorem.
+;; Prints suggested ways to speed up a theorem.  EVENT should be a defthm (or a variant, like defthmd).
 ;; Returns (mv erp state).
 (defun try-to-speed-up-defthm-fn (event state)
   (declare (xargs :mode :program
@@ -136,6 +136,7 @@
                               (print-to-hundredths elapsed-time)
                               (cw " seconds)~%")
                               (mv nil state))
+                    ;; Get the list of runes used in the proof:
                     (let* ((runes-used (get-event-data 'rules state))
                            (state (try-to-drop-rules (drop-fake-runes runes-used) body hints otf-flg elapsed-time state)))
                       (mv nil state))))))))))))

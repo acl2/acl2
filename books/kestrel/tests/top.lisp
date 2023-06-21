@@ -13,3 +13,5 @@
 (include-book "bstar")
 (include-book "case-match")
 (include-book "mv-let")
+(include-book "defthm")
+(include-book "defrule")
