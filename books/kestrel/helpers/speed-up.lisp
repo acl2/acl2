@@ -61,7 +61,7 @@
     (let ((rule-to-drop (first rules)))
       (mv-let (erp provedp time state)
         (prove$-nice-with-time body
-                               (disable-items-in-hints hints (list rule-to-drop))
+                               (disable-items-in-hints hints (list rule-to-drop) nil)
                                nil ; instructions
                                otf-flg
                                time-to-beat ; time-limit ; warning: not portable!
