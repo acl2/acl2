@@ -111,7 +111,7 @@
                 (saved-output-token-lst (if print nil :all)) ; compare to what set-gag-mode-fn does
                 )
                (trans-eval-error-triple event
-                                        'submit-event-helper ;todo: pass in a better context
+                                        'submit-event ;todo: pass in a better context
                                         state))
               (if erp
                   (prog2$ (and print (cw "Error.)~%"))
@@ -123,14 +123,14 @@
 ;; Returns (mv erp state) where erp is non-nil if the event failed.
 ;; Throws an error if the event fails and THROW-ERRORP is non-nil.
 ;; TODO: Consider using PSO to print proof output only upon failure.
-(defun submit-event-helper (event print throw-errorp state)
+(defun submit-event (event print throw-errorp state)
   (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
                               (booleanp throw-errorp))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
     (submit-event-core event print state)
-    (prog2$ (and erp throw-errorp (er hard? 'submit-event-helper "Failed to submit event: ~X01" event nil))
+    (prog2$ (and erp throw-errorp (er hard? 'submit-event "Failed to submit event: ~X01" event nil))
             (mv erp state))))
 
 ;returns state
@@ -138,7 +138,7 @@
 (defun submit-event-quiet (event state)
   (declare (xargs :mode :program :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event nil t state)
+    (submit-event event nil t state)
     (declare (ignore erp))
     state))
 
@@ -147,7 +147,7 @@
 (defun submit-event-verbose (event state)
   (declare (xargs :mode :program :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event :verbose t state)
+    (submit-event event :verbose t state)
     (declare (ignore erp))
     state))
 
@@ -156,7 +156,7 @@
 (defun submit-event-brief (event state)
   (declare (xargs :mode :program :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event :brief t state)
+    (submit-event event :brief t state)
     (declare (ignore erp))
     state))
 
@@ -179,7 +179,7 @@
   (if (endp events)
       state
     (mv-let (erp state)
-      (submit-event-helper (first events) print t state)
+      (submit-event (first events) print t state)
       (declare (ignore erp))
       (submit-events-aux (rest events) print state))))
 
