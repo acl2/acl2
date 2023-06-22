@@ -358,7 +358,7 @@
        (let ((state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
          ;; Try to speed up the proof:
          (mv-let (erp state)
-           (try-to-speed-up-defthm-fn event state)
+           (speed-up-defthm event state)
            (if erp
                (mv erp state)
              (prog2$ (and print (cw ")~%"))
@@ -383,6 +383,22 @@
                                 100000 ;step-limit
                                 state)))
         (mv nil state)))))
+
+;;TODO: Do more here, like we do for defthm!
+;; Returns (mv erp state).
+(defun improve-defrule-event (event rest-events print state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state)
+           (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
+           )
+  (prog2$
+   (and print (cw "(For ~x0: " (first (rest event))))
+   (mv-let (erp state)
+     (speed-up-defrule event state)
+     (declare (ignore erp)) ; todo: why?
+     (prog2$ (and print (cw ")~%"))
+             (submit-event-helper event nil nil state)))))
 
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
@@ -430,6 +446,7 @@
                   (submit-event-expect-no-error event nil state))))))
     ((defthm defthmd) (improve-defthm-event event rest-events print state))
     ((defun defund) (improve-defun-event event rest-events print state))
+    ((defrule defruled) (improve-defrule-event event rest-events print state))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
     (t (submit-event-expect-no-error event nil state))))
