@@ -17,6 +17,7 @@
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "kestrel/bv/rules10" :dir :system)
 (include-book "kestrel/bv/rules3" :dir :system)
+(local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/trim-intro-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))

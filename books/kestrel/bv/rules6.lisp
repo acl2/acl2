@@ -18,6 +18,7 @@
 (include-book "logext")
 (include-book "rules") ;for anti-slice
 (include-book "unsigned-byte-p") ;for unsigned-byte-p-forced
+(local (include-book "logxor-b"))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
