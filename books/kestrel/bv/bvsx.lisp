@@ -72,8 +72,7 @@
 (defthm bvsx-when-unsigned-byte-p
   (implies (and (unsigned-byte-p (+ -1 old-size) x)
                 (<= old-size new-size)
-                (integerp new-size)
-                (integerp old-size))
+                (integerp new-size))
            (equal (bvsx new-size old-size x)
                   x))
   :hints (("Goal" :in-theory (enable bvsx))))
