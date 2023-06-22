@@ -30,7 +30,7 @@
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event print throw-errorp state)
+    (submit-event event print throw-errorp state)
     (mv erp nil state)))
 
 ;; Returns (mv erp state) where erp is non-nil if the event failed.

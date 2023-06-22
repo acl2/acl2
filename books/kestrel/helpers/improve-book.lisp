@@ -398,7 +398,7 @@
      (speed-up-defrule event state)
      (declare (ignore erp)) ; todo: why?
      (prog2$ (and print (cw ")~%"))
-             (submit-event-helper event nil nil state)))))
+             (submit-event event nil nil state)))))
 
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
