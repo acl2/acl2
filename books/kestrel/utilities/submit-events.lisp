@@ -76,7 +76,7 @@
 
 ;; Returns (mv erp state) where erp is non-nil if the event failed.
 ;; TODO: Consider using PSO to print proof output only upon failure.
-(defun submit-event-helper-core (event print state)
+(defun submit-event-core (event print state)
   (declare (xargs :guard (member-eq print '(nil :brief t :verbose))
                   :mode :program ; because this calls trans-eval-error-triple
                   :stobjs state))
@@ -129,7 +129,7 @@
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper-core event print state)
+    (submit-event-core event print state)
     (prog2$ (and erp throw-errorp (er hard? 'submit-event-helper "Failed to submit event: ~X01" event nil))
             (mv erp state))))
 
