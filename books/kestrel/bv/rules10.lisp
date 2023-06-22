@@ -19,6 +19,8 @@
 (include-book "bvplus")
 (include-book "bv-syntax")
 (include-book "rules") ;(local (include-book "rules"))
+(local (include-book "logior"))
+(local (include-book "logxor-b"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))

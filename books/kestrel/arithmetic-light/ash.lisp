@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function ash
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 (local (include-book "floor"))
 (local (include-book "expt"))
 (local (include-book "divide"))
-(local (include-book "times-and-divide"))
+;(local (include-book "times-and-divide"))
 (local (include-book "times"))
 (local (include-book "plus"))
 
