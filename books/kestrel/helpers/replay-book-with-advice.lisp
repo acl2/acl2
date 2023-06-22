@@ -85,7 +85,7 @@
     (if (not successp)
         (prog2$ (cw "NO)~%") ; close paren matches (ADVICE
                 (b* (;; Submit the original defthm, so we can keep going:
-                     ((mv erp state) (submit-event-helper-core defthm nil state))
+                     ((mv erp state) (submit-event-helper defthm nil nil state))
                      ((when erp) (mv erp :no state)))
                   (mv nil :no state)))
       ;; We found advice that worked:
@@ -95,7 +95,7 @@
           ;; we should allow the tool to keep looking for more recs
           (prog2$ (cw "Maybe: hyp added: ~x0)~%" (help::successful-recommendation-object best-rec)) ; close paren matches (ADVICE
                   (b* ( ;; Submit the original defthm (no extra hyp), so we can keep going:
-                       ((mv erp state) (submit-event-helper-core defthm nil state))
+                       ((mv erp state) (submit-event-helper defthm nil nil state))
                        ((when erp) (mv erp :no state)))
                     (mv nil :maybe state)))
         (b* ((proved-with-no-hintsp (equal "original" (help::successful-recommendation-name best-rec)))
@@ -111,7 +111,7 @@
              ((mv erp state)
               ;; We submit the event with the hints found by ML, to ensure it works:
               ;; TODO: Instead, have the advice tool check the rec and submit the original event here.
-              (submit-event-helper-core (help::successful-rec-to-defthm defthm-variant theorem-name best-rec rule-classes) nil state))
+              (submit-event-helper (help::successful-rec-to-defthm defthm-variant theorem-name best-rec rule-classes) nil nil state))
              ((when erp)
               (er hard? 'submit-defthm-event-with-advice "The discovered advice for ~x0 did not work!" theorem-name)
               (mv :advice-didnt-work :no state)))
@@ -153,7 +153,7 @@
                      ((mv erp state)
                       ;; We use skip-proofs (but see the attachment to always-do-proofs-during-make-event-expansion below):
                       ;; TODO: Don't wrap certain events in skip-proofs?
-                      (submit-event-helper-core `(skip-proofs ,event) print state))
+                      (submit-event-helper `(skip-proofs ,event) print nil state))
                      ((when erp)
                       (er hard? 'submit-events-with-advice "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                       (mv erp yes-count no-count maybe-count trivial-count error-count state)))
@@ -169,7 +169,7 @@
         ;; Not something for which we will try advice, so submit it and continue:
         (b* (((mv erp state)
               ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-              (submit-event-helper-core `(skip-proofs ,event) print state))
+              (submit-event-helper `(skip-proofs ,event) print nil state))
              ;; FIXME: Anything that tries to read from a file will give an error since the current dir won't be right.
              ((when erp)
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
@@ -253,7 +253,7 @@
        ;; Make margins wider for nicer printing:
        (state (widen-margins state))
        ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
-       ((mv erp state) (submit-event-helper-core '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil state))
+       ((mv erp state) (submit-event-helper '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil nil state))
        ((when erp) (mv erp (list 0 0 0 0 0) state))
        ;; Submit all the events, trying advice for each defthm in theorems-to-try:
        ((mv erp yes-count no-count maybe-count trivial-count error-count state)

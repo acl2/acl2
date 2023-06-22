@@ -794,7 +794,7 @@
     (if provedp
         (b* ((- (cw "Trivial: Broken hints worked for ~x0)~%" theorem-name)) ;todo: tabulate these
              ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-              (submit-event-helper-core `(skip-proofs ,defthm) print state))
+              (submit-event-helper `(skip-proofs ,defthm) print nil state))
              ((when erp) (mv erp nil nil nil rand state)))
           (mv nil ; no error
               breakage-type
@@ -821,7 +821,7 @@
                                         state))
            ((when erp) (mv erp nil nil nil rand state))
            ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-            (submit-event-helper-core `(skip-proofs ,defthm) print state))
+            (submit-event-helper `(skip-proofs ,defthm) print nil state))
            ((when erp) (mv erp nil nil nil rand state))
            (- (cw ")~%")) ; todo: print which model(s) worked
            )
@@ -870,7 +870,7 @@
             (if erp
                 ;; If there is an error, the result is meaningless.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
                 (b* (((mv erp state)
-                      (submit-event-helper-core `(skip-proofs ,event) print state))
+                      (submit-event-helper `(skip-proofs ,event) print nil state))
                      ((when erp)
                       (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                       (mv erp nil rand state)))
@@ -878,7 +878,7 @@
               (if trivialp
                   ;; If the theorem is trivial, no useful information is returned.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
                   (b* (((mv erp state)
-                        (submit-event-helper-core `(skip-proofs ,event) print state))
+                        (submit-event-helper `(skip-proofs ,event) print nil state))
                        ((when erp)
                         (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                         (mv erp nil rand state)))
@@ -895,7 +895,7 @@
         ;; Not something for which we will try advice, so submit it and continue:
         (b* (((mv erp state)
               ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-              (submit-event-helper-core `(skip-proofs ,event) print state))
+              (submit-event-helper `(skip-proofs ,event) print nil state))
              ;; FIXME: Anything that tries to read from a file will give an error since the current dir won't be right.
              ((when erp)
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
@@ -987,7 +987,7 @@
        ;; Make margins wider for nicer printing:
        (state (widen-margins state))
        ;; Ensure proofs are done during make-event expansion, even if we use skip-proofs:
-       ((mv erp state) (submit-event-helper-core '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil state))
+       ((mv erp state) (submit-event-helper '(defattach (acl2::always-do-proofs-during-make-event-expansion acl2::constant-t-function-arity-0) :system-ok t) nil nil state))
        ((when erp) (mv erp (cons nil rand) state))
        ;; Submit all the events, trying advice for each defthm in breakable-theorems-to-try:
        ((mv erp result-alist rand state)

@@ -28,7 +28,7 @@
       (mv-let (start-time state)
         (get-real-time state)
         (mv-let (erp state)
-          (submit-event-helper-core event print state)
+          (submit-event-helper event print nil state)
           (if erp
               (prog2$ (cw "ERROR (~x0) with event ~X12." erp event nil)
                       (mv erp state))
