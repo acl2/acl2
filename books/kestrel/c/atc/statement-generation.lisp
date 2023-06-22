@@ -746,11 +746,47 @@
                                  thm-index
                                  names-to-avoid
                                  state))
+       (premises (atc-context->premises gin.context))
+       (new-premises
+        (append premises
+                (list (make-atc-premise-cvalue :var var :term rhs.term)
+                      (make-atc-premise-compustate
+                       :var gin.compst-var
+                       :term `(update-var (ident ',(symbol-name var))
+                                          ,var
+                                          ,gin.compst-var)))))
+       (new-context (change-atc-context gin.context :premises new-premises))
+       (notflexarrmem-thms
+        (atc-type-to-notflexarrmem-thms rhs.type gin.prec-tags))
+       (new-inscope-rules `(,rhs.thm-name
+                            remove-flexible-array-member-when-absent
+                            ,@notflexarrmem-thms
+                            value-fix-when-valuep
+                            ,valuep-when-type
+                            objdesign-of-var-of-update-var
+                            read-object-of-objdesign-var-of-update-var
+                            ident-fix-when-identp
+                            identp-of-ident
+                            equal-of-ident-and-ident
+                            (:e str-fix)))
+       ((mv ?new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope gin.fn
+                             gin.fn-guard
+                             gin.inscope
+                             new-context
+                             gin.compst-var
+                             new-inscope-rules
+                             gin.prec-tags
+                             thm-index
+                             names-to-avoid
+                             wrld))
+       (thm-index (1+ thm-index))
        (events (append rhs.events
                        (list asg-event
                              expr-event
                              stmt-event
-                             item-event))))
+                             item-event)
+                       new-inscope-events)))
     (retok item item-limit events thm-index names-to-avoid))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
