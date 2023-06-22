@@ -1092,7 +1092,7 @@
 ;;                   :mode :program))
 ;;   (revert-world ;; ensures the include-book gets undone
 ;;    (b* (        ;; Try to include the recommended book:
-;;         ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+;;         ((mv erp state) (acl2::submit-event include-book-form nil nil state))
 ;;         ((when erp) ; can happen if there is a name clash
 ;;          (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
 ;;          (mv nil ; suppresses error (we want to continue trying other include-books / other advice)
@@ -1210,7 +1210,7 @@
             maybe-successful-rec state)
         (revert-world ;; ensures the include-book gets undone
          (b* (        ; Try to include the recommended book:
-              ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+              ((mv erp state) (acl2::submit-event include-book-form nil nil state))
               ((when erp) ; can happen if there is a name clash
                (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
                (mv nil nil state))
@@ -1412,7 +1412,7 @@
             maybe-successful-rec state)
         (revert-world ;; ensures the include-book gets undone
          (b* (        ; Try to include the recommended book:
-              ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+              ((mv erp state) (acl2::submit-event include-book-form nil nil state))
               ((when erp) ; can happen if there is a name clash
                (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
                (mv nil nil state))
@@ -1618,7 +1618,7 @@
             maybe-successful-rec state)
         (revert-world ;; ensures the include-book gets undone
          (b* (        ; Try to include the recommended book:
-              ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+              ((mv erp state) (acl2::submit-event include-book-form nil nil state))
               ((when erp) ; can happen if there is a name clash
                (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
                (mv nil nil state))
@@ -1821,7 +1821,7 @@
             maybe-successful-rec state)
         (revert-world ;; ensures the include-book gets undone
          (b* (        ; Try to include the recommended book:
-              ((mv erp state) (acl2::submit-event-helper include-book-form nil nil state))
+              ((mv erp state) (acl2::submit-event include-book-form nil nil state))
               ((when erp) ; can happen if there is a name clash
                (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
                (mv nil nil state))
@@ -2337,7 +2337,7 @@
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :expand item theorem-hints))
        ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (acl2::submit-event-helper
+       ;; ((mv erp state) (acl2::submit-event
        ;;                  (make-thm-to-attempt theorem-body
        ;;                                       ;; todo: ensure this is nice:
        ;;                                       (acl2::merge-hint-setting-into-goal-hint :expand item theorem-hints)
@@ -2437,7 +2437,7 @@
        ;; todo: ensure this is nice:
        (new-hints (acl2::merge-hint-setting-into-goal-hint :cases item theorem-hints))
        ;; Now see whether we can prove the theorem using the new hyp:
-       ;; ((mv erp state) (acl2::submit-event-helper
+       ;; ((mv erp state) (acl2::submit-event
        ;;                  (make-thm-to-attempt theorem-body
        ;;                                       ;; todo: ensure this is nice:
        ;;                                       (acl2::merge-hint-setting-into-goal-hint  :cases item
