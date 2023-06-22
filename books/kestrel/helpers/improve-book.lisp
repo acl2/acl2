@@ -60,7 +60,7 @@
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event print nil state)
+    (submit-event event print nil state)
     (mv erp nil state)))
 
 ;; Submits the EVENTS.  If an error is encountered, it is returned and further events are ignored.
@@ -82,7 +82,7 @@
       (if skipp
           (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)
         (mv-let (erp state)
-          (submit-event-helper (if skip-proofsp event `(skip-proofs ,event))
+          (submit-event (if skip-proofsp event `(skip-proofs ,event))
                                nil ;print
                                nil state)
           (if erp
@@ -135,7 +135,7 @@
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event print nil state)
+    (submit-event event print nil state)
     (if erp
         (prog2$ (cw "ERROR (~x0) submitting event ~X12.~%" erp event nil)
                 (mv :error-submitting-event state))
@@ -148,7 +148,7 @@
 ;;                   :mode :program
 ;;                   :stobjs state))
 ;;   (mv-let (erp state) ; make a deflabel to support undoing
-;;     (submit-event-helper '(deflabel improve-book-undo-label) nil nil state)
+;;     (submit-event '(deflabel improve-book-undo-label) nil nil state)
 ;;     (if erp ; shouldn't happen
 ;;         (mv erp state)
 ;;       (mv-let (erp state)
@@ -363,7 +363,7 @@
                (mv erp state)
              (prog2$ (and print (cw ")~%"))
                      ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
-                     (submit-event-helper event nil nil state)))))))))
+                     (submit-event event nil nil state)))))))))
 
 ;; Returns (mv erp state).
 (defun improve-defun-event (event rest-events print state)
@@ -374,7 +374,7 @@
            (ignore print) ;todo
            )
   (mv-let (erp state)
-    (submit-event-helper event nil nil state)
+    (submit-event event nil nil state)
     (if erp
         (mv erp state)
       (let* ((fn (cadr event))
