@@ -489,8 +489,7 @@
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
-;; TODO: Remove a .lisp extension if supplied.
-;; TODO: Better message when book does not exist.
+;; TODO: Tolerate a .lisp extension being supplied?
 (defun improve-book-fn (bookname ; no extension
                         dir
                         print
@@ -498,29 +497,34 @@
   (declare (xargs :guard (stringp bookname)
                   :mode :program ; because this calls submit-events
                   :stobjs state))
-  (let* ((old-cbd (cbd-fn state))
-         (dir (if (eq dir :cbd) "." dir))
+  (let* ((dir (if (eq dir :cbd) "." dir))
          (full-book-path (extend-pathname$ dir bookname state)) ; no extension
-         ;; Get the book's dir:
-         (full-book-dir (dir-of-path full-book-path)))
-    (prog2$
-     (and print (cw "~%Attempting to improve ~x0.~%" full-book-path))
-     (let* ( ;; We set the CBD so that the book is replayed in its own directory:
-            (state (set-cbd-simple full-book-dir state))
-            ;; Load the .port file, so that packages (especially) exist:
-            (state (load-port-file-if-exists full-book-path state)))
-       (mv-let (erp events state)
-         (read-objects-from-book (concatenate 'string full-book-path ".lisp") state)
-         (if erp
-             (let ((state (set-cbd-simple old-cbd state)))
-               (mv erp state))
-           (prog2$ (and print (cw "~x0 contains ~x1 events.~%~%" bookname (len events)))
-                   (let ((state (widen-margins state)))
-                     (mv-let (erp state)
-                       (improve-events events print state)
-                       (let* ((state (unwiden-margins state))
-                              (state (set-cbd-simple old-cbd state)))
-                         (mv erp state)))))))))))
+         (full-file-path (concatenate 'string full-book-path ".lisp")))
+    (mv-let (existsp state)
+      (file-write-date$ full-file-path state)
+      (if (not existsp)
+          (prog2$ (er hard? 'improve-book-fn "~s0 does not exist." full-file-path)
+                  (mv :file-does-not-exist state))
+        (prog2$
+         (and print (cw ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~%Attempting to improve ~x0.~%" full-book-path))
+         (let* ((old-cbd (cbd-fn state))
+                (full-book-dir (dir-of-path full-book-path))
+                ;; We set the CBD so that the book is replayed in its own directory:
+                (state (set-cbd-simple full-book-dir state))
+                ;; Load the .port file, so that packages (especially) exist:
+                (state (load-port-file-if-exists full-book-path state)))
+           (mv-let (erp events state)
+             (read-objects-from-book (concatenate 'string full-book-path ".lisp") state)
+             (if erp
+                 (let ((state (set-cbd-simple old-cbd state)))
+                   (mv erp state))
+               (prog2$ (and print (cw "~s0 contains ~x1 forms.~%~%" bookname (len events)))
+                       (let ((state (widen-margins state)))
+                         (mv-let (erp state)
+                           (improve-events events print state)
+                           (let* ((state (unwiden-margins state))
+                                  (state (set-cbd-simple old-cbd state)))
+                             (mv erp state)))))))))))))
 
 ;; Example: (IMPROVE-BOOK "helper").  This makes no changes to the world, just
 ;; prints suggestions for improvement.
