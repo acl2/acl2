@@ -929,28 +929,35 @@
 ; an alias for cons, then :kons x y will parse into (cons 'x 'y) and keyp will
 ; be (:kons x y).
 
-  (mv-let (eofp val state)
-    (read-standard-oi state)
-    (pprogn
-     (cond ((int= (f-get-global 'ld-level state) 1)
-            (let ((last-index (iprint-last-index state)))
-              (cond ((> last-index (iprint-soft-bound state))
-                     (rollover-iprint-ar nil last-index state))
-                    (t state))))
-           (t state))
-     (cond (eofp (mv t nil nil nil state))
-           ((keywordp val)
-            (mv-let (erp keyp form state)
-              (ld-read-keyword-command val state)
-              (mv nil erp keyp form state)))
-           ((stringp val)
-            (let ((upval (string-upcase val)))
-              (cond ((find-non-hidden-package-entry
-                      upval
-                      (global-val 'known-package-alist (w state)))
-                     (mv nil nil nil `(in-package ,upval) state))
-                    (t (mv nil nil nil val state)))))
-           (t (mv nil nil nil (ld-fix-command val) state))))))
+  (pprogn
+
+; We need the following call, or the corresponding one in waterfall-step, or
+; both, for successful certification of community book
+; books/demos/brr-test-book.
+
+   (brr-evisc-tuple-oracle-update state)
+   (mv-let (eofp val state)
+     (read-standard-oi state)
+     (pprogn
+      (cond ((int= (f-get-global 'ld-level state) 1)
+             (let ((last-index (iprint-last-index state)))
+               (cond ((> last-index (iprint-soft-bound state))
+                      (rollover-iprint-ar nil last-index state))
+                     (t state))))
+            (t state))
+      (cond (eofp (mv t nil nil nil state))
+            ((keywordp val)
+             (mv-let (erp keyp form state)
+               (ld-read-keyword-command val state)
+               (mv nil erp keyp form state)))
+            ((stringp val)
+             (let ((upval (string-upcase val)))
+               (cond ((find-non-hidden-package-entry
+                       upval
+                       (global-val 'known-package-alist (w state)))
+                      (mv nil nil nil `(in-package ,upval) state))
+                     (t (mv nil nil nil val state)))))
+            (t (mv nil nil nil (ld-fix-command val) state)))))))
 
 (defun ld-print-command (keyp form col state)
   (with-base-10
@@ -5199,6 +5206,11 @@
                    :iprint :same))
 
 (defun-for-state set-term-evisc-tuple (val state))
+
+(defun set-brr-evisc-tuple (val state)
+  (set-evisc-tuple val
+                   :sites :brr
+                   :iprint :same))
 
 (defun without-evisc-fn (form state)
   (state-global-let*

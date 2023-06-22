@@ -88,8 +88,6 @@
                       (equal (assoc-equal-cdr key x) nil)))
          :rule-classes :type-prescription))
 (verify-termination runep) ; and guards
-(verify-termination clean-brr-stack1) ; and guards
-(verify-termination clean-brr-stack) ; and guards
 (verify-termination deref-macro-name) ; and guards
 (verify-termination write-for-read) ; and guards
 (verify-termination fnume) ; and guards
@@ -104,7 +102,6 @@
 (verify-termination filename-to-book-name) ; and guards
 (verify-termination include-book-dir) ; and guards
 (verify-termination strip-non-hidden-package-names) ; and guards
-(verify-termination clear-brr-data-lst) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; The following section was written by Matt Kaufmann.

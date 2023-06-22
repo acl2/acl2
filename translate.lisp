@@ -7793,6 +7793,9 @@
 (defun ev-rec (form alist w user-stobj-alist big-n safe-mode gc-off latches
                     hard-error-returns-nilp aok)
 
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
 ; See also ev-respecting-ens.
 
 ; Note: Latches includes a binding of 'state.  See the Essay on EV.
@@ -7840,50 +7843,49 @@
         ((eq (ffn-symb form) 'wormhole-eval)
 
 ; Because this form has been translated, we know it is of the form
-; (wormhole-eval 'name '(lambda ...) term) where the quoted lambda is either
+; (wormhole-eval name '(lambda ...) term) where the quoted lambda is either
 ; (lambda (whs) body) or (lambda () body), where body has also been translated.
 ; Furthermore, we know that all the free variables of the lambda are bound in
 ; the current environment.  Logically this term returns nil.  Actually, it
-; applies the lambda expression to the most recent output of the named wormhole
-; and stores the result as the most recent output.
+; applies the lambda expression to the persistent-whs of the named wormhole and
+; stores back to the persistent-whs.
 
 ; (Remember: the quoted lambda of wormhole-eval is not related to apply$)
 
          #+acl2-loop-only
          (mv nil nil latches)
          #-acl2-loop-only
-         (progn
-           (cond (*wormholep*
-                  (setq *wormhole-status-alist*
-                        (put-assoc-equal
-                         (f-get-global 'wormhole-name
-                                       *the-live-state*)
-                         (f-get-global 'wormhole-status
-                                       *the-live-state*)
-                         *wormhole-status-alist*))))
-           (let* ((*wormholep* t)
-                  (name (cadr (fargn form 1)))
-                  (formals (lambda-formals (cadr (fargn form 2))))
-                  (whs (car formals)) ; will be nil if formals is nil!
-                  (body (lambda-body (cadr (fargn form 2))))
-                  (alist (if formals
-                             (cons (cons whs
-                                         (cdr (assoc-equal
-                                               name
-                                               *wormhole-status-alist*)))
-                                   alist)
-                             alist)))
-             (mv-let (body-er body-val latches)
-                     (ev-rec body alist w user-stobj-alist
-                             (decrement-big-n big-n) safe-mode gc-off latches
-                             hard-error-returns-nilp
-                             aok)
-                     (cond
-                      (body-er (mv body-er body-val latches))
-                      (t (setq *wormhole-status-alist*
-                               (put-assoc-equal name body-val
-                                                *wormhole-status-alist*))
-                         (mv nil nil latches)))))))
+         (mv-let
+           (name-er name-val latches)
+           (ev-rec (fargn form 1) alist w user-stobj-alist
+                   (decrement-big-n big-n) safe-mode gc-off latches
+                   hard-error-returns-nilp
+                   aok)
+           (cond
+            (name-er (mv name-er name-val latches))
+            (t
+             (let* ((*wormholep* t)
+                    (formals (lambda-formals (cadr (fargn form 2))))
+                    (whs (car formals)) ; will be nil if formals is nil!
+                    (body (lambda-body (cadr (fargn form 2))))
+                    (alist (if formals
+                               (cons (cons whs
+                                           (cdr (assoc-equal
+                                                 name-val
+                                                 *wormhole-status-alist*)))
+                                     alist)
+                               alist)))
+               (mv-let (body-er body-val latches)
+                 (ev-rec body alist w user-stobj-alist
+                         (decrement-big-n big-n) safe-mode gc-off latches
+                         hard-error-returns-nilp
+                         aok)
+                 (cond
+                  (body-er (mv body-er body-val latches))
+                  (t (setq *wormhole-status-alist*
+                           (put-assoc-equal name-val body-val
+                                            *wormhole-status-alist*))
+                     (mv nil nil latches)))))))))
         ((eq (ffn-symb form) 'if)
          (mv-let (test-er test latches)
                  (ev-rec (fargn form 1) alist w user-stobj-alist
@@ -15611,19 +15613,25 @@
 
 (defun name-dropper (lst)
 
-; This function builds a term that mentions each element of lst.  Provided the
+; This function builds a term that mentions each element of lst.  If state is
+; used as a variable in some element of lst then the element must be state
+; itself.  In addition, no stobjs other than state are allowed.  Provided the
 ; elements of list are translated terms, the output is a translated term.
 ; Provided every element of lst has a guard of t, the output has a guard of t.
-; The intention here is that lst is a list of distinct variable names and
-; name-dropper builds a translated term whose free-vars are those variables;
-; furthermore, it is cheap to evaluate and always has a guard of T.
-; The general form is either 'NIL, a single var, or a PROG2$ nest around
-; the vars.
+; The intention here is that lst is a list of distinct variable names (possibly
+; including state) and name-dropper builds a translated term whose free-vars
+; are those variables; furthermore, it is cheap to evaluate and always has a
+; guard of T.  The general form is a progn nest around the elements of lst,
+; with state replaced by (state-p state) so the signature works.
 
   (cond ((endp lst) *nil*)
-        ((endp (cdr lst)) (car lst))
-        (t (prog2$-call (car lst)
-                        (name-dropper (cdr lst))))))
+        (t (let ((temp (if (eq (car lst) 'state)
+                           '(state-p state)
+                           (car lst))))
+             (cond
+              ((endp (cdr lst)) temp)
+              (t (prog2$-call temp
+                              (name-dropper (cdr lst)))))))))
 
 (defun first-assoc-eq (keys alist)
   (declare (xargs :guard (and (alistp alist)
@@ -15663,12 +15671,35 @@
                 'illegal)
                (t 'maybe)))))
 
-(defconst *brr-globals*
-  '(brr-monitored-runes
-    brr-evisc-tuple
-    brr-stack
-    brr-gstack
-    brr-alist))
+(defconst *protected-system-wormhole-names*
+
+; This list below together includes the protected wormhole names: all of the
+; built-in wormholes in ACL2 except for comment-window-io.  The user is not
+; permitted to invoke wormhole-eval or wormhole (whose expansion includes a
+; wormhole-eval call), or sync-ephemeral-whs-with-persistent-whs or
+; set-persistent-whs-and-ephemeral-whs on any of these protected names.
+; Translate enforces this by allowing these wormhole names to be used in those
+; sensitive functions only during translations done during boot-strap.  This
+; means terms of the form
+
+; (wormhole-eval '<protected-name> '(lambda ...) ...)
+
+; should only occur in our source code in defuns, not macro expansions.
+
+; Note: comment-window-io perhaps ought to be on the list below.  It is a
+; primitive system wormhole used to track warning summaries.  Calls to
+; wormhole-eval on comment-window-io are introduced by the expansion of the
+; macro io?  We can't prohibit the user from using io? but we check that the
+; ``invariant'' holds of the data there when we use it.  See the comment
+; ``Invariant'' on the Wormhole-Data field of the COMMENT-WINDOW-IO wormhole,
+; in basis-a.lisp.
+
+  '(brr
+    accumulated-persistence
+    fc-wormhole
+    ev-fncall-guard-er-wormhole
+    hons-copy-lambda-object-wormhole
+    brr-data))
 
 (defun unknown-binding-msg-er (x ctx stobjs-bound str1 str2 str3)
   (mv-let
@@ -21308,24 +21339,19 @@
 (defun translate11-wormhole-eval (x y z bindings flet-alist ctx wrld
                                     state-vars)
 
-; The three arguments of wormhole-eval are x y and z.  Here, z has been
-; translated but x and y have not been.  We want to ensure that x and y are
-; well-formed quoted forms of a certain shape.  We don't actually care about z
-; and ignore it!  We translated it just for sanity's sake: no point in allowing
-; the user ever to write an ill-formed term in a well-formed term.
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
+; The three arguments of wormhole-eval are x, y and z.  Here, x and z have been
+; translated but y has not been.  We want to ensure that y is a well-formed
+; quoted lambda expression.  We don't actually care about z and ignore it!  We
+; translated it just for sanity's sake: no point in allowing the user ever to
+; write an ill-formed term in a well-formed term.
 
 ; Remember: The quoted lambda of wormholes are not related to apply$.
 
   (declare (ignore z))
   (cond
-   ((not (and (true-listp x)
-              (equal (length x) 2)
-              (equal (car x) 'quote)))
-    (trans-er ctx
-              "The first argument to wormhole-eval must be a QUOTE expression ~
-               containing the name of the wormhole in question and ~x0 is not ~
-               quoted."
-              x))
    ((not (and (true-listp y)
               (equal (length y) 2)
               (equal (car y) 'quote)))
@@ -21412,6 +21438,9 @@
                                 known-stobjs msg flet-alist ctx wrld state-vars
                                 stobjs-in-call)
 
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
 ; Here we carve out some code from translate11-call for case where both
 ; stobjs-out and stobjs-out2 are conses, so that we can invoke it twice without
 ; writing the code twice.  Msg is as described in translate11-lst.
@@ -21422,14 +21451,15 @@
 ; is known, and below, where it is not.  Of course, stobjs-out2 (for
 ; wormhole-eval) is fixed: (nil).  Keep this code in sync with that below.
 
-; The odd treatment of wormhole-eval's first two arguments below is due to the
-; fact that we actually don't want to translate them.  We will insist that they
-; actually be quoted forms, not macro calls that expand to quoted forms.  So we
-; put bogus nils in here and then swap back the untranslated args below.
+; The odd treatment of wormhole-eval's middle argument below is due to the fact
+; that we actually don't want to translate it.  We will insist that it actually
+; be a quoted form, not macro calls that expand to quoted forms.  So we put a
+; bogus nil into that middle arg slot during translate11-lst below and then
+; swap back the untranslated middle arg below.
 
    ((targs (trans-or
             (translate11-lst (if (eq fn 'wormhole-eval)
-                                 (list *nil* *nil* (nth 2 args))
+                                 (list (nth 0 args) *nil* (nth 2 args))
                                args)
                              (ilks-per-argument-slot fn wrld)
                              stobjs-in-call
@@ -21473,16 +21503,47 @@
                   ordinary object, this stobj recognizer must not be applied ~
                   to the wrong stobj."
                  fn))))
-   (cond ((eq fn 'wormhole-eval)
-          (translate11-wormhole-eval (car args)
-                                     (cadr args)
-                                     (caddr targs)
-                                     bindings flet-alist ctx wrld
-                                     state-vars))
-         (t (trans-value (fcons-term fn targs))))))
+   (cond
+    ((and (not (global-val 'boot-strap-flg wrld))
+          (member-eq fn '(wormhole-eval
+                          sync-ephemeral-whs-with-persistent-whs
+                          set-persistent-whs-and-ephemeral-whs))
+          (or (not (quotep (car targs)))
+              (member-eq (unquote (car targs))
+                         *protected-system-wormhole-names*)))
+     (cond
+      ((not (quotep (car targs)))
+       (trans-er ctx
+                 "The first argument of ~x0 must be a quoted wormhole name, ~
+                  thus ~X12 is illegal.~#3~[~/  This call of WORMHOLE-EVAL ~
+                  might have been introduced by the macroexpansion of a call ~
+                  of WORMHOLE on that wormhole name.~]"
+                 fn
+                 (cons fn args)
+                 (evisc-tuple 3 3 nil nil)
+                 (if (eq fn 'wormhole-eval) 1 0)))
+      (t (trans-er ctx
+                   "It is illegal to call ~x0 on ~x1 because that is the name ~
+                    of a protected ACL2 system wormhole.~#2~[~/  This call of ~
+                    WORMHOLE-EVAL might have been introduced by the ~
+                    macroexpansion of a call of WORMHOLE on that wormhole ~
+                    name.~]"
+                   fn
+                   (unquote (car targs))
+                   (if (eq fn 'wormhole-eval) 1 0)))))
+    ((eq fn 'wormhole-eval)
+     (translate11-wormhole-eval (car targs)
+                                (cadr args)
+                                (caddr targs)
+                                bindings flet-alist ctx wrld
+                                state-vars))
+    (t (trans-value (fcons-term fn targs))))))
 
 (defun translate11-call (form fn args stobjs-out-x stobjs-out-fn bindings
                               known-stobjs msg flet-alist ctx wrld state-vars)
+
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
 
 ; We are translating (for execution, not merely theorems) a call of fn on args,
 ; where the length of args is the arity of fn in wrld.  Stobjs-out-x and
@@ -21656,7 +21717,7 @@
         (trans-er-let*
          ((targs (trans-or
                   (translate11-lst (if (eq fn 'wormhole-eval)
-                                       (list *nil* *nil* (nth 2 args))
+                                       (list (nth 0 args) *nil* (nth 2 args))
                                      args)
                                    (ilks-per-argument-slot fn wrld)
                                    stobjs-in-call
@@ -21676,13 +21737,42 @@
                         an ordinary object, this stobj recognizer must not be ~
                         applied to the wrong stobj."
                        fn))))
-         (cond ((eq fn 'wormhole-eval)
-                (translate11-wormhole-eval (car args)
-                                           (cadr args)
-                                           (caddr targs)
-                                           bindings flet-alist ctx wrld
-                                           state-vars))
-               (t (trans-value (fcons-term fn targs)))))))
+         (cond
+          ((and (not (global-val 'boot-strap-flg wrld))
+                (member-eq fn '(wormhole-eval
+                                sync-ephemeral-whs-with-persistent-whs
+                                set-persistent-whs-and-ephemeral-whs))
+                (or (not (quotep (car targs)))
+                    (member-eq (unquote (car targs))
+                               *protected-system-wormhole-names*)))
+           (cond
+            ((not (quotep (car targs)))
+             (trans-er ctx
+                       "The first argument of ~x0 must be a quoted wormhole ~
+                        name, thus ~X12 is illegal.~#3~[~/  This call of ~
+                        WORMHOLE-EVAL might have been introduced by the ~
+                        macroexpansion of a call of WORMHOLE on that wormhole ~
+                        name.~]"
+                       fn
+                       (cons fn args)
+                       (evisc-tuple 3 3 nil nil)
+                       (if (eq fn 'wormhole-eval) 1 0)))
+            (t (trans-er ctx
+                         "It is illegal to call ~x0 on ~x1 because that is ~
+                          the name of a protected ACL2 system ~
+                          wormhole.~#2~[~/  This call of WORMHOLE-EVAL might ~
+                          have been introduced by the macroexpansion of a ~
+                          call of WORMHOLE on that wormhole name.~]"
+                         fn
+                         (unquote (car targs))
+                         (if (eq fn 'wormhole-eval) 1 0)))))
+          ((eq fn 'wormhole-eval)
+           (translate11-wormhole-eval (car targs)
+                                      (cadr args)
+                                      (caddr targs)
+                                      bindings flet-alist ctx wrld
+                                      state-vars))
+          (t (trans-value (fcons-term fn targs)))))))
      (t ; both stobjs-out-x and stobjs-out-call are symbols
       (let ((bindings
 
@@ -24869,8 +24959,7 @@
                                       (access state-vars state-vars
                                               :temp-touchable-vars))))
                  (and (eq (car x) 'makunbound-global)
-                      (or (always-boundp-global (cadr (cadr x)))
-                          (member-eq (cadr (cadr x)) *brr-globals*)))
+                      (always-boundp-global (cadr (cadr x))))
 
 ; It is tempting to get the following value of boot-strap from state-vars.  But
 ; some calls of translate11 supply state-vars using (default-state-vars nil),
@@ -24881,8 +24970,7 @@
 ; that point.
 
                  (and (global-val 'boot-strap-flg wrld)
-                      (not (or (always-boundp-global (cadr (cadr x)))
-                               (member-eq (cadr (cadr x)) *brr-globals*))))))
+                      (not (always-boundp-global (cadr (cadr x)))))))
            (cond ( ; Keep this case the same as its twin above
                   (not (and (consp (cadr x))
                             (eq (car (cadr x)) 'quote)
@@ -24925,8 +25013,8 @@
                  (t ; (global-val 'boot-strap-flg wrld)
                   (trans-er ctx
                             "State global ~x0 needs to be declared for the ~
-                             build by adding it to *initial-global-table*, ~
-                             *initial-ld-special-bindings*, or *brr-globals*."
+                             build by adding it to *initial-global-table* or ~
+                             *initial-ld-special-bindings*."
                             (cadr (cadr x))))))
           (t
            (let ((stobjs-out (translate-deref stobjs-out bindings))

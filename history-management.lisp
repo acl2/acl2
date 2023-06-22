@@ -5921,7 +5921,7 @@
 
 ; Class is 'command or 'event.
 ; Markp is t or nil, indicating whether we are to print a ">".
-; Status is a an ldd-status record indicating defun-mode, disabled status, and
+; Status is an ldd-status record indicating defun-mode, disabled status, and
 ;   memoized status.
 ; n is a natural number whose interpretation depends on class:
 ;   if class is 'command, n is the command number; otherwise,
@@ -6667,7 +6667,11 @@
 
 ; We want history commands to show the "appropriate" enabled status.  For the
 ; user inside break-rewrite, "appropriate" suggests using the enabled structure
-; at the current point in the proof.
+; at the current point in the proof.  By the way, this function is widely used
+; in our sources and also in the regression books; changing its signature would
+; be expensive!
+
+; Note that this implementation depends on Wormhole Coherence.
 
   (or (and (eq (f-get-global 'wormhole-name state) 'brr)
            (access rewrite-constant
@@ -13055,6 +13059,9 @@
 
 (defun guard-clauses (term debug-info stobj-optp clause wrld ttree newvar)
 
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
 ; See also guard-clauses+, which is a wrapper for guard-clauses that eliminates
 ; ground subexpressions.
 
@@ -13225,12 +13232,20 @@
 
 ; Because of translate, term is necessarily of the form
 
-; (wormhole-eval '<name> '(lambda (<whs>) <body>) <name-dropper-term>)
+; (wormhole-eval <name> '(lambda (<whs>) <body>) <name-dropper-term>)
 ; or
-; (wormhole-eval '<name> '(lambda (     ) <body>) <name-dropper-term>)
+; (wormhole-eval <name> '(lambda (     ) <body>) <name-dropper-term>)
 
-; the only difference being whether the lambda has one or no formals.  The
-; <body> of the lambda has been translated despite its occurrence inside a
+; the only difference being whether the lambda has one or no formals.
+
+; The <name> subterm is always quoted post-boot-strap, but in our source code
+; we are free to pass any term in for name.  In fact, we always pass either a
+; variable name or a quoted constant.  So to be lazy here we just check that
+; <name> is a variable or constant and cause an error if it isn't.  Then we
+; ignore the <name> term in guard generation.  Technically we ought to generate
+; guards for <name>.
+
+; The <body> of the lambda has been translated despite its occurrence inside a
 ; quoted lambda.  The <name-dropper-term> is always of the form 'NIL or a
 ; variable symbol or a PROG2$ nest of variable symbols and thus has a guard of
 ; T.  Furthermore, translate ensures that the free variables of the lambda are
@@ -13269,7 +13284,21 @@
            (new-body (if (eq whs new-var)
                          body
                        (subst-var new-var whs body))))
-      (cond (new-var (mv-let (cl-set env ttree)
+      (cond ((not (or (variablep (fargn term 1))
+                      (fquotep (fargn term 1))))
+             (mv (er hard 'guard-clauses
+                     "We thought that the name argument of every call of ~
+                      wormhole-eval in the ACL2 source code was either a ~
+                      variable symbol or a quoted constant.  But ~
+                      guard-clauses has encountered a call of wormhole-eval ~
+                      with the term ~x0 in the wormhole name position.  Out ~
+                      of sheer laziness, guard-clauses is not prepared to ~
+                      generate guard clauses for such a call of ~
+                      wormhole-eval!  Please inform the ACL2 developers of ~
+                      this error message and we'll fix it!"
+                     (fargn term 1))
+                 nil nil))
+            (new-var (mv-let (cl-set env ttree)
 
 ; In this case we discard env if new-var occurs in it.  To see why, imagine
 ; that we have an expression (foo (wormhole-eval ...) (wormhole-eval ...)).

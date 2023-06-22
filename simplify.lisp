@@ -8615,9 +8615,7 @@
 ; required by a clause processor in the waterfall.  The work horse doesn't
 ; return an pspv and we do.
 
- (prog2$
-  (initialize-brr-stack state)
-  (cond ((assoc-eq 'settled-down-clause hist)
+ (cond ((assoc-eq 'settled-down-clause hist)
 
 ; The clause has settled down under rewriting with the induction-hyp-terms
 ; initially ignored and the induction-concl-terms forcibly expanded.  We now
@@ -8661,25 +8659,25 @@
 ; found that motivated this change.  For another desperation heuristic see the
 ; comment in sort-lits.
 
-         (let* ((rcnst0 (access prove-spec-var pspv :rewrite-constant))
-                (local-rcnst (if (eq 'settled-down-clause
-                                     (access history-entry (car hist) :processor))
-                                 (change rewrite-constant
-                                         rcnst0
-                                         :force-info
-                                         (if (ffnnamep-lst 'if cl)
-                                             'weak
-                                           t)
-                                         :rewriter-state 'settled-down)
-                               (change rewrite-constant
-                                       rcnst0
-                                       :force-info
-                                       (if (ffnnamep-lst 'if cl)
-                                           'weak
-                                         t)))))
-           (sl-let (changedp clauses ttree)
-                   (simplify-clause1 cl hist local-rcnst wrld state step-limit)
-                   (cond (changedp
+        (let* ((rcnst0 (access prove-spec-var pspv :rewrite-constant))
+               (local-rcnst (if (eq 'settled-down-clause
+                                    (access history-entry (car hist) :processor))
+                                (change rewrite-constant
+                                        rcnst0
+                                        :force-info
+                                        (if (ffnnamep-lst 'if cl)
+                                            'weak
+                                            t)
+                                        :rewriter-state 'settled-down)
+                                (change rewrite-constant
+                                        rcnst0
+                                        :force-info
+                                        (if (ffnnamep-lst 'if cl)
+                                            'weak
+                                            t)))))
+          (sl-let (changedp clauses ttree)
+                  (simplify-clause1 cl hist local-rcnst wrld state step-limit)
+                  (cond (changedp
 
 ; Note: It is possible that our input, cl, is a member-equal of our output,
 ; clauses!  Such simplifications are said to be "specious."  But we do not
@@ -8690,33 +8688,33 @@
 ; caused a lot of confusion among experienced users, who saw simplifiable
 ; clauses being passed on to elim, etc.  See :DOC specious-simplification.
 
-                          (mv step-limit 'hit clauses ttree pspv))
-                         (t (mv step-limit 'miss nil ttree nil))))))
-        (t
+                         (mv step-limit 'hit clauses ttree pspv))
+                        (t (mv step-limit 'miss nil ttree nil))))))
+       (t
 
 ; The clause has not settled down yet.  So we arrange to ignore the
 ; induction-hyp-terms when appropriate, and to expand the induction-concl-terms
 ; without question.  The local-rcnst created below is not passed out of this
 ; function.
 
-         (let* ((rcnst (access prove-spec-var pspv :rewrite-constant))
-                (new-force-info (if (ffnnamep-lst 'if cl)
-                                    'weak
-                                  t))
-                (induction-concl-terms
-                 (access prove-spec-var pspv :induction-concl-terms))
-                (hist-entry-hit (found-hit-rewrite-hist-entry hist))
-                (hit-rewrite2 (or (eq hist-entry-hit 'hit-rewrite2)
-                                  (and (eq hist-entry-hit 'hit-rewrite)
-                                       (not (some-element-dumb-occur-lst
-                                             induction-concl-terms
-                                             cl)))))
+        (let* ((rcnst (access prove-spec-var pspv :rewrite-constant))
+               (new-force-info (if (ffnnamep-lst 'if cl)
+                                   'weak
+                                   t))
+               (induction-concl-terms
+                (access prove-spec-var pspv :induction-concl-terms))
+               (hist-entry-hit (found-hit-rewrite-hist-entry hist))
+               (hit-rewrite2 (or (eq hist-entry-hit 'hit-rewrite2)
+                                 (and (eq hist-entry-hit 'hit-rewrite)
+                                      (not (some-element-dumb-occur-lst
+                                            induction-concl-terms
+                                            cl)))))
 
 ; We arrange to expand the induction-concl-terms and ignore the
 ; induction-hyp-terms unless hit-rewrite2 above is set.
 
-                (local-rcnst
-                 (cond (hit-rewrite2
+               (local-rcnst
+                (cond (hit-rewrite2
 
 ; We have previously passed through the rewriter, and either a predecessor goal
 ; or this one is free of induction-concl-terms.  In that case we stop meddling
@@ -8819,9 +8817,9 @@
 ; reach the conclusion!  If memory serves, an attempt to turn off
 ; case-split-limitations just led the prover off the deep end.
 
-                        (change rewrite-constant
-                                rcnst
-                                :force-info new-force-info
+                       (change rewrite-constant
+                               rcnst
+                               :force-info new-force-info
 
 ; We also tried a modification in which we use the same :expand-lst as below,
 ; thus continuing to meddle with induction-concl-terms even after we are done
@@ -8856,38 +8854,38 @@
 ; induction-concl-terms, and yet we are still guaranteed at least one pass
 ; through the rewriter before stopping the "meddling".
 
-                                ))
-                       (t
-                        (change rewrite-constant
-                                rcnst
-                                :force-info new-force-info
-                                :terms-to-be-ignored-by-rewrite
-                                (append
-                                 (access prove-spec-var
-                                         pspv :induction-hyp-terms)
-                                 (access rewrite-constant
-                                         rcnst
-                                         :terms-to-be-ignored-by-rewrite))
-                                :expand-lst
-                                (append? (access rewrite-constant
-                                                 rcnst :expand-lst)
+                               ))
+                      (t
+                       (change rewrite-constant
+                               rcnst
+                               :force-info new-force-info
+                               :terms-to-be-ignored-by-rewrite
+                               (append
+                                (access prove-spec-var
+                                        pspv :induction-hyp-terms)
+                                (access rewrite-constant
+                                        rcnst
+                                        :terms-to-be-ignored-by-rewrite))
+                               :expand-lst
+                               (append? (access rewrite-constant
+                                                rcnst :expand-lst)
 
 ; We give the user's expand-lst priority, in case it specifies :with for a term
 ; that is also an enabled call in induction-concl-terms.
 
-                                         (filter-disabled-expand-terms
-                                          induction-concl-terms
-                                          (access rewrite-constant
-                                                  rcnst
-                                                  :current-enabled-structure)
-                                          wrld)))))))
-           (sl-let (hitp clauses ttree)
-                   (simplify-clause1 cl hist local-rcnst wrld state step-limit)
-                   (cond
-                    (hitp (mv step-limit
-                              (if hit-rewrite2 'hit-rewrite2 hitp)
-                              clauses ttree pspv))
-                    (t (mv step-limit 'miss nil ttree nil)))))))))
+                                        (filter-disabled-expand-terms
+                                         induction-concl-terms
+                                         (access rewrite-constant
+                                                 rcnst
+                                                 :current-enabled-structure)
+                                         wrld)))))))
+          (sl-let (hitp clauses ttree)
+                  (simplify-clause1 cl hist local-rcnst wrld state step-limit)
+                  (cond
+                   (hitp (mv step-limit
+                             (if hit-rewrite2 'hit-rewrite2 hitp)
+                             clauses ttree pspv))
+                   (t (mv step-limit 'miss nil ttree nil))))))))
 
 ; Inside the waterfall, the following clause processor immediately follows
 ; simplify-clause.

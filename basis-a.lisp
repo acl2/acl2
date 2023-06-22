@@ -161,39 +161,144 @@
 
 ; Essay on Wormholes
 
-; Once upon a time (Version  3.6 and earlier) the wormhole function had a
-; pseudo-flg argument which allowed the user a quick way to determine whether
-; it was appropriate to incur the expense of going into the wormhole.  The idea
-; was that the form could have one a free var in it, wormhole-output, and that
-; when it was evaluated in raw Lisp that variable was bound to the last value
-; returned by the wormhole.  Since wormhole always returned nil anyway, this
-; screwy semantics didn't matter.  However, it was implemented in such a way
-; that a poorly constructed pseudo-flg could survive guard verification and yet
-; cause a hard error at runtime because during guard verification
-; wormhole-output was bound to NIL but in actual evaluation it was entirely
-; under the control of the wormhole forms.
+; See :doc wormhole for the basic idea.  Wormholes provide access to state from
+; places without access to state.  Their main purpose is to allow the
+; collection and display of data, and to allow user interaction, without
+; changing state.  Associated with every wormhole is an ACL2 object called its
+; ``persistent wormhole status'' or ``persistent-whs.''  The shape of these
+; status objects varies with the wormhole and is determined by the author of
+; the wormhole (though the car of each status object is always supposed to be
+; :SKIP or :ENTER).  The persistent-whs is accessible to ACL2 terms only via
+; the ACL2 oracle.  That is, we think of the persistent-whs as outside of the
+; ACL2 state or hidden.
 
-; To fix this we have introduced wormhole-eval.  It takes two important
-; arguments, the name of the wormhole and a lambda expression.  Both must be
-; quoted.  The lambda may have at most one argument but the body may contain
-; any variables available in the environment of the wormhole-eval call.  (A
-; third argument to wormhole-eval is an arbitrary form that uses all the free
-; vars of the lambda, thus insuring that translate will cause an error if the
-; lambda uses variables unavailable in the context.)  The body of the lambda
-; must be a single-valued, non-state, non-stobj term.
+; To get the persistent-whs of a wormhole one can use (get-persistent-whs name
+; state) => (mv whs state').  Note that it changes state by using
+; read-acl2-oracle to get the whs.  Thus, this is not a very convenient
+; interface to wormholes since one of the main purposes is to not change state!
 
-; The idea is that the lambda expression is applied to the last value of the
-; wormhole output and its value is assigned as the last value of the wormhole
-; output.  Wormhole-eval always returns nil.  Translation of a wormhole-eval
-; call enforces these restrictions.  Furthermore, it translates the body of the
-; lambda (even though the lambda is quoted).  This is irrelevant since the
-; wormhole-eval returns nil regardless of the lambda expression supplied.
-; Similarly, translation computes an appropriate third argument to use all the
-; free vars, so the user may just write nil there and a suitable form is
-; inserted by translate.
+; However, the function wormhole-eval allows the caller to change the
+; persistent-whs as a function of the current status without ever exporting it.
+; Roughly speaking, wormhole-eval takes a wormhole name and a lambda
+; expression, applies the lambda expression to the persistent-whs of the named
+; wormhole, and stores the result back into the persistent-whs.  Wormhole-eval
+; does not take state as an argument and always returns nil.  So, for example,
+; you can accumulate data into the persistent-whs with wormhole-eval, without
+; ever making the status available outside.  You can also print from within
+; wormhole-eval to display the accumulated data.  You now know how
+; accumulated-persistence and fc-report are implemented.
+
+; In order to allow user interaction with a wormhole, e.g., as provided by
+; break-rewrite, the function wormhole is provided.  Roughly speaking, it takes
+; a wormhole name, a lambda expression, an arbitray object, input, and a quoted
+; untranslated term, first-form.  Wormhole does not take state.  It applies the
+; lambda expression to the persistent-whs of the named wormhole and if the
+; resulting persistent-whs has car :ENTER (actually, if the car is not :SKIP),
+
+; (a) provisions are made so that all allowed state changes are undone upon
+;     exit,
+
+; (b) the wormhole name, input, and the persistent-whs are (undoably) assigned
+;     to the state global variables wormhole-name, wormhole-input, and
+;     wormhole-status,
+
+; (c) LD is invoked on *the-live-state* so that the first form read and eval'd
+;     by LD is first-form,
+
+; (d) when that LD is exited the value of the state global wormhole-status is
+;     stored as the new persistent-whs for the wormhole,
+
+; (e) all state changes are undone, and
+
+; (f) wormhole returns nil.
+
+; Entering a wormhole is thus expensive, which is why its gated by the lambda
+; expression and wormhole-eval (which are implemented efficiently).
+
+; Historical Note: Once upon a time (Version 3.6 and earlier) the wormhole
+; function had a pseudo-flg argument which allowed the user a quick way to
+; determine whether it was appropriate to incur the expense of going into the
+; wormhole.  The idea was that the form could have one a free var in it,
+; wormhole-output, and that when it was evaluated in raw Lisp that variable was
+; bound to the last value returned by the wormhole.  Since wormhole always
+; returned nil anyway, this screwy semantics didn't matter.  However, it was
+; implemented in such a way that a poorly constructed pseudo-flg could survive
+; guard verification and yet cause a hard error at runtime because during guard
+; verification wormhole-output was bound to NIL but in actual evaluation it was
+; entirely under the control of the wormhole forms.  End of Historical Note.
+
+; While in the wormhole, forms evaluated by the LD can access the wormhole
+; status with (f-get-global 'wormhole-status state).  But that status will
+; ``disappear'' when the wormhole is exited.  So we call that the
+; ``ephemeral-whs.''
+
+; Thus, from within the wormhole the ephemeral-whs can be inspected, computed
+; with, printed, etc.  This is very handy because it means code executed in the
+; wormhole can easily access the previously inaccessible status.
+
+; But the emphemeral whs cannot be directly changed.  That is: wormhole-status
+; is untouchable, even from within the wormhole: (f-put-global 'wormhole-status
+; new-whs state) will cause an error.  This is necessary to prevent the
+; interactive user from violating invariants we maintain on system wormholes.
+
+; While in a user wormhole (not a system wormhole), the user can call
+; wormhole-eval to change the persistent-whs.  An example of why this might
+; happen is provided by the :monitor command of break-rewrite.  At the
+; top-level of ACL2 the user will use :monitor to install a monitor on a rune.
+; The list of monitored runes is maintained inside the brr wormhole to allow
+; the user to add new monitors during a proof attempt, without changing state.
+; So :monitor is defined in terms of wormhole-eval.  So if the user adds a new
+; :monitor while inside brr, the persistent-whs of the brr wormhole is changed.
+
+; ``Wormhole coherence'' is concept that the persistent-whs and the
+; ephemeral-whs are equal.  Think of the persistent-whs as the value of a
+; remote memory location and the ephemeral-whs as a nearby cache.
+
+; Note that the use of wormhole-eval from within a wormhole can make the
+; persistent-whs and the ephemeral-whs unequal.  We say such a wormhole is
+; ``incoherent.''
+
+; The function sync-ephemeral-whs-with-persistent-whs does what its name
+; suggests and restores coherence.  The code for system wormholes like brr is
+; careful to maintain coherence, e.g., :monitor uses wormhole-eval to change
+; the persistent-whs and then sync-ephemeral-whs-with-persistent-whs to to
+; restore coherence.  But users implementing wormholes of their own have to
+; decide whether they care about coherence or not.  (Note: if all reads and
+; writes to a wormhole's status are done with wormhole-eval, you needn't even
+; think about coherence.  There is never an ephemeral-whs; all operations are
+; done at a single location, the persistent-whs.  It's only when interaction is
+; allowed that one is might need to worry about two copies of ``the'' status.)
+
+; A better way, from within a wormhole, to change the status is to change both,
+; using set-persistent-whs-and-ephemeral-whs.
+
+; See :doc wormhole-programming-tips.
+
+; Now for a few more implementation-level details.
+
+; The persistent-whs of each wormhole is stored in an alist in raw Lisp.  The
+; alist is named *wormhole-status-alist*.
+
+; Wormhole-eval takes two important arguments, the name of the wormhole and a
+; lambda expression.  Both must be quoted in user input.  (Translate allows
+; developers to use variables in the name position during boot-strap.)  The
+; lambda may have at most one argument but the body may contain any variables
+; available in the environment of the wormhole-eval call.  (A third argument to
+; wormhole-eval is an arbitrary form that uses all the free vars of the lambda,
+; thus insuring that translate will cause an error if the lambda uses variables
+; unavailable in the context.)  The body of the lambda must be a single-valued,
+; non-state, non-stobj term.
+
+; Translation of a wormhole-eval call enforces these restrictions.
+; Furthermore, it translates the body of the lambda (even though the lambda is
+; quoted).  This is irrelevant since the wormhole-eval returns nil regardless
+; of the lambda expression supplied.  Similarly, translation computes an
+; appropriate third argument to use all the free vars, so the user may just
+; write nil there and a suitable form is inserted by translate.
 
 ; We arrange for wormhole-eval to be a macro in raw lisp that really does what
-; is said above.
+; is said above, so it is as efficient as we can make.  I.e., the lambda
+; expression is not applied, it is compiled in place.
 
 ; To make it bullet-proof, when we generate guard clauses we go inside the
 ; lambda, generating a new variable symbol to use in place of the lambda formal
@@ -202,54 +307,13 @@
 
 ; Ev-rec, the interpreter for terms, treats wormhole-eval specially in the
 ; expected way, as does oneify.  Thus, both interpreted and compiled calls of
-; wormhole-eval are handled, and guard violations are handled politely.
+; wormhole-eval are handled, and guard violations are handled politely.  So if
+; you change wormholes you must also look at translate, ev-rec, oneify, and
+; guard-clauses, at least!
 
-; Now, how does this allow us to fix the wormhole pseudo-flg problem?
-
-; The hidden global variable in Lisp used to record the status of the various
-; wormholes is called *wormhole-status-alist*.  The entry in this alist for
-; a particular wormhole will be called the wormhole's ``status.''  The lambda
-; expression in wormhole-eval maps the wormhole's status to a new status.
-
-; The status of a wormhole is supposed to be a cons whose car is either :ENTER
-; or :SKIP.  However, in the absence of verifying the guards on the code inside
-; wormholes and in light of the fact that users can set the status by
-; manipulating wormhole-status in the wormhole it is hard to ensure that the
-; status is always as supposed.  So we code rather defensively.
-
-; When the ``function'' wormhole is called it may or may not actually enter a
-; wormhole.  ``Entering'' the wormhole means invoking the form on the given
-; input, inside a side-effects undoing call of ld.  That, in turn, involves
-; setting up the ld specials and then reading, translating, and evaluating
-; forms.  Upon exit, cleanup must be done.  So entering is expensive.
-
-; Whether it enters the wormhole or not depends on the wormhole's status, and
-; in particular it depends on what we call the wormhole's ``entry code''
-; computed from the status as follows.
-
-; If the wormhole's status satisfies wormhole-statusp then the situation is
-; simple: wormhole enters the wormhole if the status is :ENTER and doesn't if
-; the status is :SKIP.  But we compute the entry code defensively: the entry
-; code is :SKIP if and only if the wormhole's status is a cons whose car is
-; :SKIP.  Otherwise, the entry code is :ENTER.
-
-; If we enter the wormhole, we take the wormhole input argument and stuff it
-; into (@ wormhole-input), allowing the user to see it inside the ld code.  We
-; take the wormhole status and stuff it into (@ wormhole-status), allowing the
-; user to see it and probably change it with (assign wormhole-status...).  When
-; we exit ld, we take (@ wormhole-status) and put it back into the hidden
-; *wormhole-status-alist*.
-
-; One subtlety arises: How to make wormholes re-entrant...  The problem is that
-; sometimes the current status is in the hidden alist and other times it is in
-; (@ wormhole-status).  So when we try to enter a new wormhole from within a
-; wormhole -- which always happens by calling wormhole-eval -- the first thing
-; we do is stuff the current (@ wormhole-status) into the hidden
-; *wormhole-status-alist*.  This means that the lambda expression for the new
-; entrance is applied, it is applied to the ``most recent'' value of the status
-; of that particular wormhole.  The natural undoing of wormhole effects
-; implements the restoration of (@ wormhole-status) upon exit from the
-; recursive wormhole.
+; It is possible to enter a wormhole from within another wormhole.  It happens
+; all the time when a wormhole prints using cw, which is implemented by the
+; comment-window-io wormhole.
 
 ; If we wanted to convert our system code to logic mode we would want to verify
 ; the guards of the lambda bodies and the wormhole-status after ld.  See the
@@ -264,6 +328,8 @@
 ; so we know that the final status satisfies foo.  If we do this we can safely
 ; assume that every status seen by a lambda body in wormhole-eval will satisfy
 ; the foo invariant.
+
+; End of the Essay on Wormholes
 
 (defun wormhole-statusp (whs)
   (declare (xargs :mode :logic :guard t))
@@ -368,22 +434,26 @@
 #+acl2-loop-only
 (defun wormhole-eval (qname qlambda free-vars)
 
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
 ; A typical call of this function is
 ; (wormhole-eval 'my-wormhole
 ;                '(lambda (output) (p x y output))
 ;                (list x y))
 
 ; And the pragmatic semantics is that the lambda expression is applied to the
-; last output of the wormhole my-wormhole, the result of of the application is
-; stuffed back in as the last output, and the function logically returns nil.
-; Note that free vars in the lambda must listed.  This is so that the free vars
-; of this wormhole-eval expression consists of the free vars of the lambda,
-; even though the lambda appears quoted.  Translate automatically replaces the
-; lambda expression constant by the translated version of that same constant,
-; and it replaces the supposed list of free vars by the actual free vars.  So
-; in fact the user calling wormhole-eval can just put nil in the free-vars arg
-; and let translate fill it in.  Translate can mangle the arguments of
-; wormhole-eval because it always returns nil, regardless of its arguments.
+; persistent-whs of the wormhole my-wormhole, the result of the application is
+; stuffed back in as the persistent-whs, and the function logically returns
+; nil.  Note that free vars in the lambda must be listed.  This is so that the
+; free vars of this wormhole-eval expression consists of the free vars of the
+; lambda, even though the lambda appears quoted.  Translate automatically
+; replaces the lambda expression constant by the translated version of that
+; same constant, and it replaces the supposed list of free vars by the actual
+; free vars.  So in fact the user calling wormhole-eval can just put nil in the
+; free-vars arg and let translate fill it in.  Translate can mangle the
+; arguments of wormhole-eval because it always returns nil, regardless of its
+; arguments.
 
 ; The guard is declared below to be t but actually we compute the guard for the
 ; body of the quoted lambda, with some fiddling about the bound variable.
@@ -421,11 +491,14 @@
     (& nil)))
 
 #-acl2-loop-only
-(defmacro wormhole-eval (qname qlambda free-vars)
+(defmacro wormhole-eval (namex qlambda free-vars)
   (declare (xargs :guard t))
 
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
 ; All calls of wormhole-eval that have survived translation are of a special
-; form.  Qname is a quoted object (used as the name of a wormhole), and qlambda
+; form.  Namex is a term that evaluates to the name of a wormhole, and qlambda
 ; is of one of the two forms:
 
 ; (i)  (quote (lambda (whs) body)), or
@@ -438,14 +511,15 @@
 ; variable names supplied by translate.  Finally, we know that whs appears as
 ; the lambda formal iff it is used in body.
 
-; Wormholes may have arbitrary objects for names, so qname is not necessarily a
-; quoted symbol.  This may be the first entry into the wormhole of that name,
-; in which case the most recent output of the wormhole is understood to be nil.
+; Wormholes may have arbitrary objects for names, so namex does not necessarily
+; evaluate to a symbol.  This may be the first entry into the wormhole of that
+; name, in which case the most recent output of the wormhole is understood to
+; be nil.
 
 ; Logically this function always returns nil.  Actually, it applies the lambda
-; expression to either (i) ``the most recent output'' of the named wormhole or
-; (ii) no arguments, appropriately, and stores the result as the most recent
-; output, and then returns nil.
+; expression to either (i) persistent-whs of the named wormhole or (ii) no
+; arguments, appropriately, and stores the result as the persistent-whs, and
+; then returns nil.
 
 ; For efficiency we use put-assoc-equal-destructive below instead of put-assoc.
 ; When considering a similar use of put-assoc-equal-destructive elsewhere --
@@ -456,39 +530,32 @@
   (let* ((whs (car (cadr (cadr qlambda)))) ; non-nil in Case (i) only
          (early-null-exit-p (and whs
                                  (wormhole-eval-early-null-exit-p qlambda)))
-         (val (gensym))
+         (name (gensym)) ; name will be bound to the value of namex
+         (val (gensym))  ; val will be bound to the value of the lambda body
          (form1
-          `(progn
-             (cond (*wormholep*
-                    (setq *wormhole-status-alist*
-                          (put-assoc-equal-destructive
-                           (f-get-global 'wormhole-name
-                                         *the-live-state*)
-                           (f-get-global 'wormhole-status
-                                         *the-live-state*)
-                           *wormhole-status-alist*))))
-             (let* ((*wormholep* t)
-                    ,@(and whs ; Case (i)
-                           (not early-null-exit-p) ; otherwise bind whs later
-                           `((,whs
-                              (cdr (assoc-equal ,qname
-                                                *wormhole-status-alist*)))))
-                    (,val ,(caddr (cadr qlambda))))
+          `(let* ((*wormholep* t)
+                  ,@(and whs                       ; Case (i)
+                         (not early-null-exit-p)   ; otherwise bind whs later
+                         `((,whs
+                            (cdr (assoc-equal ,name
+                                              *wormhole-status-alist*)))))
+                  (,val ,(caddr (cadr qlambda))))
 
 ; At one time we skipped the following setq in the case that (equal ,whs ,val),
 ; where ,whs was unconditionally bound above.  However, that equality test can
 ; be expensive, so we avoid it.
 
-               (setq *wormhole-status-alist*
-                     (put-assoc-equal-destructive ,qname
-                                                  ,val
-                                                  *wormhole-status-alist*))
-               nil)))
+             (setq *wormhole-status-alist*
+                   (put-assoc-equal-destructive ,name
+                                                ,val
+                                                *wormhole-status-alist*))
+             nil))
          (form2 (cond ((tree-occur-eq :no-wormhole-lock free-vars)
                        form1)
                       (t `(with-wormhole-lock ,form1)))))
     (cond (early-null-exit-p ; hence whs is non-nil
-           `(let ((,whs (cdr (assoc-equal ,qname
+           `(let* ((,name ,namex)
+                   (,whs (cdr (assoc-equal ,name
                                           *wormhole-status-alist*))))
               (cond ((null (wormhole-data ,whs))
 
@@ -497,7 +564,45 @@
 
                      nil)
                     (t ,form2))))
-          (t form2))))
+          (t `(let ((,name ,namex)) ,form2)))))
+
+(defun sync-ephemeral-whs-with-persistent-whs (name state)
+
+; If you are in the named wormhole, this function updates ephemeral-whs to be
+; the persistent-whs, achieving Wormhole Coherence.  If you are not in the
+; named wormhole, this function is a no-op returning state and the wormhole is
+; coherent since there is no ephemeral-whs.
+
+  (declare (xargs :stobjs state))
+  (if (and name
+           (equal (f-get-global 'wormhole-name state) name))
+      #+acl2-loop-only
+      (mv-let (erp val state)
+        (read-acl2-oracle state)
+        (declare (ignore erp))
+        (f-put-global 'wormhole-status val state))
+      #-acl2-loop-only
+      (if (and *wormholep*
+               (live-state-p state))
+          (f-put-global 'wormhole-status
+                        (cdr (assoc-equal name *wormhole-status-alist*))
+                        state)
+          state)
+      state))
+
+(defun set-persistent-whs-and-ephemeral-whs (name new-status state)
+
+; Update the persistent-whs for name to be new-status and then, if you're in
+; the wormhole, also update the ephemeral-whs.  Thus, you can establish and
+; maintain Wormhole Coherence if you use this function to update your wormhole
+; status.
+
+  (declare (xargs :stobjs state))
+  (prog2$
+   (wormhole-eval name ; set persistent-whs
+                  '(lambda nil new-status)
+                  new-status)
+   (sync-ephemeral-whs-with-persistent-whs name state)))
 
 (defmacro wormhole (name entry-lambda input form
                          &key
@@ -520,7 +625,10 @@
                          (ld-verbose 'same ld-verbosep)
                          (ld-user-stobjs-modified-warning ':same))
 
-; Warning: Keep this in sync with f-get-ld-specials, f-put-ld-specials,
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
+; Warning: Also, keep this in sync with f-get-ld-specials, f-put-ld-specials,
 ; *initial-ld-special-bindings*, ld-alist-raw, chk-acceptable-ld-fn1-pair, and
 ; ld.
 
@@ -1556,6 +1664,11 @@
             nil)))
   state)
 
+(defun brr-evisc-tuple-oracle-update@par ()
+  #-acl2-loop-only
+  (f-put-global 'brr-evisc-tuple *wormhole-brr-evisc-tuple* *the-live-state*)
+  nil)
+
 (defun iprint-oracle-updates@par ()
   #-acl2-loop-only
   (iprint-oracle-updates-raw *the-live-state*)
@@ -1582,15 +1695,18 @@
 (defun eviscerate-top (x print-level print-length alist evisc-table hiding-cars
                          state)
 
-; We take iprint-ar from the state and then install a new iprint-ar in the state,
-; in addition to returning the evisceration of x.  See eviscerate and the Essay
-; on Iprinting for more details.
+; We update iprint and brr-evisc-tuple information from wormholes and then
+; install a new iprint-ar in the state, in addition to returning the
+; evisceration of x.  See eviscerate and the Essay on Iprinting for more
+; details.
 
   (pprogn
 
-; First we ensure that any iprinting will reflect iprint updates made during brr.
+; First we ensure that the result will reflect iprint and brr-evisc-tuple
+; updates made during brr.
 
    (iprint-oracle-updates? state)
+   (brr-evisc-tuple-oracle-update state)
    (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
      (mv-let (result iprint-alist iprint-fal-new)
        (eviscerate x print-level print-length alist evisc-table hiding-cars
@@ -3623,18 +3739,6 @@
 
   (list alist   print-level print-length hiding-cars))
 
-(defun standard-evisc-tuplep (x)
-  (declare (xargs :guard t))
-  (or (null x)
-      (and (true-listp x)
-           (= (length x) 4)
-           (alistp (car x))
-           (or (null (cadr x))
-               (integerp (cadr x)))
-           (or (null (caddr x))
-               (integerp (caddr x)))
-           (symbol-listp (cadddr x)))))
-
 (defun world-evisceration-alist (state alist)
   (declare (xargs :stobjs state))
   (let ((wrld (w state)))
@@ -3705,6 +3809,21 @@
   (let ((evisc-tuple (f-get-global 'ld-evisc-tuple state)))
     (assert$ (not (eq evisc-tuple :default)) ; only abbrev, term evisc-tuples
              evisc-tuple)))
+
+(defun brr-evisc-tuple (state)
+
+; It would be nice if we could call (brr-evisc-tuple-oracle-update state) here
+; to make sure that 'brr-evisc-tuple has the latest value set by
+; set-site-evisc-tuple.  The only reason it wouldn't is the unwind protection
+; cleanup in wormhole1.  But we can't change state in this function.  On the
+; other hand, ld-read-command calls the oracle updater before every command is
+; read.
+
+  (let ((val (f-get-global 'brr-evisc-tuple state)))
+    (cond
+     ((eq val :default)
+      (term-evisc-tuple t state))
+     (t val))))
 
 #+(and acl2-infix (not acl2-loop-only))
 (defun-one-output print-infix (x termp width rpc col file eviscp)
