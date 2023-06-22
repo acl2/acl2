@@ -1232,7 +1232,7 @@
              ;; The include-book brought in the desired name (and that thing can be enabled), so now try the proof, enabling the item:
              ;; TTODO: Check if already enabled!
              (b* ( ; todo: ensure this is nice:
-                  (hints-with-enable (acl2::add-enable*-to-hints hints (list item-to-enable)))
+                  (hints-with-enable (acl2::enable-items-in-hints hints (list item-to-enable) t)) ; t means use enable*
                   ((mv provedp state) (prove$-no-error 'try-enable-with-include-book theorem-body hints-with-enable otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the enable hint.  Now, try again without the enable (just the include-book):
@@ -1639,8 +1639,8 @@
                        (mv nil nil state))
              ;; The include-book brought in the desired name (and that thing can be used with :induct), so now try the proof, with :induct item:
              (b* ( ; todo: ensure this is nice:
-                  ;; todo: switch arg order of add-enable*-to-hints:
-                  (hints-with-induct (acl2::add-enable*-to-hints (acl2::merge-hint-setting-into-goal-hint :induct induct-term hints) (list `(:i ,name-to-induct))))
+                  ;; todo: switch arg order:
+                  (hints-with-induct (acl2::enable-items-in-hints (acl2::merge-hint-setting-into-goal-hint :induct induct-term hints) (list `(:i ,name-to-induct)) t))
                   ((mv provedp state) (prove$-no-error 'try-induct-with-include-book theorem-body hints-with-induct otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the :induct hint.  Now, try again without the :induct (just the include-book):
@@ -2046,7 +2046,7 @@
               (and (acl2::print-level-at-least-tp print) (cw "skip (~x0 is already enabled.)~%" fn))
               (mv nil nil state))
              ;; FN exists and just needs to be enabled:
-             (new-hints (acl2::add-enable*-to-hints theorem-hints (list fn))) ;; todo: ensure this is nice
+             (new-hints (acl2::enable-items-in-hints theorem-hints (list fn) t)) ;; todo: ensure this is nice
              ((mv provedp state)
               (prove$-no-error 'try-add-enable-hint
                                theorem-body
@@ -2075,7 +2075,7 @@
                 (and (acl2::print-level-at-least-tp print) (cw "skip (~x0 is already enabled.)~%" rule))
                 (mv nil nil state))
                ;; RULE exists and just needs to be enabled:
-               (new-hints (acl2::enable-runes-in-hints theorem-hints (list rule))) ;; todo: ensure this is nice
+               (new-hints (acl2::enable-items-in-hints theorem-hints (list rule) nil)) ;; todo: ensure this is nice
                ((mv provedp state)
                 (prove$-no-error 'try-add-enable-hint
                                  theorem-body
@@ -2580,7 +2580,7 @@
           (let ((name-to-induct (acl2::ffn-symb induct-term)))
             (if (acl2::recursivep name-to-induct nil (w state)) ; todo: quit here is it is already defined but is not a recursive function
                 ;; Don't need to include and books:
-                (b* ((new-hints (acl2::add-enable*-to-hints (acl2::merge-hint-setting-into-goal-hint :induct induct-term theorem-hints) (list `(:i ,name-to-induct))))
+                (b* ((new-hints (acl2::enable-items-in-hints (acl2::merge-hint-setting-into-goal-hint :induct induct-term theorem-hints) (list `(:i ,name-to-induct)) t))
                      ((mv provedp state) (prove$-no-error 'try-add-induct-hint
                                                           theorem-body
                                                           new-hints
