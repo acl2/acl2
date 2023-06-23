@@ -78,6 +78,7 @@
 
 ;; Returns state.
 ;todo: rules are usually actually runes?
+;; Each line printed starts with a newline.
 (defun try-to-drop-rules-from-defthm (rules body hints otf-flg time-to-beat state)
   (declare (xargs :guard (and (true-listp rules)
                               (rationalp time-to-beat))
@@ -102,22 +103,22 @@
                            (let* ((savings (- time-to-beat time))
                                   (percent-saved (floor (* 100 (/ savings time-to-beat)) 1)))
                              (if (<= *minimum-time-savings-to-report* savings)
-                                 (progn$ (cw "  (Speedup: disable ~x0 to save " rule-to-drop)
+                                 (progn$ (cw "~%  (Speedup: disable ~x0 to save " rule-to-drop)
                                          (print-to-hundredths savings)
                                          (cw " of ")
                                          (print-to-hundredths time-to-beat)
-                                         (cw " seconds (~x0%))~%" percent-saved))
-                               (progn$ ;; (cw "  (Minimal speedup: disable ~x0 to save " rule-to-drop)
+                                         (cw " seconds (~x0%))" percent-saved))
+                               (progn$ ;; (cw "~%  (Minimal speedup: disable ~x0 to save " rule-to-drop)
                                        ;; (print-to-hundredths savings)
                                        ;; (cw " of ")
                                        ;; (print-to-hundredths time-to-beat)
-                                       ;; (cw " seconds (~x0%))~%" percent-saved)
+                                       ;; (cw " seconds (~x0%))" percent-saved)
                                        )))
-                         (progn$ ;; (cw "  (Slower: disable ~x0: " rule-to-drop)
+                         (progn$ ;; (cw "~%  (Slower: disable ~x0: " rule-to-drop)
                                  ;; (print-to-hundredths time)
                                  ;; (cw " vs ")
                                  ;; (print-to-hundredths time-to-beat)
-                                 ;; (cw " seconds)~%")
+                                 ;; (cw " seconds)")
                                  )))
                   (try-to-drop-rules-from-defthm (rest rules) body hints otf-flg time-to-beat state)))))))
 
@@ -161,9 +162,9 @@
                           (mv :failed state))
                 (let* ((elapsed-time (- end-time start-time)))
                   (if (< elapsed-time 1/100)
-                      (progn$ ;; (cw "(Not trying to speed up ~x0 because it only takes " name)
+                      (progn$ ;; (cw "~%(Not trying to speed up ~x0 because it only takes " name)
                               ;; (print-to-hundredths elapsed-time)
-                              ;; (cw " seconds)~%")
+                              ;; (cw " seconds)")
                               (mv nil state))
                     ;; Get the list of runes used in the proof:
                     (let* ((runes-used (get-event-data 'rules state))
@@ -173,6 +174,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns state.  Prints a suggestion if disabling RUNE beforehand can significantly speed up EVENT.
+;; Each line printed starts with a newline.
 (defun try-to-drop-rune-from-event (rune event time-to-beat state)
   (declare (xargs :guard (rationalp time-to-beat)
                   :mode :program
@@ -199,24 +201,24 @@
                   (let* ((savings (- time-to-beat elapsed-time))
                          (percent-saved (floor (* 100 (/ savings time-to-beat)) 1)))
                     (if (<= *minimum-time-savings-to-report* savings)
-                        (progn$ (cw "  (Speedup: disable ~x0 to save " rune)
+                        (progn$ (cw "~%  (Speedup: disable ~x0 to save " rune)
                                 (print-to-hundredths savings)
                                 (cw " of ")
                                 (print-to-hundredths time-to-beat)
-                                (cw " seconds (~x0%))~%" percent-saved)
+                                (cw " seconds (~x0%))" percent-saved)
                                 state)
-                      (progn$ ;;  (cw "  (Minimal speedup: disable ~x0 to save " rune)
+                      (progn$ ;;  (cw "~%  (Minimal speedup: disable ~x0 to save " rune)
                        ;; (print-to-hundredths savings)
                        ;; (cw " of ")
                        ;; (print-to-hundredths time-to-beat)
-                       ;; (cw " seconds (~x0%))~%" percent-saved)
+                       ;; (cw " seconds (~x0%))" percent-saved)
                        state
                        )))
-                (progn$ ;;  (cw "  (Slower: disable ~x0: " rune)
+                (progn$ ;;  (cw "~%  (Slower: disable ~x0: " rune)
                  ;; (print-to-hundredths elapsed-time)
                  ;; (cw " vs ")
                  ;; (print-to-hundredths time-to-beat)
-                 ;; (cw " seconds)~%")
+                 ;; (cw " seconds)")
                  state)))))))))
 
 ;; Returns state.  Prints suggestion for RUNES which, if disabled beforehand, lead to significant speed ups for EVENT.
@@ -231,6 +233,7 @@
       (try-to-drop-runes-from-event (rest runes) event time-to-beat state))))
 
 ;; Returns (mv erp state).
+;; Each line printed starts with a newline.
 (defun speed-up-defrule (event state)
   (declare (xargs :mode :program
                   :stobjs state))
@@ -249,14 +252,14 @@
                       (mv erp state))
             (let* ((elapsed-time (- end-time start-time)))
               (if (< elapsed-time 1/100)
-                  (progn$ ;; (cw "(Not trying to speed up ~x0 because it only takes " name)
+                  (progn$ ;; (cw "~%(Not trying to speed up ~x0 because it only takes " name)
                    ;; (print-to-hundredths elapsed-time)
-                   ;; (cw " seconds)~%")
+                   ;; (cw " seconds)")
                    (mv nil state))
                 ;; Get the list of runes used in the proof:
                 (let* ((runes-used (get-event-data-1 'rules (cadr (hons-get name (f-get-global 'event-data-fal state))))))
                   (if (not runes-used)
-                      (prog2$ (cw "WARNING: No runes reported as used by ~x0.~%" name)
+                      (prog2$ (cw "~%WARNING: No runes reported as used by ~x0." name)
                               (mv nil state))
                     (let ((state (try-to-drop-runes-from-event (drop-fake-runes runes-used) event elapsed-time state)))
                       (mv nil state))))))))))))
