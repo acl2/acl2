@@ -484,6 +484,8 @@
                         create-var-to-add-var
                         create-var-okp-of-add-var
                         create-var-okp-of-enter-scope
+                        create-var-okp-of-add-frame
+                        create-var-okp-of-update-var
                         ident-fix-when-identp
                         equal-of-ident-and-ident
                         (:e str-fix)
@@ -491,7 +493,7 @@
                         compustate-frames-number-of-add-var-not-zero
                         compustate-frames-number-of-enter-scope-not-zero
                         compustate-frames-number-of-add-frame-not-zero
-                        create-var-okp-of-add-frame
+                        compustate-frames-number-of-update-var
                         compustatep-of-add-var))))
        ((mv item-thm-event &) (evmac-generate-defthm item-thm-name
                                                      :formula item-formula
@@ -526,6 +528,8 @@
                (item block-itemp)
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
                (thm-index posp)
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
@@ -547,7 +551,7 @@
      for the theorem about @(tsee exec-stmt),
      because that is what it takes, in @(tsee exec-stmt),
      to go to @(tsee exec-expr-call-or-asg)."))
-  (b* (((reterr) (irr-block-item) nil nil 1 nil)
+  (b* (((reterr) (irr-block-item) nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((unless var-info?)
@@ -609,7 +613,13 @@
        (stmt-limit `(binary-+ '1 ,expr-limit))
        ((when (or (not rhs.proofs)
                   (atc-var-info->externalp var-info))) ; <- temporary
-        (retok item stmt-limit rhs.events rhs.thm-index rhs.names-to-avoid))
+        (retok item
+               stmt-limit
+               rhs.events
+               gin.inscope
+               gin.context
+               rhs.thm-index
+               rhs.names-to-avoid))
        (compst-term `(update-var (ident ',(symbol-name var))
                                  ,rhs.term
                                  ,gin.compst-var))
@@ -658,8 +668,10 @@
                         compustate-frames-number-of-add-var-not-zero
                         compustate-frames-number-of-enter-scope-not-zero
                         compustate-frames-number-of-add-frame-not-zero
+                        compustate-frames-number-of-update-var
                         write-var-okp-of-add-var
                         write-var-okp-of-enter-scope
+                        write-var-okp-of-update-var
                         ident-fix-when-identp
                         identp-of-ident
                         equal-of-ident-and-ident
@@ -694,6 +706,7 @@
                                not-zp-of-limit-variable
                                compustatep-of-add-var
                                compustatep-of-enter-scope
+                               compustatep-of-update-var
                                ,asg-thm-name))))
        ((mv expr-event &) (evmac-generate-defthm expr-thm-name
                                                  :formula expr-formula
@@ -769,7 +782,7 @@
                             identp-of-ident
                             equal-of-ident-and-ident
                             (:e str-fix)))
-       ((mv ?new-inscope new-inscope-events names-to-avoid)
+       ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
                              gin.inscope
@@ -787,7 +800,13 @@
                              stmt-event
                              item-event)
                        new-inscope-events)))
-    (retok item item-limit events thm-index names-to-avoid))
+    (retok item
+           item-limit
+           events
+           new-inscope
+           new-context
+           thm-index
+           names-to-avoid))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1286,7 +1305,7 @@
                                          nil
                                          wrld))
        (lemma-hints `(("Goal"
-                       :in-theory '(,gin.fn-guard if* test* declar)
+                       :in-theory '(,gin.fn-guard if* test* declar assign)
                        :use (:guard-theorem ,gin.fn))))
        ((mv lemma-event &)
         (evmac-generate-defthm lemma-name
@@ -2921,6 +2940,8 @@
               (b* (((erp asg-item
                          asg-limit
                          asg-events
+                         new-inscope
+                         new-context
                          thm-index
                          names-to-avoid)
                     (atc-gen-block-item-var-asg var
@@ -2932,10 +2953,11 @@
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
+                                   :context new-context
                                    :var-term-alist var-term-alist-body
+                                   :inscope new-inscope
                                    :thm-index thm-index
-                                   :names-to-avoid names-to-avoid
-                                   :proofs nil)
+                                   :names-to-avoid names-to-avoid)
                                   state))
                    (type body.type)
                    (limit (pseudo-term-fncall
