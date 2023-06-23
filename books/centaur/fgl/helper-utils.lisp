@@ -295,6 +295,8 @@
                                                            nil 'interp-st)))
                     nil)))
 
+(disable-execution run-counterexample)
+
 
 
 
