@@ -6722,9 +6722,14 @@
 ; This function is a "No-Change Loser" meaning that if it fails and returns nil
 ; as its first result, it returns the unmodified alist as its second.
 
-  (declare (xargs :guard (and (pseudo-termp pat)
+  (declare (xargs :measure (make-ord 1
+                                     (+ 1 (acl2-count pat))
+                                     2)
+                  :guard (and (pseudo-termp pat)
                               (pseudo-termp term)
-                              (alistp alist))))
+                              (alistp alist))
+                  :verify-guards nil
+                  ))
   (cond ((variablep pat)
          (let ((pair (assoc-eq pat alist)))
            (cond (pair (cond ((equal (cdr pair) term)
@@ -6743,23 +6748,23 @@
 ; and, of course, cons, as constructors.
 
          (mv-let
-          (pat1 term1 pat2 term2)
-          (one-way-unify1-quotep-subproblems pat term)
-          (cond ((eq pat1 t) (mv t alist))
-                ((eq pat1 nil) (mv nil alist))
-                ((eq pat2 nil) (one-way-unify1 pat1 term1 alist))
-                (t
+           (pat1 term1 pat2 term2)
+           (one-way-unify1-quotep-subproblems pat term)
+           (cond ((eq pat1 t) (mv t alist))
+                 ((eq pat1 nil) (mv nil alist))
+                 ((eq pat2 nil) (one-way-unify1 pat1 term1 alist))
+                 (t
 
 ; We are careful with alist to keep this a no change loser.
 
-                 (mv-let (ans alist1)
-                         (one-way-unify1 pat1 term1 alist)
-                         (cond ((eq ans nil) (mv nil alist))
-                               (t (mv-let
-                                   (ans alist2)
-                                   (one-way-unify1 pat2 term2 alist1)
-                                   (cond (ans (mv ans alist2))
-                                         (t (mv nil alist)))))))))))
+                  (mv-let (ans alist1)
+                    (one-way-unify1 pat1 term1 alist)
+                    (cond ((eq ans nil) (mv nil alist))
+                          (t (mv-let
+                               (ans alist2)
+                               (one-way-unify1 pat2 term2 alist1)
+                               (cond (ans (mv ans alist2))
+                                     (t (mv nil alist)))))))))))
         ((cond ((flambda-applicationp pat)
                 (equal (ffn-symb pat) (ffn-symb term)))
                (t
@@ -6769,9 +6774,9 @@
                                       (fargn term 1) (fargn term 2)
                                       alist))
                (t (mv-let (ans alist1)
-                          (one-way-unify1-lst (fargs pat) (fargs term) alist)
-                          (cond (ans (mv ans alist1))
-                                (t (mv nil alist)))))))
+                    (one-way-unify1-lst (fargs pat) (fargs term) alist)
+                    (cond (ans (mv ans alist1))
+                          (t (mv nil alist)))))))
         (t (mv nil alist))))
 
 (defun one-way-unify1-lst (pl tl alist)
@@ -6782,10 +6787,13 @@
 ; as its first result, indicating that no substitution exists, but
 ; return as its second result an alist different from its input alist.
 
-  (declare (xargs :guard (and (pseudo-term-listp pl)
+  (declare (xargs :measure (make-ord  1
+                                      (+ 1 (acl2-count pl))
+                                      2)
+                  :guard (and (pseudo-term-listp pl)
                               (pseudo-term-listp tl)
                               (alistp alist))))
-  (cond ((null pl) (mv t alist))
+  (cond ((endp pl) (mv t alist))
         (t (mv-let (ans alist)
              (one-way-unify1 (car pl) (car tl) alist)
              (cond
@@ -6808,16 +6816,37 @@
 ; but ultimate success also depends on y, you must preserve the
 ; original inputs and explicitly revert to them if y loses.
 
+  (declare (xargs :measure (make-ord 1
+                                     (+ 2
+                                        (acl2-count pat1)
+                                        (acl2-count pat2))
+                                     0)
+                  :guard (and (pseudo-termp pat1)
+                              (pseudo-termp term1)
+                              (pseudo-termp pat2)
+                              (pseudo-termp term2)
+                              (alistp alist))))
+
   (mv-let (ans alist1)
     (one-way-unify1 pat1 term1 alist)
     (cond (ans
            (mv-let (ans alist2)
-                   (one-way-unify1 pat2 term2 alist1)
-                   (cond (ans (mv ans alist2))
-                         (t (mv nil alist)))))
+             (one-way-unify1 pat2 term2 alist1)
+             (cond (ans (mv ans alist2))
+                   (t (mv nil alist)))))
           (t (mv nil alist)))))
 
 (defun one-way-unify1-equal (pat1 pat2 term1 term2 alist)
+  (declare (xargs :measure (make-ord 1
+                                     (+ 2
+                                        (acl2-count pat1)
+                                        (acl2-count pat2))
+                                     1)
+                  :guard (and (pseudo-termp pat1)
+                              (pseudo-termp term1)
+                              (pseudo-termp pat2)
+                              (pseudo-termp term2)
+                              (alistp alist))))
   (mv-let (ans alist)
     (one-way-unify1-equal1 pat1 pat2 term1 term2 alist)
     (cond
