@@ -400,6 +400,16 @@
      (prog2$ (and print (cw ")~%"))
              (submit-event event nil nil state)))))
 
+;; Currently, there is nothing to try for an in-package.
+(defun improve-in-package-event (event rest-events print state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state)
+           (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
+           )
+  (prog2$ (and print (cw "(Working on ~x0: )~%" event))
+          (mv nil state)))
+
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
 (defun improve-event (event rest-events print state)
@@ -447,9 +457,11 @@
     ((defthm defthmd) (improve-defthm-event event rest-events print state))
     ((defun defund) (improve-defun-event event rest-events print state))
     ((defrule defruled) (improve-defrule-event event rest-events print state))
+    ((in-package) (improve-in-package-event event rest-events print state))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
-    (t (submit-event-expect-no-error event nil state))))
+    (t (prog2$ (cw "(Skipping unhandled event ~x0)~%" event)
+               (submit-event-expect-no-error event nil state)))))
 
 ;; Submits each event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
