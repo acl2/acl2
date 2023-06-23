@@ -426,7 +426,7 @@
                            (expr-var-vals1 (svtv-chase-evallist expr-vars phase svtv-chase-data.evaldata))
                            (expr-var-vals2 (svtv-chase-evallist expr-vars phase2 svtv-chase-data.evaldata2))
                            (diffs (4veclist-bitdiff expr-var-vals1 expr-var-vals2)))
-                        (pairlis$ expr-vars diffs)))
+                        (make-fast-alist (pairlis$ expr-vars diffs))))
                 (mv nil nil)))
           (mv nil nil)))
        
