@@ -23998,6 +23998,106 @@
                val)))
   state)
 
+; The following functions, through print-brr-status, are useful for debugging
+; break-rewrite.  Prettyify-brr-status converts a brr-status record into a
+; readable term and, if the hide-stuff-flg is t, will elide the often very
+; large rcnst (by replacing it with |some-rewrite-constant|), elide all the
+; numes (by replacing them with |some-nume|), and elide the saved-standard-oi
+; field.  The reason for the latter two is illustrated by the run-script book
+; books/demos/brr-test-input.lsp.  That book uses print-brr-status (which uses
+; prettyify-brr-status) to display the status at various points in a
+; break-rewrite session and the brr-test-log.txt file records the right
+; answers.  But as we add new functions to the ACL2 sources the numes
+; associated with rewrite rules change and the book fails to re-certify because
+; the "right" answers have the newly wrong numes in them; also, the value of
+; saved-standard-oi is dependent on the filesystem.
+
+(defun hide-nume-in-rewrite-or-linear-rule (lemma)
+  (cond
+   ((eq (record-type lemma) 'rewrite-rule)
+    (change rewrite-rule
+            lemma
+            :nume '|some-nume|))
+   ((eq (record-type lemma) 'linear-lemma)
+    (change linear-lemma
+            lemma
+            :nume '|some-nume|))
+   (t lemma)))
+
+(defun prettyify-brr-gstack-frame (frame)
+
+; Keep this in sync with the cw-gframe vis-a-vis the shapes of each possible
+; frame.
+
+  (case (access gframe frame :sys-fn)
+        ((rewrite-with-lemma
+          rewrite-quoted-constant-with-lemma
+          add-linear-lemma)
+         (let* ((args (access gframe frame :args))
+                (lemma (cdr args)))
+           (change gframe frame
+                   :args
+                   (cons (car args)
+                         (hide-nume-in-rewrite-or-linear-rule lemma)))))
+        (otherwise frame)))
+
+(defun prettyify-brr-gstack (gstack)
+  (cond
+   ((endp gstack) nil)
+   (t (cons (prettyify-brr-gstack-frame (car gstack))
+            (prettyify-brr-gstack (cdr gstack))))))
+
+(defun prettyify-brr-status (hide-stuff-flg status)
+  (cond
+   ((null status) nil)
+   (t `(make brr-status
+             :entry-code
+             ',(access brr-status status :entry-code)
+             :brr-monitored-runes
+             ',(access brr-status status :brr-monitored-runes)
+             :brr-gstack
+             ',(prettyify-brr-gstack (access brr-status status :brr-gstack))
+             :brr-local-alist
+             ',(let* ((alist0 (access brr-status status :brr-local-alist))
+                      (alist1 (cond
+                               ((and hide-stuff-flg
+                                     (assoc-eq 'rcnst alist0))
+                                (put-assoc-eq 'rcnst '|some-rewrite-constant|
+                                              alist0))
+                               (t alist0)))
+                      (alist2 (cond
+                               ((and hide-stuff-flg
+                                     (assoc-eq 'lemma alist1))
+                                (let ((lemma (cdr (assoc-eq 'lemma alist1))))
+                                  (put-assoc-eq
+                                   'lemma
+                                   (hide-nume-in-rewrite-or-linear-rule lemma)
+                                   alist1)))
+                               (t alist1)))
+                      (alist3 (cond
+                               ((and hide-stuff-flg
+                                     (assoc-eq 'saved-standard-oi alist2))
+                                (put-assoc-eq 'saved-standard-oi
+                                              '|some-channel|
+                                              alist2))
+                               (t alist2))))
+                 alist3)
+             :brr-previous-status
+             ,(prettyify-brr-status
+               hide-stuff-flg
+               (access brr-status status :brr-previous-status))))))
+
+(defun print-brr-status (hide-rcnst-flg)
+  #+acl2-loop-only (declare (ignore hide-rcnst-flg))
+  #-acl2-loop-only
+  (cw "~X01"
+      (prettyify-brr-status
+       hide-rcnst-flg
+       (cdr (assoc-eq 'brr *wormhole-status-alist*)))
+      nil)
+
+  nil)
+
 (defun chk-trace-options-aux (form kwd formals ctx wrld state)
 
 ; Check that the indicated form returns a single, non-stobj value, and that
@@ -27630,6 +27730,15 @@
 (defconst *evisc-tuple-sites*
   '(:TERM :LD :TRACE :ABBREV :GAG-MODE :BRR))
 
+(defun set-brr-evisc-tuple1 (val state)
+
+; This function is untouchable because it assumes val is a legal
+; brr-evisc-tuple, i.e., either :default or a standard-evisc-tuplep.
+
+  #-acl2-loop-only
+  (setq *wormhole-brr-evisc-tuple* val)
+  (f-put-global 'brr-evisc-tuple val state))
+
 (defun set-site-evisc-tuple (site evisc-tuple ctx state)
 
 ; This function is untouchable because it assumes that evisc-tuple is legal.
@@ -27654,7 +27763,7 @@
     (:TRACE    (set-trace-evisc-tuple
                 (if (eq evisc-tuple :default) nil evisc-tuple)
                 state))
-    (:BRR      (set-brr-evisc-tuple evisc-tuple state))
+    (:BRR      (set-brr-evisc-tuple1 evisc-tuple state))
     (otherwise (prog2$ (er hard ctx
                            "Implementation Error: Unrecognized keyword, ~x0.  ~
                             Expected evisc-tuple site: ~v1"

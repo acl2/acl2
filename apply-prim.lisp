@@ -319,6 +319,8 @@
    '(SYNP                   ; restricts arguments
      WORMHOLE1              ; restricts arguments
      WORMHOLE-EVAL          ; restricts arguments
+     SYNC-EPHEMERAL-WHS-WITH-PERSISTENT-WHS ; restricts arguments
+     SET-PERSISTENT-WHS-AND-EPHEMERAL-WHS   ; restricts arguments
      SYS-CALL               ; bad -- requires trust tag
      HONS-CLEAR!            ; bad -- requires trust tag
      HONS-WASH!             ; bad -- requires trust tag
@@ -452,9 +454,6 @@
     (CERT-ANNOTATIONSP)
     (CHK-ALL-BUT-NEW-NAME-CMP)
     (CHK-LENGTH-AND-KEYS ACL2-COUNT ACTUALS)
-    (CLEAN-BRR-STACK)
-    (CLEAN-BRR-STACK1 ACL2-COUNT STACK)
-    (CLEAR-BRR-DATA-LST)
     (COLLECT$ ACL2-COUNT LST)
     (COLLECT$+ ACL2-COUNT LST)
     (COLLECT$+-AC ACL2-COUNT LST)
@@ -590,7 +589,6 @@
     (SCAN-PAST-WHITESPACE NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
     (SCAN-TO-CLTL-COMMAND ACL2-COUNT WRLD)
     (SILENT-ERROR)
-    (STANDARD-EVISC-TUPLEP)
     (STOBJP)
     (STRING-PREFIXP)
     (STRING-PREFIXP-1 ACL2-COUNT I)

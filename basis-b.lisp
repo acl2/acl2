@@ -873,9 +873,11 @@
 
   (pprogn
 
-; First we ensure that any iprinting will reflect iprint updates made during brr.
+; First we ensure that the result will reflect iprint and brr-evisc-tuple
+; updates made during brr.
 
    (iprint-oracle-updates? state)
+   (brr-evisc-tuple-oracle-update state)
    (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
      (mv-let (result iprint-alist iprint-fal-new)
        (eviscerate-stobjs estobjs-out lst print-level print-length alist
