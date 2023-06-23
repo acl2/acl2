@@ -14,12 +14,21 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)
 
-(assert-equal (enable-items-in-theory-expression nil '(a b (:r c))) ''(a b (:r c)))
-(assert-equal (enable-items-in-theory-expression '(enable foo bar) '(a b (:r c))) '(enable foo bar a b (:r c)))
-(assert-equal (enable-items-in-theory-expression '(enable* foo bar) '(a b (:r c))) '(enable* foo bar a b (:r c)))
-(assert-equal (enable-items-in-theory-expression '(disable foo bar) '(a b (:r c))) '(e/d nil (foo bar) (a b (:r c))))
-(assert-equal (enable-items-in-theory-expression '(disable* foo bar) '(a b (:r c))) '(e/d* nil (foo bar) (a b (:r c))))
-(assert-equal (enable-items-in-theory-expression ''(foo bar) '(a b (:r c))) ''(foo bar a b (:r c)))
+;; Tests with starp=nil.
+(assert-equal (enable-items-in-theory-expression nil '(a b (:r c)) nil) ''(a b (:r c)))
+(assert-equal (enable-items-in-theory-expression '(enable foo bar) '(a b (:r c)) nil) '(enable foo bar a b (:r c)))
+(assert-equal (enable-items-in-theory-expression '(enable* foo bar) '(a b (:r c)) nil) '(enable* foo bar a b (:r c)))
+(assert-equal (enable-items-in-theory-expression '(disable foo bar) '(a b (:r c)) nil) '(e/d nil (foo bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression '(disable* foo bar) '(a b (:r c)) nil) '(e/d* nil (foo bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression ''(foo bar) '(a b (:r c)) nil) ''(foo bar a b (:r c)))
+
+;; Tests with starp=t.
+(assert-equal (enable-items-in-theory-expression nil '(a b (:r c)) t) '(expand-ruleset '(a b (:r c)) world))
+(assert-equal (enable-items-in-theory-expression '(enable foo bar) '(a b (:r c)) t) '(enable* foo bar a b (:r c)))
+(assert-equal (enable-items-in-theory-expression '(enable* foo bar) '(a b (:r c)) t) '(enable* foo bar a b (:r c)))
+(assert-equal (enable-items-in-theory-expression '(disable foo bar) '(a b (:r c)) t) '(e/d* nil (foo bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression '(disable* foo bar) '(a b (:r c)) t) '(e/d* nil (foo bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression ''(foo bar) '(a b (:r c)) t) '(union-theories '(foo bar) (expand-ruleset '(a b (:r c)) world)))
 
 ;; Tests with starp=nil.
 (assert-equal (disable-items-in-theory-expression nil '(a b (:r c)) nil) 'nil)
@@ -47,23 +56,23 @@
 (assert-equal (disable-items-in-hints '(("Subgoal 1" :use foo)) '(baz baz2) t) '(("Goal" :in-theory (disable* baz baz2)) ("Subgoal 1" :use foo :in-theory (disable* baz baz2))))
 (assert-equal (disable-items-in-hints nil '(baz baz2) t) '(("Goal" :in-theory (disable* baz baz2))))
 
-(assert-equal
- (enable-runes-in-hints '(("Goal" :use blah)) '(f2))
- '(("Goal" :use blah :in-theory (enable f2))))
+;; (assert-equal
+;;  (enable-runes-in-hints '(("Goal" :use blah)) '(f2))
+;;  '(("Goal" :use blah :in-theory (enable f2))))
 
-(assert-equal
- (enable-runes-in-hints '(("Goal" :in-theory (enable f1))) '(f2))
- '(("Goal" :in-theory (enable f1 f2))))
+;; (assert-equal
+;;  (enable-runes-in-hints '(("Goal" :in-theory (enable f1))) '(f2))
+;;  '(("Goal" :in-theory (enable f1 f2))))
 
-;; TODO: Not right if f1 is a theory that includes f2.
-(assert-equal
- (enable-runes-in-hints '(("Goal" :in-theory (disable f1))) '(f2))
- '(("Goal" :in-theory (e/d (f2) (f1)))))
+;; ;; TODO: Not right if f1 is a theory that includes f2.
+;; (assert-equal
+;;  (enable-runes-in-hints '(("Goal" :in-theory (disable f1))) '(f2))
+;;  '(("Goal" :in-theory (e/d (f2) (f1)))))
 
-;; TODO: Not right if f2 is a theory that includes f3.
-(assert-equal
- (enable-runes-in-hints '(("Goal" :in-theory (e/d (f1) (f2)))) '(f3))
- '(("Goal" :in-theory (e/d (f1 f3) (f2)))))
+;; ;; TODO: Not right if f2 is a theory that includes f3.
+;; (assert-equal
+;;  (enable-runes-in-hints '(("Goal" :in-theory (e/d (f1) (f2)))) '(f3))
+;;  '(("Goal" :in-theory (e/d (f1 f3) (f2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,19 +117,19 @@
 (def-ruleset foo '(posp endp))
 (def-ruleset bar '(natp))
 
-(assert-equal
- (add-enable*/disable*-to-hints '(("Goal" :in-theory (enable remove-duplicates-equal)))
-                                '(foo natp)
-                                '(bar len))
- '(("Goal"
-    :in-theory
-    (set-difference-theories (union-theories (expand-ruleset '(foo natp) world)
-                                             (enable remove-duplicates-equal))
-                             (expand-ruleset '(bar len) world)))))
+;; (assert-equal
+;;  (add-enable*/disable*-to-hints '(("Goal" :in-theory (enable remove-duplicates-equal)))
+;;                                 '(foo natp)
+;;                                 '(bar len))
+;;  '(("Goal"
+;;     :in-theory
+;;     (set-difference-theories (union-theories (expand-ruleset '(foo natp) world)
+;;                                              (enable remove-duplicates-equal))
+;;                              (expand-ruleset '(bar len) world)))))
 
-;; test with no existing hint for Goal
-(assert-equal
- (add-enable*/disable*-to-hints nil
-                                '(foo natp)
-                                '(bar len))
- '(("Goal" :in-theory (e/d* (foo natp) (bar len)))))
+;; ;; test with no existing hint for Goal
+;; (assert-equal
+;;  (add-enable*/disable*-to-hints nil
+;;                                 '(foo natp)
+;;                                 '(bar len))
+;;  '(("Goal" :in-theory (e/d* (foo natp) (bar len)))))

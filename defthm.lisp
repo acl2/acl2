@@ -11030,7 +11030,12 @@
          (cons (car rules) (collect-abbreviation-subclass (cdr rules))))
         (t (collect-abbreviation-subclass (cdr rules)))))
 
+; Note: In pre-Version_8.6 there were functions called monitor1 and unmonitor1,
+; which duplicated some code.  Those functions have been refactored and
+; eliminated in favor of compositions of new functions.
+
 (defun runes-to-monitor1 (runes x wrld ctx state
+                                quietp
                                 only-simple only-simple-count
                                 some-simple some-s-all some-s-bad
                                 acc)
@@ -11045,7 +11050,7 @@
      (t
       (pprogn
        (cond
-        (only-simple
+        ((and only-simple (not quietp))
          (warning$ ctx "Monitor"
                    "The rune~#0~[~/s~] ~&0 name~#0~[s~/~] only~#1~[ a~/~] ~
                     simple abbreviation rule~#1~[~/s~].  Monitors can be ~
@@ -11058,7 +11063,7 @@
                    (if (> only-simple-count 1) 1 0)))
         (t state))
        (cond
-        (some-simple
+        ((and some-simple (not quietp))
          (assert$
           (< 1 some-s-all)
           (warning$ ctx "Monitor"
@@ -11082,11 +11087,14 @@
         (let ((rules (find-rules-of-rune rune wrld)))
           (cond
            ((null rules)
-            (pprogn (warning$ ctx "Monitor"
-                              "No rules are named ~x0."
-                              rune)
+            (pprogn (if quietp
+                        state
+                        (warning$ ctx "Monitor"
+                                  "No rules are named ~x0."
+                                  rune))
                     (runes-to-monitor1
                      (cdr runes) x wrld ctx state
+                     quietp
                      only-simple
                      only-simple-count
                      some-simple some-s-all some-s-bad
@@ -11097,6 +11105,7 @@
                ((equal (length bad-rewrite-rules) (length rules))
                 (runes-to-monitor1
                  (cdr runes) x wrld ctx state
+                 quietp
                  (cons rune only-simple)
                  (+ (length rules) only-simple-count)
                  some-simple some-s-all some-s-bad
@@ -11104,16 +11113,19 @@
                (bad-rewrite-rules
                 (runes-to-monitor1
                  (cdr runes) x wrld ctx state
+                 quietp
                  only-simple only-simple-count
                  (cons rune some-simple)
                  (+ (length rules) some-s-all)
                  (+ (length bad-rewrite-rules) some-s-bad)
                  (cons rune acc)))
                (t (runes-to-monitor1 (cdr runes) x wrld ctx state
+                                     quietp
                                      only-simple only-simple-count
                                      some-simple some-s-all some-s-bad
                                      (cons rune acc)))))))))
        (t (runes-to-monitor1 (cdr runes) x wrld ctx state
+                             quietp
                              only-simple only-simple-count
                              some-simple some-s-all some-s-bad
                              (cons rune acc))))))))
@@ -11147,7 +11159,7 @@
                          'runic-mapping-pairs nil wrld))))
     (monitorable-runes temp)))
 
-(defun runes-to-monitor (x ctx state)
+(defun runes-to-monitor (x ctx state quietp)
   (er-let* ((wrld (value (w state)))
             (runes
              (cond
@@ -11166,6 +11178,7 @@
                        rune))
                   (t (value (list rune)))))))))
     (runes-to-monitor1 runes x wrld ctx state
+                       quietp
                        nil 0
                        nil 0 0
                        nil)))
@@ -11182,26 +11195,15 @@
                                 (remove1-assoc-equal? (car lst) alist))
     alist))
 
-(defun monitor1 (x form ctx state)
-
-; The list of monitored runes modified by this function is a brr-global.
-; Thus, this function should only be evaluated within a wormhole.  The macro
-; monitor can be called in either a wormhole state or a normal state.
-
-  (er-let* ((runes (runes-to-monitor x ctx state))
-            (term (translate-break-condition form ctx state)))
-    (prog2$
-     (or (f-get-global 'gstackp state)
-         (cw "Note: Enable break-rewrite with :brr t.~%"))
-     (pprogn
-      (f-put-global 'brr-monitored-runes
-                    (append (pairlis-x2 runes (list term))
-                            (remove1-assoc-equal?-lst
-                             runes
-                             (get-brr-global 'brr-monitored-runes
-                                             state)))
-                    state)
-      (value (get-brr-global 'brr-monitored-runes state))))))
+(defun preserve-other-brr-criteria (args criteria-alist)
+  (cond
+   ((endp args) (revappend criteria-alist nil))
+   ((member-eq (car args) '(:condition :depth :abstraction :lambda))
+    (preserve-other-brr-criteria (cddr args) criteria-alist))
+   (t (preserve-other-brr-criteria (cddr args)
+                                   (cons (cons (car args)
+                                               (cadr args))
+                                         criteria-alist)))))
 
 (defun remove1-assoc-equal-lst (lst alist)
   (declare (xargs :guard (alistp alist)))
@@ -11218,124 +11220,252 @@
          (set-difference-assoc-equal (cdr lst) alist))
         (t (cons (car lst) (set-difference-assoc-equal (cdr lst) alist)))))
 
-(defun unmonitor1 (x ctx state)
-  (let* ((wrld (w state))
-         (runes (cond
-                 ((symbolp x)
-                  (monitorable-runes-from-mapping-pairs x wrld))
-                 (t (list (translate-abbrev-rune x (macro-aliases wrld)))))))
-    (cond
-     ((null runes)
-      (er soft ctx
-          "The value ~x0 does not specify any runes that could be monitored."
-          x))
-     (t
-      (let* ((monitored-runes-alist
-              (get-brr-global 'brr-monitored-runes state))
-             (bad-runes ; specified to unmonitor, but not monitored
-              (set-difference-assoc-equal runes monitored-runes-alist)))
-        (er-progn
-         (cond ((null bad-runes)
-                (value nil))
-               ((not (intersectp-equal runes (strip-cars monitored-runes-alist)))
-                (cond
-                 ((null (cdr runes)) ; common case
-                  (er soft ctx "~x0 is not monitored." (car runes)))
-                 (t
-                  (er soft ctx
-                      "None of the ~n0 runes specified to be unmonitored is ~
-                       currently monitored."
-                      (length runes)))))
-               (t
-                (pprogn (warning$ ctx "Monitor"
-                                  "Skipping the rune~#0~[~/s~] ~&0, as ~
-                                   ~#0~[it is~/they are~] not currently ~
-                                   monitored."
-                                  bad-runes)
-                        (value nil))))
-         (pprogn
-          (f-put-global 'brr-monitored-runes
-                        (remove1-assoc-equal-lst runes monitored-runes-alist)
-                        state)
-          (prog2$
-           (cond ((and (f-get-global 'gstackp state)
-                       (null monitored-runes-alist))
-                  (cw "Note:  No runes are being monitored.  Disable ~
-                       break-rewrite with :brr nil.~%"))
-                 (t nil))
-           (value monitored-runes-alist)))))))))
+(defun monitorable-runes-from-mapping-pairs (sym wrld)
 
-(defun monitor-fn (x expr quietp state)
+; Sym is runic designator, like a function or theorem name or a macro name
+; mapped to a function name by macro-aliases.  We collect the monitorable runes
+; associated with sym.
 
-; If we are not in a wormhole, get into one.  Then we set brr-monitored-runes
-; appropriately.  We always print the final value of brr-monitored-runes to the
-; comment window and we always return (value :invisible).
+  (let ((temp (strip-cdrs
+               (getpropc (deref-macro-name sym (macro-aliases wrld))
+                         'runic-mapping-pairs nil wrld))))
+    (monitorable-runes temp)))
+
+(defun merge-new-and-old-monitors (new-lst old-lst)
+
+; Both arguments are lists of pairs (rune . criteria-alist).  In fact, old-lst
+; is the current value of brr-monitored-runes, and new-lst is an analogous
+; list.  We merge them to form a new value for brr-monitored-runes.  Note
+; however that we just form the list.  We don't install it.
+
+  (append new-lst
+          (remove1-assoc-equal?-lst (strip-cars new-lst)
+                                    old-lst)))
+
+(defun translate-rune-and-criteria (x args ctx state)
+
+; We translate x into a list of monitorable runes and args into an alist
+; pairing monitor criteria keywords and translated values.  We then pair each
+; rune with the criteria alist and return that list in an error triple.  If
+; args does not start with a keyword, we treat it as (:condition args).
+
+  (let ((args (cond ((and (consp args)
+                          (keywordp (car args)))
+                     args)
+                    (t (list :condition args)))))
+    (er-let* ((runes (runes-to-monitor x ctx state nil)))
+      (cond
+       ((and (keyword-value-listp args)
+             (no-duplicatesp-eq (evens args)))
+        (let* ((condition-spec (assoc-keyword :condition args))
+               (depth-spec (assoc-keyword :depth args))
+               (abstraction-spec (assoc-keyword :abstraction args))
+               (lambda-spec (assoc-keyword :lambda args)))
+          (cond
+           ((and depth-spec
+                 (not (natp (cadr depth-spec))))
+            (er soft 'monitor
+                "When supplied, the :depth value in MONITOR's second argument ~
+                 must be a natural and ~x0 is not!"
+                (cadr depth-spec)))
+           ((and lambda-spec
+                 (not (booleanp (cadr lambda-spec))))
+            (er soft 'monitor
+                "When supplied, the :lambda value in MONITOR's second ~
+                 argument must be a Boolean and ~x0 is not!"
+                (cadr lambda-spec)))
+           (t
+            (er-let* ((apat (if abstraction-spec
+                                (translate (cadr abstraction-spec)
+                                           '(nil) nil t ctx (w state) state)
+                                (value nil)))
+                      (condition (if condition-spec
+                                     (translate-break-condition
+                                      (cadr condition-spec)
+                                      ctx state)
+                                     (value *t*))))
+              (value
+               (pairlis-x2
+                 runes
+                 (preserve-other-brr-criteria
+                  args
+                  (append
+                   (if lambda-spec
+                       (list (cons :lambda (cadr lambda-spec)))
+                       nil)
+                   (if abstraction-spec
+                       (list (cons :abstraction apat))
+                       nil)
+                   (if depth-spec
+                       (list (cons :depth (cadr depth-spec)))
+                       nil)
+                   (list (cons :condition condition)))))))))))
+       (t (er soft 'monitor
+              "The second argument to MONITOR must satisfy ~
+               keyword-value-listp with no duplicate keys and ~x0 is not!"
+              args))))))
+
+(defun monitor-fn (x args quietp state)
+
+; Expects and ensures Wormhole Coherence
+
+; X designates a list of runes and args is a keyword alist of monitoring
+; criteria.  E.g., x might be a theorem name and args might be (:depth 3
+; :condition (foop (brr@ x))) and, after translating them (producing an alist
+; from args), we pair all the runes with that one criteria alist.  We then
+; merge that list of monitors into the current value of brr-monitored-runes.
+; We update brr-monitored-runes in both persistent-whs and ephemeral-whs (if
+; we're in the brr wormhole).
+
+; If break-rewrite hasn't been turned on (i.e., (brr t)), we print a note that
+; it should be.  Otherwise we print nothing (but error messages) if quietp is t
+; and we return (value t).  If quietp is nil, we print the new current value of
+; brr-monitored-runes to the comment window and return (value :invisible)
+
+  (er-let* ((new-pairs (translate-rune-and-criteria x args quietp state)))
+    (progn$
+     (semi-initialize-brr-wormhole state)
+     (progn$
+      (or (f-get-global 'gstackp state)
+          (cw "Note: Enable break-rewrite with :brr t.~%~%"))
+      (wormhole-eval
+       'brr
+       '(lambda (whs)
+          (let* ((old-brr-monitored-runes
+                  (access brr-status whs :brr-monitored-runes))
+                 (new-brr-monitored-runes
+                  (merge-new-and-old-monitors new-pairs
+                                              old-brr-monitored-runes)))
+            (prog2$
+             (and (not quietp)
+; Note: we are not using (brr-evisc-tuple state) here.  This is
+; a deliberate but undebated choice! 
+                  (cw "~Y01~|" new-brr-monitored-runes nil))
+             (change brr-status whs
+                     :brr-monitored-runes new-brr-monitored-runes))))
+       (list new-pairs quietp))
+      (pprogn
+       (sync-ephemeral-whs-with-persistent-whs 'brr state)
+       (value (if quietp t :invisible)))))))
+
+(defun all-keys-with-base-symbol (x alist)
+
+; X is a symbol.  Alist is an alist whose keys look like runes (but some may
+; not be runes in the current world).  We return return every key of alist that
+; has x as its base symbol.
 
   (cond
-   ((eq (f-get-global 'wormhole-name state) 'brr)
-    (er-progn
-     (monitor1 x expr 'monitor state)
-     (prog2$
-      (and (not quietp)
-           (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil))
-      (value (if quietp t :invisible)))))
-   (t (prog2$
-       (brr-wormhole
-        '(lambda (whs)
-           (set-wormhole-entry-code whs :ENTER))
-        nil
-        `(er-progn
-          (monitor1 ',x ',expr 'monitor state)
-          (prog2$
-           (and (not ',quietp)
-                (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil))
-           (value nil)))
-        nil)
-       (value (if quietp t :invisible))))))
+   ((endp alist) nil)
+   ((equal (base-symbol (car (car alist))) x)
+    (cons (car (car alist))
+          (all-keys-with-base-symbol x (cdr alist))))
+   (t (all-keys-with-base-symbol x (cdr alist)))))
+
+(defun all-monitored-runes-removed-reminder ()
+  (cw "Note:  No runes are being monitored.  Perhaps you should turn off ~
+       break-rewrite with (brr nil).~%~%"))
+
+(defun remove-runes-from-old-monitors (runes old-brr-monitored-runes
+                                             brr-reminder-flg)
+
+; Runes is a list of ``runes'' to remove from the current list of
+; monitored-runes (with their criteria).  Actually, not every element of runes
+; is a rune in the current world but we do know that every element of runes
+; occurs as a key in the alist old-brr-monitored-runes.
+
+; We create and return the new list of monitored-runes, but we do not install
+; it.  Brr-reminder-flg tells us whether we are to remind the user (when the
+; new monitored runes is empty) to disable brr.  That flag should only be t if
+; (f-get-global 'gstackp state) is t.  (But we don't have state here, so our
+; caller must tell us.)
+
+  (let* ((new-brr-monitored-runes
+          (remove1-assoc-equal-lst runes old-brr-monitored-runes)))
+    (prog2$
+     (if (and brr-reminder-flg (null new-brr-monitored-runes))
+         (all-monitored-runes-removed-reminder)
+         nil)
+     new-brr-monitored-runes)))
 
 (defun unmonitor-fn (x ctx state)
-  (cond
-   ((eq (f-get-global 'wormhole-name state) 'brr)
-    (er-progn
-     (cond ((eq x :all)
-            (pprogn (f-put-global 'brr-monitored-runes nil state)
-                    (value nil)))
-           (t (unmonitor1 x ctx state)))
-     (prog2$
-      (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
-      (value :invisible))))
-   (t
-    (prog2$
-     (brr-wormhole
-      '(lambda (whs)
-         (set-wormhole-entry-code whs :ENTER))
-      nil
-      `(er-progn
-        (cond ((eq ',x :all)
-               (pprogn (f-put-global 'brr-monitored-runes nil state)
-                       (value nil)))
-              (t (unmonitor1 ',x ',ctx state)))
-        (prog2$
-         (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
-         (value nil)))
-      nil)
-     (value :invisible)))))
+
+; Expects and ensures Wormhole Coherence
+
+; X is :all, another symbol, or something being used as a rune.  We remove from
+; the current value of brr-monitored-runes every pair ``indicated'' by x.  If x
+; is :all, we remove every pair.  If x is another symbol, we remove every pair
+; whose car has x as its base symbol.  If x is anything else we remove the
+; pair, if any, with x as its car.  If no runes were indicated by x we cause an
+; error.
+
+  (progn$
+   (semi-initialize-brr-wormhole state)
+   (er-let* ((whs (get-persistent-whs 'brr state)))
+     (let* ((old-brr-monitored-runes
+             (access brr-status whs :brr-monitored-runes))
+            (runes
+             (cond
+              ((eq x :all)
+               (strip-cars old-brr-monitored-runes))
+              ((symbolp x)
+               (all-keys-with-base-symbol x old-brr-monitored-runes))
+              ((assoc-equal x old-brr-monitored-runes)
+               (list x))
+              (t nil))))
+; Runes, above, is the list of runes ``indicated'' by x.  By construction,
+; every element of runes occurs as a key in old-brr-monitored-runes.  If no
+; runes are indicated by x, we cause an error.
+
+       (cond
+        ((null runes)
+         (cond
+          ((eq x :all)
+           (prog2$ (and (f-get-global 'gstackp state)
+                        (all-monitored-runes-removed-reminder))
+                   (value nil)))
+          ((symbolp x)
+           (er soft ctx
+               "No rune with base symbol ~x0 is being monitored.  Perhaps you ~
+                misspelled it?"
+               x))
+          (t (er soft ctx
+                 "~x0 is not being monitored.  Perhaps you misspelled it?"
+                 x))))
+        (t
+         (prog2$
+          (let ((brr-reminder-flg (f-get-global 'gstackp state)))
+            (wormhole-eval
+             'brr
+             '(lambda (whs)
+                (let ((new-brr-monitored-runes
+                       (remove-runes-from-old-monitors runes
+                                                       old-brr-monitored-runes
+                                                       brr-reminder-flg)))
+                  (prog2$
+; Note: we are not using (brr-evisc-tuple state) here.  This is
+; a deliberate but undebated choice! 
+                   (cw "~Y01~|" new-brr-monitored-runes nil)
+                   (change brr-status whs
+                           :brr-monitored-runes new-brr-monitored-runes))))
+             (list runes brr-reminder-flg)))
+          (pprogn
+           (sync-ephemeral-whs-with-persistent-whs 'brr state)
+           (value :invisible)))))))))
 
 (defun monitored-runes-fn (state)
-  (cond
-   ((eq (f-get-global 'wormhole-name state) 'brr)
-    (prog2$ (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
-            (value :invisible)))
-   (t
-    (prog2$
-     (brr-wormhole
-      '(lambda (whs)
-         (set-wormhole-entry-code whs :ENTER))
-      nil
-      `(prog2$ (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
-               (value nil))
-      nil)
-     (value :invisible)))))
+  (progn$
+   (semi-initialize-brr-wormhole state)
+   (prog2$
+    (wormhole-eval
+     'brr
+     '(lambda (whs)
+        (prog2$
+; Note: we are not using (brr-evisc-tuple state) here.  This is
+; a deliberate but undebated choice! 
+         (cw "~Y01~|" (access brr-status whs :brr-monitored-runes) nil)
+         whs))
+     nil)
+    (value :invisible))))
 
 (defun brr-fn (flg quietp state)
   (cond
@@ -11358,18 +11488,19 @@
                  "It is illegal to exit break-rewrite using :brr when ~
                   brr-data is being tracked.  See :DOC with-brr-data."))))
    (flg
-    (pprogn
-     (f-put-global 'gstackp t state)
-     (maybe-initialize-brr-evisc-tuple state)
-     (cond
-      (quietp (value t))
-      (t
-       (prog2$ (cw "Use :a! to exit break-rewrite.~|See :DOC ~
+    (prog2$
+     (semi-initialize-brr-wormhole state)
+     (pprogn
+      (f-put-global 'gstackp t state)
+      (cond
+       (quietp (value t))
+       (t
+        (prog2$ (cw "Use :a! to exit break-rewrite.~|See :DOC ~
                     set-brr-evisc-tuple and :DOC iprint to control ~
                     suppression of details when printing.~|~%The monitored ~
                     runes are:~%")
-               (er-progn (monitored-runes-fn state)
-                         (value t)))))))
+                (er-progn (monitored-runes-fn state)
+                          (value t))))))))
    (t (pprogn (f-put-global 'gstackp nil state)
               (value nil)))))
 
@@ -11407,7 +11538,9 @@
         (:ancestors '(get-brr-local 'ancestors state))
         (:initial-ttree '(get-brr-local 'initial-ttree state))
         (:final-ttree '(get-brr-local 'final-ttree state))
-        (otherwise '(get-brr-global 'brr-gstack state))))
+        (otherwise '(access brr-status
+                            (f-get-global 'wormhole-status state)
+                            :brr-gstack))))
 
 (defmacro monitor (x expr &optional quietp)
   `(monitor-fn ,x ,expr ,quietp state))
@@ -11421,24 +11554,26 @@
 (defun unconditional-monitor-tuples (x-lst ctx state)
 
 ; This function takes a list of base symbols and/or runes, converts it into a
-; list of monitorable runes, and then creates a doublet for the
-; brr-monitored-runes in which each rune is given the break condition *t*.
-; The resulting list of doublets can be appended to brr-monitored-runes to
-; monitor all of the runes derived from x-lst.  This function causes an error,
-; for example, no monitorable runes are found among the x-lst runes.
+; list of monitorable runes, and then creates a criteria-alist for each rune,
+; in which the break :condition is *t*.  The alist can be appended to
+; brr-monitored-runes to monitor all of the runes derived from x-lst.  This
+; function causes an error, for example, if no monitorable runes are found
+; among the x-lst runes.
 
 ; This function is only used when the brr commands :eval$, :go$, and :ok$ are
-; executed.  Those commands are defined in *brkpt1-aliases* to call
-; proceed-from-brkpt1 with a list of runes (or base symbols) that are to be
-; added to the list of monitored runes.  (Other brr commands call
-; proceed-from-brkpt1, but those commands supply t or nil as the ``list of
-; runes'' and those values are treated differently.)
+; executed under brkpt1 and near-miss-brkpt1.  Those commands are defined in
+; *brkpt1-aliases* to call proceed-from-brkpt1 with a list of runes (or base
+; symbols) that are to be added to the list of monitored runes.  (Other brr
+; commands call proceed-from-brkpt1, but those commands supply t or :none as
+; the ``list of runes'' and those values are treated differently.)
 
   (cond
    ((endp x-lst) (value nil))
-   (t (er-let* ((runes (runes-to-monitor (car x-lst) ctx state))
+   (t (er-let* ((runes (runes-to-monitor (car x-lst) ctx state nil))
                 (rest (unconditional-monitor-tuples (cdr x-lst) ctx state)))
-        (value (append (pairlis-x2 runes (list *t*)) rest))))))
+        (value (append
+                (pairlis-x2 runes (list (cons :condition *t*)))
+                rest))))))
 
 (defun proceed-from-brkpt1 (action runes ctx state)
 
@@ -11447,18 +11582,29 @@
 ; print -  exit brr after printing results of attempted application
 ; break -  do not exit brr
 
-; Runes is allegedly either t or a list of runes (or any runic designators
-; legal for monitoring) to be used as brr-monitored-runes after pairing every
-; rune with *t*.  If it is t, it means use the same brr-monitored-runes.
-; Otherwise, we check that they are all legal.  If not, we warn and do not
-; exit.  We may wish someday to provide the capability of proceeding with
-; conditions other than *t* on the various runes, but I haven't seen a nice
-; design for that yet.
+; Runes is allegedly t, :none, or a list of runes (or any runic designators
+; legal for monitoring) to be added to brr-monitored-runes after pairing every
+; rune with *t*.  If runes is t, it means use the same brr-monitored-runes.  If
+; runes is :none it means unmonitor all runes before proceeding.  Otherwise, we
+; check that all runes all legal.  If not, we warn and do not exit.  We may
+; wish someday to provide the capability of proceeding with conditions other
+; than *t* on the various runes or proceeding after unmonitoring some runes,
+; but I haven't seen a nice design for that yet.  One could always just
+; :monitor and/or :unmonitor before proceeding with exactly the same effect
+
+; Once upon a time we changed the monitored runes ``locally'' so that when
+; break-rewrite got back to this frame it was unchanged.  To do that we could
+; treat :brr-monitored-runes here like we do standard-oi: save the old value
+; below and restore it in brkpt2.  But why bother?  Nothing the user does in
+; brkpt2 is going to use the monitored runes (except a re-entrant call of thm
+; or something) and it might be more confusing to restore the old list --
+; leaving the user wondering if the :eval$ just done really changed it -- than
+; to allow the user to inspect the list as it stood when the :eval$ was done.
 
   (er-let*
       ((tuples (cond ((eq runes t)
                       (value nil))
-                     ((eq runes nil)
+                     ((eq runes :none)
 
 ; This special case avoids getting an error when calling runes-to-monitor.
 
@@ -11473,36 +11619,42 @@
                              runes)
                          ctx state)))))
     (pprogn
-     (put-brr-local 'saved-standard-oi
-                    (f-get-global 'standard-oi state)
-                    state)
-     (put-brr-local 'saved-brr-monitored-runes
-                    (get-brr-global 'brr-monitored-runes state)
-                    state)
-     (put-brr-local 'saved-brr-evisc-tuple
-                    (get-brr-global 'brr-evisc-tuple state)
-                    state)
-     (if (eq runes t)
-         state
-         (f-put-global 'brr-monitored-runes
-                       (append tuples
-                               (remove1-assoc-equal?-lst
-                                (strip-cars tuples)
-                                (get-brr-global 'brr-monitored-runes
-                                                state)))
-                       state))
-     (put-brr-local 'action action state)
-     (exit-brr-wormhole state))))
+     (let ((whs (f-get-global 'wormhole-status state)))
+       (set-persistent-whs-and-ephemeral-whs
+        'brr
+        (change brr-status whs
+                :brr-monitored-runes
+                (if (eq runes t)
+                    (access brr-status whs :brr-monitored-runes)
+                    (if (eq runes :none)
+                        nil
+                        (append tuples
+                                (remove1-assoc-equal?-lst
+                                 (strip-cars tuples)
+                                 (access brr-status whs
+                                         :brr-monitored-runes)))))
+                :brr-local-alist
+                (put-assoc-eq-alist
+                 (access brr-status whs :brr-local-alist)
+                 (list (cons 'saved-standard-oi
+                             (f-get-global 'standard-oi state))
+                       (cons 'action action))))
+        state))
+     (value :q))))
 
 (defun exit-brr (state)
 
 ; The assoc-eq on 'wonp below determines if we are in brkpt2 or brkpt1.
+; Note that we're testing the assoc-eq, not its cdr!
 
   (cond
-   ((assoc-eq 'wonp (get-brr-global 'brr-alist state))
-    (prog2$ (cw "~F0)~%" (get-brr-local 'depth state))
-            (pprogn (pop-brr-stack-frame state)
-                    (exit-brr-wormhole state))))
+   ((assoc-eq 'wonp
+              (access brr-status
+                      (f-get-global 'wormhole-status state)
+                      :brr-local-alist))
+    (prog2$ (cw "~F0)~%" (brr-depth state))
+            (pprogn (pop-brr-status state)
+                    (value :q))))
    (t (proceed-from-brkpt1 'silent t 'exit-brr state))))
 
 (defun ok-if-fn (term state)

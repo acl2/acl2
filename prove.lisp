@@ -4164,22 +4164,28 @@
    (pprogn@par
     (serial-first-form-parallel-second-form@par
 
-; Since wormholes (in particular, brr wormholes) don't change the global values
-; of the iprint structures, we formerly called iprint-oracle-updates as shown
-; just below so that iprinting done in brr is reflected in the global state.
-; However, we see now that this is not necessary: printing with evisceration
-; always goes through eviscerate-top or eviscerate-stobjs-top, and these invoke
-; iprint-oracle-updates when necessary, so the only other reason for such an
-; update here would be if we were to read forms #@n# printed in the brr
-; wormhole.  But such reads would presumably take place interactively by way of
+; Since wormholes (in particular, brr wormholes) don't change the values of the
+; state globals that implement iprinting, we formerly called
+; iprint-oracle-updates as shown in a comment below, so that iprinting done in
+; brr is reflected in the global state.  However, this is not necessary.  To
+; see why, first note that printing with evisceration always goes through
+; eviscerate-top or eviscerate-stobjs-top, and these invoke
+; iprint-oracle-updates when necessary.  So the only other reason to consider
+; calling iprint-oracle-updates here is for the reading of forms #@n# printed
+; in the brr wormhole.  But such reads would presumably take place by way of
 ; read-object, which has its own call of iprint-oracle-updates.
 
-; We leave such code for ACL(p), however; perhaps it could be omitted too, at
-; least when waterfall-parallelism is not enabled, but we haven't thought that
-; through.
+; We leave a version of iprint-oracle-updates for ACL(p), however; perhaps it
+; could be omitted too, at least when waterfall-parallelism is not enabled, but
+; we haven't thought that through.
 
-     state ; formerly (iprint-oracle-updates state); see above
-     (iprint-oracle-updates@par))
+; We do however invoke brr-evisc-tuple-oracle-update, which is necessary either
+; here or in ld-read-command, or both, to avoid failures for certification of
+; community book books/demos/brr-test-book.
+
+     (brr-evisc-tuple-oracle-update state)
+     (prog2$ (iprint-oracle-updates@par)
+             (brr-evisc-tuple-oracle-update@par)))
     (cond
      (erp ; from out-of-time or clause-processor fail; treat as 'error signal
       (let ((time-limit-reached-p
@@ -8212,8 +8218,7 @@
           (prin1 term str)
           (terpri str)
           (force-output str))))
-    (progn$
-     (initialize-brr-stack state)
+    (prog2$
      (initialize-fc-wormhole-sites)
      (pprogn
       (f-put-global 'saved-output-reversed nil state)

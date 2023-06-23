@@ -4717,7 +4717,7 @@
   (declare (xargs :stobjs (state)
                   :mode :program))
   (b* ((- (cw "(Submitting :postlude event for loop number ~x0:~%" this-loop-number))
-       ((mv erp state) (submit-event-helper postlude-event
+       ((mv erp state) (submit-event postlude-event
                                    :brief ;todo: use an overarching print argument
                                    nil
                                    state))

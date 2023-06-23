@@ -704,6 +704,10 @@
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; To see our reason for putting this here, see the comment containing this form
+; in boot-strap-pass-2-a.lisp.
+(verify-termination-boot-strap clear-brr-data-lst) ; and guards
+
 (deftheory ground-zero
 
 ; We want to keep this near the end of *acl2-pass-2-files* in order for the

@@ -60,7 +60,7 @@
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event print nil state)
+    (submit-event event print nil state)
     (mv erp nil state)))
 
 ;; Submits the EVENTS.  If an error is encountered, it is returned and further events are ignored.
@@ -82,7 +82,7 @@
       (if skipp
           (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)
         (mv-let (erp state)
-          (submit-event-helper (if skip-proofsp event `(skip-proofs ,event))
+          (submit-event (if skip-proofsp event `(skip-proofs ,event))
                                nil ;print
                                nil state)
           (if erp
@@ -135,7 +135,7 @@
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event print nil state)
+    (submit-event event print nil state)
     (if erp
         (prog2$ (cw "ERROR (~x0) submitting event ~X12.~%" erp event nil)
                 (mv :error-submitting-event state))
@@ -148,7 +148,7 @@
 ;;                   :mode :program
 ;;                   :stobjs state))
 ;;   (mv-let (erp state) ; make a deflabel to support undoing
-;;     (submit-event-helper '(deflabel improve-book-undo-label) nil nil state)
+;;     (submit-event '(deflabel improve-book-undo-label) nil nil state)
 ;;     (if erp ; shouldn't happen
 ;;         (mv erp state)
 ;;       (mv-let (erp state)
@@ -358,12 +358,12 @@
        (let ((state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
          ;; Try to speed up the proof:
          (mv-let (erp state)
-           (try-to-speed-up-defthm-fn event state)
+           (speed-up-defthm event state)
            (if erp
                (mv erp state)
              (prog2$ (and print (cw ")~%"))
                      ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
-                     (submit-event-helper event nil nil state)))))))))
+                     (submit-event event nil nil state)))))))))
 
 ;; Returns (mv erp state).
 (defun improve-defun-event (event rest-events print state)
@@ -374,7 +374,7 @@
            (ignore print) ;todo
            )
   (mv-let (erp state)
-    (submit-event-helper event nil nil state)
+    (submit-event event nil nil state)
     (if erp
         (mv erp state)
       (let* ((fn (cadr event))
@@ -383,6 +383,22 @@
                                 100000 ;step-limit
                                 state)))
         (mv nil state)))))
+
+;;TODO: Do more here, like we do for defthm!
+;; Returns (mv erp state).
+(defun improve-defrule-event (event rest-events print state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state)
+           (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
+           )
+  (prog2$
+   (and print (cw "(For ~x0: " (first (rest event))))
+   (mv-let (erp state)
+     (speed-up-defrule event state)
+     (declare (ignore erp)) ; todo: why?
+     (prog2$ (and print (cw ")~%"))
+             (submit-event event nil nil state)))))
 
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
@@ -430,6 +446,7 @@
                   (submit-event-expect-no-error event nil state))))))
     ((defthm defthmd) (improve-defthm-event event rest-events print state))
     ((defun defund) (improve-defun-event event rest-events print state))
+    ((defrule defruled) (improve-defrule-event event rest-events print state))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
     (t (submit-event-expect-no-error event nil state))))
@@ -472,8 +489,7 @@
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
-;; TODO: Remove a .lisp extension if supplied.
-;; TODO: Better message when book does not exist.
+;; TODO: Tolerate a .lisp extension being supplied?
 (defun improve-book-fn (bookname ; no extension
                         dir
                         print
@@ -481,29 +497,34 @@
   (declare (xargs :guard (stringp bookname)
                   :mode :program ; because this calls submit-events
                   :stobjs state))
-  (let* ((old-cbd (cbd-fn state))
-         (dir (if (eq dir :cbd) "." dir))
+  (let* ((dir (if (eq dir :cbd) "." dir))
          (full-book-path (extend-pathname$ dir bookname state)) ; no extension
-         ;; Get the book's dir:
-         (full-book-dir (dir-of-path full-book-path)))
-    (prog2$
-     (and print (cw "~%Attempting to improve ~x0.~%" full-book-path))
-     (let* ( ;; We set the CBD so that the book is replayed in its own directory:
-            (state (set-cbd-simple full-book-dir state))
-            ;; Load the .port file, so that packages (especially) exist:
-            (state (load-port-file-if-exists full-book-path state)))
-       (mv-let (erp events state)
-         (read-objects-from-book (concatenate 'string full-book-path ".lisp") state)
-         (if erp
-             (let ((state (set-cbd-simple old-cbd state)))
-               (mv erp state))
-           (prog2$ (and print (cw "~x0 contains ~x1 events.~%~%" bookname (len events)))
-                   (let ((state (widen-margins state)))
-                     (mv-let (erp state)
-                       (improve-events events print state)
-                       (let* ((state (unwiden-margins state))
-                              (state (set-cbd-simple old-cbd state)))
-                         (mv erp state)))))))))))
+         (full-file-path (concatenate 'string full-book-path ".lisp")))
+    (mv-let (existsp state)
+      (file-write-date$ full-file-path state)
+      (if (not existsp)
+          (prog2$ (er hard? 'improve-book-fn "~s0 does not exist." full-file-path)
+                  (mv :file-does-not-exist state))
+        (prog2$
+         (and print (cw ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~%Attempting to improve ~x0.~%" full-book-path))
+         (let* ((old-cbd (cbd-fn state))
+                (full-book-dir (dir-of-path full-book-path))
+                ;; We set the CBD so that the book is replayed in its own directory:
+                (state (set-cbd-simple full-book-dir state))
+                ;; Load the .port file, so that packages (especially) exist:
+                (state (load-port-file-if-exists full-book-path state)))
+           (mv-let (erp events state)
+             (read-objects-from-book (concatenate 'string full-book-path ".lisp") state)
+             (if erp
+                 (let ((state (set-cbd-simple old-cbd state)))
+                   (mv erp state))
+               (prog2$ (and print (cw "~s0 contains ~x1 forms.~%~%" bookname (len events)))
+                       (let ((state (widen-margins state)))
+                         (mv-let (erp state)
+                           (improve-events events print state)
+                           (let* ((state (unwiden-margins state))
+                                  (state (set-cbd-simple old-cbd state)))
+                             (mv erp state)))))))))))))
 
 ;; Example: (IMPROVE-BOOK "helper").  This makes no changes to the world, just
 ;; prints suggestions for improvement.
