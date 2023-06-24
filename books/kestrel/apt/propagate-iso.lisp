@@ -34,7 +34,7 @@
 ;todo: print the names of the generated functions
 
 (include-book "lift-iso")
-(include-book "../utilities/hints")
+(include-book "kestrel/hints/renaming" :dir :system)
 (include-book "../utilities/theory-hints")
 (include-book "kestrel/utilities/event-tuples-between" :dir :system)
 ;(include-book "transformation-table")

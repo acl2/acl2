@@ -16,7 +16,7 @@
 
 (include-book "declares0")
 (include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
-(include-book "hints")
+(include-book "kestrel/hints/renaming" :dir :system)
 
 ;;; Applying a substitution to a guard
 
