@@ -338,7 +338,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar)
+                     :in-theory '(,gin.fn-guard if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -498,7 +498,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar)
+                     :in-theory '(,gin.fn-guard if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -672,7 +672,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar)
+                     :in-theory '(,gin.fn-guard if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -1569,7 +1569,7 @@
                                  wrld))
              (okp-lemma-hints
               `(("Goal"
-                 :in-theory '(,gin.fn-guard if* test* declar)
+                 :in-theory '(,gin.fn-guard if* test* declar assign)
                  :use (:guard-theorem ,gin.fn))))
              ((mv okp-lemma-event &)
               (evmac-generate-defthm okp-lemma-name
@@ -1937,7 +1937,7 @@
                                           wrld))
                       (okp-lemma-hints
                        `(("Goal"
-                          :in-theory '(,gin.fn-guard if* test* declar)
+                          :in-theory '(,gin.fn-guard if* test* declar assign)
                           :use (:guard-theorem ,gin.fn))))
                       ((mv okp-lemma-event &)
                        (evmac-generate-defthm okp-lemma-name
@@ -2074,7 +2074,7 @@
                                           wrld))
                       (okp-lemma-hints
                        `(("Goal"
-                          :in-theory '(,gin.fn-guard if* test* declar)
+                          :in-theory '(,gin.fn-guard if* test* declar assign)
                           :use (:guard-theorem ,gin.fn))))
                       ((mv okp-lemma-event &)
                        (evmac-generate-defthm okp-lemma-name
@@ -2887,6 +2887,7 @@
        (hints `(("Goal" :in-theory '(compustatep-of-add-frame
                                      compustatep-of-add-var
                                      compustatep-of-enter-scope
+                                     compustatep-of-update-var
                                      exec-expr-call-or-pure-when-pure
                                      (:e expr-kind)
                                      not-zp-of-limit-variable
