@@ -8952,19 +8952,34 @@ its attachment is ignored during proofs"))))
 ; restrictions, and what the break command used to view the pattern in the
 ; break environment.  Linear rules don't have restrictions.
 
+  (declare (xargs :guard
+                  (and (or (weak-rewrite-rule-p lemma)
+                           (weak-linear-lemma-p lemma))
+                       (weak-rewrite-constant-p rcnst))))
+
+; Note: The two ``guard issues'' tagged below are guaranteed to be true if
+; lemma really is a well-formed rewrite-rule (as all of our stored
+; rewrite-rules are).  But we don't want to characterize what that means, so we
+; suffer the runtime checks just so we can verify the guards of this function.
+
   (if (eq (record-type lemma) 'rewrite-rule)
       (mv (access rewrite-rule lemma :rune)
           :lhs
           (if (and (eq (access rewrite-rule lemma :subclass)
                        'rewrite-quoted-constant)
-                   (eql (car (access rewrite-rule lemma :heuristic-info))
-                        2))
+                   (let ((heuristic-info
+                          (access rewrite-rule lemma :heuristic-info)))
+                     (and (consp heuristic-info) ; guard issue
+                          (eql (car heuristic-info) 2))))
               (access rewrite-rule lemma :rhs)
               (access rewrite-rule lemma :lhs))
-          (cdr (assoc-equal
-                (access rewrite-rule lemma :rune)
-                (access rewrite-constant rcnst
-                        :restrictions-alist))))
+          (let ((restrictions-alist (access rewrite-constant rcnst
+                                            :restrictions-alist)))
+            (if (alistp restrictions-alist) ; guard issue
+                (cdr (assoc-equal
+                      (access rewrite-rule lemma :rune)
+                      restrictions-alist))
+                nil)))
       (mv (access linear-lemma lemma :rune)
           :max-term
           (access linear-lemma lemma :max-term)
@@ -8978,6 +8993,12 @@ its attachment is ignored during proofs"))))
 ; which case we abstract all quoted lambdas.  The lambda abstraction ignores
 ; ilks.
 
+  (declare (xargs :guard (and (or (eq k-flg t)
+                                  (natp k-flg))
+                              (pseudo-termp pat)
+                              (true-listp vars))
+                  :verify-guards nil
+                  :measure (acl2-count pat)))
   (cond
    ((eql k-flg 0)
     (let ((new-var (genvar 'brr "GENSYM" 0 vars)))
@@ -8992,13 +9013,18 @@ its attachment is ignored during proofs"))))
           (t (mv pat vars))))
    (t (mv-let (new-args new-vars)
         (abstract-pat1-lst (if (natp k-flg)
-                               (- k-flg 1)
-                               k-flg)
-                           (fargs pat) vars)
+                                   (- k-flg 1)
+                                   k-flg)
+                               (fargs pat) vars)
         (mv (fcons-term (ffn-symb pat) new-args)
             new-vars)))))
 
 (defun abstract-pat1-lst (k-flg pats vars)
+  (declare (xargs :guard (and (or (eq k-flg t)
+                                  (natp k-flg))
+                              (pseudo-term-listp pats)
+                              (true-listp vars))
+                  :measure (acl2-count pats)))
   (cond
    ((endp pats) (mv nil vars))
    (t (mv-let (new-arg new-vars)
@@ -9008,14 +9034,26 @@ its attachment is ignored during proofs"))))
           (mv (cons new-arg new-args) new-vars)))))))
 
 (defun abstract-pat (k-flg pat)
+  (declare (xargs :guard (and (or (eq k-flg t) (natp k-flg))
+                              (pseudo-termp pat))))
   (mv-let (new-pat vars)
     (abstract-pat1 k-flg pat (all-vars pat))
     (declare (ignore vars))
     new-pat))
 
-(defun one-way-unify-restrictions1 (pat term restrictions)
+(defun alistp-listp (x)
+  (declare (xargs :guard t))
   (cond
-   ((null restrictions)
+   ((atom x) (eq x nil))
+   (t (and (alistp (car x))
+           (alistp-listp (cdr x))))))
+
+(defun one-way-unify-restrictions1 (pat term restrictions)
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp-listp restrictions))))
+  (cond
+   ((endp restrictions)
     (mv nil nil))
    (t (mv-let (unify-ans unify-subst)
               (one-way-unify1 pat term (car restrictions))
@@ -9024,6 +9062,9 @@ its attachment is ignored during proofs"))))
                (t (one-way-unify-restrictions1 pat term (cdr restrictions))))))))
 
 (defun one-way-unify-restrictions (pat term restrictions)
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp-listp restrictions))))
   (cond
    ((null restrictions)
     (one-way-unify pat term))
@@ -9031,14 +9072,31 @@ its attachment is ignored during proofs"))))
 
 (defun symbol-alist-to-keyword-value-list (alist)
 
-; We convert a symbol alist to a keyword-value-listp (without but showing the
-; full translations of terms, not their untranslations).  We assume the keys in
+; We convert a symbol alist to a keyword-value-listp (but showing the full
+; translations of terms, not their untranslations).  We assume the keys in
 ; alist are keywords!
 
+  (declare (xargs :guard (alistp alist)))
   (cond ((endp alist) nil)
         (t (cons (car (car alist))
                  (cons (cdr (car alist))
                        (symbol-alist-to-keyword-value-list (cdr alist)))))))
+
+(defun brr-criteria-alistp (alist)
+  (declare (xargs :guard t))
+  (cond
+   ((atom alist) (equal alist nil))
+   ((not (consp (car alist))) nil)
+   ((eq (car (car alist)) :depth)
+    (and (natp (cdr (car alist)))
+         (brr-criteria-alistp (cdr alist))))
+   ((eq (car (car alist)) :abstraction)
+    (and (pseudo-termp (cdr (car alist)))
+         (brr-criteria-alistp (cdr alist))))
+   ((eq (car (car alist)) :lambda)
+    (and (booleanp (cdr (car alist)))
+         (brr-criteria-alistp (cdr alist))))
+   (t (brr-criteria-alistp (cdr alist)))))
 
 (defun make-built-in-brr-near-miss-msg (brr-cmd-name
                                         pat alist
@@ -9056,6 +9114,13 @@ its attachment is ignored during proofs"))))
 ; printed with ~@ as part of the introductory sentence produced by the function
 ; near-miss-brkpt1.
 
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (brr-criteria-alistp alist)
+                              (implies depth-criterion-satisfiedp
+                                       (natp (cdr (assoc-eq :depth alist)))))))
+
+; We nfix below because :depth must be bound to a natp.  In fact, we know it is,
+; by the :guard above, except for the fact that we don't know 
   (let* ((depth-msg
           (if depth-criterion-satisfiedp
               (list (msg "* The abstraction of ~x0 to depth ~x1, namely the ~
@@ -9112,66 +9177,82 @@ its attachment is ignored during proofs"))))
 ; as soon as one is satisfied (provided we are only looking for a Boolean
 ; answer).  If msgp is t then, of course, we try all the criteria.
 
+  (declare (xargs :guard (and (or (weak-rewrite-rule-p lemma)
+                                  (weak-linear-lemma-p lemma))
+                              (pseudo-termp target)
+                              (weak-rewrite-constant-p rcnst)
+                              (brr-criteria-alistp criteria-alist))))
   (mv-let (rune brr-cmd-name pattern restrictions)
     (get-brr-one-way-unify-info lemma rcnst)
     (declare (ignore rune))
-    (let* ((depth-arg (assoc-eq :depth criteria-alist))
-           (depth-criterion-satisfiedp
-            (if (cdr depth-arg)
-                (mv-let (flg unify-subst)
-                  (one-way-unify-restrictions
-                   (abstract-pat (cdr depth-arg) pattern)
-                   target
-                   restrictions)
-                  (declare (ignore unify-subst))
-                  flg)
-                nil))
-           (abstraction-arg (if (and (not msgp) depth-criterion-satisfiedp)
-                                nil
-                                (assoc-eq :abstraction criteria-alist)))
-           (abstraction-criterion-satisfiedp
-            (if (cdr abstraction-arg)
-                (mv-let (flg unify-subst)
-                  (one-way-unify-restrictions
-                   (cdr abstraction-arg)
-                   target
-                   restrictions)
-                  (declare (ignore unify-subst))
-                  flg)
-                nil))
-           (lambda-arg (if (and (not msgp)
-                                (or depth-criterion-satisfiedp
-                                    abstraction-criterion-satisfiedp))
-                           nil
-                           (assoc-eq :lambda criteria-alist)))
-           (lambda-criterion-satisfiedp
-            (if (cdr lambda-arg)
-                (mv-let (flg unify-subst)
-                  (one-way-unify-restrictions
-                   (abstract-pat (cdr lambda-arg) pattern)
-                   target
-                   restrictions)
-                  (declare (ignore unify-subst))
-                  flg)
-                nil)))
-      (if (or depth-criterion-satisfiedp
-              abstraction-criterion-satisfiedp
-              lambda-criterion-satisfiedp)
-          (if msgp
-              (make-built-in-brr-near-miss-msg brr-cmd-name
-                                               pattern
-                                               criteria-alist
-                                               depth-criterion-satisfiedp
-                                               abstraction-criterion-satisfiedp
-                                               lambda-criterion-satisfiedp)
-              t)
-          nil))))
+    (cond
+     ((and (pseudo-termp pattern)
+           (alistp-listp restrictions))
+
+; In order to verify the guards on this function we must make sure pattern and
+; restrictions are the right shapes.  We know they are when lemma and rcnst are
+; actually as maintained by us!  But we don't want to prove that and so we
+; suffer the necessary runtime checks to allow guard verification here.  If
+; pattern and restrictions are not appropriate, we just indicate that there was
+; no near-miss.
+
+      (let* ((depth-arg (assoc-eq :depth criteria-alist))
+             (depth-criterion-satisfiedp
+              (if (cdr depth-arg)
+                  (mv-let (flg unify-subst)
+                    (one-way-unify-restrictions
+                     (abstract-pat (cdr depth-arg) pattern)
+                     target
+                     restrictions)
+                    (declare (ignore unify-subst))
+                    flg)
+                  nil))
+             (abstraction-arg (if (and (not msgp) depth-criterion-satisfiedp)
+                                  nil
+                                  (assoc-eq :abstraction criteria-alist)))
+             (abstraction-criterion-satisfiedp
+              (if (cdr abstraction-arg)
+                  (mv-let (flg unify-subst)
+                    (one-way-unify-restrictions
+                     (cdr abstraction-arg)
+                     target
+                     restrictions)
+                    (declare (ignore unify-subst))
+                    flg)
+                  nil))
+             (lambda-arg (if (and (not msgp)
+                                  (or depth-criterion-satisfiedp
+                                      abstraction-criterion-satisfiedp))
+                             nil
+                             (assoc-eq :lambda criteria-alist)))
+             (lambda-criterion-satisfiedp
+              (if (cdr lambda-arg)
+                  (mv-let (flg unify-subst)
+                    (one-way-unify-restrictions
+                     (abstract-pat (cdr lambda-arg) pattern)
+                     target
+                     restrictions)
+                    (declare (ignore unify-subst))
+                    flg)
+                  nil)))
+        (if (or depth-criterion-satisfiedp
+                abstraction-criterion-satisfiedp
+                lambda-criterion-satisfiedp)
+            (if msgp
+                (make-built-in-brr-near-miss-msg brr-cmd-name
+                                                     pattern
+                                                     criteria-alist
+                                                     depth-criterion-satisfiedp
+                                                     abstraction-criterion-satisfiedp
+                                                     lambda-criterion-satisfiedp)
+                t)
+            nil)))
+     (t nil))))
 
 (defun brr-near-missp (msgp lemma target rcnst criteria-alist)
 
-; It would be nice to make this function attachable.  That may be challenging
-; unless we can convert built-in-brr-near-missp to (guard-verified) :logic
-; mode.
+; This function should be replaced by a constrained function to which
+; built-in-brr-near-missp is attached.
 
 ; The rewriter has tried to match the pattern in lemma to target under the
 ; restrictions in rcnst.  The match failed.  We determine whether this
@@ -9188,6 +9269,12 @@ its attachment is ignored during proofs"))))
 ; rather than
 
 ; (:condition t :depth 3 :abstraction (f 44 (cadr z)))!
+
+  (declare (xargs :guard (and (or (weak-rewrite-rule-p lemma)
+                                  (weak-linear-lemma-p lemma))
+                              (pseudo-termp target)
+                              (weak-rewrite-constant-p rcnst)
+                              (brr-criteria-alistp criteria-alist))))
 
   (built-in-brr-near-missp msgp lemma target rcnst criteria-alist))
 

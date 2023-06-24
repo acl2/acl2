@@ -381,11 +381,8 @@
               (consp scopes))
        :hints (("Goal" :induct t)))
      (defruled var-in-scopes-p-of-update-var-aux
-       (implies (var-in-scopes-p var2 scopes)
-                (equal (var-in-scopes-p var (update-var-aux var2 val scopes))
-                       (or (equal (ident-fix var)
-                                  (ident-fix var2))
-                           (var-in-scopes-p var scopes))))
+       (iff (c::var-in-scopes-p var (c::update-var-aux var2 val scopes))
+            (c::var-in-scopes-p var scopes))
        :induct t
        :enable var-in-scopes-p))))
 
@@ -675,6 +672,20 @@
                             (ident-fix var2)))
                 (create-var-okp var compst)))
     :enable (create-var-okp add-var))
+
+  (defruled create-var-okp-of-update-var
+    (equal (create-var-okp var (update-var var2 val compst))
+           (create-var-okp var compst))
+    :enable (create-var-okp
+             update-var
+             update-var-aux
+             var-in-scopes-p
+             push-frame
+             pop-frame
+             top-frame)
+    :expand (update-var-aux var2
+                            val
+                            (frame->scopes (car (compustate->frames compst)))))
 
   (defruled create-var-to-add-var
     (implies (and (create-var-okp var compst)
