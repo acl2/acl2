@@ -529,6 +529,7 @@
                (val-term* pseudo-termp)
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
+               (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
                (new-context atc-contextp)
                (thm-index posp)
@@ -552,7 +553,7 @@
      for the theorem about @(tsee exec-stmt),
      because that is what it takes, in @(tsee exec-stmt),
      to go to @(tsee exec-expr-call-or-asg)."))
-  (b* (((reterr) (irr-block-item) nil nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((unless var-info?)
@@ -618,6 +619,7 @@
                rhs.term
                stmt-limit
                rhs.events
+               nil
                gin.inscope
                gin.context
                rhs.thm-index
@@ -744,7 +746,7 @@
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
-       ((mv item item-limit item-event ?item-thm-name thm-index names-to-avoid)
+       ((mv item item-limit item-event item-thm-name thm-index names-to-avoid)
         (atc-gen-block-item-stmt gin.fn
                                  gin.fn-guard
                                  gin.context
@@ -806,6 +808,7 @@
            rhs.term
            item-limit
            events
+           item-thm-name
            new-inscope
            new-context
            thm-index
@@ -2944,6 +2947,7 @@
                          asg-term
                          asg-limit
                          asg-events
+                         ?asg-thm
                          new-inscope
                          new-context
                          thm-index
