@@ -526,6 +526,7 @@
                                     state)
   :returns (mv erp
                (item block-itemp)
+               (val-term* pseudo-termp)
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
                (new-inscope atc-symbol-varinfo-alist-listp)
@@ -551,7 +552,7 @@
      for the theorem about @(tsee exec-stmt),
      because that is what it takes, in @(tsee exec-stmt),
      to go to @(tsee exec-expr-call-or-asg)."))
-  (b* (((reterr) (irr-block-item) nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr) (irr-block-item) nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((unless var-info?)
@@ -614,6 +615,7 @@
        ((when (or (not rhs.proofs)
                   (atc-var-info->externalp var-info))) ; <- temporary
         (retok item
+               rhs.term
                stmt-limit
                rhs.events
                gin.inscope
@@ -801,6 +803,7 @@
                              item-event)
                        new-inscope-events)))
     (retok item
+           rhs.term
            item-limit
            events
            new-inscope
@@ -2938,6 +2941,7 @@
                     gin.fn var)))
              ((when (eq wrapper? 'assign))
               (b* (((erp asg-item
+                         ?asg-term
                          asg-limit
                          asg-events
                          new-inscope
