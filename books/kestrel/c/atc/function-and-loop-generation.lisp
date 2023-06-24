@@ -2741,7 +2741,7 @@
      to @(tsee exec-block-item-list),
      which is what the body's theorem refers to.")
    (xdoc::p
-    "We enable @(tsee declar) in the generated hints
+    "We enable @(tsee declar) and @(tsee assign) in the generated hints
      because the correctness theorem generated about the body of the function
      (i.e. @('body-thm')) does not that have that wrapper.
      We will need to add other wrappers like @(tsee assign) here,
@@ -2800,7 +2800,8 @@
                                                    (type-kind body-type)))))
                                ,pop-frame-thm
                                ,fn-def*
-                               declar))))
+                               declar
+                               assign))))
        ((mv lemma-event &) (evmac-generate-defthm lemma-name
                                                   :formula lemma-formula
                                                   :hints lemma-hints
