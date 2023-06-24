@@ -2941,7 +2941,7 @@
                     gin.fn var)))
              ((when (eq wrapper? 'assign))
               (b* (((erp asg-item
-                         ?asg-term
+                         asg-term
                          asg-limit
                          asg-events
                          new-inscope
@@ -2969,7 +2969,9 @@
                            (list (pseudo-term-quote 2)
                                  (pseudo-term-fncall
                                   'binary-+
-                                  (list asg-limit body.limit))))))
+                                  (list asg-limit body.limit)))))
+                   (term (acl2::close-lambdas
+                          `((lambda (,var) ,body.term) ,asg-term))))
                 (retok (make-stmt-gout
                         :items (cons asg-item body.items)
                         :type type
