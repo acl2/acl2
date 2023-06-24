@@ -71,6 +71,10 @@ Because the new rule will be tried first, it may nonetheless find application.
 ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
 see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
 ACL2 !>>(SET-INHIBIT-WARNINGS "Subsume")
  ("Subsume")
 ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
@@ -99,6 +103,10 @@ Because the new rule will be tried first, it may nonetheless find application.
 ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
 see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
 ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS
                                 :ALL STATE)
 <state>
@@ -115,6 +123,10 @@ Because the new rule will be tried first, it may nonetheless find application.
 ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
 see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
 ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
 <state>
 ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
@@ -146,6 +158,10 @@ Because the new rule will be tried first, it may nonetheless find application.
 ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
 see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
 ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL "Use" STATE)
 
 
@@ -173,6 +189,10 @@ Because the new rule will be tried first, it may nonetheless find application.
 ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
 see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
 ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL '("subsume")
                                 STATE)
 <state>
@@ -229,6 +249,10 @@ Because the new rule will be tried first, it may nonetheless find application.
 ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
 see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
 ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL :ALL STATE)
 <state>
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROVE))
@@ -492,12 +516,6 @@ see :DOC print-gv, see :DOC trace, and see :DOC wet.
 Summary
 Form:  ( DEFTHM FOO ...)
 Rules: NIL
-
-*** Note: No checkpoints to print. ***
-
-ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
-
-******** FAILED ********
 ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(WARNING PROOF-TREE))
  (WARNING PROOF-TREE)
 ACL2 !>>(DEFTHM FOO
@@ -537,12 +555,6 @@ see :DOC print-gv, see :DOC trace, and see :DOC wet.
 Summary
 Form:  ( DEFTHM FOO ...)
 Rules: NIL
-
-*** Note: No checkpoints to print. ***
-
-ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
-
-******** FAILED ********
 ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
 <state>
 ACL2 !>>(DEFTHM FOO
@@ -598,12 +610,6 @@ see :DOC print-gv, see :DOC trace, and see :DOC wet.
 Summary
 Form:  ( DEFTHM FOO ...)
 Rules: NIL
-
-*** Note: No checkpoints to print. ***
-
-ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
-
-******** FAILED ********
 ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL '("USE")
                                 STATE)
 <state>
