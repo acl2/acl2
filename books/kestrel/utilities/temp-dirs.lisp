@@ -1,7 +1,7 @@
 ; Utilities for dealing with temporary directories
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -147,7 +147,7 @@
                )
            (temp-dir-chars-okp (rest chars))))))
 
-(defun safe-term-dir-to-deletep (temp-dir-name)
+(defun safe-temp-dir-to-deletep (temp-dir-name)
   (declare (xargs :guard (stringp temp-dir-name)))
   (let ((temp-dir-chars (coerce temp-dir-name 'list))
         (expected-prefix (coerce *system-temp-dir-with-slash* 'list)))
@@ -171,7 +171,7 @@
       (temp-dir-name state)
       ;; Makes sure that the rm command will not do anything bad:
       (if (not (and (stringp temp-dir-name)
-                    (safe-term-dir-to-deletep temp-dir-name)))
+                    (safe-temp-dir-to-deletep temp-dir-name)))
           (prog2$ (er hard? 'maybe-remove-temp-dir "Bad temp dir name: ~x0." temp-dir-name)
                   state)
         (progn$
