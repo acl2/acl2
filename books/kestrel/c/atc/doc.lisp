@@ -893,7 +893,7 @@
        a statement term for @('fn0')
        returning @('void') and affecting @('vars').
        This represents an expression statement
-       whose expression is call of the C function corresponding to @('fn0')."))
+       whose expression is a call of the C function corresponding to @('fn0')."))
 
     (xdoc::p
      "A <i>loop term for</i> @('fn')
