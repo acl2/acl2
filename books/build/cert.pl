@@ -160,7 +160,7 @@ if ($images_dir) {
     if ($bin_dir && ! ($bin_dir eq $images_dir)) {
 	STDERR->print("ACL2_IMAGES: ${images_dir}\n");
 	STDERR->print("CERT_PL_BIN_DIR: ${bin_dir}\n");
-	
+
 	die("Environment vars ACL2_IMAGES and CERT_PL_BIN_DIR must both be set to the same value if they are both set");
     }
     $bin_dir = $images_dir;
@@ -633,7 +633,7 @@ USEFUL ENVIRONMENT VARIABLES
 
     CERT_PL_BIN_DIR or ACL2_IMAGES
          Should be set to the directory in which saved ACL2 images are deposited,
-         if using saved images.  
+         if using saved images.
 
     STARTJOB (default: "bash")
          Can be set to the name of a command to use instead of bash
@@ -1093,10 +1093,12 @@ unless ($no_makefile) {
 	    print $mf " \\\n     " . image_file_path($cert);
 	}
     }
-    
+    # Turn off the "Nothing to be done for 'all-cert-pl-images' warning
+    # when there aren't any images.  No-op if there are images.
+    print $mf " \;\@:";
+    # Close out the list of images
+    print $mf "\n\n";
 
-    
-    
     print $mf "# Note: This variable lists the certificates for all books to be built\n";
     print $mf "# along with any pcert or acl2x files to be built along the way.\n";
     print $mf "${var_prefix}_ALLCERTS := \$(${var_prefix}_CERTS)";
@@ -1258,14 +1260,14 @@ unless ($no_makefile) {
 	    next;
 	}
 
-	
+
 	my $maketarget;
 	if ($cert_is_image) {
 	    $maketarget = image_file_path($cert);
 	} else {
 	    $maketarget = make_encode($cert);
 	}
-	
+
         print $mf $maketarget . " : acl2x = $useacl2x\n";
         print $mf $maketarget . " : pcert = $pcert_ok\n";
         # print $mf "#$cert params: ";
@@ -1357,7 +1359,7 @@ unless ($no_makefile) {
 	if ($cert_is_image) {
 	    next;
 	}
-	
+
         my $useacl2x = $depdb->cert_get_param($cert, "acl2x") || 0;
         # BOZO acl2x implies no pcert
         my $pcert_ok = (! $useacl2x && ($depdb->cert_get_param($cert, "pcert") || $pcert_all)) || 0;
