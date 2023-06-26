@@ -7940,37 +7940,16 @@
    (pprogn (f-put-global 'last-step-limit step-limit state)
            (mv erp val state))))
 
-(defun print-summary-on-error (ctx state)
-  (print-summary t   ; erp
-                 t   ; noop-flg
-                 nil ; event-type
-                 nil ; event
-                 ctx state))
-
 (defun prove-loop0 (clauses pspv hints ens wrld ctx state)
 
 ; Warning: This function assumes that *acl2-time-limit* has already been
 ; let-bound in raw Lisp by bind-acl2-time-limit.
 
-; The perhaps unusual structure below is intended to invoke
-; print-summary-on-error only when there is a hard error such as an interrupt.
-; In the normal failure case, the pstack is not printed and the key checkpoint
-; summary (from the gag-state) is printed after the summary.
-
   (state-global-let*
    ((guard-checking-on nil) ; see the Essay on Guard Checking
     (in-prove-flg t))
-   (mv-let (interrupted-p erp-val state)
-           (acl2-unwind-protect
-            "prove-loop"
-            (mv-let (erp val state)
-                    (prove-loop1 0 nil clauses pspv hints ens wrld ctx
-                                 state)
-                    (mv nil (cons erp val) state))
-            (print-summary-on-error ctx state)
-            state)
-           (cond (interrupted-p (mv t nil state))
-                 (t (mv (car erp-val) (cdr erp-val) state))))))
+   (prove-loop1 0 nil clauses pspv hints ens wrld ctx
+                state)))
 
 (defun prove-loop (clauses pspv hints ens wrld ctx state)
 

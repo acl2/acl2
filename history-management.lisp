@@ -2463,7 +2463,8 @@
 ; Defun is however in this category, since proof failures result in error
 ; messages about guard proof failure or termination proof failure.
 
-                          '(encapsulate progn make-event defun)))
+                          '(encapsulate progn defun
+                             make-event make-event-save-event-data)))
           (cond
            ((output-ignored-p 'error state)
             (io? summary nil state (erp acc-ttree ctx)
@@ -2987,9 +2988,6 @@
 ; redundant or was not really an event but was something like a call of (thm
 ; ...)) and we do not scan the most recent event block for redefined names.
 
-; If erp is a message, as recognized by tilde-@p, then that message will be
-; printed by the call below of print-failure.
-
   #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
   (cond ((atom ctx))
         ((symbolp (cdr ctx))
@@ -3148,21 +3146,15 @@
 
                state)
               (cond (erp
-                     (pprogn
-                      (print-failure erp
-                                     (if make-event-save-event-data-p
-                                         'make-event
-                                       event-type)
-                                     acc-ttree ctx state)
-                      (cond
-                       ((f-get-global 'proof-tree state)
-                        (io? proof-tree nil state
-                             (ctx)
-                             (pprogn (f-put-global 'proof-tree-ctx
-                                                   (cons :failed ctx)
-                                                   state)
-                                     (print-proof-tree state))))
-                       (t state))))
+                     (cond
+                      ((f-get-global 'proof-tree state)
+                       (io? proof-tree nil state
+                            (ctx)
+                            (pprogn (f-put-global 'proof-tree-ctx
+                                                  (cons :failed ctx)
+                                                  state)
+                                    (print-proof-tree state))))
+                      (t state)))
                     (t (pprogn
                         #+acl2-par
                         (erase-acl2p-checkpoints-for-summary state)
@@ -4498,21 +4490,36 @@
               (erp val state)
               (save-event-state-globals
                (mv-let (erp val state)
-                       (er-progn
-                        (xtrans-eval-state-fn-attachment
-                         (initialize-event-user ',ctx ',body)
-                         ctx)
-                        ,body)
-                       (pprogn
-                        (print-summary erp
-                                       (equal saved-wrld (w state))
-                                       ,event-type ,event
-                                       ctx state)
-                        (er-progn
-                         (xtrans-eval-state-fn-attachment
-                          (finalize-event-user ',ctx ',body)
-                          ctx)
-                         (mv erp val state)))))
+                 (acl2-unwind-protect
+                  "with-ctx-summarized"
+                  (er-progn
+                   (xtrans-eval-state-fn-attachment
+                    (initialize-event-user ',ctx ',body)
+                    ctx)
+                   ,body)
+                  (print-summary t ; erp
+                                 (equal saved-wrld (w state))
+                                 ,event-type ,event
+                                 ctx state)
+                  (print-summary nil ; erp
+                                 (equal saved-wrld (w state))
+                                 ,event-type ,event
+                                 ctx state))
+                 (pprogn
+                  (if erp
+                      (print-failure
+                       erp
+                       ,(if (eq event-type 'make-event-save-event-data)
+                            'make-event
+                          event-type)
+                       (f-get-global 'accumulated-ttree state)
+                       ctx state)
+                    state)
+                  (er-progn
+                   (xtrans-eval-state-fn-attachment
+                    (finalize-event-user ',ctx ',body)
+                    ctx)
+                   (mv erp val state)))))
 
 ; In the case of a compound event such as encapsulate, we avoid saving io?
 ; forms for proof replay that were generated after a failed proof attempt,
