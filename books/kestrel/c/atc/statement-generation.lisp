@@ -526,8 +526,10 @@
                                     state)
   :returns (mv erp
                (item block-itemp)
+               (val-term* pseudo-termp)
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
+               (thm-name symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
                (new-context atc-contextp)
                (thm-index posp)
@@ -551,7 +553,7 @@
      for the theorem about @(tsee exec-stmt),
      because that is what it takes, in @(tsee exec-stmt),
      to go to @(tsee exec-expr-call-or-asg)."))
-  (b* (((reterr) (irr-block-item) nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((unless var-info?)
@@ -611,11 +613,14 @@
        (asg-limit `(binary-+ '1 ,rhs.limit))
        (expr-limit `(binary-+ '1 ,asg-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
+       (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (or (not rhs.proofs)
                   (atc-var-info->externalp var-info))) ; <- temporary
         (retok item
-               stmt-limit
+               rhs.term
+               item-limit
                rhs.events
+               nil
                gin.inscope
                gin.context
                rhs.thm-index
@@ -742,7 +747,7 @@
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
-       ((mv item item-limit item-event ?item-thm-name thm-index names-to-avoid)
+       ((mv item item-limit item-event item-thm-name thm-index names-to-avoid)
         (atc-gen-block-item-stmt gin.fn
                                  gin.fn-guard
                                  gin.context
@@ -801,8 +806,10 @@
                              item-event)
                        new-inscope-events)))
     (retok item
+           rhs.term
            item-limit
            events
+           item-thm-name
            new-inscope
            new-context
            thm-index
@@ -2938,8 +2945,10 @@
                     gin.fn var)))
              ((when (eq wrapper? 'assign))
               (b* (((erp asg-item
+                         asg-term
                          asg-limit
                          asg-events
+                         asg-thm
                          new-inscope
                          new-context
                          thm-index
@@ -2957,26 +2966,31 @@
                                    :var-term-alist var-term-alist-body
                                    :inscope new-inscope
                                    :thm-index thm-index
-                                   :names-to-avoid names-to-avoid)
+                                   :names-to-avoid names-to-avoid
+                                   :proofs (and asg-thm t))
                                   state))
-                   (type body.type)
-                   (limit (pseudo-term-fncall
-                           'binary-+
-                           (list (pseudo-term-quote 2)
-                                 (pseudo-term-fncall
-                                  'binary-+
-                                  (list asg-limit body.limit))))))
-                (retok (make-stmt-gout
-                        :items (cons asg-item body.items)
-                        :type type
-                        :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :limit limit
-                        :events (append asg-events body.events)
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+                   (term (acl2::close-lambdas
+                          `((lambda (,var) ,body.term) ,asg-term)))
+                   (items-gout
+                    (atc-gen-block-item-list-cons
+                     term
+                     asg-item
+                     asg-limit
+                     asg-events
+                     asg-thm
+                     body.items
+                     body.limit
+                     body.events
+                     body.thm-name
+                     body.type
+                     new-context
+                     (change-stmt-gin
+                      gin
+                      :thm-index body.thm-index
+                      :names-to-avoid body.names-to-avoid
+                      :proofs body.proofs)
+                     state)))
+                (retok (change-stmt-gout items-gout :proofs nil))))
              ((unless (eq wrapper? nil))
               (reterr (raise "Internal error: LET wrapper is ~x0." wrapper?)))
              ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
