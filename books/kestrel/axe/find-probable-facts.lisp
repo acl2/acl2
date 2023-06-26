@@ -19,6 +19,7 @@
 (include-book "kestrel/booleans/bool-fix" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
+(local (include-book "numeric-lists"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))

@@ -28,11 +28,11 @@
 
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "wf-dagp")
-(include-book "numeric-lists")
-(include-book "make-dag-constant-alist")
-(include-book "make-dag-variable-alist")
-(include-book "dag-parent-array")
-(include-book "kestrel/utilities/erp" :dir :system)
+(local (include-book "numeric-lists"))
+;(include-book "make-dag-constant-alist")
+;(include-book "make-dag-variable-alist")
+;(include-book "dag-parent-array")
+;(include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (in-theory (disable alistp))

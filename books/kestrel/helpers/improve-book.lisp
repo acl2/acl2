@@ -502,11 +502,14 @@
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
 ;; TODO: Tolerate a .lisp extension being supplied?
-(defun improve-book-fn (bookname ; no extension
-                        dir
-                        print
-                        state)
-  (declare (xargs :guard (stringp bookname)
+(defun improve-book-fn-aux (bookname ; no extension
+                            dir
+                            print
+                            state)
+  (declare (xargs :guard (and (stringp bookname)
+                              (or (eq :cbd dir)
+                                  (stringp dir))
+                              (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
   (let* ((dir (if (eq dir :cbd) "." dir))
@@ -515,7 +518,7 @@
     (mv-let (existsp state)
       (file-write-date$ full-file-path state)
       (if (not existsp)
-          (prog2$ (er hard? 'improve-book-fn "~s0 does not exist." full-file-path)
+          (prog2$ (er hard? 'improve-book-fn-aux "~s0 does not exist." full-file-path)
                   (mv :file-does-not-exist state))
         (prog2$
          (and print (cw ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~%Attempting to improve ~x0.~%" full-book-path))
@@ -538,61 +541,82 @@
                                   (state (set-cbd-simple old-cbd state)))
                              (mv erp state)))))))))))))
 
+;; Returns (mv erp nil state).
+(defun improve-book-fn (bookname ; no extension
+                        dir
+                        print
+                        state)
+  (declare (xargs :guard (and (stringp bookname)
+                              (or (eq :cbd dir)
+                                  (stringp dir))
+                              (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this calls submit-events
+                  :stobjs state))
+  (revert-world
+   (mv-let (erp state)
+     (improve-book-fn-aux bookname dir print state)
+     (mv erp nil state))))
+
 ;; Example: (IMPROVE-BOOK "helper").  This makes no changes to the world, just
 ;; prints suggestions for improvement.
 (defmacro improve-book (bookname ; no extension
                         &key
-                        (print ':brief)
-                        (dir ':cbd))
-  `(revert-world
-    (mv-let (erp state)
-      (improve-book-fn ,bookname ,dir ,print state)
-      (mv erp nil state))))
+                        (dir ':cbd)
+                        (print ':brief))
+  `(improve-book-fn ,bookname ,dir ,print state))
 
-(defttag improve-book) ; for sys-call+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defttag improve-book) ; for sys-call+ below
 
 ;; Looks for .lisp files in the current subtree.
-;; Returns (mv book-paths state).
+;; Returns (mv book-paths state) where the BOOK-PATHS have no .lisp extensions.
 ;move
 (defun books-in-subtree (state)
   (declare (xargs :stobjs state))
-  (mv-let (erp val state)
+  (mv-let (erp filename-lines state)
     (sys-call+ "find" '("." "-name" "*.lisp") state)
     (if erp
         (prog2$ (er hard? 'books-in-subtree "Failed to find books: ~x0." erp)
                 (mv nil state))
-      (mv (strip-suffix-from-strings ".lisp" (split-string-repeatedly val #\Newline))
+      (mv (strip-suffix-from-strings ".lisp" (split-string-repeatedly filename-lines #\Newline))
           state))))
 
-(defun improve-books-fn-aux (books print dir state)
-  (declare (xargs :stobjs state :mode :program))
+(defun improve-books-fn-aux (books dir print state)
+  (declare (xargs :guard (and (string-listp books)
+                              (or (eq :cbd dir)
+                                  (stringp dir))
+                              (member-eq print '(nil :brief :verbose)))
+                  :stobjs state :mode :program))
   (if (endp books)
       state
     (prog2$
      (cw "~%~%(TRYING TO IMPROVE ~x0~%" (first books))
      (mv-let (erp val state)
-       (improve-book (first books)
-                     :print print
-                     :dir dir)
+       (improve-book-fn (first books) dir print state)
        (declare (ignore val))
        (if erp
            (prog2$ (er hard? 'improve-books-fn-aux "Error improving ~x0." (first books))
                    state)
          (prog2$
           (cw ")~%")
-          (improve-books-fn-aux (rest books) print dir state)))))))
+          (improve-books-fn-aux (rest books) dir print state)))))))
 
 (defun improve-books-fn (print dir state)
-  (declare (xargs :stobjs state :mode :program))
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose))
+                              (or (eq :cbd dir)
+                                  (stringp dir)))
+                  :stobjs state :mode :program))
   (let* ((dir (if (eq dir :cbd) "." dir))
          (full-dir (canonical-pathname dir t state))
          (state (set-cbd-simple full-dir state)))
     (mv-let (books state)
       (books-in-subtree state)
-      (improve-books-fn-aux books print dir state))))
+      ;; pass full-dir here?:
+      (improve-books-fn-aux books dir print state))))
 
-
-;; Tries to improve all .lisp files in the current subtree.
+;; Tries to improve all books in DIR, including books in subdirectories.
+;; By default, uses the connected book directory for DIR.
 (defmacro improve-books (&key
                          (print ':brief)
                          (dir ':cbd))
