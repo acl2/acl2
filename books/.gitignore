@@ -55,3 +55,4 @@ Makefile-sources
 startjob.*.wrap
 .#*
 \#*.*\#
+*@event-data.lsp

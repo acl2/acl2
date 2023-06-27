@@ -10,47 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/file-io-light/read-object-from-file" :dir :system)
-(include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
+(include-book "kestrel/file-io-light/read-objects-from-book" :dir :system)
 (include-book "kestrel/utilities/file-existsp" :dir :system)
-
-;; Read forms from FILENAME but require the first form to be an IN-PACKAGE form
-;; used for interpreting symbols in the rest of the forms.  Returns (mv erp
-;; forms state).
-(defund read-objects-from-book (filename state)
-  (declare (xargs :guard (stringp filename)
-                  :mode :program ; because of in-package-fn
-                  :stobjs state))
-  ;; First read just the in-package form:
-  (mv-let (erp first-form state)
-    (read-object-from-file filename state)
-    (if erp
-        (mv erp nil state)
-      (if (not (and (consp first-form)
-                    (eq 'in-package (car first-form))))
-          (prog2$ (er hard? 'read-objects-from-book "ERROR: Expected an in-package form but got ~x0." first-form)
-                  (mv :missing-in-package nil state))
-        (let ((original-package (current-package state))
-              (book-package (cadr first-form)))
-          ;; Temporarily set the package to the one for the book:
-          (mv-let (erp value state)
-            (in-package-fn book-package state)
-            (declare (ignore value))
-            (if erp
-                (mv erp nil state)
-              (mv-let (erp forms state)
-                ;; This read uses the current package (i.e., book-package) for the symbols:
-                (read-objects-from-file filename state)
-                (if erp
-                    (mv erp nil state)
-                  ;; Undo the temporary in-package:
-                  (mv-let (erp value state)
-                    (in-package-fn original-package state)
-                    (declare (ignore value))
-                    (if erp
-                        (mv erp nil state)
-                      ;; No error:
-                      (mv nil forms state))))))))))))
 
 ;; Returns state.
 (defun load-port-file-if-exists (book-path ; no extension

@@ -1,7 +1,7 @@
 ; Utilities in support of reasoning about / lifting 32-bit code.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,11 +20,13 @@
 (include-book "kestrel/axe/known-booleans" :dir :system) ;todo?
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
+(local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, for floor-mod-elim
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))

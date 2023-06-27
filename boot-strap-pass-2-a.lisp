@@ -56,6 +56,10 @@
 (verify-termination-boot-strap cons-term) ; and guards
 (verify-termination-boot-strap symbol-class) ; and guards
 
+; wormhole coherence functions
+(verify-termination-boot-strap sync-ephemeral-whs-with-persistent-whs)
+(verify-termination-boot-strap set-persistent-whs-and-ephemeral-whs)
+
 ; packn1, packn, and pack-to-string
 
 (verify-termination-boot-strap packn1) ; and guards

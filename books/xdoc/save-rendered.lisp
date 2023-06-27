@@ -80,6 +80,30 @@
             (princ$ " " channel state)
             (acl2-doc-print-fix-symbol-lst (cdr lst) channel state)))))
 
+(defun remove-sgr-1 (s i len acc)
+  (let ((p (search *sgr-prefix* s :start2 i)))
+    (cond
+     (p (let ((p2 (search "m" s :start2 (+ 2 p))))
+          (assert$
+           p2
+           (remove-sgr-1 s (1+ p2) len
+                         (concatenate 'string
+                                      acc
+                                      (subseq s i p))))))
+     (t (concatenate 'string acc (subseq s i len))))))
+
+(defun remove-sgr (s)
+
+; The acl2-doc search file, acl2-doc-search, needs to avoid having any SGR
+; control sequences, so that searches there can match up with searches in the
+; acl2-doc buffer, where those markings have been removed.  See comments in the
+; definition of sgr-prefix in display.lisp for more on SGR.
+
+  (let ((p (search *sgr-prefix* s :start2 0)))
+    (cond ((null p)
+           s)
+          (t (remove-sgr-1 s p (length s) (subseq s 0 p))))))
+
 (defun acl2-doc-print-topic-index (tuple channel state)
 
 ; Warning: Do not set the buffer to read-only here, because this
@@ -117,11 +141,11 @@
               (if (eq (nth 0 tuple) 'TOP)
                   state
                 (pprogn (princ$ ":DOC source: " channel state)
-                        (princ$ (nth 3 tuple) channel state)
+                        (princ$ (remove-sgr (nth 3 tuple)) channel state)
                         (newline channel state)))
             (pprogn (princ$ ":DOC source: ACL2 Sources" channel state)
                     (newline channel state)))
-          (princ$ (nth 2 tuple) channel state)
+          (princ$ (remove-sgr (nth 2 tuple)) channel state)
           (newline channel state)))
 
 (defun acl2-doc-print-topic-index-lst (tuple-lst channel state)
@@ -129,6 +153,32 @@
         (t (pprogn
             (acl2-doc-print-topic-index (car tuple-lst) channel state)
             (acl2-doc-print-topic-index-lst (cdr tuple-lst) channel state)))))
+
+(defmacro with-acl2-doc-images (form)
+
+; Form evaluates to (mv val state) and we return (value val), except that form
+; is evaluated in an environment where documentation will be printed to be
+; rendered with images.  We restore the original environment even in the case
+; of an error.
+
+; Form should not contain with wadi- variable bound by b* below.  We should
+; really use something like check-vars-not-free, but this will do.  ("Wadi" is
+; based on the name of this macro.)
+
+  `(b* (((mv - wadi-env-val state)
+         (getenv$ "ACL2_DOC_IMAGES" state))
+        ((mv - wadi-temp state)
+         (acl2::acl2-unwind-protect
+          "with-acl2-doc-images"
+          (prog2$ (setenv$ "ACL2_DOC_IMAGES" "t")
+                  (mv-let (wadi-temp state)
+                    ,form
+                    (value wadi-temp)))
+          (prog2$ (setenv$ "ACL2_DOC_IMAGES" (or wadi-env-val ""))
+                  state)
+          (prog2$ (setenv$ "ACL2_DOC_IMAGES" (or wadi-env-val "" ""))
+                  state))))
+     (value wadi-temp)))
 
 (defun save-rendered (outfile
                       header
@@ -176,8 +226,9 @@
                                     (force-missing-parents all-topics2)
                                   all-topics2)))
               all-topics3)))
-          ((mv rendered state)
-           (time$ (render-topics all-topics all-topics state)))
+          ((er rendered)
+           (time$ (with-acl2-doc-images
+                   (render-topics all-topics all-topics state))))
           (rendered (time$ (split-acl2-topics rendered nil nil nil)))
           (- (cw "Writing ~s0~%" outfile))
           ((mv channel state) (open-output-channel! outfile :character state))
@@ -211,8 +262,8 @@
           ((unless channel)
            (cw "can't open ~s0 for output." search-file)
            (acl2::silent-error state))
-          (state (time$ (acl2-doc-print-topic-index-lst rendered channel
-                                                        state)))
+          (state (time$
+                  (acl2-doc-print-topic-index-lst rendered channel state)))
           (state (close-output-channel channel state)))
        (value '(value-triple :ok))))))
 

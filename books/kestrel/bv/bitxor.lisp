@@ -110,13 +110,13 @@
   (implies (not (integerp x))
            (equal (bitxor x y)
                   (getbit 0 y)))
-  :hints (("Goal" :in-theory (enable bitxor bvxor-when-x-is-not-an-integer))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 (defthm bitxor-when-y-is-not-an-integer
   (implies (not (integerp y))
            (equal (bitxor x y)
                   (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable bitxor bvxor-when-y-is-not-an-integer))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 (defthmd bitxor-split
   (equal (bitxor x y)
@@ -163,9 +163,7 @@
 (defthm bitxor-numeric-bound-2
   (implies (<= 2 k)
            (equal (< (bitxor x y) k)
-                  t))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bitxor (size 1))
-           :in-theory (disable unsigned-byte-p-of-bitxor))))
+                  t)))
 
 (defthmd bitxor-both-sides
   (implies (equal x y)

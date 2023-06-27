@@ -11,3 +11,9 @@
 (in-package "ACL2")
 
 (include-book "combine-hints")
+(include-book "remove-hints")
+(include-book "goal-specs")
+(include-book "renaming")
+
+;; Not including these tests in top:
+;; (include-book "renaming-tests")

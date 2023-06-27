@@ -825,11 +825,12 @@
         (reterr (msg "The :DEPRECATED input must be ~
                       a non-empty list of keywords, ~
                       but it is NIL instead.")))
-       (allowed '(:arrays))
+       (allowed nil)
        ((unless (subsetp-eq deprecated allowed))
-        (reterr (msg "The allowed keywords for the :DEPRECATED input are ~&0, ~
+        (reterr (msg "There are currently no allowed keywords ~
+                      for the :DEPRECATED input, ~
                       but it includes ~&1 instead."
-                     allowed (set-difference-eq deprecated allowed)))))
+                     (set-difference-eq deprecated allowed)))))
     (retok deprecated)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

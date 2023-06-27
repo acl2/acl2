@@ -1,6 +1,6 @@
 ; A simple JSON parser
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -43,23 +43,16 @@
 (include-book "kestrel/unicode-light/hex-digit-chars-to-code-point" :dir :system)
 (include-book "kestrel/unicode-light/code-point-to-utf-8-chars" :dir :system)
 (include-book "kestrel/unicode-light/surrogates" :dir :system)
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/prefixp" :dir :system))
 
 (local (in-theory (disable mv-nth member-equal true-listp)))
 
-;dup
-(defund prefixp (x y)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (consp y)
-           (equal (car x) (car y))
-           (prefixp (cdr x) (cdr y)))
-    t))
-
-(local (in-theory (enable prefixp ;todo
-                          true-listp-when-character-listp2)))
+(local (in-theory (enable true-listp-when-character-listp2)))
 
 ;; Returns a suffix of chars.
 (defund skip-json-whitespace (chars)

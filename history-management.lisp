@@ -1800,34 +1800,26 @@
       (and (consp act)
            (or (eq (car act) :warn)
                (eq (car act) :warn!))))
-    (let ((redefs
-           (scrunch-eq
-            (reverse
-             (collect-redefined
-              (cond ((and (consp wrld)
-                          (eq (caar wrld) 'event-landmark)
-                          (eq (cadar wrld) 'global-value))
-                     (cdr wrld))
-                    (t (er hard 'print-redefinition-warning
-                           "This function is supposed to be called on a world ~
-                             that starts at an event landmark, but this world ~
-                             starts with (~x0 ~x1 . val)."
-                           (caar wrld)
-                           (cadar wrld))))
-              nil)))))
+    (let* ((wrld (scan-to-event wrld))
+           (redefs
+            (scrunch-eq
+             (reverse
+              (collect-redefined
+               (cdr wrld)
+               nil)))))
       (cond (redefs
              (warning$ ctx ("Redef") "~&0 redefined.~%" redefs))
             (t state))))
    (t state)))
 
-(defun clear-event-data (state)
-  (f-put-global 'last-event-data nil state))
+(defun get-event-data-1 (key event-data)
+  (cdr (assoc-eq key event-data)))
 
 (defun get-event-data (key state)
 
 ; See :DOC get-event-data.
 
-  (cdr (assoc key (f-get-global 'last-event-data state))))
+  (get-event-data-1 key (f-get-global 'last-event-data state)))
 
 (defun put-event-data (key val state)
 
@@ -2471,7 +2463,8 @@
 ; Defun is however in this category, since proof failures result in error
 ; messages about guard proof failure or termination proof failure.
 
-                          '(encapsulate progn make-event defun)))
+                          '(encapsulate progn defun
+                             make-event make-event-save-event-data)))
           (cond
            ((output-ignored-p 'error state)
             (io? summary nil state (erp acc-ttree ctx)
@@ -2922,7 +2915,62 @@
                         (declare (ignore col))
                         state)))))))))))
 
-(defun print-summary (erp noop-flg event-type ctx state)
+(defmacro saving-event-data (form)
+
+; Form must evaluate to an error triple.
+
+; It seems unnecessary to free any fast-alists after calling this macro.  The
+; event-data-fal fast-alist should persist so that we can make queries, up to
+; the time that we run saving-event-data again -- which will generally replace
+; the existing event-data-fal.  There is also a read-event-data-fal fast-alist,
+; but it is stored as an entry in the event-data-fal fast-alist (see "cached"
+; in old-and-new-event-data-fal), so it can be expected to disappear when we
+; call saving-event-data again -- at least, (fast-alist-summary) has shown this
+; to be the case.
+
+  `(er-progn (assign event-data-fal 'event-data-fal)
+             ,form))
+
+(defun eval-hidden-packages (known-package-alist state)
+  (cond ((endp known-package-alist) (value nil))
+        (t (let ((entry (car known-package-alist)))
+             (cond ((package-entry-hidden-p entry)
+                    (er-progn (trans-eval
+                               `(defpkg ,(package-entry-name entry)
+                                  ',(package-entry-imports entry)
+                                  nil ; doc
+                                  ',(package-entry-book-path entry)
+                                  nil)
+                               'eval-hidden-packages
+                               state
+                               nil)
+                              (eval-hidden-packages (cdr known-package-alist)
+                                                    state)))
+                   (t (eval-hidden-packages (cdr known-package-alist)
+                                            state)))))))
+
+(defmacro with-packages-unhidden (form)
+  `(revert-world
+    (er-progn (eval-hidden-packages (known-package-alist state) state)
+              ,form)))
+
+(defun event-data-name (event-data event-type)
+  (cond ((eq event-type 'verify-guards)
+; In this special case we don't want to use the namex, because it's 0.
+         (let ((name (cadr (get-event-data-1 'event event-data))))
+           (and (symbolp name) ; not a lambda
+                name)))
+        (t (let ((namex ; as with get-event-data, but without state
+                  (get-event-data-1 'namex event-data)))
+             (cond ((symbolp namex) namex)
+                   ((and (consp namex) (symbolp (car namex)))
+                    (car namex))
+                   (t nil))))))
+
+(defun clear-event-data (state)
+  (f-put-global 'last-event-data nil state))
+
+(defun print-summary (erp noop-flg event-type event ctx state)
 
 ; This function prints the Summary paragraph.  Part of that paragraph includes
 ; the timers.  Time accumulated before entry to this function is charged to
@@ -2939,9 +2987,6 @@
 ; the installed world did not get changed by the "event" (e.g., the "event" was
 ; redundant or was not really an event but was something like a call of (thm
 ; ...)) and we do not scan the most recent event block for redefined names.
-
-; If erp is a message, as recognized by tilde-@p, then that message will be
-; printed by the call below of print-failure.
 
   #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
   (cond ((atom ctx))
@@ -2981,7 +3026,11 @@
      ((global-val 'include-book-path wrld)
       (clear-event-data state))
      (t
-      (let ((steps (prover-steps state)))
+      (let* ((steps (prover-steps state))
+             (make-event-save-event-data-p
+              (eq event-type 'make-event-save-event-data))
+             (old-event-data (and make-event-save-event-data-p ; optimization
+                                  (f-get-global 'last-event-data state))))
         (pprogn
          (clear-event-data state)
          (prog2$ (clear-warning-summaries) state)
@@ -2995,6 +3044,9 @@
                  (t state)))
          (put-event-data 'prover-steps-counted steps state)
          (put-event-data 'form ctx state)
+         (if event
+             (put-event-data 'event event state)
+           state)
          (increment-timer 'other-time state)
          (put-event-data 'time
                          (list (car (get-timer 'prove-time state))
@@ -3093,24 +3145,65 @@
 ; in case the proof was aborted without printing this part of the summary.
 
                state)
-              (pprogn
-               (cond (erp
-                      (pprogn
-                       (print-failure erp event-type acc-ttree ctx state)
-                       (cond
-                        ((f-get-global 'proof-tree state)
-                         (io? proof-tree nil state
-                              (ctx)
-                              (pprogn (f-put-global 'proof-tree-ctx
-                                                    (cons :failed ctx)
-                                                    state)
-                                      (print-proof-tree state))))
-                        (t state))))
-                     (t (pprogn
-                         #+acl2-par
-                         (erase-acl2p-checkpoints-for-summary state)
-                         state)))
-               (f-put-global 'proof-tree nil state))))))))))))
+              (cond (erp
+                     (cond
+                      ((f-get-global 'proof-tree state)
+                       (io? proof-tree nil state
+                            (ctx)
+                            (pprogn (f-put-global 'proof-tree-ctx
+                                                  (cons :failed ctx)
+                                                  state)
+                                    (print-proof-tree state))))
+                      (t state)))
+                    (t (pprogn
+                        #+acl2-par
+                        (erase-acl2p-checkpoints-for-summary state)
+                        state)))
+              (f-put-global 'proof-tree nil state)))))
+         (if make-event-save-event-data-p
+
+; One could argue that it it is inefficient to make the calls of put-event-data
+; above (either lexically above, or within function calls), since we are about
+; to smash last-event-data.  But we expect that this
+; make-event-save-event-data-p case is relatively rare, so we'd rather pay that
+; price here than complicate the code and do the extra checks necessary to
+; prevent those put-event-data calls.  Note in particular that we are
+; introducing the :save-event-data option of make-event to support thm, and the
+; only changes for thm are to save old-event-data above and do the following
+; assignment, which are very cheap additions.
+
+             (f-put-global 'last-event-data old-event-data state)
+           state)
+         (if (and (not (eq (ld-skip-proofsp state)
+                           'include-book)) ; so not encapsulate pass 2
+                  event-type ; optimization for reasonably common case
+                  (member-eq event-type
+                             '(defthm defun verify-guards thm)))
+             (let* ((info (f-get-global 'certify-book-info state))
+                    (channel (and info
+                                  (access certify-book-info info
+                                          :event-data-channel)))
+                    (event-data (f-get-global 'last-event-data state))
+                    (edf (f-get-global 'event-data-fal state)))
+               (cond ((or channel edf)
+                      (let ((name (event-data-name event-data event-type)))
+                        (pprogn (if channel
+                                    (print-object$ (cons name event-data)
+                                                   channel
+                                                   state)
+                                  state)
+                                (if edf
+                                    (f-put-global
+                                     'event-data-fal
+                                     (hons-acons
+                                      name
+                                      (cons event-data
+                                            (cdr (hons-get name edf)))
+                                      edf)
+                                     state)
+                                  state))))
+                     (t state)))
+           state)))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)
 
@@ -3968,6 +4061,8 @@
             trace-co              ;;; see just above
             trace-specs           ;;; see just above
             giant-lambda-object   ;;; see just above
+            last-event-data       ;;; see just above
+            event-data-fal        ;;; see just above
             show-custom-keyword-hint-expansion
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
@@ -4351,7 +4446,7 @@
                                        form))
                               (t (value val)))))))))
 
-(defmacro with-ctx-summarized (ctx body &key event-type)
+(defmacro with-ctx-summarized (ctx body &key event-type event)
 
 ; A typical use of this macro by an event creating function is:
 
@@ -4395,21 +4490,36 @@
               (erp val state)
               (save-event-state-globals
                (mv-let (erp val state)
-                       (er-progn
-                        (xtrans-eval-state-fn-attachment
-                         (initialize-event-user ',ctx ',body)
-                         ctx)
-                        ,body)
-                       (pprogn
-                        (print-summary erp
-                                       (equal saved-wrld (w state))
-                                       ,event-type
-                                       ctx state)
-                        (er-progn
-                         (xtrans-eval-state-fn-attachment
-                          (finalize-event-user ',ctx ',body)
-                          ctx)
-                         (mv erp val state)))))
+                 (acl2-unwind-protect
+                  "with-ctx-summarized"
+                  (er-progn
+                   (xtrans-eval-state-fn-attachment
+                    (initialize-event-user ',ctx ',body)
+                    ctx)
+                   ,body)
+                  (print-summary t ; erp
+                                 (equal saved-wrld (w state))
+                                 ,event-type ,event
+                                 ctx state)
+                  (print-summary nil ; erp
+                                 (equal saved-wrld (w state))
+                                 ,event-type ,event
+                                 ctx state))
+                 (pprogn
+                  (if erp
+                      (print-failure
+                       erp
+                       ,(if (eq event-type 'make-event-save-event-data)
+                            'make-event
+                          event-type)
+                       (f-get-global 'accumulated-ttree state)
+                       ctx state)
+                    state)
+                  (er-progn
+                   (xtrans-eval-state-fn-attachment
+                    (finalize-event-user ',ctx ',body)
+                    ctx)
+                   (mv erp val state)))))
 
 ; In the case of a compound event such as encapsulate, we avoid saving io?
 ; forms for proof replay that were generated after a failed proof attempt,
@@ -5818,7 +5928,7 @@
 
 ; Class is 'command or 'event.
 ; Markp is t or nil, indicating whether we are to print a ">".
-; Status is a an ldd-status record indicating defun-mode, disabled status, and
+; Status is an ldd-status record indicating defun-mode, disabled status, and
 ;   memoized status.
 ; n is a natural number whose interpretation depends on class:
 ;   if class is 'command, n is the command number; otherwise,
@@ -6345,7 +6455,6 @@
                                  state)
        (fmt-ppr
         form
-        t
         (+f (fmt-hard-right-margin state) (-f formula-col))
         0
         formula-col channel state
@@ -6564,7 +6673,11 @@
 
 ; We want history commands to show the "appropriate" enabled status.  For the
 ; user inside break-rewrite, "appropriate" suggests using the enabled structure
-; at the current point in the proof.
+; at the current point in the proof.  By the way, this function is widely used
+; in our sources and also in the regression books; changing its signature would
+; be expensive!
+
+; Note that this implementation depends on Wormhole Coherence.
 
   (or (and (eq (f-get-global 'wormhole-name state) 'brr)
            (access rewrite-constant
@@ -6828,7 +6941,10 @@
 
 (defun print-undefined-primitive-msg (name channel state)
   (fms "~x0 is built into ACL2 without a defining event.~#1~[  See :DOC ~
-        ~x0.~/~]~|"
+        ~x0.~/~]~|See :DOC ARGS for a way to get more information about such ~
+        primitives.~|See :DOC primitive for a list containing each built-in ~
+        function without a definition, each associated with its formals and ~
+        guard.~|"
        (list (cons #\0 name)
              (cons #\1 (if (assoc-eq name *acl2-system-documentation*)
                            0
@@ -7768,14 +7884,6 @@
        (getpropc name 'label nil wrld)
        (equal event-form (get-event name wrld))))
 
-(defmacro make-ctx-for-event (event-form ctx)
-  #+acl2-infix
-  `(if (output-in-infixp state) ,event-form ,ctx)
-  #-acl2-infix
-  (declare (ignore event-form))
-  #-acl2-infix
-  ctx)
-
 (defun deflabel-fn (name state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -7783,7 +7891,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form (cons 'deflabel name))
+   (cons 'deflabel name)
    (let ((wrld1 (w state))
          (event-form (or event-form
                          (list 'deflabel name))))
@@ -8163,29 +8271,28 @@
          (signal val cmds state)
          (mv-let
            (erp obj cmds state)
-           (with-infixp-nil
-            (if cmds
-                (mv-let (col state)
-                  (fmt1 "~x0~|" (list (cons #\0 (car cmds)))
-                        0
-                        *standard-co* state
-                        nil)
-                  (declare (ignore col))
-                  (mv nil (car cmds) (cdr cmds) state))
-                (mv-let (erp obj state)
-                  (read-object *standard-oi* state)
-                  (mv erp
+           (if cmds
+               (mv-let (col state)
+                 (fmt1 "~x0~|" (list (cons #\0 (car cmds)))
+                       0
+                       *standard-co* state
+                       nil)
+                 (declare (ignore col))
+                 (mv nil (car cmds) (cdr cmds) state))
+             (mv-let (erp obj state)
+               (read-object *standard-oi* state)
+               (mv erp
 
 ; Originally 0 was accepted to mean "up"; since January 2023, however, the
 ; symbol UP has also been accepted.  The simplest way to preserve behavior when
 ; making that change was to treat the symbol UP as 0, and we do that here.
 
-                      (if (and (symbolp obj)
-                               (equal (symbol-name obj) "UP"))
-                          0
-                          obj)
-                       nil
-                       state))))
+                   (if (and (symbolp obj)
+                            (equal (symbol-name obj) "UP"))
+                       0
+                     obj)
+                   nil
+                   state)))
            (cond
             (erp (mv 'exit nil nil state))
             (t (let ((obj (cond ((not intern-flg) obj)
@@ -12952,6 +13059,9 @@
 
 (defun guard-clauses (term debug-info stobj-optp clause wrld ttree newvar)
 
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
 ; See also guard-clauses+, which is a wrapper for guard-clauses that eliminates
 ; ground subexpressions.
 
@@ -13122,12 +13232,20 @@
 
 ; Because of translate, term is necessarily of the form
 
-; (wormhole-eval '<name> '(lambda (<whs>) <body>) <name-dropper-term>)
+; (wormhole-eval <name> '(lambda (<whs>) <body>) <name-dropper-term>)
 ; or
-; (wormhole-eval '<name> '(lambda (     ) <body>) <name-dropper-term>)
+; (wormhole-eval <name> '(lambda (     ) <body>) <name-dropper-term>)
 
-; the only difference being whether the lambda has one or no formals.  The
-; <body> of the lambda has been translated despite its occurrence inside a
+; the only difference being whether the lambda has one or no formals.
+
+; The <name> subterm is always quoted post-boot-strap, but in our source code
+; we are free to pass any term in for name.  In fact, we always pass either a
+; variable name or a quoted constant.  So to be lazy here we just check that
+; <name> is a variable or constant and cause an error if it isn't.  Then we
+; ignore the <name> term in guard generation.  Technically we ought to generate
+; guards for <name>.
+
+; The <body> of the lambda has been translated despite its occurrence inside a
 ; quoted lambda.  The <name-dropper-term> is always of the form 'NIL or a
 ; variable symbol or a PROG2$ nest of variable symbols and thus has a guard of
 ; T.  Furthermore, translate ensures that the free variables of the lambda are
@@ -13166,7 +13284,21 @@
            (new-body (if (eq whs new-var)
                          body
                        (subst-var new-var whs body))))
-      (cond (new-var (mv-let (cl-set env ttree)
+      (cond ((not (or (variablep (fargn term 1))
+                      (fquotep (fargn term 1))))
+             (mv (er hard 'guard-clauses
+                     "We thought that the name argument of every call of ~
+                      wormhole-eval in the ACL2 source code was either a ~
+                      variable symbol or a quoted constant.  But ~
+                      guard-clauses has encountered a call of wormhole-eval ~
+                      with the term ~x0 in the wormhole name position.  Out ~
+                      of sheer laziness, guard-clauses is not prepared to ~
+                      generate guard clauses for such a call of ~
+                      wormhole-eval!  Please inform the ACL2 developers of ~
+                      this error message and we'll fix it!"
+                     (fargn term 1))
+                 nil nil))
+            (new-var (mv-let (cl-set env ttree)
 
 ; In this case we discard env if new-var occurs in it.  To see why, imagine
 ; that we have an expression (foo (wormhole-eval ...) (wormhole-eval ...)).
@@ -18236,7 +18368,7 @@
                          (getpropc name 'table-alist nil wrld))))))
     (:put
      (with-ctx-summarized
-      (make-ctx-for-event event-form ctx)
+      ctx
       (let* ((tbl (getpropc name 'table-alist nil wrld))
              (old-pair (assoc-equal key tbl)))
         (er-progn
@@ -18297,7 +18429,7 @@
                 state))))))))
     (:clear
      (with-ctx-summarized
-      (make-ctx-for-event event-form ctx)
+      ctx
       (er-progn
        (chk-table-nil-args :clear
                            (or key term)
@@ -18347,7 +18479,7 @@
         (value (getpropc name 'table-guard *t* wrld))))
       (t
        (with-ctx-summarized
-        (make-ctx-for-event event-form ctx)
+        ctx
         (er-progn
          (chk-table-nil-args op
                              (or key val)

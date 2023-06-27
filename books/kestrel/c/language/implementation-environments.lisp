@@ -133,16 +133,9 @@
    (xdoc::p
     "We formalize the format of @('signed char') as consisting of
      a specification of signed format
-     and a boolean flag saying whether the aforementioned pattern is a trap.
-     The latter only applies to
-     the sign-and-magniture and one's complement signed formats;
-     thus, we require it to be @('nil') for two's complement signed format."))
+     and a boolean flag saying whether the aforementioned pattern is a trap."))
   ((signed signed-format)
-   (trap bool :reqfix (if (equal (signed-format-kind signed) :twos-complement)
-                          nil
-                        trap)))
-  :require (implies (equal (signed-format-kind signed) :twos-complement)
-                    (not trap))
+   (trap bool))
   :pred schar-formatp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -261,12 +254,18 @@
    (xdoc::p
     "Based on the discussion in @(tsee schar-format),
      this is either @($- 2^{\\mathtt{CHAR\\_BIT}-1}$)
-     (if the signed format is two's complement)
+     (if the signed format is two's complement
+     and the pattern with sign bit 1 and all value bits 0
+     is not a trap representation)
      or @($- 2^{\\mathtt{CHAR\\_BIT}-1} + 1$)
-     (if the signed format is one's complement or sign-and-magnitude)."))
-  (if (equal (signed-format-kind
-              (schar-format->signed (ienv->schar-format ienv)))
-             :twos-complement)
+     (if the signed format is one's complement or sign-and-magnitude,
+     or it if two's complement
+     but the pattern with sign bit 1 and all value bits 0
+     is a trap representation)."))
+  (if (and (equal (signed-format-kind
+                   (schar-format->signed (ienv->schar-format ienv)))
+                  :twos-complement)
+           (not (schar-format->trap (ienv->schar-format ienv))))
       (- (expt 2 (1- (ienv->char-bits ienv))))
     (- (1- (expt 2 (1- (ienv->char-bits ienv))))))
   :hooks (:fix)
@@ -285,9 +284,10 @@
     :disable acl2::expt-is-weakly-increasing-for-base->-1)
 
   (defret ienv->schar-min-upper-bound
-    (<= min (if (equal (signed-format-kind
-                        (schar-format->signed (ienv->schar-format ienv)))
-                       :twos-complement)
+    (<= min (if (and (equal (signed-format-kind
+                             (schar-format->signed (ienv->schar-format ienv)))
+                            :twos-complement)
+                     (not (schar-format->trap (ienv->schar-format ienv))))
                 -128
               -127))
     :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))))

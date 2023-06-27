@@ -962,6 +962,17 @@ be SPECIAL.")
          (and (constant-backquote-term-p (car l))
               (constant-backquote-lst-p (cdr l))))))
 
+(defun acl2-reader-error (string &rest args)
+  (clear-input)
+  (let ((*hard-error-returns-nilp* nil))
+    (declare (special *hard-error-returns-nilp*))
+    (qfuncall hard-error
+              'acl2-reader
+              string
+              (qfuncall pairlis$
+                        (symbol-value '*base-10-chars*)
+                        args))))
+
 (defun backquote (x)
 
   "The two functions BACKQUOTE and BACKQUOTE-LST implement backquote
@@ -1005,11 +1016,11 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; gratuitous-lambda-object-restrictions.
 
   (cond ((and (vectorp x) (not (stringp x)))
-         (error "ACL2 does not handle vectors in backquote."))
+         (acl2-reader-error "ACL2 does not handle vectors in backquote."))
         ((constant-backquote-term-p x) ; includes the case (atom x)
          (list 'quote x))
         ((eq (car x) *comma*) (cadr x))
-        ((eq (car x) *comma-atsign*) (error "`,@ is an error"))
+        ((eq (car x) *comma-atsign*) (acl2-reader-error "`,@ is an error"))
         (t (backquote-lst x))))
 
 (defun backquote-lst (l)
@@ -1020,7 +1031,7 @@ notation causes an error and (b) the use of ,. is not permitted."
    ((eq (car l) *comma*)
     (cadr l))
    ((eq (car l) *comma-atsign*)
-    (error ". ,@ is illegal."))
+    (acl2-reader-error ". ,@ is illegal."))
    (t (let ((r (if (constant-backquote-lst-p (cdr l)) ; includes (atom (cdr l))
                    (list 'quote (cdr l))
                  (backquote-lst (cdr l)))))
@@ -1043,20 +1054,21 @@ notation causes an error and (b) the use of ,. is not permitted."
                           (pathname stream)))
            (posn (and pathname
                       (file-position stream))))
-      (clear-input stream)
       (cond
        (posn
-        (error "Illegal comma encountered by READ: file ~a, position ~s."
-               pathname posn))
+        (acl2-reader-error
+         "Illegal comma encountered by READ: file ~x0, position ~x1."
+         (namestring pathname)
+         posn))
        (*read-object-comma-count*
-        (error
-         "Illegal comma: ~:r comma processed while reading top-level form."
-         *read-object-comma-count*))
-       (t (error "Illegal comma encountered by READ.")))))
+        (acl2-reader-error
+         "Illegal comma: ~n0 comma processed while reading top-level form."
+         (list *read-object-comma-count*)))
+       (t (acl2-reader-error "Illegal comma encountered by READ.")))))
   (case (peek-char nil stream t nil t)
     (#\@ (read-char stream t nil t)
      (list *comma-atsign* (read stream t nil t)))
-    (#\. (error ",. not allowed in ACL2 backquote forms."))
+    (#\. (acl2-reader-error ",. not allowed in ACL2 backquote forms."))
     (otherwise (list *comma* (read stream t nil t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1294,13 +1306,14 @@ notation causes an error and (b) the use of ,. is not permitted."
                             #\Return #\Space)))
     (when (member (peek-char nil stream nil nil t)
                   whitespace-chars)
-      (error "#. must be followed immediately by a non-whitespace character.~%~
-              See :DOC sharp-dot-reader.")))
+      (acl2-reader-error
+       "#. must be followed immediately by a non-whitespace character.  See ~
+        :DOC sharp-dot-reader.")))
   (let* ((*inside-sharp-dot-read*
           (or (not *inside-sharp-dot-read*)
-              (error "Recursive attempt to read a sharp-dot (#.)~%expression ~
-                      while inside a sharp-dot expression.  This is not~%~
-                      allowed in ACL2.")))
+              (acl2-reader-error
+               "Recursive attempt to read a sharp-dot (#.) expression while ~
+                inside a sharp-dot expression.  This is not allowed in ACL2.")))
          (sym (read stream t nil t))
          (val (and (symbolp sym)
                    (qfuncall fgetprop sym 'const nil
@@ -1312,25 +1325,24 @@ notation causes an error and (b) the use of ,. is not permitted."
                   (consp (cdr val))
                   (null (cddr val)))
              (cadr val))
-            (t (clear-input stream)
-               (error "(Implementation error) Found non-quotep 'const ~%~
-                       property for ~s."
-                      sym))))
+            (t (acl2-reader-error
+                "(Implementation error) Found non-quotep 'const property for ~
+                 ~x0."
+                sym))))
      (sym
-      (clear-input stream)
-      (error "ACL2 supports #. syntax only for #.*a*, where *a* has been ~%~
-              defined by ~s.  Thus the form #.~s is illegal.  See :DOC ~%~
-              sharp-dot-reader~a."
-             'defconst
-             sym
-             (cond ((eval '(f-get-global 'certify-book-info *the-live-state*))
-                    (format nil ", in particular Remark (2)"))
-                   (t ""))))
+      (acl2-reader-error
+       "ACL2 supports #. syntax only for #.*a*, where *a* has been defined ~
+        by ~x0.  Thus the form #.~x1 is illegal.  See :DOC sharp-dot-reader~@2."
+       'defconst
+       sym
+       (cond ((eval '(f-get-global 'certify-book-info *the-live-state*))
+              ", in particular Remark (2)")
+             (t ""))))
      (t ; surprising case
-      (clear-input stream)
-      (error "ACL2 supports #. syntax only for #.*a*, where *a* has been ~%~
-              defined by ~s."
-             'defconst)))))
+      (acl2-reader-error
+       "ACL2 supports #. syntax only for #.*a*, where *a* has been defined by ~
+        ~x0."
+       'defconst)))))
 
 (defun sharp-bang-read (stream char n)
 
@@ -1342,7 +1354,7 @@ notation causes an error and (b) the use of ,. is not permitted."
                                 (symbol-name package-name))
                                ((stringp package-name)
                                 package-name)
-                               (t nil)))
+                               (t "<unknown>")))
          (*package* (cond
                      (*read-suppress* *package*)
                      ((assoc package-string
@@ -1350,24 +1362,25 @@ notation causes an error and (b) the use of ,. is not permitted."
                              :test 'equal)
                       (qfuncall find-package-fast package-string))
                      (t
-                      (error "There is no package named ~S that is known to ~
-                              ACL2 in this context."
-                             package-name)))))
+                      (acl2-reader-error
+                       "There is no package named ~x0 that is known to ACL2 ~
+                        in this context."
+                       package-string)))))
     (read stream t nil t)))
 
 (defun sharp-u-read (stream char n)
   (declare (ignore char n))
   (let* ((*inside-sharp-u-read*
           (or (not *inside-sharp-u-read*)
-              (error "Recursive attempt to read a sharp-u (#u)~%expression ~
-                      while inside a sharp-u expression.  This is not~%~
-                      allowed.")))
+              (acl2-reader-error
+               "Recursive attempt to read a sharp-u (#u) expression while ~
+                inside a sharp-u expression.  This is not allowed.")))
          (x (read stream t nil t)))
     (cond
      ((numberp x) x)
      ((not (symbolp x))
-      (error "Failure to read #u expression:~%~
-              #u was not followed by a symbol."))
+      (acl2-reader-error
+       "Failure to read #u expression: #u was not followed by a symbol."))
      (t (let* ((name (symbol-name x))
                (c (and (not (equal name ""))
                        (char name 0))))
@@ -1378,8 +1391,9 @@ notation causes an error and (b) the use of ,. is not permitted."
                 (t (let ((n (read-from-string (remove #\_ name))))
                      (cond ((numberp n) n)
                            (*read-suppress* nil)
-                           (t (error "Failure to read #u expression:~%~
-                                      Result ~s is not a numeral."
+                           (t (acl2-reader-error
+                               "Failure to read #u expression: result ~s is ~
+                                not a numeral."
                                      n)))))))))))
 
 (defun read-digits (stream base-16-p)
@@ -1415,8 +1429,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                     (read-digits stream nil)
                     (when (eql len 0)
                       (cond (*read-suppress* (return-from sharp-f-read nil))
-                            (t (clear-input stream)
-                               (error "Empty exponent in #f expression."))))
+                            (t (acl2-reader-error
+                                "Empty exponent in #f expression."))))
                     (unread-char next-char stream)
                     (if negp (- exp) exp))))
     (let* ((tmp (read-char stream nil :eof t))
@@ -1424,7 +1438,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                        ((member tmp '(#\x #\X)) t)
                        ((eq tmp :eof)
                         (cond (*read-suppress* (return-from sharp-f-read nil))
-                              (t (error "End of file encountered after #f."))))
+                              (t (acl2-reader-error
+                                  "End of file encountered after #f."))))
                        (t (unread-char tmp stream)
                           nil)))
            (exp-chars (if base-16-p '(#\p #\P) '(#\e #\E))))
@@ -1445,8 +1460,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                (when negp-after-dot
                  (cond
                   (*read-suppress* (return-from sharp-f-read nil))
-                  (t (clear-input stream)
-                     (error "Illegal sign after point in #f expression."))))
+                  (t (acl2-reader-error
+                      "Illegal sign after point in #f expression."))))
                (let ((significand
                       (+ before-dot (/ after-dot
                                        (expt (if base-16-p 16 10) len)))))
@@ -1524,13 +1539,16 @@ notation causes an error and (b) the use of ,. is not permitted."
 
   (let ((quote1 (read-char stream)))
     (unless (eql quote1 #\")
-      (error "Undefined reader macro: #{~c" quote1)))
+      (acl2-reader-error "Undefined reader macro: #{~s0"
+                         (string quote1))))
   (let ((quote2 (read-char stream)))
     (unless (eql quote2 #\")
-      (error "Undefined reader macro: #{\"~c" quote2)))
+      (acl2-reader-error "Undefined reader macro: #{\"~s0"
+                         (string quote2))))
   (let ((quote3 (read-char stream)))
     (unless (eql quote3 #\")
-      (error "Undefined reader macro: #{\"\"~c" quote3)))
+      (acl2-reader-error "Undefined reader macro: #{\"\"~s0"
+                         (string quote3))))
 
 ; Now read all the characters until """}, reverse them, and turn them into a
 ; string.
@@ -1596,9 +1614,10 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; Grow the array.
 
       (when (>= index *sharp-reader-max-array-size*)
-        (error "Lisp reader encountered #=~s (maximum index is ~s)."
-               index
-               (1- *sharp-reader-max-array-size*)))
+        (acl2-reader-error
+         "Lisp reader encountered #=~x0 (maximum index is ~x1)."
+         index
+         (1- *sharp-reader-max-array-size*)))
       (let* ((new-sharp-reader-array-size
               (max (1+ index)
                    (min (* *sharp-reader-array-size-multiplier*

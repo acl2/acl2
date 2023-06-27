@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "dags")
+(include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 ;todo: reduce?:
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

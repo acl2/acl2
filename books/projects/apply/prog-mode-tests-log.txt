@@ -9,10 +9,9 @@ ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
 ACL2 !>>(IN-PACKAGE "ACL2")
  "ACL2"
-ACL2 !>>(F-PUT-GLOBAL 'TRACE-CO
-                      (@ STANDARD-CO)
-                      STATE)
-<state>
+ACL2 !>>(ER-PROGN (SET-TRACE-CO (@ STANDARD-CO) STATE)
+                  (VALUE NIL))
+ NIL
 ACL2 !>>(INCLUDE-BOOK "projects/apply/loop"
                       :DIR :SYSTEM)
 

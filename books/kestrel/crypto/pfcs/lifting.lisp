@@ -17,8 +17,10 @@
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/union" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -49,7 +51,7 @@
      not only to a shallowly embedded version of it,
      but also to a theorem that relates the two.
      This is a form of lifting:
-     a deeply embedded definition is lifted into a shallowly embedded one.
+     a deeply embedded definition is lifted to a shallowly embedded one.
      The latter is easier to reason about,
      and anything proved about it
      can be extended to the deeply embedded definition
@@ -64,7 +66,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The lifter generates proof that make use of
+    "The lifter generates proofs that make use of
      certain rules about omaps and about some built-ins.
      To avoid a dependency on the libraries that contain those rules,
      here we create versions of these rules that are part of the lifter
@@ -81,7 +83,7 @@
     :by omap::consp-of-in-iff-in)
 
   (defruled lift-rule-natp-of-mod
-    (implies (and (natp a)
+    (implies (and (integerp a)
                   (posp b))
              (natp (mod a b))))
 
@@ -104,10 +106,10 @@
      looking up a certain PFCS definition by name
      yields the expected abstract syntax of the definition;
      there is one such term
-     for the PFCS definition that the information refers to,
+     for the PFCS definition that this information refers to,
      and one such term for each PFCS definition
      directly or indirectly called by
-     the PFCS definition that the information refers to."))
+     the PFCS definition that this information refers to."))
   ((def definition)
    (hyps true-list))
   :pred lift-infop)
@@ -121,11 +123,11 @@
    (xdoc::p
     "For each lifted PFCS definition,
      we store an entry in this table
-     whose key is the definition name (a symbol)
+     whose key is the definition name (a string)
      and whose value is the information of type @(tsee lift-info)."))
 
   (table lift-table nil nil
-    :guard (and (symbolp acl2::key)
+    :guard (and (stringp acl2::key)
                 (lift-infop acl2::val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,7 +142,7 @@
      For each relation,
      whose definition is the @('def') parameter passed to this function,
      we need the hypothesis that looking up the relation in @('defs')
-     (the latter is the variable, in the generated theorem,
+     (which is the variable, in the generated theorem,
      holding the definitions with respect to which the semntics is given)
      yields @('def').
      We also need the cumulative hypotheses of the same form
@@ -149,7 +151,7 @@
      taking the set-like union (thus avoiding duplicates)
      of each relation called."))
   (b* (((definition def) def)
-       (hyp `(equal (lookup-definition ',def.name defs) ',def))
+       (hyp `(equal (lookup-definition ,def.name defs) ',def))
        (crels (constraint-list-constrels def.body))
        (tab (table-alist+ 'lift-table wrld))
        (more-hyps (lift-thm-def-hyps-aux crels tab)))
@@ -162,7 +164,7 @@
      (b* (((when (set::empty crels)) nil)
           (crel (set::head crels))
           (name (constrel->name crel))
-          (info (cdr (assoc-eq name tab)))
+          (info (cdr (assoc-equal name tab)))
           ((unless info)
            (raise "Internal error: ~x0 not in table." name))
           ((unless (lift-infop info))
@@ -173,7 +175,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-free-inst ((free symbol-listp) (witness "A term."))
+(define lift-thm-free-inst ((free string-setp) (witness "A term.") state)
   :returns (doublets doublet-listp)
   :short "Calculate an instantiation of free variables."
   :long
@@ -183,17 +185,17 @@
      precisely the `only if' direction of the theorem
      for the case in which the relation has free variables.
      This instantiation is used in a lemma instance (see @(tsee lift-thm)).
-     The instantiation replaces each free variable
+     The instantiation replaces each variable
      with its lookup in the witness term of the @(tsee defun-sk)."))
-  (cond ((endp free) nil)
-        (t (cons `(,(car free)
-                   (cdr (omap::in ',(car free) ,witness)))
-                 (lift-thm-free-inst (cdr free) witness))))
+  (cond ((set::empty free) nil)
+        (t (b* ((var (set::head free)))
+             (cons `(,(name-to-symbol var state) (cdr (omap::in ,var ,witness)))
+                   (lift-thm-free-inst (set::tail free) witness state)))))
   :prepwork ((local (in-theory (enable doublet-listp length len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-omap-keys-lemma-instances ((vars symbol-listp)
+(define lift-thm-omap-keys-lemma-instances ((vars string-listp)
                                             (witness "A term."))
   :returns (lemma-instances true-listp)
   :short "Calculate lemmas instances for the lifting theorem."
@@ -204,96 +206,233 @@
      The lemma is the same for all instances."))
   (cond ((endp vars) nil)
         (t (cons `(:instance lift-rule-omap-in-to-in-of-keys
-                             (key ',(car vars))
+                             (key ,(car vars))
                              (map ,witness))
                  (lift-thm-omap-keys-lemma-instances (cdr vars) witness)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-asgfree-pairs ((free symbol-listp) (witness "A term."))
+(define lift-thm-asgfree-pairs ((quant symbol-listp) (witness "A term."))
   :returns (terms true-listp)
   :short "Calculate a list of pairs for constructing
-          a witness assignment to free variables."
+          a witness assignment to quantified variables."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are used in the hints for the `if' direction
-     of the lifting theorem, when there are free variables."))
-  (cond ((endp free) (raise "Error."))
-        ((endp (cdr free)) (list witness))
-        (t (lift-thm-asgfree-pairs-aux free 0 witness)))
+    "These are used in the hints for the `if' direction of the lifting theorem,
+     when there are free PFCS variables,
+     which become quantified variables in ACL2."))
+  (cond ((endp quant) (raise "Error."))
+        ((endp (cdr quant)) (list witness))
+        (t (lift-thm-asgfree-pairs-aux quant 0 witness)))
 
   :prepwork
-  ((define lift-thm-asgfree-pairs-aux ((free symbol-listp)
+  ((define lift-thm-asgfree-pairs-aux ((quant symbol-listp)
                                        (index natp)
                                        (witness "A term."))
      :returns (terms true-listp)
-     (cond ((endp free) nil)
+     (cond ((endp quant) nil)
            (t (cons `(mv-nth ,index ,witness)
                     (lift-thm-asgfree-pairs-aux
-                     (cdr free) (1+ index) witness)))))))
+                     (cdr quant) (1+ index) witness)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-called-lemma-instance ((crel constrelp)
-                                        (params symbol-listp)
-                                        (prime symbolp))
-  :returns lemma-instance
-  :short "Calculate a lemma instance for a relation call."
+(define lift-thm-called-lift-thms ((rels symbol-listp))
+  :returns (called-lift-thms)
+  :short "List of lifting theorems for a set of relations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "To prove the lifting theorem of a PFCS definition,
-     we need to use the lifting theorems of the PFCS relations
-     called by this definition.
-     There is one lemma instance for each call.
-     The variables of the lemma are instantiated
-     with the result of evaluating the actual arguments of the call."))
-  (b* (((constrel crel) crel)
-       (asg `(omap::from-lists ',params (list ,@params)))
-       (inst-pairs (lift-thm-called-lemma-instance-aux params asg prime))
-       (lemma-name (acl2::packn-pos (list 'definition-satp-of-
-                                          crel.name
-                                          '-to-shallow)
-                                    crel.name)))
-    `(:instance ,lemma-name ,@inst-pairs))
-
-  :prepwork
-  ((define lift-thm-called-lemma-instance-aux ((params symbol-listp)
-                                               asg
-                                               (prime symbolp))
-     :returns (doublets doublet-listp)
-     (b* (((when (endp params)) nil)
-          (param (car params))
-          (doublet `(,param (eval-expr ',(expression-var param) ,asg ,prime)))
-          (doublets (lift-thm-called-lemma-instance-aux
-                     (cdr params) asg prime)))
-       (cons doublet doublets))
-     :prepwork ((local (in-theory (enable doublet-listp length len)))))))
+    "These are used as rewrite rules in the caller's lifting theorem."))
+  (b* (((when (endp rels)) nil)
+       (rel (car rels)))
+    (cons (acl2::packn-pos (list 'definition-satp-of- rel '-to-shallow) rel)
+          (lift-thm-called-lift-thms (cdr rels)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-called-lemma-instances ((crels constrel-setp)
-                                         (params symbol-listp)
-                                         (prime symbolp))
-  :returns (lemma-instances true-listp)
-  :short "Calculate lemma instances for a set of relation calls."
+(define lift-thm-definition-satp-specialized-lemma ((def definitionp) state)
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp))
+  :short "Generate a local lemma to apply
+          the definition of @(tsee definition-satp)
+          to a specific definition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called on all the relations called by a PFCS definition
-     for which we need to prove the lifting theorem;
-     the resulting lemma instances are used in the proof."))
-  (b* (((when (set::empty crels)) nil)
-       (crel (set::head crels))
-       (instance (lift-thm-called-lemma-instance crel params prime))
-       (instances (lift-thm-called-lemma-instances
-                   (set::tail crels) params prime)))
-    (cons instance instances)))
+    "To prove the lifting theorem,
+     we need to open @(tsee definition-satp)
+     when applied to the name of the definition @('def') that we are lifting.
+     If @('def') calls other definitions,
+     in the course of the proof there will be
+     other instances of @(tsee definition-satp)
+     applied to the names of the called definitions.
+     For these, @(tsee definition-satp) must not be opened,
+     because we need to use the lifting theorems for those definitions.
+     Thus, just enabling @(tsee definition-satp) is too coarse.
+     In order to limit the application of this ACL2 definition,
+     we generate a local lemma which is
+     essentially the definition of @(tsee definition-satp)
+     specialized to the name of the definition to be the one of @('def')."))
+  (b* ((def-name (definition->name def))
+       (pred-name (name-to-symbol def-name state))
+       (thm-name (acl2::packn-pos (list 'definition-satp-of- pred-name)
+                                  pred-name))
+       (thm-event
+        `(defruledl ,thm-name
+           (equal (definition-satp ,def-name defs vals p)
+                  (b* ((def (lookup-definition ,def-name defs))
+                       ((unless def) nil)
+                       (para (definition->para def))
+                       ((unless (equal (len vals) (len para))) nil)
+                       (asg (omap::from-lists para vals))
+                       (constr (make-constraint-relation
+                                :name ,def-name
+                                :args (expression-var-list para))))
+                    (constraint-satp constr defs asg p)))
+           :in-theory '(definition-satp))))
+    (mv thm-event thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm ((def definitionp) (prime symbolp) (wrld plist-worldp))
+(define lift-thm-constr-satp-specialized-lemma ((def definitionp) state)
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp))
+  :short "Generate a local lemma to apply
+          @(tsee constraint-satp-of-relation) or
+          @(tsee constraint-satp-of-relation-when-nofreevars)
+          to a specific relation constraint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to
+     @(tsee lift-thm-definition-satp-specialized-lemma),
+     but for a different rule:
+     the choice between the two aforementioned rules is determined
+     by whether the definition @('def') has free variables or not.
+     In the lifting theorem,
+     we need to apply this rule to the constraint obtained
+     by opening @(tsee definition-satp) on @('def'),
+     but not on the constraints for any relations called by @('def'),
+     because for those we want to apply a different rule.
+     So the local lemma that we generate here limits application
+     to the constraint with the name of @('def')."))
+  (b* ((def-name (definition->name def))
+       (pred-name (name-to-symbol def-name state))
+       (thm-name (acl2::packn-pos (list 'constraint-satp-of- pred-name)
+                                  pred-name))
+       (thm-event
+        (if (set::empty (definition-free-vars def))
+            `(defruledl ,thm-name
+               (implies (and (assignmentp asg)
+                             (assignment-wfp asg p)
+                             (constraint-case constr :relation)
+                             (equal (constraint-relation->name constr)
+                                    ,def-name))
+                        (b* ((args (constraint-relation->args constr))
+                             (def (lookup-definition ,def-name defs)))
+                          (implies (and def
+                                        (set::empty (definition-free-vars def)))
+                                   (equal (constraint-satp constr defs asg p)
+                                          (constraint-relation-nofreevars-satp
+                                           ,def-name args defs asg p)))))
+               :in-theory '(constraint-satp-of-relation-when-nofreevars))
+          `(defruledl ,thm-name
+             (implies (and (assignmentp asg)
+                           (assignment-wfp asg p)
+                           (constraint-case constr :relation)
+                           (equal (constraint-relation->name constr)
+                                  ,def-name))
+                      (equal (constraint-satp constr defs asg p)
+                             (constraint-relation-satp
+                              ,def-name
+                              (constraint-relation->args constr)
+                              defs
+                              asg
+                              p)))
+             :in-theory '(constraint-satp-of-relation)))))
+    (mv thm-event thm-name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-thm-constr-to-def-satp-specialized-lemmas ((rels string-setp)
+                                                        state)
+  :returns (mv (thm-events pseudo-event-form-listp)
+               (thm-names symbol-listp))
+  :short "Generate local lemmas to apply
+          @(tsee constraint-satp-to-definition-satp)
+          to specific relations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is somewhat analogous to
+     @(tsee lift-thm-definition-satp-specialized-lemma) and
+     @(tsee lift-thm-constr-satp-specialized-lemma),
+     but it is not for the definition @('def') being lifted,
+     but instead for the relations called by @('def').
+     In the proofs, we need to rewrite @(tsee constraintp)
+     to the constraint relations in the body of @('def')
+     to equivalent @(tsee definition-satp),
+     so that we can apply the lifting theorems for those relations.
+     So here we go through all the relations called by @('def')
+     and we generate one specialized theorem for each."))
+  (b* (((when (set::empty rels)) (mv nil nil))
+       (rel (set::head rels))
+       (pred-name (name-to-symbol rel state))
+       (thm-name (acl2::packn-pos
+                  (list 'constraint-satp-to-definition-satp-of- pred-name)
+                  pred-name))
+       (thm-event
+        `(defruledl ,thm-name
+           (implies (and (primep p)
+                         (assignmentp asg)
+                         (assignment-wfp asg p)
+                         (constraint-case constr :relation)
+                         (equal (constraint-relation->name constr)
+                                ,rel)
+                         (no-duplicatesp-equal
+                          (definition->para (lookup-definition ,rel defs))))
+                    (b* ((vals (eval-expr-list
+                                (constraint-relation->args constr) asg p)))
+                      (implies (not (reserrp vals))
+                               (equal (constraint-satp constr defs asg p)
+                                      (definition-satp
+                                        ,rel defs vals p)))))
+           :in-theory '(constraint-satp-to-definition-satp)))
+       ((mv thm-events thm-names)
+        (lift-thm-constr-to-def-satp-specialized-lemmas (set::tail rels)
+                                                        state)))
+    (mv (cons thm-event thm-events)
+        (cons thm-name thm-names))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-thm-type-prescriptions-for-called-preds ((rels string-listp)
+                                                      state)
+  :returns (rules true-listp)
+  :short "List of type prescription rules for the shallowly embedded predicates
+          for the relations called by the definition being lifted."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We need the fact that they are booleans
+     in the proofs of the lifting theorems."))
+  (b* (((when (endp rels)) nil)
+       (rel (car rels))
+       (pred-name (name-to-symbol rel state))
+       (rule `(:t ,pred-name))
+       (rules (lift-thm-type-prescriptions-for-called-preds (cdr rels) state)))
+    (cons rule rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-thm ((def definitionp)
+                  (def-sat-lemma symbolp)
+                  (constr-sat-lemma symbolp)
+                  (constr-to-def-sat-lemmas symbol-listp)
+                  (prime symbolp)
+                  state)
   :returns (mv (event pseudo-event-formp)
                (def-hyps true-listp))
   :short "Generate the theorem connecting
@@ -312,7 +451,26 @@
    (xdoc::p
     "When the definition has no free variables,
      the theorem is proved by enabling certain definitions and rules.
-     The proof is obtained completely by rewriting.")
+     The proof is obtained completely by rewriting.
+     Note that we use the specialized rules constructed in
+     @(tsee lift-thm-definition-satp-specialized-lemma),
+     @(tsee lift-thm-constr-satp-specialized-lemma), and
+     @(tsee lift-thm-constr-to-def-satp-specialized-lemmas),
+     for the reasons discussed in their documentation.
+     The proof goes as follows:
+     (1) open @(tsee definition-satp) on @('def');
+     (2) apply @(tsee constraint-satp-of-relation)
+     to the resulting relation constraint for @('def');
+     (3) decompose the body of @('def') into the constituent constraints;
+     (4) apply @(tsee constraint-satp-to-definition-satp)
+     to the relation constraints in the body of @('def');
+     (5) apply the lifting theorems for the relations called by @('def'),
+     which produces the shallowly embedded predicate calls,
+     (6) reduce the equality constraints in @('def')
+     to equalities between shallowly embedded expressions, and
+     (7) open the shallowly embedded predicate for @('def')
+     whose body consists of the shallowly embedded
+     equalities and predicate calls.")
    (xdoc::p
     "If the definition has free variables,
      the shallowly embedded version of the definition is a @(tsee defun-sk),
@@ -335,30 +493,38 @@
      given things are formulated;
      perhaps there is a way to do this via rewrite rules."))
 
-  (b* (((definition def) def)
+  (b* ((wrld (w state))
+       ((definition def) def)
+       (pred-name (name-to-symbol def.name state))
+       (para (name-list-to-symbol-list def.para state))
        (free (definition-free-vars def))
+       (quant (name-set-to-symbol-list free state))
        (thm-name (acl2::packn-pos (list 'definition-satp-of-
-                                        def.name
+                                        pred-name
                                         '-to-shallow)
-                                  def.name))
+                                  pred-name))
        (def-hyps (lift-thm-def-hyps def wrld))
-       (callee-lemma-instances
-        (lift-thm-called-lemma-instances (constraint-list-constrels def.body)
-                                         def.para
-                                         prime))
+       (rels (constraint-list-rels def.body))
+       (called-lift-thms (lift-thm-called-lift-thms
+                          (name-set-to-symbol-list rels state)))
+       (type-presc-rules
+        (lift-thm-type-prescriptions-for-called-preds rels state))
 
        ((when (equal free nil))
         (mv
          `(defruled ,thm-name
             (implies (and ,@def-hyps
-                          ,@(sesem-gen-fep-terms def.para prime))
+                          ,@(sesem-gen-fep-terms para prime)
+                          (primep ,prime))
                      (equal (definition-satp
-                              ',def.name defs (list ,@def.para) ,prime)
-                            (,def.name ,@def.para ,prime)))
-            :in-theory '(,def.name
-                         (:e ,def.name)
-                         definition-satp
-                         constraint-satp-of-relation-when-nofreevars
+                              ,def.name defs (list ,@para) ,prime)
+                            (,pred-name ,@para ,prime)))
+            :in-theory '(,pred-name
+                         (:e ,pred-name)
+                         ,def-sat-lemma
+                         ,constr-sat-lemma
+                         ,@constr-to-def-sat-lemmas
+                         ,@called-lift-thms
                          constraint-relation-nofreevars-satp
                          constraint-list-satp-of-cons
                          constraint-list-satp-of-nil
@@ -403,116 +569,119 @@
                          acl2::nat-listp-of-cons
                          acl2::not-reserrp-when-nat-listp
                          nfix
-                         (:t mod))
-            :use (,@callee-lemma-instances))
+                         (:t mod)
+                         (:e no-duplicatesp-equal)
+                         ,@type-presc-rules))
          def-hyps))
 
        (constraint-relation-satp-witness
-        `(constraint-relation-satp-witness ',def.name
+        `(constraint-relation-satp-witness ,def.name
                                            ',(expression-var-list def.para)
                                            defs
-                                           (omap::from-lists ',def.para
-                                                             (list ,@def.para))
+                                           (omap::from-lists (list ,@def.para)
+                                                             (list ,@para))
                                            ,prime))
-       (def-witness `(,(add-suffix-to-fn def.name "-WITNESS")
-                      ,@def.para ,prime)))
+       (def-witness `(,(add-suffix-to-fn pred-name "-WITNESS") ,@para ,prime)))
 
     (mv
      `(defruled ,thm-name
         (implies (and ,@def-hyps
-                      ,@(sesem-gen-fep-terms def.para prime)
-                      (posp ,prime))
-                 (equal (definition-satp
-                          ',def.name defs (list ,@def.para) ,prime)
-                        (,def.name ,@def.para ,prime)))
+                      ,@(sesem-gen-fep-terms para prime)
+                      (primep ,prime))
+                 (equal (definition-satp ,def.name defs (list ,@para) ,prime)
+                        (,pred-name ,@para ,prime)))
         :in-theory '((:t definition-satp)
-                     (:t ,def.name))
+                     (:t ,pred-name))
         :use (only-if-direction if-direction)
 
         :prep-lemmas
 
         ((defruled only-if-direction
-           (implies (and (equal (lookup-definition ',def.name defs)
-                                ',def)
-                         ,@(sesem-gen-fep-terms def.para prime))
+           (implies (and ,@def-hyps
+                         ,@(sesem-gen-fep-terms para prime)
+                         (primep ,prime))
                     (implies (definition-satp
-                               ',def.name defs (list ,@def.para) ,prime)
-                             (,def.name ,@def.para ,prime)))
-           :in-theory '(definition-satp
-                         constraint-satp-of-relation
-                         constraint-relation-satp
-                         constraint-list-satp-of-cons
-                         constraint-list-satp-of-nil
-                         constraint-satp-of-equal
-                         constraint-equal-satp
-                         eval-expr
-                         eval-expr-list
-                         (:e definition->para)
-                         (:e definition->body)
-                         (:e definition-free-vars)
-                         (:e constraint-kind)
-                         (:e constraint-equal->left)
-                         (:e constraint-equal->right)
-                         (:e constraint-relation)
-                         (:e constraint-relation->name)
-                         (:e constraint-relation->args)
-                         (:e expression-kind)
-                         (:e expression-const->value)
-                         (:e expression-var->name)
-                         (:e expression-add->arg1)
-                         (:e expression-add->arg2)
-                         (:e expression-mul->arg1)
-                         (:e expression-mul->arg2)
-                         (:e expression-var-list)
-                         assignment-wfp-of-update*
-                         assignment-wfp-of-update
-                         assignment-wfp-of-nil
-                         assignment-fix-when-assignmentp
-                         assignmentp-of-update*
-                         assignmentp-of-update
-                         (:e assignmentp)
-                         omap::from-lists
-                         pfield::fep-fw-to-natp
-                         pfield::natp-of-add
-                         pfield::natp-of-mul
-                         len
-                         fty::consp-when-reserrp
-                         acl2::natp-compound-recognizer
-                         (:e nat-listp)
-                         (:e set::empty)
-                         car-cons
-                         cdr-cons
-                         omap::in-of-update*
-                         omap::in-of-update
-                         acl2::nat-listp-of-cons
-                         acl2::not-reserrp-when-nat-listp
-                         lift-rule-nfix-when-natp
-                         (:t mod)
-                         (:t reserr)
-                         fty::reserrp-of-reserr
-                         lift-rule-omap-consp-of-in-iff-in
-                         (:e set::in)
-                         natp-of-cdr-of-in-when-assignmentp-type
-                         fep-of-cdr-of-in-when-assignment-wfp)
-           :use ((:instance ,(add-suffix-to-fn def.name "-SUFF")
+                               ,def.name defs (list ,@para) ,prime)
+                             (,pred-name ,@para ,prime)))
+           :in-theory '(,def-sat-lemma
+                        ,constr-sat-lemma
+                        ,@constr-to-def-sat-lemmas
+                        ,@called-lift-thms
+                        constraint-relation-satp
+                        constraint-list-satp-of-cons
+                        constraint-list-satp-of-nil
+                        constraint-satp-of-equal
+                        constraint-equal-satp
+                        eval-expr
+                        eval-expr-list
+                        (:e definition->para)
+                        (:e definition->body)
+                        (:e definition-free-vars)
+                        (:e constraint-kind)
+                        (:e constraint-equal->left)
+                        (:e constraint-equal->right)
+                        (:e constraint-relation)
+                        (:e constraint-relation->name)
+                        (:e constraint-relation->args)
+                        (:e expression-kind)
+                        (:e expression-const->value)
+                        (:e expression-var->name)
+                        (:e expression-add->arg1)
+                        (:e expression-add->arg2)
+                        (:e expression-mul->arg1)
+                        (:e expression-mul->arg2)
+                        (:e expression-var-list)
+                        assignment-wfp-of-update*
+                        assignment-wfp-of-update
+                        assignment-wfp-of-nil
+                        assignment-fix-when-assignmentp
+                        assignmentp-of-update*
+                        assignmentp-of-update
+                        (:e assignmentp)
+                        omap::from-lists
+                        pfield::fep-fw-to-natp
+                        pfield::natp-of-add
+                        pfield::natp-of-mul
+                        len
+                        fty::consp-when-reserrp
+                        acl2::natp-compound-recognizer
+                        (:e nat-listp)
+                        (:e set::empty)
+                        car-cons
+                        cdr-cons
+                        omap::in-of-update*
+                        omap::in-of-update
+                        acl2::nat-listp-of-cons
+                        acl2::not-reserrp-when-nat-listp
+                        lift-rule-nfix-when-natp
+                        (:t mod)
+                        (:t reserr)
+                        fty::reserrp-of-reserr
+                        lift-rule-omap-consp-of-in-iff-in
+                        (:e set::in)
+                        natp-of-cdr-of-in-when-assignmentp-type
+                        fep-of-cdr-of-in-when-assignment-wfp
+                        (:e no-duplicatesp-equal)
+                        ,@type-presc-rules)
+           :use ((:instance ,(add-suffix-to-fn pred-name "-SUFF")
                             ,@(lift-thm-free-inst
-                               free constraint-relation-satp-witness))
+                               free constraint-relation-satp-witness state))
                  ,@(lift-thm-omap-keys-lemma-instances
                     (append def.para free)
-                    constraint-relation-satp-witness)
-                 ,@callee-lemma-instances))
+                    constraint-relation-satp-witness)))
 
          (defruled if-direction
-           (implies (and (equal (lookup-definition ',def.name defs)
-                                ',def)
-                         ,@(sesem-gen-fep-terms def.para prime)
-                         (posp ,prime))
-                    (implies (,def.name ,@def.para ,prime)
+           (implies (and ,@def-hyps
+                         ,@(sesem-gen-fep-terms para prime)
+                         (primep ,prime))
+                    (implies (,pred-name ,@para ,prime)
                              (definition-satp
-                               ',def.name defs (list ,@def.para) ,prime)))
-           :in-theory '(,def.name
-                        definition-satp
-                        constraint-satp-of-relation
+                               ,def.name defs (list ,@para) ,prime)))
+           :in-theory '(,pred-name
+                        ,def-sat-lemma
+                        ,constr-sat-lemma
+                        ,@constr-to-def-sat-lemmas
+                        ,@called-lift-thms
                         constraint-list-satp-of-cons
                         constraint-list-satp-of-nil
                         constraint-satp-of-equal
@@ -557,20 +726,25 @@
                         lift-rule-nfix-when-natp
                         (:e reserrp)
                         acl2::not-reserrp-when-natp
+                        acl2::not-reserrp-when-nat-listp
                         nat-listp
                         (:e omap::in)
                         lift-rule-natp-of-mod
-                        (:e natp))
+                        (:e natp)
+                        (:e no-duplicatesp-equal)
+                        acl2::primep-forward-to-posp
+                        ,@type-presc-rules
+                        pfield::natp-of-add
+                        pfield::natp-of-mul)
            :use ((:instance constraint-relation-satp-suff
                             (asgfree (omap::from-lists
-                                      ',free
+                                      (list ,@free)
                                       (list ,@(lift-thm-asgfree-pairs
-                                               free def-witness))))
-                            (name ',def.name)
-                            (args (expression-var-list ',def.para))
-                            (asg (omap::from-lists ',def.para
-                                                   (list ,@def.para))))
-                 ,@callee-lemma-instances))))
+                                               quant def-witness))))
+                            (name ,def.name)
+                            (args (expression-var-list (list ,@def.para)))
+                            (asg (omap::from-lists (list ,@def.para)
+                                                   (list ,@para))))))))
      def-hyps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -583,20 +757,35 @@
    (xdoc::p
     "This adds an entry to the table for the definition passed as argument."))
   (b* ((info (make-lift-info :def def :hyps hyps)))
-    `(table lift-table ',(definition->name def) ',info)))
+    `(table lift-table ,(definition->name def) ',info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-fn ((def definitionp) (prime symbolp) (wrld plist-worldp))
+(define lift-fn ((def definitionp) (prime symbolp) state)
   :returns (event pseudo-event-formp)
   :short "Lift a deeply embedded PFCS definition
           to a shallowly embedded PFCS definition
           with a theorem relating the two."
-  (b* ((event-fn (sesem-definition def prime))
-       ((mv event-thm def-hyps) (lift-thm def prime wrld))
+  (b* ((event-fn (sesem-definition def prime state))
+       ((mv event-def-sat def-sat-lemma)
+        (lift-thm-definition-satp-specialized-lemma def state))
+       ((mv event-constr-sat constr-sat-lemma)
+        (lift-thm-constr-satp-specialized-lemma def state))
+       ((mv events-constr-to-def-sat constr-to-def-sat-lemmas)
+        (lift-thm-constr-to-def-satp-specialized-lemmas
+         (constraint-list-rels (definition->body def)) state))
+       ((mv event-thm def-hyps) (lift-thm def
+                                          def-sat-lemma
+                                          constr-sat-lemma
+                                          constr-to-def-sat-lemmas
+                                          prime
+                                          state))
        (event-table (lift-table-add def def-hyps)))
     `(encapsulate ()
        ,event-fn
+       ,event-def-sat
+       ,event-constr-sat
+       ,@events-constr-to-def-sat
        ,event-thm
        ,event-table)))
 
@@ -617,4 +806,4 @@
      to use for the prime that parameterizes the PFCS semantics.
      It is @('p') by default.
      This is quoted (not evaluated) for processing."))
-  `(make-event (lift-fn ,def ',prime (w state))))
+  `(make-event (lift-fn ,def ',prime state)))

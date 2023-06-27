@@ -22,7 +22,10 @@
 (include-book "std/util/defprojection" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/basic/inductions" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (in-theory (disable primep)))
 
@@ -111,19 +114,19 @@
      which are a superset of every possible prime field.
      This way, we can have a fixtype of assignments
      (recall that fixtypes cannot be parameterized, currently)."))
-  :key-type symbol
+  :key-type string
   :val-type nat
   :pred assignmentp
   ///
 
   (defrule natp-of-cdr-of-in-when-assignmentp-type
     (implies (and (assignmentp asg)
-                  (omap::in sym asg))
-             (natp (cdr (omap::in sym asg))))
+                  (omap::in str asg))
+             (natp (cdr (omap::in str asg))))
     :rule-classes :type-prescription)
 
   (defrule assignmentp-of-from-lists
-    (implies (and (symbol-listp keys)
+    (implies (and (string-listp keys)
                   (nat-listp vals)
                   (equal (len keys) (len vals)))
              (assignmentp (omap::from-lists keys vals)))
@@ -210,7 +213,7 @@
     :enable omap::delete*)
 
   (defrule assignment-wfp-of-from-lists
-    (implies (and (symbol-listp keys)
+    (implies (and (string-listp keys)
                   (fe-listp vals p)
                   (equal (len keys) (len vals)))
              (assignment-wfp (omap::from-lists keys vals) p))
@@ -238,7 +241,12 @@
      with the field addition and multiplication operations.
      If the assignment is for a prime field,
      and the evaluation returns a natural number (not an error),
-     that natural number is in the prime field."))
+     that natural number is in the prime field.")
+   (xdoc::p
+    "We prove that evaluating an expression with an assignment
+     that has an added variable that is not in the expression,
+     is like evaluating the expression with the assignment
+     without the added variable."))
   (expression-case
    expr
    :const (mod expr.value p)
@@ -267,7 +275,17 @@
              (fep (eval-expr expr asg p) p))
     :enable fep-of-cdr-of-in-when-assignment-wfp)
 
-  (verify-guards eval-expr))
+  (verify-guards eval-expr)
+
+  (defruled eval-expr-of-omap-update-of-var-not-in-expr
+    (implies (and (stringp var)
+                  (natp val)
+                  (assignmentp asg)
+                  (not (set::in var (expression-vars expr))))
+             (equal (eval-expr expr (omap::update var val asg) p)
+                    (eval-expr expr asg p)))
+    :induct t
+    :enable (eval-expr expression-vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -277,6 +295,18 @@
   :guard (assignment-wfp asg p)
   :returns (nats nat-list-resultp :hyp (primep p))
   :short "Lift @(tsee eval-expr) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We prove that evaluating a list of expressions with an assignment
+     that has an added variable that is not in the list of expressions,
+     is like evaluating the list of expressions with the assignment
+     without the added variable.")
+   (xdoc::p
+    "We prove that evaluating a list of distinct variables (as expressions)
+     with an assignment that assigns values from a list
+     to the variables in the same order,
+     yields those values, in the same order."))
   (b* (((when (endp exprs)) nil)
        ((ok val) (eval-expr (car exprs) asg p))
        ((ok vals) (eval-expr-list (cdr exprs) asg p)))
@@ -300,7 +330,38 @@
     (implies (nat-listp nats)
              (equal (len nats)
                     (len exprs)))
-    :hints (("Goal" :induct t :in-theory (enable len)))))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defruled eval-expr-list-of-omap-udpate-of-var-not-in-exprs
+    (implies (and (stringp var)
+                  (natp val)
+                  (assignmentp asg)
+                  (not (set::in var (expression-list-vars exprs))))
+             (equal (eval-expr-list exprs (omap::update var val asg) p)
+                    (eval-expr-list exprs asg p)))
+    :induct t
+    :enable (eval-expr-list
+             expression-list-vars
+             eval-expr-of-omap-update-of-var-not-in-expr))
+
+  (defruled eval-expr-list-of-expression-var-list-and-omap-from-lists
+    (implies (and (string-listp vars)
+                  (no-duplicatesp-equal vars)
+                  (fe-listp vals p)
+                  (equal (len vars)
+                         (len vals)))
+             (equal (eval-expr-list (expression-var-list vars)
+                                    (omap::from-lists vars vals)
+                                    p)
+                    vals))
+    :induct (acl2::cdr-cdr-induct vars vals)
+    :enable (len
+             eval-expr-list
+             eval-expr
+             no-duplicatesp-equal
+             omap::from-lists
+             acl2::not-reserrp-when-nat-listp
+             eval-expr-list-of-omap-udpate-of-var-not-in-exprs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,7 +511,7 @@
              (left expression)
              (right expression)))
     (:relation ((asg assignment)
-                (name symbol)
+                (name string)
                 (args expression-list)
                 (sub proof-tree-list)
                 (asgfree assignment)))
@@ -735,7 +796,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define definition-satp ((name symbolp)
+(define definition-satp ((name stringp)
                          (defs definition-listp)
                          (vals (fe-listp vals p))
                          (p primep))

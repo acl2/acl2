@@ -11,9 +11,9 @@
 
 (in-package "ACL2")
 
-(include-book "logxor-b")
-(include-book "bvchop")
+;(include-book "bvchop")
 (include-book "getbit")
+(local (include-book "logxor-b"))
 (local (include-book "../utilities/equal-of-booleans"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

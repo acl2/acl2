@@ -381,11 +381,8 @@
               (consp scopes))
        :hints (("Goal" :induct t)))
      (defruled var-in-scopes-p-of-update-var-aux
-       (implies (var-in-scopes-p var2 scopes)
-                (equal (var-in-scopes-p var (update-var-aux var2 val scopes))
-                       (or (equal (ident-fix var)
-                                  (ident-fix var2))
-                           (var-in-scopes-p var scopes))))
+       (iff (c::var-in-scopes-p var (c::update-var-aux var2 val scopes))
+            (c::var-in-scopes-p var scopes))
        :induct t
        :enable var-in-scopes-p))))
 
@@ -676,6 +673,20 @@
                 (create-var-okp var compst)))
     :enable (create-var-okp add-var))
 
+  (defruled create-var-okp-of-update-var
+    (equal (create-var-okp var (update-var var2 val compst))
+           (create-var-okp var compst))
+    :enable (create-var-okp
+             update-var
+             update-var-aux
+             var-in-scopes-p
+             push-frame
+             pop-frame
+             top-frame)
+    :expand (update-var-aux var2
+                            val
+                            (frame->scopes (car (compustate->frames compst)))))
+
   (defruled create-var-to-add-var
     (implies (and (create-var-okp var compst)
                   (> (compustate-frames-number compst) 0))
@@ -907,7 +918,7 @@
     "The theorems below about @(tsee read-var) are a bit different
      because @(tsee read-var) does not return a state, but a value instead.")
    (xdoc::p
-    "e first theorem turns @(tsee read-var) into @(tsee read-static-var)
+    "The first theorem turns @(tsee read-var) into @(tsee read-static-var)
      when we encounter @(tsee add-frame):
      since @(tsee add-frame) adds no variables in automatic storage,
      the variable must be in static storage.")
@@ -1644,7 +1655,8 @@
      (i.e. commutativity normalizes them, via its loop stopper)."))
 
   (defruled read-object-of-add-frame
-    (implies (equal (objdesign-kind objdes) :alloc)
+    (implies (or (equal (objdesign-kind objdes) :alloc)
+                 (equal (objdesign-kind objdes) :static))
              (equal (read-object objdes (add-frame fun compst))
                     (read-object objdes compst)))
     :enable (add-frame

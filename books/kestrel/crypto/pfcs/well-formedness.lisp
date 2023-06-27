@@ -97,7 +97,7 @@
      and the relation being defined is not already defined."))
   (b* (((definition def) def))
     (and (not (lookup-definition def.name defs))
-         (no-duplicatesp-eq def.para)
+         (no-duplicatesp-equal def.para)
          (constraint-list-wfp def.body defs)))
   :hooks (:fix))
 

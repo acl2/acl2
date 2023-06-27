@@ -703,7 +703,6 @@ world" "blah blah"))
       (config (str::make-printconfig :home-package (pkg-witness "STR")))
       (max    100)
       (eviscp t)
-      (termp  t)  ;; apparently relevant only for infix printing
       )
   (loop for x in (list 0 300 -848 "foo" #\a #\Newline (expt 2 32)
                        (/ 22 7) (/ (expt 2 32) (1- (expt 2 39)))
@@ -712,10 +711,10 @@ world" "blah blah"))
         do
         (format t "Testing ~a:~%" x)
         (time (loop for i fixnum from 1 to 10000000 do
-                    (acl2::flsz x termp 0 max state eviscp)))
+                    (acl2::flsz x 0 max state eviscp)))
         (time (loop for i fixnum from 1 to 10000000 do
                     (str::obj-size x 0 max eviscp config)))
-        (unless (equal (acl2::flsz x termp 0 max state eviscp)
+        (unless (equal (acl2::flsz x 0 max state eviscp)
                        (str::obj-size x 0 max eviscp config))
           (error "Mismatch"))))
 
@@ -724,7 +723,6 @@ world" "blah blah"))
       (config (str::make-printconfig :home-package (pkg-witness "STR")))
       (max    100)
       (eviscp t)
-      (termp  t)  ;; apparently relevant only for infix printing
       )
   (loop for x in '((local (defthm len-when-consp
                             (implies (consp x)
@@ -737,10 +735,10 @@ world" "blah blah"))
         do
         (format t "Testing ~a:~%" x)
         (time (loop for i fixnum from 1 to 100000 do
-                    (acl2::flsz x termp 0 max state eviscp)))
+                    (acl2::flsz x 0 max state eviscp)))
         (time (loop for i fixnum from 1 to 100000 do
                     (str::obj-size x 0 max eviscp config)))
-        (unless (equal (acl2::flsz x termp 0 max state eviscp)
+        (unless (equal (acl2::flsz x 0 max state eviscp)
                        (str::obj-size x 0 max eviscp config))
           (error "Mismatch"))))
 

@@ -4164,22 +4164,28 @@
    (pprogn@par
     (serial-first-form-parallel-second-form@par
 
-; Since wormholes (in particular, brr wormholes) don't change the global values
-; of the iprint structures, we formerly called iprint-oracle-updates as shown
-; just below so that iprinting done in brr is reflected in the global state.
-; However, we see now that this is not necessary: printing with evisceration
-; always goes through eviscerate-top or eviscerate-stobjs-top, and these invoke
-; iprint-oracle-updates when necessary, so the only other reason for such an
-; update here would be if we were to read forms #@n# printed in the brr
-; wormhole.  But such reads would presumably take place interactively by way of
+; Since wormholes (in particular, brr wormholes) don't change the values of the
+; state globals that implement iprinting, we formerly called
+; iprint-oracle-updates as shown in a comment below, so that iprinting done in
+; brr is reflected in the global state.  However, this is not necessary.  To
+; see why, first note that printing with evisceration always goes through
+; eviscerate-top or eviscerate-stobjs-top, and these invoke
+; iprint-oracle-updates when necessary.  So the only other reason to consider
+; calling iprint-oracle-updates here is for the reading of forms #@n# printed
+; in the brr wormhole.  But such reads would presumably take place by way of
 ; read-object, which has its own call of iprint-oracle-updates.
 
-; We leave such code for ACL(p), however; perhaps it could be omitted too, at
-; least when waterfall-parallelism is not enabled, but we haven't thought that
-; through.
+; We leave a version of iprint-oracle-updates for ACL(p), however; perhaps it
+; could be omitted too, at least when waterfall-parallelism is not enabled, but
+; we haven't thought that through.
 
-     state ; formerly (iprint-oracle-updates state); see above
-     (iprint-oracle-updates@par))
+; We do however invoke brr-evisc-tuple-oracle-update, which is necessary either
+; here or in ld-read-command, or both, to avoid failures for certification of
+; community book books/demos/brr-test-book.
+
+     (brr-evisc-tuple-oracle-update state)
+     (prog2$ (iprint-oracle-updates@par)
+             (brr-evisc-tuple-oracle-update@par)))
     (cond
      (erp ; from out-of-time or clause-processor fail; treat as 'error signal
       (let ((time-limit-reached-p
@@ -7934,91 +7940,16 @@
    (pprogn (f-put-global 'last-step-limit step-limit state)
            (mv erp val state))))
 
-(defun print-summary-on-error (state)
-
-; This function is called only when a proof attempt causes an error rather than
-; merely returning (mv non-nil val state); see prove-loop0.  We formerly called
-; this function pstack-and-gag-state, but now we also print the runes, and
-; perhaps we will print additional information in the future.
-
-; An alternative approach, which might avoid the need for this function, is
-; represented by the handling of *acl2-time-limit* in our-abort.  The idea
-; would be to continue automatically from the interrupt, but with a flag saying
-; that the proof should terminate immediately.  Then any proof procedure that
-; checks for this flag would return with some sort of error.  If no such proof
-; procedure is invoked, then a second interrupt would immediately take effect.
-; An advantage of such an alternative approach is that it would use a normal
-; control flow, updating suitable state globals so that a normal call of
-; print-summary could be made.  We choose, however, not to pursue this
-; approach, since it might risk annoying users who find that they need to
-; provide two interrupts, and because it seems inherently a bit tricky and
-; perhaps easy to get wrong.
-
-; We conclude with remarks for the case that waterfall parallelism is enabled.
-
-; When the user has to interrupt a proof twice before it quits, the prover will
-; call this function.  Based on observation by Rager, the pstack tends to be
-; long and irrelevant in this case.  So, we disable the printing of the pstack
-; when waterfall parallelism is enabled and waterfall-printing is something
-; other than :full.  We considered not involving the current value for
-; waterfall-printing, but using the :full setting is a strange thing to begin
-; with.  So, we make the decision that if a user goes to the effort to use the
-; :full waterfall-printing mode, that maybe they'd like to see the pstack after
-; all.
-
-; The below #+acl2-par change in definition also results in not printing
-; gag-state under these conditions.  However, this is effectively a no-op,
-; because the parallel waterfall does not save anything to gag-state anyway.
-
-  (let ((chan (proofs-co state))
-        (acc-ttree (f-get-global 'accumulated-ttree state)))
-    (pprogn
-     (clear-event-data state)
-     (io? summary nil state (chan acc-ttree)
-          (pprogn
-           (newline chan state)
-           (print-rules-and-hint-events-summary acc-ttree state)
-           (print-system-attachments-summary state)))
-     (cond
-      #+acl2-par
-      ((and (f-get-global 'waterfall-parallelism state)
-            (not (eql (f-get-global 'waterfall-printing state) :full)))
-       state)
-      (t
-       (pprogn
-        (io? summary nil state (chan)
-             (fms "Here is the current pstack [see :DOC pstack]:"
-                  nil chan state nil))
-        (mv-let (erp val state)
-                (io? summary nil (mv erp val state) nil
-                     (pstack))
-                (declare (ignore erp val))
-                (save-and-print-gag-state state))))))))
-
 (defun prove-loop0 (clauses pspv hints ens wrld ctx state)
 
 ; Warning: This function assumes that *acl2-time-limit* has already been
 ; let-bound in raw Lisp by bind-acl2-time-limit.
 
-; The perhaps unusual structure below is intended to invoke
-; print-summary-on-error only when there is a hard error such as an interrupt.
-; In the normal failure case, the pstack is not printed and the key checkpoint
-; summary (from the gag-state) is printed after the summary.
-
   (state-global-let*
    ((guard-checking-on nil) ; see the Essay on Guard Checking
     (in-prove-flg t))
-   (mv-let (interrupted-p erp-val state)
-           (acl2-unwind-protect
-            "prove-loop"
-            (mv-let (erp val state)
-                    (prove-loop1 0 nil clauses pspv hints ens wrld ctx
-                                 state)
-                    (mv nil (cons erp val) state))
-            (print-summary-on-error state)
-            state)
-           (cond (interrupted-p (mv t nil state))
-                 (t (mv (car erp-val) (cdr erp-val) state))))))
+   (prove-loop1 0 nil clauses pspv hints ens wrld ctx
+                state)))
 
 (defun prove-loop (clauses pspv hints ens wrld ctx state)
 
@@ -8266,8 +8197,7 @@
           (prin1 term str)
           (terpri str)
           (force-output str))))
-    (progn$
-     (initialize-brr-stack state)
+    (prog2$
      (initialize-fc-wormhole-sites)
      (pprogn
       (f-put-global 'saved-output-reversed nil state)

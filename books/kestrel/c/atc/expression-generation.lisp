@@ -102,7 +102,10 @@
   (xdoc::topstring
    (xdoc::p
     "An ACL2 variable is translated to a C variable.
-     Its information is looked up in the symbol table."))
+     Its information is looked up in the symbol table.")
+   (xdoc::p
+    "If the variable has pointer or array type and is not an external object,
+     its correctness theorem equates it to the @('-ptr') variable."))
   (b* (((pexpr-gin gin) gin)
        (info (atc-get-var var gin.inscope))
        ((when (not info))
@@ -138,11 +141,18 @@
                                        gin.context
                                        expr
                                        type
+                                       (if (and (or (type-case type :pointer)
+                                                    (type-case type :array))
+                                                (not (atc-var-info->externalp
+                                                      info)))
+                                           (add-suffix-to-fn var "-PTR")
+                                         var)
                                        var
                                        objdes
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -200,7 +210,7 @@
         (b* ((fixtype (integer-type-to-fixtype type))
              (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
              (fixtype-integerp (pack fixtype '-integerp))
-             (recognizer (type-to-recognizer type (w state)))
+             (recognizer (atc-type-to-recognizer type gin.prec-tags))
              (valuep-when-recognizer (pack 'valuep-when- recognizer))
              (recognizer-of-fixtype-from-integer
               (pack recognizer '-of- fixtype '-from-integer)))
@@ -230,10 +240,12 @@
                                        expr
                                        type
                                        term
+                                       term
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -326,7 +338,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar)
+                     :in-theory '(,gin.fn-guard if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -339,14 +351,14 @@
                   names-to-avoid))
           (mv nil nil gin.thm-index gin.names-to-avoid)))
        (hints
-        (b* ((in-type-pred (type-to-recognizer in-type wrld))
+        (b* ((in-type-pred (atc-type-to-recognizer in-type gin.prec-tags))
              (valuep-when-in-type-pred (pack 'valuep-when- in-type-pred))
              (value-kind-when-in-type-pred
               (pack 'value-kind-when- in-type-pred))
              (op-name (pack (unop-kind op)))
              (exec-unary-when-op-and-in-type-pred
               (pack op-name '-value-when- in-type-pred))
-             (type-pred (type-to-recognizer out-type wrld))
+             (type-pred (atc-type-to-recognizer out-type gin.prec-tags))
              (valuep-when-type-pred (pack 'valuep-when- type-pred))
              (type-pred-of-fn (pack type-pred '-of- fn)))
           `(("Goal" :in-theory '(exec-expr-pure-when-unary
@@ -372,10 +384,12 @@
                                        expr
                                        out-type
                                        term
+                                       term
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        thm-index
                                        names-to-avoid
                                        state)))
@@ -484,7 +498,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar)
+                     :in-theory '(,gin.fn-guard if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -497,8 +511,8 @@
                   names-to-avoid))
           (mv nil nil gin.thm-index gin.names-to-avoid)))
        (hints
-        (b* ((arg1-type-pred (type-to-recognizer arg1-type wrld))
-             (arg2-type-pred (type-to-recognizer arg2-type wrld))
+        (b* ((arg1-type-pred (atc-type-to-recognizer arg1-type gin.prec-tags))
+             (arg2-type-pred (atc-type-to-recognizer arg2-type gin.prec-tags))
              (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
              (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
              (value-kind-when-arg1-type-pred (pack 'value-kind-when-
@@ -507,7 +521,7 @@
                                                    arg2-type-pred))
              (exec-binary-strict-pure-when-op
               (pack 'exec-binary-strict-pure-when- op-name))
-             (type-pred (type-to-recognizer out-type wrld))
+             (type-pred (atc-type-to-recognizer out-type gin.prec-tags))
              (arg1-fixtype (integer-type-to-fixtype arg1-type))
              (arg2-fixtype (integer-type-to-fixtype arg2-type))
              (op-values-when-arg1-type
@@ -547,10 +561,12 @@
                                        expr
                                        out-type
                                        term
+                                       term
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        thm-index
                                        names-to-avoid
                                        state)))
@@ -656,7 +672,7 @@
                                      wrld))
                  (okp-lemma-hints
                   `(("Goal"
-                     :in-theory '(,gin.fn-guard if* test* declar)
+                     :in-theory '(,gin.fn-guard if* test* declar assign)
                      :use (:guard-theorem ,gin.fn))))
                  ((mv okp-lemma-event &)
                   (evmac-generate-defthm okp-lemma-name
@@ -669,11 +685,11 @@
                   names-to-avoid))
           (mv nil nil gin.thm-index gin.names-to-avoid)))
        (hints
-        (b* ((arg-type-pred (type-to-recognizer arg-type wrld))
+        (b* ((arg-type-pred (atc-type-to-recognizer arg-type gin.prec-tags))
              (valuep-when-arg-type-pred (pack 'valuep-when- arg-type-pred))
              (exec-cast-of-out-type-when-arg-type-pred
               (pack 'exec-cast-of- (type-kind out-type) '-when- arg-type-pred))
-             (type-pred (type-to-recognizer out-type wrld))
+             (type-pred (atc-type-to-recognizer out-type gin.prec-tags))
              (type-pred-of-fn (pack type-pred '-of- fn))
              (valuep-when-type-pred (pack 'valuep-when- type-pred)))
           `(("Goal" :in-theory '(exec-expr-pure-when-cast
@@ -696,11 +712,13 @@
                                        gin.context
                                        expr
                                        out-type
-                                       `(,fn ,arg-term)
+                                       term
+                                       term
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        thm-index
                                        names-to-avoid
                                        state)))
@@ -752,7 +770,6 @@
      in case the term or its negation happens to be in context
      and thus gets rewritten to @('t') or @('nil')."))
   (b* (((reterr) (irr-pexpr-gout))
-       (wrld (w state))
        ((pexpr-gin gin) gin)
        ((unless (equal arg-type in-type))
         (reterr
@@ -778,7 +795,7 @@
        (cterm arg-term)
        ((unless (type-nonchar-integerp type))
         (reterr (raise "Internal error: non-integer type ~x0." type)))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type gin.prec-tags))
        (test-value-when-type-pred (pack 'test-value-when- type-pred))
        (booleanp-of-fn (pack 'booleanp-of- fn))
        (hints `(("Goal" :in-theory '(,arg-thm
@@ -802,6 +819,7 @@
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -876,9 +894,9 @@
           :thm-index gin.thm-index
           :names-to-avoid gin.names-to-avoid
           :proofs nil)))
-       (test-type-pred (type-to-recognizer test-type wrld))
+       (test-type-pred (atc-type-to-recognizer test-type gin.prec-tags))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type gin.prec-tags))
        (valuep-when-type-pred (pack 'valuep-when- type-pred))
        (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
        (value-kind-when-test-type-pred (pack 'value-kind-when- test-type-pred))
@@ -956,10 +974,12 @@
                                        expr
                                        type
                                        term*
+                                       term*
                                        acl2::*nil*
                                        gin.compst-var
                                        nil
                                        instructions
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -1022,8 +1042,8 @@
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
        (cterm `(sint-from-boolean ,term))
-       (arg1-type-pred (type-to-recognizer arg1-type wrld))
-       (arg2-type-pred (type-to-recognizer arg2-type wrld))
+       (arg1-type-pred (atc-type-to-recognizer arg1-type gin.prec-tags))
+       (arg2-type-pred (atc-type-to-recognizer arg2-type gin.prec-tags))
        (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
        (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
        (value-kind-when-arg1-type-pred (pack 'value-kind-when- arg1-type-pred))
@@ -1102,6 +1122,7 @@
                                        gin.compst-var
                                        nil
                                        instructions
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -1162,8 +1183,8 @@
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
        (cterm `(sint-from-boolean ,term))
-       (arg1-type-pred (type-to-recognizer arg1-type wrld))
-       (arg2-type-pred (type-to-recognizer arg2-type wrld))
+       (arg1-type-pred (atc-type-to-recognizer arg1-type gin.prec-tags))
+       (arg2-type-pred (atc-type-to-recognizer arg2-type gin.prec-tags))
        (valuep-when-arg1-type-pred (pack 'valuep-when- arg1-type-pred))
        (valuep-when-arg2-type-pred (pack 'valuep-when- arg2-type-pred))
        (value-kind-when-arg1-type-pred (pack 'value-kind-when- arg1-type-pred))
@@ -1247,6 +1268,7 @@
                                        gin.compst-var
                                        nil
                                        instructions
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -1321,10 +1343,12 @@
                                        expr
                                        type
                                        term
+                                       term
                                        acl2::*nil*
                                        gin.compst-var
                                        hints
                                        nil
+                                       gin.prec-tags
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
@@ -1350,10 +1374,45 @@
                                    (type typep)
                                    (gin pexpr-ginp)
                                    state)
-  (declare (ignore arg-thm state))
+  :guard (type-nonchar-integerp type)
   :returns (mv erp (gout pexpr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents an indirection of a pointer to integer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The expression and theorem for the argument
+     are generated in the caller, and passed here.")
+   (xdoc::p
+    "Currently, the argument term must be an ACL2 variable.
+     We defensively check that it is the case.
+     The generated theorem needs not only the theorem about the argument,
+     but also the theorem about the variable in the symbol table.
+     The reason is that the theorem about the argument
+     just says that the execution of the C variable
+     yields the ACL2 @('-ptr') variable,
+     but here we need to show that the execution of the indirection expression
+     yields the ACL2 variable that contains the integer, not the pointer:
+     that assertion is in the theorem about the variable in the symbol table.
+     An alternative proof generation approach is to
+     extend the theorem about the argument to also say that
+     dereferncing the pointer yields the integer variable,
+     i.e. the same assertion in the symbol table:
+     doing this obviated the need to use, in the theorem generated here,
+     the theorem from the symbol table.
+     However, that approach makes the theorem about the argument expression
+     disuniform with other theorems about expressions;
+     in particular, @(tsee atc-gen-expr-pure-correct-thm)
+     would have to be generalized.
+     Thus, the approach we use here seems better for now,
+     since the only slight ``disuniformity'' is in the fact that
+     we need to retrieve and use the theorem from the symbol table.
+     The current approach critically depends on
+     the argument of the indirection operator always being a variable;
+     if in the future our ACL2 representation of C is extended
+     so that the indirection operator can be applied to more general arguments,
+     we may need to choose the alternative approach sketched above,
+     which in that case would be more uniform."))
   (b* (((reterr) (irr-pexpr-gout))
        ((pexpr-gin gin) gin)
        ((unless (equal arg-type
@@ -1365,18 +1424,748 @@
                This is indicative of provably dead code, ~
                given that the code is guard-verified."
               type arg-term arg-type (type-pointer type))))
-       (term `(,fn ,arg-term))
        (expr (make-expr-unary :op (unop-indir)
-                              :arg arg-expr)))
+                              :arg arg-expr))
+       (term `(,fn ,arg-term))
+       ((when (not gin.proofs))
+        (retok
+         (make-pexpr-gout :expr expr
+                          :type type
+                          :term term
+                          :events arg-events
+                          :thm-name nil
+                          :thm-index gin.thm-index
+                          :names-to-avoid gin.names-to-avoid
+                          :proofs nil)))
+       ((unless (symbolp arg-term))
+        (reterr (raise "Interal error: indirection applied to non-variable ~x0."
+                       arg-term)))
+       (info (atc-get-var arg-term gin.inscope))
+       ((unless info)
+        (reterr (raise "Internal error: variable ~x0 not found in scope."
+                       arg-term)))
+       (var-thm (atc-var-info->thm info))
+       (hints
+        (b* ((type-pred (atc-type-to-recognizer type gin.prec-tags))
+             (exec-indir-when-type-pred (pack 'exec-indir-when- type-pred))
+             (type-read (pack (type-kind type) '-read))
+             (type-read-when-type-pred (pack type-read '-when- type-pred)))
+          `(("Goal" :in-theory '(exec-expr-pure-when-unary
+                                 (:e expr-kind)
+                                 (:e expr-unary->arg)
+                                 (:e expr-unary->op)
+                                 ,arg-thm
+                                 expr-valuep-of-expr-value
+                                 ,exec-indir-when-type-pred
+                                 (:e unop-kind)
+                                 ,var-thm
+                                 ,type-read-when-type-pred)))))
+       (objdes (add-suffix-to-fn arg-term "-OBJDES"))
+       ((mv thm-event thm-name thm-index names-to-avoid)
+        (atc-gen-expr-pure-correct-thm gin.fn
+                                       gin.fn-guard
+                                       gin.context
+                                       expr
+                                       type
+                                       term
+                                       term
+                                       objdes
+                                       gin.compst-var
+                                       hints
+                                       nil
+                                       gin.prec-tags
+                                       gin.thm-index
+                                       gin.names-to-avoid
+                                       state)))
     (retok
      (make-pexpr-gout :expr expr
                       :type type
                       :term term
-                      :events arg-events
-                      :thm-name nil
-                      :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid
-                      :proofs nil)))
+                      :events (append arg-events
+                                      (list thm-event))
+                      :thm-name thm-name
+                      :thm-index thm-index
+                      :names-to-avoid names-to-avoid
+                      :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-array-read ((fn symbolp)
+                                 (arr-term pseudo-termp)
+                                 (arr-expr exprp)
+                                 (arr-type typep)
+                                 (arr-events pseudo-event-form-listp)
+                                 (arr-thm symbolp)
+                                 (sub-term pseudo-termp)
+                                 (sub-expr exprp)
+                                 (sub-type typep)
+                                 (sub-events pseudo-event-form-listp)
+                                 (sub-thm symbolp)
+                                 (elem-type typep)
+                                 (gin pexpr-ginp)
+                                 state)
+  :guard (type-nonchar-integerp elem-type)
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents an array read."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate a theorem to show that the @('okp') predicate is satisfied,
+     and a theorem about the expression itself."))
+  (b* (((reterr) (irr-pexpr-gout))
+       (wrld (w state))
+       ((pexpr-gin gin) gin)
+       ((unless (and (type-case arr-type :array)
+                     (equal (type-array->of arr-type) elem-type)
+                     (type-integerp sub-type)))
+        (reterr
+         (msg "The reading of a ~x0 array is applied to ~
+               an expression term ~x1 returning ~x2 ~
+               and to an expression term ~x3 returning ~x4, ~
+               but a ~x0 array and an integer operand are expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              elem-type arr-term arr-type sub-term sub-type)))
+       (expr (make-expr-arrsub :arr arr-expr :sub sub-expr))
+       ((when (eq fn 'quote))
+        (reterr (raise "Internal error: function symbol is QUOTE.")))
+       (term `(,fn ,arr-term ,sub-term))
+       ((when (not gin.proofs))
+        (retok (make-pexpr-gout
+                :expr expr
+                :type elem-type
+                :term term
+                :events (append arr-events sub-events)
+                :thm-name nil
+                :thm-index gin.thm-index
+                :names-to-avoid gin.names-to-avoid
+                :proofs nil)))
+       (elem-fixtype (integer-type-to-fixtype elem-type))
+       (fn-okp (pack elem-fixtype '-array-index-okp))
+       ((mv okp-lemma-event
+            okp-lemma-name
+            thm-index
+            names-to-avoid)
+        (b* ((okp-lemma-name (pack gin.fn '-expr- gin.thm-index '-okp-lemma))
+             ((mv okp-lemma-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                                 nil
+                                                 gin.names-to-avoid
+                                                 wrld))
+             (arr-uterm (untranslate$ arr-term nil state))
+             (sub-uterm (untranslate$ sub-term nil state))
+             (okp-lemma-formula `(,fn-okp ,arr-uterm ,sub-uterm))
+             (okp-lemma-formula
+              (atc-contextualize okp-lemma-formula
+                                 gin.context
+                                 gin.fn
+                                 gin.fn-guard
+                                 nil
+                                 nil
+                                 nil
+                                 nil
+                                 wrld))
+             (okp-lemma-hints
+              `(("Goal"
+                 :in-theory '(,gin.fn-guard if* test* declar assign)
+                 :use (:guard-theorem ,gin.fn))))
+             ((mv okp-lemma-event &)
+              (evmac-generate-defthm okp-lemma-name
+                                     :formula okp-lemma-formula
+                                     :hints okp-lemma-hints
+                                     :enable nil)))
+          (mv okp-lemma-event
+              okp-lemma-name
+              (1+ gin.thm-index)
+              names-to-avoid)))
+       (exec-arrsub-when-elemtype-arrayp
+        (pack 'exec-arrsub-when- elem-fixtype '-arrayp))
+       ((unless (symbolp arr-term))
+        (reterr (raise "Interal error: non-variable array ~x0." arr-term)))
+       (info (atc-get-var arr-term gin.inscope))
+       ((unless info)
+        (reterr (raise "Internal error: variable ~x0 not found in scope."
+                       arr-term)))
+       (var-thm (atc-var-info->thm info))
+       (externalp (atc-var-info->externalp info))
+       ((unless (type-nonchar-integerp sub-type))
+        (reterr (raise "Internal error: non-integer index ~x0." sub-term)))
+       (sub-fixtype (integer-type-to-fixtype sub-type))
+       (sub-type-pred (pack sub-fixtype 'p))
+       (cintegerp-when-type-pred (pack 'cintegerp-when- sub-type-pred))
+       (elem-type-pred-of-fn (pack elem-fixtype 'p-of- fn))
+       (apconvert-expr-value-when-elem-arrayp
+        (pack 'apconvert-expr-value-when- elem-fixtype '-arrayp))
+       (return-type-of-elem-type (pack 'return-type-of-type- elem-fixtype))
+       (hints
+        `(("Goal"
+           :in-theory '(exec-expr-pure-when-arrsub
+                        (:e expr-kind)
+                        (:e expr-arrsub->arr)
+                        (:e expr-arrsub->sub)
+                        ,arr-thm
+                        ,sub-thm
+                        expr-valuep-of-expr-value
+                        ,exec-arrsub-when-elemtype-arrayp
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep
+                        ,var-thm
+                        ,cintegerp-when-type-pred
+                        ,okp-lemma-name
+                        ,elem-type-pred-of-fn
+                        ,@(if externalp
+                              `(,apconvert-expr-value-when-elem-arrayp
+                                objdesignp-when-objdesign-optionp
+                                objdesign-optionp-of-objdesign-of-var
+                                return-type-of-value-pointer
+                                value-pointer-validp-of-value-pointer
+                                return-type-of-pointer-valid
+                                value-pointer->reftype-of-value-pointer
+                                type-fix-when-typep
+                                value-pointer->designator-of-value-pointer
+                                pointer-valid->get-of-pointer-valid
+                                objdesign-fix-when-objdesignp
+                                ,return-type-of-elem-type)
+                            `(apconvert-expr-value-when-not-value-array))))))
+       (objdes
+        (if externalp
+            `(objdesign-element
+              (objdesign-of-var (ident ',(symbol-name arr-term)) ,gin.compst-var)
+              (integer-from-cinteger ,sub-term))
+          `(objdesign-element ,(add-suffix-to-fn arr-term "-OBJDES")
+                              (integer-from-cinteger ,sub-term))))
+       ((mv thm-event thm-name thm-index names-to-avoid)
+        (atc-gen-expr-pure-correct-thm gin.fn
+                                       gin.fn-guard
+                                       gin.context
+                                       expr
+                                       elem-type
+                                       term
+                                       term
+                                       objdes
+                                       gin.compst-var
+                                       hints
+                                       nil
+                                       gin.prec-tags
+                                       thm-index
+                                       names-to-avoid
+                                       state)))
+    (retok
+     (make-pexpr-gout :expr expr
+                      :type elem-type
+                      :term term
+                      :events (append arr-events
+                                      sub-events
+                                      (list okp-lemma-event
+                                            thm-event))
+                      :thm-name thm-name
+                      :thm-index thm-index
+                      :names-to-avoid names-to-avoid
+                      :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-struct-read-scalar ((fn symbolp)
+                                         (arg-term pseudo-termp)
+                                         (arg-expr exprp)
+                                         (arg-type typep)
+                                         (arg-events pseudo-event-form-listp)
+                                         (arg-thm symbolp)
+                                         (tag identp)
+                                         (member identp)
+                                         (mem-type typep)
+                                         (gin pexpr-ginp)
+                                         state)
+  :guard (type-nonchar-integerp mem-type)
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a structure scalar read."
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       (term `(,fn ,arg-term))
+       ((unless (symbolp arg-term))
+        (reterr (raise "Internal error: ~
+                        structure read ~x0 applied to non-variable ~x1."
+                       fn arg-term))))
+    (cond ((equal arg-type (type-struct tag))
+           (b* ((expr (make-expr-member :target arg-expr :name member))
+                ((when (not gin.proofs))
+                 (retok (make-pexpr-gout
+                         :expr expr
+                         :type mem-type
+                         :term term
+                         :events arg-events
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid
+                         :proofs nil)))
+                (recognizer (atc-type-to-recognizer arg-type gin.prec-tags))
+                (exec-member-read-when-struct-tag-p-and-member
+                 (pack 'exec-member-read-when-
+                       recognizer
+                       '-and-
+                       (ident->name member)))
+                (info (atc-get-var arg-term gin.inscope))
+                ((unless info)
+                 (reterr (raise "Internal error: variable ~x0 not found."
+                                arg-term)))
+                (var-thm (atc-var-info->thm info))
+                (mem-typep (atc-type-to-recognizer mem-type gin.prec-tags))
+                (mem-typep-of-fn (packn-pos (list mem-typep '-of- fn) fn))
+                (hints
+                 `(("Goal"
+                    :in-theory '(exec-expr-pure-when-member
+                                 (:e expr-kind)
+                                 (:e expr-member->target)
+                                 (:e expr-member->name)
+                                 ,arg-thm
+                                 expr-valuep-of-expr-value
+                                 ,exec-member-read-when-struct-tag-p-and-member
+                                 exec-member-of-const-identifier
+                                 (:e identp)
+                                 (:e ident->name)
+                                 objdesign-option-fix-when-objdesign-optionp
+                                 objdesign-optionp-of-objdesign-of-var
+                                 ,var-thm
+                                 ,mem-typep-of-fn))))
+                (objdes
+                 `(objdesign-member
+                   (objdesign-of-var (ident ',(symbol-name arg-term))
+                                     ,gin.compst-var)
+                   (ident ',(ident->name member))))
+                ((mv thm-event thm-name thm-index names-to-avoid)
+                 (atc-gen-expr-pure-correct-thm gin.fn
+                                                gin.fn-guard
+                                                gin.context
+                                                expr
+                                                mem-type
+                                                term
+                                                term
+                                                objdes
+                                                gin.compst-var
+                                                hints
+                                                nil
+                                                gin.prec-tags
+                                                gin.thm-index
+                                                gin.names-to-avoid
+                                                state)))
+             (retok
+              (make-pexpr-gout :expr expr
+                               :type mem-type
+                               :term term
+                               :events (append arg-events
+                                               (list thm-event))
+                               :thm-name thm-name
+                               :thm-index thm-index
+                               :names-to-avoid names-to-avoid
+                               :proofs t))))
+          ((equal arg-type (type-pointer (type-struct tag)))
+           (b* ((expr (make-expr-memberp :target arg-expr :name member))
+                ((when (not gin.proofs))
+                 (retok (make-pexpr-gout
+                         :expr expr
+                         :type mem-type
+                         :term term
+                         :events arg-events
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid
+                         :proofs nil)))
+                (arg-type (type-pointer->to arg-type))
+                (recognizer (atc-type-to-recognizer arg-type gin.prec-tags))
+                (exec-memberp-read-when-struct-point-p-and-x
+                 (pack 'exec-memberp-read-when-
+                       recognizer
+                       '-and-
+                       (ident->name member)))
+                (mem-typep (atc-type-to-recognizer mem-type gin.prec-tags))
+                (mem-typep-of-fn (packn-pos (list mem-typep '-of- fn) fn))
+                (hints
+                 `(("Goal"
+                    :in-theory '(exec-expr-pure-when-memberp
+                                 (:e expr-kind)
+                                 (:e expr-memberp->target)
+                                 (:e expr-memberp->name)
+                                 ,arg-thm
+                                 expr-valuep-of-expr-value
+                                 ,exec-memberp-read-when-struct-point-p-and-x
+                                 exec-memberp-of-const-identifier
+                                 (:e identp)
+                                 (:e ident->name)
+                                 read-object-of-add-var
+                                 read-object-of-add-frame
+                                 ,mem-typep-of-fn))))
+                (objdes `(objdesign-member
+                          ,(add-suffix-to-fn arg-term "-OBJDES")
+                          (ident ',(ident->name member))))
+                ((mv thm-event thm-name thm-index names-to-avoid)
+                 (atc-gen-expr-pure-correct-thm gin.fn
+                                                gin.fn-guard
+                                                gin.context
+                                                expr
+                                                mem-type
+                                                term
+                                                term
+                                                objdes
+                                                gin.compst-var
+                                                hints
+                                                nil
+                                                gin.prec-tags
+                                                gin.thm-index
+                                                gin.names-to-avoid
+                                                state)))
+             (retok (make-pexpr-gout :expr expr
+                                     :type mem-type
+                                     :term term
+                                     :events (append arg-events
+                                                     (list thm-event))
+                                     :thm-name thm-name
+                                     :thm-index thm-index
+                                     :names-to-avoid names-to-avoid
+                                     :proofs t))))
+          (t (reterr
+              (msg "The reading of a ~x0 structure with member ~x1 ~
+                    is applied to ~
+                    an expression term ~x2 returning ~x3, ~
+                    but a an operand of type ~x4 or ~x5 ~
+                    is expected. ~
+                    This is indicative of provably dead code, ~
+                    given that the code is guard-verified."
+                   tag
+                   member
+                   arg-term
+                   arg-type
+                   (type-struct tag)
+                   (type-pointer (type-struct tag)))))))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-struct-read-array ((fn symbolp)
+                                        (index-term pseudo-termp)
+                                        (index-expr exprp)
+                                        (index-type typep)
+                                        (index-events pseudo-event-form-listp)
+                                        (index-thm symbolp)
+                                        (struct-term pseudo-termp)
+                                        (struct-expr exprp)
+                                        (struct-type typep)
+                                        (struct-events pseudo-event-form-listp)
+                                        (struct-thm symbolp)
+                                        (tag identp)
+                                        (member identp)
+                                        (elem-type typep)
+                                        (flexiblep booleanp)
+                                        (gin pexpr-ginp)
+                                        state)
+  :returns (mv erp (gout pexpr-goutp))
+  :short "Generate a C expression from an ACL2 term
+          that represents a structure array read."
+  (b* (((reterr) (irr-pexpr-gout))
+       ((pexpr-gin gin) gin)
+       (wrld (w state))
+       ((when (eq fn 'quote))
+        (reterr (raise "Internal error: QUOTE function.")))
+       (term `(,fn ,index-term ,struct-term))
+       ((unless (type-integerp index-type))
+        (reterr
+         (msg "The reading of a ~x0 structure with array member ~x1 ~
+               is applied to an index expression term ~x2 returning ~x3, ~
+               but a C integer operand is expected. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              (type-struct tag)
+              member
+              index-term
+              index-type)))
+       ((unless (symbolp struct-term))
+        (reterr (raise "Internal error: ~
+                        structure read ~x0 applied to non-variable ~x1."
+                       fn struct-term)))
+       (index-uterm (untranslate$ index-term nil state)))
+    (cond ((equal struct-type (type-struct tag))
+           (b* ((expr (make-expr-arrsub :arr (make-expr-member
+                                              :target struct-expr
+                                              :name member)
+                                        :sub index-expr))
+                ((when (not gin.proofs))
+                 (retok (make-pexpr-gout
+                         :expr expr
+                         :type elem-type
+                         :term term
+                         :events (append index-events struct-events)
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid
+                         :proofs nil)))
+                (struct-tag-p
+                 (atc-type-to-recognizer struct-type gin.prec-tags))
+                ((mv okp-lemma-event
+                     okp-lemma-name
+                     thm-index
+                     names-to-avoid)
+                 (b* ((okp-lemma-name
+                       (pack gin.fn '-expr- gin.thm-index '-okp-lemma))
+                      ((mv okp-lemma-name names-to-avoid)
+                       (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                                          nil
+                                                          gin.names-to-avoid
+                                                          wrld))
+                      (struct-tag (defstruct-info->fixtype
+                                    (atc-tag-info->defstruct
+                                     (atc-get-tag-info tag gin.prec-tags))))
+                      (struct-tag-member-index-okp
+                       (packn-pos (list struct-tag
+                                        '-
+                                        (ident->name member)
+                                        '-index-okp)
+                                  struct-tag))
+                      (okp-lemma-formula
+                       `(,struct-tag-member-index-okp ,index-uterm))
+                      (okp-lemma-formula
+                       (atc-contextualize okp-lemma-formula
+                                          gin.context
+                                          gin.fn
+                                          gin.fn-guard
+                                          nil
+                                          nil
+                                          nil
+                                          nil
+                                          wrld))
+                      (okp-lemma-hints
+                       `(("Goal"
+                          :in-theory '(,gin.fn-guard if* test* declar assign)
+                          :use (:guard-theorem ,gin.fn))))
+                      ((mv okp-lemma-event &)
+                       (evmac-generate-defthm okp-lemma-name
+                                              :formula okp-lemma-formula
+                                              :hints okp-lemma-hints
+                                              :enable nil)))
+                   (mv okp-lemma-event
+                       okp-lemma-name
+                       (1+ gin.thm-index)
+                       names-to-avoid)))
+                (exec-member-read-when-struct-tag-p-and-member-element
+                 (pack 'exec-member-read-when-
+                       struct-tag-p
+                       '-and-
+                       (ident->name member)
+                       '-element))
+                (index-typep (atc-type-to-recognizer index-type gin.prec-tags))
+                (cintegerp-when-index-type (pack 'cintegerp-when- index-typep))
+                (var-info (atc-get-var struct-term gin.inscope))
+                ((unless var-info)
+                 (reterr (raise "Internal error: variable ~x0 not found."
+                                struct-term)))
+                (var-thm (atc-var-info->thm var-info))
+                (elem-typep (atc-type-to-recognizer elem-type gin.prec-tags))
+                (elem-typep-of-fn (packn-pos (list elem-typep '-of- fn) fn))
+                (hints
+                 `(("Goal"
+                    :in-theory
+                    '(exec-expr-pure-when-arrsub-of-member
+                      (:e expr-kind)
+                      (:e expr-arrsub->arr)
+                      (:e expr-arrsub->sub)
+                      (:e expr-member->target)
+                      (:e expr-member->name)
+                      ,index-thm
+                      ,struct-thm
+                      expr-valuep-of-expr-value
+                      exec-arrsub-of-member-of-const-identifier
+                      (:e identp)
+                      (:e ident->name)
+                      ,exec-member-read-when-struct-tag-p-and-member-element
+                      ,cintegerp-when-index-type
+                      ,okp-lemma-name
+                      objdesignp-when-objdesign-optionp
+                      objdesign-optionp-of-objdesign-of-var
+                      ,var-thm
+                      value-integer->get-when-cintegerp
+                      ,elem-typep-of-fn))))
+                (objdes
+                 `(objdesign-element
+                   (objdesign-member
+                    (objdesign-of-var (ident ',(symbol-name struct-term))
+                                      ,gin.compst-var)
+                    (ident ',(ident->name member)))
+                   (integer-from-cinteger ,index-term)))
+                ((mv thm-event thm-name thm-index names-to-avoid)
+                 (atc-gen-expr-pure-correct-thm gin.fn
+                                                gin.fn-guard
+                                                gin.context
+                                                expr
+                                                elem-type
+                                                term
+                                                term
+                                                objdes
+                                                gin.compst-var
+                                                hints
+                                                nil
+                                                gin.prec-tags
+                                                thm-index
+                                                names-to-avoid
+                                                state)))
+             (retok
+              (make-pexpr-gout :expr expr
+                               :type elem-type
+                               :term term
+                               :events (append index-events
+                                               struct-events
+                                               (list okp-lemma-event
+                                                     thm-event))
+                               :thm-name thm-name
+                               :thm-index thm-index
+                               :names-to-avoid names-to-avoid
+                               :proofs t))))
+          ((equal struct-type (type-pointer (type-struct tag)))
+           (b* ((expr (make-expr-arrsub :arr (make-expr-memberp
+                                              :target struct-expr
+                                              :name member)
+                                        :sub index-expr))
+                ((when (not gin.proofs))
+                 (retok (make-pexpr-gout
+                         :expr expr
+                         :type elem-type
+                         :term term
+                         :events (append index-events struct-events)
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid
+                         :proofs nil)))
+                ((mv okp-lemma-event
+                     okp-lemma-name
+                     thm-index
+                     names-to-avoid)
+                 (b* ((okp-lemma-name
+                       (pack gin.fn '-expr- gin.thm-index '-okp-lemma))
+                      ((mv okp-lemma-name names-to-avoid)
+                       (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                                          nil
+                                                          gin.names-to-avoid
+                                                          wrld))
+                      (struct-tag (defstruct-info->fixtype
+                                    (atc-tag-info->defstruct
+                                     (atc-get-tag-info tag gin.prec-tags))))
+                      (struct-tag-member-index-okp
+                       (packn-pos (list struct-tag
+                                        '-
+                                        (ident->name member)
+                                        '-index-okp)
+                                  struct-tag))
+                      (index-uterm (untranslate$ index-term nil state))
+                      (okp-lemma-formula
+                       (if flexiblep
+                           `(,struct-tag-member-index-okp ,index-uterm
+                                                          ,struct-term)
+                         `(,struct-tag-member-index-okp ,index-uterm)))
+                      (okp-lemma-formula
+                       (atc-contextualize okp-lemma-formula
+                                          gin.context
+                                          gin.fn
+                                          gin.fn-guard
+                                          nil
+                                          nil
+                                          nil
+                                          nil
+                                          wrld))
+                      (okp-lemma-hints
+                       `(("Goal"
+                          :in-theory '(,gin.fn-guard if* test* declar assign)
+                          :use (:guard-theorem ,gin.fn))))
+                      ((mv okp-lemma-event &)
+                       (evmac-generate-defthm okp-lemma-name
+                                              :formula okp-lemma-formula
+                                              :hints okp-lemma-hints
+                                              :enable nil)))
+                   (mv okp-lemma-event
+                       okp-lemma-name
+                       (1+ gin.thm-index)
+                       names-to-avoid)))
+                (struct-tag-p
+                 (atc-type-to-recognizer (type-pointer->to struct-type)
+                                         gin.prec-tags))
+                (exec-memberp-read-when-struct-tag-p-and-member-element
+                 (pack 'exec-memberp-read-when-
+                       struct-tag-p
+                       '-and-
+                       (ident->name member)
+                       '-element))
+                (index-typep (atc-type-to-recognizer index-type gin.prec-tags))
+                (cintegerp-when-index-type (pack 'cintegerp-when- index-typep))
+                (elem-typep (atc-type-to-recognizer elem-type gin.prec-tags))
+                (elem-typep-of-fn (packn-pos (list elem-typep '-of- fn) fn))
+                (hints
+                 `(("Goal"
+                    :in-theory
+                    '(exec-expr-pure-when-arrsub-of-memberp
+                      (:e expr-kind)
+                      (:e expr-arrsub->arr)
+                      (:e expr-arrsub->sub)
+                      (:e expr-memberp->target)
+                      (:e expr-memberp->name)
+                      ,index-thm
+                      ,struct-thm
+                      expr-valuep-of-expr-value
+                      exec-arrsub-of-memberp-of-const-identifier
+                      (:e identp)
+                      (:e ident->name)
+                      ,exec-memberp-read-when-struct-tag-p-and-member-element
+                      read-object-of-add-var
+                      read-object-of-add-frame
+                      ,cintegerp-when-index-type
+                      ,okp-lemma-name
+                      value-integer->get-when-cintegerp
+                      ,elem-typep-of-fn))))
+                (objdes
+                 `(objdesign-element
+                   (objdesign-member
+                    ,(add-suffix-to-fn struct-term "-OBJDES")
+                    (ident ',(ident->name member)))
+                   (integer-from-cinteger ,index-term)))
+                ((mv thm-event thm-name thm-index names-to-avoid)
+                 (atc-gen-expr-pure-correct-thm gin.fn
+                                                gin.fn-guard
+                                                gin.context
+                                                expr
+                                                elem-type
+                                                term
+                                                term
+                                                objdes
+                                                gin.compst-var
+                                                hints
+                                                nil
+                                                gin.prec-tags
+                                                thm-index
+                                                names-to-avoid
+                                                state)))
+             (retok
+              (make-pexpr-gout :expr expr
+                               :type elem-type
+                               :term term
+                               :events (append index-events
+                                               struct-events
+                                               (list okp-lemma-event
+                                                     thm-event))
+                               :thm-name thm-name
+                               :thm-index thm-index
+                               :names-to-avoid names-to-avoid
+                               :proofs t))))
+          (t (reterr
+              (msg "The reading of ~x0 structure with array member ~x1 ~
+                    is applied to an expression term ~x2 returning ~x3, ~
+                    but an operand of type ~x4 or ~x5 is expected. ~
+                    This is indicative of provably dead code, ~
+                    given that the code is guard-verified."
+                   tag
+                   member
+                   struct-term
+                   struct-type
+                   (type-struct tag)
+                   (type-pointer (type-struct tag)))))))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1533,7 +2322,7 @@
                                        type
                                        gin
                                        state)))
-         ((mv okp arr-term sub-term arr-type elem-type)
+         ((erp okp fn arr-term sub-term elem-type)
           (atc-check-array-read term))
          ((when okp)
           (b* (((erp (pexpr-gout arr))
@@ -1543,183 +2332,81 @@
                                    (change-pexpr-gin
                                     gin
                                     :thm-index arr.thm-index
-                                    :names-to-avoid arr.names-to-avoid)
+                                    :names-to-avoid arr.names-to-avoid
+                                    :proofs arr.proofs)
                                    state))
-               ((unless (and (type-case arr.type :array)
-                             (type-case arr-type :array)
-                             (equal (type-array->of arr.type)
-                                    (type-array->of arr-type))
-                             (or (equal (type-array->size arr.type)
-                                        (type-array->size arr-type))
-                                 (not (type-array->size arr.type))
-                                 (not (type-array->size arr-type)))
-                             (type-integerp sub.type)))
-                (reterr
-                 (msg "The reading of a ~x0 array is applied to ~
-                       an expression term ~x1 returning ~x2 ~
-                       and to an expression term ~x3 returning ~x4, ~
-                       but a ~x0 and an integer operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      arr-type arr-term arr.type sub-term sub.type))))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-arrsub :arr arr.expr
-                                            :sub sub.expr)
-                    :type elem-type
-                    :term term
-                    :events (append arr.events sub.events)
-                    :thm-name nil
-                    :thm-index sub.thm-index
-                    :names-to-avoid sub.names-to-avoid
-                    :proofs nil))))
-         ((mv okp arr-term sub-term in-type1 in-type2 out-type)
-          (atc-check-array-read-deprecated term))
-         ((when (and okp (member-eq :arrays gin.deprecated)))
-          (b* (((erp (pexpr-gout arr))
-                (atc-gen-expr-pure arr-term gin state))
-               ((erp (pexpr-gout sub))
-                (atc-gen-expr-pure sub-term
-                                   (change-pexpr-gin
-                                    gin
-                                    :thm-index arr.thm-index
-                                    :names-to-avoid arr.names-to-avoid)
-                                   state))
-               ((unless (and (type-case arr.type :array)
-                             (type-case in-type1 :array)
-                             (equal (type-array->of arr.type)
-                                    (type-array->of in-type1))
-                             (or (equal (type-array->size arr.type)
-                                        (type-array->size in-type1))
-                                 (not (type-array->size arr.type))
-                                 (not (type-array->size in-type1)))
-                             (equal sub.type in-type2)))
-                (reterr
-                 (msg "The reading of a ~x0 array with a ~x1 index ~
-                       is applied to ~
-                       an expression term ~x2 returning ~x3 ~
-                       and to an expression term ~x4 returning ~x5, ~
-                       but a ~x0 and a ~x1 operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      in-type1 in-type2
-                      arr-term arr.type sub-term sub.type))))
-            (retok (make-pexpr-gout
-                    :expr (make-expr-arrsub :arr arr.expr
-                                            :sub sub.expr)
-                    :type out-type
-                    :term term
-                    :events (append arr.events sub.events)
-                    :thm-name nil
-                    :thm-index sub.thm-index
-                    :names-to-avoid sub.names-to-avoid
-                    :proofs nil))))
-         ((mv okp arg-term tag member mem-type)
+               (gin (change-pexpr-gin gin
+                                      :thm-index sub.thm-index
+                                      :names-to-avoid sub.names-to-avoid
+                                      :proofs sub.proofs)))
+            (atc-gen-expr-array-read fn
+                                     arr.term
+                                     arr.expr
+                                     arr.type
+                                     arr.events
+                                     arr.thm-name
+                                     sub.term
+                                     sub.expr
+                                     sub.type
+                                     sub.events
+                                     sub.thm-name
+                                     elem-type
+                                     gin
+                                     state)))
+         ((erp okp fn arg-term tag member mem-type)
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout arg))
-                (atc-gen-expr-pure arg-term gin state)))
-            (cond ((equal arg.type (type-struct tag))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-member :target arg.expr
-                                                   :name member)
-                           :type mem-type
-                           :term term
-                           :events arg.events
-                           :thm-name nil
-                           :thm-index arg.thm-index
-                           :names-to-avoid arg.names-to-avoid
-                           :proofs nil)))
-                  ((equal arg.type (type-pointer (type-struct tag)))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-memberp :target arg.expr
-                                                    :name member)
-                           :type mem-type
-                           :term term
-                           :events arg.events
-                           :thm-name nil
-                           :thm-index arg.thm-index
-                           :names-to-avoid arg.names-to-avoid
-                           :proofs nil)))
-                  (t (reterr
-                      (msg "The reading of a ~x0 structure with member ~x1 ~
-                            is applied to ~
-                            an expression term ~x2 returning ~x3, ~
-                            but a an operand of type ~x4 or ~x5 ~
-                            is expected. ~
-                            This is indicative of provably dead code, ~
-                            given that the code is guard-verified."
-                           tag
-                           member
-                           arg-term
-                           arg.type
-                           (type-struct tag)
-                           (type-pointer (type-struct tag))))))))
-         ((mv okp index-term struct-term tag member elem-type)
+                (atc-gen-expr-pure arg-term gin state))
+               (gin (change-pexpr-gin gin
+                                      :thm-index arg.thm-index
+                                      :names-to-avoid arg.names-to-avoid
+                                      :proofs arg.proofs)))
+            (atc-gen-expr-struct-read-scalar fn
+                                             arg-term
+                                             arg.expr
+                                             arg.type
+                                             arg.events
+                                             arg.thm-name
+                                             tag
+                                             member
+                                             mem-type
+                                             gin
+                                             state)))
+         ((erp okp fn index-term struct-term tag member elem-type flexiblep)
           (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)
           (b* (((erp (pexpr-gout index))
                 (atc-gen-expr-pure index-term gin state))
-               ((unless (type-integerp index.type))
-                (reterr
-                 (msg "The reading of ~x0 structure with member ~x1 ~
-                       is applied to ~
-                       an index expression term ~x2 returning ~x3, ~
-                       but a C integer operand is expected. ~
-                       This is indicative of provably dead code, ~
-                       given that the code is guard-verified."
-                      (type-struct tag)
-                      member
-                      index-term
-                      index.type)))
                ((erp (pexpr-gout struct))
                 (atc-gen-expr-pure struct-term
                                    (change-pexpr-gin
                                     gin
                                     :thm-index index.thm-index
                                     :names-to-avoid index.names-to-avoid)
-                                   state)))
-            (cond ((equal struct.type (type-struct tag))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-arrsub
-                                  :arr (make-expr-member
-                                        :target struct.expr
-                                        :name member)
-                                  :sub index.expr)
-                           :type elem-type
-                           :term term
-                           :events (append index.events struct.events)
-                           :thm-name nil
-                           :thm-index struct.thm-index
-                           :names-to-avoid struct.names-to-avoid
-                           :proofs nil)))
-                  ((equal struct.type (type-pointer (type-struct tag)))
-                   (retok (make-pexpr-gout
-                           :expr (make-expr-arrsub
-                                  :arr (make-expr-memberp
-                                        :target struct.expr
-                                        :name member)
-                                  :sub index.expr)
-                           :type elem-type
-                           :term term
-                           :events (append index.events struct.events)
-                           :thm-name nil
-                           :thm-index struct.thm-index
-                           :names-to-avoid struct.names-to-avoid
-                           :proofs nil)))
-                  (t (reterr
-                      (msg "The reading of ~x0 structure with member ~x1 ~
-                            is applied to ~
-                            an expression term ~x2 returning ~x3, ~
-                            but an operand of type ~x4 or ~x5 ~
-                            is expected. ~
-                            This is indicative of provably dead code, ~
-                            given that the code is guard-verified."
-                           tag
-                           member
-                           struct-term
-                           struct.type
-                           (type-struct tag)
-                           (type-pointer (type-struct tag))))))))
+                                   state))
+               (gin (change-pexpr-gin
+                     gin
+                     :thm-index struct.thm-index
+                     :names-to-avoid struct.names-to-avoid
+                     :proofs (and index.proofs struct.proofs))))
+            (atc-gen-expr-struct-read-array fn
+                                            index.term
+                                            index.expr
+                                            index.type
+                                            index.events
+                                            index.thm-name
+                                            struct.term
+                                            struct.expr
+                                            struct.type
+                                            struct.events
+                                            struct.thm-name
+                                            tag
+                                            member
+                                            elem-type
+                                            flexiblep
+                                            gin
+                                            state)))
          ((erp okp arg-term) (atc-check-sint-from-boolean term))
          ((when okp)
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-bool arg-term gin state)))
@@ -2166,9 +2853,11 @@
        (thm-name (pack gin.fn '-correct- pure.thm-index))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
-       (type-pred (type-to-recognizer pure.type wrld))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
-       (value-kind-when-type-pred (pack 'value-kind-when- type-pred))
+       (type-pred (atc-type-to-recognizer pure.type gin.prec-tags))
+       (valuep-when-type-pred
+        (atc-type-to-valuep-thm pure.type gin.prec-tags))
+       (value-kind-when-type-pred
+        (atc-type-to-value-kind-thm pure.type gin.prec-tags))
        (uterm* (untranslate$ pure.term nil state))
        (formula1 `(equal (exec-expr-call-or-pure ',pure.expr
                                                  ,gin.compst-var
@@ -2198,6 +2887,7 @@
        (hints `(("Goal" :in-theory '(compustatep-of-add-frame
                                      compustatep-of-add-var
                                      compustatep-of-enter-scope
+                                     compustatep-of-update-var
                                      exec-expr-call-or-pure-when-pure
                                      (:e expr-kind)
                                      not-zp-of-limit-variable

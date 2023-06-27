@@ -29,10 +29,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Provably equivalent to the function post in post.lisp.
-(defun post-light (url data state)
-  (declare (xargs :guard (and (stringp url) (alistp data))
+(defun post-light (url data state kwds)
+  (declare (xargs :guard (and (stringp url) (alistp data) (doublet-listp kwds))
                   :stobjs state)
-           (ignore url data))
+           (ignore url data kwds))
   (prog2$ (er hard? 'post-light "Raw Lisp definition not installed?")
           (mv-let (err1 val1 state)
             (read-acl2-oracle state)

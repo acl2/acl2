@@ -3316,15 +3316,6 @@
  available by modern Lisps that have 64-bit implementations.  (CMUCL seems to
  be an exception.)</p>
 
- <h3>Infix printing is no longer supported</h3>
-
- <p>At one time ACL2 had support for infix printing, which was used rarely if
- at all.  Infix code is still present, conditioned by feature @(':acl2-infix'),
- but it has probably been quite some time since it was tested.  Perhaps it is
- time to remove all such code; indeed, the release notes for Version 8.0 (see
- @(see note-8-0)) say that ``The (minimal) support for infix printing has been
- removed.''</p>
-
  <p>NEXT SECTION: @(see developers-guide-releases)</p>")
 
 (defxdoc developers-guide-releases

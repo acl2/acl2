@@ -161,7 +161,7 @@
           (acl2::submit-event-quiet `(progn ,@prerequisite-type-defs) state))
          (thm (proof-obligation-to-acl2-theorem oblig (translate-names fn-names-being-defined)))
          ((mv erp state)
-          (acl2::submit-event-helper thm :brief nil state)))
+          (acl2::submit-event thm :brief nil state)))
       (if erp
           (value (cons (make-outcome-proof-obligation-failure
                         :message (toplevel-name this-top)  ;"Obligation not proven!"
@@ -206,7 +206,7 @@
         (mv () outcomes state))
        (this-event (d-->s-toplevel this-top))
        ((mv err state)
-        (acl2::submit-event-helper this-event nil nil state))
+        (acl2::submit-event this-event nil nil state))
        ((when err)
         (mv () (list (toplevel-failure-outcome this-top)) state))
        ((mv - outcomes state)

@@ -44,6 +44,7 @@
 (include-book "kestrel/bv/arith" :dir :system) ;reduce?
 (include-book "ihs/logops-lemmas" :dir :system) ;reduce? for logext-identity
 (include-book "kestrel/arithmetic-light/mod" :dir :system)
+(include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)

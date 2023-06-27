@@ -280,7 +280,7 @@
 ;; For example, we may have a test that ensures that a later loop terminates.
 
 ;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state).
-;; This uses all classes currently in the global-class-table.
+;; This uses all classes currently in the global-class-alist.
 ;; Why does this return the dag-fns?
 (defun unroll-java-code-fn-aux (method-designator-string
                                 maybe-nice-output-indicator

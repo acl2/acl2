@@ -983,7 +983,7 @@
                                       new-fn ;the name to use for the new function
                                       lemma-name
                                       state)
-  (declare (xargs :mode :program ;because this calls submit-events (todo: split out the creation of the events)
+  (declare (xargs :mode :program ;because this calls submit-events-brief (todo: split out the creation of the events)
                   :stobjs state))
   (let* ((formals (fn-formals fn (w state)))
          (body (fn-body fn t (w state)))
@@ -1000,7 +1000,7 @@
          ;;now rename the function being called:
          (new-rec-case (rename-fn fn new-fn new-rec-case))
          (new-body `(if ,new-exit-test ,new-base-case ,new-rec-case))
-         (state (submit-events `((skip-proofs ;fixme reuse the termination argument for fn?
+         (state (submit-events-brief `((skip-proofs ;fixme reuse the termination argument for fn?
                                   (defun ,new-fn ,formals
                                     (declare (xargs :normalize nil))
                                     ,new-body))
@@ -5593,11 +5593,11 @@
 
 
 
-;;               (state (submit-events `( ;; Prove that the invariant implies the rv-predicate on the base-case when the function exits:
+;;               (state (submit-events-brief `( ;; Prove that the invariant implies the rv-predicate on the base-case when the function exits:
 
 
 ;;               (state
-;;                (submit-events `( ;;this just opens up the rv predicate:
+;;                (submit-events-brief `( ;;this just opens up the rv predicate:
 ;;                          state)))
 
 ;;          ;; The function may have several formals but only returns a single value (may be a tuple), so we need a new predicate for the RV.  But since the base case is simple (a single param or a tuple of some of the params), the rv-predicate should be easy to derive from the invars.
@@ -5616,7 +5616,7 @@
 ;;                         (conjuncts-for-rv-predicate-instantiated2
 ;;                          (keep-terms-that-mention fn-call conjuncts-for-rv-predicate-instantiated2))
 
-;;                         (state (submit-events `( ;; this one has the unchanged components of the RV replaced by their params:
+;;                         (state (submit-events-brief `( ;; this one has the unchanged components of the RV replaced by their params:
 ;;                                            ;;what if some unchanged components don't appear in the rv invars?
 ;; ;e.g., (nth 1 (nth 2 formal10)) is unchanged but only (nth 2 formal10) appears?
 ;;                                            ;;maybe if we know the length of (nth 2 formal10) we should rewrite it as an
@@ -5750,7 +5750,7 @@
 ;;                                                               :in-theory (union-theories (theory 'minimal-theory)
 ;;                                                                                          '(,exit-fn))))))))
 ;;                                            (mv-let (erp result state)
-;;                                                    (submit-events exit-test-strengthening-events t state)
+;;                                                    (submit-events-brief exit-test-strengthening-events t state)
 ;;                                                    (declare (ignore result))
 ;;                                                    (if erp
 ;;                                                        (mv t nil nil state)
@@ -5810,11 +5810,11 @@
     ;;      (erp result state)
     ;;      ;; define the invariant:
     ;;      ;;(abuse of progn for 1 event?)
-    ;;      (submit-events `((defun ,invariant-name (params ,@old-vars) declare...
+    ;;      (submit-events-brief `((defun ,invariant-name (params ,@old-vars) declare...
     ;;                       ,(make-conjunction-from-list preds)))
     ;;                   t state)
     ;;      (declare (ignore result))
-;instead of calling my-defthm-fn repeatedly, just make a list of events and call submit-events?
+;instead of calling my-defthm-fn repeatedly, just make a list of events and call submit-events-brief?
 ;;     (if erp
 ;;         (mv t nil nil state)
 
@@ -6654,7 +6654,7 @@
                                      new-fn           ; a symbol
                                      wrap-base-case-hyp-in-work-hardp
                                      state)
-  (declare (xargs :mode :program  ;because this calls submit-events
+  (declare (xargs :mode :program  ;because this calls submit-events-brief
                   :stobjs state))
   (let* ((equivalence-lemma-name (packnew fn '-becomes- new-fn))
          (alias-base-case-lemma-name (packnew new-fn '-base-case)))
@@ -6665,7 +6665,7 @@
                              ,base-case-expr
                            (,new-fn ,@update-expr-list))
                         state)
-            (let* ((state (submit-events `((defthm ,equivalence-lemma-name
+            (let* ((state (submit-events-brief `((defthm ,equivalence-lemma-name
                                              (equal (,fn ,@formals)
                                                     (,new-fn ,@formals))
                                              :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory)
@@ -6700,7 +6700,7 @@
                                ;;no base-case computation (just returns all the formals):
                                (list ,@formals)
                              (,limited-fn ,@update-expr-list (+ -1 ,reps-formal))))
-         (state (submit-events `((skip-proofs
+         (state (submit-events-brief `((skip-proofs
                                   (defun ,limited-fn (,@formals ,reps-formal)
                                     (declare (xargs :normalize nil)) ;may be crucial?
                                     ,limited-fn-body))
@@ -6752,7 +6752,7 @@
                                ;;no base-case computation (just returns all the formals):
                                (list ,@formals)
                              (,limited-fn ,@update-expr-list (+ -1 ,reps-formal))))
-         (state (submit-events `((skip-proofs
+         (state (submit-events-brief `((skip-proofs
                                   (defun ,limited-fn (,@formals ,reps-formal)
                                     (declare (xargs :normalize nil)) ;may be crucial?
                                     ,limited-fn-body))
@@ -7628,7 +7628,7 @@
   (declare (xargs :mode :program
                   :stobjs state))
   (let* ((unroll-events (unroll-events fn unrolling-factor expand-hint-terms state))
-         (state (submit-events unroll-events state)))
+         (state (submit-events-brief unroll-events state)))
     (mv (pack$ fn '-unrolled-by- (nat-to-string unrolling-factor))
         `,(unroller-lemma-name fn unrolling-factor)
         state)))
@@ -8353,7 +8353,7 @@
                                                         (theory 'minimal-theory))
                       :use (:instance ,helper-lemma-name (,acc-formal nil))))
              ))
-         (state (submit-events (list new-defun helper-lemma lemma) state)))
+         (state (submit-events-brief (list new-defun helper-lemma lemma) state)))
     (mv (list `,lemma-name)
         (list new-fn)
         state)))
@@ -8770,7 +8770,7 @@
                                :use (:instance ,helper-lemma-name
                                                ,@(bind-new-to-old-for-cdred-formals formals cdred-formals)
                                                (,numcdrs-formal 0)))))))
-         (state (submit-events events state)))
+         (state (submit-events-brief events state)))
     (mv (list `,lemma-name)
         (list new-fn)
         state)))
@@ -9238,7 +9238,7 @@
 ;;                                             `(equal ,rhs ,lhs)
 ;;                                           `(equal ,lhs ,rhs)))
 ;;                          ;;pull the defthm out of this function? but maybe the rules depend on what we do here?
-;;                          (state (submit-events `((defthm ,equality-strengthening-theorem-name ;;,equality-strengthening-helper-theorem-name
+;;                          (state (submit-events-brief `((defthm ,equality-strengthening-theorem-name ;;,equality-strengthening-helper-theorem-name
 ;;                                               ;;could include only the relevant conjuncts of the invariant, but we need type info:
 ;;                                               (implies (and ,pushed-back-invariant-call ;;,cross-term
 ;;                                                             ,term-to-use)
@@ -9321,7 +9321,7 @@
 ;;                                             `(equal ,rhs ,lhs)
 ;;                                           `(equal ,lhs ,rhs)))
 ;;                          ;;pull the defthm out of this function? but maybe the rules depend on what we do here?
-;;                          (state (submit-events `((defthm ,equality-strengthening-theorem-name ;;,equality-strengthening-helper-theorem-name
+;;                          (state (submit-events-brief `((defthm ,equality-strengthening-theorem-name ;;,equality-strengthening-helper-theorem-name
 ;;                                               ;;could include only the relevant conjuncts of the invariant, but we need type info:
 ;;                                               (implies (and ,pushed-back-invariant-call ;;,cross-term
 ;;                                                             ,term-to-use)
@@ -10003,7 +10003,7 @@
                                            `((equal ,duplicate-numcdrs-formal ,numcdrs-formal))
                                            update-dags-agree-defthm-names interpreted-function-alist :brief state))
            ;;fixme consider defining functions to capture the exit, base, and update dags (would need to open them up in the proof below)
-           (state (submit-events `(
+           (state (submit-events-brief `(
                                    (skip-proofs ;fixme pull out the pattern of making a fn given the dags for each piece?
                                     (defun ,new-fn (,@new-formals)
                                       (declare (ignorable ,duplicate-numcdrs-formal) (xargs :normalize nil))
@@ -10183,7 +10183,7 @@
                       (defthm ,defthm-name
                         (equal (,consumer-fn ,@consumer-args)
                                (,new-fn ,@new-formals)))))
-            (state (submit-events (list defun defthm) state)))
+            (state (submit-events-brief (list defun defthm) state)))
            (mv (erp-nil)
                (list (append (if transformer-rune (list transformer-rune) nil) (list `,defthm-name))
                      (append (if transformed-consumer-fn (list transformed-consumer-fn) nil) (list new-fn)))
@@ -10757,7 +10757,7 @@
        (formals-in-invar (intersection-eq formals vars-in-inductive-invars)) ;puts them in the same order as formals
        (old-vars-in-invar (intersection-eq old-vars vars-in-inductive-invars))
        ;; Define the invariant: ;fixme pull this out of this function?
-       (state (submit-events `((defun ,invariant-name (,@formals-in-invar ,@old-vars-in-invar)
+       (state (submit-events-brief `((defun ,invariant-name (,@formals-in-invar ,@old-vars-in-invar)
                                  (declare (xargs :normalize nil))
                                  (and ,@proved-invars))
 
@@ -10943,7 +10943,7 @@
 
        (original-names-of-new-formals (lookup-eq-lst new-formals new-formal-name-to-old-formal-name-alist))
        (state
-        (submit-events `( ;rename the formals of these (will have to change all annotations):
+        (submit-events-brief `( ;rename the formals of these (will have to change all annotations):
                          (defun ,new-exit-fn (,@original-names-of-new-formals ,@old-vars-in-explanations) ;fixme figure out which formals are needed?
                            (declare (ignorable ,@original-names-of-new-formals ,@old-vars-in-explanations) (xargs :normalize nil)) ;Thu Mar 11 23:12:52 2010
                            ,(replace-in-term2 simplified-expanded-new-exit-test-expr new-formal-name-to-old-formal-name-alist))
@@ -11065,7 +11065,7 @@
        ;;                                                                                                                          interpreted-function-alist state result-array-stobj)
        ;;                                                                                        unroll print extra-stuff monitored-symbols miter-depth-to-use nil state result-array-stobj)
 
-       (state (submit-events `((defthm ,updates-preserve-connection-relation-theorem-name
+       (state (submit-events-brief `((defthm ,updates-preserve-connection-relation-theorem-name
                                  (implies (and (,invariant-name ,@(sublis-var-simple-lst update-expr-alist formals-in-invar) ,@old-vars-in-invar)
                                                ;;(,invariant-name ,@formals-in-invar ,@old-vars-in-invar) ;to get the shape info?
                                                ;;(,connection-relation-name ,@formals ,@new-formals ,@old-vars-in-explanations) ;can we leave this closed?
@@ -11297,8 +11297,8 @@
 
          (peel-theorem-name (packnew combined-fn '-becomes- new-fn))
 
-         ;;ffixme what about errors?  submit-events will throw one.  hope that's okay!
-         (state (submit-events `( ;; the new function:
+         ;;ffixme what about errors?  submit-events-brief will throw one.  hope that's okay!
+         (state (submit-events-brief `( ;; the new function:
                                  (skip-proofs ;fixme use the same termination argument as the old function?
                                   (defun ,new-fn ,formals
                                     (declare (xargs :normalize nil)) ;this may be crucial, since we turn off all rules to prove the theorem, we don't want any smarts used to transform the body
@@ -11387,7 +11387,7 @@
                  ((when erp) (mv erp :error analyzed-function-table state result-array-stobj))
                  ((mv erp letified-newer-term) (letify-term-via-dag newer-term)) ;Tue Feb 22 22:23:09 2011
                  ((when erp) (mv erp :error analyzed-function-table state result-array-stobj))
-                 (state (submit-events `((defun ,newer-fn-exit-test-name ,exit-test-vars
+                 (state (submit-events-brief `((defun ,newer-fn-exit-test-name ,exit-test-vars
                                            (declare (xargs :normalize nil))
                                            ,newer-exit-test)
 
@@ -11762,7 +11762,7 @@
 
        ;;fixme pull this stuff out into the parent?
        (state
-        (submit-events `((defun ,invariant-name ,invariant-formals
+        (submit-events-brief `((defun ,invariant-name ,invariant-formals
                            (declare (xargs :normalize nil)) ;may be crucial (fffixme where else might i want this?)
                            (and ,@proved-invars))
 
@@ -11794,7 +11794,7 @@
        (better-invariant-formals invariant-formals) ;ffixme i hope the formals are the same for the better- invariant..
        (better-invariant-call `(,better-invariant-name ,@better-invariant-formals)) ;fixme use more
        (state
-        (submit-events `((defun ,better-invariant-name ,better-invariant-formals
+        (submit-events-brief `((defun ,better-invariant-name ,better-invariant-formals
                            (declare (xargs :normalize nil)) ;may be crucial? (fffixme where else might i want this?)
                            (and ,@better-proved-invars))
 
@@ -11946,7 +11946,7 @@
        (proved-final-claim-lemma-name-helper1 (packnew proved-final-claim-lemma-name '-helper1))
        (proved-final-claim-lemma-name-helper2 (packnew proved-final-claim-lemma-name '-helper2))
        (state
-        (submit-events `((defun ,proved-final-claim-name (,@proved-final-claim-formals) ;ffixme do we need both this and the rv predicate?  well, the rv predicate is over rv, not the formals...
+        (submit-events-brief `((defun ,proved-final-claim-name (,@proved-final-claim-formals) ;ffixme do we need both this and the rv predicate?  well, the rv predicate is over rv, not the formals...
                            (declare (xargs :normalize nil))
                            (and ,@proved-new-final-claims ;proved-final-claims
                                 ))
@@ -12074,7 +12074,7 @@
                                                        conjuncts-for-rv-predicate))
 
              ;; Define the predicate on return values:
-             (state (submit-events
+             (state (submit-events-brief
                      `( ;; This is over 'rv and some of the old vars:
                        (defun ,rv-predicate-name ,rv-predicate-formals
                          (declare (xargs :normalize nil))
@@ -12620,7 +12620,7 @@
  ;;                     (prog2$ (hard-error 'prove-updates-preserve-connection-for-dropping "failed to prove conjunct ~X01" (acons #\0 conjunct (acons #\1 nil nil)))
  ;;                             (mv nil state result-array-stobj))
  ;;                   ;;this one just closes up the invariant:
- ;;                   (let ((state (submit-events `((defthm ,helper-2-theorem-name
+ ;;                   (let ((state (submit-events-brief `((defthm ,helper-2-theorem-name
  ;;                                              (implies (and ,invariant-call
  ;;                                                            ,connection-relation-call ;;,@connection-conjuncts
  ;;                                                            ,@hyps)
@@ -12631,7 +12631,7 @@
  ;;                                                                                  '(,invariant-name))))))
  ;;                                          state))) ;check for error?
  ;;                     ;;this one closes up the connection relation: fffixme no it doesn't!
- ;;                     (let ((state (submit-events `((defthm ,theorem-name
+ ;;                     (let ((state (submit-events-brief `((defthm ,theorem-name
  ;;                                                (implies (and ,invariant-call
  ;;                                                              ,connection-relation-call
  ;;                                                              ,@hyps)
@@ -12659,7 +12659,7 @@
  ;;                                                                       unroll print extra-stuff monitored-symbols miter-depth-to-use
  ;;                                                                       (cons theorem-name defthm-names-acc) state result-array-stobj))))))))
 
- ;;            (state (submit-events ;fixme abuse for 1 event?
+ ;;            (state (submit-events-brief ;fixme abuse for 1 event?
  ;;                    `((defthm ,theorem-name
  ;;                        (implies (and ,@hyps)
  ;;                                 ,conjunct)
@@ -13825,7 +13825,7 @@
                           (dummy11 (cw "Simplified exit test expr 2: ~x0)~%" simplified-exit-test-expr2))
                           (simplified-exit-test1-theorem-name (packnew fn1 '-simplified-exit-test-theorem))
                           (simplified-exit-test2-theorem-name (packnew fn2 '-simplified-exit-test-theorem))
-                          (state (submit-events
+                          (state (submit-events-brief
                                   ;;ffixme just call one of the axe routines to prove this?
                                   `((defthm ,simplified-exit-test1-theorem-name
                                       (implies ,fn1-invariant-call
@@ -13880,7 +13880,7 @@
                           (negated-exit-test-conjuncts2 (conjuncts-for-negation simplified-exit-test-expr2))
                           (negated-exit-test1-theorem-name (packnew fn1 '-negated-simplified-exit-test-theorem))
                           (negated-exit-test2-theorem-name (packnew fn2 '-negated-simplified-exit-test-theorem))
-                          (state (submit-events `((defthm ,negated-exit-test1-theorem-name
+                          (state (submit-events-brief `((defthm ,negated-exit-test1-theorem-name
                                                     (iff (not ,simplified-exit-test-expr1)
                                                          (and ,@negated-exit-test-conjuncts1))
                                                     :rule-classes nil
@@ -13965,7 +13965,7 @@
                               (connection-predicate-of-updates-theorem-name (packnew connection-predicate-name '-of-updates))
 
                               (connection-implies-exits-agree-theorem-name (packnew connection-predicate-name '-implies-exits-agree))
-                              (state (submit-events `((defun ,connection-predicate-name ,connection-predicate-formals
+                              (state (submit-events-brief `((defun ,connection-predicate-name ,connection-predicate-formals
                                                         (declare (xargs :normalize nil))
                                                         ,(make-conjunction-from-list proved-connections))
 
@@ -14078,7 +14078,7 @@
                               (proved-final-claim-lemma-name (packnew proved-final-claim-name '-lemma))
                               (proved-final-claim-lemma-name-helper (packnew proved-final-claim-lemma-name '-helper))
                               (state
-                               (submit-events `( ;fixme could proved-final-claim-formals include more than better-invariant-formals?
+                               (submit-events-brief `( ;fixme could proved-final-claim-formals include more than better-invariant-formals?
                                                 ;;do we need both this and the rv predicate?  well, the rv predicate is over rv, not the formals...
                                                 (defun ,proved-final-claim-name (,@proved-final-claim-formals)
                                                   (declare (xargs :normalize nil))
@@ -14198,7 +14198,7 @@
                               (induction-fn-name (packnew 'joint-induct- fn1 '-and- fn2))
                               (state (submit-event-brief (make-induction-function fn1 fn2 induction-fn-name state) state))
                               (proved-final-claim-implies-rv-predicate-theorem-name (packnew proved-final-claim-name '-implies- rv-predicate-name))
-                              (state (submit-events
+                              (state (submit-events-brief
                                       `((defun ,rv-predicate-name ,rv-predicate-formals
                                           (declare (xargs :normalize nil))
                                           ,(make-conjunction-from-list conjuncts-for-rv-predicate))
@@ -14354,7 +14354,7 @@
                               ((when erp) (mv erp nil nil rand state result-array-stobj))
                               (- (cw "Done simplifying the connection relation)~%"))
                               (simplified-conclusions (remove-equal *t* simplified-conclusions))
-                              (state (submit-events `((defthm ,connection-theorem-helper4-name
+                              (state (submit-events-brief `((defthm ,connection-theorem-helper4-name
                                                         (implies (and ,(make-conjunction-from-list (sublis-var-simple-lst old-var-to-formal-alist proved-connections)) ;;(,connection-predicate-name ,@connection-predicate-formals)
                                                                       (,fn1-invariant-name ,@(sublis-var-simple-lst old-var-to-formal-alist1 fn1-invariant-formals))
                                                                       (,fn2-invariant-name ,@(sublis-var-simple-lst old-var-to-formal-alist2 fn2-invariant-formals))
@@ -15001,7 +15001,7 @@
                                                            (not fn2-tail-recp))
                                                       ;;ffixme do we still want to do this? ffixme call the prover here?
                                                       (prog2$ (cw ",,Making head-recursive version of ~x0.~%" fn1)
-                                                              (let ((state (submit-events (CONVERT-TO-HEAD-RECURSIVE-EVENTS-wrapper fn1 state) state))) ;fffffixme handle name clashes!
+                                                              (let ((state (submit-events-brief (CONVERT-TO-HEAD-RECURSIVE-EVENTS-wrapper fn1 state) state))) ;fffffixme handle name clashes!
                                                                 (mv (erp-nil)
                                                                     (list :new-rules
                                                                           `(,(pack$ fn1 '-becomes- fn1 '-head)
@@ -15021,7 +15021,7 @@
                                                            (not fn1-tail-recp))
                                                       ;;ffixme do we still want to do this?
                                                       (prog2$ (cw ",,Making head-recursive version of ~x0.~%" fn2)
-                                                              (let ((state (submit-events (CONVERT-TO-HEAD-RECURSIVE-EVENTS-wrapper fn2 state) state)))
+                                                              (let ((state (submit-events-brief (CONVERT-TO-HEAD-RECURSIVE-EVENTS-wrapper fn2 state) state)))
                                                                 (mv (erp-nil)
                                                                     (list :new-rules
                                                                           `(,(pack$ fn2 '-BECOMES- fn2 '-HEAD)
@@ -17575,7 +17575,7 @@
 ;;          (new-term (replace-in-term2 base-case-expr formal-replacement-alist))
 ;;          (theorem-name (pack$ fn '-becomes- new-fn)))
 ;;     (mv-let (erp result state result-array-stobj)
-;;             (submit-events
+;;             (submit-events-brief
 ;;              `(,defun ;the new function
 ;;                 ;;the replacement rule:
 ;;                 (defthm ,theorem-name
@@ -18786,7 +18786,7 @@
                                                                         (executable-counterparts)
                                                                         '(,function-name ,new-function-name))))))))
                    (prog2$ (cw "Specializing.  New defun: ~x0~%. Rule: ~x1.~%" defun-event defthm) ;move printing down?
-                           (let ((state (submit-events (list defun-event defthm) state)))
+                           (let ((state (submit-events-brief (list defun-event defthm) state)))
                              (prog2$ (cw "Specialzed ~x0.)~%" (cons function-name args))
                                      (mv (erp-nil)
                                          (list new-function-name)

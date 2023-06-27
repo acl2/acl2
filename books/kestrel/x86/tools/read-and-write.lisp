@@ -25,7 +25,8 @@
 ;(include-book "support") ;reduce?
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system))
+(local (include-book "kestrel/bv/arith" :dir :system)) ;todo
+(local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
 
 ;;

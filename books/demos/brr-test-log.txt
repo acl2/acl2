@@ -1,0 +1,1096 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(DEFCONST *OLD-STANDARD-OI*
+          *STANDARD-OI*)
+
+Summary
+Form:  ( DEFCONST *OLD-STANDARD-OI* ...)
+Rules: NIL
+ *OLD-STANDARD-OI*
+ACL2 !>>(REDEF+)
+ T
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-OI*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-OI STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-OI* ...):  *STANDARD-OI*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-OI* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-OI* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-OI*
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-CO*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-CO STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-CO* ...):  *STANDARD-CO*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-CO* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-CO* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-CO*
+ACL2 p!>>(DEFUN SET-LD-PROMPT (VAL STATE)
+           (ER-PROGN (CHK-LD-PROMPT VAL 'SET-LD-PROMPT STATE)
+                     (IF (EQ VAL 'BRR-PROMPT)
+                         (SET-LD-PRE-EVAL-PRINT T STATE)
+                       (VALUE NIL))
+                     (PPROGN (F-PUT-GLOBAL 'LD-PROMPT VAL STATE)
+                             (VALUE VAL))))
+
+ACL2 Warning [Redef] in ( DEFUN SET-LD-PROMPT ...):  SET-LD-PROMPT
+redefined.
+
+
+
+Summary
+Form:  ( DEFUN SET-LD-PROMPT ...)
+Rules: NIL
+Warnings:  Redef
+ SET-LD-PROMPT
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(ENCAPSULATE ((AFN (X) T)
+                      (BFN (X) T)
+                      (CFN (X) T)
+                      (DFN (X) T)
+                      (EFN (X) T))
+          (LOCAL (DEFUN AFN (X) (DECLARE (IGNORE X)) T))
+          (LOCAL (DEFUN BFN (X) (DECLARE (IGNORE X)) T))
+          (LOCAL (DEFUN CFN (X) (DECLARE (IGNORE X)) T))
+          (LOCAL (DEFUN DFN (X) (DECLARE (IGNORE X)) T))
+          (LOCAL (DEFUN EFN (X) (DECLARE (IGNORE X)) T))
+          (DEFTHM A (IMPLIES (BFN X) (AFN X)))
+          (DEFTHM B (IMPLIES (CFN X) (BFN X)))
+          (DEFTHM C (IMPLIES (DFN X) (CFN X)))
+          (DEFTHM D (IMPLIES (EFN X) (DFN X))))
+
+To verify that the nine encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN AFN (X) (DECLARE (IGNORE X)) T))
+
+Since AFN is non-recursive, its admission is trivial.  We observe that
+the type of AFN is described by the theorem (EQUAL (AFN X) T).  
+
+Summary
+Form:  ( DEFUN AFN ...)
+Rules: NIL
+AFN
+
+
+ACL2 !>>>(LOCAL (DEFUN BFN (X) (DECLARE (IGNORE X)) T))
+
+Since BFN is non-recursive, its admission is trivial.  We observe that
+the type of BFN is described by the theorem (EQUAL (BFN X) T).  
+
+Summary
+Form:  ( DEFUN BFN ...)
+Rules: NIL
+BFN
+
+
+ACL2 !>>>(LOCAL (DEFUN CFN (X) (DECLARE (IGNORE X)) T))
+
+Since CFN is non-recursive, its admission is trivial.  We observe that
+the type of CFN is described by the theorem (EQUAL (CFN X) T).  
+
+Summary
+Form:  ( DEFUN CFN ...)
+Rules: NIL
+CFN
+
+
+ACL2 !>>>(LOCAL (DEFUN DFN (X) (DECLARE (IGNORE X)) T))
+
+Since DFN is non-recursive, its admission is trivial.  We observe that
+the type of DFN is described by the theorem (EQUAL (DFN X) T).  
+
+Summary
+Form:  ( DEFUN DFN ...)
+Rules: NIL
+DFN
+
+
+ACL2 !>>>(LOCAL (DEFUN EFN (X) (DECLARE (IGNORE X)) T))
+
+Since EFN is non-recursive, its admission is trivial.  We observe that
+the type of EFN is described by the theorem (EQUAL (EFN X) T).  
+
+Summary
+Form:  ( DEFUN EFN ...)
+Rules: NIL
+EFN
+
+
+ACL2 !>>>(DEFTHM A (IMPLIES (BFN X) (AFN X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM A ...):  A :REWRITE rule generated
+from A will be triggered only by terms containing the function symbol
+AFN, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM A ...):  The previously added rule
+AFN subsumes a newly proposed :REWRITE rule generated from A, in the
+sense that the old rule rewrites a more general target.  Because the
+new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of A depends upon the :type-prescription rule AFN.
+
+Summary
+Form:  ( DEFTHM A ...)
+Rules: ((:TYPE-PRESCRIPTION AFN)
+        (:TYPE-PRESCRIPTION BFN))
+Warnings:  Subsume and Non-rec
+A
+
+
+ACL2 !>>>(DEFTHM B (IMPLIES (CFN X) (BFN X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM B ...):  A :REWRITE rule generated
+from B will be triggered only by terms containing the function symbol
+BFN, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM B ...):  The previously added rule
+BFN subsumes a newly proposed :REWRITE rule generated from B, in the
+sense that the old rule rewrites a more general target.  Because the
+new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of B depends upon the :type-prescription rule BFN.
+
+Summary
+Form:  ( DEFTHM B ...)
+Rules: ((:TYPE-PRESCRIPTION BFN)
+        (:TYPE-PRESCRIPTION CFN))
+Warnings:  Subsume and Non-rec
+B
+
+
+ACL2 !>>>(DEFTHM C (IMPLIES (DFN X) (CFN X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM C ...):  A :REWRITE rule generated
+from C will be triggered only by terms containing the function symbol
+CFN, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM C ...):  The previously added rule
+CFN subsumes a newly proposed :REWRITE rule generated from C, in the
+sense that the old rule rewrites a more general target.  Because the
+new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of C depends upon the :type-prescription rule CFN.
+
+Summary
+Form:  ( DEFTHM C ...)
+Rules: ((:TYPE-PRESCRIPTION CFN)
+        (:TYPE-PRESCRIPTION DFN))
+Warnings:  Subsume and Non-rec
+C
+
+
+ACL2 !>>>(DEFTHM D (IMPLIES (EFN X) (DFN X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM D ...):  A :REWRITE rule generated
+from D will be triggered only by terms containing the function symbol
+DFN, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM D ...):  The previously added rule
+DFN subsumes a newly proposed :REWRITE rule generated from D, in the
+sense that the old rule rewrites a more general target.  Because the
+new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of D depends upon the :type-prescription rule DFN.
+
+Summary
+Form:  ( DEFTHM D ...)
+Rules: ((:TYPE-PRESCRIPTION DFN)
+        (:TYPE-PRESCRIPTION EFN))
+Warnings:  Subsume and Non-rec
+D
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with every one of the functions
+AFN, BFN, CFN, DFN and EFN:
+
+(AND (IMPLIES (BFN X) (AFN X))
+     (IMPLIES (CFN X) (BFN X))
+     (IMPLIES (DFN X) (CFN X))
+     (IMPLIES (EFN X) (DFN X)))
+
+Summary
+Form:  ( ENCAPSULATE ((AFN ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+ (AFN BFN CFN DFN EFN)
+ACL2 !>>(BRR T)
+Use :a! to exit break-rewrite.
+See :DOC set-brr-evisc-tuple and :DOC iprint to control suppression
+of details when printing.
+
+The monitored runes are:
+NIL
+ T
+ACL2 !>>'(SCENARIO 1)
+(SCENARIO 1)
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+ NIL
+ACL2 !>>(SET-EVISC-TUPLE :DEFAULT
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>(DEFUN BRR-COHERENTP (STATE)
+         (DECLARE (XARGS :MODE :PROGRAM :STOBJS (STATE)))
+         (IF
+          (EQ (F-GET-GLOBAL 'WORMHOLE-NAME STATE)
+              'BRR)
+          (ER-LET*
+              ((PERSISTENT-WHS (GET-PERSISTENT-WHS 'BRR STATE))
+               (EPHEMERAL-WHS (VALUE (F-GET-GLOBAL 'WORMHOLE-STATUS STATE))))
+              (VALUE (EQUAL PERSISTENT-WHS EPHEMERAL-WHS)))
+          (VALUE T)))
+
+Summary
+Form:  ( DEFUN BRR-COHERENTP ...)
+Rules: NIL
+ BRR-COHERENTP
+ACL2 !>>(MONITOR 'A T)
+(((:REWRITE A) (:CONDITION QUOTE T)))
+ACL2 !>>(THM (IMPLIES (EFN X) (AFN X)))
+
+(1 Breaking (:REWRITE A) on (AFN X):
+1 ACL2 >:TARGET
+(AFN X)
+1 ACL2 >:PATH
+1. Simplifying the clause
+     ((NOT (EFN X)) (AFN X))
+2. Rewriting (to simplify) the atom of the second literal,
+     (AFN X),
+3. Attempting to apply (:REWRITE A) to
+     (AFN X)
+1 ACL2 >(PRINT-BRR-STATUS T)
+(MAKE BRR-STATUS
+      :ENTRY-CODE ':ENTER
+      :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+      :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
+                                        REWRITE-RULE (:REWRITE A)
+                                        |some-nume| ((BFN X))
+                                        IFF (AFN X)
+                                        'T
+                                        BACKCHAIN NIL NIL T)
+                    (REWRITE 2 (AFN X) NIL . ?)
+                    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                                     (AFN X)))
+      :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+                                |some-nume| ((BFN X))
+                                IFF (AFN X)
+                                'T
+                                BACKCHAIN NIL NIL T)
+                         (TARGET AFN X)
+                         (UNIFY-SUBST (X . X))
+                         (TYPE-ALIST ((EFN X) -129))
+                         (POT-LIST)
+                         (ANCESTORS)
+                         (RCNST . |some-rewrite-constant|)
+                         (INITIAL-TTREE))
+      :BRR-PREVIOUS-STATUS
+      (MAKE BRR-STATUS
+            :ENTRY-CODE ':ENTER
+            :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+            :BRR-GSTACK 'NIL
+            :BRR-LOCAL-ALIST 'NIL
+            :BRR-PREVIOUS-STATUS NIL))
+NIL
+1 ACL2 >(BRR-COHERENTP STATE)
+ T
+1 ACL2 >(MONITOR 'B T)
+(((:REWRITE B) (:CONDITION QUOTE T))
+ ((:REWRITE A) (:CONDITION QUOTE T)))
+1 ACL2 >(PRINT-BRR-STATUS T)
+(MAKE BRR-STATUS
+      :ENTRY-CODE ':ENTER
+      :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
+                             ((:REWRITE A) (:CONDITION QUOTE T)))
+      :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
+                                        REWRITE-RULE (:REWRITE A)
+                                        |some-nume| ((BFN X))
+                                        IFF (AFN X)
+                                        'T
+                                        BACKCHAIN NIL NIL T)
+                    (REWRITE 2 (AFN X) NIL . ?)
+                    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                                     (AFN X)))
+      :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+                                |some-nume| ((BFN X))
+                                IFF (AFN X)
+                                'T
+                                BACKCHAIN NIL NIL T)
+                         (TARGET AFN X)
+                         (UNIFY-SUBST (X . X))
+                         (TYPE-ALIST ((EFN X) -129))
+                         (POT-LIST)
+                         (ANCESTORS)
+                         (RCNST . |some-rewrite-constant|)
+                         (INITIAL-TTREE))
+      :BRR-PREVIOUS-STATUS
+      (MAKE BRR-STATUS
+            :ENTRY-CODE ':ENTER
+            :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+            :BRR-GSTACK 'NIL
+            :BRR-LOCAL-ALIST 'NIL
+            :BRR-PREVIOUS-STATUS NIL))
+NIL
+1 ACL2 >(MONITORED-RUNES)
+(((:REWRITE B) (:CONDITION QUOTE T))
+ ((:REWRITE A) (:CONDITION QUOTE T)))
+1 ACL2 >:EVAL
+
+(2 Breaking (:REWRITE B) on (BFN X):
+2 ACL2 >(PRINT-BRR-STATUS T)
+(MAKE BRR-STATUS
+      :ENTRY-CODE ':ENTER
+      :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
+                             ((:REWRITE A) (:CONDITION QUOTE T)))
+      :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (BFN X)
+                                        REWRITE-RULE (:REWRITE B)
+                                        |some-nume| ((CFN X))
+                                        IFF (BFN X)
+                                        'T
+                                        BACKCHAIN NIL NIL T)
+                    (REWRITE 1 (BFN X) ((X . X)) . T)
+                    (REWRITE-WITH-LEMMA NIL (AFN X)
+                                        REWRITE-RULE (:REWRITE A)
+                                        |some-nume| ((BFN X))
+                                        IFF (AFN X)
+                                        'T
+                                        BACKCHAIN NIL NIL T)
+                    (REWRITE 2 (AFN X) NIL . ?)
+                    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                                     (AFN X)))
+      :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE B)
+                                |some-nume| ((CFN X))
+                                IFF (BFN X)
+                                'T
+                                BACKCHAIN NIL NIL T)
+                         (TARGET BFN X)
+                         (UNIFY-SUBST (X . X))
+                         (TYPE-ALIST ((EFN X) -129))
+                         (POT-LIST)
+                         (ANCESTORS ((NOT (BFN X))
+                                     (BFN X)
+                                     1 1 0 ((:REWRITE A))
+                                     . 1))
+                         (RCNST . |some-rewrite-constant|)
+                         (INITIAL-TTREE))
+      :BRR-PREVIOUS-STATUS
+      (MAKE BRR-STATUS
+            :ENTRY-CODE ':ENTER
+            :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
+                                   ((:REWRITE A) (:CONDITION QUOTE T)))
+            :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
+                                              REWRITE-RULE (:REWRITE A)
+                                              |some-nume| ((BFN X))
+                                              IFF (AFN X)
+                                              'T
+                                              BACKCHAIN NIL NIL T)
+                          (REWRITE 2 (AFN X) NIL . ?)
+                          (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                                           (AFN X)))
+            :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+                                      |some-nume| ((BFN X))
+                                      IFF (AFN X)
+                                      'T
+                                      BACKCHAIN NIL NIL T)
+                               (TARGET AFN X)
+                               (UNIFY-SUBST (X . X))
+                               (TYPE-ALIST ((EFN X) -129))
+                               (POT-LIST)
+                               (ANCESTORS)
+                               (RCNST . |some-rewrite-constant|)
+                               (INITIAL-TTREE)
+                               (SAVED-STANDARD-OI . |some-channel|)
+                               (ACTION . BREAK))
+            :BRR-PREVIOUS-STATUS
+            (MAKE BRR-STATUS
+                  :ENTRY-CODE ':ENTER
+                  :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+                  :BRR-GSTACK 'NIL
+                  :BRR-LOCAL-ALIST 'NIL
+                  :BRR-PREVIOUS-STATUS NIL)))
+NIL
+2 ACL2 >:OK
+2)
+
+1! (:REWRITE A) produced 'T.
+
+1 ACL2 >(PRINT-BRR-STATUS T)
+(MAKE BRR-STATUS
+      :ENTRY-CODE ':ENTER
+      :BRR-MONITORED-RUNES '(((:REWRITE B) (:CONDITION QUOTE T))
+                             ((:REWRITE A) (:CONDITION QUOTE T)))
+      :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
+                                        REWRITE-RULE (:REWRITE A)
+                                        |some-nume| ((BFN X))
+                                        IFF (AFN X)
+                                        'T
+                                        BACKCHAIN NIL NIL T)
+                    (REWRITE 2 (AFN X) NIL . ?)
+                    (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+                                     (AFN X)))
+      :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+                                |some-nume| ((BFN X))
+                                IFF (AFN X)
+                                'T
+                                BACKCHAIN NIL NIL T)
+                         (TARGET AFN X)
+                         (UNIFY-SUBST (X . X))
+                         (TYPE-ALIST ((EFN X) -129))
+                         (POT-LIST)
+                         (ANCESTORS)
+                         (RCNST . |some-rewrite-constant|)
+                         (INITIAL-TTREE)
+                         (SAVED-STANDARD-OI . |some-channel|)
+                         (ACTION . BREAK)
+                         (WONP . T)
+                         (FAILURE-REASON)
+                         (BRR-RESULT QUOTE T)
+                         (FINAL-TTREE (LEMMA (:REWRITE B)
+                                             (:REWRITE C)
+                                             (:REWRITE D))))
+      :BRR-PREVIOUS-STATUS
+      (MAKE BRR-STATUS
+            :ENTRY-CODE ':ENTER
+            :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+            :BRR-GSTACK 'NIL
+            :BRR-LOCAL-ALIST 'NIL
+            :BRR-PREVIOUS-STATUS NIL))
+NIL
+1 ACL2 >:OK
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE A)
+        (:REWRITE B)
+        (:REWRITE C)
+        (:REWRITE D))
+
+Proof succeeded.
+ACL2 !>>(PRINT-BRR-STATUS T)
+(MAKE BRR-STATUS
+      :ENTRY-CODE ':ENTER
+      :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+      :BRR-GSTACK 'NIL
+      :BRR-LOCAL-ALIST 'NIL
+      :BRR-PREVIOUS-STATUS NIL)
+NIL
+ACL2 !>>'(SCENARIO 2)
+(SCENARIO 2)
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+NIL
+ACL2 !>>(SET-EVISC-TUPLE :DEFAULT
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>(DEFUN DEMO-WORMHOLE-COHERENTP (STATE)
+         (DECLARE (XARGS :MODE :PROGRAM :STOBJS (STATE)))
+         (IF
+          (EQ (F-GET-GLOBAL 'WORMHOLE-NAME STATE)
+              'DEMO)
+          (ER-LET*
+              ((PERSISTENT-WHS (GET-PERSISTENT-WHS 'DEMO STATE))
+               (EPHEMERAL-WHS (VALUE (F-GET-GLOBAL 'WORMHOLE-STATUS STATE))))
+              (VALUE (EQUAL PERSISTENT-WHS EPHEMERAL-WHS)))
+          (VALUE T)))
+
+Summary
+Form:  ( DEFUN DEMO-WORMHOLE-COHERENTP ...)
+Rules: NIL
+ DEMO-WORMHOLE-COHERENTP
+ACL2 !>>(WORMHOLE-EVAL 'DEMO
+                       '(LAMBDA NIL '(:ENTER . 0))
+                       NIL)
+NIL
+ACL2 !>>(WORMHOLE 'DEMO
+                  '(LAMBDA (WHS) WHS)
+                  NIL ''(WELCOME TO DEMO WORMHOLE))
+Wormhole ACL2 !>>'(WELCOME TO DEMO WORMHOLE)
+(WELCOME TO DEMO WORMHOLE)
+Wormhole ACL2 !>>(DEMO-WORMHOLE-COHERENTP STATE)
+ T
+Wormhole ACL2 !>>(WORMHOLE-EVAL 'DEMO
+                                '(LAMBDA NIL '(:ENTER . 1))
+                                NIL)
+NIL
+Wormhole ACL2 !>>(DEMO-WORMHOLE-COHERENTP STATE)
+ NIL
+Wormhole ACL2 !>>(F-GET-GLOBAL 'WORMHOLE-STATUS STATE)
+(:ENTER . 0)
+Wormhole ACL2 !>>(GET-PERSISTENT-WHS 'DEMO STATE)
+ (:ENTER . 1)
+Wormhole ACL2 !>>(VALUE :Q)
+NIL
+ACL2 !>>(WORMHOLE 'DEMO
+                  '(LAMBDA (WHS) WHS)
+                  NIL ''(WELCOME BACK TO DEMO WORMHOLE))
+Wormhole ACL2 !>>'(WELCOME BACK TO DEMO WORMHOLE)
+(WELCOME BACK TO DEMO WORMHOLE)
+Wormhole ACL2 !>>(F-GET-GLOBAL 'WORMHOLE-STATUS STATE)
+(:ENTER . 0)
+Wormhole ACL2 !>>(DEMO-WORMHOLE-COHERENTP STATE)
+ T
+Wormhole ACL2 !>>(SET-PERSISTENT-WHS-AND-EPHEMERAL-WHS 'DEMO
+                                                       '(:ENTER . 2)
+                                                       STATE)
+<state>
+Wormhole ACL2 !>>(DEMO-WORMHOLE-COHERENTP STATE)
+ T
+Wormhole ACL2 !>>(F-GET-GLOBAL 'WORMHOLE-STATUS STATE)
+(:ENTER . 2)
+Wormhole ACL2 !>>(GET-PERSISTENT-WHS 'DEMO STATE)
+ (:ENTER . 2)
+Wormhole ACL2 !>>(VALUE :Q)
+NIL
+ACL2 !>>'(SCENARIO 3)
+(SCENARIO 3)
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+ NIL
+ACL2 !>>(SET-EVISC-TUPLE :DEFAULT
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>:MONITOR A T
+(((:REWRITE A) (:CONDITION QUOTE T)))
+ACL2 !>>(THM (IMPLIES (EFN X) (AFN X)))
+
+(1 Breaking (:REWRITE A) on (AFN X):
+1 ACL2 >:GO$ B
+
+(2 Breaking (:REWRITE B) on (BFN X):
+2 ACL2 >:TARGET
+(BFN X)
+2 ACL2 >:EVAL$ C
+
+(3 Breaking (:REWRITE C) on (CFN X):
+3 ACL2 >:TARGET
+(CFN X)
+3 ACL2 >:OK$ D
+
+(4 Breaking (:REWRITE D) on (DFN X):
+4 ACL2 >:TARGET
+(DFN X)
+4 ACL2 >:MONITORED-RUNES
+(((:REWRITE D) (:CONDITION QUOTE T))
+ ((:REWRITE C) (:CONDITION QUOTE T))
+ ((:REWRITE B) (:CONDITION QUOTE T))
+ ((:REWRITE A) (:CONDITION QUOTE T)))
+4 ACL2 >:OK
+4)
+3)
+
+2! (:REWRITE B) produced 'T.
+
+2 ACL2 >:MONITORED-RUNES
+(((:REWRITE C) (:CONDITION QUOTE T))
+ ((:REWRITE B) (:CONDITION QUOTE T))
+ ((:REWRITE A) (:CONDITION QUOTE T)))
+2 ACL2 >:OK
+2)
+
+1 (:REWRITE A) produced 'T.
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE A)
+        (:REWRITE B)
+        (:REWRITE C)
+        (:REWRITE D))
+
+Proof succeeded.
+ACL2 !>>:MONITORED-RUNES
+(((:REWRITE A) (:CONDITION QUOTE T)))
+ACL2 !>>'(SCENARIO 4)
+(SCENARIO 4)
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+NIL
+ACL2 !>>(SET-EVISC-TUPLE :DEFAULT
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>:MONITOR A T
+(((:REWRITE A) (:CONDITION QUOTE T)))
+ACL2 !>>(THM (IMPLIES (EFN X) (AFN X)))
+
+(1 Breaking (:REWRITE A) on (AFN X):
+1 ACL2 >:MONITOR B T
+(((:REWRITE B) (:CONDITION QUOTE T))
+ ((:REWRITE A) (:CONDITION QUOTE T)))
+1 ACL2 >:MONITOR C T
+(((:REWRITE C) (:CONDITION QUOTE T))
+ ((:REWRITE B) (:CONDITION QUOTE T))
+ ((:REWRITE A) (:CONDITION QUOTE T)))
+1 ACL2 >:MONITOR D T
+(((:REWRITE D) (:CONDITION QUOTE T))
+ ((:REWRITE C) (:CONDITION QUOTE T))
+ ((:REWRITE B) (:CONDITION QUOTE T))
+ ((:REWRITE A) (:CONDITION QUOTE T)))
+1 ACL2 >:GO!
+
+1 (:REWRITE A) produced 'T.
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE A)
+        (:REWRITE B)
+        (:REWRITE C)
+        (:REWRITE D))
+
+Proof succeeded.
+ACL2 !>>:MONITORED-RUNES
+(((:REWRITE A) (:CONDITION QUOTE T)))
+ACL2 !>>'(SCENARIO 5)
+(SCENARIO 5)
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+NIL
+ACL2 !>>(SET-EVISC-TUPLE :DEFAULT
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>:MONITOR A T
+(((:REWRITE A) (:CONDITION QUOTE T)))
+ACL2 !>>(THM (IMPLIES (EFN X) (AFN X)))
+
+(1 Breaking (:REWRITE A) on (AFN X):
+1 ACL2 >:MONITOR B T
+(((:REWRITE B) (:CONDITION QUOTE T))
+ ((:REWRITE A) (:CONDITION QUOTE T)))
+1 ACL2 >:UNMONITOR A
+(((:REWRITE B) (:CONDITION QUOTE T)))
+1 ACL2 >(THM (AND (IMPLIES (EFN Y) (AFN Y))
+                  (IMPLIES (EFN Z) (AFN Z))))
+Subgoal 2
+
+(2 Breaking (:REWRITE B) on (BFN Y):
+2 ACL2 >:MONITORED-RUNES
+(((:REWRITE B) (:CONDITION QUOTE T)))
+2 ACL2 >:GO!
+
+2 (:REWRITE B) produced 'T.
+2)
+Subgoal 1
+
+(2 Breaking (:REWRITE B) on (BFN Z):
+2 ACL2 >:MONITORED-RUNES
+(((:REWRITE B) (:CONDITION QUOTE T)))
+2 ACL2 >:GO!
+
+2 (:REWRITE B) produced 'T.
+2)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE A)
+        (:REWRITE B)
+        (:REWRITE C)
+        (:REWRITE D))
+
+Proof succeeded.
+1 ACL2 >:MONITORED-RUNES
+(((:REWRITE B) (:CONDITION QUOTE T)))
+1 ACL2 >:GO!
+
+1 (:REWRITE A) produced 'T.
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE A)
+        (:REWRITE B)
+        (:REWRITE C)
+        (:REWRITE D))
+
+Proof succeeded.
+ACL2 !>>:MONITORED-RUNES
+(((:REWRITE A) (:CONDITION QUOTE T)))
+ACL2 !>>'(SCENARIO 6)
+(SCENARIO 6)
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+NIL
+ACL2 !>>(SET-EVISC-TUPLE :DEFAULT
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>:MONITOR A T
+(((:REWRITE A) (:CONDITION QUOTE T)))
+ACL2 !>>(DEFCONST *TENX*
+          '(X1 X2 X3 X4 X5 X6 X7 X8 X9 X10))
+
+Summary
+Form:  ( DEFCONST *TENX* ...)
+Rules: NIL
+ *TENX*
+ACL2 !>>(DEFCONST *TENY*
+          '(Y1 Y2 Y3 Y4 Y5 Y6 Y7 Y8 Y9 Y10))
+
+Summary
+Form:  ( DEFCONST *TENY* ...)
+Rules: NIL
+ *TENY*
+ACL2 !>>(DEFCONST *TENZ*
+          '(Z1 Z2 Z3 Z4 Z5 Z6 Z7 Z8 Z9 Z10))
+
+Summary
+Form:  ( DEFCONST *TENZ* ...)
+Rules: NIL
+ *TENZ*
+ACL2 !>>(SET-EVISC-TUPLE (EVISC-TUPLE NIL 9 NIL NIL)
+                         :SITES :BRR
+                         :IPRINT :SAME)
+ (:BRR)
+ACL2 !>>(THM (IMPLIES (EFN *TENX*) (AFN *TENX*)))
+
+(1 Breaking (:REWRITE A) on (AFN '(X1 X2 X3 X4 X5 X6 X7 X8 X9 ...)):
+1 ACL2 >(THM (AND (IMPLIES (EFN *TENY*) (AFN *TENY*))
+                  (IMPLIES (EFN *TENZ*) (AFN *TENZ*))))
+Subgoal 2
+
+(2 Breaking (:REWRITE A) on (AFN '(Y1 Y2 Y3 Y4 Y5 Y6 Y7 Y8 Y9 ...)):
+2 ACL2 >(SET-EVISC-TUPLE (EVISC-TUPLE NIL 7 NIL NIL)
+                         :SITES :BRR
+                         :IPRINT :SAME)
+ (:BRR)
+2 ACL2 >:GO!
+
+2 (:REWRITE A) produced 'T.
+2)
+Subgoal 1
+
+(2 Breaking (:REWRITE A) on (AFN '(Z1 Z2 Z3 Z4 Z5 Z6 Z7 ...)):
+2 ACL2 >(SET-EVISC-TUPLE (EVISC-TUPLE NIL 5 NIL NIL)
+                         :SITES :BRR
+                         :IPRINT :SAME)
+ (:BRR)
+2 ACL2 >:GO!
+
+2 (:REWRITE A) produced 'T.
+2)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE A)
+        (:REWRITE B)
+        (:REWRITE C)
+        (:REWRITE D))
+
+Proof succeeded.
+1 ACL2 >:TARGET
+(AFN '(X1 X2 X3 X4 X5 ...))
+1 ACL2 >:GO!
+
+1 (:REWRITE A) produced 'T.
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE A)
+        (:REWRITE B)
+        (:REWRITE C)
+        (:REWRITE D))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (EFN *TENX*) (AFN *TENX*)))
+
+(1 Breaking (:REWRITE A) on (AFN '(X1 X2 X3 X4 X5 ...)):
+1 ACL2 >:GO!
+
+1 (:REWRITE A) produced 'T.
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE A)
+        (:REWRITE B)
+        (:REWRITE C)
+        (:REWRITE D))
+
+Proof succeeded.
+ACL2 !>>'(SCENARIO 7)
+(SCENARIO 7)
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+NIL
+ACL2 !>>(SET-EVISC-TUPLE :DEFAULT
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>(MONITOR 'LEN T)
+(((:DEFINITION LEN) (:CONDITION QUOTE T)))
+ACL2 !>>(SET-EVISC-TUPLE (EVISC-TUPLE NIL 10 NIL NIL)
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>(IPRINT-ENABLEDP STATE)
+NIL
+ACL2 !>>(F-GET-GLOBAL 'IPRINT-AR STATE)
+((:HEADER :DIMENSIONS (10001)
+          :MAXIMUM-LENGTH 40004
+          :DEFAULT NIL
+          :NAME IPRINT-AR
+          :ORDER ...)
+ (0 0))
+ACL2 !>>(MV-LET (STEP-LIMIT TERM TTREE)
+                (REWRITE '(LEN (CONS A B))
+                         NIL 1 20 100 NIL '?
+                         NIL NIL ...)
+          (DECLARE (IGNORE STEP-LIMIT TERM TTREE))
+          (MAKE-LIST 10))
+
+(1 Breaking (:DEFINITION LEN) on (LEN (CONS A B)):
+1 ACL2 !>(SET-EVISC-TUPLE (EVISC-TUPLE 1 2 NIL NIL)
+                          :SITES :ALL
+                          :IPRINT T)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been enabled.
+ (:TERM :LD . #@1#)
+1 ACL2 !>:GO!
+
+1 (:DEFINITION LEN) produced (BINARY-+ #@2# . #@3#).
+1)
+(NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+ACL2 !>>(MAKE-LIST 10)
+(NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+ACL2 !>>'(SCENARIO 8)
+(SCENARIO 8)
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+NIL
+ACL2 !>>(SET-EVISC-TUPLE :DEFAULT
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>(MONITOR 'LEN T)
+(((:DEFINITION LEN) (:CONDITION QUOTE T)))
+ACL2 !>>(SET-EVISC-TUPLE (EVISC-TUPLE NIL 10 NIL NIL)
+                         :SITES :ALL
+                         :IPRINT :RESET)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been reset and
+disabled.
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>(IPRINT-ENABLEDP STATE)
+NIL
+ACL2 !>>(F-GET-GLOBAL 'IPRINT-AR STATE)
+((:HEADER :DIMENSIONS (10001)
+          :MAXIMUM-LENGTH 40004
+          :DEFAULT NIL
+          :NAME IPRINT-AR
+          :ORDER ...)
+ (0 0))
+ACL2 !>>(ER-PROGN (THM (EQUAL (LEN (CONS A B)) (+ 1 (LEN B))))
+                  (VALUE (MAKE-LIST 10)))
+
+(1 Breaking (:DEFINITION LEN) on (LEN (CONS A B)):
+1 ACL2 >(SET-EVISC-TUPLE (EVISC-TUPLE 1 2 NIL NIL)
+                         :SITES :ALL
+                         :IPRINT T)
+
+ACL2 Observation in SET-EVISC-TUPLE:  Iprinting has been enabled.
+ (:TERM :LD . #@1#)
+1 ACL2 >:GO!
+
+1 (:DEFINITION LEN) produced (BINARY-+ #@2# . #@3#).
+1)
+
+(1 Breaking (:DEFINITION LEN) on (LEN B):
+1 ACL2 >(MAKE-LIST 10)
+(NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+1 ACL2 >:OK
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION LEN)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CDR-CONS))
+
+Proof succeeded.
+ (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+ACL2 !>>(MAKE-LIST 10)
+(NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+ACL2 !>>(REDEF+)
+
+TTAG NOTE: Adding ttag :REDEF+ from the top level loop.
+ T
+ACL2 p!>>(DEFCONST *STANDARD-OI*
+           *OLD-STANDARD-OI*)
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-OI* ...):  *STANDARD-OI*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-OI* ...)
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-OI*
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>Bye.

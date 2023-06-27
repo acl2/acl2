@@ -1,7 +1,7 @@
 ; Rules to convert bitops operations to operations from the Kestrel BV library
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "kestrel/bv/rules10" :dir :system)
 (include-book "kestrel/bv/rules3" :dir :system)
+(local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/trim-intro-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
@@ -24,6 +25,7 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "meta/meta-plus-lessp" :dir :system))
 

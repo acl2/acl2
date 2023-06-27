@@ -58,7 +58,7 @@
                       (set-classes (rest alist) class-table)))))
 
 (defthm get-class-info-of-set-classes
-  (implies (alistp alist)
+  (implies class-name
            (equal (get-class-info class-name (set-classes alist class-table))
                   (let ((res (assoc-eq class-name alist))) ; often this gets resolved
                     (if res

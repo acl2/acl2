@@ -135,15 +135,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(verify-termination lookup-brr-stack)
-
-(verify-termination get-brr-global)
-
 (verify-termination get-brr-local)
 
 (verify-termination ens-maybe-brr)
 
-; The above four forms ensure that the expansion of the disabledp macro is in
+; The above two forms ensure that the expansion of the disabledp macro is in
 ; logic mode.
 
 ; For verify-guards, we need to add a suitable guard to lookup-brr-stack, and

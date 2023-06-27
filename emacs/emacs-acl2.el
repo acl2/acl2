@@ -539,7 +539,8 @@ current top-level form.  See the documentation for enter-theorem."
 
 (defun write-region-for-shell (beg end)
   "Writes the current region to the shell temp file, with the header
-   string at the top and the footer string at the bottom and <return> separating each.
+   string at the top and the footer string at the bottom and <return>
+   separating each.
    Assumes beg < end."
   (let ((flg (buffer-modified-p)))
     (save-excursion
@@ -736,7 +737,7 @@ then also ignore case if that argument is positive, else do not ignore case."
 
 ; Other modes can be put below as well (asm, c++, c, perl, emacs-lisp).
 (if (equal window-system 'x)
-    (add-hook 'lisp-mode-hook '(lambda () (font-lock-mode 1))))
+    (add-hook 'lisp-mode-hook #'(lambda () (font-lock-mode 1))))
 
 (defun acl2-sources-dir ()
   (let ((dir
@@ -769,8 +770,8 @@ then also ignore case if that argument is positive, else do not ignore case."
 
 ; Set the right margin (used when auto-fill-mode is on).
 (add-hook 'lisp-mode-hook
-          '(lambda ()
-             (setq fill-column 79)))
+          #'(lambda ()
+              (setq fill-column 79)))
 ; Formerly: (set-default 'fill-column 79)
 
 ; The function fill-format-string below probably originated from Bob

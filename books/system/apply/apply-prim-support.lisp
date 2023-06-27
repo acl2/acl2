@@ -292,4 +292,7 @@
 (include-book "../top") ; includes ../meta-extract
 
 #+acl2-devel
+(include-book "../brr-near-missp")
+
+#+acl2-devel
 (verify-termination apply$-prim) ; and guards
