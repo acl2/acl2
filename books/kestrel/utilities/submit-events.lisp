@@ -123,15 +123,40 @@
 ;; Returns (mv erp state) where erp is non-nil if the event failed.
 ;; Throws an error if the event fails and THROW-ERRORP is non-nil.
 ;; TODO: Consider using PSO to print proof output only upon failure.
-(defun submit-event (event print throw-errorp state)
+;; TODO: If throw-error is t, consider using submit-event-handle-error.
+(defun submit-event (event print throw-error state)
   (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
-                              (booleanp throw-errorp))
+                              (member-eq throw-error '(t nil :warn)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
     (submit-event-core event print state)
-    (prog2$ (and erp throw-errorp (er hard? 'submit-event "Failed to submit event: ~X01" event nil))
+    (prog2$ (and erp
+                 (if (eq t throw-error)
+                     (er hard? 'submit-event "Failed to submit event: ~X01" event nil)
+                   (if (eq :warn throw-error)
+                       (cw "WARNING: Error submitting ~X01.~%" event nil)
+                     nil)))
             (mv erp state))))
+
+;; Returns state.  Does not return an error but may throw an error or print a warning.
+(defun submit-event-handle-error (event print throw-error state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
+                              (member-eq throw-error '(t nil :warn)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state))
+  (mv-let (erp state)
+    (submit-event-core event print state)
+    (prog2$ (and erp
+                 (if (eq t throw-error)
+                     (er hard? 'submit-event-handle-error "Failed to submit event: ~X01" event nil)
+                   (if (eq :warn throw-error)
+                       (cw "WARNING: Error submitting ~X01.~%" event nil)
+                     ;; Completely suppress the error:
+                     nil)))
+            state)))
+
+;; TODO: Deprecate these?:
 
 ;returns state
 ;throws an error if the event fails
