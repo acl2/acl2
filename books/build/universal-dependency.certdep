@@ -2,4 +2,10 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Deleted three fields of state.  It seems safest to recertify everything.
+Forcing recertification 6/27/2023 for commit 5e894873ac, "Eliminated
+all traces of infix printing."  A fresh regression-everything
+completed without error before commiting that change and pushing it to
+master, yet testing failed for master.  I didn't see an obvious
+recertification to force so that books/kestrel/helpers,
+books/acl2s/mode-acl2s-dependencies, and books/acl2s/ccg/ccg would
+certify.
