@@ -425,18 +425,28 @@
                   (integerp x)
                   (posp y)
                   (svl::ignore-and-return-t (sv::4vec-rsh 500 x)))
-             (equal (sv::4vec-== x y)
-                    (-- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
-                                             (acl2::logcar x)
-                                           (svl::4vec-bitnot$ 1 (acl2::logcar x)))
-                                         (-- (sv::4vec-== (acl2::logcdr x)
-                                                          (acl2::logcdr y)))))))
+             (and (equal (sv::4vec-== x y)
+                         (-- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
+                                                  (acl2::logcar x)
+                                                (svl::4vec-bitnot$ 1 (acl2::logcar x)))
+                                              (-- (sv::4vec-== (acl2::logcdr x)
+                                                               (acl2::logcdr y))))))
+                  (equal (sv::4vec-== y x)
+                         (-- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
+                                                  (acl2::logcar x)
+                                                (svl::4vec-bitnot$ 1 (acl2::logcar x)))
+                                              (-- (sv::4vec-== (acl2::logcdr x)
+                                                               (acl2::logcdr y))))))))
     :hints (("Goal"
              :use ((:instance svl::4vec-==-with-constant
                               (svl::x x)
+                              (svl::y y))
+                   (:instance svl::4vec-==-with-constant2
+                              (svl::x x)
                               (svl::y y)))
              :in-theory (e/d (--)
-                             (svl::4vec-==-with-constant)))))
+                             (svl::4vec-==-with-constant
+                              svl::4vec-==-with-constant2)))))
 
   (def-rp-rule 4vec-==-with-bits-and-zero
     (implies (and (integerp x)

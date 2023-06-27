@@ -30,6 +30,7 @@
 (include-book "fnc-defs")
 (include-book "centaur/svl/top" :dir :system)
 (include-book "centaur/sv/svex/lists" :dir :system)
+(include-book "centaur/misc/sneaky-load" :dir :system)
 
 (local
  (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -335,7 +336,7 @@
   (define pattern-call ((x pattern-fn-call-p)
                         &optional args)
     (b* (((pattern-fn-call x))
-         (res 
+         (res
           (hons x.fn
                 (if x.extra-arg
                     (hons x.extra-arg
@@ -344,7 +345,7 @@
       (if x.flip
           (hons-list 'sv::bitxor 1 res)
         res)))
-      
+
   (defthm pattern-fn-call->fn-is-not-var
     (and (not (equal (pattern-fn-call->fn x) :var))
          (sv::fnsym-p (pattern-fn-call->fn x)))
@@ -1153,12 +1154,12 @@
                                                                    ('SV::BITXOR
                                                                     ('SV::BITAND y z)
                                                                     ('SV::BITAND x ('SV::BITXOR y1 z1))))
-                                          
+
                                           (local
                                            (in-theory (enable FA-C-CHAIN))))
                                :correct-pattern-hints '(:in-theory (e/d (or*) ()))
                                :body
-                               (b* (((Unless (and*-exec (consp svex) ;; redundant. hopefully will help with speed. 
+                               (b* (((Unless (and*-exec (consp svex) ;; redundant. hopefully will help with speed.
                                                         (equal (car svex) 'sv::bitxor)))
                                      nil)
                                     ((mv x y z flip valid)
@@ -4198,8 +4199,8 @@
                              ()))))
 
   (memoize 'extract-svex-from-id
-            ;; :condition '(eq (sv::svex-kind x) :call)
-            )
+           ;; :condition '(eq (sv::svex-kind x) :call)
+           )
   )
 
 (define extract-svex-from-id-alist ((svex-alist sv::svex-alist-p))
@@ -4453,8 +4454,8 @@
                       (global-zero-fa-c-chain-extra-arg-lst nil))
              :in-theory (e/d () ()))))
   (memoize 'global-zero-fa-c-chain-extra-arg
-            ;; :condition '(eq (sv::svex-kind svex) :call)
-            )
+           ;; :condition '(eq (sv::svex-kind svex) :call)
+           )
   )
 
 (define global-zero-fa-c-chain-extra-arg-alist ((alist sv::svex-alist-p)
@@ -7658,7 +7659,6 @@ pattern
                                                :parsed-svexes parsed-svexes)))
         (mv collected parsed-svexes)))))
 
-
 (define shuffle-gates-after-removing-ha-under-gates ((svex.fn sv::fnsym-p)
                                                      (svex.args sv::svexlist-p)
                                                      (orig-svex.args sv::svexlist-p))
@@ -7671,7 +7671,7 @@ pattern
                                   member-equal
                                   symbol-listp
                                   default-car))))
-  
+
   :returns (res-svex sv::svex-p :hyp (and (sv::fnsym-p svex.fn)
                                           (sv::svexlist-p svex.args))
                      :hints (("Goal"
@@ -7685,7 +7685,7 @@ pattern
                  :in-theory (e/d (and*
                                   SVL::EQUAL-LEN)
                                  (sv::svex-kind$inline))))
-  
+
   (b* (((unless (or (equal svex.fn 'sv::bitxor)
                     (equal svex.fn 'sv::bitand)))
         (sv::Svex-call svex.fn svex.args))
@@ -7736,7 +7736,6 @@ pattern
 
   ///
 
-
   (defret <fn>-is-correct
     (implies t
              (equal (sv::Svex-eval$ res-svex env)
@@ -7746,15 +7745,11 @@ pattern
              :expand ((sv::svex-kind (car svex.args))
                       (sv::svex-kind (cadr svex.args)))
              :in-theory (e/d (sv::svex-apply)
-                             (sv::svex-kind$inline))))))  
-           
+                             (sv::svex-kind$inline))))))
+
 ;; (shuffle-gates-after-removing-ha-under-gates 'sv::bitand
 ;;                                              (list 'z '(sv::bitand x y))
 ;;                                              (list 'z '(ha-c-chain x y)))
-
-       
-       
-  
 
 (defines remove-ha-under-gates
   :verify-guards nil
@@ -7790,9 +7785,9 @@ pattern
             svex.fn
             (remove-ha-under-gates-lst svex.args)
             svex.args)
-           
+
            #|(sv::Svex-call svex.fn
-                          (remove-ha-under-gates-lst svex.args))|#)
+           (remove-ha-under-gates-lst svex.args))|#)
           (res
            (cond
             ((ha-c-chain-self-pattern-p svex)
@@ -8398,8 +8393,7 @@ pattern
   (memoize 'add-ha-c-for-shifted-search
            ;; :condition '(eq (sv::svex-kind x) :call)
            )
-  ;; no need to verify anything. 
-  
+  ;; no need to verify anything.
 
   (define add-ha-c-for-shifted-search-main ((x sv::svex-p))
     :Returns (collected-lst true-listp)
@@ -8421,7 +8415,6 @@ pattern
       (& (b* (((mv c &)
                (add-ha-c-for-shifted-search x nil)))
            c))))
-
 
   (define add-ha-c-for-shifted-search-alist ((x sv::svex-alist-p))
     :Returns (collected-lst true-listp)
@@ -8451,7 +8444,7 @@ pattern
                              (add-ha-c-for-shifted-lst x.args collected))))))
 
   (define add-ha-c-for-shifted-lst ((lst sv::Svexlist-p)
-                                           (collected))
+                                    (collected))
     :returns (res-lst sv::svexlist-p :hyp (sv::svexlist-p lst))
     :measure (sv::Svexlist-count lst)
     (if (atom lst)
@@ -8516,7 +8509,7 @@ pattern
        `(defattach search-and-add-ha-c-for-shifted-enabled return-nil)))
 
    (enable-search-and-add-ha-c-for-shifted t))
-  
+
   (b* (((unless (search-and-add-ha-c-for-shifted-enabled))
         x)
        (collected-lst (add-ha-c-for-shifted-search-alist x))
@@ -8542,11 +8535,7 @@ pattern
              :in-theory (e/d (sv::svex-alist-eval$
                               sv::svex-alist-eval)
                              ())))))
-       
-        
-  
-    
-      
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (progn
   (encapsulate
@@ -8653,7 +8642,7 @@ pattern
   (case-match term
     (('sv::svex-alist-eval ('quote svex-alist) env-orig)
      (b* ((- (vescmul-clear-memoize-tables))
-          
+
           (env (rp::ex-from-rp env-orig))
           ((mv falistp env) (case-match env
                               (('falist ('quote x) &) (mv t x))
@@ -8718,8 +8707,13 @@ was ~st seconds."))
 
           ;;(- (design_res-broken svex-alist "after-fa"))
 
-          (- (cwe "resulting svexl-alist after full-adders ~p0 ~%"
-                  (svl::svex-alist-to-svexl-alist svex-alist)))
+          #|(- (cwe "resulting svexl-alist after full-adders ~p0 ~%"
+          (svl::svex-alist-to-svexl-alist svex-alist)))|#
+
+          (- (acl2::sneaky-save 'after-fa svex-alist))
+          (- (cw "Access the svexl-alist after full-adder search: ~
+(b* (((mv state res) (acl2::sneaky-load 'rp::after-all state)))
+   (mv state (svl::svex-alist-to-svexl-alist res))) ~%"))
 
           (- (time-tracker :rewrite-adders-in-svex :stop))
           (- (time-tracker :rewrite-adders-in-svex :print?
@@ -8833,9 +8827,11 @@ was ~st seconds."))
           (- (let ((x (svl::svexl-alist->node-array svexl-alist))) ;; for guards
                (cw "Finished: svl::svex-alist-to-svexl-alist. Resulting svexl-alist has ~p0 nodes.~%~%" (len x))))
 
-          (- (cwe "resulting svexl-alist: ~p0 ~%" svexl-alist))
-
           (- (missed-adder-warning svexl-alist))
+
+          ;;(- (cwe "resulting svexl-alist: ~p0 ~%" svexl-alist))
+          (- (acl2::sneaky-save 'after-all svexl-alist))
+          (- (cw "Access the resulting svexl-alist:~%(acl2::sneaky-load 'rp::after-all state)~%"))
 
           (- (clear-memoize-table 'replace-adder-patterns-in-svex))
 
@@ -9659,10 +9655,6 @@ svex-alist)
   (implies (not (consp x))
            (and (equal (car x) nil)
                 (equal (cdr x) nil))))
-
-
-
-
 
 (progn
   (defun defthm-with-temporary-warrants-fn (thm-name thm-body args

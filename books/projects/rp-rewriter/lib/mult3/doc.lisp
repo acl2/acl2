@@ -144,7 +144,10 @@ ways to use these tools. </p>
 
 <p> Including projects/rp-rewriter/lib/mult3/top everytime can take a long time
 (almost a minute). However, you can save an executable with that book in it to
-quickly pull up this multiplier verification library. See (@see acl2::save-exec).</p> 
+quickly pull up this multiplier verification library. See @(see
+acl2::save-exec). Alternatively, download a <a
+href=\"https://temelmertcan.github.io/vescmul.zip\">package</a> that does that
+for you. This package also includes some demo files.</p> 
 
 <p> Various demos in much more detail are present to  show  how  this  tool  can be  used  in  new
 designs.  @(see Multiplier-Verification-demo-1) shows  a very basic verification
@@ -215,7 +218,9 @@ heuristic is not expected to be necessary for the majority of designs and it is
 disabled by default. If a proof attempt of a Booth encoded design is failing,
 we recommend that you enable this heuristic: </p>
 
-<code> @('(rp:: enable-unpack-booth-later <t-or-nil>)') </code>
+<code> @('(rp::enable-unpack-booth-later <t-or-nil>)') </code>
+
+<p><i> This feature might not be working for the time-being</i></p>
 
 <p>S-PATTERN1-REDUCE <i>(enabled by default)</i></p>
 
@@ -337,10 +342,10 @@ complex arithmetic module.  </p>
 <code>
 (include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)
 </code>
-
+</p><p>
 Including this book can take a long time (around a minute). However, we can save an executable
 that has this image already loaded. You can either follow the instructions at
-@(see save-exec) or download a <a
+@(see acl2::save-exec) or download a <a
 href=\"https://temelmertcan.github.io/vescmul.zip\">package</a> that does that
 for you. This package also includes some demo files.
 
@@ -356,7 +361,7 @@ for you. This package also includes some demo files.
 ')
 </code>
 
-This verilog file is located in @('<ACL2-DIRECTORY>/books/projects/rp-rewriter/lib/mult3/demo').
+</p><p>This verilog file is located in @('<ACL2-DIRECTORY>/books/projects/rp-rewriter/lib/mult3/demo').
 
 </p>
 
@@ -368,7 +373,7 @@ This verilog file is located in @('<ACL2-DIRECTORY>/books/projects/rp-rewriter/l
                                    (loghead 128 (* (logext 64 in1)
                                                    (logext 64 in2)))))
 ')</code>
-
+</p><p>
 Here, the variables are case-insensitive and they correspond to input/output
 names in the original design. For example, \"result\" is the output signal
 name, and \"in1\" and \"in2\" are input signals. This design performs 64x64-bit
@@ -568,10 +573,10 @@ You may continue to @(see Multiplier-Verification-demo-2-expanded).
 <code>
 (include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)
 </code>
-
-Including this book can take a long time (around a minute). However, we can save an executable
+</p>
+<p>Including this book can take a long time (around a minute). However, we can save an executable
 that has this image already loaded. You can either follow the instructions at
-@(see save-exec) or download a <a
+@(see acl2::save-exec) or download a <a
 href=\"https://temelmertcan.github.io/vescmul.zip\">package</a> that does that
 for you. This package also includes some demo files.
 
@@ -730,8 +735,8 @@ prove. We omit the proofs for unsigned here for brevity.
                                                 (nth-slice32 0 in3))))))
 ')
 </code>
-
-We can  prove a  similar lemma  for unsigned  mode as  well (omittied in this
+</p>
+<p>We can  prove a  similar lemma  for unsigned  mode as  well (omittied in this
   doc).</p>
 
 <p> 7. We have
@@ -815,7 +820,7 @@ existing 4-32x32-bit one.
                                 :outputs ((\"result\" result2)))))
 ')
 </code>
-
+</p><p>
 The call for @(see parse-and-create-svtv) is more complicated here as we need
 to define what happens in each clock cycle. With the :cycle-phases argument we
 tell the program what signal represents the clock in a given design. In this
@@ -884,7 +889,7 @@ spec function below.
                                                     acc-init-val)))))
 ')
 </code>
-
+</p><p>
 Note that the conclusion has a conjunct of two expressions. This is optional
 and only here to show the flexibility of our program. \"result1\" refers to the
 value of the output signal at the second clock cycle, and \"result2\" refers to
