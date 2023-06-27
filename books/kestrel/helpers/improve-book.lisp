@@ -43,6 +43,38 @@
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
 (include-book "speed-up")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defttag books-in-subtree) ; for sys-call+ below
+
+;; Looks for .lisp files in the current subtree.
+;; Returns (mv book-paths state) where the BOOK-PATHS have no .lisp extensions.
+;move
+(defun books-in-subtree (state)
+  (declare (xargs :stobjs state))
+  (mv-let (erp filename-lines state)
+    (sys-call+ "find" '("." "-name" "*.lisp") state)
+    (if erp
+        (prog2$ (er hard? 'books-in-subtree "Failed to find books: ~x0." erp)
+                (mv nil state))
+      (mv (strip-suffix-from-strings ".lisp" (split-string-repeatedly filename-lines #\Newline))
+          state))))
+
+;move
+;; Looks for .lisp files in the current subtree.
+;; Returns (mv book-paths state) where the BOOK-PATHS have no .lisp extensions.
+(defun books-in-dir (state)
+  (declare (xargs :stobjs state))
+  (mv-let (erp filename-lines state)
+    (sys-call+ "find" '("." "-name" "*.lisp" "-maxdepth" "1") state)
+    (if erp
+        (prog2$ (er hard? 'books-in-dir "Failed to find books: ~x0." erp)
+                (mv nil state))
+      (mv (strip-suffix-from-strings ".lisp" (split-string-repeatedly filename-lines #\Newline))
+          state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun print-to-string (item)
   (declare (xargs :mode :program))
   (mv-let (col string)
@@ -567,21 +599,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defttag improve-book) ; for sys-call+ below
-
-;; Looks for .lisp files in the current subtree.
-;; Returns (mv book-paths state) where the BOOK-PATHS have no .lisp extensions.
-;move
-(defun books-in-subtree (state)
-  (declare (xargs :stobjs state))
-  (mv-let (erp filename-lines state)
-    (sys-call+ "find" '("." "-name" "*.lisp") state)
-    (if erp
-        (prog2$ (er hard? 'books-in-subtree "Failed to find books: ~x0." erp)
-                (mv nil state))
-      (mv (strip-suffix-from-strings ".lisp" (split-string-repeatedly filename-lines #\Newline))
-          state))))
-
 (defun improve-books-fn-aux (books dir print state)
   (declare (xargs :guard (and (string-listp books)
                               (or (eq :cbd dir)
@@ -602,22 +619,35 @@
           (cw ")~%")
           (improve-books-fn-aux (rest books) dir print state)))))))
 
-(defun improve-books-fn (print dir state)
+(defun improve-books-fn (print dir subdirsp state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose))
                               (or (eq :cbd dir)
-                                  (stringp dir)))
+                                  (stringp dir))
+                              (booleanp subdirsp))
                   :stobjs state :mode :program))
   (let* ((dir (if (eq dir :cbd) "." dir))
          (full-dir (canonical-pathname dir t state))
          (state (set-cbd-simple full-dir state)))
     (mv-let (books state)
-      (books-in-subtree state)
-      ;; pass full-dir here?:
-      (improve-books-fn-aux books dir print state))))
+      (if subdirsp
+          (books-in-subtree state)
+        (books-in-dir state))
+      (prog2$ (if subdirsp
+                  (cw "~%(Will try to improve ~x0 books in ~s1 and subdirs.)" (len books) full-dir)
+                (cw "~%(Will try to improve ~x0 books in ~s1.)" (len books) full-dir))
+              ;; pass full-dir here?:
+              (improve-books-fn-aux books dir print state)))))
 
-;; Tries to improve all books in DIR, including books in subdirectories.
+;; Tries to improve all books in DIR, not including books in subdirectories.
 ;; By default, uses the connected book directory for DIR.
 (defmacro improve-books (&key
                          (print ':brief)
                          (dir ':cbd))
-  `(make-event (improve-books-fn ',print ',dir state)))
+  `(make-event (improve-books-fn ',print ',dir nil state)))
+
+;; Tries to improve all books in DIR, including books in subdirectories.
+;; By default, uses the connected book directory for DIR.
+(defmacro improve-books-in-subtree (&key
+                                    (print ':brief)
+                                    (dir ':cbd))
+  `(make-event (improve-books-fn ',print ',dir t state)))
