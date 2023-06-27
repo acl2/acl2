@@ -66,7 +66,7 @@
 (defun books-in-dir (state)
   (declare (xargs :stobjs state))
   (mv-let (erp filename-lines state)
-    (sys-call+ "find" '("." "-name" "*.lisp" "-maxdepth" "1") state)
+    (sys-call+ "find" '("." "-maxdepth" "1" "-name" "*.lisp") state)
     (if erp
         (prog2$ (er hard? 'books-in-dir "Failed to find books: ~x0." erp)
                 (mv nil state))
@@ -403,18 +403,23 @@
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
-           (ignore print) ;todo
            )
-  (mv-let (erp state)
-    (submit-event event nil nil state)
-    (if erp
-        (mv erp state)
-      (let* ((fn (cadr event))
-             (state (lint-defun fn t ;assume-guards
-                                nil ; suppress
-                                100000 ;step-limit
-                                state)))
-        (mv nil state)))))
+  (progn$
+   (and print (cw "(For ~x0: " (first (rest event))))
+   ;; todo: try to improve hints, etc.
+   ;; Must submit it before we lint it:
+   (mv-let (erp state)
+     (submit-event event nil nil state)
+     (if erp
+         (mv erp state)
+       (let* ((fn (cadr event))
+              (state (lint-defun fn t   ;assume-guards
+                                 nil    ; suppress
+                                 100000 ;step-limit
+                                 state)))
+
+         (prog2$ (and print (cw ")~%"))
+                 (mv nil state)))))))
 
 ;;TODO: Do more here, like we do for defthm!
 ;; Returns (mv erp state).
@@ -490,9 +495,27 @@
     ((defun defund) (improve-defun-event event rest-events print state))
     ((defrule defruled) (improve-defrule-event event rest-events print state))
     ((in-package) (improve-in-package-event event rest-events print state))
+    ((deflabel) (submit-event event nil nil state) ; can't think of anything to do for labels
+     )
+    ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
+     )
+    ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
+     )
+    ((defmacro) (submit-event event nil nil state) ; todo: check the body?
+     )
+    ((defconst) (submit-event event nil nil state) ; todo: check the body?
+     )
+    ((encapsulate) (submit-event event nil nil state) ; todo: handle!
+     )
+    ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
+     )
+    ;; Since it's just an assert, we can continue after an error, so we just warn:
+    ((assert-event assert-equal)
+     (let ((state (submit-event-handle-error event nil :warn state)))
+       (mv nil state)))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
-    (t (prog2$ (cw "(Skipping unhandled event ~x0)~%" event)
+    (t (prog2$ (cw "(Just submitting unhandled event ~x0)~%" event)
                (submit-event-expect-no-error event nil state)))))
 
 ;; Submits each event, after printing suggestions for improving it.
@@ -525,6 +548,7 @@
 
 ;; Drop-in replacement for extend-pathname that doesn't fail on stuff like
 ;; (extend-pathname "." "../foo" state).
+;; Note: This can add a slash if the filename is a dir.
 ;move
 (defund extend-pathname$ (dir filename state)
   (declare (xargs :stobjs state
@@ -533,7 +557,6 @@
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
-;; TODO: Tolerate a .lisp extension being supplied?
 (defun improve-book-fn-aux (bookname ; no extension
                             dir
                             print
@@ -544,13 +567,14 @@
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
-  (let* ((dir (if (eq dir :cbd) "." dir))
-         (full-book-path (extend-pathname$ dir bookname state)) ; no extension
-         (full-file-path (concatenate 'string full-book-path ".lisp")))
+  (let* ((file-name (if (string-ends-withp bookname ".lisp") ; tolerate existing .lisp extension
+                        bookname
+                      (concatenate 'string bookname ".lisp")))
+         (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
     (mv-let (existsp state)
-      (file-write-date$ full-file-path state)
+      (file-write-date$ full-book-path state)
       (if (not existsp)
-          (prog2$ (er hard? 'improve-book-fn-aux "~s0 does not exist." full-file-path)
+          (prog2$ (er hard? 'improve-book-fn-aux "~s0 does not exist." full-book-path)
                   (mv :file-does-not-exist state))
         (prog2$
          (and print (cw ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~%Attempting to improve ~x0.~%" full-book-path))
@@ -559,13 +583,13 @@
                 ;; We set the CBD so that the book is replayed in its own directory:
                 (state (set-cbd-simple full-book-dir state))
                 ;; Load the .port file, so that packages (especially) exist:
-                (state (load-port-file-if-exists full-book-path state)))
+                (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
            (mv-let (erp events state)
-             (read-objects-from-book (concatenate 'string full-book-path ".lisp") state)
+             (read-objects-from-book full-book-path state)
              (if erp
                  (let ((state (set-cbd-simple old-cbd state)))
                    (mv erp state))
-               (prog2$ (and print (cw "~s0 contains ~x1 forms.~%~%" bookname (len events)))
+               (prog2$ (and print (cw "  Book contains ~x0 forms.~%~%" (len events)))
                        (let ((state (widen-margins state)))
                          (mv-let (erp state)
                            (improve-events events print state)
