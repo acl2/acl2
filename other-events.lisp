@@ -9320,9 +9320,7 @@
    (t (let ((str (expand-tilde-to-user-home-dir str os ctx state)))
         (cond
          ((absolute-pathname-string-p str nil os)
-          (canonical-dirname! (maybe-add-separator str)
-                              ctx
-                              state))
+          (maybe-add-separator (canonical-dirname! str ctx state)))
          ((not (absolute-pathname-string-p
                 (f-get-global 'connected-book-directory state)
                 t
@@ -9335,13 +9333,12 @@
                str
                (f-get-global 'connected-book-directory state)))
          (t
-          (canonical-dirname!
-           (maybe-add-separator
-            (our-merge-pathnames
-             (f-get-global 'connected-book-directory state)
-             str))
-           ctx
-           state)))))))
+          (maybe-add-separator
+           (canonical-dirname! (our-merge-pathnames
+                                (f-get-global 'connected-book-directory state)
+                                str)
+                               ctx
+                               state))))))))
 
 (defun set-cbd-fn (str state)
 

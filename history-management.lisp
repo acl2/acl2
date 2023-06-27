@@ -6942,7 +6942,10 @@
 
 (defun print-undefined-primitive-msg (name channel state)
   (fms "~x0 is built into ACL2 without a defining event.~#1~[  See :DOC ~
-        ~x0.~/~]~|"
+        ~x0.~/~]~|See :DOC ARGS for a way to get more information about such ~
+        primitives.~|See :DOC primitive for a list containing each built-in ~
+        function without a definition, each associated with its formals and ~
+        guard.~|"
        (list (cons #\0 name)
              (cons #\1 (if (assoc-eq name *acl2-system-documentation*)
                            0

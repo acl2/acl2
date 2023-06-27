@@ -27469,9 +27469,8 @@ Lisp definition."
          state)))
   (mv-let (erp val state)
           (read-acl2-oracle state)
-          (mv (and (null erp)
-                   (natp val)
-                   val)
+          (declare (ignore val))
+          (mv (null erp)
               state)))
 
 ; Next: debugger control
