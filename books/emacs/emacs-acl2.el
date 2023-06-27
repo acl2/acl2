@@ -177,13 +177,13 @@
 (if (and (not (boundp '*acl2-sources-dir*))
          (file-name-absolute-p load-file-name))
     (let ((pattern (if (string-match "[\\]" load-file-name)
-		       "\\books\\emacs\\*$"
-		     "/books/emacs/*$"))
-	  (dir (file-name-directory load-file-name)))
+                       "\\books\\emacs\\*$"
+                     "/books/emacs/*$"))
+          (dir (file-name-directory load-file-name)))
       (let ((posn (string-match pattern dir)))
-	(if posn
-	    (setq *acl2-sources-dir*
-		  (substring dir 0 (1+ posn)))))))
+        (if posn
+            (setq *acl2-sources-dir*
+                  (substring dir 0 (1+ posn)))))))
 
 ; The following causes, for every event, the event name to be given
 ; the same color (in font-lock mode) as when defun is called.  If you

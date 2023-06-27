@@ -55,9 +55,9 @@
 
 ;; ======================================================================
 
-;; Files will be copied from X86ISA/images to res/images of the x86
-;; manual.
-(xdoc::add-resource-directory "images" "images")
+;; Files will be copied from X86ISA/images to res/x86isa of the x86
+;; manual. Note: this needs to be replicated in projects/top-doc (with path corrected).
+(xdoc::add-resource-directory "x86isa" "images")
 
 ; (depends-on "images/x86isa.png")
 
@@ -65,7 +65,7 @@
   :parents (acl2::software-verification acl2::hardware-verification acl2::projects)
   :short "x86 ISA model and machine-code analysis framework developed
   at UT Austin"
-  :long "<p><img src='res/images/x86isa.png' /></p>")
+  :long "<p><img src='res/x86isa/x86isa.png' /></p>")
 
 (defsection Introduction
   :parents (x86isa)
@@ -296,7 +296,7 @@
   :long "<p>Doc. topic coming soon!  For now, here's an illustrative
   image.</p>
 
- <p><img src='res/images/cosim.png' /></p>")
+ <p><img src='res/x86isa/cosim.png' /></p>")
 
 (defxdoc Publications
   :parents (x86isa)

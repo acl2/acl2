@@ -49,7 +49,7 @@
         constant-pool)))
 
 ;; Submit events to load a Java class, including a defconst containing the
-;; parsed contents of the class, an event to add it to the global-class-table,
+;; parsed contents of the class, an event to add it to the global-class-alist,
 ;; etc. ROOT should contain class files organized in the usual way, with one
 ;; directory level for each part of each fully qualified name.
 (defmacro read-class-from-hierarchy (&whole whole-form

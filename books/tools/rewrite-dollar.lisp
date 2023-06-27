@@ -1107,7 +1107,7 @@
 ; forced-assumptions, where we call prove, whose generated call of waterfall
 ; will take care of that.
 
-        (- (initialize-brr-stack state))
+        (- (semi-initialize-brr-wormhole state))
         (- (initialize-fc-wormhole-sites)))
      (rewrite$-main tterm translated-alist geneqv obj
                     prove-forced-assumptions forced-assumptions-hints

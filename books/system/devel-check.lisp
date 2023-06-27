@@ -38,6 +38,7 @@
 (include-book "all-fnnames")
 (include-book "observation1-cw")
 (include-book "defstobj")
+(include-book "brr-near-missp")
 (include-book "remove-guard-holders") ; includes remove-guard-holders-weak
 ; Do not include "remove-guard-holders-future", which has an invalid
 ; skip-proofs as noted there.

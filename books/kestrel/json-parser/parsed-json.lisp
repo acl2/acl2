@@ -1,6 +1,6 @@
 ; Recognizers for parsed JSON objects, arrays, and values
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,7 @@
 ;; JSON objects (maps) are represented as alists, tagged with :object.
 
 (mutual-recursion
- ;; Recognize the parsed form of a JSON array
+ ;; Recognize a parsed JSON array, of the form (:array <values>)
  (defund parsed-json-arrayp (val)
    (declare (xargs :guard t
                    :measure (make-ord 1 (+ 1 (acl2-count val)) 0)))

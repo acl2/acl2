@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "classes")
+(include-book "global-class-alist")
 
 (defund class-info-constant-name (class-name  ;fully qualified?
                                  )
@@ -25,8 +26,8 @@
                               (jvm::class-infop0 class-info))))
   (let ((class-info-constant-name (class-info-constant-name class-name)))
     `((mydefconst ,class-info-constant-name ',class-info)
-      ;; Register the class in the global-class-table (used in lifting):
-      (table global-class-table ,class-name ,class-info-constant-name))))
+      ;; Register the class in the global-class-alist (used in lifting):
+      (jvm::add-to-global-class-alist ,class-name ,class-info-constant-name))))
 
 ;; Returns a list of event forms.
 (defund events-for-class (class-name

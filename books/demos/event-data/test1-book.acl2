@@ -1,0 +1,12 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "test1")
+
+; Help dependency scanner.
+#||
+(depends-on "test1-input.lsp")
+(depends-on "test1-log.txt")
+(include-book "test1")
+||#
+
+; We specify :useless-runes nil so that the entirety of .sys can be removed
+; cert-flags: ? t :useless-runes nil

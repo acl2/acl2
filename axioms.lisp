@@ -1057,6 +1057,93 @@
 (defvar *non-executable-user-stobj-lst*
   nil)
 
+; Essay on the Wormhole Implementation Nexus
+
+; The implementation of wormhole and wormhole-eval are scattered over many
+; source files and functions and macros.  When one of those functions or macros
+; is changed it is often necessary to change others.  We call this group of
+; names the ``wormhole implementation nexus.''  The functions (or macros) in
+; question are:
+
+;  wormhole-eval             ; obviously relevant top-level defs
+;  wormhole                  ; obviously relevant top-level defs
+;  wormhole1                 ; workhorse of wormhole
+;  ev-rec                    ; recapitulate def of wormhole-eval
+                             ;  for interpreted execution in ACL2 loop
+;  translate11-wormhole-eval ; enforce syntactic restrictions on args
+;  translate11-call-1        ; enforce syntactic restrictions on args
+;  translate11-call          ; enforce syntactic restrictions on args
+;  guard-clauses             ; guarantee guards on quoted entry lambdas
+;  oneify                    ; correct execution of *1* calls
+
+; If you change one of these, look at all the others!  In that quest, visit
+; each function and search for ``wormhole''.  Be sure to pay attention to the
+; #-acl2-loop-only cases.  For example, wormhole-eval has a #+acl2-loop-only
+; defun and, a few definitions below that, a #-acl2-loop-only defmacro.
+
+; The definition of each function and macro above is marked with the comment:
+
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
+; If you're changing wormhole or wormhole-eval, be advised that there are many
+; more functions involved in its correct execution despite rather tenuous
+; call-graph connections.
+
+; The problem there is that wormhole calls ld and ld reads from the user and
+; can execute virtually any ACL2 function -- and many functions detect that
+; they're being called under a wormhole and behave differently than they would
+; otherwise.  They are not included in the nexus but you might have to look at
+; them.
+
+; For example, wormhole1 binds the special raw Lisp variable *wormholep*, which
+; tells raw Lisp code that it is executing under a wormhole.  The following 35
+; functions (in axioms.lisp, basis-a.lisp, boot-strap-pass-2-a,
+; futures-raw.lisp, history-management.lisp, interface-raw.lisp, ld.lisp, and
+; translate.lisp) all mention that variable and behave differently when it's
+; true than when its nil: hard-error, one-output, makunbound-global,
+; put-global, f-put-global, princ$, write-byte$, open-input-channel,
+; close-input-channel, open-output-channel, fmt-to-comment-window-raw,
+; get-output-stream-string$-fn, close-output-channel, read-char$, peek-char$,
+; read-byte$, read-object, prin1-with-slashes, f-decrement-big-clock,
+; decrement-big-clock, read-idate, read-run-time, prin1$, wormhole1,
+; wormhole-p, wormhole-eval, sync-ephemeral-whs-with-persistent-whs, one-output,
+; write-user-stobj-alist-raw, make-closure-expr-with-acl2-bindings, set-w,
+; oneify-cltl-code, ld-loop, ld-fn-body, and ev-rec.  These functions are not
+; in the nexus, they are not necessarily even called by wormhole but instead
+; may be called by the read-eval-print loop in ld, as determined by user input.
+; Whether you should look at them when you're changing wormhole depends on what
+; changes you're making.
+
+; Another way wormholes are distantly but critically linked to functions not
+; called in the implementation is via the *wormhole-cleanup-form*.  This form
+; is bound by wormhole1 to a raw Lisp form that grows as expressions are
+; executed under a wormhole.  The final value of *wormhole-cleanup-form* is
+; eval'd in raw Lisp as the wormhole exits.  The function that adds
+; subexpressions to *wormhole-cleanup-form* is push-wormhole-undo-formi.  It is
+; not sensitive to *wormholep* and so it is not mentioned in the big
+; ``secondary'' list above.  But it is called by many of the functions in that
+; list.  When called it may add a subexpression to the cleanup form.  That
+; subexpression may appear as a quoted raw Lisp term in
+; push-wormhole-undo-formi, or may be consed up from symbols there.  So the
+; call-graph is obscured.  That subexpression may mention functions not
+; otherwise linked to wormholes, e.g., compress1.  And so compress1 can be
+; called when wormholes are operating, despite the tenuous connection.
+
+; We should note that wormhole has another warning in it, stemming from its
+; use of ld.
+
+; Warning: Also, keep this in sync with f-get-ld-specials, f-put-ld-specials,
+; *initial-ld-special-bindings*, ld-alist-raw, chk-acceptable-ld-fn1-pair, and
+; ld.
+
+; We have droned on about this issue to bring home the problem, suggest ways to
+; find the functions you'll need to look at, and impress upon you that the
+; rather short list nexus names is just the tip of the iceberg.  The bottom
+; line is simply: think twice before wandering into the definition of wormhole!
+
+; End of Essay on the Wormhole Implementation Nexus
+
 ; The following SPECIAL VARIABLE, *wormholep*, when non-nil, means that we
 ; are within a wormhole and are obliged to undo every change visited upon
 ; *the-live-state*.  Clearly, we can undo some of them, e.g., f-put-globals, by
@@ -1065,20 +1152,20 @@
 ; We disallow all modifications to user stobjs.
 
 ; This feature is implemented so that we can permit the "wormhole window" to
-; manipulate a "copy" of state without changing it.  The story is that wormhole,
-; which does not take state as an arg and which always returns nil, is
-; "actually" implemented by calling the familiar LD on a near image of the
+; manipulate a "copy" of state without changing it.  The story is that
+; wormhole, which does not take state as an arg and which always returns nil,
+; is "actually" implemented by calling the familiar LD on a near image of the
 ; current state.  That near image is like the current state except that certain
 ; state globals have been set for wormhole.  In addition, we assume that the
 ; physical map between ACL2 channels and the outside world has been altered so
 ; that *standard-co*, *standard-ci*, and *standard-oi* now actually interact
-; with the "wormhole window" streams.  Thus, even when *wormholep* is non-nil, we
-; can allow i/o to those standard channels because it causes no change to the
-; streams normally identified with those channels.  If, while *wormholep* is
-; non-nil we are asked to make a change that would undoably alter the state, we
-; print a soft-looking error message and abort.  If the requested change can be
-; undone, we make the change after remembering enough to undo it.  When we exit
-; the wormhole we undo the changes.
+; with the "wormhole window" streams.  Thus, even when *wormholep* is non-nil,
+; we can allow i/o to those standard channels because it causes no change to
+; the streams normally identified with those channels.  If, while *wormholep*
+; is non-nil we are asked to make a change that would undoably alter the state,
+; we print a soft-looking error message and abort.  If the requested change can
+; be undone, we make the change after remembering enough to undo it.  When we
+; exit the wormhole we undo the changes.
 
 (defparameter *wormholep* nil)
 
@@ -1123,35 +1210,34 @@
 ; The value of *wormhole-cleanup-form* is a lisp (but not ACL2) form that will
 ; be executed to cleanup the live state.  This form is built up incrementally
 ; by certain state changing primitives (e.g., f-put-global) so as to enable us
-; to "undo" the effects of those primitives.  We store this undo information
-; as an executable form (rather than, say, a list of "undo tuples") because of
-; the interaction between this mechanism and our acl2-unwind-protect
-; mechanism.  In particular, it will just happen to be the case that the
-; *wormhole-cleanup-form* is always on the unwind protection stack (a true
-; lisp global variable) so that if an abort happens while executing in a
-; wormhole and we get ripped all the way out because of perfectly timed
-; aborts, the undo cleanup form(s) will be at their proper places on the stack
-; of cleanup forms and it will just look like certain acl2-unwind-protects were
-; interrupted.  See the discussion in and around LD-FN.  The value of
-; *wormhole-cleanup-form* is (PROGN save-globals undo-form1 ... undo-formk
-; safety-set STATE).  The individual undo-formi are created and added to the
+; to "undo" the effects of those primitives.  We store this undo information as
+; an executable form (rather than, say, a list of "undo tuples") because of the
+; interaction between this mechanism and our acl2-unwind-protect mechanism.  In
+; particular, it will just happen to be the case that the
+; *wormhole-cleanup-form* is always on the unwind protection stack (a true lisp
+; global variable) so that if an abort happens while executing in a wormhole
+; and we get ripped all the way out because of perfectly timed aborts, the undo
+; cleanup form(s) will be at their proper places on the stack of cleanup forms
+; and it will just look like certain acl2-unwind-protects were interrupted.
+; See the discussion in and around LD-FN.  The value of *wormhole-cleanup-form*
+; is (PROGN save-ephemeral-whs undo-form1 ... undo-formk safety-set STATE).
+; The individual undo-formi are created and added to the
 ; *wormhole-cleanup-form* by push-wormhole-undo- formi, below.  The initial
-; value of the cleanup form is (PROGN save-globals safety-set STATE) and new
-; formis are added immediately after save-globals, making the final form a
-; stack with save-globals always on top and the formi succeeding it in reverse
-; order of their storage.  The save-globals form will save into a lisp special
-; the final values of the global variables that are available only in the
-; wormhole.  The save-globals form is complicated because it also contains a
-; check that the cleanup form has never been completely executed.  It does
-; this by checking the car of a cons that ``belongs'' to this incarnation of
-; the form.  The safety-set at the end of the form sets the car of that cons
-; to t.  We cannot prevent the possible partial re-execution of the unwind
-; protection form in the face of repeated ill-timed ctrl-c's and we cannot
-; really guarantee that a ctrl-c doesn't prevent the execution of the
-; safety-set even though the ``real'' cleanup work has been successfully done.
-; But the re-execution of the cleanup form can confuse the tracking of the
-; brr-stack gstack and we installed this check just for an increased sense of
-; sanity.  See the comment after wormhole1.
+; value of the cleanup form is (PROGN save-ephemeral-whs safety-set STATE) and
+; new formis are added immediately after save-ephemeral-whs, making the final
+; form a stack with save-ephemeral-whs always on top and the formi succeeding
+; it in reverse order of their storage.  The save-ephemeral-whs form will save
+; into the persistent wormhole status the final value of the ephemeral wormhole
+; status (except for the brr wormhole which is treated differently).  The
+; save-ephemeral-whs form is complicated because it also contains a check that
+; the cleanup form has never been completely executed.  It does this by
+; checking the car of a cons that ``belongs'' to this incarnation of the form.
+; The safety-set at the end of the form sets the car of that cons to t.  We
+; cannot prevent the possible partial re-execution of the unwind protection
+; form in the face of repeated ill-timed ctrl-c's and we cannot really
+; guarantee that a ctrl-c doesn't prevent the execution of the safety-set even
+; though the ``real'' cleanup work has been successfully done.  But we do our
+; best.
 
 ; We introduce a CLTL structure for the sole purpose of preventing the
 ; accidental printing of huge objects like the world.  If, in raw lisp, you
@@ -1207,19 +1293,41 @@
 (defvar *wormhole-iprint-hard-bound* nil)
 (defvar *wormhole-iprint-fal* nil)
 (defvar *wormhole-iprint-soft-bound* nil)
+
+; About brr-evisc-tuple and Its Mirror
+
+; In past implementations of break-rewrite brr-evisc-tuple was only a component
+; of the brr status and had no special value outside of the brr wormhole.
+; However, in the current implementation brr-evisc-tuple is a full-fledged,
+; system-maintained, untouchable state global variable like ld-evisc-tuple.  It
+; can be read and written in or out of the brr wormhole, but the only use of it
+; in system code is by break-rewrite when it is printing terms.  This
+; implementation is essentially based on the implementation of
+; *wormhole-iprint-ar*, etc.
+
+; Every time the state global variable 'brr-evisc-tuple is set via
+; set-site-evisc-tuple (actually by set-brr-evisc-tuple1) we also set this raw
+; Lisp var, *wormhole-brr-evisc-tuple*, to the same value.  This variable can
+; thus be thought of a ``mirror'' of brr-evisc-tuple.  Unwind protection in
+; wormhole1 undoes the setting of the state global value of 'brr-evisc-tuple
+; when we pop out of break-rewrite, but cleanup does not mess with the mirrored
+; value.  The function brr-evisc-tuple-oracle-update is called in
+; eviscerate-top and eviscerate-stobjs-top, to restore brr-evisc-tuple to its
+; mirrored value before anything interesting happens.
+
+(defvar *wormhole-brr-evisc-tuple* :default)
 )
 
 #-acl2-loop-only
 (defun-one-output push-wormhole-undo-formi (op arg1 arg2)
 
-; When a primitive state changing function is called while *wormholep*
-; is non-nil it actually carries out the change (in many cases) but
-; saves some undo information on the special *wormhole-cleanup-form*.
-; The value of that special is (PROGN save-globals form1 ... formk
-; safety-set STATE).  In response to this call we will add a new form,
-; say form0, and will destructively modify *wormhole-cleanup-form* so
-; that it becomes (PROGN save-globals form0 form1 ...  formk
-; safety-set STATE).
+; When a primitive state changing function is called while *wormholep* is
+; non-nil it actually carries out the change (in many cases) but saves some
+; undo information on the special *wormhole-cleanup-form*.  The value of that
+; special is (PROGN save-ephemeral-whs form1 ... formk safety-set STATE).  In
+; response to this call we will add a new form, say form0, and will
+; destructively modify *wormhole-cleanup-form* so that it becomes (PROGN
+; save-ephemeral-whs form0 form1 ...  formk safety-set STATE).
 
 ; We modify *wormhole-cleanup-form* destructively because it shares
 ; structure with the *acl2-unwind-protect-stack* as described above.
@@ -1867,8 +1975,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro make-event (&whole event-form
                              form
                              &key
-                             expansion? check-expansion on-behalf-of)
-  (declare (ignore form on-behalf-of))
+                             expansion? check-expansion on-behalf-of
+                             save-event-data)
+  (declare (ignore form on-behalf-of save-event-data))
   (cond ((consp check-expansion)
          check-expansion)
         (expansion?)
@@ -2861,10 +2970,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   alist~%~s"
                  ctx str alist)))
        (t
-        (when (not (and (f-get-global 'inhibit-er-hard state)
-                        (member 'error
-                                (f-get-global 'inhibit-output-lst state)
-                                :test #'eq)))
+        (when (not (inhibit-er-hard state))
           (let ((*standard-output* *error-output*)
                 (*wormholep* nil))
             (error-fms t ctx summary str alist state)))
@@ -7712,7 +7818,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (msgp x)))
 
 (defun with-output-fn (ctx0 args off on gag-mode stack summary-on summary-off
-                            evisc ctx kwds)
+                            evisc inhibit-er-hard ctx kwds)
   (declare (xargs :mode :program
                   :guard (and (true-listp args)
                               (or (symbol-listp off)
@@ -7743,7 +7849,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ((eq (car args) :ctx)
           (cond ((ctxp (cadr args))
                  (with-output-fn ctx0 (cddr args) off on gag-mode stack
-                                 summary-on summary-off evisc (cadr args)
+                                 summary-on summary-off evisc inhibit-er-hard
+                                 (cadr args)
                                  (cons (car args) kwds)))
                 (t (hard-error ctx0
                                illegal-value-string
@@ -7751,14 +7858,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      (cons #\1 :ctx))))))
          ((eq (car args) :evisc) ; we leave it to without-evisc to check syntax
           (with-output-fn ctx0 (cddr args) off on gag-mode stack
-                          summary-on summary-off (cadr args) ctx
+                          summary-on summary-off (cadr args) inhibit-er-hard
+                          ctx
                           (cons (car args) kwds)))
          ((eq (car args) :gag-mode)
           (cond
            ((member-eq (cadr args)
                        '(t :goals nil)) ; keep in sync with set-gag-mode
             (with-output-fn ctx0 (cddr args) off on (cadr args) stack
-                            summary-on summary-off evisc ctx
+                            summary-on summary-off evisc inhibit-er-hard ctx
                             (cons (car args) kwds)))
            (t (hard-error ctx0
                           illegal-value-string
@@ -7767,9 +7875,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ((and (eq (car args) :off)
                (eq (cadr args) :all!))
           (with-output-fn ctx0
-                          (list* :off :all :gag-mode nil (cddr args))
+                          (list* :off :all :gag-mode nil :inhibit-er-hard t
+                                 (cddr args))
                           off on gag-mode stack summary-on summary-off
-                          evisc ctx kwds))
+                          evisc inhibit-er-hard ctx kwds))
          ((member-eq (car args) '(:on :off))
           (let ((val (with-output-on-off-arg (cadr args) *valid-output-names*)))
             (cond
@@ -7780,17 +7889,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                 (cons #\1 (car args)))))
              ((eq (car args) :on)
               (with-output-fn ctx0 (cddr args) off val
-                              gag-mode stack summary-on summary-off evisc ctx
+                              gag-mode stack summary-on summary-off evisc
+                              inhibit-er-hard ctx
                               (cons (car args) kwds)))
              (t ; (eq (car args) :off)
               (with-output-fn ctx0 (cddr args) val on
-                              gag-mode stack summary-on summary-off evisc ctx
+                              gag-mode stack summary-on summary-off evisc
+                              inhibit-er-hard ctx
                               (cons (car args) kwds))))))
          ((eq (car args) :stack)
           (cond
            ((member-eq (cadr args) '(:push :pop))
             (with-output-fn ctx0 (cddr args) off on gag-mode (cadr args)
-                            summary-on summary-off evisc ctx
+                            summary-on summary-off evisc inhibit-er-hard ctx
                             (cons (car args) kwds)))
            (t (hard-error ctx0
                           illegal-value-string
@@ -7805,12 +7916,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      (cons #\1 (car args)))))
                   ((eq (car args) :summary-on)
                    (with-output-fn ctx0 (cddr args) off on gag-mode stack
-                                   val summary-off evisc ctx
+                                   val summary-off evisc inhibit-er-hard ctx
                                    (cons (car args) kwds)))
                   (t ; (eq (car args) :summary-off)
                    (with-output-fn ctx0 (cddr args) off on gag-mode stack
-                                   summary-on val evisc ctx
+                                   summary-on val evisc inhibit-er-hard ctx
                                    (cons (car args) kwds))))))
+         ((eq (car args) :inhibit-er-hard)
+          (with-output-fn ctx0 (cddr args) off on gag-mode stack
+                          summary-on summary-off evisc (cadr args) ctx
+                          (cons (car args) kwds)))
          (t
           (hard-error ctx0
                       "~x0 is not a legal keyword for a call of with-output.  ~
@@ -7827,6 +7942,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t
     (let* ((ctx-p (member-eq :ctx kwds))
            (evisc-p (member-eq :evisc kwds))
+           (inhibit-er-hard-p (member-eq :inhibit-er-hard kwds))
            (gag-p (member-eq :gag-mode kwds))
            (on-p (member-eq :on kwds))
            (off-p (member-eq :off kwds))
@@ -7839,6 +7955,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (,@
                (and ctx-p
                     `((global-ctx ,ctx)))
+               ,@
+               (and inhibit-er-hard-p
+                    `((inhibit-er-hard ,inhibit-er-hard)))
                ,@
                (and (or gag-p
                         (eq stack :pop))
@@ -7884,7 +8003,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(if (eq (ld-skip-proofsp state) 'include-book)
        ,(car (last args))
      ,(let ((val (with-output-fn 'with-output args
-                                 nil nil nil nil nil nil nil nil nil)))
+                                 nil nil nil nil nil nil nil nil nil nil)))
         (or val
 
 ; If val is nil, then we have presumably already aborted with an error.  But
@@ -8276,8 +8395,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defthm pseudo-termp-consp-forward
     (implies (and (pseudo-termp x)
-		  (consp x))
-	     (true-listp x))
+                  (consp x))
+             (true-listp x))
   :hints (("Goal" :expand ((pseudo-termp x))))
   :rule-classes :forward-chaining)
 
@@ -10294,7 +10413,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro make-event (&whole event-form
                              form
                              &key
-                             expansion? check-expansion on-behalf-of)
+                             expansion? check-expansion on-behalf-of
+                             save-event-data)
 
 ; Essay on Make-event
 
@@ -10350,12 +10470,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; include-book form, it uses the expansion-alist from the book's certificate if
 ; there is an up-to-date certificate.
 
+; Finally, here is an outline of how we handle save-event-data.  We exempt the
+; symbol, save-event-data, from membership in the list
+; *protected-system-state-globals*, so that its global value will persist after
+; make-event expansion.  Then in print-summary we ensure that this global value
+; is preserved after printing the make-event summary.
+
   (declare (xargs :guard t))
 ; Keep this in sync with the -acl2-loop-only definition.
   `(make-event-fn ',form
                   ',expansion?
                   ',check-expansion
                   ',on-behalf-of
+                  ',save-event-data
                   ',event-form
                   state))
 
@@ -13965,7 +14092,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-w ; *the-live-state*
     verbose-pstack ; *verbose-pstk*
     comp-fn ; compile-uncompiled-defuns
-    #+acl2-infix fmt-ppr
     acl2-raw-eval ; eval
     pstack-fn ; *pstk-stack*
     dmr-start-fn ; dmr-start-fn-raw
@@ -13993,7 +14119,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     add-polys ; *add-polys-counter*
     dmr-stop-fn ; dmr-stop-fn-raw
     ld-print-results
-    #+acl2-infix flpr
     close-trace-file-fn ; *trace-output*
     ev-fncall-rec ; raw-ev-fncall
     ev-fncall ; live-state-p
@@ -14038,6 +14163,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     chk-absstobj-invariants
     get-stobj-creator
     iprint-oracle-updates@par
+    brr-evisc-tuple-oracle-update@par
+    print-brr-status
+    set-brr-evisc-tuple1
     ld-fix-command
     update-enabled-structure-array
     update-enabled-structure
@@ -14056,6 +14184,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-cbd-fn1
     read-hons-copy-lambda-object-culprit ; reads wormhole data from oracle
     #+acl2-devel ilks-plist-worldp
+    defstobj-field-fns-raw-defs ; CCL bug #446
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -14077,7 +14206,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     getenv$ ; GETENV$-RAW
     wormhole-eval ; *WORMHOLE-STATUS-ALIST*
     wormhole1 ; *WORMHOLEP*, ...
-    get-wormhole-status ; *WORMHOLE-STATUS-ALIST*
+    get-persistent-whs ; *WORMHOLE-STATUS-ALIST*
+    sync-ephemeral-whs-with-persistent-whs ; *WORMHOLE-STATUS-ALIST*
     aset2 ; [seems like we can live with logic code]
     sgetprop ; SGETPROP1
     setenv$ ; SI::SETENV ...
@@ -14242,6 +14372,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     #-acl2-devel apply$-lambda
     #-acl2-devel apply$-prim
     #-acl2-devel ilks-plist-worldp
+
+; Brr-evisc-tuple-oracle-update is logically defined in terms of
+; read-acl2-oracle but actually returns the value of the raw Lisp variable
+; *wormhole-brr-evisc-tuple*.  Iprint-oracle-updates has an analogous
+; treatment.
+  
+    brr-evisc-tuple-oracle-update
     iprint-oracle-updates
   ))
 
@@ -14633,7 +14770,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; corresponding state global.
 
                     t)
-    (brr-evisc-tuple-initialized . nil)
+    (brr-evisc-tuple . :default) ; see About brr-evisc-tuple and Its Mirror
     (cert-data . nil)
     (certify-book-info .
 
@@ -14668,6 +14805,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (deferred-ttag-notes . :not-deferred)
     (deferred-ttag-notes-saved . nil)
     (dmrp . nil)
+    (event-data-fal . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
     (fast-cert-status . nil)
@@ -14690,7 +14828,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (in-prove-flg . nil)
     (in-verify-flg . nil) ; value can be set to the ld-level
     (including-uncertified-p . nil) ; valid only during include-book
-    #+acl2-infix (infixp . nil) ; See the Essay on Infix below
     (inhibit-er-hard . nil)
     (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
                                      ; will print a summary for each event.
@@ -14830,86 +14967,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      (illegal 'top-level
               "*initial-global-table* is not an ordered-symbol-alistp!"
               nil)))
-
-; Essay on Infix
-
-; Note: As of late July 2017, infix printing is no longer supported.  As a
-; result, it is now possible to execute some forms in safe-mode that were
-; formerly prohibited; for example, evaluation of the form
-
-;   (defconst *c* (fms-to-string "abc~x0" (list (cons #\0 (expt 2 4)))))
-
-; formerly failed with an error saying that a call of flpr had been made in
-; safe-mode, which was illegal because flpr had raw Lisp code -- which is no
-; longer the case.  Note, however, that we have left the infix-printing code in
-; place for the case #+acl2-infix, in case it becomes desirable to restore it
-; in the future.  Indeed, if you build ACL2 with :acl2-info pushed to
-; *features*, you may be able to do infix printing.  Warning: In that case,
-; some user books may fail, since more functions would have raw Lisp code,
-; hence would be disqualified from evaluation in safe-mode.  Here is an
-; example:
-
-;   (defconst *c* (fms-to-string "abc~x0" (list (cons #\0 (expt 2 4)))))
-
-; Below is the rest of the Essay on Infix.
-
-; ACL2 has a hook for providing a different syntax.  We call this different
-; syntax "infix" but it could be anything.  If the state global variable
-; infixp is nil, ACL2 only supports CLTL syntax.  If infixp is non-nil
-; then infix syntax may be used, depending on the context and the value of
-; infixp.
-
-; First, what is the "infix" syntax supported?  The answer is "a really stupid
-; one."  In the built-in infix syntax, a well-formed expression is a dollar
-; sign followed by a CLTL s-expression.  E.g., if infixp is t one must
-; write $ (car (cdr '(a b c))) instead of just (car (cdr '(a b c))).  If
-; infixp is t, the prover prints formulas by preceding them with a dollar
-; sign.  This stupid syntax allows the ACL2 developers to test the infix
-; hooks without having to invent and implement an new syntax.  Such testing
-; has helped us identify places where, for example, we printed or read in
-; one syntax when the other was expected by the user.
-
-; However, we anticipate that users will redefine the infix primitives so as to
-; implement interesting alternative syntax.  This note explains the primitives
-; which must be redefined.  But first we discuss the values of the state
-; global variable infixp.
-
-; In addition to nil, infixp can be :in, :out or t (meaning both).  As noted,
-; if infixp is nil, we use Common Lisp s-expression syntax.  If infixp is
-; non-nil the syntax used depends on both infixp and on the context.  On
-; printing, we use infix if infixp is t or :out.  On reading from the terminal,
-; we expect infix if infixp is :in or t.  When reading from files (as in
-; include-book) with infixp non-nil, we peek at the file and if it begins with
-
-; (IN-PACKAGE "...
-
-; optionally preceded by Lisp-style comments and whitespace, we use lisp
-; syntax, otherwise infix.  The check is made with the raw Lisp function
-; lisp-book-syntaxp.
-
-; By allowing the :in and :out settings we allow users to type one and see the
-; other.  We think this might help some users learn the other syntax.
-
-; The following variable and functions, mostly defined in raw Lisp should be
-; redefined to implement an alternative infix syntax.
-;
-; (defparameter *parse* ...)
-; (defun parse-infix-from-terminal (eof) ...)
-; (defun print-infix (x termp width rpc col file eviscp) ...)
-; (defun print-flat-infix (x termp file eviscp) ...)
-; (defun flatsize-infix (x termp j max state eviscp) ...)
-
-; We document each of these when we define them for the silly $ syntax.
-
-; It is common to bind state global infixp to nil, so we create the following
-; macro for that purpose.
-
-(defmacro with-infixp-nil (form)
-  #+acl2-infix
-  `(state-global-let* ((infixp nil))
-                      ,form)
-  #-acl2-infix
-  form)
 
 (defun all-boundp (alist1 alist2)
   (declare (xargs :guard (and (eqlable-alistp alist1)
@@ -15591,6 +15648,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(progn (f-put-global ,key ,value ,st)
           nil))
 
+(defun inhibit-er-hard (state)
+  (declare (xargs :stobjs state :mode :program))
+  (and (f-get-global 'inhibit-er-hard state)
+       (member-eq 'error
+                  (f-get-global 'inhibit-output-lst state))))
+
 ; We now define state-global-let*, which lets us "bind" state
 ; globals.
 
@@ -15686,7 +15749,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; case; in particularly, set-iprint calls compress1.
 
 ; This constant supports the use of state-global-let* to bind certain built-in
-; untouchables variables without a translate error.  It was computed by
+; untouchable variables without a translate error.  It was computed by
 ; evaluating the form (state-global-let*-untouchable-alist) in raw Lisp and
 ; checking manually that the functions are indeed appropriate.  We check in
 ; check-built-in-constants that this value is still equal to
@@ -18210,59 +18273,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; by at least one more character in the file.  If these conditions are met we
 ; return t; otherwise we return nil.
 
-  (cond
-   #+acl2-infix
-   ((null (f-get-global 'infixp *the-live-state*))
-    t)
-   (t
-    (let ((stream (safe-open file :direction :input :if-does-not-exist nil)))
-      (if stream
-          (unwind-protect (lisp-book-syntaxp1 0 stream)
-            (close stream))
-        nil)))))
-
-#-acl2-loop-only
-(defparameter *parser* nil)
-
-; If *parser* is non-nil then it should be set to a string that names a Unix
-; command that parses a file.  Suppose *parser* is set to "infixparse".  Then
-; we will use the Unix command
-
-; % infixparse < foo.lisp > foo.lisp.mirror
-
-; to generate from "foo.lisp" a file of s-expressions "foo.lisp.mirror".  The
-; unix command should return error code 3 if the parse fails.  Otherwise, the
-; parse is assumed to have worked.
-
-#+(and acl2-infix (not acl2-loop-only))
-(defun-one-output parse-infix-file (infile outfile)
-
-; This function is only used with the silly $ infix syntax.  It is the analogue
-; of the *parse* Unix command that transforms a $ infix file to its
-; s-expression image.  Rather than make it be a Unix command and pay the
-; complexity and performance cost of firing off another process, we just
-; implement it it directly in this image for the $ syntax.
-
-  (with-open-file
-   (file1 infile :direction :input)
-   (with-open-file
-    (file2 outfile :direction :output)
-    (prog ((form nil)
-           (eof (cons nil nil)))
-          loop
-          (setq form (read file1 nil eof))
-          (cond ((eq form eof) (return nil))
-                ((eq form '$)
-                 (setq form (read file1 nil eof))
-                 (cond ((eq form eof)
-                        (error "Bad $ infix syntax in ~s.  Ended with a $."
-                               (namestring file1)))
-                       (t (print form file2))))
-                (t (error "Bad $ infix syntax in file ~s.   Missing $ before ~
-                           s-expr ending at position ~a."
-                          (namestring file1)
-                          (file-position file1))))
-          (go loop)))))
+  (let ((stream (safe-open file :direction :input :if-does-not-exist nil)))
+    (if stream
+        (unwind-protect (lisp-book-syntaxp1 0 stream)
+          (close stream))
+      nil)))
 
 #-acl2-loop-only
 (defvar *read-file-into-string-alist*
@@ -18396,41 +18411,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (interface-er "Illegal input-type ~x0." typ)))))
               (cond
                ((null stream) (mv nil *the-live-state*))
-               #+(and acl2-infix gcl)
-               ((and (eq typ :object)
-                     (not (lisp-book-syntaxp os-file-name)))
-
-; Note that lisp-book-syntaxp returns t unless state global 'infixp is t.  So
-; ignore the code below unless you're thinking about the infix case!
-
-                (let* ((mirror-file-name
-                        (concatenate 'string
-                                     (namestring stream)
-                                     ".mirror"))
-                       (er-code
-                        (cond
-                         (*parser*
-                          (si::system
-                           (format nil "~s < ~s > ~s"
-                                   *parser*
-                                   (namestring stream)
-                                   mirror-file-name)))
-                         (t (parse-infix-file file-name
-                                              mirror-file-name)
-                            0))))
-                  (cond
-                   ((not (equal er-code 3))
-                    (let ((channel
-                           (make-input-channel mirror-file-name
-                                               *file-clock*))
-                          (mirror-stream
-                           (open mirror-file-name :direction :input)))
-                      (symbol-name channel)
-                      (setf (get channel *open-input-channel-type-key*) typ)
-                      (setf (get channel *open-input-channel-key*)
-                            mirror-stream)
-                      (mv channel *the-live-state*)))
-                   (t (mv nil *the-live-state*)))))
                (t (let ((channel
                          (make-input-channel file-name *file-clock*)))
                     (symbol-name channel)
@@ -19232,31 +19212,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (open-input-channels state-state))
          state-state))))
 
-#+(and acl2-infix (not acl2-loop-only))
-(defun-one-output parse-infix-from-terminal (eof)
-
-; Eof is an arbitrary lisp object.  If the terminal input is empty, return eof.
-; Otherwise, parse one well-formed expression from terminal input and return the
-; corresponding s-expr.  If the file is exhausted before the parse finishes or
-; if the parse is unsuccessful, cause a hard lisp error.
-
-; In the current hackish implementation, the infix language is just a dollar
-; sign followed by the s-expr.
-
-  (let (dollar sexpr)
-    (setq dollar (read *terminal-io* nil eof))
-    (cond ((eq dollar eof) eof)
-          ((eq dollar '$)
-; The following read could cause an error if the user types bad lisp syntax.
-           (setq sexpr (read *terminal-io* nil eof))
-           (cond ((eq sexpr eof)
-                  (error "Ill-formed infix input.  File ended on a $"))
-                 (t sexpr)))
-          (t (error
-              "Ill-formed infix input.  You were supposed to type a $ ~
-               followed by an s-expression and you typed ~s instead."
-              dollar)))))
-
 #-acl2-loop-only
 (defparameter *acl2-read-suppress* nil)
 
@@ -19550,19 +19505,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                   (eq channel *standard-ci*))
                               nil
                             si:*notify-gbc*))
-                   #+acl2-infix
-                   (infixp (f-get-global 'infixp state-state))
                    (stream (get-input-stream-from-channel channel))
                    (obj
                     (cond
-                     #+acl2-infix
-                     ((and (or (eq infixp t) (eq infixp :in))
-                           (eq stream (get-input-stream-from-channel  *standard-ci*)))
-                      (let ((obj (parse-infix-from-terminal read-object-eof)))
-                        (cond ((eq obj read-object-eof)
-                               read-object-eof)
-                              (t (chk-bad-lisp-object obj)
-                                 obj))))
                      #+(and mcl (not ccl))
                      ((eq channel *standard-oi*)
                       (ccl::toplevel-read))
@@ -20532,6 +20477,37 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           "The function symbol ~x0 is reserved but may not be executed."
           'read-acl2-oracle@par)
       nil))
+
+(defun standard-evisc-tuplep (x)
+  (declare (xargs :guard t))
+  (or (null x)
+      (and (true-listp x)
+           (= (length x) 4)
+           (alistp (car x))
+           (or (null (cadr x))
+               (integerp (cadr x)))
+           (or (null (caddr x))
+               (integerp (caddr x)))
+           (symbol-listp (cadddr x)))))
+
+(defun brr-evisc-tuple-oracle-update (state)
+  (declare (xargs :guard (state-p state)))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from
+     brr-evisc-tuple-oracle-update
+     (f-put-global 'brr-evisc-tuple *wormhole-brr-evisc-tuple* state)))
+  (mv-let (erp val state)
+    (read-acl2-oracle state)
+    (declare (ignore erp))
+    (f-put-global 'brr-evisc-tuple
+                  (if (or (eq val :default)
+                          (standard-evisc-tuplep val))
+                      val
+                      :default)
+                  state)))
+
+(verify-termination-boot-strap brr-evisc-tuple-oracle-update)
 
 (defun getenv$ (str state)
   (declare (xargs :stobjs state :guard (stringp str)))
@@ -21609,6 +21585,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-evisc-tuple-fn1
     set-iprint-ar
     init-iprint-fal update-iprint-fal-rec update-iprint-fal init-iprint-fal+
+    set-brr-evisc-tuple1
+    semi-initialize-brr-status
 
     untouchable-marker
 
@@ -21664,6 +21642,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     main-timer
 
     wormhole-name
+    wormhole-status
 
     proof-tree
 ;   proof-tree-ctx  - used in community book books/cli-misc/expander.lisp
@@ -21713,6 +21692,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     standard-oi
     standard-co
     proofs-co
+    trace-co
     ld-prompt
     ld-missing-input-ok
     ld-always-skip-top-level-locals
@@ -21764,6 +21744,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     term-evisc-tuple
     abbrev-evisc-tuple
     gag-mode-evisc-tuple
+    brr-evisc-tuple
     serialize-character
     serialize-character-system
 
@@ -22292,7 +22273,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           :exec
                           ,(xxxjoin 'intersection-eql-exec vars)))
                (t ; (equal test 'equal)
-                `(xxxjoin 'intersection-equal ,args))))))))
+                (xxxjoin 'intersection-equal args))))))))
 
 #+acl2-loop-only
 (defmacro set-enforce-redundancy (x)
@@ -24992,14 +24973,29 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun p! ()
 
-; If p! is executed inside a brr wormhole break, it will cause an abort out of
-; the brkpt1 call.  The message "Pop up to ACL2 top-level" might be a bit
-; misleading in that case, but it appears to be accurate: the brr wormhole from
-; brkpt1 is indeed exited.
+; From the perspective of ld, (p!) pops up one level.  But if p! is executed
+; inside a brr wormhole break, it just prints a comment message and execution
+; stays in the brr wormhole.
+
+; Once upon a time we allowed (indeed, documented and thus encouraged) the use
+; of :p! to ``pop up a level'' in brr.  But that was a crock.  If you're
+; several levels down in the ``break-rewrite'' abstraction and you throw :pop
+; to 'local-top-level (as we were doing) you don't necessary get back to the
+; previous break-rewrite level (depth).  Nor does it even stop the prover from
+; running on.  For example, suppose you're in the interactive loop of brkpt1 at
+; depth 2 about to try some lemma, say BAD.  If you type :p!, thinking you'll
+; pop up to whatever the rewriter was doing at depth 1, you'd be wrong.  The
+; (old) :p! would throw :pop and the system would exit from brkpt1, the
+; rewriter would proceed, and you'd enter brkpt2, at depth 2.  Essentially,
+; that version of :p! was equivalent to :ok or :go, modulo printing.
 
   (declare (xargs :guard t))
   #-acl2-loop-only
-  (throw 'local-top-level :pop)
+  (if (eq (f-get-global 'wormhole-name *the-live-state*) 'brr)
+      (cw "~%The p! command is a no-op when you're in the break-rewrite ~
+           wormhole.  Exit with :a! or one of the :ok or :go commands of ~
+           :doc brr-commands.~%~%")
+      (throw 'local-top-level :pop))
   nil)
 
 (in-theory (disable abort!
@@ -25011,6 +25007,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; convenient place to do it.
 
                     (:executable-counterpart hide)))
+
+; The following raw Lisp alist pairs each wormhole name with its
+; persistent-whs.
 
 #-acl2-loop-only
 (defparameter *wormhole-status-alist* nil)
@@ -25127,7 +25126,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   x)
 
+; When the wormhole cleanup form constructed by wormhole1 is evaluated as we
+; come out of the wormhole, the following special tells us whether we're
+; aborting to the top-level or just exiting politely.
+
+#-acl2-loop-only
+(defvar wormhole-cleanup-abort-flg)
+
 (defun wormhole1 (name input form ld-specials)
+
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
 
 ; Here is the world's fanciest no-op.
 
@@ -25161,16 +25170,49 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; See note below.
 
             (let ((own-cons (cons nil nil)))
+
+; The form constructed below will be destructively augmented as wormhole
+; interactions occur, by splicing new undo forms in where indicated below.
+; Then it will be evaluated, either at location [a] or [b] below upon exit from
+; this wormhole.  The cond immediately below is always the first of the forms
+; to be executed upon exit.
+
+; This is the value of the *wormhole-cleanup-form*, and will be maintained in
+; the form (PROGN save-ephemeral-whs form1 ... formk safety-set STATE) even as
+; execution from within the coming LD will destructively insert new formi
+; immediately after the save-ephemeral-whs form.
+
               (list 'progn
                     `(cond ((car (quote ,own-cons))
-                            (error "Attempt to execute *wormhole-cleanup-form* ~
-                                   twice!"))
+                            (error "Attempt to execute ~
+                                    *wormhole-cleanup-form* twice!"))
                            (t (setq *wormhole-status-alist*
                                     (put-assoc-equal
                                      ',name
-                                     (f-get-global 'wormhole-status
-                                                   *the-live-state*)
-                                     *wormhole-status-alist*))))
+                                     (if (and wormhole-cleanup-abort-flg
+                                              (eq ',name 'brr))
+
+; Note that for all wormholes except brr, when a wormhole is aborted, we
+; immediately move the current ephemeral-whs, (f-get-global 'wormhole-status
+; state), into the persistent-whs (i.e., *wormhole-status-alist*).  But for brr
+; we do something quite brr-specific.  The brr-status is really a stack of
+; statuses and we chase down the :brr-previous-status chain to find the status
+; of the wormhole when we first entered break-rewrite from the top-level, and
+; we store that original status into the persistent-whs.
+
+                                         (top-level-brr-status
+                                          (f-get-global 'wormhole-status
+                                                        *the-live-state*))
+                                         (f-get-global 'wormhole-status
+                                                       *the-live-state*))
+                                         *wormhole-status-alist*))))
+
+;                  --- new undo forms will be spliced here ---
+;                  <most recent undo form>
+;                  ...
+;                  <oldest undo form>
+;                  --- builtin final undo forms ---
+
                     `(fix-trace ',(f-get-global 'trace-specs *the-live-state*))
                     `(setf (car (quote ,own-cons)) t)
                     'state))))
@@ -25200,7 +25242,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; *wormhole-cleanup-form* (as we formerly did) as we push the function onto the
 ; stack.
 
-                       (let ((acl-non-special-var *wormhole-cleanup-form*))
+; [a] cleanup on behalf of an abort
+                       (let ((acl-non-special-var
+                              `(let ((wormhole-cleanup-abort-flg t))
+                                 ,*wormhole-cleanup-form*)))
                          (function
                           (lambda nil (eval acl-non-special-var)))))
                  *acl2-unwind-protect-stack*
@@ -25226,7 +25271,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                state
                t)
         nil)
-       (eval *wormhole-cleanup-form*)
+; [b] cleaning up after polite, normal exit.
+       
+       (eval
+        `(let ((wormhole-cleanup-abort-flg nil))
+           ,*wormhole-cleanup-form*))
        (pop (car *acl2-unwind-protect-stack*))
        nil)))))
 
@@ -27130,15 +27179,19 @@ Lisp definition."
 (defmacro gc-verbose (arg1 &optional arg2)
   `(gc-verbose-fn ,arg1 ,arg2))
 
-(defun get-wormhole-status (name state)
+(defun get-persistent-whs (name state)
    #+acl2-loop-only
    (declare (xargs :guard (state-p state))
             (ignore name))
    #-acl2-loop-only
    (when (live-state-p state)
-     (return-from get-wormhole-status
+     (return-from get-persistent-whs
                   (value (cdr (assoc-equal name *wormhole-status-alist*)))))
    (read-acl2-oracle state))
+
+(defun get-wormhole-status (name state)
+  (declare (xargs :guard (state-p state)))
+  (get-persistent-whs name state))
 
 (defun file-write-date$ (file state)
 
@@ -27215,9 +27268,8 @@ Lisp definition."
          state)))
   (mv-let (erp val state)
           (read-acl2-oracle state)
-          (mv (and (null erp)
-                   (natp val)
-                   val)
+          (declare (ignore val))
+          (mv (null erp)
               state)))
 
 ; Next: debugger control
@@ -29173,6 +29225,6 @@ Lisp definition."
 
 (defthm acl2-count-car-cdr-linear
   (implies (consp x)
-	   (equal (acl2-count x)
-		  (+ 1 (acl2-count (car x)) (acl2-count (cdr x)))))
+           (equal (acl2-count x)
+                  (+ 1 (acl2-count (car x)) (acl2-count (cdr x)))))
   :rule-classes :linear)

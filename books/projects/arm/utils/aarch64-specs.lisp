@@ -25,6 +25,7 @@
 (defconst *fz16* 19)
 (defconst *fz*   24)
 (defconst *dn*   25)
+(defconst *ahp*  26)
 
 ;; FPSR bits:
 
@@ -137,25 +138,25 @@
                               (formatp f))
                   :guard-hints (("Goal"
                                  :use ((:instance rnd-monotone
-                                                  (x (lpn f))
-                                                  (y u)
-                                                  (mode (fpscr-rc fpcr))
-                                                  (n (prec f)))
+                                        (x (lpn f))
+                                        (y u)
+                                        (mode (fpscr-rc fpcr))
+                                        (n (prec f)))
                                        (:instance rnd-monotone
-                                                  (x u)
-                                                  (y (- (lpn f)))
-                                                  (mode (fpscr-rc fpcr))
-                                                  (n (prec f)))
+                                        (x u)
+                                        (y (- (lpn f)))
+                                        (mode (fpscr-rc fpcr))
+                                        (n (prec f)))
                                        (:instance nrepp-minus
-                                                  (x (spn f)))
+                                        (x (spn f)))
                                        (:instance nrepp-minus
-                                                  (x (lpn f)))
+                                        (x (lpn f)))
                                        (:instance drnd-exactp-a
-                                                  (x u)
-                                                  (mode (fpscr-rc fpcr)))
+                                        (x u)
+                                        (mode (fpscr-rc fpcr)))
                                        (:instance rnd-drnd-up
-                                                  (x u)
-                                                  (mode (fpscr-rc fpcr))))
+                                        (x u)
+                                        (mode (fpscr-rc fpcr))))
                                  :in-theory (e/d (sgn set-flag rnd-minus)
                                                  (rationalp-abs
                                                   acl2::|(< x (if a b c))|
@@ -222,10 +223,10 @@
            (aval (decode a f))
            (bval (decode b f))
            (u (binary-eval op aval bval)))
-        (if (or (and (eql op 'div) (infp b f)) (= u 0))
-            (mv (zencode (binary-zero-sgn op asgn bsgn (fpscr-rc fpcr)) f)
-                fpsr)
-          (aarch64-post-comp u fpcr fpsr f)))))
+      (if (or (and (eql op 'div) (infp b f)) (= u 0))
+          (mv (zencode (binary-zero-sgn op asgn bsgn (fpscr-rc fpcr)) f)
+              fpsr)
+        (aarch64-post-comp u fpcr fpsr f)))))
 
 (defthm encodingp-nth0-of-aarch64-binary-pre-comp
   (implies (encodingp a f)
@@ -257,6 +258,189 @@
     (if result
         (mv result fpsr)
       (aarch64-binary-comp op a b fpcr fpsr f))))
+
+;; ======================================================================
+
+;; AArch64 fpdot and fpdotadd specs
+
+(defund aarch64-convert-qnan (a fmt1 fmt2)
+  (declare (xargs :guard (and (member-equal fmt1 (list (hp) (sp) (dp)))
+                              (member-equal fmt2 (list (hp) (sp) (dp)))
+                              (encodingp a fmt1))))
+  (b* (((unless (member-equal fmt1 (list (hp) (sp) (dp))))
+        (er hard 'convert-nan "Source format must be either HP, SP or DP"))
+       ((unless (member-equal fmt2 (list (hp) (sp) (dp))))
+        (er hard 'convert-nan "Destination format must be either HP, SP or DP"))
+       (frac (manf a fmt1))
+       (frac (cond ((equal fmt1 (hp))
+                    (cat frac 9 0 42))
+                   ((equal fmt1 (sp))
+                    (cat frac 22 0 29))
+                   (t (bits frac 50 0))))
+       (sgn (sgnf a fmt1)))
+    (cond ((equal fmt2 (hp))
+           (cat sgn 1 #x3F 6 (bits frac 50 42) 9))
+          ((equal fmt2 (sp))
+           (cat sgn 1 #x1FF 9 (bits frac 50 29) 22))
+          (t ;; (equal fmt2 (dp))
+           (cat sgn 1 #xFFF 12 frac 51)))))
+
+(defund aarch64-process-nans-4 (a1 b1 a2 b2 fpcr fpsr)
+  (declare (xargs :guard (and (bvecp fpcr 32)
+                              (bvecp fpsr 32)
+                              (encodingp a1 (hp))
+                              (encodingp b1 (hp))
+                              (encodingp a2 (hp))
+                              (encodingp b2 (hp)))
+                  :guard-hints (("Goal" :in-theory (e/d (encodingp qnanize) ())))))
+  ;; Input format is HP. FPCR.AH bit is not used for determining NaN priority.
+  (cond ((snanp a1 (hp))
+         (mv (aarch64-convert-qnan (aarch64-process-nan a1 fpcr (hp)) (hp) (sp))
+             (set-flag *ioc* fpsr)))
+        ((snanp a2 (hp))
+         (mv (aarch64-convert-qnan (aarch64-process-nan a2 fpcr (hp)) (hp) (sp))
+             (set-flag *ioc* fpsr)))
+        ((snanp b1 (hp))
+         (mv (aarch64-convert-qnan (aarch64-process-nan b1 fpcr (hp)) (hp) (sp))
+             (set-flag *ioc* fpsr)))
+        ((snanp b2 (hp))
+         (mv (aarch64-convert-qnan (aarch64-process-nan b2 fpcr (hp)) (hp) (sp))
+             (set-flag *ioc* fpsr)))
+        ((qnanp a1 (hp))
+         (mv (aarch64-convert-qnan (aarch64-process-nan a1 fpcr (hp)) (hp) (sp))
+             fpsr))
+        ((qnanp a2 (hp))
+         (mv (aarch64-convert-qnan (aarch64-process-nan a2 fpcr (hp)) (hp) (sp))
+             fpsr))
+        ((qnanp b1 (hp))
+         (mv (aarch64-convert-qnan (aarch64-process-nan b1 fpcr (hp)) (hp) (sp))
+             fpsr))
+        ((qnanp b2 (hp))
+         (mv (aarch64-convert-qnan (aarch64-process-nan b2 fpcr (hp)) (hp) (sp))
+             fpsr))
+        (t (mv nil fpsr))))
+
+(defund aarch64-fpdot-comp (a1 b1 a2 b2 fpcr fpsr)
+  (declare (xargs :guard (and (bvecp fpcr 32)
+                              (bvecp fpsr 32)
+                              (encodingp a1 (hp))
+                              (encodingp b1 (hp))
+                              (encodingp a2 (hp))
+                              (encodingp b2 (hp)))
+                  :guard-hints (("Goal" :in-theory (e/d (sgnf) ())))))
+  (b* ((invalid-op (and (= (bitn fpcr *ahp*) 0)
+                        (or (and (infp a1 (hp)) (zerp b1 (hp)))
+                            (and (zerp a1 (hp)) (infp b1 (hp)))
+                            (and (infp a2 (hp)) (zerp b2 (hp)))
+                            (and (zerp a2 (hp)) (infp b2 (hp))))))
+       (sgn1 (logxor (sgnf a1 (hp)) (sgnf b1 (hp))))
+       (sgn2 (logxor (sgnf a2 (hp)) (sgnf b2 (hp))))
+       (infp1 (or (infp a1 (hp)) (infp b1 (hp))))
+       (infp2 (or (infp a2 (hp)) (infp b2 (hp))))
+       (invalid-op (or invalid-op
+                       (and (= (bitn fpcr *ahp*) 0)
+                            (and infp1 infp2
+                                 (not (= sgn1 sgn2)))))))
+    (if invalid-op
+        (mv (signed-indef (bitn fpcr *ah*) (sp)) (set-flag *ioc* fpsr))
+      (if (and (= (bitn fpcr *ahp*) 0)
+               (or (and infp1 (= sgn1 0))
+                   (and infp2 (= sgn2 0))))
+          (mv (iencode 0 (sp)) fpsr)
+        (if (and (= (bitn fpcr *ahp*) 0)
+                 (or (and infp1 (= sgn1 1))
+                     (and infp2 (= sgn2 1))))
+            (mv (iencode 1 (sp)) fpsr)
+          (b* ((val (+ (* (decode a1 (hp)) (decode b1 (hp)))
+                       (* (decode a2 (hp)) (decode b2 (hp))))))
+            (if (= val 0)
+                (if (= sgn1 sgn2)
+                    (mv (zencode sgn1 (sp)) fpsr)
+                  (mv (zencode (if (eql (fpscr-rc fpcr) 'rdn) 1 0) (sp))
+                      fpsr))
+              (aarch64-post-comp val fpcr fpsr (sp)))))))))
+
+(defund aarch64-fpdot-spec (a1 b1 a2 b2 fpcr fpsr)
+  (declare (xargs :otf-flg nil
+                  :guard (and (encodingp a1 (hp))
+                              (encodingp b1 (hp))
+                              (encodingp a2 (hp))
+                              (encodingp b2 (hp))
+                              (bvecp fpcr 32)
+                              (bvecp fpsr 32))
+                  :guard-hints (("Goal" :in-theory (e/d (sgnf zencode
+                                                         encodingp
+                                                         aarch64-process-nans-4
+                                                         set-flag) ())))))
+  (b* ((fz16 (bitn fpcr *fz16*))
+       ((mv a1 a2 b1 b2)
+        (if1 fz16
+             (b* ((a1 (if (denormp a1 (hp)) (zencode (sgnf a1 (hp)) (hp)) a1))
+                  (a2 (if (denormp a2 (hp)) (zencode (sgnf a2 (hp)) (hp)) a2))
+                  (b1 (if (denormp b1 (hp)) (zencode (sgnf b1 (hp)) (hp)) b1))
+                  (b2 (if (denormp b2 (hp)) (zencode (sgnf b2 (hp)) (hp)) b2)))
+               (mv a1 a2 b1 b2))
+             (mv a1 a2 b1 b2)))
+       ((mv result fpsr)
+        (if (= (bitn fpcr *ahp*) 0)
+            (aarch64-process-nans-4 a1 b1 a2 b2 fpcr fpsr)
+          (mv nil fpsr))))
+    (if result
+        (mv result fpsr)
+      (aarch64-fpdot-comp a1 b1 a2 b2 fpcr fpsr))))
+
+(defthm bvecp-of-zencode-sp
+  (bvecp (zencode x (sp)) 32)
+  :hints (("Goal" :in-theory (e/d (zencode) ()))))
+
+(defthm bvecp-of-nencode-sp
+  (bvecp (nencode x (sp)) 32)
+  :hints (("Goal" :in-theory (e/d (nencode) ()))))
+
+(defthm bvecp-of-dencode-sp
+  (bvecp (dencode x (sp)) 32)
+  :hints (("Goal" :in-theory (e/d (dencode) ()))))
+
+(defthm encodingp-of-aarch64-fpdot-spec
+  (encodingp (mv-nth 0 (aarch64-fpdot-spec a1 b1 a2 b2 fpcr fpsr)) (sp))
+  :hints (("Goal" :in-theory (e/d (aarch64-fpdot-spec
+                                   aarch64-fpdot-comp
+                                   aarch64-process-nans-4
+                                   encodingp
+                                   aarch64-convert-qnan) ()))))
+
+(defthm bvecp-fpsr-aarch64-post-comp
+  (implies (bvecp fpsr 32)
+           (bvecp (mv-nth 1 (aarch64-post-comp val fpcr fpsr f)) 32))
+  :hints (("Goal" :in-theory (e/d (aarch64-post-comp
+                                   set-flag) ()))))
+
+(defthm bvecp-fpsr-aarch64-fpdot-comp
+  (implies (bvecp fpsr 32)
+           (bvecp (mv-nth 1 (aarch64-fpdot-comp a1 b1 a2 b2 fpcr fpsr)) 32))
+  :hints (("Goal" :in-theory (e/d (aarch64-fpdot-comp
+                                   set-flag) (aarch64-post-comp)))))
+
+(defthm bvecp-fpsr-aarch64-fpdot-spec
+  (implies (bvecp fpsr 32)
+           (bvecp (mv-nth 1 (aarch64-fpdot-spec a1 b1 a2 b2 fpcr fpsr)) 32))
+  :hints (("Goal" :in-theory (e/d (aarch64-fpdot-spec
+                                   aarch64-process-nans-4
+                                   set-flag) ()))))
+
+(defund aarch64-fpdotadd-spec (acc a1 b1 a2 b2 fpcr fpsr)
+  (declare (xargs :guard (and (encodingp acc (sp))
+                              (encodingp a1 (hp))
+                              (encodingp b1 (hp))
+                              (encodingp a2 (hp))
+                              (encodingp b2 (hp))
+                              (bvecp fpcr 32)
+                              (bvecp fpsr 32))
+                  :guard-hints (("Goal" :in-theory (e/d ()
+                                                        (bvecp-fpsr-aarch64-fpdot-spec))
+                                        :use (bvecp-fpsr-aarch64-fpdot-spec)))))
+  (b* (((mv dotres fpsr) (aarch64-fpdot-spec a1 b1 a2 b2 fpcr fpsr)))
+    (aarch64-binary-spec 'add acc dotres fpcr fpsr (sp))))
 
 ;; ======================================================================
 
@@ -655,18 +839,18 @@
                   :guard-hints (("Goal" :in-theory (enable sgnf)))))
   (let ((sgnr (logxor (sgnf a (bf)) (sgnf b (bf)))))
     (if (or (nanp a (bf))
-	    (nanp b (bf))
-	    (and (infp a (bf))
-		 (or (zerp b (bf)) (denormp b (bf))))
-	    (and (infp b (bf))
-		 (or (zerp a (bf)) (denormp a (bf)))))
+            (nanp b (bf))
+            (and (infp a (bf))
+                 (or (zerp b (bf)) (denormp b (bf))))
+            (and (infp b (bf))
+                 (or (zerp a (bf)) (denormp a (bf)))))
         (signed-indef ah (sp))
       (if (or (infp a (bf)) (infp b (bf)))
-	  (iencode sgnr (sp))
+          (iencode sgnr (sp))
         (if (or (zerp a (bf)) (denormp a (bf))
-		(zerp b (bf)) (denormp b (bf)))
-	    (zencode sgnr (sp))
-	  (bf-post-comp (* (ndecode a (bf)) (ndecode b (bf)))))))))
+                (zerp b (bf)) (denormp b (bf)))
+            (zencode sgnr (sp))
+          (bf-post-comp (* (ndecode a (bf)) (ndecode b (bf)))))))))
 
 ;; SP sum of 2 SP operands
 
@@ -676,26 +860,160 @@
                               (bitp ah))
                   :guard-hints (("Goal" :in-theory (enable sgnf)))))
   (let* ((sgna (sgnf a (sp)))
-	 (sgnb (sgnf b (sp)))
-	 (aval (if (or (zerp a (sp)) (denormp a (sp)))
+         (sgnb (sgnf b (sp)))
+         (aval (if (or (zerp a (sp)) (denormp a (sp)))
                    0
                  (ndecode a (sp))))
-	 (bval (if (or (zerp b (sp)) (denormp b (sp)))
+         (bval (if (or (zerp b (sp)) (denormp b (sp)))
                    0
                  (ndecode b (sp))))
-	 (u (+ aval bval)))
+         (u (+ aval bval)))
     (if (or (nanp a (sp))
-	    (nanp b (sp))
-	    (and (infp a (sp)) (infp b (sp)) (not (= sgna sgnb))))
+            (nanp b (sp))
+            (and (infp a (sp)) (infp b (sp)) (not (= sgna sgnb))))
         (signed-indef ah (sp))
       (if (infp a (sp))
-	  a
-	(if (infp b (sp))
-	    b
-	  (if (= u 0)
-	      (if (= sgna sgnb)
-	          (zencode sgna (sp))
-	        (zencode 0 (sp)))
-	    (bf-post-comp u)))))))
+          a
+        (if (infp b (sp))
+            b
+          (if (= u 0)
+              (if (= sgna sgnb)
+                  (zencode sgna (sp))
+                (zencode 0 (sp)))
+            (bf-post-comp u)))))))
 
 ;; )
+
+(defthm encodingp-of-aarch64-bfmul16
+  (encodingp (aarch64-bfmul16-spec a b ah) (sp))
+  :hints (("Goal" :in-theory (e/d (aarch64-bfmul16-spec encodingp
+                                   bf-post-comp
+                                   nencode zencode) ()))))
+
+(defthm encodingp-of-aarch64-bfadd32
+  (implies (and (encodingp a (sp))
+                (encodingp b (sp)))
+           (encodingp (aarch64-bfadd32-spec a b ah) (sp)))
+  :hints (("Goal" :in-theory (e/d (aarch64-bfadd32-spec encodingp
+                                   bf-post-comp
+                                   nencode zencode) ()))))
+
+;; Dot-product of 2 BF vectors of length 2, followed by SP addition.
+(defund aarch64-bfdotadd-spec (addend a1 b1 a2 b2 ah)
+  (declare (xargs :guard (and (encodingp addend (sp))
+                              (encodingp a1 (bf))
+                              (encodingp b1 (bf))
+                              (encodingp a2 (bf))
+                              (encodingp b2 (bf))
+                              (bitp ah))))
+  (b* ((p1 (aarch64-bfmul16-spec a1 b1 ah))
+       (p2 (aarch64-bfmul16-spec a2 b2 ah))
+       (sumprod (aarch64-bfadd32-spec p1 p2 ah)))
+    (aarch64-bfadd32-spec addend sumprod ah)))
+
+(defthm encodingp-of-aarch64-bfdotadd-spec
+  (implies (encodingp addend (sp))
+           (encodingp (aarch64-bfdotadd-spec addend a1 b1 a2 b2 ah) (sp)))
+  :hints (("Goal" :in-theory (e/d (aarch64-bfdotadd-spec) ()))))
+
+;; Bfloat matrix multiply operation : multiply a 2x4 and transpose of another
+;; 2x4 matrix, and add a 2x2 matrix. The 2x4 matrices hold BF entries and the
+;; 2x2 addend matrix contains SP entries.
+
+(defund elem (a n size)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp size)
+                              (integerp n))))
+  (bits a (1- (* size (1+ n))) (* size n)))
+
+(defund mat-elem-bf (a i j)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp i)
+                              (integerp j))))
+  ;; element of a 2x4 matrix
+  (elem a (+ (* 4 i) j) 16))
+
+(defund mat-elem-sp (a i j)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp i)
+                              (integerp j))))
+  ;; element of a 2x2 matrix
+  (elem a (+ (* 2 i) j) 32))
+
+(defthm encodingp-of-elem-16
+  (and (encodingp (elem a n 16) (bf))
+       (encodingp (elem a n 16) (hp)))
+  :hints (("Goal" :in-theory (e/d (elem encodingp) ()))))
+
+(defthm encodingp-of-elem-32
+  (encodingp (elem a n 32) (sp))
+  :hints (("Goal" :in-theory (e/d (elem encodingp) ()))))
+
+(defthm encodingp-of-mat-elem-bf
+  (encodingp (mat-elem-bf a i j) (bf))
+  :hints (("Goal" :in-theory (e/d (mat-elem-bf encodingp elem) ()))))
+
+(defthm encodingp-of-mat-elem-sp
+  (encodingp (mat-elem-sp a i j) (sp))
+  :hints (("Goal" :in-theory (e/d (mat-elem-sp encodingp elem) ()))))
+
+(defund aarch64-bfmmla-spec (addend a b ah)
+  (declare (xargs :guard (and (bvecp addend 128)
+                              (bvecp a 128)
+                              (bvecp b 128)
+                              (bitp ah))
+                  :guard-hints
+                  (("Goal" :in-theory (e/d () ())))))
+  (b* ((addend00 (mat-elem-sp addend 0 0))
+       (res00 (aarch64-bfdotadd-spec addend00
+                                     (mat-elem-bf a 0 0)
+                                     (mat-elem-bf b 0 0)
+                                     (mat-elem-bf a 0 1)
+                                     (mat-elem-bf b 0 1)
+                                     ah))
+       (res00 (aarch64-bfdotadd-spec res00
+                                     (mat-elem-bf a 0 2)
+                                     (mat-elem-bf b 0 2)
+                                     (mat-elem-bf a 0 3)
+                                     (mat-elem-bf b 0 3)
+                                     ah))
+       (addend01 (mat-elem-sp addend 0 1))
+       (res01 (aarch64-bfdotadd-spec addend01
+                                     (mat-elem-bf a 0 0)
+                                     (mat-elem-bf b 1 0)
+                                     (mat-elem-bf a 0 1)
+                                     (mat-elem-bf b 1 1)
+                                     ah))
+       (res01 (aarch64-bfdotadd-spec res01
+                                     (mat-elem-bf a 0 2)
+                                     (mat-elem-bf b 1 2)
+                                     (mat-elem-bf a 0 3)
+                                     (mat-elem-bf b 1 3)
+                                     ah))
+       (addend10 (mat-elem-sp addend 1 0))
+       (res10 (aarch64-bfdotadd-spec addend10
+                                     (mat-elem-bf a 1 0)
+                                     (mat-elem-bf b 0 0)
+                                     (mat-elem-bf a 1 1)
+                                     (mat-elem-bf b 0 1)
+                                     ah))
+       (res10 (aarch64-bfdotadd-spec res10
+                                     (mat-elem-bf a 1 2)
+                                     (mat-elem-bf b 0 2)
+                                     (mat-elem-bf a 1 3)
+                                     (mat-elem-bf b 0 3)
+                                     ah))
+       (addend11 (mat-elem-sp addend 1 1))
+       (res11 (aarch64-bfdotadd-spec addend11
+                                     (mat-elem-bf a 1 0)
+                                     (mat-elem-bf b 1 0)
+                                     (mat-elem-bf a 1 1)
+                                     (mat-elem-bf b 1 1)
+                                     ah))
+       (res11 (aarch64-bfdotadd-spec res11
+                                     (mat-elem-bf a 1 2)
+                                     (mat-elem-bf b 1 2)
+                                     (mat-elem-bf a 1 3)
+                                     (mat-elem-bf b 1 3)
+                                     ah)))
+    (cat res11 32 res10 32 res01 32 res00 32)))

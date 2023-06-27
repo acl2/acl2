@@ -15,13 +15,13 @@
 (local (include-book "denominator"))
 (local (include-book "times"))
 (local (include-book "plus"))
-(local (include-book "minus"))
+;(local (include-book "minus"))
 (local (include-book "divide"))
 (local (include-book "times-and-divide"))
 (local (include-book "nonnegative-integer-quotient"))
 (local (include-book "integerp"))
 ;(local (include-book "expt"))
-(local (include-book "../../meta/meta-plus-lessp"))
+;(local (include-book "../../meta/meta-plus-lessp"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;rename and move

@@ -854,7 +854,7 @@
 ; given to raw lisp, a hard error results when the wormhole-eval macro tries to
 ; cadr into qname.  So what should be here?  Intuitively we ought to lay down
 ; code that checks that qlambda is a well-formed and appropriate lambda
-; expression and then apply it to the wormhole status of the wormhole with the
+; expression and then apply it to the persistent-whs of the wormhole with the
 ; name qname.  But in fact this *1* function should never be called except from
 ; within the theorem prover when we are evaluating wormhole-eval on quoted
 ; constants.  Thus, we just return nil, it's logical value, without attempting
@@ -1304,8 +1304,11 @@
 
 (defun-one-output oneify (x fns w program-p)
 
-; Keep this function in sync with translate11.  Errors have generally been
-; removed here, since we know they can't occur.
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
+; In addition, keep this function in sync with translate11.  Errors have
+; generally been removed here, since we know they can't occur.
 
 ; Fns is an alist.  Entries include (fn) for each flet-bound fn and (mac args
 ; body) for each macrolet-bound mac.  We use a single structure for both local
@@ -1715,21 +1718,41 @@
    ((eq (car x) 'wormhole-eval)
 
 ; We know that in a well-formed term (wormhole-eval x y z), x is a quoted
-; constant naming the wormhole, y is a lambda object of either the form (lambda
-; (whs) body) or (lambda () body) that will be applied to the wormhole status,
-; and z is some well-formed (irrelevant) term.  The oneify of a quote is
-; itself, so we don't have to do anything to x.  But with y, we oneify the
-; lambda body.  The ``call'' of wormhole-eval laid down below is a reference to
-; the macro definition for that symbol in raw Lisp.
+; constant naming the wormhole (or else we're in boot-strap where x could be
+; any term but is thought, always, to be a variable symbol or quoted constant),
+; y is a lambda object of either the form (lambda (whs) body) or (lambda ()
+; body) that will be applied to the persistent-whs of x (when there is a lambda
+; formal), and z is some well-formed (irrelevant) term.  The oneify of a
+; variable or a quote is itself, so we don't have to do anything to x aside
+; from confirming it is one of those two syntactic types.  But with y, we
+; oneify the lambda body.  The ``call'' of wormhole-eval laid down below is a
+; reference to the macro definition for that symbol in raw Lisp.
 
     (let* ((qname (cadr x))
+
+; Warning: qname might not be a quoted constant during boot-strap!  See the
+; check below.
+
            (qlambda (caddr x))
            (formals (cadr (cadr qlambda)))
            (body (caddr (cadr qlambda))))
-      (list 'wormhole-eval
-            qname
-            (list 'quote (list 'lambda formals (oneify body fns w program-p)))
-            *nil*)))
+      (cond
+       ((not (or (variablep qname)
+                 (fquotep qname)))
+        (interface-er
+         "We thought that the name argument of every call of wormhole-eval in ~
+          the ACL2 source code was either a variable symbol or a quoted ~
+          constant.  But oneify has encountered a call of wormhole-eval with ~
+          the term ~x0 in the wormhole name position.  Out of sheer laziness, ~
+          oneify is not prepared to deal with such a call of wormhole-eval!  ~
+          Please inform the ACL2 developers of this error and we'll fix it!"
+         qname))
+       (t
+        (list 'wormhole-eval
+              qname
+              (list 'quote
+                    (list 'lambda formals (oneify body fns w program-p)))
+              *nil*)))))
    (t
     (let ((arg-forms (oneify-lst (cdr x) fns w program-p))
           (fn (cond ((and (eq program-p 'invariant-risk)
@@ -8661,11 +8684,6 @@
 ; that saved-build-date-string is defined in interface-raw.lisp.
 
            (list (eval '(saved-build-date-string))))
-
-; If you want the final image to have infixp = t (and have feature :acl2-infix
-; set), then put the following form here:
-;    (f-put-global 'infixp t *the-live-state*)
-
      t)))
 
 
@@ -9052,10 +9070,7 @@
                          customization-full-file-name
                          (put-assoc-eq
                           'ld-error-action :error
-                          (f-get-ld-specials *the-live-state*))))
-              #+acl2-infix (old-infixp
-                            (f-get-global 'infixp *the-live-state*)))
-          #+acl2-infix (f-put-global 'infixp nil *the-live-state*)
+                          (f-get-ld-specials *the-live-state*)))))
           (mv-let (erp val state)
             (with-suppression ; package locks, not just warnings, for read
              (with-cbd-raw
@@ -9094,8 +9109,6 @@
                             (ld-prompt nil))
                            (ld-fn quiet-alist *the-live-state* nil)))))))
                     (t (ld-fn ld-alist *the-live-state* nil)))))
-            #+acl2-infix
-            (f-put-global 'infixp old-infixp *the-live-state*)
             (cond (erp (format t "**Error encountered during LD of ACL2 ~
                                   customization file,~%~s.~%Quitting....~%"
                                customization-full-file-name)
@@ -9437,7 +9450,8 @@
    (let ((state *the-live-state*)
          #+(and gcl (not cltl2))
          (system::*break-enable* (debugger-enabledp *the-live-state*))
-         (*debug-io* *our-standard-io*))
+         (*debug-io* *our-standard-io*)
+         (*features* (cons :acl2-loop-only *features*)))
      (cond
       ((> *ld-level* 0)
        (when (raw-mode-p *the-live-state*)
@@ -9638,9 +9652,11 @@
      (spawn-extra-lispworks-listener)
      (values))))
 
-(defmacro lp! (&rest args)
-  `(let ((*features* (add-to-set-eq :acl2-loop-only *features*)))
-     (lp ,@args)))
+(defun lp! (&rest args)
+  (declare (ignore args))
+  (error "LP! is no longer supported or necessary.
+Evaluate (LP) to enter the ACL2 read-eval-print loop
+such that feature :acl2-loop-only is true."))
 
 ;                   COMPILING, SAVING, AND RESTORING
 
@@ -10512,9 +10528,9 @@
 ; showed significant slowdown upon including new memoization code from Centaur
 ; on 3/28/2013:
 ; ; old:
-; 24338.570u 1357.200s 1:19:02.75 541.7%	0+0k 0+1918864io 0pf+0w
+; 24338.570u 1357.200s 1:19:02.75 541.7%        0+0k 0+1918864io 0pf+0w
 ; ; new:
-; 33931.460u 1017.070s 1:43:24.28 563.2%	0+0k 392+1931656io 0pf+0w
+; 33931.460u 1017.070s 1:43:24.28 563.2%        0+0k 392+1931656io 0pf+0w
 ; After restoring (start-sol-gc) in function acl2h-init, we regained the old
 ; level of performance for a UT CS ACL2(h) regression, with the new memoization
 ; code.

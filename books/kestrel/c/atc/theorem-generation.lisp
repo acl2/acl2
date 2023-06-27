@@ -14,6 +14,7 @@
 (include-book "generation-contexts")
 (include-book "types-to-recognizers")
 (include-book "variable-tables")
+(include-book "tag-tables")
 
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -48,11 +49,13 @@
                                        (context atc-contextp)
                                        (expr exprp)
                                        (type typep)
-                                       (term pseudo-termp)
+                                       (term1 pseudo-termp)
+                                       (term2 pseudo-termp)
                                        (objdes pseudo-termp)
                                        (compst-var symbolp)
                                        (hints true-listp)
                                        (instructions true-listp)
+                                       (prec-tags atc-string-taginfo-alistp)
                                        (thm-index posp)
                                        (names-to-avoid symbol-listp)
                                        state)
@@ -74,11 +77,15 @@
    (xdoc::p
     "The theorem says that
      @(tsee exec-expr-pure) called on the quoted expression
-     is the same as the term;
-     it also says that the term has the expression's type.
-     The term is untranslated, to make it more readable,
+     is the same as @('term1');
+     it also says that @('term2') has the expression's type.
+     Often @('term1') and @('term2') are the same,
+     but sometimes they differ,
+     e.g. when @('term1') is a @('-ptr') variable
+     while @('term2') is the same variable without @('-ptr').
+     The terms are untranslated, to make them more readable,
      in particular to eliminate quotes before numbers.
-     Term, expression, and type are passed as inputs.
+     Terms, expression, and type are passed as inputs.
      The theorem is contextualized,
      and further conditioned by the satisfaction of the guard of @('fn').")
    (xdoc::p
@@ -88,14 +95,15 @@
        (name (pack fn '-correct- thm-index))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       (type-pred (type-to-recognizer type wrld))
-       (uterm (untranslate$ term nil state))
+       (type-pred (atc-type-to-recognizer type prec-tags))
+       (uterm1 (untranslate$ term1 nil state))
+       (uterm2 (untranslate$ term2 nil state))
        (uobjdes (untranslate$ objdes nil state))
        (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
-                         (expr-value ,uterm ,uobjdes)))
+                         (expr-value ,uterm1 ,uobjdes)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var nil nil t wrld))
-       (formula2 `(,type-pred ,uterm))
+       (formula2 `(,type-pred ,uterm2))
        (formula2 (atc-contextualize formula2 context fn fn-guard
                                     nil nil nil nil wrld))
        (formula `(and ,formula1 ,formula2))
@@ -119,6 +127,7 @@
                                        (compst-var symbolp)
                                        (hints true-listp)
                                        (instructions true-listp)
+                                       (prec-tags atc-string-taginfo-alistp)
                                        (thm-index posp)
                                        (names-to-avoid symbol-listp)
                                        state)
@@ -141,7 +150,8 @@
      The two terms are
      @('aterm') (for `ACL2 term') and @('cterm') (for `C term'),
      both passed as parameters to this ACL2 function
-     (unlike a single @('term') in @(tsee atc-gen-expr-pure-correct-thm)).
+     (unlike the terms @('term1') and @('term2')
+     in @(tsee atc-gen-expr-pure-correct-thm)).
      The two terms and their relation are slightly different
      for different kinds of boolean expression terms;
      see the callers of this ACL2 function for details.")
@@ -166,7 +176,7 @@
        (name (pack fn '-correct- thm-index))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type prec-tags))
        (uaterm (untranslate$ aterm nil state))
        (ucterm (untranslate$ cterm nil state))
        (uobjdes (untranslate$ objdes nil state))
@@ -196,6 +206,7 @@
                              (new-context atc-contextp)
                              (compst-var symbolp)
                              (rules true-listp)
+                             (prec-tags atc-string-taginfo-alistp)
                              (thm-index posp)
                              (names-to-avoid symbol-listp)
                              (wrld plist-worldp))
@@ -223,8 +234,8 @@
      and constructs an updated symbol table @('new-inscope') from it,
      with the same scopes and variables, but different theorems (see below).
      Callers of this ACL2 function can further update the returned symbol table;
-     for instance, when entering a scope,
-     the caller of this ACL2 function adds a new empty scope.")
+     for instance, when encountering a new variable declaration,
+     the caller of this ACL2 function adds the new variable.")
    (xdoc::p
     "The input context @('new-context') is already the new context,
      created by the caller of this ACL2 function
@@ -250,11 +261,11 @@
        (scope (car inscope))
        ((mv new-scope events names-to-avoid)
         (atc-gen-new-inscope-aux fn fn-guard scope new-context compst-var
-                                 rules thm-index names-to-avoid wrld))
+                                 rules prec-tags thm-index names-to-avoid wrld))
        (scopes (cdr inscope))
        ((mv new-scopes more-events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard scopes new-context compst-var
-                             rules thm-index names-to-avoid wrld)))
+                             rules prec-tags thm-index names-to-avoid wrld)))
     (mv (cons new-scope new-scopes)
         (append events more-events)
         names-to-avoid))
@@ -266,6 +277,7 @@
                                     (new-context atc-contextp)
                                     (compst-var symbolp)
                                     (rules true-listp)
+                                    (prec-tags atc-string-taginfo-alistp)
                                     (thm-index posp)
                                     (names-to-avoid symbol-listp)
                                     (wrld plist-worldp))
@@ -282,13 +294,16 @@
           ((cons var info) (car scope))
           (type (atc-var-info->type info))
           (thm (atc-var-info->thm info))
-          (type-pred (type-to-recognizer type wrld))
+          (externalp (atc-var-info->externalp info))
+          (type-pred (atc-type-to-recognizer type prec-tags))
           (new-thm (pack fn '- var '-in-scope- thm-index))
           ((mv new-thm names-to-avoid)
            (fresh-logical-name-with-$s-suffix
             new-thm nil names-to-avoid wrld))
-          (var/varptr (if (type-case type :pointer)
-                          (add-suffix var "-PTR")
+          (var/varptr (if (and (or (type-case type :pointer)
+                                   (type-case type :array))
+                               (not externalp))
+                          (add-suffix-to-fn var "-PTR")
                         var))
           (formula1 `(and (objdesign-of-var (ident ,(symbol-name var))
                                             ,compst-var)
@@ -297,9 +312,11 @@
                                                     ,compst-var)
                                   ,compst-var)
                                  ,var/varptr)
-                          ,@(and (type-case type :pointer)
+                          ,@(and (or (type-case type :pointer)
+                                     (type-case type :array))
+                                 (not externalp)
                                  `((equal (read-object
-                                           ,(add-suffix var "-OBJDES")
+                                           ,(add-suffix-to-fn var "-OBJDES")
                                            ,compst-var)
                                           ,var)))))
           (formula1 (atc-contextualize formula1 new-context fn fn-guard
@@ -317,7 +334,7 @@
           (rest (cdr scope))
           ((mv new-rest events names-to-avoid)
            (atc-gen-new-inscope-aux fn fn-guard rest new-context
-                                    compst-var rules thm-index
+                                    compst-var rules prec-tags thm-index
                                     names-to-avoid wrld)))
        (mv (acons var new-info new-rest)
            (cons event events)
@@ -334,6 +351,7 @@
                                (inscope atc-symbol-varinfo-alist-listp)
                                (context atc-contextp)
                                (compst-var symbolp)
+                               (prec-tags atc-string-taginfo-alistp)
                                (thm-index posp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
@@ -380,7 +398,7 @@
                 read-object-of-enter-scope))
        ((mv new-inscope events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var
-                             rules thm-index names-to-avoid wrld)))
+                             rules prec-tags thm-index names-to-avoid wrld)))
     (mv (cons nil new-inscope)
         new-context
         events
@@ -398,6 +416,7 @@
                                  (term "An untranslated term.")
                                  (term-thm symbolp)
                                  (compst-var symbolp)
+                                 (prec-tags atc-string-taginfo-alistp)
                                  (thm-index posp)
                                  (names-to-avoid symbol-listp)
                                  (wrld plist-worldp))
@@ -431,10 +450,11 @@
                 ident-fix-when-identp
                 identp-of-ident
                 equal-of-ident-and-ident
-                (:e str-fix)))
+                (:e str-fix)
+                read-object-of-add-var))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope fn fn-guard inscope new-context compst-var rules
-                             thm-index names-to-avoid wrld))
+                             prec-tags thm-index names-to-avoid wrld))
        (var-in-scope-thm (pack fn '- var '-in-scope- thm-index))
        (thm-index (1+ thm-index))
        ((mv var-in-scope-thm names-to-avoid)
@@ -442,7 +462,7 @@
                                            nil
                                            names-to-avoid
                                            wrld))
-       (type-pred (type-to-recognizer type wrld))
+       (type-pred (atc-type-to-recognizer type prec-tags))
        (var-in-scope-formula1
         `(and (objdesign-of-var (ident ,(symbol-name var)) ,compst-var)
               (equal (read-object (objdesign-of-var (ident ,(symbol-name var))
@@ -458,9 +478,8 @@
                            nil nil nil nil wrld))
        (var-in-scope-formula `(and ,var-in-scope-formula1
                                    ,var-in-scope-formula2))
-       (valuep-when-type-pred (pack 'valuep-when- type-pred))
-       (not-flexible-array-member-p-when-type-pred
-        (pack 'not-flexible-array-member-p-when- type-pred))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
+       (not-flexiblep-thms (atc-type-to-notflexarrmem-thms type prec-tags))
        (var-in-scope-hints
         `(("Goal" :in-theory '(objdesign-of-var-of-add-var-iff
                                read-object-of-objdesign-of-var-of-add-var
@@ -469,7 +488,7 @@
                                equal-of-ident-and-ident
                                (:e str-fix)
                                remove-flexible-array-member-when-absent
-                               ,not-flexible-array-member-p-when-type-pred
+                               ,@not-flexiblep-thms
                                value-fix-when-valuep
                                ,valuep-when-type-pred
                                ,term-thm))))

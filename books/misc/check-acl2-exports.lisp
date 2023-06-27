@@ -211,9 +211,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    SET-TABLE-GUARD
-    WITH-CURRENT-PACKAGE
-
   ))
 
 (defconst *special-ops*

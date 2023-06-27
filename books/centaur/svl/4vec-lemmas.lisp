@@ -66,6 +66,8 @@
   use-equal-by-logbitp
   :disabled t))
 
+
+
 (encapsulate
   nil
   (local
@@ -6776,14 +6778,13 @@ lognot)
                              sv::4vec->upper
                              ) ())))))
 
-(local
- (DEFTHMd separate-num-to-vector-with-loghead
-   (IMPLIES (AND (NATP SIZE)
-                 (integerp y))
-            (EQUAL
-             (LOGAPP SIZE (loghead size Y)
-                     (ASH Y (- SIZE)))
-             y))))
+(defthmd separate-num-to-vector-with-loghead
+  (implies (and (natp size)
+                (integerp y))
+           (equal
+            (logapp size (loghead size y)
+                    (ash y (- size)))
+            y)))
 
 (local
  (defthm equivalence-of-4vec-and-integerp
@@ -7526,8 +7527,8 @@ lognot)
                                     (sv::3vec-fix y)))
                 (equal (sv::3vec-fix (4vec-concat$ size x y))
                        (4vec-concat$ size
-                                    (sv::3vec-fix x)
-                                    (sv::3vec-fix y)))))
+                                     (sv::3vec-fix x)
+                                     (sv::3vec-fix y)))))
   :hints (("Goal"
            :in-theory (e/d (4vec-concat
                             SV::3VEC-FIX
@@ -7545,14 +7546,13 @@ lognot)
                        (sv::3vec-fix (4vec-concat size x y))
                        )
                 (equal (4vec-concat$ size
-                                    (sv::3vec-fix x)
-                                    (sv::3vec-fix y))
+                                     (sv::3vec-fix x)
+                                     (sv::3vec-fix y))
                        (sv::3vec-fix (4vec-concat$ size x y))
                        )))
   :hints (("Goal"
            :in-theory (e/d (3vec-fix-of-4vec-concat)
                            ()))))
-
 
 
 (defthm 3vec-p-of-4vec-fix
@@ -8142,7 +8142,34 @@ lognot)
                             4vec-part-select-better-opener)
                            ()))))
 
+(def-rp-rule :disabled t
+  4vec-==-with-constant2
+  (implies (and (syntaxp (quotep y))
+                (integerp x)
+                (natp y)
+                ;; below is to prevent continuos rewriting.
+                (ignore-and-return-t (sv::4vec-rsh 500 x))
+                )
+           (equal (sv::4vec-== y x)
+                  (- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
+                                          (acl2::logcar x)
+                                        (svl::4vec-bitnot$ 1 (acl2::logcar x)))
+                                      (- (sv::4vec-== (acl2::logcdr x)
+                                                      (acl2::logcdr y)))))))
+  :hints (("Goal"
+           :in-theory (e/d (sv::4vec-==
+                            SV::3VEC-==
+                            SV::3VEC-BITXOR
+                            SV::3VEC-BITNOT
+                            4VEC-BITAND
+                            SV::3VEC-REDUCTION-AND
+                            3VEC-BITAND
+                            SV::BOOL->VEC
+                            4vec-part-select-better-opener)
+                           ()))))
+
 (add-svex-simplify-rule 4vec-==-with-constant)
+(add-svex-simplify-rule 4vec-==-with-constant2)
 
 (def-rp-rule :disabled t
   4vec-symwildeq-with-constant
@@ -8864,7 +8891,7 @@ lognot)
                                    LOGand-OF-LOGTAIL)
                                   (BITOPS::LOGTAIL-OF-LOGAND
                                    BITOPS::LOGTAIL-OF-LOGior)
-                                 )))))
+                                  )))))
 
 (defthm 3vec-p-of-4vec-rsh
   (implies (and (natp size)
@@ -8882,7 +8909,7 @@ lognot)
                                   (bitops::logtail-of-lognot
                                    bitops::logtail-of-logand
                                    bitops::logtail-of-logior)
-                                 )))))
+                                  )))))
 
 (defthm 4vec-sign-ext-of-4vec-part-select
   (implies (natp size)
@@ -8894,3 +8921,21 @@ lognot)
                             4vec-part-select
                             4vec-concat)
                            ()))))
+
+
+(encapsulate
+  nil
+  (local
+   (use-ihs-extensions t))
+
+  (rp::def-rp-rule :disabled-for-acl2 t
+    expand-logrev
+    (implies (and (posp size))
+             (equal (acl2::logrev size num)
+                    (acl2::logcons
+                     (acl2::logbit (1- size) num)
+                     (acl2::logrev (1- size) num))))
+    :hints (("Goal"
+             :in-theory (e/d* (bitops::ihsext-inductions
+                               bitops::ihsext-recursive-redefs)
+                              ())))))

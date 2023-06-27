@@ -2716,3 +2716,4 @@
 
 (svl::add-svex-simplify-rule integerp-implies-acl2-numberp)
 
+

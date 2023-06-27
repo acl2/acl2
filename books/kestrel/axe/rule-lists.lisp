@@ -231,7 +231,8 @@
 
     integerp-of--
     integerp-of-+
-    ))
+
+    integerp-when-unsigned-byte-p-free))
 
 (defun safe-trim-rules ()
   (declare (xargs :guard t))
@@ -591,7 +592,11 @@
 
      bvshl-of-0-arg2
      bvshl-of-0-arg3
+
      equal-of-bvplus-and-bvplus-cancel-arg2-arg2 ;sat feb 19 17:28:05 2011
+     equal-of-bvplus-and-bvplus-cancel-arg1-arg2
+     equal-of-bvplus-and-bvplus-cancel-arg2-arg1
+
      not-equal-bvchop-when-not-equal-bvchop      ;tue feb  8 12:55:33 2011
      bvmod-of-0-arg2
      slice-when-not-bvlt-free ;fri jan 28 18:39:08 2011
@@ -2105,12 +2110,12 @@
      nthcdr-of-bvplus-1
      +-of-minus-1-and-bv2
      +-of-minus-1-and-bv
-     equal-of-bvplus-and-bvplus-cancel-arg3-and-arg3
+     equal-of-bvplus-and-bvplus-cancel-arg3-and-arg3 ; todo: move to core-rules-bv
      equal-of-minval-and-bvplus-of-bvminus
      equal-of-minval-and-bvplus-of-bvminus-alt
 
      unsigned-byte-p-of-bvplus-minus-1
-     equal-of-bvplus-and-bvplus-cancel-arg2-and-arg3
+     equal-of-bvplus-and-bvplus-cancel-arg2-and-arg3 ; todo: move to core-rules-bv
      unsigned-byte-p-of-bvplus-1
 
      ;;CONSP-FROM-LEN ;new ;loops with LIST::LEN-OF-NON-CONSP
@@ -2471,8 +2476,7 @@
    (booleanp-rules) ;new!
    (boolean-rules-safe) ;new!
    (type-rules)     ;very new (seems safe)
-   '(integerp-when-unsigned-byte-p-free ;tue jan 11 16:53:16 2011
-     equal-of-not-and-nil               ;tue jan 11 16:52:09 2011
+   '(equal-of-not-and-nil               ;tue jan 11 16:52:09 2011
      bvlt-of-bvchop-arg2
      bvlt-of-bvchop-arg3
      bvlt-tighten-free-and-free ;hope this is okay. fixme use polarities?
@@ -2741,7 +2745,6 @@
 (table axe-rule-priorities-table 'bvplus-of-bvuminus-same-2 -1)
 (table axe-rule-priorities-table 'bvplus-of-bvuminus-same-2-alt -1)
 
-
 (table axe-rule-priorities-table 'bvplus-becomes-ripple-carry-adder 10)
 ;new:
 (table axe-rule-priorities-table 'blast-bvmult-into-bvplus-constant-version-arg2 10)
@@ -2853,5 +2856,3 @@
         (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules-basic)) (w state))
         ;;we do need to blast the mult of a constant (and the resulting pluses??), it seems
         (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules3)) (w state))))
-
-;; (defun dups (x) (if (endp x) nil (if (member-eq (first x) (rest x)) (cons (first x) (dups (rest x))) (dups (rest x)))))

@@ -1,6 +1,6 @@
 ; Checking for package conflicts
 
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,16 +11,14 @@
 (in-package "ACL2")
 
 ;; This book attempts to include as many different packages as possible, by
-;; including portcullis.lisp books.
-;; TODO: What about packages that do not correspond to portcullis.lisp files?
+;; including portcullis many books.  Packages that do not have portcullis.lisp
+;; files are brought in via packages.acl2 instead, so see that file as well.
 
 ;; These came from running 'find ../../.. -name portcullis.lisp':
 
 ;; TODO: Why does including this book bring in rev?  Maybe because of ./acl2/books/projects/async/package.lsp?
 
 ;; TODO: Bring in M5 package once modernized
-
-;; See also some packages brought in by packages.acl2
 
 (include-book "acl2s/portcullis" :dir :system)
 (include-book "build/portcullis" :dir :system)

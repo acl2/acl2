@@ -7273,6 +7273,7 @@ e2-e1+1.
                  nil
                  nil
                  nil
+                 nil ; save-event-data, added by Matt K.
                  event-form
                  state))
 
@@ -7455,7 +7456,7 @@ e2-e1+1.
   :program (value nil)
   :raw
   (with-ctx-summarized
-   (defun-ctx def-lst state event-form #+:non-standard-analysis std-p)
+   (defun-ctx def-lst #+:non-standard-analysis std-p)
    (let ((wrld (w state))
          (def-lst0
            #+:non-standard-analysis

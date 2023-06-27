@@ -250,6 +250,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-block-item
+  :short "An irrelevant block-item."
+  :type block-itemp
+  :body (block-item-stmt (irr-stmt)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-fundef
   :short "An irrelevant function definition."
   :type fundefp

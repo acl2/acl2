@@ -1,0 +1,264 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROVE PROOF-TREE))
+ (PROVE PROOF-TREE)
+ACL2 !>>(SET-GAG-MODE NIL)
+<state>
+ACL2 !>>(IN-THEORY (DISABLE REVERSE))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(SAVING-EVENT-DATA (LD "test2.lisp"))
+ACL2 !>>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>>(INCLUDE-BOOK "std/util/define"
+                       :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "std/util/define" ...)
+Rules: NIL
+ (:SYSTEM . "std/util/define.lisp")
+ACL2 !>>>(THM (IMPLIES (CONSP (APPEND Y X))
+                       (CONSP (APPEND X Y))))
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:TYPE-PRESCRIPTION BINARY-APPEND))
+ACL2 !>>>(DEFINE FOO ((X TRUE-LISTP))
+           :VERIFY-GUARDS
+           NIL (APPEND (REVERSE X) X)
+           /// (VERIFY-GUARDS FOO))
+
+Since FOO is non-recursive, its admission is trivial.  We observe that
+the type of FOO is described by the theorem 
+(OR (CONSP (FOO X)) (EQUAL (FOO X) X)).  We used the :type-prescription
+rule BINARY-APPEND.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-APPEND))
+
+
+ACL2 !>>>>(VERIFY-GUARDS FOO)
+
+Computing the guard conjecture for FOO....
+
+The non-trivial part of the guard conjecture for FOO is
+
+Goal
+(IMPLIES (TRUE-LISTP X)
+         (AND (OR (TRUE-LISTP X) (STRINGP X))
+              (TRUE-LISTP (REVERSE X)))).
+
+
+ACL2 Error in ( VERIFY-GUARDS FOO):  The proof of the guard conjecture
+for FOO has failed.  You may wish to avoid specifying a guard, or to
+supply option :VERIFY-GUARDS NIL with the :GUARD.  Otherwise, you may
+wish to specify :GUARD-DEBUG T; see :DOC verify-guards.
+
+
+
+Summary
+Form:  ( VERIFY-GUARDS FOO)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART REVERSE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION TRUE-LISTP)
+        (:TYPE-PRESCRIPTION REVERSE))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(IMPLIES (AND (TRUE-LISTP X)
+              (NOT (CONSP (REVERSE X))))
+         (NOT (REVERSE X)))
+
+*** Key checkpoints under a top-level induction: ***
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP X)
+              (NOT (REVERSE (CDR X)))
+              (TRUE-LISTP (CDR X))
+              (NOT (CONSP (REVERSE X))))
+         (NOT (REVERSE X)))
+
+Subgoal *1/2'
+(IMPLIES (AND (CONSP X)
+              (CONSP (REVERSE (CDR X)))
+              (TRUE-LISTP (CDR X))
+              (NOT (CONSP (REVERSE X))))
+         (NOT (REVERSE X)))
+
+ACL2 Error [Failure] in ( VERIFY-GUARDS FOO):  The proof of the guard
+conjecture for FOO has failed; see the discussion above about :VERIFY-GUARDS
+and :GUARD-DEBUG.  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( PROGN (VERIFY-GUARDS FOO) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( PROGN (VERIFY-GUARDS FOO) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ (:STOP-LD 3)
+ACL2 !>>(RUNES-DIFF "test1.lisp")
+ ((:OLD ((:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
+         (:TYPE-PRESCRIPTION ALISTP)
+         (:TYPE-PRESCRIPTION TRUE-LISTP-REVERSE)))
+  (:NEW ((:DEFINITION NOT)
+         (:DEFINITION TRUE-LISTP)
+         (:ELIM CAR-CDR-ELIM)
+         (:EXECUTABLE-COUNTERPART CONSP)
+         (:EXECUTABLE-COUNTERPART NOT)
+         (:EXECUTABLE-COUNTERPART REVERSE)
+         (:FAKE-RUNE-FOR-TYPE-SET NIL)
+         (:INDUCTION TRUE-LISTP))))
+ACL2 !>>(IN-THEORY (DISABLE (:T APPEND)))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>(SAVING-EVENT-DATA (LD "test2.lisp"))
+ACL2 !>>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>>(INCLUDE-BOOK "std/util/define"
+                       :DIR :SYSTEM)
+
+The event ( INCLUDE-BOOK "std/util/define" ...) is redundant.  See
+:DOC redundant-events.
+
+Summary
+Form:  ( INCLUDE-BOOK "std/util/define" ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>>(THM (IMPLIES (CONSP (APPEND Y X))
+                       (CONSP (APPEND X Y))))
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND))
+ACL2 !>>>(DEFINE FOO ((X TRUE-LISTP))
+           :VERIFY-GUARDS
+           NIL (APPEND (REVERSE X) X)
+           /// (VERIFY-GUARDS FOO))
+
+Since FOO is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+
+
+ACL2 !>>>>(VERIFY-GUARDS FOO)
+
+Computing the guard conjecture for FOO....
+
+The non-trivial part of the guard conjecture for FOO is
+
+Goal
+(IMPLIES (TRUE-LISTP X)
+         (AND (OR (TRUE-LISTP X) (STRINGP X))
+              (TRUE-LISTP (REVERSE X)))).
+
+
+ACL2 Error in ( VERIFY-GUARDS FOO):  The proof of the guard conjecture
+for FOO has failed.  You may wish to avoid specifying a guard, or to
+supply option :VERIFY-GUARDS NIL with the :GUARD.  Otherwise, you may
+wish to specify :GUARD-DEBUG T; see :DOC verify-guards.
+
+
+
+Summary
+Form:  ( VERIFY-GUARDS FOO)
+Rules: ((:DEFINITION NOT)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART REVERSE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION TRUE-LISTP)
+        (:TYPE-PRESCRIPTION REVERSE))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(IMPLIES (AND (TRUE-LISTP X)
+              (NOT (CONSP (REVERSE X))))
+         (NOT (REVERSE X)))
+
+*** Key checkpoints under a top-level induction: ***
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP X)
+              (NOT (REVERSE (CDR X)))
+              (TRUE-LISTP (CDR X))
+              (NOT (CONSP (REVERSE X))))
+         (NOT (REVERSE X)))
+
+Subgoal *1/2'
+(IMPLIES (AND (CONSP X)
+              (CONSP (REVERSE (CDR X)))
+              (TRUE-LISTP (CDR X))
+              (NOT (CONSP (REVERSE X))))
+         (NOT (REVERSE X)))
+
+ACL2 Error [Failure] in ( VERIFY-GUARDS FOO):  The proof of the guard
+conjecture for FOO has failed; see the discussion above about :VERIFY-GUARDS
+and :GUARD-DEBUG.  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( PROGN (VERIFY-GUARDS FOO) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( PROGN (VERIFY-GUARDS FOO) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ (:STOP-LD 3)
+ACL2 !>>(RUNES-DIFF "test2.lisp" :NAME NIL)
+ ((:OLD ((:TYPE-PRESCRIPTION BINARY-APPEND)))
+  (:NEW ((:ELIM CAR-CDR-ELIM))))
+ACL2 !>>Bye.

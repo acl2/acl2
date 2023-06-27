@@ -5737,12 +5737,11 @@
   (when-logic
    "VERIFY-GUARDS"
    (with-ctx-summarized
-    (make-ctx-for-event event-form
-                        (cond ((and (null hints)
-                                    (null otf-flg))
-                               (msg "( VERIFY-GUARDS ~x0)"
-                                    name))
-                              (t (cons 'verify-guards name))))
+    (cond ((and (null hints)
+                (null otf-flg))
+           (msg "( VERIFY-GUARDS ~x0)"
+                name))
+          (t (cons 'verify-guards name)))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list* 'verify-guards
@@ -5791,7 +5790,9 @@
                                 nil
                                 nil
                                 (car pair)
-                                state))))))))))))
+                                state)))))))))
+    :event-type 'verify-guards
+    :event event-form)))
 
 ; That completes the implementation of verify-guards.  We now return
 ; to the development of defun itself.
@@ -11598,24 +11599,21 @@
                       wrld
                       state)))
 
-(defun defun-ctx (def-lst state event-form #+:non-standard-analysis std-p)
-  #-acl2-infix (declare (ignore event-form state))
-  (make-ctx-for-event
-   event-form
-   (cond ((atom def-lst)
-          (msg "( DEFUNS ~x0)"
-               def-lst))
-         ((atom (car def-lst))
-          (cons 'defuns (car def-lst)))
-         ((null (cdr def-lst))
-          #+:non-standard-analysis
-          (if std-p
-              (cons 'defun-std (caar def-lst))
-            (cons 'defun (caar def-lst)))
-          #-:non-standard-analysis
-          (cons 'defun (caar def-lst)))
-         (t (msg *mutual-recursion-ctx-string*
-                 (caar def-lst))))))
+(defun defun-ctx (def-lst #+:non-standard-analysis std-p)
+  (cond ((atom def-lst)
+         (msg "( DEFUNS ~x0)"
+              def-lst))
+        ((atom (car def-lst))
+         (cons 'defuns (car def-lst)))
+        ((null (cdr def-lst))
+         #+:non-standard-analysis
+         (if std-p
+             (cons 'defun-std (caar def-lst))
+           (cons 'defun (caar def-lst)))
+         #-:non-standard-analysis
+         (cons 'defun (caar def-lst)))
+        (t (msg *mutual-recursion-ctx-string*
+                (caar def-lst)))))
 
 (defun install-event-defuns (names event-form def-lst0 symbol-class
                                    reclassifyingp non-executablep pair ctx wrld
@@ -11735,7 +11733,7 @@
 ; be a waste of time.
 
   (with-ctx-summarized
-   (defun-ctx def-lst state event-form #+:non-standard-analysis std-p)
+   (defun-ctx def-lst #+:non-standard-analysis std-p)
    (let ((wrld (w state))
          (def-lst0
            #+:non-standard-analysis
@@ -11888,7 +11886,8 @@
                 (install-event-defuns names event-form def-lst0 symbol-class
                                       reclassifyingp non-executablep pair ctx wrld
                                       state)))))))))))
-   :event-type 'defun))
+   :event-type 'defun
+   :event event-form))
 
 (defun defun-fn (def state event-form #+:non-standard-analysis std-p)
 

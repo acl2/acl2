@@ -20,7 +20,6 @@
 (include-book "kestrel/std/system/check-lambda-call" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-call" :dir :system)
-(include-book "kestrel/std/system/check-mbt-dollar-call" :dir :system)
 (include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/check-not-call" :dir :system)
 (include-book "kestrel/std/system/check-or-call" :dir :system)

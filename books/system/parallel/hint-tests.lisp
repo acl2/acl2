@@ -990,7 +990,7 @@ from translate-hint-expression
 
 ; (trace$ (formal-value-triple@par)
 ;         (formal-value-triple)
-;         (thm-fn)n
+;         (thm-fn)
 ;         (translate-hints+)
 ;         (translate-hints)
 ;         (translate-hint-expression)
