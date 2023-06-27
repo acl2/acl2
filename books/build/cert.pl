@@ -1093,9 +1093,6 @@ unless ($no_makefile) {
 	    print $mf " \\\n     " . image_file_path($cert);
 	}
     }
-    # Turn off the "Nothing to be done for 'all-cert-pl-images' warning
-    # when there aren't any images.  No-op if there are images.
-    print $mf " \;\@:";
     # Close out the list of images
     print $mf "\n\n";
 
@@ -1149,7 +1146,8 @@ unless ($no_makefile) {
     # print $mf "\n\nendif\n";
 
     print $mf "all-cert-pl-certs: \$(" . $var_prefix . "_CERTS)\n\n";
-    print $mf "all-cert-pl-images: \$(" . $var_prefix . "_IMAGES)\n\n";
+    # The "@:" means don't print a no-op recipe".  It avoids an empty target warning.
+    print $mf "all-cert-pl-images: \$(" . $var_prefix . "_IMAGES)\n\t\@:\n\n";
 
     # declare $var_prefix_SOURCES to be the list of sources
     print $mf $var_prefix . "_SOURCES :=";
