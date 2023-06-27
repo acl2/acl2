@@ -1300,7 +1300,7 @@
           (linear-memory-rules)
           '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs
+            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs ; puts in wml-size
             x86isa::rime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::read-*ip-when-64-bit-modep
