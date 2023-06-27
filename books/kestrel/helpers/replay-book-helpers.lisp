@@ -23,7 +23,7 @@
     (mv-let (existsp state)
       (file-existsp port-file-path state)
       (if (not existsp)
-          (prog2$ (cw "NOTE: Not loading ~s0 (does not exist)~%." port-file-path)
+          (prog2$ (cw "NOTE: Not loading ~s0 (does not exist).~%" port-file-path)
                   state)
         (mv-let (erp val state)
           ;; TODO: Make this less noisy:
