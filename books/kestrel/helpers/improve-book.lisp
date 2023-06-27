@@ -358,7 +358,7 @@
        (let ((state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
          ;; Try to speed up the proof:
          (mv-let (erp state)
-           (speed-up-defthm event state)
+           (speed-up-defthm event print state)
            (if erp
                (mv erp state)
              (prog2$ (and print (cw ")~%"))
