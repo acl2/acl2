@@ -60,6 +60,8 @@
 
 (include-book "doc")
 
+(include-book "centaur/bitops/extra-defs" :dir :system)
+
 (local
  (include-book "lemmas"))
 
@@ -126,6 +128,39 @@
 
 ;; ---------------------------------------------------------------------------
 ;; misc lemmas
+
+;; (encapsulate
+;;   nil
+;;   (local
+;;    (use-ihs-extensions t))
+;;   #|(local
+;;    (use-ihs-logops-lemmas t))|#
+;;   #|(local
+;;    (use-arithmetic-5 t))|#
+;;   (def-rp-rule :disabled-for-acl2 t
+;;     install-bit-to-sbits
+;;     (implies (and (natp n)
+;;                   (bitp val)
+;;                   (natp x))
+;;              (equal (install-bit n val x)
+;;                     (svl::sbits n 1 val x)))
+;;     :hints (("Goal"
+;;              :cases ((logbitp n x))
+;;              :use ((:instance svl::separate-num-to-vector-with-loghead
+;;                               (svl::size n)
+;;                               (svl::y x))
+;;                    (:instance svl::separate-num-to-vector-with-loghead
+;;                               (svl::size 1)
+;;                               (svl::y (LOGTAIL N X))))
+;;              :in-theory (e/d* (bitops::ihsext-inductions
+;;                                bitops::ihsext-recursive-redefs
+;;                                INSTALL-BIT SV::4VEC-SHIFT-CORE bitp
+;;                                SVL::SBITS SV::4VEC-PART-INSTALL SV::4VEC-RSH
+;;                                SV::4VEC-CONCAT SV::4VEC-CONCAT)
+;;                               (+-is-sum
+;;                                SVL::LOGCONS-EQUIVALENCE
+;;                                BITOPS::LOGAPP-OF-LOGTAIL
+;;                                ))))))
 
 (def-rp-rule rid-of-bool->bit
   (and (equal (bool->bit (logbitp 0 x))
@@ -390,18 +425,28 @@
                   (integerp x)
                   (posp y)
                   (svl::ignore-and-return-t (sv::4vec-rsh 500 x)))
-             (equal (sv::4vec-== x y)
-                    (-- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
-                                             (acl2::logcar x)
-                                           (svl::4vec-bitnot$ 1 (acl2::logcar x)))
-                                         (-- (sv::4vec-== (acl2::logcdr x)
-                                                          (acl2::logcdr y)))))))
+             (and (equal (sv::4vec-== x y)
+                         (-- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
+                                                  (acl2::logcar x)
+                                                (svl::4vec-bitnot$ 1 (acl2::logcar x)))
+                                              (-- (sv::4vec-== (acl2::logcdr x)
+                                                               (acl2::logcdr y))))))
+                  (equal (sv::4vec-== y x)
+                         (-- (sv::4vec-bitand (if (equal (acl2::logcar y) 1)
+                                                  (acl2::logcar x)
+                                                (svl::4vec-bitnot$ 1 (acl2::logcar x)))
+                                              (-- (sv::4vec-== (acl2::logcdr x)
+                                                               (acl2::logcdr y))))))))
     :hints (("Goal"
              :use ((:instance svl::4vec-==-with-constant
                               (svl::x x)
+                              (svl::y y))
+                   (:instance svl::4vec-==-with-constant2
+                              (svl::x x)
                               (svl::y y)))
              :in-theory (e/d (--)
-                             (svl::4vec-==-with-constant)))))
+                             (svl::4vec-==-with-constant
+                              svl::4vec-==-with-constant2)))))
 
   (def-rp-rule 4vec-==-with-bits-and-zero
     (implies (and (integerp x)

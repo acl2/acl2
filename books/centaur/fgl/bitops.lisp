@@ -777,13 +777,8 @@
 
 
 
-(define +carry ((c booleanp)
-                (x integerp)
-                (y integerp))
-  (+ (bool->bit c)
-     (lifix x)
-     (lifix y))
-  ///
+(defsection +carry
+  (local (in-theory (enable +carry)))
   (disable-definition +carry)
 
   (def-fgl-rewrite fgl-+carry
@@ -810,7 +805,12 @@
   (def-fgl-rewrite minus-to-+carry
     (implies (integerp x)
              (equal (- x) (+carry t 0 (lognot x))))
-    :hints(("Goal" :in-theory (enable lognot)))))
+    :hints(("Goal" :in-theory (enable lognot))))
+
+  (def-fgl-rewrite binary-minus-to-+carry
+    (equal (binary-minus x y)
+           (+carry 1 x (lognot y)))
+    :hints(("Goal" :in-theory (enable binary-minus lognot)))))
 
 (encapsulate nil
   (local (defthm replace-mult

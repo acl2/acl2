@@ -491,3 +491,8 @@
   :hints (("Goal"
            :in-theory (e/d (bitp binary-xor bit-fix)
                            ()))))
+
+(def-rp-rule nfix-opener
+  (implies (natp x) (equal (nfix x) x)))
+
+

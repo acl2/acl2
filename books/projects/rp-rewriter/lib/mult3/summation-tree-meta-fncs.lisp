@@ -52,6 +52,14 @@
   (include-book "ihs/logops-lemmas" :dir :system)
   use-ihs-logops-lemmas
   :disabled t))
+
+
+(local
+ (fetch-new-theory
+  (include-book "arithmetic-5/top" :dir :system)
+  use-arithmetic-5
+  :disabled t))
+
 (local
  (include-book "projects/rp-rewriter/proofs/rp-equal-lemmas" :dir :system))
 (local
@@ -2297,7 +2305,6 @@ c2-lst: ~p2 ~%"
        (cur-s-w/sc cur-s)
        (cur-s (ex-from-rp$ cur-s))
 
-       
        )
     (case-match cur-s
       (('s & s-arg-pp s-arg-c)
@@ -2309,7 +2316,7 @@ c2-lst: ~p2 ~%"
             ;;(to-be-coughed-c-lst2 (add-c-rp-bitp to-be-coughed-c-lst2))
 
             (sign (if (< coef 0) -1 1))
-            
+
             (to-be-coughed-c-lst2 (append-with-times (- sign) to-be-coughed-c-lst2 nil))
             (to-be-coughed-pp-lst2 (append-with-times (- sign) to-be-coughed-pp-lst2 nil))
             (to-be-coughed-s-lst2 (cons-with-times (/ (+ coef (- sign)) 2) cur-s-w/sc nil))
@@ -2720,7 +2727,7 @@ c2-lst: ~p2 ~%"
                (('and-list & ('list & &)) t)))
     :rule-classes :forward-chaining))
 
-;; Given an e-lst, separate its logbit elements with s/c.. 
+;; Given an e-lst, separate its logbit elements with s/c..
 (define cross-product-pp-aux-precollect ((e-lst rp-term-listp))
   :returns (mv (single-s/c-lst rp-term-listp :hyp (rp-term-listp e-lst))
                (res-e-lst rp-term-listp :hyp (rp-term-listp e-lst))
@@ -2735,7 +2742,7 @@ c2-lst: ~p2 ~%"
          ((mv rest-single-s/c-lst rest-lst valid)
           (cross-product-pp-aux-precollect (cdr e-lst)))
          ((unless valid)
-          (mv rest-single-s/c-lst 
+          (mv rest-single-s/c-lst
               (cons cur rest-lst)
               nil)))
       (case-match cur
@@ -2753,7 +2760,6 @@ c2-lst: ~p2 ~%"
          (mv rest-single-s/c-lst
              (cons cur rest-lst)
              nil))))))
-
 
 ;; separate single-s/c from within binary-fncs
 (define cross-product-pp-aux-precollect2 ((single-pp rp-termp))
@@ -2776,7 +2782,7 @@ c2-lst: ~p2 ~%"
        (cons `(binary-and ,single-pp
                           ,(car side-pp-lst))
              (cross-product-pp-aux-precollect2-aux single-pp (cdr side-pp-lst))))))
-  
+
   (b* ((has-bitp (has-bitp-rp single-pp))
        (term (ex-from-rp single-pp))
        #|(term (extract-first-arg-of-equals term))|#)
@@ -2830,8 +2836,6 @@ c2-lst: ~p2 ~%"
           (t
            (mv ''1 single-pp nil has-bitp)))))
 
-
-
 (define and-list-to-binary-and ((term rp-termp))
   :returns (mv (res rp-termp :hyp (rp-termp term))
                (valid booleanp))
@@ -2846,7 +2850,7 @@ c2-lst: ~p2 ~%"
              `(binary-and ,(car lst) ,(cadr lst))
            `(binary-and ,(car lst)
                         ,(and-list-to-binary-and-aux (cdr lst))))))))
-  
+
   (case-match term
     (('and-list & ''nil)
      (mv ''1 t))
@@ -2923,7 +2927,7 @@ c2-lst: ~p2 ~%"
           (t (mv nil (hard-error 'cross-product-pp-aux-for-pp-lst-aux
                                  "Unexpected pp-lst element: ~p0 ~%"
                                  (list (cons #\0 cur))))))))))
-  
+
   (b* (((mv res-pp-lst valid)
         (cross-product-pp-aux-for-pp-lst-aux pp-lst e-lst))
        ((unless valid)
@@ -2933,19 +2937,56 @@ c2-lst: ~p2 ~%"
        (res-pp-lst (pp-sum-sort-lst res-pp-lst)))
     (mv res-pp-lst valid)))
 
+
+
+
 ;; Cros product e-lst into single-s/c
-(define cross-product-pp-aux-for-s/c ((single-s/c rp-termp)
-                                      (e-lst rp-term-listp))
-  :verify-guards nil
-  :returns (mv (res-s-lst)
-               (res-pp-lst)
-               (res-c-lst)
-               (valid booleanp))
-  :measure (cons-count single-s/c)
+(defines cross-product-pp-aux-for-s/c
+
+  :flag-local nil
   :hints (("Goal"
            :in-theory (e/d (get-pp-and-coef
-                            measure-lemmas) ())))
+                            measure-lemmas)
+                           (floor))))
   :prepwork ((local
+              (use-arithmetic-5 t))
+
+             ;; (local
+             ;;  (defthmd *-<-with-posp
+             ;;    (implies (and (posp size)
+             ;;                  (acl2-numberp x)
+             ;;                  (acl2-numberp y))
+             ;;             (equal (< x y)
+             ;;                    (< (* size x)
+             ;;                       (* size y))))))
+
+             ;; (local
+             ;;  (defthm dumb-equality
+             ;;    (implies (and (natp x)
+             ;;                  (natp y)
+             ;;                  (posp z)
+             ;;                  (< x y))
+             ;;             (< x (* y z)))
+             ;;    :hints (("Goal"
+             ;;             :cases ((= z 1))
+             ;;             :in-theory (e/d ((:e tau-system)) ())))))
+             
+
+             ;; (local
+             ;;  (defthm floor-lemma
+             ;;    (implies (and (natp x)
+             ;;                  (natp y)
+             ;;                  (posp size)
+             ;;                  (< x y))
+             ;;             (< (floor x size)
+             ;;                y))
+             ;;    :hints (("Goal"
+             ;;             :in-theory (e/d () (*-<-with-posp)))
+             ;;            (and stable-under-simplificationp
+             ;;                 '(:use ((:instance *-<-with-posp
+             ;;                                    (x (* x (/ size))))))))))
+             
+             (local
               (defthm m-lemma1
                 (implies (and (consp y)
                               (<= (cons-count x) (cons-count y)))
@@ -2968,107 +3009,122 @@ c2-lst: ~p2 ~%"
 
              )
 
-  (b* (((mv coef single-s/c) (get-pp-and-coef single-s/c))
-       (single-s/c (ex-from-rp$ single-s/c)))
-    (cond ((single-s-p single-s/c)
-           (case-match single-s/c
-             (('s & pp ('list single-c))
-              (b* ((pp-lst (list-to-lst pp))
-                   ((mv new-pp-lst valid)
-                    (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
-                   ((unless valid) (mv nil nil nil nil))
-                   ((mv rest-s-lst rest-pp-lst rest-c-lst valid)
-                    (cross-product-pp-aux-for-s/c single-c e-lst))
-                   ((unless (and valid
-                                 (equal rest-s-lst nil)))
-                    (mv nil nil nil nil))
-                   (new-pp-lst (pp-sum-merge-aux rest-pp-lst new-pp-lst))
-                   (new-pp-lst (s-fix-pp-args-aux new-pp-lst))
-                   (rest-c-lst (s-fix-pp-args-aux rest-c-lst))
-                   ((mv res-s-lst res-pp-lst res-c-lst)
-                    (create-s-instance (create-list-instance new-pp-lst)
-                                       (create-list-instance rest-c-lst))))
-                (mv (append-with-times coef res-s-lst nil)
-                    (append-with-times coef  res-pp-lst nil)
-                    (append-with-times coef  res-c-lst nil)
-                    t)))
-             (('s & ('list . pp-lst) ''nil)
-              (b* (((mv new-pp-lst valid)
-                    (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
-                   ((unless valid) (mv nil nil nil nil))
-                   (new-pp-lst (s-fix-pp-args-aux new-pp-lst))
-                   ((mv res-s-lst res-pp-lst res-c-lst)
-                    (create-s-instance (create-list-instance new-pp-lst)
-                                       ''nil)))
-                (mv (append-with-times coef  res-s-lst nil)
-                    (append-with-times coef  res-pp-lst nil)
-                    (append-with-times coef  res-c-lst nil)
-                    t)))
-             (& (mv nil nil nil nil))))
-          ((single-c-p single-s/c)
-           (case-match single-s/c
-             (('c & ''nil pp ('list single-c))
-              (b* ((pp-lst (list-to-lst pp))
-                   ((mv new-pp-lst valid)
-                    (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
-                   ((unless valid) (mv nil nil nil nil))
-                   ((mv rest-s-lst rest-pp-lst rest-c-lst valid)
-                    (cross-product-pp-aux-for-s/c single-c e-lst))
-                   ((unless (and valid
-                                 (equal rest-s-lst nil)))
-                    (mv nil nil nil nil))
-                   (new-pp-lst (pp-sum-merge-aux rest-pp-lst new-pp-lst))
-                   ((mv coughed-pp-lst new-pp-lst) (c-fix-arg-aux new-pp-lst))
-                   ((mv coughed-c-lst rest-c-lst) (c-fix-arg-aux rest-c-lst))
-                   ((mv res-s-lst res-pp-lst res-c-lst)
-                    (create-c-instance nil
-                                       new-pp-lst
-                                       rest-c-lst))
-                   (res-pp-lst (pp-sum-merge-aux coughed-pp-lst res-pp-lst))
-                   (res-c-lst (s-sum-merge-aux res-c-lst coughed-c-lst)))
-                (mv (append-with-times coef res-s-lst nil)
-                    (append-with-times coef res-pp-lst nil)
-                    (append-with-times coef res-c-lst nil)
-                    t)))
-             (('c & ''nil ('list . pp-lst) ''nil)
-              (b* (((mv new-pp-lst valid)
-                    (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
-                   ((unless valid) (mv nil nil nil nil))
-                   ((mv coughed-pp-lst new-pp-lst) (c-fix-arg-aux new-pp-lst))
-                   ((mv res-s-lst res-pp-lst res-c-lst)
-                    (create-c-instance nil
-                                       new-pp-lst
-                                       nil))
-                   (res-pp-lst (pp-sum-merge-aux coughed-pp-lst res-pp-lst)))
-                (mv (append-with-times coef res-s-lst nil)
-                    (append-with-times coef res-pp-lst nil)
-                    (append-with-times coef res-c-lst nil)
-                    t)))
-             (& (mv nil nil nil nil))))
-          (t (mv nil nil nil nil))))
+  (define cross-product-pp-aux-for-s/c ((single-s/c rp-termp)
+                                        (e-lst rp-term-listp)
+                                        &optional
+                                        ((limit natp) 'limit))
+    :verify-guards nil
+    :returns (mv (res-s-lst)
+                 (res-pp-lst)
+                 (res-c-lst)
+                 (valid booleanp))
+    :measure (acl2::nat-list-measure (list (nfix limit) 0))
 
-  ///
+    (b* (((when (zp limit)) (mv nil nil nil nil))
+         ;;(limit (1- limit))
+         ((mv coef single-s/c) (get-pp-and-coef single-s/c))
+         (single-s/c (ex-from-rp$ single-s/c)))
+      (cond ((single-s-p single-s/c)
+             (case-match single-s/c
+               (('s & pp c-list)
+                (b* ((pp-lst (list-to-lst pp))
+                     ((mv new-pp-lst valid)
+                      (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
+                     ((unless valid) (mv nil nil nil nil))
+                     (c-lst (list-to-lst c-list))
+                     (len-c-lst (len c-lst))
+                     (limit (if (> len-c-lst 1) (floor limit len-c-lst) (1- limit))) ;; shrink limit even
+                     ;; further if more than one c-lst exists, which should
+                     ;; almost never happen.
+                     ((mv rest-s-lst rest-pp-lst rest-c-lst valid)
+                      (cross-product-pp-aux-for-s/c-lst c-lst e-lst))
+                     ((unless (and valid
+                                   (equal rest-s-lst nil)))
+                      (mv nil nil nil nil))
+                     (new-pp-lst (pp-sum-merge-aux rest-pp-lst new-pp-lst))
+                     (new-pp-lst (s-fix-pp-args-aux new-pp-lst))
+                     (rest-c-lst (s-fix-pp-args-aux rest-c-lst))
+                     ((mv res-s-lst res-pp-lst res-c-lst)
+                      (create-s-instance (create-list-instance new-pp-lst)
+                                         (create-list-instance rest-c-lst))))
+                  (mv (append-with-times coef res-s-lst nil)
+                      (append-with-times coef  res-pp-lst nil)
+                      (append-with-times coef  res-c-lst nil)
+                      t)))
+               ;; (('s & ('list . pp-lst) ''nil)
+               ;;  (b* (((mv new-pp-lst valid)
+               ;;        (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
+               ;;       ((unless valid) (mv nil nil nil nil))
+               ;;       (new-pp-lst (s-fix-pp-args-aux new-pp-lst))
+               ;;       ((mv res-s-lst res-pp-lst res-c-lst)
+               ;;        (create-s-instance (create-list-instance new-pp-lst)
+               ;;                           ''nil)))
+               ;;    (mv (append-with-times coef  res-s-lst nil)
+               ;;        (append-with-times coef  res-pp-lst nil)
+               ;;        (append-with-times coef  res-c-lst nil)
+               ;;        t)))
+               (& (mv nil nil nil nil))))
+            ((single-c-p single-s/c)
+             (case-match single-s/c
+               (('c & ''nil pp c-list)
+                (b* ((pp-lst (list-to-lst pp))
+                     ((mv new-pp-lst valid)
+                      (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
+                     ((unless valid) (mv nil nil nil nil))
+                     (c-lst (list-to-lst c-list))
+                     (len-c-lst (len c-lst))
+                     (limit (if (> len-c-lst 1) (floor limit len-c-lst) (1- limit)))  ;; shrink  limit even
+                     ;; further  if more  than one  c-lst exists,  which should
+                     ;; almost never happen.
+                     ((mv rest-s-lst rest-pp-lst rest-c-lst valid)
+                      (cross-product-pp-aux-for-s/c-lst c-lst e-lst))
+                     ((unless (and valid
+                                   (equal rest-s-lst nil)))
+                      (mv nil nil nil nil))
+                     (new-pp-lst (pp-sum-merge-aux rest-pp-lst new-pp-lst))
+                     ((mv coughed-pp-lst new-pp-lst) (c-fix-arg-aux new-pp-lst))
+                     ((mv coughed-c-lst rest-c-lst) (c-fix-arg-aux rest-c-lst))
+                     ((mv res-s-lst res-pp-lst res-c-lst)
+                      (create-c-instance nil
+                                         new-pp-lst
+                                         rest-c-lst))
+                     (res-pp-lst (pp-sum-merge-aux coughed-pp-lst res-pp-lst))
+                     (res-c-lst (s-sum-merge-aux res-c-lst coughed-c-lst)))
+                  (mv (append-with-times coef res-s-lst nil)
+                      (append-with-times coef res-pp-lst nil)
+                      (append-with-times coef res-c-lst nil)
+                      t)))
+               #|(('c & ''nil ('list . pp-lst) ''nil)
+               (b* (((mv new-pp-lst valid)
+               (cross-product-pp-aux-for-pp-lst pp-lst e-lst))
+               ((unless valid) (mv nil nil nil nil))
+               ((mv coughed-pp-lst new-pp-lst) (c-fix-arg-aux new-pp-lst))
+               ((mv res-s-lst res-pp-lst res-c-lst)
+               (create-c-instance nil
+               new-pp-lst
+               nil))
+               (res-pp-lst (pp-sum-merge-aux coughed-pp-lst res-pp-lst)))
+               (mv (append-with-times coef res-s-lst nil)
+               (append-with-times coef res-pp-lst nil)
+               (append-with-times coef res-c-lst nil)
+               t)))|#
+               (& (mv nil nil nil nil))))
+            (t (mv nil nil nil nil)))))
 
-  (defret rp-term-listp-of-<fn>
-    (implies (and (rp-termp single-s/c)
-                  (rp-term-listp e-lst))
-             (and (rp-term-listp res-s-lst)
-                  (rp-term-listp res-pp-lst)
-                  (rp-term-listp res-c-lst))))
-
-  (verify-guards cross-product-pp-aux-for-s/c))
-
-;; Cross product list of s/c with e-lst
-(define cross-product-pp-aux-for-s/c-lst ((s/c-lst rp-term-listp)
-                                          (e-lst rp-term-listp))
-  :returns (mv (res-s-lst)
-               (res-pp-lst)
-               (res-c-lst)
-               (valid booleanp))
-  :verify-guards nil
-  (if (atom s/c-lst)
-      (mv nil nil nil t)
-    (b* (((mv res-s-lst res-pp-lst res-c-lst valid)
+  (define cross-product-pp-aux-for-s/c-lst ((s/c-lst rp-term-listp)
+                                            (e-lst rp-term-listp)
+                                            &optional
+                                            ((limit natp) 'limit))
+    :returns (mv (res-s-lst)
+                 (res-pp-lst)
+                 (res-c-lst)
+                 (valid booleanp))
+    :verify-guards nil
+    :measure (acl2::nat-list-measure (list (nfix limit) (len s/c-lst)))
+    (b* (((when (zp limit)) (mv nil nil nil nil))
+         ;;(limit (1- limit))
+         ((when (atom s/c-lst)) (mv nil nil nil t))
+         ((mv res-s-lst res-pp-lst res-c-lst valid)
           (cross-product-pp-aux-for-s/c (car s/c-lst) e-lst))
          ((unless valid) (mv nil nil nil nil))
          ((mv res-s-lst2 res-pp-lst2 res-c-lst2 valid)
@@ -3078,14 +3134,30 @@ c2-lst: ~p2 ~%"
           (pp-sum-merge-aux res-pp-lst res-pp-lst2)
           (s-sum-merge-aux res-c-lst res-c-lst2)
           t)))
+
   ///
-  (defret rp-term-listp-of-<fn>
-    (implies (and (rp-term-listp s/c-lst)
-                  (rp-term-listp e-lst))
-             (and (rp-term-listp res-s-lst)
-                  (rp-term-listp res-pp-lst)
-                  (rp-term-listp res-c-lst))))
-  (verify-guards cross-product-pp-aux-for-s/c-lst))
+
+  (defret-mutual rp-term-listp-of-<fn>
+    (defret rp-term-listp-of-<fn>
+      (implies (and (rp-termp single-s/c)
+                    (rp-term-listp e-lst))
+               (and (rp-term-listp res-s-lst)
+                    (rp-term-listp res-pp-lst)
+                    (rp-term-listp res-c-lst)))
+      :fn cross-product-pp-aux-for-s/c)
+    (defret rp-term-listp-of-<fn>
+      (implies (and (rp-term-listp s/c-lst)
+                    (rp-term-listp e-lst))
+               (and (rp-term-listp res-s-lst)
+                    (rp-term-listp res-pp-lst)
+                    (rp-term-listp res-c-lst)))
+      :fn cross-product-pp-aux-for-s/c-lst))
+
+  (verify-guards cross-product-pp-aux-for-s/c-fn))
+
+#|(memoize 'cons-count :forget t)|#
+
+;; Cross product list of s/c with e-lst
 
 ;; Calls cross-product-pp-aux-for-s/c to cross product  single-s/c with e-lst
 ;; Difference from cross-product-pp-aux-for-s/c: this can handle s-c-res terms.
@@ -3095,7 +3167,10 @@ c2-lst: ~p2 ~%"
                (res-pp-lst)
                (res-c-lst)
                (valid booleanp))
-  (b* ((single-s/c-orig single-s/c)
+  (b* (;; (count (+ (cons-count single-s/c) (cons-count e-lst)))
+       ;; ((when (> count (expt 2 17))) (mv nil nil nil nil))
+       (limit (expt 2 14)) ;;cross-product-pp-aux-for-s/c recursion limit
+       (single-s/c-orig single-s/c)
        (single-s/c (ex-from-rp$ single-s/c)))
     (cond ((single-s-c-res-p single-s/c)
            (b* ((s-lst (list-to-lst (cadr single-s/c)))
@@ -3124,7 +3199,7 @@ c2-lst: ~p2 ~%"
                   (rp-term-listp res-pp-lst)
                   (rp-term-listp res-c-lst)))))
 
-;; Cross product two s/c helper 
+;; Cross product two s/c helper
 (define cross-product-two-larges-aux-pp-lst ((pp-lst rp-term-listp)
                                              (single-s/c2 rp-termp))
   :returns (mv (res-s-lst)
@@ -3261,7 +3336,7 @@ c2-lst: ~p2 ~%"
                    (s-lst (s-sum-merge-aux s-lst1 s-lst2))
                    (pp-lst (pp-sum-merge-aux pp-lst1 pp-lst2))
                    (c-lst (s-sum-merge-aux c-lst1 c-lst2))
-                   
+
                    ((mv pp-res-lst c-res-lst
                         coughed-s-lst coughed-pp-lst coughed-c-lst)
                     (c-of-s-fix-lst s-lst pp-lst c-lst nil))
@@ -3373,7 +3448,6 @@ c2-lst: ~p2 ~%"
                `(rp 'bitp ,term)
              term)))))
 
-
 (define cross-product-pp-aux--mid-large-merge ((single-s-lst rp-term-listp))
   :returns (mv (res rp-termp :hyp (rp-term-listp single-s-lst))
                valid)
@@ -3463,7 +3537,7 @@ c2-lst: ~p2 ~%"
             :in-theory (e/d (nthcdr len)
                             ())))))
 
-;; Traverse pp-lst to see if each is eligible for cross-product. If so, do it.  
+;; Traverse pp-lst to see if each is eligible for cross-product. If so, do it.
 (define cross-product-pp-aux2 ((pp-lst rp-term-listp))
   :returns (mv (res-s-lst rp-term-listp :hyp (rp-term-listp pp-lst))
                (res-pp-lst rp-term-listp :hyp (rp-term-listp pp-lst))
@@ -3520,7 +3594,7 @@ c2-lst: ~p2 ~%"
                     (logbit-p (cadr cur))))
            (pp-lst-is-a-part-of-radix8+-summation (cdr pp-lst))))))
 
-;; If pp is from mcand calculation in radix8+, return t. 
+;; If pp is from mcand calculation in radix8+, return t.
 (define pp-is-a-part-of-radix8+-summation ((cur))
   :returns (res booleanp)
   (and (or (equal cur ''1)
@@ -3549,7 +3623,6 @@ c2-lst: ~p2 ~%"
            (true-listp (append-with-times-aux coef term rest)))
   :hints (("Goal"
            :in-theory (e/d (append-with-times-aux) ()))))
-
 
 (local
  (defthmd cons-count-when-times
@@ -3928,8 +4001,6 @@ to-be-coughed-c-lst))|#
                               (:rewrite rp-termp-implies-subterms))))))
   (verify-guards new-sum-merge-aux))
 
-
-
 (define extract-from-equals-lst ((pp-lst rp-term-listp))
   :returns (mv (s) (res-pp-lst) (c-lst) changed)
   :verify-guards nil
@@ -4034,7 +4105,7 @@ to-be-coughed-c-lst))|#
        ((mv s2 pp-lst2 c-lst2 changed2)
         (extract-from-equals-lst pp-lst))
 
-       ((unless changed2) 
+       ((unless changed2)
         (mv s
             (if (pp-lst-orderedp pp-lst) pp-lst (pp-sum-sort-lst pp-lst))
             c-lst))
@@ -4213,8 +4284,6 @@ nil
 (LIST (RP::LOGBIT OP1_LO '15)
 (RP::LOGBIT OP2_LO '31))))||#
 
-
-
 (define s-spec-meta-aux ((s rp-termp)
                          (pp-lst rp-term-listp)
                          (c-lst rp-term-listp))
@@ -4256,8 +4325,6 @@ nil
         (c-fix-arg-aux arg-c-lst))
        (to-be-coughed-c-lst (s-sum-merge-aux to-be-coughed-c-lst coughed-c-lst-from-args))
 
-       
-
        ((mv coughed-pp-lst arg-pp-lst)
         (c-fix-arg-aux arg-pp-lst))
 
@@ -4284,7 +4351,6 @@ nil
        (res (create-s-c-res-instance coughed-s-lst coughed-pp-lst merged-c-lst
                                      quarternaryp)))
     res))
-
 
 (progn
   (define extract-binary-xor-for-s-spec-aux ((term rp-termp))
@@ -4313,8 +4379,6 @@ nil
                     ,(extract-binary-xor-for-s-spec rest))
            `(cons ,x-orig ,(extract-binary-xor-for-s-spec rest)))))
       (& term))))
-        
-
 
 (define s-c-spec-meta ((term rp-termp))
   :returns (mv (res rp-termp

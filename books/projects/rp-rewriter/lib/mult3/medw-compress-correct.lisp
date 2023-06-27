@@ -71,6 +71,7 @@
 (create-regular-eval-lemma s-c-res 3 mult-formula-checks)
 (create-regular-eval-lemma and-list 2 mult-formula-checks)
 (create-regular-eval-lemma -- 1 mult-formula-checks)
+(create-regular-eval-lemma times 2 mult-formula-checks)
 
 (local
  (in-theory (disable (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
@@ -1078,7 +1079,7 @@
            :do-not-induct t
            :induct (medw-compress-pp-arg-lst pp-lst c-lst
                                              sign-matters)
-           :in-theory (e/d ( medw-compress-pp-arg-lst
+           :in-theory (e/d* ( medw-compress-pp-arg-lst
                              ;;equal-of-m2-to-the-same-side
                              m2-dummy-lemma2
                              -to---
@@ -1089,6 +1090,9 @@
                              (:REWRITE RP-EVL-OF----WHEN-MULT-FORMULA-CHECKS)
                              rp-evlt-of-ex-from-rp-reverse
                              ;;pp-order-equals-implies
+
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_TIMES_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              )
                            (RP-EVL-OF-EX-FROM-RP
 

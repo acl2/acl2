@@ -51,7 +51,7 @@
    (fgl-sat-check params x)
    (fgl-vacuity-check params x)
    (fgl-pathcond-fix x)
-   (show-counterexample params msg)
+   (run-counterexample params msg)
    (cons x y)
    (car x)
    (cdr x)
@@ -214,7 +214,7 @@
   `((lambda (x msg params)
       ((lambda (x params msg ignore)
          ((lambda (ans params msg)
-            (if ans 't (show-counterexample params msg)))
+            (if ans 't (run-counterexample params msg)))
           (not (fgl-sat-check params (not x)))
           params
           msg))

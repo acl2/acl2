@@ -40,6 +40,9 @@
 (local (include-book "std/lists/resize-list" :dir :system))
 
 
+(acl2::defstobj-clone svtv-data2 svtv-data :suffix "2")
+
+
 ;; (svtv-cycle-run-fsm-inputs ins phases) produces a set of inputs for the base
 ;; fsm given the cycle phases and inputs for the cycle fsm.
 
@@ -296,39 +299,62 @@
   ///
   (memoize 'svtv-override-alist))
 
-
-(define svtv-data-chase-phase-fsm ((ins svex-envlist-p)
-                                   (initst svex-env-p)
-                                   &key
-                                   ((labels symbol-listp) 'nil)
-                                   ((probes svtv-probealist-p) 'nil)
-                                   ((namemap svtv-name-lhs-map-p) 'nil)
-                                   (svtv-data 'svtv-data)
-                                   (svtv-chase-data 'svtv-chase-data)
-                                   (state 'state))
-  :guard (and (open-input-channel-p *standard-oi* :object state)
-              (svtv-data->phase-fsm-validp svtv-data)
-              (svtv-data->flatten-validp svtv-data)
-              (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
-  :returns (mv new-svtv-chase-data new-state)
+;; Provides everything but the evaldata/evaldata2.
+(define svtv-data-phase-set-svtv-chase-data (&key
+                                             ((labels symbol-listp) 'nil)
+                                             ((probes svtv-probealist-p) 'nil)
+                                             ((namemap svtv-name-lhs-map-p) 'nil)
+                                             (svtv-data 'svtv-data)
+                                             (svtv-chase-data 'svtv-chase-data))
+  :returns new-svtv-chase-data
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->flatten-validp svtv-data))
   (b* (((base-fsm fsm) (svtv-data->phase-fsm svtv-data))
        ((flatnorm-res flatnorm) (svtv-data->flatnorm svtv-data))
        (svtv-chase-data (set-svtv-chase-data->stack nil svtv-chase-data))
-       (evaldata (make-svtv-evaldata
-                  :nextstate (make-fast-alist fsm.nextstate)
-                  :inputs (make-fast-alists ins)
-                  :initst (make-fast-alist initst)))
        (svtv-chase-data (set-svtv-chase-data->phaselabels labels svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->probes probes svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->namemap namemap svtv-chase-data))
-       (svtv-chase-data (set-svtv-chase-data->evaldata evaldata svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->updates (make-fast-alist fsm.values) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->delays (make-fast-alist flatnorm.delays) svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->assigns (make-fast-alist flatnorm.assigns) svtv-chase-data))
-       (override-alist (svtv-override-alist flatnorm.assigns (svtv-data->phase-fsm-setup svtv-data)))
-       (svtv-chase-data (set-svtv-chase-data->override-alist (make-fast-alist override-alist) svtv-chase-data)))
-    (svtv-chase$-repl)))
+       (override-alist (svtv-override-alist flatnorm.assigns (svtv-data->phase-fsm-setup svtv-data))))
+    (set-svtv-chase-data->override-alist (make-fast-alist override-alist) svtv-chase-data)))
+
+
+(define svtv-data-phase-fsm-evaldata ((ins svex-envlist-p)
+                                      (initst svex-env-p)
+                                      &key
+                                      (svtv-data 'svtv-data))
+  :returns (evaldata svtv-evaldata-p)
+  (b* (((base-fsm fsm) (svtv-data->phase-fsm svtv-data)))
+    (make-svtv-evaldata
+     :nextstate (make-fast-alist fsm.nextstate)
+     :inputs (make-fast-alists ins)
+     :initst (make-fast-alist initst))))
+
+
+
+;; (define svtv-data-chase-phase-fsm ((ins svex-envlist-p)
+;;                                    (initst svex-env-p)
+;;                                    &key
+;;                                    ((labels symbol-listp) 'nil)
+;;                                    ((probes svtv-probealist-p) 'nil)
+;;                                    ((namemap svtv-name-lhs-map-p) 'nil)
+;;                                    (svtv-data 'svtv-data)
+;;                                    (svtv-chase-data 'svtv-chase-data)
+;;                                    (state 'state))
+;;   :guard (and (open-input-channel-p *standard-oi* :object state)
+;;               (svtv-data->phase-fsm-validp svtv-data)
+;;               (svtv-data->flatten-validp svtv-data)
+;;               (equal (alist-keys initst)
+;;                      (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+;;   :returns (mv new-svtv-chase-data new-state)
+;;   (b* ((svtv-chase-data (svtv-data-set-svtv-chase-data :labels labels
+;;                                                        :probes probes
+;;                                                        :namemap namemap))
+;;        (svtv-chase-data (set-svtv-chase-data->evaldata (svtv-data-phase-fsm-evaldata ins initst) svtv-chase-data)))
+;;     (svtv-chase-repl)))
 
 
 
@@ -385,29 +411,31 @@
                                 (or (svtv-cycle-output-phase phases) 0)))
 
 
-(define svtv-data-chase-cycle-fsm ((ins svex-envlist-p)
-                                   (initst svex-env-p)
-                                   &key
-                                   ((labels symbol-listp) 'nil)
-                                   ((probes svtv-probealist-p) 'nil)
-                                   ((namemap svtv-name-lhs-map-p) 'nil)
-                                   (svtv-data 'svtv-data)
-                                   (svtv-chase-data 'svtv-chase-data)
-                                   (state 'state))
-  :guard (and (open-input-channel-p *standard-oi* :object state)
-              (svtv-data->phase-fsm-validp svtv-data)
+(define svtv-data-cycle-set-svtv-chase-data (&key
+                                             ((labels symbol-listp) 'nil)
+                                             ((probes svtv-probealist-p) 'nil)
+                                             ((namemap svtv-name-lhs-map-p) 'nil)
+                                             (svtv-data 'svtv-data)
+                                             (svtv-chase-data 'svtv-chase-data))
+  :returns new-svtv-chase-data
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatten-validp svtv-data)
-              (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
               (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
                   (not (svtv-data->cycle-phases svtv-data))))
-  :returns (mv new-svtv-chase-data new-state)
+  (b* ((phases (svtv-data->cycle-phases svtv-data)))
+    (svtv-data-phase-set-svtv-chase-data
+     :labels (svtv-labels-cycle-adjust labels phases)
+     :probes (svtv-probealist-cycle-adjust probes phases)
+     :namemap namemap)))
+
+(define svtv-data-cycle-fsm-evaldata ((ins svex-envlist-p)
+                                      (initst svex-env-p)
+                                      &key
+                                      (svtv-data 'svtv-data))
+  :returns (evaldata svtv-evaldata-p)
   (b* ((phases (svtv-data->cycle-phases svtv-data))
-       (base-ins (svtv-cycle-run-fsm-inputs ins phases))
-       (probes (svtv-probealist-cycle-adjust probes phases)))
-    (svtv-data-chase-phase-fsm base-ins initst
-                               :labels (svtv-labels-cycle-adjust labels phases)
-                               :probes probes :namemap namemap)))
+       (base-ins (svtv-cycle-run-fsm-inputs ins phases)))
+    (svtv-data-phase-fsm-evaldata base-ins initst)))
 
 
 ;; (defthm svex-alist-keys-of-svtv-data->cycle-nextstate
@@ -489,51 +517,55 @@
    :filename filename))
 
 
-(define svtv-data-chase-pipeline-aux ((env svex-env-p)
-                                      (setup pipeline-setup-p)
-                                      &key
-                                      ((labels symbol-listp) 'nil)
-                                      (svtv-data 'svtv-data)
-                                      (svtv-chase-data 'svtv-chase-data)
-                                      (state 'state))
-  :guard (and (open-input-channel-p *standard-oi* :object state)
-              (svtv-data->phase-fsm-validp svtv-data)
-              ;; (svtv-data->cycle-fsm-validp svtv-data)
+(define svtv-data-pipeline-set-svtv-chase-data-aux ((setup pipeline-setup-p)
+                                                    &key
+                                                    ((labels symbol-listp) 'nil)
+                                                    (svtv-data 'svtv-data)
+                                                    (svtv-chase-data 'svtv-chase-data))
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatten-validp svtv-data)
-              ;; (svtv-data->namemap-validp svtv-data)
-              (equal (svex-alist-keys (pipeline-setup->initst setup))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
               (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
                   (not (svtv-data->cycle-phases svtv-data))))
-  :returns (mv new-svtv-chase-data new-state)
+  (b* (((pipeline-setup setup))
+       (namemap (and (svtv-data->namemap-validp svtv-data)
+                     (svtv-data->namemap svtv-data))))
+    (svtv-data-cycle-set-svtv-chase-data :labels labels :probes setup.probes :namemap namemap)))
+
+(define svtv-data-pipeline-set-svtv-chase-data (&key
+                                                ((labels symbol-listp) 'nil)
+                                                (svtv-data 'svtv-data)
+                                                (svtv-chase-data 'svtv-chase-data))
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->flatten-validp svtv-data)
+              (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
+                  (not (svtv-data->cycle-phases svtv-data))))
+  (svtv-data-pipeline-set-svtv-chase-data-aux (svtv-data->pipeline-setup svtv-data)
+                                              :labels labels))
+
+(define svtv-data-pipeline-evaldata-aux ((env svex-env-p)
+                                         (setup pipeline-setup-p)
+                                         &key
+                                         (svtv-data 'svtv-data))
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->flatten-validp svtv-data)
+              (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
+                  (not (svtv-data->cycle-phases svtv-data))))
+  :returns (evaldata svtv-evaldata-p)
   (b* (((mv cycle-ins initst)
         (svtv-pipeline-setup-to-cycle-inputs env
                                              setup
-                                             (svtv-data->namemap svtv-data)))
-       ((pipeline-setup setup))
-       (namemap (and (svtv-data->namemap-validp svtv-data)
-                     (svtv-data->namemap svtv-data))))
-    (svtv-data-chase-cycle-fsm cycle-ins initst :labels labels :probes setup.probes :namemap namemap)))
+                                             (svtv-data->namemap svtv-data))))
+    (svtv-data-cycle-fsm-evaldata cycle-ins initst)))
 
-(define svtv-data-chase-pipeline ((env svex-env-p)
-                                  &key
-                                  ((labels symbol-listp) 'nil)
-                                  (svtv-data 'svtv-data)
-                                  (svtv-chase-data 'svtv-chase-data)
-                                  (state 'state))
-  :guard (and (open-input-channel-p *standard-oi* :object state)
-              (svtv-data->phase-fsm-validp svtv-data)
-              ;; (svtv-data->cycle-fsm-validp svtv-data)
+(define svtv-data-pipeline-evaldata ((env svex-env-p)
+                                     &key
+                                     (svtv-data 'svtv-data))
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatten-validp svtv-data)
-              ;; (svtv-data->namemap-validp svtv-data)
-              (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
               (or (svtv-cycle-output-phase (svtv-data->cycle-phases svtv-data))
                   (not (svtv-data->cycle-phases svtv-data))))
-  :returns (mv new-svtv-chase-data new-state)
-  (svtv-data-chase-pipeline-aux env (svtv-data->pipeline-setup svtv-data)
-                                :labels labels))
-
+  :returns (evaldata svtv-evaldata-p)
+  (svtv-data-pipeline-evaldata-aux env (svtv-data->pipeline-setup svtv-data)))
 
 
 
@@ -700,6 +732,40 @@
     (mv nil defsvtv-args state)))
 
 
+(define svtv-data-defsvtv-args-setup-chase ((args defsvtv-args-p)
+                                            (env svex-env-p)
+                                            &key
+                                            (svtv-data 'svtv-data)
+                                            (svtv-chase-data 'svtv-chase-data))
+  :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args))))
+  :returns (mv err new-svtv-chase-data new-svtv-data)
+  (b* ((args (defsvtv-args-expand-stages args))
+       ((mv err pipeline-setup svtv-data)
+        (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
+       ((when err)
+        (er hard? 'svtv-chase$ "Error setting up svtv-data and getting pipeline-setup obj: ~@0~%" err)
+        (mv err svtv-chase-data svtv-data))
+       (labels (subst nil 'acl2::? (defsvtv-args->labels args)))
+       ((unless (symbol-listp labels))
+        (er hard? 'svtv-chase$ "Expected labels to be a symbol list: ~x0~%" labels)
+        (mv err svtv-chase-data svtv-data))
+       (phases  (svtv-data->cycle-phases svtv-data))
+       ((unless (or (svtv-cycle-output-phase phases)
+                    (not phases)))
+        (er hard? 'svtv-chase$ "Expected output phase to exist in cycle-phases~%")
+        (mv "Expected output phase to exist in cycle-phases~%"
+            svtv-chase-data svtv-data))
+       (svtv-chase-data (svtv-data-pipeline-set-svtv-chase-data-aux pipeline-setup :labels labels))
+       (svtv-chase-data
+        (set-svtv-chase-data->evaldata
+         (svtv-data-pipeline-evaldata-aux env pipeline-setup)
+         svtv-chase-data)))
+    (mv nil svtv-chase-data svtv-data))
+  ///
+  (defret flatten-validp-of-<fn>
+    (implies (not err) (svtv-data$c->flatten-validp new-svtv-data))))
+
+
 (define svtv-data-chase-defsvtv-args ((args defsvtv-args-p)
                                       (env svex-env-p)
                                       &key
@@ -708,24 +774,41 @@
                                       (state 'state))
   :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args)))
               (open-input-channel-p *standard-oi* :object state))
+  :returns (mv err new-svtv-chase-data new-svtv-data new-state)
+  (b* (((mv err svtv-chase-data svtv-data)
+        (svtv-data-defsvtv-args-setup-chase args env))
+       ((when err) (mv err svtv-chase-data svtv-data state))
+       (svtv-chase-data (set-svtv-chase-data->evaldata2 nil svtv-chase-data))
+       ((mv svtv-chase-data state) (svtv-chase$-repl)))
+    (mv nil svtv-chase-data svtv-data state)))
+
+(define svtv-data-defsvtv-args-evaldata ((args defsvtv-args-p)
+                                         (env svex-env-p)
+                                         &key
+                                         (svtv-data 'svtv-data))
+  :guard (and (modalist-addr-p (design->modalist (defsvtv-args->design args))))
+  :returns (mv err (evaldata (implies (not err) (svtv-evaldata-p evaldata))) new-svtv-data)
   (b* ((args (defsvtv-args-expand-stages args))
        ((mv err pipeline-setup svtv-data)
         (defsvtv-stobj-pipeline-setup args svtv-data :skip-cycle t))
        ((when err)
         (er hard? 'svtv-chase$ "Error setting up svtv-data and getting pipeline-setup obj: ~@0~%" err)
-        (mv svtv-chase-data svtv-data state))
-       (labels (subst nil 'acl2::? (defsvtv-args->labels args)))
-       ((unless (symbol-listp labels))
-        (er hard? 'svtv-chase$ "Expected labels to be a symbol list: ~x0~%" labels)
-        (mv svtv-chase-data svtv-data state))
+        (mv err nil svtv-data))
        (phases  (svtv-data->cycle-phases svtv-data))
        ((unless (or (svtv-cycle-output-phase phases)
                     (not phases)))
         (er hard? 'svtv-chase$ "Expected output phase to exist in cycle-phases~%")
-        (mv svtv-chase-data svtv-data state))
-       ((mv svtv-chase-data state)
-        (svtv-data-chase-pipeline-aux env pipeline-setup :labels labels)))
-    (mv svtv-chase-data svtv-data state)))
+        (mv "Expected output phase to exist in cycle-phases~%"
+            nil svtv-data)))
+    (mv nil
+        (svtv-data-pipeline-evaldata-aux env pipeline-setup)
+        svtv-data)))
+
+
+
+
+
+
 
 
 (define svtv-chase$-defsvtv-form (form
@@ -739,9 +822,102 @@
         (svtv-debug-get-defsvtv-args form state))
        ((when err)
         (er hard? 'svtv-chase$ "Error recreating defsvtv-args object: ~@0~%" err)
-        (mv svtv-chase-data svtv-data state)))
+        (mv err svtv-chase-data svtv-data state)))
     ;; ec-call to get rid of invariant risk
     (ec-call (svtv-data-chase-defsvtv-args-fn defsvtv-args env svtv-data svtv-chase-data state))))
+
+
+(define svtv-chase$-compare-offsets-by-labels ((common-labels symbol-listp)
+                                               (labels1 symbol-listp)
+                                               (labels2 symbol-listp))
+  :guard (and (subsetp-eq common-labels labels1)
+              (subsetp-eq common-labels labels2))
+  :guard-hints (("goal" :expand ((:free (labels) (subsetp-equal common-labels labels)))))
+  :prepwork ((local (defthm acl2-numberp-when-natp
+                      (implies (natp x)
+                               (acl2-numberp x)))))
+  :returns (offsets integer-listp)
+  (if (atom common-labels)
+      nil
+    (cons (- (acl2::index-of (car common-labels) labels1)
+             (acl2::index-of (car common-labels) labels2))
+          (svtv-chase$-compare-offsets-by-labels (cdr common-labels) labels1 labels2))))
+
+(define svtv-chase$-compare-most-frequent-offset ((offsets integer-listp)
+                                                  (seen integer-listp)
+                                                  (most-frequent integerp)
+                                                  (frequency natp))
+  :returns (most-freq-offset integerp :rule-classes :type-prescription)
+  (b* (((when (atom offsets))
+        (lifix most-frequent))
+       (offset1 (car offsets))
+       ((when (member offset1 seen))
+        (svtv-chase$-compare-most-frequent-offset (cdr offsets) seen most-frequent frequency))
+       (count (count offset1 offsets))
+       ((when (<= count (lnfix frequency)))
+        (svtv-chase$-compare-most-frequent-offset (cdr offsets) (cons offset1 seen) most-frequent frequency)))
+    (svtv-chase$-compare-most-frequent-offset (cdr offsets) (cons offset1 seen) offset1 count)))
+   
+
+(define svtv-chase$-compare-decide-offset ((offset maybe-integerp)
+                                           (labels1 symbol-listp)
+                                           (labels2 symbol-listp))
+  :returns (final-offset integerp :rule-classes :type-prescription)
+  :prepwork ((local (defthm subsetp-equal-intersection-1
+                      (implies (subsetp-equal x z)
+                               (subsetp-equal (intersection-equal x y) z))))
+             (local (defthm subsetp-equal-intersection-2
+                      (implies (subsetp-equal y z)
+                               (subsetp-equal (intersection-equal x y) z)))))
+  (b* (((when offset)
+        (lifix offset))
+       (common-labels (remove-eq nil (intersection-eq labels1 labels2)))
+       ((unless common-labels) 0)
+       (offsets-by-label (svtv-chase$-compare-offsets-by-labels common-labels labels1 labels2)))
+    (svtv-chase$-compare-most-frequent-offset offsets-by-label nil 0 0)))
+       
+                                           
+
+
+(define svtv-chase$-compare-defsvtv-forms (&key
+                                           form1
+                                           (env1 svex-env-p)
+                                           (form2)
+                                           (env2 svex-env-p)
+                                           (offset)
+                                           (svtv-data 'svtv-data)
+                                           (svtv-chase-data 'svtv-chase-data)
+                                           (state 'state))
+  :mode :program
+  (b* (((mv err defsvtv-args state)
+        (svtv-debug-get-defsvtv-args form1 state))
+       ((when err)
+        (er hard? 'svtv-chase$ "Error recreating defsvtv-args object: ~@0~%" err)
+        (mv err svtv-chase-data svtv-data state))
+       ((mv err defsvtv-args2 state)
+        (if form2
+            (svtv-debug-get-defsvtv-args form2 state)
+          (mv nil defsvtv-args state)))
+       ((when err)
+        (er hard? 'svtv-chase$ "Error recreating defsvtv-args object: ~@0~%" err)
+        (mv err svtv-chase-data svtv-data state))
+       (defsvtv-args2 (defsvtv-args-expand-stages defsvtv-args2))
+       ((mv err svtv-chase-data svtv-data)
+        (svtv-data-defsvtv-args-setup-chase defsvtv-args env1))
+       ((when err)
+        (mv err svtv-chase-data svtv-data state))
+       ((mv err evaldata2 svtv-data)
+        (svtv-data-defsvtv-args-evaldata defsvtv-args2 env2))
+       ((when err)
+        (mv err svtv-chase-data svtv-data state))
+       (svtv-chase-data (set-svtv-chase-data->evaldata2 evaldata2 svtv-chase-data))
+       (offset (svtv-chase$-compare-decide-offset offset
+                                                  (svtv-chase-data->phaselabels svtv-chase-data)
+                                                  (subst nil 'acl2::? (defsvtv-args->labels defsvtv-args2))))
+       (svtv-chase-data (set-svtv-chase-data->data2-offset offset svtv-chase-data))
+       ((mv svtv-chase-data state) (svtv-chase$-repl)))
+    (mv nil svtv-chase-data svtv-data state)))
+
 
 (define svtv-chase$ ((svtv svtv-p)
                      (env svex-env-p)
@@ -751,6 +927,7 @@
                      (state 'state))
   :mode :program
   (svtv-chase$-defsvtv-form (svtv->form svtv) env))
+
 
 (defmacro svtv-data-chase-defsvtv$ (form
                                     &key
@@ -766,6 +943,63 @@
                                (svtv-data 'svtv-data)
                                (svtv-chase-data 'svtv-chase-data))
   `(svtv-chase$-defsvtv-form ',form ,env :svtv-data ,svtv-data :svtv-chase-data ,svtv-chase-data))
+
+
+
+(define svtv-chase$-compare-aux (&key
+                                form
+                                svtv
+                                env
+                                form1
+                                svtv1
+                                env1
+                                form2
+                                svtv2
+                                env2
+                                (offset)
+                                (svtv-data 'svtv-data)
+                                (svtv-chase-data 'svtv-chase-data)
+                                (state 'state))
+  :mode :program
+  (svtv-chase$-compare-defsvtv-forms
+   :form1 (or form1
+              form
+              (and svtv1 (svtv->form svtv1))
+              (and svtv (svtv->form svtv))
+              (er hard? 'svtv-chase-compare-aux "Need an SVTV or form!~%"))
+   :form2 (or form2
+              (and svtv2 (svtv->form svtv2))) ;; otherwise the same as form1, implicitly
+   :env1 (or env1 env)
+   :env2 (or env2 env)
+   :offset offset))
+  
+
+(defmacro svtv-chase$-compare ( &key
+                                form
+                                svtv
+                                env
+                                form1
+                                svtv1
+                                env1
+                                form2
+                                svtv2
+                                env2
+                                (offset)
+                                (svtv-data 'svtv-data)
+                                (svtv-chase-data 'svtv-chase-data))
+  `(svtv-chase$-compare-aux
+    :form ',form
+    :svtv ,svtv
+    :env ,env
+    :form1 ',form1
+    :svtv1 ,svtv1
+    :env1 ,env1
+    :form2 ',form2
+    :svtv2 ,svtv2
+    :env2 ,env2
+    :offset ,offset
+    :svtv-data ,svtv-data
+    :svtv-chase-data ,svtv-chase-data))
 
 
 
@@ -1050,6 +1284,39 @@
               :outputs (("out" out)))))
   :env '((in . #x9) (mid . #xf) (mid-ovr . #xc)))
 
+(sv::svtv-chase$-compare
+:form (defsvtv$ my-svtv
+           :design *my-design3*
+           :phases
+           '((:label the-phase
+              :inputs (("in" in))
+              :overrides (("mid" mid :cond mid-ovr)))
+             (:label next-phase
+              :outputs (("out" out)))))
+  :env1 '((in . #x9) (mid . #xf) (mid-ovr . #xc))
+   :env2  '((in . #x8) (mid . #xe) (mid-ovr . #xc)))
+
+(sv::svtv-chase$-compare
+:form2 (defsvtv$ my-svtv
+           :design *my-design3*
+           :phases
+           '((:label setup)
+             (:label the-phase
+              :inputs (("in" in))
+              :overrides (("mid" mid :cond mid-ovr)))
+             (:label next-phase
+              :outputs (("out" out)))))
+:form1 (defsvtv$ my-svtv
+           :design *my-design3*
+           :phases
+           '((:label the-phase
+              :inputs (("in" in)))
+             (:label next-phase
+              :outputs (("out" out)))))
+  :env2 '((in . #x9) (mid . #xf) (mid-ovr . #xc))
+   :env1  '((in . #x8) (mid . #xe) (mid-ovr . #xc))
+  :offset 1)
+
 
 (defconst *my-design2*
   (make-design
@@ -1148,6 +1415,60 @@ but doesn't require the SVTV to be defined already.</p>")
 user is debugging the signal settings of an SVTV.  It skips the composition of
 the cycle FSM and pipeline stages, which on large designs can greatly shorten
 the debug loop.</p>")
+
+
+(defxdoc svtv-chase$-compare
+  :parents (svtv-chase$)
+  :short "Compare two runs of a module using the @(see svtv-chase$) utility."
+  :long "<p>This sets up and runs @(see svtv-chase$) to compare two runs of the
+same module.  These two runs can either be a single SVTV run with different
+input environments, or two different SVTVs (though they should both be on the
+same design, or the results won't make sense).  In the latter case the two
+SVTVs may have different environments or both run the same one.  In case one of
+the SVTVs takes more time to initialize than the other, an offset can be given
+to align the time steps.  See the sample invocations below.</p>
+
+<p>The SVTVs may either be given as SVTV objects or @(see defsvtv$) forms.</p>
+
+<p>Sample invocations:</p>
+
+@({
+ ;; Compare two runs of the same SVTV
+ (svtv-chase$-compare
+  :svtv (my-svtv)
+  :env1 '((a . 10) (b . 1))
+  :env2 '((a . 9) (b . 1)))
+
+ ;; Compare two runs of an SVTV given by a defsvtv$ form
+ (svtv-chase$-compare
+  :form (defsvtv$ my-svtv :design *my-design* :steps ...)
+  :env1 '((a . 10) (b . 1))
+  :env2 '((a . 9) (b . 1)))
+
+ ;; Compare two SVTVS given by different defsvtv$ forms, on two envs,
+ ;; where time step N in form1 corresponds to time step N-6 in form2
+ (svtv-chase$-compare
+  :form1 (defsvtv$ my-svtv :design *my-design* :steps ...)
+  :form2 (defsvtv$ my-svtv :design *my-design* :steps ...)
+  :env1 '((a . 10) (b . 1))
+  :env2 '((a . 9) (b . 1))
+  :offset -6)
+
+ ;; Compare an existing SVTV with another SVTV given by a form, both on the same env,
+ ;; and where time step N in (my-svtv) corresponds to time step N+4 in form2
+ (svtv-chase$-compare
+   :svtv1 (my-svtv)
+   :form2 (defsvtv$ my-svtv :design *my-design* :steps ...)
+   :env '((a . 10) (b . 1))
+   :offset 4)
+ })
+
+<p>Since it is sometimes confusing to determine the correct offset between the
+two SVTVs, there is an automatic method for making that determination which
+considers the labels given to the stages, finding the offset that lines up the
+most labels if there are common labels between the two SVTVs.</p>
+
+")
 
 (defxdoc svtv-debug$
   :parents (svex-stvs)

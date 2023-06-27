@@ -5080,57 +5080,35 @@ x5)))||#
                         rp-evlt-of-ex-from-rp
                         rp-trans-lst)))))
 
-(defret cross-product-pp-aux-for-s/c-valid-sc-subterms
-  (implies (and (valid-sc single-s/c a)
-                (valid-sc-subterms e-lst a)
-                (rp-termp single-s/c)
-                (rp-term-listp e-lst)
-                (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (and (valid-sc-subterms res-s-lst a)
-                (valid-sc-subterms res-pp-lst a)
-                (valid-sc-subterms res-c-lst a)))
-  :fn cross-product-pp-aux-for-s/c
+(defret-mutual cross-product-pp-aux-for-s/c-valid-sc-subterms
+  (defret cross-product-pp-aux-for-s/c-valid-sc-subterms
+    (implies (and (valid-sc single-s/c a)
+                  (valid-sc-subterms e-lst a)
+                  (rp-termp single-s/c)
+                  (rp-term-listp e-lst)
+                  (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state))
+             (and (valid-sc-subterms res-s-lst a)
+                  (valid-sc-subterms res-pp-lst a)
+                  (valid-sc-subterms res-c-lst a)))
+    :fn cross-product-pp-aux-for-s/c)
+
+  (defret cross-product-pp-aux-for-s/c-lst-valid-sc-subterms
+    (implies (and (valid-sc-subterms s/c-lst a)
+                  (valid-sc-subterms e-lst a)
+                  (rp-term-listp s/c-lst)
+                  (rp-term-listp e-lst)
+                  (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state))
+             (and (valid-sc-subterms res-s-lst a)
+                  (valid-sc-subterms res-pp-lst a)
+                  (valid-sc-subterms res-c-lst a)))
+    :fn cross-product-pp-aux-for-s/c-lst)
+  :mutual-recursion cross-product-pp-aux-for-s/c
   :hints (("goal"
            :in-theory (e/d (cross-product-pp-aux-for-s/c
-                            and-eval-for-cross-product-pp;;-redef
-                            )
-                           (rp-trans
-                            (:rewrite valid-sc-subterms-of-cdr)
-                            ;;                            (:rewrite acl2::o-p-o-infp-car)
-                            (:rewrite acl2::fn-check-def-not-quote)
-                            (:rewrite valid-sc-when-list-instance)
-                            (:rewrite ex-from-synp-lemma1)
-                            ;;                            (:rewrite acl2::o-p-def-o-finp-1)
-                            (:definition valid-sc)
-                            (:rewrite evl-of-extract-from-rp-2)
-                            (:rewrite default-car)
-                            (:rewrite valid-sc-subterms-cons)
-                            (:rewrite default-cdr)
-                            (:definition is-rp$inline)
-                            ;;rp-trans-opener
-                            rp-evl-of-lambda
-                            rp-evl-of-variable
-                            (:definition eval-and-all)
-                            (:rewrite
-                             rp-trans-is-term-when-list-is-absent)
-                            rp-evlt-of-ex-from-rp
-                            rp-trans-lst)))))
-
-(defret cross-product-pp-aux-for-s/c-lst-valid-sc-subterms
-  (implies (and (valid-sc-subterms s/c-lst a)
-                (valid-sc-subterms e-lst a)
-                (rp-term-listp s/c-lst)
-                (rp-term-listp e-lst)
-                (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (and (valid-sc-subterms res-s-lst a)
-                (valid-sc-subterms res-pp-lst a)
-                (valid-sc-subterms res-c-lst a)))
-  :fn cross-product-pp-aux-for-s/c-lst
-  :hints (("goal"
-           :in-theory (e/d (cross-product-pp-aux-for-s/c-lst
-                            and-eval-for-cross-product-pp;;-redef
+                            cross-product-pp-aux-for-s/c-lst
+                            and-eval-for-cross-product-pp ;;-redef
                             )
                            (rp-trans
                             (:rewrite valid-sc-subterms-of-cdr)
@@ -5239,22 +5217,42 @@ x5)))||#
   :hints (("Goal"
            :in-theory (e/d (--) ()))))
 
-(defret cross-product-pp-aux-for-s/c-correct
-  (implies (and valid
-                (valid-sc single-s/c a)
-                (valid-sc-subterms e-lst a)
-                (rp-termp single-s/c)
-                (rp-term-listp e-lst)
-                (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (and (equal (sum (sum-list-eval res-s-lst a)
-                            (sum-list-eval res-pp-lst a)
-                            (sum-list-eval res-c-lst a))
-                       (and-eval-for-cross-product-pp single-s/c e-lst a))
-                (Integerp (rp-evlt single-s/c a))
-                ;;(bitp (rp-evlt single-s/c a))
-                ))
-  :fn cross-product-pp-aux-for-s/c
+(defret-mutual cross-product-pp-aux-for-s/c-correct
+  (defret cross-product-pp-aux-for-s/c-correct
+    (implies (and valid
+                  (valid-sc single-s/c a)
+                  (valid-sc-subterms e-lst a)
+                  (rp-termp single-s/c)
+                  (rp-term-listp e-lst)
+                  (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state))
+             (and (equal (sum (sum-list-eval res-s-lst a)
+                              (sum-list-eval res-pp-lst a)
+                              (sum-list-eval res-c-lst a))
+                         (and-eval-for-cross-product-pp single-s/c e-lst a))
+                  (Integerp (rp-evlt single-s/c a))
+                  ;;(bitp (rp-evlt single-s/c a))
+                  ))
+    :fn cross-product-pp-aux-for-s/c)
+
+  (defret cross-product-pp-aux-for-s/c-lst-correct
+    (implies (and valid
+                  (valid-sc-subterms s/c-lst a)
+                  (valid-sc-subterms e-lst a)
+                  (rp-term-listp s/c-lst)
+                  (rp-term-listp e-lst)
+                  (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state))
+             (and (equal (sum (sum-list-eval res-s-lst a)
+                              (sum-list-eval res-pp-lst a)
+                              (sum-list-eval res-c-lst a))
+                         (and-eval-for-cross-product-pp
+                          (list 'quote (sum-list-eval s/c-lst a))
+                          e-lst a))
+                  ;;(bitp (rp-evlt single-s/c a))
+                  ))
+    :fn cross-product-pp-aux-for-s/c-lst)
+  :mutual-recursion cross-product-pp-aux-for-s/c
 
   :hints (("goal"
            :expand ((GET-PP-AND-COEF SINGLE-S/C)
@@ -5275,6 +5273,7 @@ x5)))||#
                         regular-rp-evl-of_c_when_mult-formula-checks_with-ex-from-rp
                         regular-rp-evl-of_c_when_mult-formula-checks
                         cross-product-pp-aux-for-s/c
+                        cross-product-pp-aux-for-s/c-lst
                         and-eval-for-cross-product-pp)
                        (rp-trans
                         (:REWRITE DEFAULT-CDR)
@@ -5312,27 +5311,7 @@ x5)))||#
            :use ((:instance cross-product-pp-aux-for-s/c-correct))
            :in-theory (e/d () (cross-product-pp-aux-for-s/c-correct)))))
 
-(defret cross-product-pp-aux-for-s/c-lst-correct
-  (implies (and valid
-                (valid-sc-subterms s/c-lst a)
-                (valid-sc-subterms e-lst a)
-                (rp-term-listp s/c-lst)
-                (rp-term-listp e-lst)
-                (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (and (equal (sum (sum-list-eval res-s-lst a)
-                            (sum-list-eval res-pp-lst a)
-                            (sum-list-eval res-c-lst a))
-                       (and-eval-for-cross-product-pp
-                        (list 'quote (sum-list-eval s/c-lst a))
-                        e-lst a))
-                ;;(bitp (rp-evlt single-s/c a))
-                ))
-  :fn cross-product-pp-aux-for-s/c-lst
-  :hints (("Goal"
-           :in-theory (e/d (cross-product-pp-aux-for-s/c-lst
-                            AND-EVAL-FOR-CROSS-PRODUCT-PP)
-                           ()))))
+
 
 (defret cross-product-pp-aux-for-s/c-main-correct
   (implies (and valid
