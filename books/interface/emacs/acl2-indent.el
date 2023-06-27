@@ -19,6 +19,12 @@
   "Amount to indent first argument of a function relative to function"
   :type 'integer
   :group 'customize)
+;; This gives indentation like:
+;;   (pseudo-termp
+;;     (list* x1 ...
+;; To get the previous default behavior set this to 0:
+;;   (pseudo-termp
+;;    (list* x1 ...
 
 (defun toggle-indent-first-function-arg (arg)
   (interactive "P")
@@ -31,6 +37,16 @@
   "Indent line beginning with close paren to position of matching open paren"
   :type 'boolean
   :group 'customize)
+;; This give indentation like:
+;;   (let ((x y))
+;;      (foo x)
+;;      ;; (old-foo x)
+;;      )
+;; Setting this to T gives:
+;;   (let ((x y))
+;;      (foo x)
+;;      ;; (old-foo x)
+;;      )
 
 (defun toggle-indent-close-paren-to-open ()
   (interactive)
@@ -39,6 +55,13 @@
 ;; This is mainly relevant for :hints
 (defcustom indent-string-headed-list t
   "Controls indentation in list beginning with string: T to indent to first element; NIL do not indent.")
+;; This is mainly for :hints
+;; This default gives 
+;;  :hints ((“Goal” :use (:instance foo)
+;;                  :in-theory (disable foo)))
+;; Setting it to NIL gives
+;;  :hints ((“Goal” :use (:instance foo)
+;;           :in-theory (disable foo)))
 
 (defun toggle-indent-string-headed-list (arg)
   (interactive "P")
@@ -56,7 +79,7 @@
   (setq indent-def-beginning-functions-like-defun (not indent-def-beginning-functions-like-defun)))
 
 (defcustom specform-distinguished-args-indent 2
-  "Minimum amount to indent distinguished (initial) arguments of specforms"
+  "Minimum extra amount to indent distinguished (initial) arguments of specforms"
   :type 'integer
   :group 'customize)
 
@@ -317,6 +340,15 @@
 (put 'b* 'acl2-indent-hook 1)
 (put 'case-match   'acl2-indent-hook 'defun)
 (put 'mv-let       'acl2-indent-hook 2) ; Prefer to 'defun
+;; This indents like
+;; (mv-let (x y)
+;;         (fie y)
+;;   (+ x y))
+;; You can do (put 'mv-let 'acl2-indent-hook 1) to get
+;; (mv-let (x y)
+;;   (fie y)
+;;   (+ x y))
+
 (put 'verify-guards 'acl2-indent-hook 1)
 
 ;; Only necessary if indent-def-beginning-functions-like-defun is nil
