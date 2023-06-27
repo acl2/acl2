@@ -1,10 +1,11 @@
 ; Formalization of one's complement arithmetic
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -346,3 +347,19 @@
   (equal (bvplus1c size x 0)
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvplus1c))))
+
+(defthm bvplus1c-commutative
+  (equal (bvplus1c size y x)
+         (bvplus1c size x y))
+  :hints (("Goal" :in-theory (enable bvplus1c))))
+
+(defthm bvplus1c-associative
+  (equal (bvplus1c size (bvplus1c size x y) z)
+         (bvplus1c size x (bvplus1c size y z)))
+  :hints (("Goal"
+           :in-theory (e/d (bvplus1c
+                            bvchop-of-sum-cases)
+                           (;; Disables are for speed:
+                            ifix
+                            bvchop-shift
+                            natp)))))
