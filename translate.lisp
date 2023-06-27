@@ -1815,7 +1815,6 @@
 ;                   (FMT-SOFT-RIGHT-MARGIN . 65)
 ;                   (GSTACKP)
 ;                   (GUARD-CHECKING-ON . T)
-;                   #+acl2-infix (INFIXP)
 ;                   (INHIBIT-OUTPUT-LST SUMMARY)
 ;                   (IN-LOCAL-FLG . NIL)
 ;                   (LD-LEVEL . 0)

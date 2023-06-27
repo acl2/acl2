@@ -6455,7 +6455,6 @@
                                  state)
        (fmt-ppr
         form
-        t
         (+f (fmt-hard-right-margin state) (-f formula-col))
         0
         formula-col channel state
@@ -7885,14 +7884,6 @@
        (getpropc name 'label nil wrld)
        (equal event-form (get-event name wrld))))
 
-(defmacro make-ctx-for-event (event-form ctx)
-  #+acl2-infix
-  `(if (output-in-infixp state) ,event-form ,ctx)
-  #-acl2-infix
-  (declare (ignore event-form))
-  #-acl2-infix
-  ctx)
-
 (defun deflabel-fn (name state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -7900,7 +7891,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form (cons 'deflabel name))
+   (cons 'deflabel name)
    (let ((wrld1 (w state))
          (event-form (or event-form
                          (list 'deflabel name))))
@@ -8280,29 +8271,28 @@
          (signal val cmds state)
          (mv-let
            (erp obj cmds state)
-           (with-infixp-nil
-            (if cmds
-                (mv-let (col state)
-                  (fmt1 "~x0~|" (list (cons #\0 (car cmds)))
-                        0
-                        *standard-co* state
-                        nil)
-                  (declare (ignore col))
-                  (mv nil (car cmds) (cdr cmds) state))
-                (mv-let (erp obj state)
-                  (read-object *standard-oi* state)
-                  (mv erp
+           (if cmds
+               (mv-let (col state)
+                 (fmt1 "~x0~|" (list (cons #\0 (car cmds)))
+                       0
+                       *standard-co* state
+                       nil)
+                 (declare (ignore col))
+                 (mv nil (car cmds) (cdr cmds) state))
+             (mv-let (erp obj state)
+               (read-object *standard-oi* state)
+               (mv erp
 
 ; Originally 0 was accepted to mean "up"; since January 2023, however, the
 ; symbol UP has also been accepted.  The simplest way to preserve behavior when
 ; making that change was to treat the symbol UP as 0, and we do that here.
 
-                      (if (and (symbolp obj)
-                               (equal (symbol-name obj) "UP"))
-                          0
-                          obj)
-                       nil
-                       state))))
+                   (if (and (symbolp obj)
+                            (equal (symbol-name obj) "UP"))
+                       0
+                     obj)
+                   nil
+                   state)))
            (cond
             (erp (mv 'exit nil nil state))
             (t (let ((obj (cond ((not intern-flg) obj)
@@ -18378,7 +18368,7 @@
                          (getpropc name 'table-alist nil wrld))))))
     (:put
      (with-ctx-summarized
-      (make-ctx-for-event event-form ctx)
+      ctx
       (let* ((tbl (getpropc name 'table-alist nil wrld))
              (old-pair (assoc-equal key tbl)))
         (er-progn
@@ -18439,7 +18429,7 @@
                 state))))))))
     (:clear
      (with-ctx-summarized
-      (make-ctx-for-event event-form ctx)
+      ctx
       (er-progn
        (chk-table-nil-args :clear
                            (or key term)
@@ -18489,7 +18479,7 @@
         (value (getpropc name 'table-guard *t* wrld))))
       (t
        (with-ctx-summarized
-        (make-ctx-for-event event-form ctx)
+        ctx
         (er-progn
          (chk-table-nil-args op
                              (or key val)

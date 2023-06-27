@@ -14092,7 +14092,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-w ; *the-live-state*
     verbose-pstack ; *verbose-pstk*
     comp-fn ; compile-uncompiled-defuns
-    #+acl2-infix fmt-ppr
     acl2-raw-eval ; eval
     pstack-fn ; *pstk-stack*
     dmr-start-fn ; dmr-start-fn-raw
@@ -14120,7 +14119,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     add-polys ; *add-polys-counter*
     dmr-stop-fn ; dmr-stop-fn-raw
     ld-print-results
-    #+acl2-infix flpr
     close-trace-file-fn ; *trace-output*
     ev-fncall-rec ; raw-ev-fncall
     ev-fncall ; live-state-p
@@ -14830,7 +14828,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (in-prove-flg . nil)
     (in-verify-flg . nil) ; value can be set to the ld-level
     (including-uncertified-p . nil) ; valid only during include-book
-    #+acl2-infix (infixp . nil) ; See the Essay on Infix below
     (inhibit-er-hard . nil)
     (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
                                      ; will print a summary for each event.
@@ -14970,86 +14967,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      (illegal 'top-level
               "*initial-global-table* is not an ordered-symbol-alistp!"
               nil)))
-
-; Essay on Infix
-
-; Note: As of late July 2017, infix printing is no longer supported.  As a
-; result, it is now possible to execute some forms in safe-mode that were
-; formerly prohibited; for example, evaluation of the form
-
-;   (defconst *c* (fms-to-string "abc~x0" (list (cons #\0 (expt 2 4)))))
-
-; formerly failed with an error saying that a call of flpr had been made in
-; safe-mode, which was illegal because flpr had raw Lisp code -- which is no
-; longer the case.  Note, however, that we have left the infix-printing code in
-; place for the case #+acl2-infix, in case it becomes desirable to restore it
-; in the future.  Indeed, if you build ACL2 with :acl2-info pushed to
-; *features*, you may be able to do infix printing.  Warning: In that case,
-; some user books may fail, since more functions would have raw Lisp code,
-; hence would be disqualified from evaluation in safe-mode.  Here is an
-; example:
-
-;   (defconst *c* (fms-to-string "abc~x0" (list (cons #\0 (expt 2 4)))))
-
-; Below is the rest of the Essay on Infix.
-
-; ACL2 has a hook for providing a different syntax.  We call this different
-; syntax "infix" but it could be anything.  If the state global variable
-; infixp is nil, ACL2 only supports CLTL syntax.  If infixp is non-nil
-; then infix syntax may be used, depending on the context and the value of
-; infixp.
-
-; First, what is the "infix" syntax supported?  The answer is "a really stupid
-; one."  In the built-in infix syntax, a well-formed expression is a dollar
-; sign followed by a CLTL s-expression.  E.g., if infixp is t one must
-; write $ (car (cdr '(a b c))) instead of just (car (cdr '(a b c))).  If
-; infixp is t, the prover prints formulas by preceding them with a dollar
-; sign.  This stupid syntax allows the ACL2 developers to test the infix
-; hooks without having to invent and implement an new syntax.  Such testing
-; has helped us identify places where, for example, we printed or read in
-; one syntax when the other was expected by the user.
-
-; However, we anticipate that users will redefine the infix primitives so as to
-; implement interesting alternative syntax.  This note explains the primitives
-; which must be redefined.  But first we discuss the values of the state
-; global variable infixp.
-
-; In addition to nil, infixp can be :in, :out or t (meaning both).  As noted,
-; if infixp is nil, we use Common Lisp s-expression syntax.  If infixp is
-; non-nil the syntax used depends on both infixp and on the context.  On
-; printing, we use infix if infixp is t or :out.  On reading from the terminal,
-; we expect infix if infixp is :in or t.  When reading from files (as in
-; include-book) with infixp non-nil, we peek at the file and if it begins with
-
-; (IN-PACKAGE "...
-
-; optionally preceded by Lisp-style comments and whitespace, we use lisp
-; syntax, otherwise infix.  The check is made with the raw Lisp function
-; lisp-book-syntaxp.
-
-; By allowing the :in and :out settings we allow users to type one and see the
-; other.  We think this might help some users learn the other syntax.
-
-; The following variable and functions, mostly defined in raw Lisp should be
-; redefined to implement an alternative infix syntax.
-;
-; (defparameter *parse* ...)
-; (defun parse-infix-from-terminal (eof) ...)
-; (defun print-infix (x termp width rpc col file eviscp) ...)
-; (defun print-flat-infix (x termp file eviscp) ...)
-; (defun flatsize-infix (x termp j max state eviscp) ...)
-
-; We document each of these when we define them for the silly $ syntax.
-
-; It is common to bind state global infixp to nil, so we create the following
-; macro for that purpose.
-
-(defmacro with-infixp-nil (form)
-  #+acl2-infix
-  `(state-global-let* ((infixp nil))
-                      ,form)
-  #-acl2-infix
-  form)
 
 (defun all-boundp (alist1 alist2)
   (declare (xargs :guard (and (eqlable-alistp alist1)
@@ -18356,59 +18273,11 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; by at least one more character in the file.  If these conditions are met we
 ; return t; otherwise we return nil.
 
-  (cond
-   #+acl2-infix
-   ((null (f-get-global 'infixp *the-live-state*))
-    t)
-   (t
-    (let ((stream (safe-open file :direction :input :if-does-not-exist nil)))
-      (if stream
-          (unwind-protect (lisp-book-syntaxp1 0 stream)
-            (close stream))
-        nil)))))
-
-#-acl2-loop-only
-(defparameter *parser* nil)
-
-; If *parser* is non-nil then it should be set to a string that names a Unix
-; command that parses a file.  Suppose *parser* is set to "infixparse".  Then
-; we will use the Unix command
-
-; % infixparse < foo.lisp > foo.lisp.mirror
-
-; to generate from "foo.lisp" a file of s-expressions "foo.lisp.mirror".  The
-; unix command should return error code 3 if the parse fails.  Otherwise, the
-; parse is assumed to have worked.
-
-#+(and acl2-infix (not acl2-loop-only))
-(defun-one-output parse-infix-file (infile outfile)
-
-; This function is only used with the silly $ infix syntax.  It is the analogue
-; of the *parse* Unix command that transforms a $ infix file to its
-; s-expression image.  Rather than make it be a Unix command and pay the
-; complexity and performance cost of firing off another process, we just
-; implement it it directly in this image for the $ syntax.
-
-  (with-open-file
-   (file1 infile :direction :input)
-   (with-open-file
-    (file2 outfile :direction :output)
-    (prog ((form nil)
-           (eof (cons nil nil)))
-          loop
-          (setq form (read file1 nil eof))
-          (cond ((eq form eof) (return nil))
-                ((eq form '$)
-                 (setq form (read file1 nil eof))
-                 (cond ((eq form eof)
-                        (error "Bad $ infix syntax in ~s.  Ended with a $."
-                               (namestring file1)))
-                       (t (print form file2))))
-                (t (error "Bad $ infix syntax in file ~s.   Missing $ before ~
-                           s-expr ending at position ~a."
-                          (namestring file1)
-                          (file-position file1))))
-          (go loop)))))
+  (let ((stream (safe-open file :direction :input :if-does-not-exist nil)))
+    (if stream
+        (unwind-protect (lisp-book-syntaxp1 0 stream)
+          (close stream))
+      nil)))
 
 #-acl2-loop-only
 (defvar *read-file-into-string-alist*
@@ -18542,41 +18411,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (interface-er "Illegal input-type ~x0." typ)))))
               (cond
                ((null stream) (mv nil *the-live-state*))
-               #+(and acl2-infix gcl)
-               ((and (eq typ :object)
-                     (not (lisp-book-syntaxp os-file-name)))
-
-; Note that lisp-book-syntaxp returns t unless state global 'infixp is t.  So
-; ignore the code below unless you're thinking about the infix case!
-
-                (let* ((mirror-file-name
-                        (concatenate 'string
-                                     (namestring stream)
-                                     ".mirror"))
-                       (er-code
-                        (cond
-                         (*parser*
-                          (si::system
-                           (format nil "~s < ~s > ~s"
-                                   *parser*
-                                   (namestring stream)
-                                   mirror-file-name)))
-                         (t (parse-infix-file file-name
-                                              mirror-file-name)
-                            0))))
-                  (cond
-                   ((not (equal er-code 3))
-                    (let ((channel
-                           (make-input-channel mirror-file-name
-                                               *file-clock*))
-                          (mirror-stream
-                           (open mirror-file-name :direction :input)))
-                      (symbol-name channel)
-                      (setf (get channel *open-input-channel-type-key*) typ)
-                      (setf (get channel *open-input-channel-key*)
-                            mirror-stream)
-                      (mv channel *the-live-state*)))
-                   (t (mv nil *the-live-state*)))))
                (t (let ((channel
                          (make-input-channel file-name *file-clock*)))
                     (symbol-name channel)
@@ -19378,31 +19212,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (open-input-channels state-state))
          state-state))))
 
-#+(and acl2-infix (not acl2-loop-only))
-(defun-one-output parse-infix-from-terminal (eof)
-
-; Eof is an arbitrary lisp object.  If the terminal input is empty, return eof.
-; Otherwise, parse one well-formed expression from terminal input and return the
-; corresponding s-expr.  If the file is exhausted before the parse finishes or
-; if the parse is unsuccessful, cause a hard lisp error.
-
-; In the current hackish implementation, the infix language is just a dollar
-; sign followed by the s-expr.
-
-  (let (dollar sexpr)
-    (setq dollar (read *terminal-io* nil eof))
-    (cond ((eq dollar eof) eof)
-          ((eq dollar '$)
-; The following read could cause an error if the user types bad lisp syntax.
-           (setq sexpr (read *terminal-io* nil eof))
-           (cond ((eq sexpr eof)
-                  (error "Ill-formed infix input.  File ended on a $"))
-                 (t sexpr)))
-          (t (error
-              "Ill-formed infix input.  You were supposed to type a $ ~
-               followed by an s-expression and you typed ~s instead."
-              dollar)))))
-
 #-acl2-loop-only
 (defparameter *acl2-read-suppress* nil)
 
@@ -19696,19 +19505,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                   (eq channel *standard-ci*))
                               nil
                             si:*notify-gbc*))
-                   #+acl2-infix
-                   (infixp (f-get-global 'infixp state-state))
                    (stream (get-input-stream-from-channel channel))
                    (obj
                     (cond
-                     #+acl2-infix
-                     ((and (or (eq infixp t) (eq infixp :in))
-                           (eq stream (get-input-stream-from-channel  *standard-ci*)))
-                      (let ((obj (parse-infix-from-terminal read-object-eof)))
-                        (cond ((eq obj read-object-eof)
-                               read-object-eof)
-                              (t (chk-bad-lisp-object obj)
-                                 obj))))
                      #+(and mcl (not ccl))
                      ((eq channel *standard-oi*)
                       (ccl::toplevel-read))

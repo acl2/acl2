@@ -8684,11 +8684,6 @@
 ; that saved-build-date-string is defined in interface-raw.lisp.
 
            (list (eval '(saved-build-date-string))))
-
-; If you want the final image to have infixp = t (and have feature :acl2-infix
-; set), then put the following form here:
-;    (f-put-global 'infixp t *the-live-state*)
-
      t)))
 
 
@@ -9075,10 +9070,7 @@
                          customization-full-file-name
                          (put-assoc-eq
                           'ld-error-action :error
-                          (f-get-ld-specials *the-live-state*))))
-              #+acl2-infix (old-infixp
-                            (f-get-global 'infixp *the-live-state*)))
-          #+acl2-infix (f-put-global 'infixp nil *the-live-state*)
+                          (f-get-ld-specials *the-live-state*)))))
           (mv-let (erp val state)
             (with-suppression ; package locks, not just warnings, for read
              (with-cbd-raw
@@ -9117,8 +9109,6 @@
                             (ld-prompt nil))
                            (ld-fn quiet-alist *the-live-state* nil)))))))
                     (t (ld-fn ld-alist *the-live-state* nil)))))
-            #+acl2-infix
-            (f-put-global 'infixp old-infixp *the-live-state*)
             (cond (erp (format t "**Error encountered during LD of ACL2 ~
                                   customization file,~%~s.~%Quitting....~%"
                                customization-full-file-name)

@@ -11054,8 +11054,7 @@ its attachment is ignored during proofs"))))
             (alist1 msg)
             (fms msg alist1 *standard-co* state (ld-evisc-tuple state)))
        (er-let*
-        ((ans (with-infixp-nil
-               (read-object *standard-oi* state))))
+        ((ans (read-object *standard-oi* state)))
         (let ((temp (and (symbolp ans)
                          (assoc-keyword
                           (intern (symbol-name ans) "KEYWORD")

@@ -253,7 +253,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form (cons 'defconst name))
+   (cons 'defconst name)
    (let ((wrld1 (w state))
          (event-form (or event-form (list 'defconst name form))))
      (er-progn
@@ -351,7 +351,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form (cons 'defmacro (car mdef)))
+   (cons 'defmacro (car mdef))
    (let ((wrld (w state))
          (event-form (or event-form (cons 'defmacro mdef))))
      (er-let* ((val (chk-acceptable-defmacro mdef nil ctx wrld state)))
@@ -1578,7 +1578,7 @@
 ; over it and simply refuse requests to intern into it.
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form (cons 'defpkg name))
+   (cons 'defpkg name)
    (let ((w (w state))
          (event-form (or event-form
                          (list* 'defpkg name form
@@ -2771,9 +2771,8 @@
   (when-logic
    "DEFTHEORY"
    (with-ctx-summarized
-    (make-ctx-for-event event-form
-                        (cond (ctx)
-                              (t (cons 'deftheory name))))
+    (cond (ctx)
+          (t (cons 'deftheory name)))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list 'deftheory name expr))))
@@ -2849,13 +2848,12 @@
   (when-logic
    "IN-THEORY"
    (with-ctx-summarized
-    (make-ctx-for-event event-form
-                        (cond ((atom expr)
-                               (msg "( IN-THEORY ~x0)" expr))
-                              ((symbolp (car expr))
-                               (msg "( IN-THEORY (~x0 ...))"
-                                    (car expr)))
-                              (t "( IN-THEORY (...))")))
+    (cond ((atom expr)
+           (msg "( IN-THEORY ~x0)" expr))
+          ((symbolp (car expr))
+           (msg "( IN-THEORY (~x0 ...))"
+                (car expr)))
+          (t "( IN-THEORY (...))"))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list 'in-theory expr))))
@@ -2921,13 +2919,12 @@
   (when-logic
    "IN-ARITHMETIC-THEORY"
    (with-ctx-summarized
-    (make-ctx-for-event event-form
-                        (cond ((atom expr)
-                               (msg "( IN-ARITHMETIC-THEORY ~x0)" expr))
-                              ((symbolp (car expr))
-                               (msg "( IN-ARITHMETIC-THEORY (~x0 ...))"
-                                    (car expr)))
-                              (t "( IN-ARITHMETIC-THEORY (...))")))
+    (cond ((atom expr)
+           (msg "( IN-ARITHMETIC-THEORY ~x0)" expr))
+          ((symbolp (car expr))
+           (msg "( IN-ARITHMETIC-THEORY (~x0 ...))"
+                (car expr)))
+          (t "( IN-ARITHMETIC-THEORY (...))"))
     (let ((wrld (w state))
           (event-form (or event-form
                           (list 'in-arithmetic-theory expr))))
@@ -8307,7 +8304,7 @@
 
   (let ((ctx (encapsulate-ctx signatures ev-lst)))
     (with-ctx-summarized
-     (make-ctx-for-event event-form ctx)
+     ctx
      (let* ((wrld1 (w state))
             (saved-proved-functional-instances-alist
              (global-val 'proved-functional-instances-alist wrld1))
@@ -10762,8 +10759,7 @@
 ; accumulate onto ans as we go.  Ans should be nil initially.
 
   (mv-let (eofp form state)
-          (with-infixp-nil
-           (read-object ch state))
+          (read-object ch state)
           (cond
            (eofp (mv t nil state))
            ((eq form :END-PORTCULLIS-CMDS)
@@ -10861,8 +10857,7 @@
 ; nil initially.
 
   (mv-let (eofp form state)
-          (with-infixp-nil
-           (read-object ch state))
+          (read-object ch state)
           (cond
            (eofp
             (cond (port-file-p (value (reverse ans)))
@@ -11345,30 +11340,29 @@
 
             (eq caller 'convert-pcert)
             ch ctx state))))
-     (with-infixp-nil
-      (mv-let (erp tuple state)
-        (read-file-into-template '(:expansion-alist
-                                   :cert-data
-                                   nil ; pre-alist
-                                   nil ; post-alist3
-                                   nil ; cert-hash1
-                                   :pcert-info)
-                                 ch state nil)
-        (cond
-         (erp (ill-formed-certificate-er
-               ctx
-               'chk-raise-portcullis{read-file-into-template}
-               file1 file2))
-         (t
-          (let* ((expansion-alist (nth 0 tuple))
-                 (cert-data (cert-data-fal (nth 1 tuple)))
-                 (pre-alist (nth 2 tuple))
-                 (post-alist3 (nth 3 tuple))
-                 (cert-hash1 (nth 4 tuple))
-                 (pcert-info (if (eq caller 'convert-pcert)
-                                 (nth 5 tuple)
-                               nil))
-                 (unexpected-from-book-name
+     (mv-let (erp tuple state)
+       (read-file-into-template '(:expansion-alist
+                                  :cert-data
+                                  nil  ; pre-alist
+                                  nil  ; post-alist3
+                                  nil  ; cert-hash1
+                                  :pcert-info)
+                                ch state nil)
+       (cond
+        (erp (ill-formed-certificate-er
+              ctx
+              'chk-raise-portcullis{read-file-into-template}
+              file1 file2))
+        (t
+         (let* ((expansion-alist (nth 0 tuple))
+                (cert-data (cert-data-fal (nth 1 tuple)))
+                (pre-alist (nth 2 tuple))
+                (post-alist3 (nth 3 tuple))
+                (cert-hash1 (nth 4 tuple))
+                (pcert-info (if (eq caller 'convert-pcert)
+                                (nth 5 tuple)
+                              nil))
+                (unexpected-from-book-name
 
 ; We consider the book to be uncertified if the full-book-name doesn't match
 ; the sysfile stored for the book in its certificate.  Note that (caar
@@ -11377,49 +11371,49 @@
 ; 'include-book-alist-all (w state)), so the topmost entry is the most recent,
 ; hence for the book being included.
 
-                  (and (consp post-alist3)
-                       (consp (car post-alist3))
-                       (sysfile-p (caar post-alist3))
-                       (let ((filename
-                              (book-name-to-filename (caar post-alist3)
-                                                     (w state)
-                                                     ctx)))
-                         (and (not (equal filename file1))
-                              filename)))))
-            (er-let* ((pre-alist
-                       (cond ((include-book-alistp pre-alist nil)
-                              (value pre-alist))
-                             (t (ill-formed-certificate-er
-                                 ctx
-                                 'chk-raise-portcullis{pre-alist-2}
-                                 file1 file2 pre-alist))))
-                      (post-alist3
-                       (cond ((include-book-alistp post-alist3 t)
-                              (value post-alist3))
-                             (t (ill-formed-certificate-er
-                                 ctx
-                                 'chk-raise-portcullis{post-alist-2}
-                                 file1 file2 post-alist3))))
-                      (cert-hash2
-                       (value (and (not light-chkp) ; optimization
-                                   (cert-hash
-                                    cert-hash1
-                                    portcullis-cmds     ; :cmds
-                                    pre-alist           ; :pre-alist
-                                    post-alist3         ; :post-alist
-                                    expansion-alist     ; :expansion-alist
-                                    cert-data           ; :cert-data
-                                    state))))
-                      (actual-alist
-                       (value (global-val 'include-book-alist (w state)))))
-              (cond
-               ((and (not light-chkp)
-                     (not (equal cert-hash1 cert-hash2)))
-                (ill-formed-certificate-er
-                 ctx
-                 'chk-raise-portcullis{cert-hash}
-                 file1 file2
-                 (list :cert-hash1 cert-hash1 :cert-hash2 cert-hash2
+                 (and (consp post-alist3)
+                      (consp (car post-alist3))
+                      (sysfile-p (caar post-alist3))
+                      (let ((filename
+                             (book-name-to-filename (caar post-alist3)
+                                                    (w state)
+                                                    ctx)))
+                        (and (not (equal filename file1))
+                             filename)))))
+           (er-let* ((pre-alist
+                      (cond ((include-book-alistp pre-alist nil)
+                             (value pre-alist))
+                            (t (ill-formed-certificate-er
+                                ctx
+                                'chk-raise-portcullis{pre-alist-2}
+                                file1 file2 pre-alist))))
+                     (post-alist3
+                      (cond ((include-book-alistp post-alist3 t)
+                             (value post-alist3))
+                            (t (ill-formed-certificate-er
+                                ctx
+                                'chk-raise-portcullis{post-alist-2}
+                                file1 file2 post-alist3))))
+                     (cert-hash2
+                      (value (and (not light-chkp) ; optimization
+                                  (cert-hash
+                                   cert-hash1
+                                   portcullis-cmds  ; :cmds
+                                   pre-alist        ; :pre-alist
+                                   post-alist3      ; :post-alist
+                                   expansion-alist  ; :expansion-alist
+                                   cert-data        ; :cert-data
+                                   state))))
+                     (actual-alist
+                      (value (global-val 'include-book-alist (w state)))))
+             (cond
+              ((and (not light-chkp)
+                    (not (equal cert-hash1 cert-hash2)))
+               (ill-formed-certificate-er
+                ctx
+                'chk-raise-portcullis{cert-hash}
+                file1 file2
+                (list :cert-hash1 cert-hash1 :cert-hash2 cert-hash2
 
 ; Developer debug:
 ;                :portcullis-cmds portcullis-cmds
@@ -11427,12 +11421,12 @@
 ;                :post-alist3 post-alist3
 ;                :expansion-alist expansion-alist
 
-                       )))
-               ((and (not light-chkp)
-                     (or unexpected-from-book-name
-                         (not (include-book-alist-subsetp
-                               pre-alist
-                               actual-alist))))
+                      )))
+              ((and (not light-chkp)
+                    (or unexpected-from-book-name
+                        (not (include-book-alist-subsetp
+                              pre-alist
+                              actual-alist))))
 
 ; Note: Sometimes I have wondered how the expression above deals with LOCAL
 ; entries in the alists in question, because include-book-alist-subsetp does
@@ -11446,17 +11440,17 @@
 ; that we avoid needless computation (potentially reading certificate files) if
 ; no action is to be taken.
 
-                (let ((warning-summary
-                       (include-book-er-warning-summary
-                        :uncertified-okp
-                        suspect-book-action-alist
-                        state)))
-                  (cond
-                   ((and (equal warning-summary "Uncertified")
-                         (warning-disabled-p "Uncertified"))
-                    (value nil))
-                   (unexpected-from-book-name
-                    (include-book-er1 file1 file2
+               (let ((warning-summary
+                      (include-book-er-warning-summary
+                       :uncertified-okp
+                       suspect-book-action-alist
+                       state)))
+                 (cond
+                  ((and (equal warning-summary "Uncertified")
+                        (warning-disabled-p "Uncertified"))
+                   (value nil))
+                  (unexpected-from-book-name
+                   (include-book-er1 file1 file2
 
 ; The uses of ~| below are to ensure that both book filenames start in column
 ; 0, to make it easy to see their difference.  We avoid concluding with a
@@ -11464,28 +11458,28 @@
 ; for example, during certification: " This is illegal because we are currently
 ; attempting certify-book; see :DOC certify-book."
 
-                                      (msg "The book being ~
+                                     (msg "The book being ~
                                             included,~|~s0,~%is not in the ~
                                             location expected for the ACL2 ~
                                             executable being used:~|~s1."
-                                           file1
-                                           unexpected-from-book-name)
-                                      warning-summary ctx state))
-                   (t (mv-let (msgs state)
-                        (tilde-*-book-hash-phrase pre-alist actual-alist state)
-                        (include-book-er1 file1 file2
-                                          (cons
-                                           "After evaluating the portcullis ~
+                                          file1
+                                          unexpected-from-book-name)
+                                     warning-summary ctx state))
+                  (t (mv-let (msgs state)
+                       (tilde-*-book-hash-phrase pre-alist actual-alist state)
+                       (include-book-er1 file1 file2
+                                         (cons
+                                          "After evaluating the portcullis ~
                                             commands for the book ~x0:~|~*3."
-                                           (list (cons #\3 msgs)))
-                                          warning-summary ctx state))))))
-               (t (value (make cert-obj
-                               :cmds portcullis-cmds
-                               :cert-data cert-data
-                               :pre-alist pre-alist
-                               :post-alist post-alist3
-                               :expansion-alist expansion-alist
-                               :pcert-info pcert-info)))))))))))))
+                                          (list (cons #\3 msgs)))
+                                         warning-summary ctx state))))))
+              (t (value (make cert-obj
+                              :cmds portcullis-cmds
+                              :cert-data cert-data
+                              :pre-alist pre-alist
+                              :post-alist post-alist3
+                              :expansion-alist expansion-alist
+                              :pcert-info pcert-info))))))))))))
 
 (defun chk-certificate-file1 (file1 file2 ch light-chkp caller
                                     ctx state suspect-book-action-alist
@@ -11520,7 +11514,7 @@
 
   (mv-let
     (eofp version0 state)
-    (with-infixp-nil (read-object ch state))
+    (read-object ch state)
     (cond
      (eofp (ill-formed-certificate-er
             ctx 'chk-certificate-file1{empty}
@@ -11564,7 +11558,7 @@
           (version-okp
            (mv-let
              (eofp key state)
-             (with-infixp-nil (read-object ch state))
+             (read-object ch state)
              (cond
               (eofp
                (ill-formed-certificate-er
@@ -11627,7 +11621,7 @@
                       (equal (subseq version 0 13) "ACL2 Version "))
                  (mv-let
                    (eofp key state)
-                   (with-infixp-nil (read-object ch state))
+                   (read-object ch state)
                    (cond
                     (eofp
                      (ill-formed-certificate-er
@@ -11697,8 +11691,7 @@
                          :uncertified-okp
                          suspect-book-action-alist
                          ctx state))
-       (t (er-let* ((pkg (with-infixp-nil
-                          (chk-in-package ch file2 nil ctx state))))
+       (t (er-let* ((pkg (chk-in-package ch file2 nil ctx state)))
             (cond
              ((not (equal pkg "ACL2"))
               (ill-formed-certificate-er
@@ -13109,8 +13102,7 @@
        ((null ch)
         (value nil))
        (t
-        (er-let* ((pkg (with-infixp-nil
-                        (chk-in-package ch port-file t ctx state))))
+        (er-let* ((pkg (chk-in-package ch port-file t ctx state)))
           (cond
            ((null pkg) ; empty .port file
             (value nil))
@@ -14065,7 +14057,7 @@
 ; nil.
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form (cons 'include-book user-book-name))
+   (cons 'include-book user-book-name)
    (state-global-let*
     ((compiler-enabled (f-get-global 'compiler-enabled state))
      (port-file-enabled (f-get-global 'port-file-enabled state))
@@ -16546,12 +16538,7 @@
 ; Essay on Fast-cert for discussion pertaining to fast-cert mode.
 
   (with-ctx-summarized
-   (make-ctx-for-event
-    (list* 'certify-book user-book-name
-           (if (and (equal k 0) (eq compile-flg :default))
-               nil
-             '(irrelevant)))
-    (cons 'certify-book user-book-name))
+   (cons 'certify-book user-book-name)
    (state-global-let*
     ((warnings-as-errors nil))
     (save-parallelism-settings
@@ -17992,7 +17979,7 @@
   (when-logic
    "DEFCHOOSE"
    (with-ctx-summarized
-    (make-ctx-for-event event-form (cons 'defchoose (car def)))
+    (cons 'defchoose (car def))
     (let* ((wrld (w state))
            (event-form (or event-form (cons 'defchoose def)))
            (raw-bound-vars (cadr def))
@@ -20156,8 +20143,7 @@
 ; install-event just below its "Comment on irrelevance of skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form
-                       (msg "( DEFSTOBJ ~x0 ...)" name))
+   (msg "( DEFSTOBJ ~x0 ...)" name)
    (let ((event-form (or event-form (list* 'defstobj name args)))
          (wrld0 (w state)))
      (er-let* ((wrld1 (chk-acceptable-defstobj name args ctx wrld0 state)))
@@ -23329,8 +23315,7 @@
 ; why the ee-entry argument of process-embedded-events below uses 'defstobj.
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form
-                       (msg "( DEFABSSTOBJ ~x0 ...)" st-name))
+   (msg "( DEFABSSTOBJ ~x0 ...)" st-name)
    (defabsstobj-fn1 st-name st$c recognizer creator corr-fn exports
      protect-default congruent-to missing-only ctx state event-form)))
 
@@ -23590,10 +23575,9 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form
-                       (cond ((symbolp name)
-                              (msg "( PUSH-UNTOUCHABLE ~x0 ~x1)" name fn-p))
-                             (t "( PUSH-UNTOUCHABLE ...)")))
+   (cond ((symbolp name)
+          (msg "( PUSH-UNTOUCHABLE ~x0 ~x1)" name fn-p))
+         (t "( PUSH-UNTOUCHABLE ...)"))
    (let ((wrld (w state))
          (event-form (or event-form
                          (list 'push-untouchable name fn-p)))
@@ -23684,10 +23668,9 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form
-                       (cond ((symbolp name)
-                              (msg "( REMOVE-UNTOUCHABLE ~x0 ~x1)" name fn-p))
-                             (t "( REMOVE-UNTOUCHABLE ...)")))
+   (cond ((symbolp name)
+          (msg "( REMOVE-UNTOUCHABLE ~x0 ~x1)" name fn-p))
+         (t "( REMOVE-UNTOUCHABLE ...)"))
    (let ((wrld (w state))
          (event-form (or event-form
                          (list 'remove-untouchable name fn-p)))
@@ -23767,10 +23750,9 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form
-                       (cond ((symbolp fn)
-                              (msg "( SET-BODY ~x0)" fn))
-                             (t "( SET-BODY ...)")))
+   (cond ((symbolp fn)
+          (msg "( SET-BODY ~x0)" fn))
+         (t "( SET-BODY ...)"))
    (let* ((wrld (w state))
           (rune (if (symbolp name-or-rune)
 
@@ -27049,13 +27031,12 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form
-                       (if (and (consp event-form)
-                                (eq (car event-form) 'disable-ubt))
-                           (if (cdr event-form)
-                               (msg "( DISABLE-UBT ...)")
-                             (msg "( DISABLE-UBT)"))
-                         (msg "( RESET-PREHISTORY ~x0 ...)" pflg)))
+   (if (and (consp event-form)
+            (eq (car event-form) 'disable-ubt))
+       (if (cdr event-form)
+           (msg "( DISABLE-UBT ...)")
+         (msg "( DISABLE-UBT)"))
+     (msg "( RESET-PREHISTORY ~x0 ...)" pflg))
    (cond ((not (or (member-eq pflg '(t nil :disable-ubt))
                    (msgp pflg)))
 
@@ -30917,23 +30898,21 @@
 
 (defun defattach-fn (args state event-form)
   (with-ctx-summarized
-   (make-ctx-for-event
-    event-form
-    (case-match args
-      (((x y))
-       (msg "( DEFATTACH (~x0 ~x1))" x y))
-      (((x y . &))
-       (msg "( DEFATTACH (~x0 ~x1 ...))" x y))
-      (((x y) . &)
-       (msg "( DEFATTACH (~x0 ~x1) ...)" x y))
-      (((x y . &) . &)
-       (msg "( DEFATTACH (~x0 ~x1 ...) ...)" x y))
-      ((x y)
-       (msg "( DEFATTACH ~x0 ~x1)" x y))
-      ((x y . &)
-       (msg "( DEFATTACH ~x0 ~x1 ...)" x y))
-      (&
-       (msg "( DEFATTACH ...)"))))
+   (case-match args
+     (((x y))
+      (msg "( DEFATTACH (~x0 ~x1))" x y))
+     (((x y . &))
+      (msg "( DEFATTACH (~x0 ~x1 ...))" x y))
+     (((x y) . &)
+      (msg "( DEFATTACH (~x0 ~x1) ...)" x y))
+     (((x y . &) . &)
+      (msg "( DEFATTACH (~x0 ~x1 ...) ...)" x y))
+     ((x y)
+      (msg "( DEFATTACH ~x0 ~x1)" x y))
+     ((x y . &)
+      (msg "( DEFATTACH ~x0 ~x1 ...)" x y))
+     (&
+      (msg "( DEFATTACH ...)")))
    (let* ((wrld (w state))
           (proved-fnl-insts-alist
            (global-val 'proved-functional-instances-alist wrld)))
@@ -32064,8 +32043,7 @@
   (when-logic
    "REGENERATE-TAU-DATABASE"
    (with-ctx-summarized
-    (make-ctx-for-event event-form
-                        "( REGENERATE-TAU-DATABASE)")
+    "( REGENERATE-TAU-DATABASE)"
     (let* ((wrld (w state))
            (event-form (or event-form
                            '(REGENERATE-TAU-DATABASE)))
