@@ -4019,8 +4019,7 @@
 (defconst *protected-system-state-globals*
   (let ((val
          (set-difference-eq
-          (union-eq (strip-cars *initial-ld-special-bindings*)
-                    (strip-cars *initial-global-table*))
+          (strip-cars *initial-global-table*)
           '(acl2-raw-mode-p ;;; keep raw mode status
             bddnotes        ;;; for feedback after expansion failure
 

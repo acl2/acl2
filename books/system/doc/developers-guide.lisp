@@ -3375,8 +3375,8 @@
  an exception being small expressions that are not at the top level of the
  @('if') structure.</p>
 
- <p>System state globals need to be included in @('*initial-global-table*') or
- @('*initial-ld-special-bindings*').</p>
+ <p>System state globals need to be included in
+ @('*initial-global-table*').</p>
 
  <p>Blank lines are avoided except in the usual circumstances, e.g.,
  surrounding comments and between definitions.  Avoid consecutive blank

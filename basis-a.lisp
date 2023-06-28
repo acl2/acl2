@@ -2491,6 +2491,73 @@
                           eviscp)
                    maximum state eviscp)))))
 
+; Historical Plaque on Infix Printing
+
+; Once upon a time ACL2 supported the option of reading and printing in
+; traditional infix notation.  E.g., ``x * expt(x,y-1)'' instead of ``(* x
+; (expt x (- y 1)))'' or, in LaTeX notation, ``$x \times expt(x,y-1)$''.
+; However, in 2017, this so-called ``infix'' option was deprecated because no
+; one used it, and in 2023, we removed the last vestiges of it from the ACL2
+; source code.  But the history of our experiments with infix is worth noting.
+
+; Bob Boyer wrote the original infix printer for the Nqthm theorem prover.  The
+; original functionality was to convert a Lisp-style input file for Nqthm into
+; a LaTeX file so that the definitions and theorems could be included in
+; journal papers in conventional notation.  In 1992 and 1993, Michael K. Smith,
+; who worked with us at Computational Logic, Inc., added the option of
+; producing Scribe output.
+
+; The source code for the Nqthm infix printer is available as part of the
+; Nqthm-1992 archive:
+
+; ftp://ftp.cs.utexas.edu/pub/boyer/nqthm/nqthm-2nd-edition.tar.gz
+
+; In particular, see the subdirectory sinfix/ and the main source file there
+; sinfix.lisp.
+
+; The printer is also documented in the book A Computational Logic Handbook,
+; Second Edition, Academic Press, NY, 1997, pp 421-422.
+
+; The motivation of writing such a printer was recorded in sinfix.lisp:
+
+;   We hope this notation will facilitate the communication of work with Nqthm
+;   to those who do not happily read Lisp notation.  But we have no expectation
+;   that this notation will make it easier for the Nqthm user to formulate or
+;   to prove theorems.
+
+; As the above-mentioned Handbook notes, however,
+
+;   Unfortunately, ``conventional'' notation is remarkably unconventional as
+;   soon as one begins dealing with non-arithmetic operators (and even with
+;   arithmetic operators if one must distinguish, say, Peano addition from
+;   rational addition).
+
+; The facility allowed the user to include a table noting how given Nqthm
+; function calls were to be printed and that table was included in the LaTeX or
+; Scribe output.
+
+; Don Knuth pronounced the output ``beautiful'' when Boyer showed it to him.
+
+; Yuan Yu used the infix printer in his paper with Boyer describing Yu's
+; remarkable formalization of the Motorola 68020 and proofs of the correctness
+; of several dozen machine code programs compiled by standard C compilers.  The
+; Nqthm source code for the paper and the resulting .tex and .ps files may be
+; found in the Nqthm-1992 archives under examples/yu/mc20-1.*.
+
+; ACL2 was being developed concurrently by Boyer, Moore, and Kaufmann during
+; this period and an ACL2 version of the printer was included, thanks to Mike
+; Smith again, in the early versions of ACL2.  Mike also adapted the printer to
+; produce infix-style terminal output if certain options were enabled.
+
+; However, the facility never caught on.  Papers were generally published in
+; the native Common Lisp notation or informally translated to conventional
+; notation.  We suspect the main reason it never caught on is that ACL2 users
+; were (and are) more interested in applying formal methods to industrial
+; designs, and in communicating that work to other knowledgeable ACL2 users,
+; than in writing papers about their work for a more general audience.  By 2017
+; we decided that we would no longer maintain the infix printer code in the
+; ACL2 sources and we eliminated it completely in 2023.
+
 (defun flsz (x j maximum state eviscp)
   (declare (type (signed-byte 30) j maximum))
   (flsz1 x

@@ -25041,8 +25041,7 @@
                  (t ; (global-val 'boot-strap-flg wrld)
                   (trans-er ctx
                             "State global ~x0 needs to be declared for the ~
-                             build by adding it to *initial-global-table* or ~
-                             *initial-ld-special-bindings*."
+                             build by adding it to *initial-global-table*."
                             (cadr (cadr x))))))
           (t
            (let ((stobjs-out (translate-deref stobjs-out bindings))

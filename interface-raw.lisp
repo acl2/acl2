@@ -8255,9 +8255,7 @@
      (sym (find-package "ACL2_GLOBAL_ACL2"))
      (when (boundp sym)
        (let ((acl2-sym (intern (symbol-name sym) "ACL2")))
-         (when (not
-                (or (assoc acl2-sym *initial-global-table* :test 'eq)
-                    (assoc acl2-sym *initial-ld-special-bindings* :test 'eq)))
+         (when (not (assoc acl2-sym *initial-global-table* :test 'eq))
            (push (cons acl2-sym (symbol-value sym))
                  bad)))))
     (when bad

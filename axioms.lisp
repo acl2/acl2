@@ -14377,7 +14377,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; read-acl2-oracle but actually returns the value of the raw Lisp variable
 ; *wormhole-brr-evisc-tuple*.  Iprint-oracle-updates has an analogous
 ; treatment.
-  
+
     brr-evisc-tuple-oracle-update
     iprint-oracle-updates
   ))
@@ -14690,18 +14690,43 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *fmt-soft-right-margin-default* 65)
 (defconst *fmt-hard-right-margin-default* 77)
 
-(defconst *initial-global-table*
+(defconst *initial-ld-special-bindings*
 
-; Warning: Keep this list in alphabetic order as per ordered-symbol-alistp.  It
-; must satisfy the predicate ordered-symbol-alistp if build-state is to build a
-; state-p.
+; Warning: Keep this in sync with f-get-ld-specials,
+; chk-acceptable-ld-fn1-pair, *initial-ld-special-bindings*, ld-alist-raw,
+; wormhole, and ld.
+
+; This alist is used by initialize-acl2 to set the initial values of the LD
+; specials.  It is assumed by reset-ld-specials that the first three are the
+; channels.  There are no entries for current-package or useless-runes, even
+; though these correspond to LD keyword arguments, because they are not LD
+; specials.
+
+  `((standard-oi . ,*standard-oi*)
+    (standard-co . ,*standard-co*)
+    (proofs-co . ,*standard-co*)
+    (ld-skip-proofsp . nil)
+    (ld-redefinition-action . nil)
+    (ld-prompt . t)
+    (ld-missing-input-ok . nil)
+    (ld-always-skip-top-level-locals . nil)
+    (ld-pre-eval-filter . :all)
+    (ld-pre-eval-print . nil)
+    (ld-post-eval-print . :command-conventions)
+    (ld-evisc-tuple . nil)
+    (ld-error-triples . t)
+    (ld-error-action . :continue)
+    (ld-query-control-alist . nil)
+    (ld-verbose . "Project-dir-alist:~|~xb.~|Type :help for help.~%Type ~
+                   (quit) to quit completely out of ACL2.~|~%")
+    (ld-user-stobjs-modified-warning . nil)))
+
+(defconst *initial-global-table-1*
 
 ; When you add a new state global to this table, consider whether to modify
 ; *protected-system-state-globals*.
 
-; Note that check-state-globals-initialized insists that all state globals that
-; are bound by the build are bound in this alist or in
-; *initial-ld-special-bindings*.
+; No key of this alist should also be a key of *initial-ld-special-bindings*.
 
   `((abbrev-evisc-tuple . :default)
     (abort-soft . t)
@@ -14848,8 +14873,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (ld-history . nil)
     (ld-level . 0)
     (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
-    (ld-redefinition-action . nil)
-    (ld-skip-proofsp . nil)
     (logic-fns-with-raw-code . ,*initial-logic-fns-with-raw-code*)
     (macros-with-raw-code . ,*initial-macros-with-raw-code*)
     (main-timer . 0)
@@ -14888,7 +14911,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (proof-tree-ctx . nil)
     (proof-tree-indent . "|  ")
     (proof-tree-start-printed . nil)
-    (proofs-co . acl2-output-channel::standard-character-output-0)
     (protect-memoize-statistics . nil)
     (raw-guard-warningp . nil)
     (raw-include-book-dir!-alist . :ignore)
@@ -14914,8 +14936,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (skip-reset-prehistory . nil) ; non-nil skips (reset-prehistory nil)
     (slow-array-action . :break) ; set to :warning in exit-boot-strap-mode
     (splitter-output . t)
-    (standard-co . acl2-output-channel::standard-character-output-0)
-    (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
     (system-attachments-cache . nil) ; see modified-system-attachments
     (temp-touchable-fns . nil)
@@ -14960,6 +14980,42 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (write-bookdata . nil) ; see maybe-write-bookdata
     (write-for-read . nil)
     (writes-okp . t)))
+
+(defun merge-symbol-alistp (a1 a2)
+  (declare (xargs :mode :program))
+  (cond ((endp a1) a2)
+        ((endp a2) a1)
+        ((symbol< (caar a1) (caar a2))
+         (cons (car a1)
+               (merge-symbol-alistp (cdr a1) a2)))
+        (t
+         (cons (car a2)
+               (merge-symbol-alistp a1 (cdr a2))))))
+
+(defun merge-sort-symbol-alistp (alist)
+  (declare (xargs :mode :program))
+  (cond ((endp (cdr alist)) alist)
+        ((endp (cddr alist))
+         (cond ((symbol< (car (car alist)) (car (cadr alist)))
+                alist)
+               (t (list (cadr alist) (car alist)))))
+        (t (let* ((n (length alist))
+                  (a (ash n -1)))
+             (merge-symbol-alistp
+              (merge-sort-symbol-alistp (take a alist))
+              (merge-sort-symbol-alistp (nthcdr a alist)))))))
+
+(defconst *initial-global-table*
+
+; Warning: Keep this list in alphabetic order as per ordered-symbol-alistp.  It
+; must satisfy the predicate ordered-symbol-alistp if build-state is to build a
+; state-p.
+
+; Note that check-state-globals-initialized insists that all state globals that
+; are bound by the build are bound in this alist.
+
+  (merge-sort-symbol-alistp (append *initial-ld-special-bindings*
+                                    *initial-global-table-1*)))
 
 #+acl2-loop-only ; not during compilation
 (value ; avoid value-triple, as state-global-let* is not yet defined in pass 1
@@ -15657,43 +15713,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; We now define state-global-let*, which lets us "bind" state
 ; globals.
 
-(defconst *initial-ld-special-bindings*
-
-; Warning: Keep this in sync with f-get-ld-specials,
-; chk-acceptable-ld-fn1-pair, *initial-ld-special-bindings*, ld-alist-raw,
-; wormhole, and ld.
-
-; This alist is used by initialize-acl2 to set the initial values of the LD
-; specials.  It is assumed by reset-ld-specials that the first three are the
-; channels.  There are no entries for current-package or useless-runes, even
-; though these correspond to LD keyword arguments, because they are not LD
-; specials.
-
-  `((standard-oi . ,*standard-oi*)
-    (standard-co . ,*standard-co*)
-    (proofs-co . ,*standard-co*)
-    (ld-skip-proofsp . nil)
-    (ld-redefinition-action . nil)
-    (ld-prompt . t)
-    (ld-missing-input-ok . nil)
-    (ld-always-skip-top-level-locals . nil)
-    (ld-pre-eval-filter . :all)
-    (ld-pre-eval-print . nil)
-    (ld-post-eval-print . :command-conventions)
-    (ld-evisc-tuple . nil)
-    (ld-error-triples . t)
-    (ld-error-action . :continue)
-    (ld-query-control-alist . nil)
-    (ld-verbose . "Project-dir-alist:~|~xb.~|Type :help for help.~%Type ~
-                   (quit) to quit completely out of ACL2.~|~%")
-    (ld-user-stobjs-modified-warning . nil)))
-
 (defun always-boundp-global (x)
   (declare (xargs :guard (symbolp x)))
-  (or (assoc-eq x
-                *initial-global-table*)
-      (assoc-eq x
-                *initial-ld-special-bindings*)))
+  (assoc-eq x *initial-global-table*))
 
 (defun state-global-let*-bindings-p (lst)
 
@@ -15800,8 +15822,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;    (case-match binding
 ;      ((var ('f-get-global ('quote var) 'state))
 ;       (and (symbolp var)
-;            (or (assoc-eq var *initial-global-table*)
-;                (assoc-eq var *initial-ld-special-bindings*))))
+;            (assoc-eq var *initial-global-table*)))
 ;      (& nil))
 
 ; That expression is easily proved equal to the one below by first evaluating
@@ -15826,8 +15847,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (= (length qvar) 2)
                          (eq (car qvar) 'quote)
                          (eq (cadr qvar) var)))
-                  (or (assoc-eq var *initial-global-table*)
-                      (assoc-eq var *initial-ld-special-bindings*))))))
+                  (assoc-eq var *initial-global-table*)))))
     (state-global-let*-put-globals (cdr bindings)))
    (t
     (cons (let ((val-form `(check-vars-not-free
@@ -25272,7 +25292,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                t)
         nil)
 ; [b] cleaning up after polite, normal exit.
-       
+
        (eval
         `(let ((wormhole-cleanup-abort-flg nil))
            ,*wormhole-cleanup-form*))

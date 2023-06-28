@@ -7612,7 +7612,7 @@ its attachment is ignored during proofs"))))
 ; So below is the sample script that shows how you might explore break-rewrite.
 ; See also books/demos/brr-test-input.lsp which is a ``run-script'' book that
 ; replays several sessions with break-rewrite.  The log file from those sessions
-; is books/demos/brr-test-log.txt.  
+; is books/demos/brr-test-log.txt.
 
 ; But we recommend, first, that you replay the following script in a fresh ACL2
 ; session so you see the interaction ``live.''  First do this setup, which
@@ -7641,7 +7641,7 @@ its attachment is ignored during proofs"))))
 ; (defun brr-coherentp (state)
 ;   (declare (xargs :mode :program :stobjs (state)))
 ;   (if (eq (f-get-global 'wormhole-name state) 'brr)
-;       (er-let* 
+;       (er-let*
 ;           ((persistent-whs (get-persistent-whs 'brr state))
 ;            (ephemeral-whs (value (f-get-global 'wormhole-status state))))
 ;         (value (equal persistent-whs ephemeral-whs)))
@@ -7740,7 +7740,7 @@ its attachment is ignored during proofs"))))
 ; Intuitively, the new break just pushes a new status on top of the old status
 ; stack.  You can see this by comparing the status printed at [ 6] with the
 ; status printed at [ 9].  Count the MAKEs.  There were two (meaning we were at
-; depth 1) and now there are three (meaning we are at depth 2).  
+; depth 1) and now there are three (meaning we are at depth 2).
 
 ; The top-most status is different: it contains the same :BRR-MONITORED-RUNES
 ; (although that would change if we monitored or unmonitored runes at this
@@ -9120,7 +9120,7 @@ its attachment is ignored during proofs"))))
                                        (natp (cdr (assoc-eq :depth alist)))))))
 
 ; We nfix below because :depth must be bound to a natp.  In fact, we know it is,
-; by the :guard above, except for the fact that we don't know 
+; by the :guard above, except for the fact that we don't know
   (let* ((depth-msg
           (if depth-criterion-satisfiedp
               (list (msg "* The abstraction of ~x0 to depth ~x1, namely the ~
@@ -13633,28 +13633,6 @@ its attachment is ignored during proofs"))))
 ; WARNING: This macro assumes that the given rw-cache is non-empty.
 
   `(eq (car ,cache) t))
-
-(defun merge-symbol-alistp (a1 a2)
-  (cond ((endp a1) a2)
-        ((endp a2) a1)
-        ((symbol< (caar a1) (caar a2))
-         (cons (car a1)
-               (merge-symbol-alistp (cdr a1) a2)))
-        (t
-         (cons (car a2)
-               (merge-symbol-alistp a1 (cdr a2))))))
-
-(defun merge-sort-symbol-alistp (alist)
-  (cond ((endp (cdr alist)) alist)
-        ((endp (cddr alist))
-         (cond ((symbol< (car (car alist)) (car (cadr alist)))
-                alist)
-               (t (list (cadr alist) (car alist)))))
-        (t (let* ((n (length alist))
-                  (a (ash n -1)))
-             (merge-symbol-alistp
-              (merge-sort-symbol-alistp (take a alist))
-              (merge-sort-symbol-alistp (nthcdr a alist)))))))
 
 (defun cdr-sort-rw-cache (cache)
 
