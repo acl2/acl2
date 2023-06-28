@@ -36,6 +36,7 @@
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/utilities/linter" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/utilities/all-included-books" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
 (include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
@@ -43,6 +44,30 @@
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
 (include-book "speed-up")
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+
+;; Returns state
+;move
+(defun set-cbd-simple (cbd state)
+  (declare (xargs :guard (stringp cbd)
+                  :stobjs state
+                  :mode :program))
+  (mv-let (erp val state)
+    (set-cbd-fn cbd state)
+    (declare (ignore val))
+    (if erp
+        (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
+                state)
+      state)))
+
+
+;; Drop-in replacement for extend-pathname that doesn't fail on stuff like
+;; (extend-pathname "." "../foo" state).
+;; Note: This can add a slash if the filename is a dir.
+;move
+(defund extend-pathname$ (dir filename state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (extend-pathname (canonical-pathname dir t state) filename state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,29 +113,35 @@
     string))
 
 (defun abbreviate-event (event)
-  (declare (xargs :guard t))
+  (declare (xargs :guard t
+                  :mode :program))
   (if (not (and (consp event)
                 (symbolp (car event))))
       ;; todo: can this happen?
       "..."
-    (if (and (eq 'local (car event))
-             (= 1 (len (cdr event))))
-        (concatenate 'string "(local "
-                     (abbreviate-event (cadr event)))
-      (concatenate 'string
-                   "("
-                   (symbol-name (car event))
-                   (if (not (consp (rest event)))
-                       ")"
-                     (if (symbolp (cadr event))
-                         ;; example (defblah name ...)
-                         (concatenate 'string " " (symbol-name (cadr event))
-                                      (if (consp (rest (rest event)))
-                                          " ...)"
-                                        " )"))
-                       ;; todo: do better in this case?
-                       ;; example (progn (defun foo ...) ...)
-                       (concatenate 'string " ...)")))))))
+    (let ((fn (car event)))
+      (case fn
+        (local (if (= 1 (len (cdr event)))
+                   (concatenate 'string "(local "
+                                (abbreviate-event (cadr event)))
+                 "(local ...)" ; can this happen?
+                 ))
+        (include-book (print-to-string event))
+        (otherwise
+         (concatenate 'string
+                      "("
+                      (symbol-name (car event))
+                      (if (not (consp (rest event)))
+                          ")"
+                        (if (symbolp (cadr event))
+                            ;; example (defblah name ...)
+                            (concatenate 'string " " (symbol-name (cadr event))
+                                         (if (consp (rest (rest event)))
+                                             " ...)"
+                                           ")"))
+                          ;; todo: do better in this case?
+                          ;; example (progn (defun foo ...) ...)
+                          (concatenate 'string " ...)")))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,7 +212,7 @@
     (declare (ignore res))
     (if erp
         (mv nil state) ; some event gave an error
-      ;; TODO: Can we do something else fast here, like checking all he hints but not doing the proofs?  May cause includes to be done again...
+      ;; TODO: Can we do something else fast here, like checking all the hints but not doing the proofs?  May cause includes to be done again...
       ;; Try again for real (without skip-proofs):
       (mv-let (erp res state)
         (revert-world (submit-and-check-events-error-triple events nil nil print state))
@@ -482,11 +513,60 @@
   (prog2$ (and print (cw " (For ~x0: )~%" event))
           (mv nil state)))
 
+;; ;; Test whether the given book is incldued in the wrld.  FILENAME should include the .lisp extension.
+;; (defun book-includedp (dir filename state)
+;;   (declare (xargs :guard (and (or (keywordp dir)
+;;                                   (stringp dir))
+;;                               (stringp filename))
+;;                   :mode :program
+;;                   :stobjs state))
+;;   (member-equal (extend-pathname$ dir filename state) (all-included-books (w state))))
+
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
-(defun improve-event (event rest-events print state)
+(defun improve-include-book-event (event rest-events print initial-included-books state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state)
+           (ignore print))
+  ;; For an include-book, try skipping it and see if the rest of the events
+  ;; work.
+  (prog2$
+   (cw " (For ~x0:" event)
+   (let* ((book (cadr event))
+          (dir (cadr (assoc-keyword :dir (rest (fargs event))))) ; often nil
+          (full-path (extend-pathname$ (or dir ".") (concatenate 'string book ".lisp") state)))
+     (if (member-equal full-path initial-included-books)
+         ;; Redundant and unable to trying dropping it (probably because it is included by improve-book itself):
+         (prog2$ (cw "~%   Skipping: already included in session).~%")
+                 (submit-event-expect-no-error event nil state))
+       (if (member-equal full-path (all-included-books (w state)))
+           (prog2$ (cw "~%   Drop (redundant).)~%" event nil)
+                   ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
+                   (submit-event-expect-no-error event nil state))
+         (mv-let (successp state)
+           (events-would-succeedp rest-events nil state)
+           (if successp
+               ;; This event could be skipped: (but that might break books that use
+               ;; this book) TODO: Also try reducing what is included?  TODO: What
+               ;; if this is redundant, given stuff already in the world?  TODO:
+               ;; Somehow avoid suggesting to drop books that introduce names used
+               ;; in macros (they will seem like they can be dropped, unless the
+               ;; book contains an actual call of the macro).
+               (prog2$ (cw "~%   Drop.)~%" event nil)
+                       ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
+                       (submit-event-expect-no-error event nil state))
+             ;;failed to submit the rest of the events, so we can't just skip this one:
+             (progn$ ;; (cw " Cannot be dropped.)~%" event)
+              (cw ")~%" event)
+              (submit-event-expect-no-error event nil state)))))))))
+
+;; Submits EVENT and prints suggestions for improving it.
+;; Returns (mv erp state).
+(defun improve-event (event rest-events print initial-included-books state)
   (declare (xargs :guard (and (true-listp rest-events)
-                              (member-eq print '(nil :brief :verbose)))
+                              (member-eq print '(nil :brief :verbose))
+                              (string-listp initial-included-books))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (case (car event)
@@ -494,13 +574,13 @@
      ;; For a local event, try skipping it and see if the rest of the events
      ;; work.  If so, deleting the event should be safe, since the event is local.
      (prog2$
-      (cw " (For ~x0:" (abbreviate-event event)) ; todo: extract a name to print here, or eviscerate
+      (cw " (For ~s0:" (abbreviate-event event))
       (mv-let (successp state)
         (events-would-succeedp rest-events nil state)
         (if successp
             ;; This event could be skipped:  TODO: Still, try improving it (it may be a defthm, etc.)?
             ;; TODO: What if this is redundant, given stuff already in the world?
-            (prog2$ (cw "~%  Drop ~X01.)~%" event nil)
+            (prog2$ (cw "~%   Drop ~X01.)~%" event nil)
                     ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                     (submit-event-expect-no-error event nil state))
           ;;failed to submit the rest of the events, so we can't just skip this one:
@@ -508,27 +588,8 @@
            (cw ")~%" event)
            (submit-event-expect-no-error event nil state))))))
     (include-book
-     ;; For an include-book, try skipping it and see if the rest of the events
-     ;; work.
-     (prog2$
-      (cw " (For ~x0:" event)
-      (mv-let (successp state)
-        (events-would-succeedp rest-events nil state)
-        (if successp
-            ;; This event could be skipped: (but that might break books that use
-            ;; this book) TODO: Also try reducing what is included?  TODO: What
-            ;; if this is redundant, given stuff already in the world?  TODO:
-            ;; Somehow avoid suggesting to drop books that introduce names used
-            ;; in macros (they will seem like they can be dropped, unless the
-            ;; book contains an actual call of the macro).
-            (prog2$ (cw "~%  Drop ~x0.)~%" event nil)
-                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
-                    (submit-event-expect-no-error event nil state))
-          ;;failed to submit the rest of the events, so we can't just skip this one:
-          (progn$ ;; (cw " Cannot be dropped.)~%" event)
-                  (cw ")~%" event)
-                  (submit-event-expect-no-error event nil state))))))
-    ((defthm defthmd) (improve-defthm-event event rest-events print state))
+     (improve-include-book-event event rest-events initial-included-books print state)
+)    ((defthm defthmd) (improve-defthm-event event rest-events print state))
     ((defun defund) (improve-defun-event event rest-events print state))
     ((defrule defruled) (improve-defrule-event event rest-events print state))
     ((in-package) (improve-in-package-event event rest-events print state))
@@ -564,40 +625,18 @@
 
 ;; Submits each event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
-(defun improve-events (events print state)
-  (declare (xargs :guard (true-listp events)
+(defun improve-events (events initial-included-books print state)
+  (declare (xargs :guard (and (true-listp events)
+                              (string-listp initial-included-books))
                   :mode :program
                   :stobjs state))
   (if (endp events)
       (mv nil state)
     (mv-let (erp state)
-      (improve-event (first events) (rest events) print state)
+      (improve-event (first events) (rest events) initial-included-books print state)
       (if erp
           (mv erp state)
-        (improve-events (rest events) print state)))))
-
-;; Returns state
-;move
-(defun set-cbd-simple (cbd state)
-  (declare (xargs :guard (stringp cbd)
-                  :stobjs state
-                  :mode :program))
-  (mv-let (erp val state)
-    (set-cbd-fn cbd state)
-    (declare (ignore val))
-    (if erp
-        (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
-                state)
-      state)))
-
-;; Drop-in replacement for extend-pathname that doesn't fail on stuff like
-;; (extend-pathname "." "../foo" state).
-;; Note: This can add a slash if the filename is a dir.
-;move
-(defund extend-pathname$ (dir filename state)
-  (declare (xargs :stobjs state
-                  :mode :program))
-  (extend-pathname (canonical-pathname dir t state) filename state))
+        (improve-events (rest events) initial-included-books print state)))))
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
@@ -625,6 +664,7 @@
            (and print (cw "~%~%(IMPROVING ~x0.~%" full-book-path)) ; matches the close paren below
            (let* ((old-cbd (cbd-fn state))
                   (full-book-dir (dir-of-path full-book-path))
+                  (initial-included-books (all-included-books (w state)))
                   ;; We set the CBD so that the book is replayed in its own directory:
                   (state (set-cbd-simple full-book-dir state))
                   ;; Load the .port file, so that packages (especially) exist:
@@ -637,7 +677,7 @@
                      (mv erp state))
                  (progn$ (and (eq print :verbose) (cw "  Book contains ~x0 forms.~%~%" (len events)))
                          (mv-let (erp state)
-                           (improve-events events print state)
+                           (improve-events events initial-included-books print state)
                            (let* ((state (unwiden-margins state))
                                   (state (set-cbd-simple old-cbd state)))
                              (prog2$ (cw ")")
