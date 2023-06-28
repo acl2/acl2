@@ -44,6 +44,20 @@
 (include-book "speed-up")
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
+;; Returns state
+;move
+(defun set-cbd-simple (cbd state)
+  (declare (xargs :guard (stringp cbd)
+                  :stobjs state
+                  :mode :program))
+  (mv-let (erp val state)
+    (set-cbd-fn cbd state)
+    (declare (ignore val))
+    (if erp
+        (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
+                state)
+      state)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defttag books-in-subtree) ; for sys-call+ below
@@ -484,6 +498,34 @@
 
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
+(defun improve-include-book-event (event rest-events print state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state)
+           (ignore print))
+  ;; For an include-book, try skipping it and see if the rest of the events
+  ;; work.
+  (prog2$
+   (cw "  (For ~x0:" event)
+   (mv-let (successp state)
+     (events-would-succeedp rest-events nil state)
+     (if successp
+         ;; This event could be skipped: (but that might break books that use
+         ;; this book) TODO: Also try reducing what is included?  TODO: What
+         ;; if this is redundant, given stuff already in the world?  TODO:
+         ;; Somehow avoid suggesting to drop books that introduce names used
+         ;; in macros (they will seem like they can be dropped, unless the
+         ;; book contains an actual call of the macro).
+         (prog2$ (cw "~%  Drop ~x0.)~%" event nil)
+                 ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
+                 (submit-event-expect-no-error event nil state))
+       ;;failed to submit the rest of the events, so we can't just skip this one:
+       (progn$ ;; (cw " Cannot be dropped.)~%" event)
+        (cw ")~%" event)
+        (submit-event-expect-no-error event nil state))))))
+
+;; Submits EVENT and prints suggestions for improving it.
+;; Returns (mv erp state).
 (defun improve-event (event rest-events print state)
   (declare (xargs :guard (and (true-listp rest-events)
                               (member-eq print '(nil :brief :verbose)))
@@ -508,27 +550,8 @@
            (cw ")~%" event)
            (submit-event-expect-no-error event nil state))))))
     (include-book
-     ;; For an include-book, try skipping it and see if the rest of the events
-     ;; work.
-     (prog2$
-      (cw "  (For ~x0:" event)
-      (mv-let (successp state)
-        (events-would-succeedp rest-events nil state)
-        (if successp
-            ;; This event could be skipped: (but that might break books that use
-            ;; this book) TODO: Also try reducing what is included?  TODO: What
-            ;; if this is redundant, given stuff already in the world?  TODO:
-            ;; Somehow avoid suggesting to drop books that introduce names used
-            ;; in macros (they will seem like they can be dropped, unless the
-            ;; book contains an actual call of the macro).
-            (prog2$ (cw "~%  Drop ~x0.)~%" event nil)
-                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
-                    (submit-event-expect-no-error event nil state))
-          ;;failed to submit the rest of the events, so we can't just skip this one:
-          (progn$ ;; (cw " Cannot be dropped.)~%" event)
-                  (cw ")~%" event)
-                  (submit-event-expect-no-error event nil state))))))
-    ((defthm defthmd) (improve-defthm-event event rest-events print state))
+     (improve-include-book-event event rest-events print state)
+)    ((defthm defthmd) (improve-defthm-event event rest-events print state))
     ((defun defund) (improve-defun-event event rest-events print state))
     ((defrule defruled) (improve-defrule-event event rest-events print state))
     ((in-package) (improve-in-package-event event rest-events print state))
@@ -575,20 +598,6 @@
       (if erp
           (mv erp state)
         (improve-events (rest events) print state)))))
-
-;; Returns state
-;move
-(defun set-cbd-simple (cbd state)
-  (declare (xargs :guard (stringp cbd)
-                  :stobjs state
-                  :mode :program))
-  (mv-let (erp val state)
-    (set-cbd-fn cbd state)
-    (declare (ignore val))
-    (if erp
-        (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
-                state)
-      state)))
 
 ;; Drop-in replacement for extend-pathname that doesn't fail on stuff like
 ;; (extend-pathname "." "../foo" state).
