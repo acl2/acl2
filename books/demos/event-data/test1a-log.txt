@@ -1,0 +1,123 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROVE PROOF-TREE))
+ (PROVE PROOF-TREE)
+ACL2 !>>(SET-GAG-MODE NIL)
+<state>
+ACL2 !>>(SAVING-EVENT-DATA (LD "test1a.lisp"))
+ACL2 !>>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>>(DEFUN BAR (X)
+           (DECLARE (XARGS :GUARD T))
+           X)
+
+Since BAR is non-recursive, its admission is trivial.  We observe that
+the type of BAR is described by the theorem (EQUAL (BAR X) X).  
+
+Computing the guard conjecture for BAR....
+
+The guard conjecture for BAR is trivial to prove.  BAR is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN BAR ...)
+Rules: NIL
+ BAR
+ACL2 !>>>(IN-THEORY (DISABLE REVERSE))
+
+Summary
+Form:  ( IN-THEORY (DISABLE ...))
+Rules: NIL
+ :CURRENT-THEORY-UPDATED
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :GUARD (ALISTP X)
+                           :VERIFY-GUARDS NIL))
+           (APPEND (REVERSE X) X))
+
+Since FOO is non-recursive, its admission is trivial.  We observe that
+the type of FOO is described by the theorem 
+(OR (CONSP (FOO X)) (EQUAL (FOO X) X)).  We used the :type-prescription
+rule BINARY-APPEND.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-APPEND))
+ FOO
+ACL2 !>>>(DEFTHM FOO-GUARD-OBLIGATION
+           (IMPLIES (ALISTP X)
+                    (TRUE-LISTP (REVERSE X))))
+
+Summary
+Form:  ( DEFTHM FOO-GUARD-OBLIGATION ...)
+Rules: ((:DEFINITION ALISTP)
+        (:DEFINITION ATOM)
+        (:DEFINITION NOT)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART REVERSE)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
+        (:INDUCTION ALISTP)
+        (:TYPE-PRESCRIPTION ALISTP)
+        (:TYPE-PRESCRIPTION REVERSE))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(IMPLIES (AND (ALISTP X)
+              (NOT (CONSP (REVERSE X))))
+         (NOT (REVERSE X)))
+
+*** Key checkpoints under a top-level induction: ***
+
+Subgoal *1/4''
+(IMPLIES (AND (CONSP X)
+              (CONSP (CAR X))
+              (NOT (REVERSE (CDR X)))
+              (ALISTP (CDR X))
+              (NOT (CONSP (REVERSE X))))
+         (NOT (REVERSE X)))
+
+Subgoal *1/3''
+(IMPLIES (AND (CONSP X)
+              (CONSP (CAR X))
+              (CONSP (REVERSE (CDR X)))
+              (ALISTP (CDR X))
+              (NOT (CONSP (REVERSE X))))
+         (NOT (REVERSE X)))
+
+ACL2 Error [Failure] in ( DEFTHM FOO-GUARD-OBLIGATION ...):  See :DOC
+failure.
+
+******** FAILED ********
+ (:STOP-LD 3)
+ACL2 !>>(RUNES-DIFF "test1a.lisp")
+ ((:OLD ((:TYPE-PRESCRIPTION TRUE-LISTP)
+         (:TYPE-PRESCRIPTION TRUE-LISTP-REVERSE)))
+  (:NEW ((:DEFINITION ALISTP)
+         (:DEFINITION ATOM)
+         (:DEFINITION NOT)
+         (:DEFINITION TRUE-LISTP)
+         (:ELIM CAR-CDR-ELIM)
+         (:EXECUTABLE-COUNTERPART CONSP)
+         (:EXECUTABLE-COUNTERPART NOT)
+         (:EXECUTABLE-COUNTERPART REVERSE)
+         (:FAKE-RUNE-FOR-TYPE-SET NIL)
+         (:INDUCTION ALISTP))))
+ACL2 !>>Bye.
