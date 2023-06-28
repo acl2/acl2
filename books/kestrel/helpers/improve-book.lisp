@@ -138,7 +138,7 @@
                             (concatenate 'string " " (symbol-name (cadr event))
                                          (if (consp (rest (rest event)))
                                              " ...)"
-                                           " )"))
+                                           ")"))
                           ;; todo: do better in this case?
                           ;; example (progn (defun foo ...) ...)
                           (concatenate 'string " ...)")))))))))
@@ -212,7 +212,7 @@
     (declare (ignore res))
     (if erp
         (mv nil state) ; some event gave an error
-      ;; TODO: Can we do something else fast here, like checking all he hints but not doing the proofs?  May cause includes to be done again...
+      ;; TODO: Can we do something else fast here, like checking all the hints but not doing the proofs?  May cause includes to be done again...
       ;; Try again for real (without skip-proofs):
       (mv-let (erp res state)
         (revert-world (submit-and-check-events-error-triple events nil nil print state))
