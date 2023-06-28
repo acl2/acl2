@@ -405,27 +405,32 @@
           (keyword-value-list (rest (rest defthm-args)))
           (hintsp (assoc-keyword :hints keyword-value-list))
           ;; TODO: Try deleting the :otf-flg
-          ;; TODO: Try deleting/weakening hyps (see the linter?)
-          (event-without-hints `(,defthm-variant ,name ,body ,@(remove-keyword :hints keyword-value-list)))
-          (alist (if (not hintsp)
-                     nil ; nothing to do (currently)
-                   (let ((hints (cadr hintsp)))
-                     (acons event-without-hints
-                            (concatenate 'string (newline-string) "  Drop all :hints.") ; todo: if this works, don't try individual hints
-                            (defthms-with-removed-hints defthm-variant name body hints))))))
-     (mv-let (improvement-foundp state)
-       (try-improved-events alist nil state)
-       (declare (ignore improvement-foundp)) ;todo: don't bother to return this
-       ;; Apply the linter:
-       (let ((state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
-         ;; Try to speed up the proof:
-         (mv-let (erp state)
-           (speed-up-defthm event print state)
-           (if erp
-               (mv erp state)
-             (prog2$ (and print (cw ")~%"))
-                     ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
-                     (submit-event event nil nil state)))))))))
+          ;; Try removing hints:
+          (state (if (not hintsp)
+                     state ; no hints to try dropping
+                   (let ((event-without-hints `(,defthm-variant ,name ,body ,@(remove-keyword :hints keyword-value-list)))
+                         (drop-hints-message (concatenate 'string (newline-string) "  Drop all :hints.")))
+                     (mv-let (improvement-foundp state)
+                       (try-improved-event event-without-hints drop-hints-message state)
+                       (if improvement-foundp
+                           state
+                         ;; could not drop all hints, so try one by one:
+                         (let* ((hints (cadr hintsp))
+                                (alist (defthms-with-removed-hints defthm-variant name body hints)))
+                           (mv-let (improvement-foundp state)
+                             (try-improved-events alist nil state)
+                             (declare (ignore improvement-foundp)) ;todo: don't bother to return this?
+                             state)))))))
+          ;; Apply the linter:
+          (state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
+     ;; Try to speed up the proof:
+     (mv-let (erp state)
+       (speed-up-defthm event print state)
+       (if erp
+           (mv erp state)
+         (prog2$ (and print (cw ")~%"))
+                 ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
+                 (submit-event event nil nil state)))))))
 
 ;; Returns (mv erp state).
 (defun improve-defun-event (event rest-events print state)
@@ -527,7 +532,10 @@
     ((defun defund) (improve-defun-event event rest-events print state))
     ((defrule defruled) (improve-defrule-event event rest-events print state))
     ((in-package) (improve-in-package-event event rest-events print state))
+    ;; todo: for these, we should print the event before submitting it:
     ((deflabel) (submit-event event nil nil state) ; can't think of anything to do for labels
+     )
+    ((defstub) (submit-event event nil nil state) ; anything to do?
      )
     ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
      )
@@ -539,7 +547,11 @@
      )
     ((encapsulate) (submit-event event nil nil state) ; todo: handle!
      )
+    ((theory-invariant) (submit-event event nil nil state) ; todo: handle!  could warn about a name that is not defined.
+     )
     ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
+     )
+    ((defcong) (submit-event event nil nil state) ; todo: try to clean up hints
      )
     ;; Since it's just an assert, we can continue after an error, so we just warn:
     ((assert-event assert-equal)
