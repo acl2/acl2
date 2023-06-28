@@ -662,6 +662,7 @@
                       ;; Check for ground term:
                       (and (not (member-eq :ground-term suppress))
                            (not (eq 'synp fn)) ; synp calls are usually ground terms
+                           (not (member-eq fn '(hard-error error1 illegal))) ; these have side effects that shoud be kept
                            ;; don't report ground calls of constrained functions:
                            (or (flambdap fn)
                                (fn-primitivep fn (w state))
