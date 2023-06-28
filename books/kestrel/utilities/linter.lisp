@@ -86,6 +86,7 @@
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
+(include-book "kestrel/world-light/fn-primitivep" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "book-of-event")
 (include-book "fresh-names")
@@ -632,9 +633,10 @@
               nil
             (if (eq 'if fn) ; separate because we process the args differently
                 (lint-call-of-if term subst type-alist iff-flag thing-being-checked suppress state)
-              (prog2$ (lint-terms (fargs term) subst type-alist
-                                   nil ; iff-flag
-                                   thing-being-checked suppress state)
+              ;; Regular function or lambda:
+              (progn$ (lint-terms (fargs term) subst type-alist
+                                  nil ; iff-flag
+                                  thing-being-checked suppress state)
                       ;; TODO: Use the subst for these?
                       (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
                           (check-call-of-fmt-function term thing-being-checked)
@@ -652,14 +654,21 @@
                                       (check-call-of-illegal term thing-being-checked suppress)
                                     (if (consp fn) ;check for lambda
                                         (lint-term (lambda-body fn)
-                                                    ;; new subst, since we are in a lambda body
-                                                    (pairlis$ (lambda-formals fn)
-                                                              (sublis-var-simple-lst subst (fargs term)))
-                                                    type-alist iff-flag thing-being-checked suppress state)
-                                      (and (not (member-eq :ground-term suppress))
-                                           (not (eq 'synp (ffn-symb term))) ; synp calls are usually ground terms
-                                           (quote-listp (fargs term))
-                                           (cw "(In ~s0,~% ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))))))))))))))))
+                                                   ;; new subst, since we are in a lambda body
+                                                   (pairlis$ (lambda-formals fn)
+                                                             (sublis-var-simple-lst subst (fargs term)))
+                                                   type-alist iff-flag thing-being-checked suppress state)
+                                      nil))))))))
+                      ;; Check for ground term:
+                      (and (not (member-eq :ground-term suppress))
+                           (not (eq 'synp fn)) ; synp calls are usually ground terms
+                           (not (member-eq fn '(hard-error error1 illegal))) ; these have side effects that shoud be kept
+                           ;; don't report ground calls of constrained functions:
+                           (or (flambdap fn)
+                               (fn-primitivep fn (w state))
+                               (fn-definedp fn (w state)))
+                           (quote-listp (fargs term))
+                           (cw "(In ~s0,~% ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))))))))
 
  (defun lint-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
@@ -1165,7 +1174,7 @@
                      (intersection-eq event-names all-defuns)))
        (all-defthms (if (eq event-names :all)
                         all-defthms
-                     (intersection-eq event-names all-defthms)))
+                      (intersection-eq event-names all-defthms)))
        (state (if check-defuns
                   (prog2$ (cw "Applying linter to ~x0 defuns:~%~%" (len all-defuns))
                           (lint-defuns all-defuns assume-guards suppress skip-fns step-limit state))
@@ -1173,19 +1182,19 @@
        (state (if check-defthms
                   (prog2$ (cw "~%Applying linter to ~x0 defthms:~%~%" (len all-defthms))
                           (lint-defthms all-defthms ; assume-guards
-                                         suppress
-                                         nil ;todo
-                                         step-limit
-                                         state))
+                                        suppress
+                                        nil ;todo
+                                        step-limit
+                                        state))
                 state)))
     state))
 
-;; Call this macro to check every defun in the current ACL2 world.
+;; Call this macro to check every defun and defthm in the current ACL2 world.
 (defmacro run-linter (&key (event-range ':after-linter) ;; either :after-linter (check only events introduced after the linter was included) or :all
                            (event-names ':all) ;; List of specific names to lint, or :all (meaning don't filter by name)
                            (suppress '(:ground-term :context)) ;; types of check to skip
                            (assume-guards 't) ;; whether to assume guards when analyzing function bodies
-                           (skip-fns 'nil) ;; functions to skip checking
+                           (skip-fns 'nil)    ;; functions to not check
                            (check-defuns 't)
                            (check-defthms 't)
                            (step-limit '1000)
