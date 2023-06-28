@@ -42,6 +42,7 @@
 (include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
 (include-book "speed-up")
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,7 +58,7 @@
     (if erp
         (prog2$ (er hard? 'books-in-subtree "Failed to find books: ~x0." erp)
                 (mv nil state))
-      (mv (strip-suffix-from-strings ".lisp" (split-string-repeatedly filename-lines #\Newline))
+      (mv (strip-suffix-from-strings ".lisp" (remove-equal "" (split-string-repeatedly filename-lines #\Newline)))
           state))))
 
 ;move
@@ -70,7 +71,7 @@
     (if erp
         (prog2$ (er hard? 'books-in-dir "Failed to find books: ~x0." erp)
                 (mv nil state))
-      (mv (strip-suffix-from-strings ".lisp" (split-string-repeatedly filename-lines #\Newline))
+      (mv (strip-suffix-from-strings ".lisp" (remove-equal "" (split-string-repeatedly filename-lines #\Newline)))
           state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -656,6 +657,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns (mv erp nil state).
 (defun improve-books-fn-aux (books dir print state)
   (declare (xargs :guard (and (string-listp books)
                               (or (eq :cbd dir)
@@ -663,15 +665,16 @@
                               (member-eq print '(nil :brief :verbose)))
                   :stobjs state :mode :program))
   (if (endp books)
-      state
+      (mv nil nil state)
     (mv-let (erp val state)
       (improve-book-fn (first books) dir print state)
       (declare (ignore val))
       (if erp
           (prog2$ (er hard? 'improve-books-fn-aux "Error improving ~x0." (first books))
-                  state)
+                  (mv erp nil state))
         (improve-books-fn-aux (rest books) dir print state)))))
 
+;; Returns (mv erp nil state).
 (defun improve-books-fn (print dir subdirsp state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose))
                               (or (eq :cbd dir)
@@ -680,7 +683,8 @@
                   :stobjs state :mode :program))
   (let* ((dir (if (eq dir :cbd) "." dir))
          (full-dir (canonical-pathname dir t state))
-         (state (set-cbd-simple full-dir state)))
+         ;; (state (set-cbd-simple full-dir state))
+         )
     (mv-let (books state)
       (if subdirsp
           (books-in-subtree state)
@@ -695,12 +699,16 @@
 ;; By default, uses the connected book directory for DIR.
 (defmacro improve-books (&key
                          (print ':brief)
-                         (dir ':cbd))
-  `(make-event (improve-books-fn ',print ',dir nil state)))
+                         ;; (dir ':cbd) ; doesn't work since the sys-call to get the list of books runs in the current dir
+                         )
+  `(make-event (improve-books-fn ',print ':cbd ;;',dir
+                                 nil state)))
 
 ;; Tries to improve all books in DIR, including books in subdirectories.
 ;; By default, uses the connected book directory for DIR.
 (defmacro improve-books-in-subtree (&key
                                     (print ':brief)
-                                    (dir ':cbd))
-  `(make-event (improve-books-fn ',print ',dir t state)))
+                                    ;; (dir ':cbd) ; doesn't work since the sys-call to get the list of books runs in the current dir
+                                    )
+  `(make-event (improve-books-fn ',print ':cbd ;;',dir
+                                 t state)))
