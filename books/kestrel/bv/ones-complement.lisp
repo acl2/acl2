@@ -261,17 +261,19 @@
            (equal (from-ones-complement size (bvplus1c size x y))
                   (+ (from-ones-complement size x)
                      (from-ones-complement size y))))
-  :hints (("Goal" :in-theory (enable bvplus1c
-                                     from-ones-complement
-                                     ones-complement
-                                     representable-as-ones-complementp
-                                     bvnot-becomes-bvplus-of--1-and-bvuminus
-                                     bvplus-of-+-of-1-split
-                                     bvuminus
-                                     bvminus
-                                     bvplus
-                                     bvchop-of-sum-cases
-                                     unsigned-byte-p))))
+  :hints (("Goal" :in-theory (e/d (bvplus1c
+                                   from-ones-complement
+                                   ones-complement
+                                   representable-as-ones-complementp
+                                   bvnot-becomes-bvplus-of--1-and-bvuminus
+                                   bvplus-of-+-of-1-split
+                                   bvuminus
+                                   bvminus
+                                   bvplus
+                                   bvchop-of-sum-cases
+                                   unsigned-byte-p)
+                                  ( ;; for speed:
+                                   distributivity-of-minus-over-+)))))
 
 ;; Check whether X is equal to positive 0 (all zeros) or negative 0 (all ones).
 (defund ones-complement-zerop (size x)
@@ -305,20 +307,25 @@
                                   (to-ones-complement size
                                                       (+ (from-ones-complement size x)
                                                          (from-ones-complement size y)))))
-  :hints (("Goal" :in-theory (enable bvplus1c
-                                     to-ones-complement
-                                     from-ones-complement
-                                     ones-complement
-                                     representable-as-ones-complementp
-                                     bvnot-becomes-bvplus-of--1-and-bvuminus
-                                     bvplus-of-+-of-1-split
-                                     bvuminus
-                                     bvminus
-                                     bvplus
-                                     bvchop-of-sum-cases
-                                     unsigned-byte-p
-                                     ONES-COMPLEMENT-EQUAL
-                                     ONES-COMPLEMENT-ZEROP))))
+  :hints (("Goal" :in-theory (e/d (bvplus1c
+                                   to-ones-complement
+                                   from-ones-complement
+                                   ones-complement
+                                   representable-as-ones-complementp
+                                   bvnot-becomes-bvplus-of--1-and-bvuminus
+                                   bvplus-of-+-of-1-split
+                                   bvuminus
+                                   bvminus
+                                   bvplus
+                                   bvchop-of-sum-cases
+                                   unsigned-byte-p
+                                   ONES-COMPLEMENT-EQUAL
+                                   ONES-COMPLEMENT-ZEROP)
+                                  (;; for speed:
+                                   associativity-of-+
+                                   unsigned-byte-p-of-if
+                                   usb-plus-from-bounds
+                                   distributivity-of-minus-over-+)))))
 
  ;; :hints (("Goal" :in-theory (e/d (from-ones-complement
  ;;                                  bvplus1c
@@ -362,4 +369,5 @@
                            (;; Disables are for speed:
                             ifix
                             bvchop-shift
-                            natp)))))
+                            natp
+                            commutativity-2-of-+)))))
