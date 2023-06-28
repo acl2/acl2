@@ -669,7 +669,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp nil state).
+;; Returns (mv erp nil state) where EVENT is usually (value-triple :invisible).
 (defun improve-books-fn-aux (books dir print state)
   (declare (xargs :guard (and (string-listp books)
                               (or (eq :cbd dir)
@@ -677,7 +677,7 @@
                               (member-eq print '(nil :brief :verbose)))
                   :stobjs state :mode :program))
   (if (endp books)
-      (mv nil nil state)
+      (mv nil '(value-triple :invisible) state)
     (mv-let (erp val state)
       (improve-book-fn (first books) dir print state)
       (declare (ignore val))
@@ -686,7 +686,7 @@
                   (mv erp nil state))
         (improve-books-fn-aux (rest books) dir print state)))))
 
-;; Returns (mv erp nil state).
+;; Returns (mv erp nil state) where EVENT is usually (value-triple :invisible).
 (defun improve-books-fn (print dir subdirsp state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose))
                               (or (eq :cbd dir)
