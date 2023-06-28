@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "kestrel/utilities/runes" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
+(include-book "kestrel/utilities/print-levels" :dir :system)
 
 ;; move these:
 
@@ -77,11 +78,13 @@
 (defconst *minimum-time-savings-to-report* 1/10)
 
 ;; Returns state.
-;todo: rules are usually actually runes?
 ;; Each line printed starts with a newline.
-(defun try-to-drop-rules-from-defthm (rules body hints otf-flg time-to-beat state)
+;todo: rules are usually actually runes?
+(defun try-to-drop-rules-from-defthm (rules body hints otf-flg time-to-beat print state)
   (declare (xargs :guard (and (true-listp rules)
-                              (rationalp time-to-beat))
+                              (booleanp otf-flg)
+                              (rationalp time-to-beat)
+                              (print-levelp print))
                   :mode :program
                   :stobjs state))
   (if (endp rules)
@@ -108,26 +111,28 @@
                                          (cw " of ")
                                          (print-to-hundredths time-to-beat)
                                          (cw " seconds (~x0%))" percent-saved))
-                               (progn$ ;; (cw "~%  (Minimal speedup: disable ~x0 to save " rule-to-drop)
-                                       ;; (print-to-hundredths savings)
-                                       ;; (cw " of ")
-                                       ;; (print-to-hundredths time-to-beat)
-                                       ;; (cw " seconds (~x0%))" percent-saved)
-                                       )))
-                         (progn$ ;; (cw "~%  (Slower: disable ~x0: " rule-to-drop)
-                                 ;; (print-to-hundredths time)
-                                 ;; (cw " vs ")
-                                 ;; (print-to-hundredths time-to-beat)
-                                 ;; (cw " seconds)")
-                                 )))
-                  (try-to-drop-rules-from-defthm (rest rules) body hints otf-flg time-to-beat state)))))))
+                               (and (print-level-at-least-tp print)
+                                    (progn$ (cw "~%  (Minimal speedup: disable ~x0 to save " rule-to-drop)
+                                            (print-to-hundredths savings)
+                                            (cw " of ")
+                                            (print-to-hundredths time-to-beat)
+                                            (cw " seconds (~x0%))" percent-saved)))))
+                         (and (print-level-at-least-tp print)
+                              (progn$  (cw "~%  (Slower: disable ~x0: " rule-to-drop)
+                                       (print-to-hundredths time)
+                                       (cw " vs ")
+                                       (print-to-hundredths time-to-beat)
+                                       (cw " seconds)")
+                                       ))))
+                  (try-to-drop-rules-from-defthm (rest rules) body hints otf-flg time-to-beat print state)))))))
 
 ;; Prints suggested ways to speed up a theorem.  EVENT should be a defthm (or a variant, like defthmd).
 ;; Returns (mv erp state).
-(defun speed-up-defthm (event state)
-  (declare (xargs :mode :program
+(defun speed-up-defthm (event print state)
+  (declare (xargs :guard (member-eq print '(nil :brief t :verbose)) ; todo: caller doesn't allow t?
+                  :mode :program
                   :stobjs state))
-  (let* (;;(defthm-variant (first event))
+  (let* ( ;;(defthm-variant (first event))
          (defthm-args (rest event))
          (name (first defthm-args))
          (body (second defthm-args))
@@ -139,7 +144,7 @@
          (instructionsp (assoc-keyword :instructions keyword-value-list)))
     (if instructionsp
         (progn$ ;; (cw "Not trying to speed up ~x0 because it uses :instructions." name) ; todo: elsewhere, could try to prove without instructions
-                (mv nil state))
+         (mv nil state))
       ;; Record the start time:
       (mv-let (start-time state)
         (acl2::get-real-time state)
@@ -162,14 +167,19 @@
                           (mv :failed state))
                 (let* ((elapsed-time (- end-time start-time)))
                   (if (< elapsed-time 1/100)
-                      (progn$ ;; (cw "~%(Not trying to speed up ~x0 because it only takes " name)
-                              ;; (print-to-hundredths elapsed-time)
-                              ;; (cw " seconds)")
+                      (prog2$ (and (print-level-at-least-tp print)
+                                   (progn$ (cw "  ~%(Not trying to speed up ~x0 because it only takes " name)
+                                           (print-to-hundredths elapsed-time)
+                                           (cw " seconds)~%")))
                               (mv nil state))
-                    ;; Get the list of runes used in the proof:
-                    (let* ((runes-used (get-event-data 'rules state))
-                           (state (try-to-drop-rules-from-defthm (drop-fake-runes runes-used) body hints otf-flg elapsed-time state)))
-                      (mv nil state))))))))))))
+                    (prog2$ (and (print-level-at-least-tp print)
+                                 (progn$ (cw "(Original time for ~x0: " name)
+                                         (print-to-hundredths elapsed-time)
+                                         (cw " seconds)~%")))
+                            ;; Get the list of runes used in the proof:
+                            (let* ((runes-used (get-event-data 'rules state))
+                                   (state (try-to-drop-rules-from-defthm (drop-fake-runes runes-used) body hints otf-flg elapsed-time print state)))
+                              (mv nil state)))))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -265,15 +275,16 @@
                       (mv nil state))))))))))))
 
 ;; Returns (mv erp state).
-(defun speed-up-event-fn (event state)
-  (declare (xargs :mode :program
+(defun speed-up-event-fn (event print state)
+  (declare (xargs :guard (print-levelp print) ; todo: finish threading this through
+                  :mode :program
                   :stobjs state))
   (if (not (consp event))
       (prog2$ (er hard? 'speed-up-event-fn "~x0 is not a valid event.")
               (mv :invalid-event state))
     (let ((fn (ffn-symb event)))
       (case fn
-        ((defthm defthmd) (speed-up-defthm event state))
+        ((defthm defthmd) (speed-up-defthm event print state))
         ((defrule defruled) (speed-up-defrule event state))
         (otherwise (prog2$ (er hard? 'speed-up-event-fn "Unsupported event type: ~X01." event nil)
                            (mv :unsupported-event state)))))))
