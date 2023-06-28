@@ -19,15 +19,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
-
-;todo: move
-(defthmd update-nth-rw
-  (implies (and (natp n)
-                (< n (len lst)))
-           (equal (update-nth n val lst)
-                  (append (take n lst)
-                          (list val)
-                          (nthcdr (+ 1 n) lst)))))
+(local (include-book "kestrel/lists-light/update-nth" :dir :system))
 
 (defstub negative-infinity () t)
 
@@ -146,12 +138,12 @@
                         (if (< val (maxelem (take (nfix n) lst)))
                             (maxelem (take (nfix n) lst))
                           val))))))
-  :hints (("Goal" :do-not-induct t
-           :expand (MAXELEM (CDR LST))
+  :hints (("Goal" ;:do-not-induct t
+        ;   :expand (MAXELEM (CDR LST))
            :in-theory (e/d (update-nth-rw;update-nth-rewrite nth-when-n-is-zp
-                            update-nth
+                            ;update-nth
                             )
-                           ((force))))))
+                           ()))))
 
 ;expensive?
 ;newly disabled
