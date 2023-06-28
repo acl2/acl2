@@ -397,7 +397,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (prog2$
-   (and print (cw " (For ~x0: " (first (rest event))))
+   (and print (cw "  (For ~x0: " (first (rest event))))
    (let* ((defthm-variant (first event))
           (defthm-args (rest event))
           (name (first defthm-args))
@@ -440,7 +440,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (progn$
-   (and print (cw " (For ~x0: " (first (rest event))))
+   (and print (cw "  (For ~x0: " (first (rest event))))
    ;; todo: try to improve hints, etc.
    ;; Must submit it before we lint it:
    (mv-let (erp state)
@@ -465,7 +465,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (prog2$
-   (and print (cw " (For ~x0: " (first (rest event))))
+   (and print (cw "  (For ~x0: " (first (rest event))))
    (mv-let (erp state)
      (speed-up-defrule event state)
      (declare (ignore erp)) ; todo: why?
@@ -479,7 +479,7 @@
                   :stobjs state)
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
-  (prog2$ (and print (cw " (For ~x0: )~%" event))
+  (prog2$ (and print (cw "  (For ~x0: )~%" event))
           (mv nil state)))
 
 ;; Submits EVENT and prints suggestions for improving it.
@@ -494,7 +494,7 @@
      ;; For a local event, try skipping it and see if the rest of the events
      ;; work.  If so, deleting the event should be safe, since the event is local.
      (prog2$
-      (cw " (For ~x0:" (abbreviate-event event)) ; todo: extract a name to print here, or eviscerate
+      (cw "  (For ~x0:" (abbreviate-event event)) ; todo: extract a name to print here, or eviscerate
       (mv-let (successp state)
         (events-would-succeedp rest-events nil state)
         (if successp
@@ -511,7 +511,7 @@
      ;; For an include-book, try skipping it and see if the rest of the events
      ;; work.
      (prog2$
-      (cw " (For ~x0:" event)
+      (cw "  (For ~x0:" event)
       (mv-let (successp state)
         (events-would-succeedp rest-events nil state)
         (if successp
