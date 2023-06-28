@@ -75,6 +75,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: make this lowercase?
 (defun print-to-string (item)
   (declare (xargs :mode :program))
   (mv-let (col string)
@@ -84,6 +85,34 @@
                       (fmt-hard-right-margin . 10000)))
     (declare (ignore col))
     string))
+
+(defun abbreviate-event (event)
+  (declare (xargs :guard t))
+  (if (not (and (consp event)
+                (symbolp (car event))))
+      ;; todo: can this happen?
+      "..."
+    (if (and (eq 'local (car event))
+             (= 1 (len (cdr event))))
+        (concatenate 'string "(local "
+                     (abbreviate-event (cadr event)))
+      (concatenate 'string
+                   "("
+                   (symbol-name (car event))
+                   (if (not (consp (rest event)))
+                       ")"
+                     (if (symbolp (cadr event))
+                         ;; example (defblah name ...)
+                         (concatenate 'string " " (symbol-name (cadr event))
+                                      (if (consp (rest (rest event)))
+                                          " ...)"
+                                        " )"))
+                       ;; todo: do better in this case?
+                       ;; example (progn (defun foo ...) ...)
+                       (concatenate 'string " ...)")))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;move
 ;; Returns (mv erp nil state).
@@ -115,8 +144,8 @@
           (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)
         (mv-let (erp state)
           (submit-event (if skip-proofsp event `(skip-proofs ,event))
-                               nil ;print
-                               nil state)
+                        nil ;print
+                        nil state)
           (if erp
               (mv erp state)
             (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)))))))
@@ -367,7 +396,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (prog2$
-   (and print (cw "(For ~x0: " (first (rest event))))
+   (and print (cw " (For ~x0: " (first (rest event))))
    (let* ((defthm-variant (first event))
           (defthm-args (rest event))
           (name (first defthm-args))
@@ -405,7 +434,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (progn$
-   (and print (cw "(For ~x0: " (first (rest event))))
+   (and print (cw " (For ~x0: " (first (rest event))))
    ;; todo: try to improve hints, etc.
    ;; Must submit it before we lint it:
    (mv-let (erp state)
@@ -430,7 +459,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (prog2$
-   (and print (cw "(For ~x0: " (first (rest event))))
+   (and print (cw " (For ~x0: " (first (rest event))))
    (mv-let (erp state)
      (speed-up-defrule event state)
      (declare (ignore erp)) ; todo: why?
@@ -444,7 +473,7 @@
                   :stobjs state)
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
-  (prog2$ (and print (cw "(Working on ~x0: )~%" event))
+  (prog2$ (and print (cw " (For ~x0: )~%" event))
           (mv nil state)))
 
 ;; Submits EVENT and prints suggestions for improving it.
@@ -459,7 +488,7 @@
      ;; For a local event, try skipping it and see if the rest of the events
      ;; work.  If so, deleting the event should be safe, since the event is local.
      (prog2$
-      (cw "(Working on ~x0:" event) ; todo: extract a name to print here, or eviscerate
+      (cw " (For ~x0:" (abbreviate-event event)) ; todo: extract a name to print here, or eviscerate
       (mv-let (successp state)
         (events-would-succeedp rest-events nil state)
         (if successp
@@ -469,13 +498,14 @@
                     ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                     (submit-event-expect-no-error event nil state))
           ;;failed to submit the rest of the events, so we can't just skip this one:
-          (progn$ (cw " Cannot be dropped.)~%" event)
-                  (submit-event-expect-no-error event nil state))))))
+          (progn$ ;(cw " Cannot be dropped.)~%" event)
+           (cw ")~%" event)
+           (submit-event-expect-no-error event nil state))))))
     (include-book
      ;; For an include-book, try skipping it and see if the rest of the events
      ;; work.
      (prog2$
-      (cw "(Working on ~x0:" event)
+      (cw " (For ~x0:" event)
       (mv-let (successp state)
         (events-would-succeedp rest-events nil state)
         (if successp
@@ -489,7 +519,8 @@
                     ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                     (submit-event-expect-no-error event nil state))
           ;;failed to submit the rest of the events, so we can't just skip this one:
-          (progn$ (cw " Cannot be dropped.)~%" event)
+          (progn$ ;; (cw " Cannot be dropped.)~%" event)
+                  (cw ")~%" event)
                   (submit-event-expect-no-error event nil state))))))
     ((defthm defthmd) (improve-defthm-event event rest-events print state))
     ((defun defund) (improve-defun-event event rest-events print state))
@@ -515,7 +546,7 @@
        (mv nil state)))
     ;; TODO: Try dropping include-books.
     ;; TODO: Add more event types here.
-    (t (prog2$ (cw "(Just submitting unhandled event ~x0)~%" event)
+    (t (prog2$ (cw " (Just submitting unhandled event ~x0)~%" (abbreviate-event event))
                (submit-event-expect-no-error event nil state)))))
 
 ;; Submits each event, after printing suggestions for improving it.
@@ -576,26 +607,28 @@
       (if (not existsp)
           (prog2$ (er hard? 'improve-book-fn-aux "~s0 does not exist." full-book-path)
                   (mv :file-does-not-exist state))
-        (prog2$
-         (and print (cw ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;~%Attempting to improve ~x0.~%" full-book-path))
-         (let* ((old-cbd (cbd-fn state))
-                (full-book-dir (dir-of-path full-book-path))
-                ;; We set the CBD so that the book is replayed in its own directory:
-                (state (set-cbd-simple full-book-dir state))
-                ;; Load the .port file, so that packages (especially) exist:
-                (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
-           (mv-let (erp events state)
-             (read-objects-from-book full-book-path state)
-             (if erp
-                 (let ((state (set-cbd-simple old-cbd state)))
-                   (mv erp state))
-               (prog2$ (and print (cw "  Book contains ~x0 forms.~%~%" (len events)))
-                       (let ((state (widen-margins state)))
+        (let ((state (widen-margins state)))
+          (prog2$
+           (and print (cw "~%~%(IMPROVING ~x0.~%" full-book-path)) ; matches the close paren below
+           (let* ((old-cbd (cbd-fn state))
+                  (full-book-dir (dir-of-path full-book-path))
+                  ;; We set the CBD so that the book is replayed in its own directory:
+                  (state (set-cbd-simple full-book-dir state))
+                  ;; Load the .port file, so that packages (especially) exist:
+                  (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
+             (mv-let (erp events state)
+               (read-objects-from-book full-book-path state)
+               (if erp
+                   (let* ((state (unwiden-margins state))
+                          (state (set-cbd-simple old-cbd state)))
+                     (mv erp state))
+                 (progn$ (and (eq print :verbose) (cw "  Book contains ~x0 forms.~%~%" (len events)))
                          (mv-let (erp state)
                            (improve-events events print state)
                            (let* ((state (unwiden-margins state))
                                   (state (set-cbd-simple old-cbd state)))
-                             (mv erp state)))))))))))))
+                             (prog2$ (cw ")")
+                                     (mv erp state))))))))))))))
 
 ;; Returns (mv erp nil state).
 (defun improve-book-fn (bookname ; no extension
@@ -631,17 +664,13 @@
                   :stobjs state :mode :program))
   (if (endp books)
       state
-    (prog2$
-     (cw "~%~%(TRYING TO IMPROVE ~x0~%" (first books))
-     (mv-let (erp val state)
-       (improve-book-fn (first books) dir print state)
-       (declare (ignore val))
-       (if erp
-           (prog2$ (er hard? 'improve-books-fn-aux "Error improving ~x0." (first books))
-                   state)
-         (prog2$
-          (cw ")~%")
-          (improve-books-fn-aux (rest books) dir print state)))))))
+    (mv-let (erp val state)
+      (improve-book-fn (first books) dir print state)
+      (declare (ignore val))
+      (if erp
+          (prog2$ (er hard? 'improve-books-fn-aux "Error improving ~x0." (first books))
+                  state)
+        (improve-books-fn-aux (rest books) dir print state)))))
 
 (defun improve-books-fn (print dir subdirsp state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose))
