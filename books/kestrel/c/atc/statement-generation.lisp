@@ -1369,8 +1369,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-if/ifelse-stmt ((term pseudo-termp)
-                                (test-term pseudo-termp)
+(define atc-gen-if/ifelse-stmt ((test-term pseudo-termp)
                                 (then-term pseudo-termp)
                                 (else-term pseudo-termp)
                                 (test-expr exprp)
@@ -1415,10 +1414,11 @@
      because we need 1 to go from @(tsee exec-stmt)
      to the @(':compound') case and @(tsee exec-block-item-list).")
    (xdoc::p
-    "We then generate a theorem for the conditional statement,
+    "We generate a theorem for the conditional statement,
      based on the theorems for the test and branches.
      We turn the ACL2 @(tsee if) into @(tsee if*),
-     to prevent unwanted case splits in terms that may contain this term.
+     to prevent unwanted case splits in larger terms that may contain this term
+     (as we generate C code from those larger terms).
      We use proof builder commands to split on this @(tsee if*).
      The limit for the conditional statement is
      one more than the sum of the ones for the branches;
@@ -1449,6 +1449,7 @@
                                    :else else-stmt)
                (make-stmt-if :test test-expr
                              :then then-stmt)))
+       (term `(if* ,test-term ,then-term ,else-term))
        ((when (not gin.proofs))
         (retok
          (make-stmt-gout
@@ -1588,13 +1589,12 @@
         (fresh-logical-name-with-$s-suffix if-stmt-thm nil names-to-avoid wrld))
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
-       (term* `(if* ,test-term ,then-term ,else-term))
-       (uterm* (untranslate$ term* nil state))
+       (uterm (untranslate$ term nil state))
        (if-stmt-formula1 `(equal (exec-stmt ',stmt
                                             ,gin.compst-var
                                             ,gin.fenv-var
                                             ,gin.limit-var)
-                                 (mv ,uterm* ,gin.compst-var)))
+                                 (mv ,uterm ,gin.compst-var)))
        (if-stmt-formula1 (atc-contextualize if-stmt-formula1
                                             gin.context
                                             gin.fn
@@ -1604,7 +1604,7 @@
                                             if-stmt-limit
                                             t
                                             wrld))
-       (if-stmt-formula2 `(,type-pred ,uterm*))
+       (if-stmt-formula2 `(,type-pred ,uterm))
        (if-stmt-formula2 (atc-contextualize if-stmt-formula2
                                             gin.context
                                             gin.fn
@@ -1695,7 +1695,7 @@
             names-to-avoid)
         (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
                                  stmt if-stmt-limit if-stmt-thm
-                                 type term*
+                                 type term
                                  gin.compst-var gin.fenv-var gin.limit-var
                                  gin.compst-var gin.prec-tags
                                  thm-index names-to-avoid state))
@@ -1707,7 +1707,7 @@
             names-to-avoid)
         (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
                                      item item-limit item-thm-name
-                                     type term*
+                                     type term
                                      gin.compst-var gin.fenv-var gin.limit-var
                                      gin.compst-var gin.prec-tags
                                      thm-index names-to-avoid state)))
@@ -1715,7 +1715,7 @@
      (make-stmt-gout
       :items items
       :type type
-      :term term*
+      :term term
       :context gin.context
       :limit items-limit
       :events (append test-events
@@ -2059,7 +2059,7 @@
                                             else-enter-scope-events
                                             (stmt-gout->events gout)))
                  else-context))))
-          (atc-gen-if/ifelse-stmt term test.term then.term else.term
+          (atc-gen-if/ifelse-stmt test.term then.term else.term
                                   test.expr then.items else.items
                                   test.type then.type else.type
                                   then.limit else.limit
