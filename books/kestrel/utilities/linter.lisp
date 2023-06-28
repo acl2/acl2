@@ -78,7 +78,7 @@
 (include-book "format-strings")
 (include-book "quote")
 (include-book "my-get-event")
-(include-book "defining-forms")
+(include-book "defining-forms") ; for DEFUN-OR-MUTUAL-RECURSION-FORMP
 (include-book "world")
 (include-book "conjunctions")
 (include-book "conjuncts-and-disjuncts2") ;todo: use the simpler version?
