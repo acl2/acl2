@@ -39,9 +39,15 @@
                     (dagify-term! '(bvplus '32 x z))))
 
 ;TODO: Improve the error message here:
+;Sweeping-and-merging should just fail with no types provided -- or infer types.
 (must-fail
  (prove-equivalence (dagify-term! '(bvplus '32 x y))
                     (dagify-term! '(bvmult '32 x y))))
+
+(must-fail
+ (prove-equivalence (dagify-term! '(bvplus '32 x y))
+                    (dagify-term! '(bvmult '32 x y))
+                    :local nil))
 
 ;try with terms instead of dags:
 (prove-equivalence '(bvplus '32 '7 x)
