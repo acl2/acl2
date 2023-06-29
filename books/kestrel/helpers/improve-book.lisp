@@ -541,7 +541,7 @@
          (prog2$ (cw "~%   Skipping: already included in session).~%")
                  (submit-event-expect-no-error event nil state))
        (if (member-equal full-path (all-included-books (w state)))
-           (prog2$ (cw "~%   Drop (redundant).)~%" event nil)
+           (prog2$ (cw "~%   Drop include (redundant).)~%" event nil)
                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                    (submit-event-expect-no-error event nil state))
          (mv-let (successp state)
@@ -553,7 +553,7 @@
                ;; Somehow avoid suggesting to drop books that introduce names used
                ;; in macros (they will seem like they can be dropped, unless the
                ;; book contains an actual call of the macro).
-               (prog2$ (cw "~%   Drop.)~%" event nil)
+               (prog2$ (cw "~%   Drop include.)~%" event nil)
                        ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                        (submit-event-expect-no-error event nil state))
              ;;failed to submit the rest of the events, so we can't just skip this one:
