@@ -45,6 +45,8 @@
 (include-book "std/io/read-file-objects" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 
+(include-book "centaur/bitops/merge" :dir :system)
+
 ;; -------------------------------------------------------------------------------------
 ;; Parse macros.
 
@@ -92,11 +94,15 @@
 
   (defttag nil))
 
+
+
 (defmacro parse-and-create-svtv (&key file
-                                      modified-modules-file
                                       topmodule
                                       name
-                                      save-to-file)
+                                      save-to-file
+                                      modified-modules-file
+                                      stages
+                                      cycle-phases)
   (declare (xargs :guard (and (or (stringp file)
                                   (cw "File should be a string~%"))
                               (or (not modified-modules-file)
@@ -176,33 +182,49 @@
                                  )))))
 
            ;; (SVTV) event4
-           (svtv-event `(progn
-                          (make-event
-                           `(sv::defsvtv$ ,',name
-                              :mod ,',sv-design
-                              :inputs ',(loop$ for x in *ins* collect
-                                               `(,x ,(intern$ (string-upcase x) "RP")))
-                              :outputs ',(loop$ for x in *outs* collect
-                                                `(,x ,(intern$ (string-upcase x) "RP")))))
+           (stages ',stages)
+           (cycle-phases ',cycle-phases)
+           (svtv-event
+            `(progn
+               (make-event
+                `(sv::defsvtv$ ,',name
+                   :mod ,',sv-design
+                   ,@(and ',cycle-phases
+                          '(:cycle-phases ,cycle-phases)) 
+                   :stages
+                   ,(or ',stages
+                        `((:label
+                           p
+                           :inputs ,(loop$ for x in *ins* collect
+                                           `(,x ,(intern$ (string-upcase x) "RP")))
+                           :outputs ,(loop$ for x in *outs* collect
+                                            `(,x ,(intern$ (string-upcase x) "RP"))))))))
 
-                          (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOHYPS") "RP"))
-                          (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOINS") "RP"))))
+               (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOHYPS") "RP"))
+               (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOINS") "RP"))))
 
            (modified-name (and modified-modules-file (intern-in-package-of-symbol
                                                       (str::cat "MODIFIED-" (symbol-name name))
                                                       name)))
-           (modified-svtv-event (and modified-modules-file
-                                     `(progn
-                                        (make-event
-                                         `(sv::defsvtv$ ,',modified-name
-                                            :mod ,',modified-sv-design
-                                            :inputs ',(loop$ for x in *ins* collect
-                                                             `(,x ,(intern$ (string-upcase x) "RP")))
-                                            :outputs ',(loop$ for x in *outs* collect
-                                                              `(,x ,(intern$ (string-upcase x) "RP")))))
+           (modified-svtv-event
+            (and modified-modules-file
+                 `(progn
+                    (make-event
+                     `(sv::defsvtv$ ,',modified-name
+                        :mod ,',modified-sv-design
+                        ,@(and ',cycle-phases
+                               '(:cycle-phases ,cycle-phases))
+                        :stages
+                        ,(or ',stages
+                             `((:label
+                                p
+                                :inputs ,(loop$ for x in *ins* collect
+                                                `(,x ,(intern$ (string-upcase x) "RP")))
+                                :outputs ,(loop$ for x in *outs* collect
+                                                 `(,x ,(intern$ (string-upcase x) "RP"))))))))
 
-                                        (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOHYPS") "RP"))
-                                        (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOINS") "RP")))))
+                    (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOHYPS") "RP"))
+                    (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOINS") "RP")))))
 
            ;; (SAVE-TO-FILE) event5
            ;; save-to-file can be a string or a symbol. If string use it as
@@ -384,12 +406,15 @@
 
 (defmacro verify-svtv-of-mult (&key name
                                     concl
+                                    thm-name
+                                    (hyp)
                                     (then-fgl 'nil)
                                     (cases 'nil)
                                     (read-from-file 'nil)
                                     (keep-going 'nil)
                                     (print-message 'nil)
-                                    (pkg '"RP"))
+                                    (pkg '"RP")
+                                    )
   (acl2::template-subst
    `(progn
       ,@(and read-from-file
@@ -405,10 +430,10 @@
             ((mv invars outvars has-modified)
              ,(if read-from-file
                   `(mv (strip-cars (<mult>-inmasks))
-                       (strip-cars (strip-cdrs (<mult>-outs)))
+                       (remove-equal '&  (acl2::flatten (strip-cdrs (<mult>-outs))))
                        (not (equal (meta-extract-formula 'modified-<mult> state) ''t)))
-                `(mv (strip-cars (strip-cdrs (sv::svtv->orig-ins (<mult>))))
-                     (strip-cars (strip-cdrs (sv::svtv->orig-outs (<mult>))))
+                `(mv (remove-equal '& (acl2::flatten (strip-cdrs (sv::svtv->orig-ins (<mult>)))))
+                     (remove-equal '&  (acl2::flatten (strip-cdrs (sv::svtv->orig-outs (<mult>)))))
                      (not (equal (meta-extract-formula 'modified-<mult> state) ''t)))))
             ((mv hyps simulate-call modified-simulate-call)
              ,(if read-from-file
@@ -425,6 +450,7 @@
                 `(mv '(<mult>-autohyps)
                      '(sv::svtv-run (<mult>) (<mult>-autoins))
                      '(sv::svtv-run (modified-<mult>) (<mult>-autoins)))))
+            (hyps (if ',hyp `(and ,',hyp ,hyps) hyps)) 
             ;; ---------------
 
             ((acl2::er translated-concl)
@@ -445,7 +471,7 @@
 
             (vescmul-event `(defthmrp-multiplier
                               ,@(and ,then-fgl `(:then-fgl ,',then-fgl))
-                              <mult>-is-correct
+                              ,(or ',thm-name '<mult>-is-correct)
                               (implies ,hyps
                                        (b* (((sv::svassocs ,@ignorable-outs)
                                              ,simulate-call))
@@ -469,7 +495,7 @@
 
             (event `(:or
                      (generate-proof-summary
-                      <mult>
+                      ,(or ',thm-name '<mult>)
                       ,(if has-modified modified-equiv-events vescmul-event)
                       :keep-going ,keep-going
                       :print-message ,print-message)
@@ -537,3 +563,15 @@
 ;;                     ;; specification:
 ;;                     (loghead 12 (* (logext 8 IN1)
 ;;                                    (logext 8 IN2)))))))
+
+
+;;;;
+
+
+(rp::add-rp-rule acl2::nth-slice32$inline)
+(rp::add-rp-rule nth-slice)
+(rp::add-rp-rule bitops::part-select-width-low$inline)
+(rp::add-rp-rule bitops::part-select-width-low)
+(rp::add-rp-rule bitops::part-select-low-high)
+(rp::add-rp-rule MERGE-4-U32S)
+

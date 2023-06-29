@@ -1124,8 +1124,7 @@
                       output-channel state)
 
 ; The following raw code is identical to the logic code below except that the
-; raw code handles infix and raw-mode printing (which are, at the moment,
-; entirely extra-logical).
+; raw code handles raw-mode printing (which is entirely extra-logical).
 
               #-acl2-loop-only
               (let ((col
@@ -1133,20 +1132,8 @@
                          (length (f-get-global 'triple-print-prefix state))
                        0))
                     (evg (cadr eviscerated-valx)))
-                (cond
-                 #+acl2-infix
-                 ((and (live-state-p state)
-                       (output-in-infixp state))
-                  (print-infix
-                   evg
-                   nil
-                   (- (fmt-hard-right-margin state) col)
-                   0 col
-                   (get-output-stream-from-channel output-channel)
-                   t)
-                  *the-live-state*)
-                 (t (ppr? evg (cadr valx) stobjs-out col output-channel
-                          state))))
+                (ppr? evg (cadr valx) stobjs-out col output-channel
+                      state))
               #+acl2-loop-only
               (ppr (cadr eviscerated-valx)
                    (if (stringp (f-get-global 'triple-print-prefix state))
@@ -1156,20 +1143,7 @@
               (newline output-channel state)))))
           (t (pprogn
               #-acl2-loop-only
-              (cond
-               #+acl2-infix
-               ((and (live-state-p state)
-                     (output-in-infixp state))
-                (print-infix
-                 eviscerated-valx
-                 nil
-                 (fmt-hard-right-margin state)
-                 0 0
-                 (get-output-stream-from-channel output-channel)
-                 t)
-                *the-live-state*)
-               (t (ppr? eviscerated-valx valx stobjs-out 0 output-channel
-                        state)))
+              (ppr? eviscerated-valx valx stobjs-out 0 output-channel state)
               #+acl2-loop-only
               (ppr eviscerated-valx 0 output-channel state t)
               (newline output-channel state))))))))))
@@ -2567,8 +2541,7 @@
         (list (cons #\0 file))
         state)))
      (cond ((eq ans :until)
-            (with-infixp-nil
-             (read-object *standard-oi* state)))
+            (read-object *standard-oi* state))
            (t (value ans))))))
 
 (defun rebuild-fn (file filter filterp dir state)

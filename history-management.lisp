@@ -2955,17 +2955,35 @@
               ,form)))
 
 (defun event-data-name (event-data event-type)
-  (cond ((eq event-type 'verify-guards)
-; In this special case we don't want to use the namex, because it's 0.
-         (let ((name (cadr (get-event-data-1 'event event-data))))
-           (and (symbolp name) ; not a lambda
-                name)))
-        (t (let ((namex ; as with get-event-data, but without state
-                  (get-event-data-1 'namex event-data)))
-             (cond ((symbolp namex) namex)
-                   ((and (consp namex) (symbolp (car namex)))
-                    (car namex))
-                   (t nil))))))
+
+; Event-data has event-type defthm, defun, verify-guards, or thm.
+
+  (let ((event (and (not (eq event-type 'thm))
+                    (get-event-data-1 'event event-data))))
+    (cond
+     ((null event) ; probably only for thm
+      nil)
+     ((eq event-type 'defun)
+      (cond
+       ((member-eq (car event) '(defuns mutual-recursion
+                                  #+:non-standard-analysis
+                                  defuns-std))
+        (let ((def ; first definition, without leading defun
+               (if (eq (car event) 'mutual-recursion)
+                   (cdr (cadr event))
+                 (cadr event))))
+          (assert$ (and (consp def)
+                        (symbolp (car def)))
+                   (car def))))
+       ((or (eq (car event) 'defun)
+            #+:non-standard-analysis
+            (eq (car event) 'defun-std))
+        (cadr event))
+       (t (er hard 'event-data-name
+              "Unexpected call: ~x0"
+              `(event-data-name ',event-data ',event-type)))))
+     (t ; verify-guards or defthm
+      (cadr event)))))
 
 (defun clear-event-data (state)
   (f-put-global 'last-event-data nil state))
@@ -4019,8 +4037,7 @@
 (defconst *protected-system-state-globals*
   (let ((val
          (set-difference-eq
-          (union-eq (strip-cars *initial-ld-special-bindings*)
-                    (strip-cars *initial-global-table*))
+          (strip-cars *initial-global-table*)
           '(acl2-raw-mode-p ;;; keep raw mode status
             bddnotes        ;;; for feedback after expansion failure
 
@@ -6455,7 +6472,6 @@
                                  state)
        (fmt-ppr
         form
-        t
         (+f (fmt-hard-right-margin state) (-f formula-col))
         0
         formula-col channel state
@@ -6942,7 +6958,10 @@
 
 (defun print-undefined-primitive-msg (name channel state)
   (fms "~x0 is built into ACL2 without a defining event.~#1~[  See :DOC ~
-        ~x0.~/~]~|"
+        ~x0.~/~]~|See :DOC ARGS for a way to get more information about such ~
+        primitives.~|See :DOC primitive for a list containing each built-in ~
+        function without a definition, each associated with its formals and ~
+        guard.~|"
        (list (cons #\0 name)
              (cons #\1 (if (assoc-eq name *acl2-system-documentation*)
                            0
@@ -7882,14 +7901,6 @@
        (getpropc name 'label nil wrld)
        (equal event-form (get-event name wrld))))
 
-(defmacro make-ctx-for-event (event-form ctx)
-  #+acl2-infix
-  `(if (output-in-infixp state) ,event-form ,ctx)
-  #-acl2-infix
-  (declare (ignore event-form))
-  #-acl2-infix
-  ctx)
-
 (defun deflabel-fn (name state event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
@@ -7897,7 +7908,7 @@
 ; skip-proofs".
 
   (with-ctx-summarized
-   (make-ctx-for-event event-form (cons 'deflabel name))
+   (cons 'deflabel name)
    (let ((wrld1 (w state))
          (event-form (or event-form
                          (list 'deflabel name))))
@@ -8277,29 +8288,28 @@
          (signal val cmds state)
          (mv-let
            (erp obj cmds state)
-           (with-infixp-nil
-            (if cmds
-                (mv-let (col state)
-                  (fmt1 "~x0~|" (list (cons #\0 (car cmds)))
-                        0
-                        *standard-co* state
-                        nil)
-                  (declare (ignore col))
-                  (mv nil (car cmds) (cdr cmds) state))
-                (mv-let (erp obj state)
-                  (read-object *standard-oi* state)
-                  (mv erp
+           (if cmds
+               (mv-let (col state)
+                 (fmt1 "~x0~|" (list (cons #\0 (car cmds)))
+                       0
+                       *standard-co* state
+                       nil)
+                 (declare (ignore col))
+                 (mv nil (car cmds) (cdr cmds) state))
+             (mv-let (erp obj state)
+               (read-object *standard-oi* state)
+               (mv erp
 
 ; Originally 0 was accepted to mean "up"; since January 2023, however, the
 ; symbol UP has also been accepted.  The simplest way to preserve behavior when
 ; making that change was to treat the symbol UP as 0, and we do that here.
 
-                      (if (and (symbolp obj)
-                               (equal (symbol-name obj) "UP"))
-                          0
-                          obj)
-                       nil
-                       state))))
+                   (if (and (symbolp obj)
+                            (equal (symbol-name obj) "UP"))
+                       0
+                     obj)
+                   nil
+                   state)))
            (cond
             (erp (mv 'exit nil nil state))
             (t (let ((obj (cond ((not intern-flg) obj)
@@ -18375,7 +18385,7 @@
                          (getpropc name 'table-alist nil wrld))))))
     (:put
      (with-ctx-summarized
-      (make-ctx-for-event event-form ctx)
+      ctx
       (let* ((tbl (getpropc name 'table-alist nil wrld))
              (old-pair (assoc-equal key tbl)))
         (er-progn
@@ -18436,7 +18446,7 @@
                 state))))))))
     (:clear
      (with-ctx-summarized
-      (make-ctx-for-event event-form ctx)
+      ctx
       (er-progn
        (chk-table-nil-args :clear
                            (or key term)
@@ -18486,7 +18496,7 @@
         (value (getpropc name 'table-guard *t* wrld))))
       (t
        (with-ctx-summarized
-        (make-ctx-for-event event-form ctx)
+        ctx
         (er-progn
          (chk-table-nil-args op
                              (or key val)

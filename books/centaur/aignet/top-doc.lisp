@@ -62,3 +62,5 @@
  (or (str::strprefixp "centaur/aignet/" (cdr (assoc :from x)))
      (str::strprefixp "centaur/truth/" (cdr (assoc :from x)))
      (equal "centaur/misc/nth-nat-equiv.lisp :DIR :SYSTEM" (cdr (assoc :from x)))))
+
+(xdoc::add-resource-directory "aignet" "images")

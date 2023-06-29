@@ -45,3 +45,5 @@
 (xdoc::archive-matching-topics
  (or (str::strprefixp "projects/" (cdr (assoc :from x)))
      (equal "tools/defsum.lisp :DIR :SYSTEM" (cdr (assoc :from x)))))
+
+(xdoc::add-resource-directory "x86isa" "x86isa/images")

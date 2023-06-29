@@ -1815,7 +1815,6 @@
 ;                   (FMT-SOFT-RIGHT-MARGIN . 65)
 ;                   (GSTACKP)
 ;                   (GUARD-CHECKING-ON . T)
-;                   #+acl2-infix (INFIXP)
 ;                   (INHIBIT-OUTPUT-LST SUMMARY)
 ;                   (IN-LOCAL-FLG . NIL)
 ;                   (LD-LEVEL . 0)
@@ -25042,8 +25041,7 @@
                  (t ; (global-val 'boot-strap-flg wrld)
                   (trans-er ctx
                             "State global ~x0 needs to be declared for the ~
-                             build by adding it to *initial-global-table* or ~
-                             *initial-ld-special-bindings*."
+                             build by adding it to *initial-global-table*."
                             (cadr (cadr x))))))
           (t
            (let ((stobjs-out (translate-deref stobjs-out bindings))

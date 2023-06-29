@@ -94,8 +94,10 @@
 
 
 (disable-definition show-counterexample)
+(disable-execution show-counterexample)
 
 (disable-definition show-top-counterexample)
+(disable-execution show-top-counterexample)
 
 
 (define get-counterexample-value ((x fgl-object-p)
@@ -284,8 +286,16 @@
 (fgl::def-fgl-program get-counterexample (config)
   (fgl::syntax-interp (fgl::show-counterexample-bind config fgl::interp-st state)))
 
+(def-fgl-rewrite run-counterexample-rw
+  (equal (run-counterexample params msg)
+         (fgl-prog2 (syntax-interp
+                     (prog2$ (interp-st-run-ctrex (g-concrete->val params) 'interp-st 'state)
+                             (fgl-interp-store-debug-info (msg "~@0: Counterexample -- stopping!"
+                                                               (g-concrete->val msg))
+                                                           nil 'interp-st)))
+                    nil)))
 
-
+(disable-execution run-counterexample)
 
 
 
@@ -537,6 +547,8 @@ keyword argument. Examples of usage:</p>
                           (cw "Literal out of range for AIGNET: ~x0~%" lit))
                         void)
              void))
+
+(fancy-ev-add-primitive interp-st-print-aig-lit (aignet::litp lit))
 
 
 (defmacro fgl-error! (&key msg debug-obj)

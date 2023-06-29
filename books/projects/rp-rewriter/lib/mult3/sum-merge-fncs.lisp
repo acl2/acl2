@@ -133,7 +133,12 @@
                    (mv car-order nil))
                   ((mv cdr-order cdr-equal)
                    (s-order-lst (cdr lst1) (cdr lst2))))
-               (mv cdr-order cdr-equal))))))
+               (mv cdr-order cdr-equal)))))
+
+  ///
+  (memoize 's-order) ;; for some reason it makes a difference especfially for
+  ;; b16 multiplier
+  )
 
 (defret-mutual
   s-order-sanity

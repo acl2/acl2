@@ -1977,8 +1977,6 @@ which is saved just in case it's needed later.")
 ;          will be rejected by bad-lisp-object
 ;   #,  load-time evaluation
 ;          we shut it off
-;   #0-#9 used for infix arguments
-;          ok
 ;   #:  uninterned symbol
 ;          will be rejected by bad-lisp-object
 ;   #<  signals an error
