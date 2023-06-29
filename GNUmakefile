@@ -272,6 +272,26 @@ endif
 endif
 endif
 
+# We run target update_books_build_info when ACL2 is built, to update
+# certain files in books/build/, in particular
+# books/build/Makefile-features and books/build/*.certdep files.  Note
+# that we do this every time ACL2 is built, not merely when the
+# sources have changed, because variables ACL2_HOST_LISP and
+# ACL2_COMP_EXT are written to books/build/Makefile-features.  (Of
+# course, one might use cert.pl on a saved_acl2 previously built in
+# the same directory on a different host Lisp.  But this approach is
+# probably much better than nothing, and the target
+# update_books_build_info is only relevant for using cert.pl, not
+# make, as books/GNUmakefile rebuilds books/build/Makefile-features
+# every time it is invoked.)
+.PHONY: update_books_build_info
+update_books_build_info:
+	@if [ ! -d books/build ] ; then \
+	echo "ERROR: Directory, books/build/ does not exist." ;\
+	exit 1 ;\
+	fi
+	@export ACL2=$(ACL2) ; export STARTJOB=$(SHELL) ; cd books/build ; (./features.sh 2>&1) > features.out
+
 # The following target is intended only for when $(ACL2_MAKE_LOG) is
 # not NONE.
 .PHONY: set-up-log
@@ -724,6 +744,10 @@ else
 	@$(MAKE) init >> "$(ACL2_MAKE_LOG)" 2>&1 || (echo "\n**ERROR**: See $(ACL2_MAKE_LOG)." ; exit 1)
 	@echo " done."
 	@echo "Successfully built $(ACL2_WD)/${PREFIXsaved_acl2}."
+	@echo "Updating books/build/."
+	@if [ -d books/build ] ; then \
+	$(MAKE) --no-print-directory update_books_build_info ;\
+	fi
 endif
 
 # The following target should be used with care, since it fails to

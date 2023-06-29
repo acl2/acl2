@@ -11765,7 +11765,7 @@
   (when-logic-or-boot-strap
    "DEFAXIOM"
    (with-ctx-summarized
-    (make-ctx-for-event event-form (cons 'defaxiom name))
+    (cons 'defaxiom name)
 
 ; At one time we thought that event-form could be nil.  It is simplest, for
 ; checking redundancy, not to consider the case of manufacturing an event-form,
@@ -11999,7 +11999,7 @@
                         event-form
                         #+:non-standard-analysis std-p)
   (with-ctx-summarized
-   (make-ctx-for-event event-form (cons 'defthm name))
+   (cons 'defthm name)
 
 ; At one time we thought that event-form could be nil.  It is simplest, for
 ; checking redundancy, not to consider the case of manufacturing an event-form,
@@ -12185,9 +12185,7 @@
                               ,@(and otf-flg `(:otf-flg ,otf-flg))))))
     (er-progn
      (with-ctx-summarized
-      (make-ctx-for-event
-       event-form
-       "( THM ...)")
+      "( THM ...)"
       (cond
        ((member-eq (ld-skip-proofsp state)
                    '(include-book include-book-with-locals initialize-acl2))

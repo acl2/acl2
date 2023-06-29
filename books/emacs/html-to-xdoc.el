@@ -173,12 +173,22 @@
 	  (insert "_")
 	  (insert subscript))))))
 
+(defun html-replace-string (from-string to-string start end)
+
+; This is just a version of replace-string to use in a program, to
+; avoid byte compiler warnings in some versions of Emacs.
+
+  (save-excursion
+    (goto-char start)
+    (while (search-forward from-string end t)
+      (replace-match to-string end t))))
+
 (defun html-convert-code-to-tt-and-pre-to-code ()
   (interactive)
-  (replace-string "<code>" "<tt>" nil (point-min) (point-max))
-  (replace-string "</code>" "</tt>" nil (point-min) (point-max))
-  (replace-string "<pre>" "<code>" nil (point-min) (point-max))
-  (replace-string "</pre>" "</code>" nil (point-min) (point-max)))
+  (html-replace-string "<code>" "<tt>" (point-min) (point-max))
+  (html-replace-string "</code>" "</tt>" (point-min) (point-max))
+  (html-replace-string "<pre>" "<code>" (point-min) (point-max))
+  (html-replace-string "</pre>" "</code>" (point-min) (point-max)))
 
 (defun html-remove-monospace-for-tt ()
   (interactive)
@@ -214,12 +224,12 @@
 	  (newline-br-atsigns-string "\n<br>@@@"))
       (search-forward newline-br-atsigns-string)
       (let ((p2 (+ 1 (match-beginning 0))))
-	(replace-string "&nbsp;" " " nil p1 p2)
+	(html-replace-string "&nbsp;" " " p1 p2)
 ;;; Now recalculate end points.
 	(goto-char p1)
 	(search-forward newline-br-atsigns-string)
 	(let ((p2 (+ 1 (match-beginning 0))))
-	  (replace-string "<br>" "" nil p1 p2)
+	  (html-replace-string "<br>" "" p1 p2)
 ;;; Now recalculate end points.
 	  (search-forward (concat newline-br-atsigns-string "\n</span>"))
 	  (replace-match "</code>")

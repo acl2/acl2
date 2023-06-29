@@ -38,7 +38,7 @@
   ((nextstate svex-alist-p)
    (inputs svex-envlist-p)
    (initst svex-env-p))
-  :layout :tree)
+  :layout :fulltree)
 
 (local (defthm svex-env-p-of-nth
          (implies (svex-envlist-p x)

@@ -121,7 +121,9 @@ implementation of something like the @('~x') @(see fmt) directive.</p>
 
 <p>Even with respect to @('ppr'), there is some @(see missing-functionality).
 I don't implement @(see acl2::iprinting) or include any infix printing support.
-Various complex and unhelpful printer-control variables are also omitted.</p>
+(Note added June 2023 by ACL2 implementors: infix printing is now completely
+removed for ACL2.)  Various complex and unhelpful printer-control variables are
+also omitted.</p>
 
 
 <h3>Implementation Details</h3>

@@ -235,8 +235,7 @@
                                     nil
                                     (fms0 "Please supply an event name (or :A to ~
                                    abort)~%>> "))
-                               (with-infixp-nil
-                                (read-object *standard-oi* state))))))
+                               (read-object *standard-oi* state)))))
             (if (eq event-name :a)
                 (pprogn (io? proof-builder nil state
                              nil
@@ -4012,8 +4011,7 @@
                             above:) "
                            (list (cons #\0 (strip-cars ss-alist)))))
                 (mv-let (erp val state)
-                        (with-infixp-nil
-                         (read-object *standard-oi* state))
+                        (read-object *standard-oi* state)
                         (declare (ignore erp))
                         (retrieve-fn val state)))))
      ((not (symbolp name))

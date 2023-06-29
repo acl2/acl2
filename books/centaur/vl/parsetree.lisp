@@ -507,7 +507,7 @@ these.</p>")
              "The delay or range part between the two sequences.  Note that
               SystemVerilog gives a rich syntax here which we always boil down
               to a range.  In particular, a single expression like @('##1') is
-              represented with the range #('[1:1]').  The SystemVerilog syntax
+              represented with the range @('[1:1]').  The SystemVerilog syntax
               @('##[*]') just means @('##[0:$]') and the syntax @('##[+]') just
               means @('##[1:$]').  Dollar signs are supposed to mean the end of
               simulation, or for formal tools are supposed to mean some finite
@@ -629,7 +629,7 @@ these.</p>")
      ((strongp booleanp :rule-classes :type-prescription
                "True for @('s_nexttime') operators, nil for ordinary @('nexttime').")
       (expr    vl-maybe-expr-p
-               "For instance, #('3') in case of @('nexttime [3] foo').")
+               "For instance, @('3') in case of @('nexttime [3] foo').")
       (prop    vl-propexpr-p
                "The property that must hold next time, e.g., @('foo') in
                 @('nexttime [3] foo').")))
@@ -2966,7 +2966,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                   etc.")
      (deferral   vl-assertdeferral-p
                  "Indicates whether this assertion is a regular, non-deferred
-                  assertion, or a #('#0') or @('final') deferred assertion.")
+                  assertion, or a @('#0') or @('final') deferred assertion.")
      (condition  vl-expr-p
                  "The condition to assert.  Note that since this is an
                   immediate assertion, the condition is a simple expression,
