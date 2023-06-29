@@ -2040,7 +2040,7 @@
                         else-enter-scope-events
                         thm-index
                         names-to-avoid)
-                    (if then.proofs
+                    (if test.proofs
                         (atc-gen-enter-inscope gin.fn
                                                gin.fn-guard
                                                gin.inscope
