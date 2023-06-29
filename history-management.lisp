@@ -2988,6 +2988,23 @@
 (defun clear-event-data (state)
   (f-put-global 'last-event-data nil state))
 
+(defun print-event-data (name event-data channel ctx state)
+  (mv-let (erp val state)
+      (state-global-let*
+       ((current-package "ACL2" set-current-package-state)
+        (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
+        (fmt-soft-right-margin 10000 set-fmt-soft-right-margin))
+       (pprogn (print-object$ (cons name event-data)
+                              channel
+                              state)
+               (value nil)))
+    (declare (ignore val))
+    (prog2$ (and erp
+                 (er hard ctx
+                     "Implementation error in print-event-data.  Please ~
+                      contact the ACL2 implementors."))
+            state)))
+
 (defun print-summary (erp noop-flg event-type event ctx state)
 
 ; This function prints the Summary paragraph.  Part of that paragraph includes
@@ -3205,21 +3222,20 @@
                     (edf (f-get-global 'event-data-fal state)))
                (cond ((or channel edf)
                       (let ((name (event-data-name event-data event-type)))
-                        (pprogn (if channel
-                                    (print-object$ (cons name event-data)
-                                                   channel
-                                                   state)
-                                  state)
-                                (if edf
-                                    (f-put-global
-                                     'event-data-fal
-                                     (hons-acons
-                                      name
-                                      (cons event-data
-                                            (cdr (hons-get name edf)))
-                                      edf)
-                                     state)
-                                  state))))
+                        (pprogn
+                         (if channel
+                             (print-event-data name event-data channel ctx
+                                               state)
+                           state)
+                         (if edf
+                             (f-put-global
+                              'event-data-fal
+                              (hons-acons name
+                                          (cons event-data
+                                                (cdr (hons-get name edf)))
+                                          edf)
+                              state)
+                           state))))
                      (t state)))
            state)))))))
 
