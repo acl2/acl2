@@ -32524,10 +32524,10 @@
                      (not (eq (caddr stobjs-out) 'state))
                      (member-eq nil (cdddr stobjs-out)))
                  (er soft ctx
-                     "The form ~x0 was expected either to return a result ~
-                      that is either a single ordinary value or else is a ~
-                      tuple (mv erp val state stobj1 stobj2 ... stobjk) for ~
-                      some k >= 0.  But the shape of that result was ~x1."
+                     "The form ~x0 was expected to return a result that is ~
+                      either a single ordinary value or else is a tuple (mv ~
+                      erp val state stobj1 stobj2 ... stobjk) for some k >= ~
+                      0.  But the shape of that result was ~x1."
                      form
                      (prettyify-stobjs-out stobjs-out)))
                 ((car vals)

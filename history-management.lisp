@@ -2955,17 +2955,35 @@
               ,form)))
 
 (defun event-data-name (event-data event-type)
-  (cond ((eq event-type 'verify-guards)
-; In this special case we don't want to use the namex, because it's 0.
-         (let ((name (cadr (get-event-data-1 'event event-data))))
-           (and (symbolp name) ; not a lambda
-                name)))
-        (t (let ((namex ; as with get-event-data, but without state
-                  (get-event-data-1 'namex event-data)))
-             (cond ((symbolp namex) namex)
-                   ((and (consp namex) (symbolp (car namex)))
-                    (car namex))
-                   (t nil))))))
+
+; Event-data has event-type defthm, defun, verify-guards, or thm.
+
+  (let ((event (and (not (eq event-type 'thm))
+                    (get-event-data-1 'event event-data))))
+    (cond
+     ((null event) ; probably only for thm
+      nil)
+     ((eq event-type 'defun)
+      (cond
+       ((member-eq (car event) '(defuns mutual-recursion
+                                  #+:non-standard-analysis
+                                  defuns-std))
+        (let ((def ; first definition, without leading defun
+               (if (eq (car event) 'mutual-recursion)
+                   (cdr (cadr event))
+                 (cadr event))))
+          (assert$ (and (consp def)
+                        (symbolp (car def)))
+                   (car def))))
+       ((or (eq (car event) 'defun)
+            #+:non-standard-analysis
+            (eq (car event) 'defun-std))
+        (cadr event))
+       (t (er hard 'event-data-name
+              "Unexpected call: ~x0"
+              `(event-data-name ',event-data ',event-type)))))
+     (t ; verify-guards or defthm
+      (cadr event)))))
 
 (defun clear-event-data (state)
   (f-put-global 'last-event-data nil state))
