@@ -630,6 +630,7 @@
        (compst-term `(update-var (ident ',(symbol-name var))
                                  ,rhs.term
                                  ,gin.compst-var))
+       (compst-uterm (untranslate$ compst-term nil state))
        (asg-thm-name (pack gin.fn '-correct- rhs.thm-index))
        ((mv asg-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
@@ -639,7 +640,7 @@
                                            ,gin.compst-var
                                            ,gin.fenv-var
                                            ,gin.limit-var)
-                            ,compst-term))
+                            ,compst-uterm))
        (asg-formula (atc-contextualize asg-formula
                                        gin.context
                                        gin.fn
@@ -697,7 +698,7 @@
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
                                                     ,gin.limit-var)
-                             ,compst-term))
+                             ,compst-uterm))
        (expr-formula (atc-contextualize expr-formula
                                         gin.context
                                         gin.fn
@@ -728,7 +729,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv nil ,compst-term)))
+                             (mv nil ,compst-uterm)))
        (stmt-formula (atc-contextualize stmt-formula
                                         gin.context
                                         gin.fn
