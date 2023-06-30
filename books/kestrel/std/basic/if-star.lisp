@@ -34,6 +34,9 @@
   (defthmd if*-when-false
     (implies (not a)
              (equal (if* a b c)
-                    c))))
+                    c)))
+
+  (defthmd if*-when-same
+    (equal (if* a b b) b)))
 
 (in-theory (disable if*))

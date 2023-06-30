@@ -575,6 +575,11 @@
              add-var
              push-frame))
 
+  (defruled pop-frame-of-if*
+    (equal (pop-frame (if* a b c))
+           (if* a (pop-frame b) (pop-frame c)))
+    :enable if*)
+
   (defval *atc-pop-frame-rules*
     '(pop-frame-of-add-frame
       pop-frame-of-enter-scope

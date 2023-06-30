@@ -241,6 +241,7 @@
   ((items block-item-list)
    (type type)
    (term pseudo-termp)
+   (compst-term pseudo-termp)
    (context atc-context)
    (limit pseudo-term)
    (events pseudo-event-form-list)
@@ -258,6 +259,7 @@
   :body (make-stmt-gout :items nil
                         :type (irr-type)
                         :term nil
+                        :compst-term nil
                         :context (irr-atc-context)
                         :limit nil
                         :events nil
@@ -628,6 +630,7 @@
        (compst-term `(update-var (ident ',(symbol-name var))
                                  ,rhs.term
                                  ,gin.compst-var))
+       (compst-uterm (untranslate$ compst-term nil state))
        (asg-thm-name (pack gin.fn '-correct- rhs.thm-index))
        ((mv asg-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
@@ -637,7 +640,7 @@
                                            ,gin.compst-var
                                            ,gin.fenv-var
                                            ,gin.limit-var)
-                            ,compst-term))
+                            ,compst-uterm))
        (asg-formula (atc-contextualize asg-formula
                                        gin.context
                                        gin.fn
@@ -695,7 +698,7 @@
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
                                                     ,gin.limit-var)
-                             ,compst-term))
+                             ,compst-uterm))
        (expr-formula (atc-contextualize expr-formula
                                         gin.context
                                         gin.fn
@@ -726,7 +729,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv nil ,compst-term)))
+                             (mv nil ,compst-uterm)))
        (stmt-formula (atc-contextualize stmt-formula
                                         gin.context
                                         gin.fn
@@ -953,6 +956,7 @@
          :items all-items
          :type items-type
          :term term
+         :compst-term gin.compst-var
          :context (make-atc-context :preamble nil :premises nil)
          :limit all-items-limit
          :events (append item-events items-events)
@@ -1015,6 +1019,7 @@
     (make-stmt-gout :items all-items
                     :type items-type
                     :term term
+                    :compst-term gin.compst-var
                     :context items-new-context
                     :limit all-items-limit
                     :events (append item-events
@@ -1023,7 +1028,8 @@
                     :thm-name thm-name
                     :thm-index thm-index
                     :names-to-avoid names-to-avoid
-                    :proofs t)))
+                    :proofs t))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1126,6 +1132,7 @@
                 :items (list (block-item-stmt stmt))
                 :type expr.type
                 :term expr.term
+                :compst-term expr.compst-term
                 :context (make-atc-context :preamble nil :premises nil)
                 :limit (pseudo-term-fncall
                         'binary-+
@@ -1214,6 +1221,7 @@
     (retok (make-stmt-gout :items items
                            :type expr.type
                            :term expr.term
+                           :compst-term expr.compst-term
                            :context gin.context
                            :limit items-limit
                            :events (append expr.events
@@ -1289,6 +1297,7 @@
         (retok (make-stmt-gout :items then-items
                                :type then-type
                                :term term
+                               :compst-term gin.compst-var
                                :context (atc-context nil nil)
                                :limit then-limit
                                :events then-events
@@ -1357,6 +1366,7 @@
     (retok (make-stmt-gout :items then-items
                            :type then-type
                            :term term
+                           :compst-term gin.compst-var
                            :context then-context
                            :limit then-limit
                            :events (append then-events
@@ -1365,12 +1375,12 @@
                            :thm-name thm-name
                            :thm-index thm-index
                            :names-to-avoid names-to-avoid
-                           :proofs t))))
+                           :proofs t)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-if/ifelse-stmt ((term pseudo-termp)
-                                (test-term pseudo-termp)
+(define atc-gen-if/ifelse-stmt ((test-term pseudo-termp)
                                 (then-term pseudo-termp)
                                 (else-term pseudo-termp)
                                 (test-expr exprp)
@@ -1415,10 +1425,11 @@
      because we need 1 to go from @(tsee exec-stmt)
      to the @(':compound') case and @(tsee exec-block-item-list).")
    (xdoc::p
-    "We then generate a theorem for the conditional statement,
+    "We generate a theorem for the conditional statement,
      based on the theorems for the test and branches.
      We turn the ACL2 @(tsee if) into @(tsee if*),
-     to prevent unwanted case splits in terms that may contain this term.
+     to prevent unwanted case splits in larger terms that may contain this term
+     (as we generate C code from those larger terms).
      We use proof builder commands to split on this @(tsee if*).
      The limit for the conditional statement is
      one more than the sum of the ones for the branches;
@@ -1449,12 +1460,14 @@
                                    :else else-stmt)
                (make-stmt-if :test test-expr
                              :then then-stmt)))
+       (term `(if* ,test-term ,then-term ,else-term))
        ((when (not gin.proofs))
         (retok
          (make-stmt-gout
           :items (list (block-item-stmt stmt))
           :type type
           :term term
+          :compst-term gin.compst-var
           :context (make-atc-context :preamble nil :premises nil)
           :limit (pseudo-term-fncall
                   'binary-+
@@ -1588,13 +1601,12 @@
         (fresh-logical-name-with-$s-suffix if-stmt-thm nil names-to-avoid wrld))
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
-       (term* `(if* ,test-term ,then-term ,else-term))
-       (uterm* (untranslate$ term* nil state))
+       (uterm (untranslate$ term nil state))
        (if-stmt-formula1 `(equal (exec-stmt ',stmt
                                             ,gin.compst-var
                                             ,gin.fenv-var
                                             ,gin.limit-var)
-                                 (mv ,uterm* ,gin.compst-var)))
+                                 (mv ,uterm ,gin.compst-var)))
        (if-stmt-formula1 (atc-contextualize if-stmt-formula1
                                             gin.context
                                             gin.fn
@@ -1604,7 +1616,7 @@
                                             if-stmt-limit
                                             t
                                             wrld))
-       (if-stmt-formula2 `(,type-pred ,uterm*))
+       (if-stmt-formula2 `(,type-pred ,uterm))
        (if-stmt-formula2 (atc-contextualize if-stmt-formula2
                                             gin.context
                                             gin.fn
@@ -1695,7 +1707,7 @@
             names-to-avoid)
         (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
                                  stmt if-stmt-limit if-stmt-thm
-                                 type term*
+                                 type term
                                  gin.compst-var gin.fenv-var gin.limit-var
                                  gin.compst-var gin.prec-tags
                                  thm-index names-to-avoid state))
@@ -1707,7 +1719,7 @@
             names-to-avoid)
         (atc-gen-block-item-list-one gin.fn gin.fn-guard gin.context
                                      item item-limit item-thm-name
-                                     type term*
+                                     type term
                                      gin.compst-var gin.fenv-var gin.limit-var
                                      gin.compst-var gin.prec-tags
                                      thm-index names-to-avoid state)))
@@ -1715,7 +1727,8 @@
      (make-stmt-gout
       :items items
       :type type
-      :term term*
+      :term term
+      :compst-term gin.compst-var
       :context gin.context
       :limit items-limit
       :events (append test-events
@@ -2028,7 +2041,7 @@
                         else-enter-scope-events
                         thm-index
                         names-to-avoid)
-                    (if then.proofs
+                    (if test.proofs
                         (atc-gen-enter-inscope gin.fn
                                                gin.fn-guard
                                                gin.inscope
@@ -2059,7 +2072,7 @@
                                             else-enter-scope-events
                                             (stmt-gout->events gout)))
                  else-context))))
-          (atc-gen-if/ifelse-stmt term test.term then.term else.term
+          (atc-gen-if/ifelse-stmt test.term then.term else.term
                                   test.expr then.items else.items
                                   test.type then.type else.type
                                   then.limit else.limit
@@ -2193,6 +2206,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
+                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append init.events body.events)
@@ -2292,6 +2306,7 @@
                         :items (cons item body.items)
                         :type type
                         :term term
+                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append rhs.events body.events)
@@ -2360,6 +2375,7 @@
                   :items items
                   :type type
                   :term term
+                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit limit
                   :events (append xform.events body.events)
@@ -2456,6 +2472,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
+                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append ptr.events
@@ -2574,6 +2591,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
+                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append arr.events
@@ -2681,6 +2699,7 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type body.type
+                        :compst-term gin.compst-var
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
@@ -2813,6 +2832,7 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
+                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append struct.events
@@ -3041,6 +3061,7 @@
                   :items items
                   :type type
                   :term term
+                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit limit
                   :events (append xform.events body.events)
@@ -3061,6 +3082,7 @@
                   :items nil
                   :type (type-void)
                   :term term
+                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit (pseudo-term-quote 1)
                   :events nil
@@ -3084,6 +3106,7 @@
             (retok (make-stmt-gout :items nil
                                    :type (type-void)
                                    :term term
+                                   :compst-term gin.compst-var
                                    :context (make-atc-context :preamble nil
                                                               :premises nil)
                                    :limit (pseudo-term-quote 1)
@@ -3149,6 +3172,7 @@
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
                   :term term
+                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit limit
                   :events nil
@@ -3162,6 +3186,7 @@
                     :items nil
                     :type (type-void)
                     :term term
+                    :compst-term gin.compst-var
                     :context (make-atc-context :preamble nil :premises nil)
                     :limit (pseudo-term-quote 1)
                     :events nil
@@ -3227,6 +3252,7 @@
                   :items (list (block-item-stmt (stmt-expr call-expr)))
                   :type (type-void)
                   :term term
+                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
