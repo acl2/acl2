@@ -180,6 +180,85 @@ call FGL, which will invoke a SAT solver after VeSCmul finishes rewriting:
 </p>
 
 
+<h3>Exporting a Verilog file with adder hierarchy after the adder detection stage</h3>
+
+<p> VeSCmul allows users to export a Verilog file after the adder detection
+stage. The exported file contains basic adder modules and a large Verilog module
+instantiating those adder modules. That large module is expected to be
+equivalant to the original design. The difference will be the exported Verilog
+module will have the design hierarchy around adder
+components (even if the original design did not have any design hierarchy). If
+the original design had any complex adders (e.g., 4-to-2 compressors, parallel
+prefix adders), the exported module is expected to have replaced those with
+only simple full/half-adders.
+ Researchers may use this feature in their tool flows. </p>
+
+<p> To use this tool, simply run: </p>
+
+<code>
+@('(export-to-verilog-after-adder-detection \"mult_module_with_hier\")')
+</code>
+<p> The string argument can be customized to be used as file and module
+names. This program
+should be run after the @(see verify-svtv-of-mult) event for the desired
+multiplier design. The verify-svtv-of-mult event does not need to succeed for
+this to work; that is, you can try to prove a false conjecture and the
+export-to-verilog-after-adder-detection program will still export the processed design
+for you. </p>
+
+
+<p> The Verilog translation  is not
+verified and it can potentially output a design with problems (syntactical or
+purely functional). However, users can tell the program to do a sanity
+check, which performs
+formal equivalance checking between the exported desig the original one. For
+sanity check, run the following events:
+</p>
+
+<code>
+@('
+(progn
+  (local (include-book \"centaur/ipasir/ipasir-backend\" :dir :system))
+  (local (include-book \"centaur/aignet/transforms\" :dir :system))
+  (local (defun transforms-config ()
+           (declare (Xargs :guard t))
+           #!aignet
+           (list (make-observability-config)
+                 (make-balance-config :search-higher-levels t
+                                      :search-second-lit t)
+                 (change-fraig-config *fraig-default-config*
+                                      :random-seed-name 'my-random-seed
+                                      :ctrex-queue-limit 8
+                                      :sim-words 1
+                                      :ctrex-force-resim nil
+                                      :ipasir-limit 4
+                                      :initial-sim-rounds 2
+                                      :initial-sim-words 2
+                                      :ipasir-recycle-count 2000)
+                 )))
+  (local (defattach fgl::fgl-aignet-transforms-config transforms-config))
+  (local (define monolithic-sat-with-transforms ()
+           (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
+  (local (defattach fgl::fgl-toplevel-sat-check-config monolithic-sat-with-transforms)))
+
+(export-to-verilog-after-adder-detection \"mult_module_with_hier\" :sanity-check t)
+
+')
+</code>
+
+<p> The first set of events configures FGL to perform AIG transformations which are
+essential for equivalance checking to finish in a timely manner. You may need
+to set up the @(see ipasir::ipasir) libraries if it is not done yet. If the
+above export-to-verilog-after-adder-detection event succeeds, it means that the
+exported design is proved to be equivalant to the original design. Speed of
+sanity check is usually high but it can vary, and modifying the parameters in
+transforms-config may make a big difference.
+
+
+</p>
+
+
+
 
 "
   )

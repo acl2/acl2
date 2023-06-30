@@ -31,6 +31,7 @@
 (include-book "centaur/svl/top" :dir :system)
 (include-book "centaur/sv/svex/lists" :dir :system)
 (include-book "centaur/misc/sneaky-load" :dir :system)
+(include-book "centaur/fgl/portcullis" :dir :system)
 
 (local
  (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -1588,13 +1589,15 @@
                                                 :args args))))))
                                :warrant-hyps ()))
 
-(define fa-s-c-chain (x y z)
+
+
+(define full-adder (x y z)
   :verify-guards nil
-  (svl::4vec-concat 1
-                    (fa-s-chain x y z)
-                    (fa-c-chain 0 x y z))
+  (svl::4vec-list (fa-s-chain x y z)
+                  (fa-c-chain 0 x y z)
+                  0)
   ///
-  (defwarrant-rp fa-s-c-chain))
+  (defwarrant-rp full-adder))
 
 (progn
   (defun warrants-for-adder-pattern-match ()
@@ -1604,7 +1607,7 @@
          (apply$-warrant-ha+1-s-chain)
          (apply$-warrant-ha-s-chain)
          (apply$-warrant-fa-s-chain)
-         (apply$-warrant-fa-s-c-chain)))
+         (apply$-warrant-full-adder)))
 
   (defconst *adder-fncs*
     '(ha-c-chain
@@ -1613,7 +1616,7 @@
       ha+1-s-chain
       ha-s-chain
       fa-s-chain
-      fa-s-c-chain))
+      full-adder))
 
   (rp::add-rp-rule warrants-for-adder-pattern-match)
   (rp::disable-rules '((:e warrants-for-adder-pattern-match))))
@@ -1649,11 +1652,11 @@
                             bitp)
                            (fa-c-chain-c-spec)))))
 
-(def-rp-rule fa-s-c-chain-when-bitp
+(def-rp-rule full-adder-when-bitp
   (implies (and (bitp x)
                 (bitp y)
                 (bitp z))
-           (equal (fa-s-c-chain x y z)
+           (equal (full-adder x y z)
                   (b* ((res (s-c-spec (list x y z))))
                     (svl::4vec-concat$ 1 (first res)
                                        (second res)))))
@@ -1720,7 +1723,7 @@
        ha-s-chain
        fa-c-chain
        fa-s-chain
-       fa-s-c-chain
+       full-adder
        ha+1-c-chain
        ha+1-s-chain)))
 
@@ -1816,6 +1819,12 @@
                                                    (:rewrite acl2::integer-listp-of-cdr-when-integer-listp)
                                                    ))))))
 
+(svl::create-width-of-svex-extn :fn full-adder
+                                :formula '2
+                                :prepwork ((local
+                                            (in-theory (e/d (svl::4vec-correct-width-p
+                                                             svl::4vec-concat$))))))
+
 (svl::create-integerp-of-svex-extn :fn ha-s-chain
                                    :prepwork
                                    ((local
@@ -1858,7 +1867,7 @@
               (member-equal (sv::Svex-call->fn x)
                             '(fa-c-chain
                               fa-s-chain
-                              fa-s-c-chain
+                              full-adder
                               ha+1-c-chain
                               ha+1-s-chain
                               ha-c-chain
@@ -1874,7 +1883,7 @@
               (member-equal (sv::Svex-call->fn x)
                             '(fa-c-chain
                               fa-s-chain
-                              fa-s-c-chain
+                              full-adder
                               ha+1-c-chain
                               ha+1-s-chain
                               ha-c-chain
@@ -1902,7 +1911,7 @@
                       (:free (args) (sv::svex-apply 'sv::unfloat args)))
              :in-theory (e/d (FA-C-CHAIN
                               FA-s-CHAIN
-                              FA-S-C-CHAIN
+                              FULL-ADDER
                               HA-C-CHAIN HA-s-CHAIN
                               HA+1-S-CHAIN HA+1-C-CHAIN
                               SV::SVEX-APPLY$)
@@ -8092,7 +8101,7 @@ pattern
                                (svl::bitp-of-svex (third x.args))))
                     (sv::svex-call 'sv::partsel
                                    (hons-list 0 1
-                                              (sv::svex-call 'fa-s-c-chain args))))
+                                              (sv::svex-call 'full-adder args))))
                    ((and (eq x.fn 'fa-c-chain)
                          (svl::equal-len x.args 4)
                          (and* (valid-fa-c-chain-args-p (first x.args)
@@ -8102,7 +8111,7 @@ pattern
                                (svl::bitp-of-svex (fourth x.args))))
                     (sv::svex-call 'sv::partsel
                                    (hons-list 1 1
-                                              (sv::svex-call 'fa-s-c-chain (cdr args)))))
+                                              (sv::svex-call 'full-adder (cdr args)))))
                    (t (sv::svex-call x.fn args))))))
 
   (define merge-fa-s-c-chains-lst ((lst sv::svexlist-p)
@@ -8189,7 +8198,7 @@ pattern
                               SV::SVEXLIST-EVAL$
                               SV::SVEX-APPLY
                               sv::svex-apply$
-                              fa-s-c-chain)
+                              full-adder)
                              ()))))
 
   (define merge-fa-s-c-chains-alist ((alist sv::svex-alist-p)
@@ -8247,7 +8256,7 @@ pattern
       ((fn . &)
        (or (equal fn 'fa-c-chain)
            (equal fn 'fa-s-chain)
-           (equal fn 'fa-s-c-chain)
+           (equal fn 'full-adder)
            (equal fn 'ha-s-chain)
            (equal fn 'ha-c-chain)
            (equal fn 'ha+1-s-chain)
@@ -8589,7 +8598,7 @@ pattern
            (apply$-warrant-ha+1-s-chain)
            (apply$-warrant-ha-s-chain)
            (apply$-warrant-fa-s-chain)
-           (apply$-warrant-fa-s-c-chain))))
+           (apply$-warrant-full-adder))))
    `(define check-context-for-adder-warrants ((context rp-term-listp))
       :returns valid
       (subsetp-equal ',w context)
@@ -8618,11 +8627,15 @@ pattern
 
 (define vescmul-clear-memoize-tables ()
   (progn$ (clear-memoize-table 's-order)
+          (clear-memoize-table 'svl::width-of-svex-fn)
+          (clear-memoize-table 'svl::integerp-of-svex-fn)
+          (clear-memoize-table 'svl::svex-reduce-w/-env-fn)
+          (clear-memoize-table 'svl::svex-reduce-w/-env-masked-fn)
           (clear-memoize-table 'adder-pattern-match)
           (clear-memoize-table 'clear-adder-fnc-from-unfloat)
           (clear-memoize-table 'replace-adder-patterns-in-svex)
           (clear-memoize-table 'fix-order-of-fa/ha-s-args)
-          (clear-memoize-table ''svl::bitand/or/xor-cancel-repeated)
+          (clear-memoize-table 'svl::bitand/or/xor-cancel-repeated)
           (clear-memoize-table 'simplify-to-find-fa-c-patterns-fn)
           (clear-memoize-table 'wrap-pp-with-id-aux)
           (clear-memoize-table 'add-ha-c-for-shifted)
@@ -8675,6 +8688,7 @@ pattern
                    config :skip-bitor/and/xor-repeated t))
           (svex-alist (svl::svexalist-convert-bitnot-to-bitxor svex-alist))
           (svex-alist (svl::svex-alist-reduce-w/-env svex-alist :env env :config config))
+          (- (acl2::sneaky-save 'orig-svex-alist svex-alist))
           (- (time-tracker :rewrite-adders-in-svex :stop))
           (- (time-tracker :rewrite-adders-in-svex :print?
                            :min-time 0
@@ -8712,7 +8726,7 @@ was ~st seconds."))
 
           (- (acl2::sneaky-save 'after-fa svex-alist))
           (- (cw "Access the svexl-alist after full-adder search: ~
-(b* (((mv state res) (acl2::sneaky-load 'rp::after-all state)))
+(b* (((mv res state) (acl2::sneaky-load 'rp::after-fa state)))
    (mv state (svl::svex-alist-to-svexl-alist res))) ~%"))
 
           (- (time-tracker :rewrite-adders-in-svex :stop))
@@ -9137,7 +9151,7 @@ was ~st seconds."))
                       ,(third args-lst))
                `(nil (nil t) t t)))
           ((and* (or (eq fnc 'fa-s-chain)
-                     (eq fnc 'fa-s-c-chain))
+                     (eq fnc 'full-adder))
                  (svl::equal-len args-lst 3))
            (mv `(,fnc ,(first args-lst)
                       ,(second args-lst)
@@ -9171,7 +9185,7 @@ was ~st seconds."))
          (create-regular-eval-lemma binary-and 2 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma ha+1-s-chain 3 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma fa-s-chain 3 find-adders-in-svex-formula-checks)
-         (create-regular-eval-lemma fa-s-c-chain 3 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma full-adder 3 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma ha+1-c-chain 2 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma fa-c-chain 4 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma ha-c-chain 2 find-adders-in-svex-formula-checks)
@@ -9269,15 +9283,15 @@ was ~st seconds."))
                 :in-theory (e/d (fa-s-chain) ())))))
 
     (local
-     (defthm FA-s-c-CHAIN-of-4vec-fix
-       (and (equal (fa-s-c-chain (sv::4vec-fix x) y z)
-                   (fa-s-c-chain x y z))
-            (equal (fa-s-c-chain x (sv::4vec-fix y) z)
-                   (fa-s-c-chain x y z))
-            (equal (fa-s-c-chain x y (sv::4vec-fix z))
-                   (fa-s-c-chain x y z)))
+     (defthm full-adder-of-4vec-fix
+       (and (equal (full-adder (sv::4vec-fix x) y z)
+                   (full-adder x y z))
+            (equal (full-adder x (sv::4vec-fix y) z)
+                   (full-adder x y z))
+            (equal (full-adder x y (sv::4vec-fix z))
+                   (full-adder x y z)))
        :hints (("Goal"
-                :in-theory (e/d (fa-s-c-chain) ())))))
+                :in-theory (e/d (full-adder) ())))))
 
     (local
      (defthm ha+1-s-CHAIN-of-4vec-fix
@@ -9783,3 +9797,78 @@ svex-alist)
     `(make-event
       (defthm-with-temporary-warrants-fn ',thm-name ',thm-body ',args state))
     ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Export verilog after adders are found.
+
+(acl2::defconsts *adder-verilog-modules*
+  "
+module ha_c_chain(input a, input b, output o);
+   assign o = a & b;
+endmodule
+
+module ha_s_chain(input a, input b, output o);
+    assign o = a ^ b;
+endmodule
+
+module ha_1_c_chain(input a, input b, output o);
+    assign o = a | b;
+endmodule
+
+module ha_1_s_chain(input integer m, input a, input b, output o);
+    assign o = (m == 10) ? a ^ b : a ^ b ^ 1'b1;
+endmodule
+
+module fa_c_chain(input m, input a, input b, input c, output o);
+    assign o = a & b | a & c | b & c;
+endmodule
+
+module fa_s_chain(input a, input b, input c, output o);
+    assign o = a ^ b ^ c;
+endmodule
+
+module full_adder(input a, input b, input c, output [1:0] o);
+    assign o = a + b + c;
+endmodule")
+
+;; (FGL::FGL-INTERP-CP CLAUSE #@333# FGL::INTERP-ST STATE)
+
+(defmacro export-to-verilog-after-adder-detection (module-name &key
+                                                               (sanity-check 'nil))
+  `(make-event
+    (b* (((mv svexl-alist state) (acl2::sneaky-load 'after-all state))
+         (svex-alist (svl::svexl-alist-to-svex-alist svexl-alist))
+         (config (svex-reduce-w/-env-config-1))
+         (extra-lines (list *adder-verilog-modules*))
+         ((acl2::er parse-events-for-sanity-check)
+          (svl::svex-alist-to-verilog-fn svex-alist ',module-name
+                                         :extra-lines extra-lines
+                                         :config config)))
+      (if ,sanity-check
+          (value
+           `(encapsulate
+              nil
+              (with-output :off :all :on (error) :gag-mode nil
+                (progn ,@parse-events-for-sanity-check
+                       (local
+                        (acl2::defconsts (*orig-svex-alist* state)
+                          (acl2::sneaky-load 'orig-svex-alist state)))))
+              (value-triple (acl2::tshell-ensure))
+              (local
+               (make-event
+                `(:or
+                  (fgl::fgl-thm
+                   (implies (svl::exported-design-svtv-autohyps)
+                            (b* ((orig-out (sv::svex-alist-eval *orig-svex-alist*
+                                                                (svl::exported-design-svtv-autoins)))
+                                 (exported-out (sv::svtv-run (svl::exported-design-svtv)
+                                                             (svl::exported-design-svtv-autoins)))
+                                 (- (cw "~%Output values of the original design: ~p0~%" orig-out))
+                                 (- (cw "~%Output values of the exported design: ~p0~%" exported-out)))
+                            (equal orig-out exported-out))))
+                  (value-triple (hard-error 'export-to-verilog-after-adder-detection
+                                            "Sanity check failed. Please see the counterexample above~%"
+                                            nil)))))
+              (value-triple :sanity-check-passed)))
+      (value '(value-triple :done))))))
