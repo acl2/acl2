@@ -251,12 +251,16 @@
      after the execution of some code, e.g. a list of block items.
      The caller takes the ``difference'' between
      the context before and after that execution,
-     and passes it to this function.
-     We expect that there should be no test in that difference context:
-     we defensively check that, and raise an error if we find one.")
+     and passes it to this function.")
    (xdoc::p
     "Note that this function takes as input a list of premises, not a context.
-     This is the ``difference'' betweeen the two contexts mentioned above."))
+     This is the ``difference'' betweeen the two contexts mentioned above.")
+   (xdoc::p
+    "We skip any test encountered in the list of premises.
+     Because of the way this function is used, this is adeguate.
+     The context difference may include tests in upcoming modular proofs,
+     so it would be inappropriate to stop with an error
+     upon encountering a test here."))
   (b* (((when (endp premises)) compst-var)
        (premise (car premises)))
     (atc-premise-case
@@ -265,4 +269,4 @@
                     ,(atc-contextualize-compustate compst-var (cdr premises)))
      :cvalue `(let ((,premise.var ,premise.term))
                 ,(atc-contextualize-compustate compst-var (cdr premises)))
-     :test (raise "Internal error: test ~x0 found." premise.term))))
+     :test (atc-contextualize-compustate compst-var (cdr premises)))))
