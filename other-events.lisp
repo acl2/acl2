@@ -16089,8 +16089,12 @@
       (mv-let (channel state)
         (open-input-channel useless-runes-filename :object state)
         (cond (channel
-               (mv-let (alist state)
-                 (read-file-iterate-safe channel nil state)
+               (er-let* ((alist
+                          (state-global-let*
+                           ((current-package "ACL2" set-current-package-state))
+                           (mv-let (alist state)
+                             (read-file-iterate-safe channel nil state)
+                             (value alist)))))
                  (pprogn (io? event nil state
                               (useless-runes-filename)
                               (fms! "; Note: Consulting useless-runes ~
@@ -35089,14 +35093,14 @@
                :on-behalf-of :quiet!)
               ,@(memoize-partial-calls tuples)))))))
 
-(defun read-event-data-fal-1 (alist fal)
+(defun read-event-data-fal (alist fal)
   (cond ((endp alist) fal)
         (t
          (let* ((key (caar alist))
                 (val (cdar alist))
                 (old (cdr (hons-get key fal))))
-           (read-event-data-fal-1 (cdr alist)
-                                  (hons-acons key (cons val old) fal))))))
+           (read-event-data-fal (cdr alist)
+                                (hons-acons key (cons val old) fal))))))
 
 (defun first-non-string-key-pair (fal)
   (cond ((atom fal) nil)
@@ -35126,10 +35130,15 @@
                  (open-input-channel event-data-filename :object state)
                  (cond
                   (channel
-                   (mv-let (alist state)
-                     (read-file-iterate-safe channel nil state)
+                   (er-let* ((alist
+                              (state-global-let*
+                               ((current-package "ACL2"
+                                                 set-current-package-state))
+                               (mv-let (alist state)
+                                 (read-file-iterate-safe channel nil state)
+                                 (value alist)))))
                      (let ((file-event-data-fal
-                            (read-event-data-fal-1 alist 'read-event-data-fal)))
+                            (read-event-data-fal alist 'read-event-data-fal)))
                        (pprogn
                         (close-input-channel channel state)
                         (let ((new-event-data-fal
