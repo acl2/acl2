@@ -19294,6 +19294,7 @@
                 (event (second values-returned)))
            (mv erp event state))))
      ;; The acl2-unwind-protect ensures that this is called if the user aborts:
+     ;; TODO: Don't do this if the debug arg is set
      (maybe-remove-temp-dir state)
      ;; No need to clean up anything if no abort and no error:
      state)))
@@ -20225,6 +20226,7 @@
                              normalize-xors
                              interpreted-function-alist
                              check-vars
+                             local
                              whole-form
                              state rand result-array-stobj)
   (declare (xargs :guard (and (natp tests)
@@ -20244,7 +20246,8 @@
                               (booleanp use-context-when-miteringp)
                               (booleanp normalize-xors)
                               (interpreted-function-alistp interpreted-function-alist)
-                              (booleanp check-vars))
+                              (booleanp check-vars)
+                              (booleanp local))
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
   ;;TODO: error or warning if :tactic is rewrite and :tests is given?
@@ -20334,7 +20337,8 @@
                           `(progn))
                 defthm))
        (event (extend-progn event `(with-output :off :all (table prove-equivalence-table ',whole-form ',event))))
-       (event (extend-progn event `(value-triple ',miter-name))))
+       (event (extend-progn event `(value-triple ',miter-name)))
+       (event (if local `(local ,event) event)))
     (mv (erp-nil) event state rand result-array-stobj)))
 
 (defxdoc prove-equivalence
@@ -20386,25 +20390,23 @@
                                     (interpreted-function-alist 'nil) ;affects soundness
                                     (check-vars 't)
                                     (local 't))
-  (let ((form `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
-                                                       ,dag-or-term2
-                                                       ,tests
-                                                       ,tactic
-                                                       ,assumptions
-                                                       ,types
-                                                       ,name
-                                                       ,print
-                                                       ,debug
-                                                       ,max-conflicts
-                                                       ,extra-rules
-                                                       ,initial-rule-sets
-                                                       ,monitor
-                                                       ,use-context-when-miteringp
-                                                       ',normalize-xors
-                                                       ,interpreted-function-alist
-                                                       ,check-vars
-                                                       ',whole-form
-                                                       state rand result-array-stobj))))
-    (if (check-boolean local)
-        (list 'local form)
-      form)))
+  `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
+                                           ,dag-or-term2
+                                           ,tests
+                                           ,tactic
+                                           ,assumptions
+                                           ,types
+                                           ,name
+                                           ,print
+                                           ,debug
+                                           ,max-conflicts
+                                           ,extra-rules
+                                           ,initial-rule-sets
+                                           ,monitor
+                                           ,use-context-when-miteringp
+                                           ',normalize-xors
+                                           ,interpreted-function-alist
+                                           ,check-vars
+                                           ,local
+                                           ',whole-form
+                                           state rand result-array-stobj)))
