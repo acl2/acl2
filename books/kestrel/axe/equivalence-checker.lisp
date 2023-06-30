@@ -19294,6 +19294,7 @@
                 (event (second values-returned)))
            (mv erp event state))))
      ;; The acl2-unwind-protect ensures that this is called if the user aborts:
+     ;; TODO: Don't do this if the debug arg is set
      (maybe-remove-temp-dir state)
      ;; No need to clean up anything if no abort and no error:
      state)))
