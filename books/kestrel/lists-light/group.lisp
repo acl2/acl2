@@ -226,15 +226,6 @@
 
 ;; (LIST::EQUIV Y (CDR Y))
 
-(defthm <-of-times-of-floor-and-same
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
-           (equal (< (* j (floor i j)) i)
-                  (not (integerp (/ i j)))))
-  :hints (("Goal" :use (:instance my-floor-upper-bound (x i) (y j))
-           :in-theory (disable my-floor-upper-bound))))
-
 (defthm <-of-times-of-floor-and-same-hack
   (implies (and (integerp i)
                 (integerp j)
