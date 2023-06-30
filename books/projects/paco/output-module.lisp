@@ -537,12 +537,14 @@
           0 1)
       (IF (ENDP NAMES) 0 1)
       NAMES))
-   (er-progn
-    (assign wormhole-status
-            (set-wormhole-data (@ wormhole-status)
-                               (cons (union-equal (car (wormhole-data (@ wormhole-status)))
-                                                  (cadr (wormhole-data (@ wormhole-status))))
-                                     (cddr (wormhole-data (@ wormhole-status))))))
+   (acl2::pprogn
+    (acl2::set-persistent-whs-and-ephemeral-whs
+     'nume-stack
+     (set-wormhole-data (@ wormhole-status)
+                        (cons (union-equal (car (wormhole-data (@ wormhole-status)))
+                                           (cadr (wormhole-data (@ wormhole-status))))
+                              (cddr (wormhole-data (@ wormhole-status)))))
+     acl2::state)
     (value :q))))
 
 (defmacro <apply-waterfall-process-id> (body)

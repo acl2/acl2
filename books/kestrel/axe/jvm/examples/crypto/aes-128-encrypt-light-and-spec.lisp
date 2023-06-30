@@ -19,9 +19,7 @@
 (read-class "AESEncryptLightDriver.class") ; (depends-on "AESEncryptLightDriver.class")
 
 ;; Read in bouncycastle classes:
-(read-jar "jce-jdk13-134.jar" ; (depends-on "jce-jdk13-134.jar")
-          :classes ("org.bouncycastle.crypto.params.KeyParameter"
-                    "org.bouncycastle.crypto.engines.AESLightEngine"))
+(read-jar "jce-jdk13-134.jar") ; (depends-on "jce-jdk13-134.jar")
 
 ;; Read in some Java libraries:
 (read-jar "jdk1.7.0_80/jre/lib/rt.jar" ; (depends-on "jdk1.7.0_80/jre/lib/rt.jar")

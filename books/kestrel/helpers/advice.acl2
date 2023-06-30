@@ -1,6 +1,6 @@
 ; Portcullis and cert flags for advice.lisp
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,12 @@
 (INCLUDE-BOOK "kestrel/htclient/portcullis" :DIR :SYSTEM)
 
 (include-book "kestrel/big-data/packages" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "portcullis") ;; for the HELP package
+
+;; Additional packages (TODO: Clean this up):
 
 ;TODO: REMOVE:
 (defpkg "LABEL" '(nil t))
@@ -252,10 +258,6 @@
   (set-difference-eq (union-eq *acl2-exports*
                                *common-lisp-symbols-from-main-lisp-package*)
                      '(push pop pc program step)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(include-book "portcullis")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -246,3 +246,14 @@
                        ;; the (+ -1 (integer-length k)) will be evaluated to a constant:
                        (equal i (+ -1 (integer-length k))))))
   :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(defthm <-of-expt2-same
+  (implies (integerp i)
+           (< i (expt 2 i)))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm <-of-expt2-same-linear
+  (implies (integerp i)
+           (< i (expt 2 i)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt))))

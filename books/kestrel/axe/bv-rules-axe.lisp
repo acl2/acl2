@@ -32,7 +32,8 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "known-booleans")
-(local (include-book "kestrel/bv/rules" :dir :system)) ;drop?
+(local (include-book "kestrel/bv/logior-b" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
 (local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
 (local (include-book "kestrel/bv/sbvrem-rules" :dir :system))

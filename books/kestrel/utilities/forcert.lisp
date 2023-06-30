@@ -113,7 +113,7 @@
          (omap::update trimmed-key trimmed-val-exceptions-removed
                        (update-many rest-alist bd exceptions))))
      ///
-     (verify-guards update-many :guard-debug t))
+     (verify-guards update-many))
 
 (define make-bookdeps ((alist alistp) (exceptions string-listp))
   :short "Makes a cleaned-up book dependency map from a build dependency alist."
@@ -153,7 +153,7 @@
        (forward-bookdeps (depgraph::invert fast-bookdeps)))
     (mv forward-bookdeps state))
   ///
-  (verify-guards makefile-deps-file-to-forward-alist :guard-debug t))
+  (verify-guards makefile-deps-file-to-forward-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

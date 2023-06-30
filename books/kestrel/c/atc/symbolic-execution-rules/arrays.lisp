@@ -15,9 +15,6 @@
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))
 
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
-(local (include-book "std/typed-lists/symbol-listp" :dir :system))
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -538,53 +535,19 @@
   (xdoc::topstring
    (xdoc::p
     "These rules say that the array write operations preserve array lengths.
-     There is one rule for each @('<type1>-array-write-<type2>') function,
-     so generate the list programmatically."))
-
-  (define atc-array-length-write-rules-loop-itypes ((atype typep)
-                                                    (itypes type-listp))
-    :guard (and (type-nonchar-integerp atype)
-                (type-nonchar-integer-listp itypes))
-    :returns (names symbol-listp)
-    :parents nil
-    (cond ((endp itypes) nil)
-          (t (b* ((afixtype (integer-type-to-fixtype atype))
-                  (ifixtype (integer-type-to-fixtype (car itypes))))
-               (cons
-                (pack afixtype
-                      '-array-length-of-
-                      afixtype
-                      '-array-write-
-                      ifixtype)
-                (atc-array-length-write-rules-loop-itypes atype
-                                                          (cdr itypes)))))))
-
-  (define atc-array-length-write-rules-loop-atypes ((atypes type-listp)
-                                                    (itypes type-listp))
-    :guard (and (type-nonchar-integer-listp atypes)
-                (type-nonchar-integer-listp itypes))
-    :returns (name symbol-listp)
-    :parents nil
-    (cond ((endp atypes) nil)
-          (t (append (atc-array-length-write-rules-loop-itypes (car atypes)
-                                                               itypes)
-                     (atc-array-length-write-rules-loop-atypes (cdr atypes)
-                                                               itypes)))))
+     There is one rule for each @('<type1>-array-write') function."))
 
   (defval *atc-array-length-write-rules*
-    (append
-     (atc-array-length-write-rules-loop-atypes *nonchar-integer-types*
-                                               *nonchar-integer-types*)
-     '(schar-array-length-of-schar-array-write
-       uchar-array-length-of-uchar-array-write
-       sshort-array-length-of-sshort-array-write
-       ushort-array-length-of-ushort-array-write
-       sint-array-length-of-sint-array-write
-       uint-array-length-of-uint-array-write
-       slong-array-length-of-slong-array-write
-       ulong-array-length-of-ulong-array-write
-       sllong-array-length-of-sllong-array-write
-       ullong-array-length-of-ullong-array-write))))
+    '(schar-array-length-of-schar-array-write
+      uchar-array-length-of-uchar-array-write
+      sshort-array-length-of-sshort-array-write
+      ushort-array-length-of-ushort-array-write
+      sint-array-length-of-sint-array-write
+      uint-array-length-of-uint-array-write
+      slong-array-length-of-slong-array-write
+      ulong-array-length-of-ulong-array-write
+      sllong-array-length-of-sllong-array-write
+      ullong-array-length-of-ullong-array-write)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

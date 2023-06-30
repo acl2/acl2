@@ -101,7 +101,37 @@
 
   (eq (legal-variable-or-constant-namep name) 'constant))
 
+(defun gsym (pkg-witness char-lst cnt)
+  (declare (xargs :guard (and (symbolp pkg-witness)
+                              (character-listp char-lst)
+                              (integerp cnt)
+                              (<= 0 cnt))))
+  (intern-in-package-of-symbol
+   (coerce
+    (append char-lst
+            (explode-nonnegative-integer cnt 10 nil))
+    'string)
+   pkg-witness))
+
+(defun genvar1-guardp (pkg-witness char-lst avoid-lst cnt)
+  (declare (xargs :guard t))
+  (and (symbolp pkg-witness)
+       (let ((p (symbol-package-name pkg-witness)))
+         (and (not (equal p "KEYWORD"))
+              (not (equal p *main-lisp-package-name*))))
+       (character-listp char-lst)
+       (consp char-lst)
+       (not (eql (car char-lst) #\*))
+       (not (eql (car char-lst) #\&))
+       (true-listp avoid-lst)
+       (natp cnt)))
+
 (defun genvar1 (pkg-witness char-lst avoid-lst cnt)
+
+; This function is logically genvar when the guard is true.  We've replaced
+; the open call of intern-in-package-of-symbol by a call of gsym so we can
+; access our lemmas about gsym and we've coerced the formals above to satisfy
+; the guard.
 
 ; This function generates a symbol in the same package as the symbol
 ; pkg-witness that is guaranteed to be a legal-variablep and not in avoid-lst.
@@ -115,27 +145,36 @@
 ; finite number of generated symbols might have been interned in one of the
 ; non-variable packages).
 
-  (declare (xargs :guard (and (let ((p (symbol-package-name pkg-witness)))
-                                (and (not (equal p "KEYWORD"))
-                                     (not (equal p *main-lisp-package-name*))))
-                              (consp char-lst)
-                              (not (eql (car char-lst) #\*))
-                              (not (eql (car char-lst) #\&)))))
-  (let ((sym (intern-in-package-of-symbol
-              (coerce
-               (append char-lst
-                       (explode-nonnegative-integer cnt 10 nil))
-               'string)
-              pkg-witness)))
-    (cond ((or (member sym avoid-lst)
+  (declare (xargs :guard
+                  (genvar1-guardp pkg-witness char-lst avoid-lst cnt)))
+  (if (mbt (genvar1-guardp pkg-witness char-lst avoid-lst cnt))
+      (let ((sym (mbe :logic (gsym pkg-witness char-lst cnt)
+                      :exec (intern-in-package-of-symbol
+                             (coerce
+                              (append char-lst
+                                      (explode-nonnegative-integer cnt 10 nil))
+                              'string)
+                             pkg-witness))))
+        (cond ((or (member sym avoid-lst)
 
 ; The following call of legal-variablep could soundly be replaced by
 ; legal-variable-or-constant-namep, given the guard above, but we keep it
 ; as is for robustness.
 
-               (not (legal-variablep sym)))
-           (genvar1 pkg-witness char-lst avoid-lst (1+ cnt)))
-          (t sym))))
+                   (not (legal-variablep sym)))
+               (genvar1 pkg-witness char-lst avoid-lst (1+ cnt)))
+              (t sym)))
+; In the event that the guard doesn't hold, we don't care what the returned value
+; is.  All theorems about genvar1 will assume the guard!
+
+      nil))
+
+(defun genvar-guardp (pkg-witness prefix n avoid-lst)
+  (declare (xargs :guard t))
+  (and (symbolp pkg-witness)
+       (stringp prefix)
+       (or (null n) (natp n))
+       (true-listp avoid-lst)))
 
 (defun genvar (pkg-witness prefix n avoid-lst)
 
@@ -158,6 +197,7 @@
 ; function.  Thus, all other code associated with variable name
 ; generation is heuristic if this one is correct.
 
+  (declare (xargs :guard (genvar-guardp pkg-witness prefix n avoid-lst)))
   (let* ((pkg-witness (cond ((let ((p (symbol-package-name pkg-witness)))
                                (or (equal p "KEYWORD")
                                    (equal p *main-lisp-package-name*)))
@@ -171,13 +211,13 @@
                 (legal-variablep sym)
                 (not (member sym avoid-lst)))
            sym)
-          (t (let ((prefix (coerce prefix 'list)))
-               (cond ((null prefix) (genvar1 pkg-witness '(#\V) avoid-lst cnt))
-                     ((and (consp prefix)
-                           (or (eql (car prefix) #\*)
-                               (eql (car prefix) #\&)))
-                      (genvar1 pkg-witness (cons #\V prefix) avoid-lst cnt))
-                     (t (genvar1 pkg-witness prefix avoid-lst cnt))))))))
+          (t (let ((char-lst (coerce prefix 'list)))
+               (cond ((null char-lst) (genvar1 pkg-witness '(#\V) avoid-lst cnt))
+                     ((and (consp char-lst)
+                           (or (eql (car char-lst) #\*)
+                               (eql (car char-lst) #\&)))
+                      (genvar1 pkg-witness (cons #\V char-lst) avoid-lst cnt))
+                     (t (genvar1 pkg-witness char-lst avoid-lst cnt))))))))
 
 (defun gen-formals-from-pretty-flags1 (pretty-flags i avoid)
   (cond ((endp pretty-flags) nil)
@@ -873,9 +913,11 @@
 
   (pprogn
 
-; First we ensure that any iprinting will reflect iprint updates made during brr.
+; First we ensure that the result will reflect iprint and brr-evisc-tuple
+; updates made during brr.
 
    (iprint-oracle-updates? state)
+   (brr-evisc-tuple-oracle-update state)
    (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
      (mv-let (result iprint-alist iprint-fal-new)
        (eviscerate-stobjs estobjs-out lst print-level print-length alist
@@ -1290,8 +1332,18 @@
 ; With er defined, we may now define chk-ld-skip-proofsp.
 
 (defconst *ld-special-error*
+
+; Warning: If you change this value, consider also changing the value of
+; *state-global-error*.
+
   "~x1 is an illegal value for the state global variable ~x0.  See ~
    :DOC ~x0.")
+
+(defconst *state-global-error*
+
+; Since *ld-special-error* does not mention LD, we use its value here.
+
+  *ld-special-error*)
 
 (defun chk-ld-skip-proofsp (val ctx state)
   (declare (xargs :mode :program))
@@ -3271,6 +3323,20 @@
    (chk-proofs-co val 'set-proofs-co state)
    (pprogn
     (f-put-global 'proofs-co val state)
+    (value val))))
+
+(defun chk-trace-co (val ctx state)
+  (cond
+   ((and (symbolp val)
+         (open-output-channel-p val :character state))
+    (value nil))
+   (t (er soft ctx *state-global-error* 'trace-co val))))
+
+(defun set-trace-co (val state)
+  (er-progn
+   (chk-trace-co val 'set-trace-co state)
+   (pprogn
+    (f-put-global 'trace-co val state)
     (value val))))
 
 (defun illegal-state-ld-prompt (channel state)

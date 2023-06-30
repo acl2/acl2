@@ -33,7 +33,7 @@
 ; Adapted from tool2-fn in books/misc/expander.lisp.
 
   (prog2$
-   (initialize-brr-stack state)
+   (semi-initialize-brr-wormhole state)
    (let* ((ens (ens state))
           (saved-pspv (make-pspv ens wrld state
                                  :displayed-goal term ; from, e.g., thm-fn

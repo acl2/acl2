@@ -1,6 +1,6 @@
 ; A tool to auto-generate return-type theorems for functions.
 ;
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,12 @@
 
 ;; TODO: Handle functions that return multiple values (challenging example:
 ;; FNS-SUPPORTING-FNS-AUX with no types about the accs).
+
+;; TODO: Guess the type of an accumulator based on what is added to it (e.g., consed on).
+
+;; TODO: Handle return types of branches.  Look for theorems of the form:
+;; (<pred> ... <call-on-formals> ...) where the ... are all formals?  Allow mv-nth as well.
+;; And what about other kinds of properties, like (equal (len (foo ...)) ...)?
 
 ;; TODO: Handle more kinds of patterns
 
@@ -431,10 +437,7 @@
        (non-self-branches (remove-calls-to fn branches))
        (- (cw "Body has ~x0 non-self branches.~%" (len non-self-branches)))
        (formals (fn-formals fn (w state)))
-       (guard (fn-guard fn (w state))) ;todo: what about declared types?
-       ((when (not (pseudo-termp guard))) ;todo: improve fn-guard
-        (er hard? 'auto-return-type-fn "bad guard.")
-        (mv (erp-t) nil state))
+       (guard (fn-guard$ fn (w state))) ; translated, includes types from declares
        (guard-conjuncts (get-conjuncts guard))
        ;; (- (cw "Guard conjuncts: ~x0~%" guard-conjuncts))
        (suffix (if suffix (symbol-name (pack$ '- suffix)) ""))

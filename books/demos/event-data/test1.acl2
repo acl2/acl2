@@ -1,0 +1,7 @@
+(defthm true-listp-reverse
+  (implies (true-listp x)
+           (true-listp (reverse x)))
+  :rule-classes :type-prescription)
+
+; We specify :useless-runes nil so that the entirety of .sys can be removed
+; cert-flags: ? t :write-event-data t :useless-runes nil

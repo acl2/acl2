@@ -2188,8 +2188,8 @@
              bvxor-cancel
              bvxor-cancel-alt
 
-             bvplus-cancel-cross
-             bvplus-cancel-cross2
+             equal-of-bvplus-and-bvplus-cancel-arg2-arg1
+             equal-of-bvplus-and-bvplus-cancel-arg1-arg2
              unsigned-byte-p-of-nth
 
              <-of-constant-and-unary-minus
@@ -2481,7 +2481,6 @@
              equal-of-bvplus-constant-and-constant-alt
              nthcdr-of-take-becomes-subrange
              <-of-bvplus-same-32-1
-             integerp-when-unsigned-byte-p-free
              equal-of-append-arg1
              +-of-minus-constant-version
              bvlt-when-not-bvlt-one-more

@@ -854,7 +854,7 @@
 ; given to raw lisp, a hard error results when the wormhole-eval macro tries to
 ; cadr into qname.  So what should be here?  Intuitively we ought to lay down
 ; code that checks that qlambda is a well-formed and appropriate lambda
-; expression and then apply it to the wormhole status of the wormhole with the
+; expression and then apply it to the persistent-whs of the wormhole with the
 ; name qname.  But in fact this *1* function should never be called except from
 ; within the theorem prover when we are evaluating wormhole-eval on quoted
 ; constants.  Thus, we just return nil, it's logical value, without attempting
@@ -1304,8 +1304,11 @@
 
 (defun-one-output oneify (x fns w program-p)
 
-; Keep this function in sync with translate11.  Errors have generally been
-; removed here, since we know they can't occur.
+; Warning: Keep this function in sync with the other functions listed in the
+; Essay on the Wormhole Implementation Nexus in axioms.lisp.
+
+; In addition, keep this function in sync with translate11.  Errors have
+; generally been removed here, since we know they can't occur.
 
 ; Fns is an alist.  Entries include (fn) for each flet-bound fn and (mac args
 ; body) for each macrolet-bound mac.  We use a single structure for both local
@@ -1715,21 +1718,41 @@
    ((eq (car x) 'wormhole-eval)
 
 ; We know that in a well-formed term (wormhole-eval x y z), x is a quoted
-; constant naming the wormhole, y is a lambda object of either the form (lambda
-; (whs) body) or (lambda () body) that will be applied to the wormhole status,
-; and z is some well-formed (irrelevant) term.  The oneify of a quote is
-; itself, so we don't have to do anything to x.  But with y, we oneify the
-; lambda body.  The ``call'' of wormhole-eval laid down below is a reference to
-; the macro definition for that symbol in raw Lisp.
+; constant naming the wormhole (or else we're in boot-strap where x could be
+; any term but is thought, always, to be a variable symbol or quoted constant),
+; y is a lambda object of either the form (lambda (whs) body) or (lambda ()
+; body) that will be applied to the persistent-whs of x (when there is a lambda
+; formal), and z is some well-formed (irrelevant) term.  The oneify of a
+; variable or a quote is itself, so we don't have to do anything to x aside
+; from confirming it is one of those two syntactic types.  But with y, we
+; oneify the lambda body.  The ``call'' of wormhole-eval laid down below is a
+; reference to the macro definition for that symbol in raw Lisp.
 
     (let* ((qname (cadr x))
+
+; Warning: qname might not be a quoted constant during boot-strap!  See the
+; check below.
+
            (qlambda (caddr x))
            (formals (cadr (cadr qlambda)))
            (body (caddr (cadr qlambda))))
-      (list 'wormhole-eval
-            qname
-            (list 'quote (list 'lambda formals (oneify body fns w program-p)))
-            *nil*)))
+      (cond
+       ((not (or (variablep qname)
+                 (fquotep qname)))
+        (interface-er
+         "We thought that the name argument of every call of wormhole-eval in ~
+          the ACL2 source code was either a variable symbol or a quoted ~
+          constant.  But oneify has encountered a call of wormhole-eval with ~
+          the term ~x0 in the wormhole name position.  Out of sheer laziness, ~
+          oneify is not prepared to deal with such a call of wormhole-eval!  ~
+          Please inform the ACL2 developers of this error and we'll fix it!"
+         qname))
+       (t
+        (list 'wormhole-eval
+              qname
+              (list 'quote
+                    (list 'lambda formals (oneify body fns w program-p)))
+              *nil*)))))
    (t
     (let ((arg-forms (oneify-lst (cdr x) fns w program-p))
           (fn (cond ((and (eq program-p 'invariant-risk)
@@ -8232,9 +8255,7 @@
      (sym (find-package "ACL2_GLOBAL_ACL2"))
      (when (boundp sym)
        (let ((acl2-sym (intern (symbol-name sym) "ACL2")))
-         (when (not
-                (or (assoc acl2-sym *initial-global-table* :test 'eq)
-                    (assoc acl2-sym *initial-ld-special-bindings* :test 'eq)))
+         (when (not (assoc acl2-sym *initial-global-table* :test 'eq))
            (push (cons acl2-sym (symbol-value sym))
                  bad)))))
     (when bad
@@ -8661,11 +8682,6 @@
 ; that saved-build-date-string is defined in interface-raw.lisp.
 
            (list (eval '(saved-build-date-string))))
-
-; If you want the final image to have infixp = t (and have feature :acl2-infix
-; set), then put the following form here:
-;    (f-put-global 'infixp t *the-live-state*)
-
      t)))
 
 
@@ -9052,10 +9068,7 @@
                          customization-full-file-name
                          (put-assoc-eq
                           'ld-error-action :error
-                          (f-get-ld-specials *the-live-state*))))
-              #+acl2-infix (old-infixp
-                            (f-get-global 'infixp *the-live-state*)))
-          #+acl2-infix (f-put-global 'infixp nil *the-live-state*)
+                          (f-get-ld-specials *the-live-state*)))))
           (mv-let (erp val state)
             (with-suppression ; package locks, not just warnings, for read
              (with-cbd-raw
@@ -9094,8 +9107,6 @@
                             (ld-prompt nil))
                            (ld-fn quiet-alist *the-live-state* nil)))))))
                     (t (ld-fn ld-alist *the-live-state* nil)))))
-            #+acl2-infix
-            (f-put-global 'infixp old-infixp *the-live-state*)
             (cond (erp (format t "**Error encountered during LD of ACL2 ~
                                   customization file,~%~s.~%Quitting....~%"
                                customization-full-file-name)
@@ -9434,24 +9445,35 @@
 
    #+acl2-par
    (f-put-global 'parallel-execution-enabled t *the-live-state*)
-   (let ((state *the-live-state*)
-         #+(and gcl (not cltl2))
-         (system::*break-enable* (debugger-enabledp *the-live-state*))
-         (*debug-io* *our-standard-io*))
-     (cond
-      ((> *ld-level* 0)
-       (when (raw-mode-p *the-live-state*)
-         (fms "You have attempted to enter the ACL2 read-eval-print loop from ~
-               within raw mode.  However, you appear already to be in that ~
-               loop.  If your intention is to leave raw mode, then execute:  ~
-               :set-raw-mode nil.~|"
-              nil (standard-co *the-live-state*) *the-live-state* nil))
-       (return-from lp nil))
-      ((not *lp-ever-entered-p*)
-       (f-put-global 'saved-output-reversed nil state)
-       (push-current-acl2-world 'saved-output-reversed *the-live-state*)
-       (set-initial-cbd)
-       (eval `(in-package ,*startup-package-name*)) ;only changes raw Lisp pkg
+
+; We want to add :acl2-loop-only to *features*.  But let-binding *features*
+; would be a mistake; in fact we did that for awhile in June 2023, but Sol
+; Swords reported a problem when quicklisp's additions to *features* in the
+; loop would be lost when using :q followed by (lp).  So we use unwind-protect
+; to remove :acl2-loop-only from *features* when leaving the loop.  Although
+; it's rare that the loop is exited with other than :q or (value :q), that can
+; happen; so we really do need an unwind-protect here.
+
+   (unwind-protect
+       (let ((state *the-live-state*)
+             #+(and gcl (not cltl2))
+             (system::*break-enable* (debugger-enabledp *the-live-state*))
+             (*debug-io* *our-standard-io*))
+         (pushnew :acl2-loop-only *features*)
+         (cond
+          ((> *ld-level* 0)
+           (when (raw-mode-p *the-live-state*)
+             (fms "You have attempted to enter the ACL2 read-eval-print loop ~
+                   from within raw mode.  However, you appear already to be ~
+                   in that loop.  If your intention is to leave raw mode, ~
+                   then execute:  :set-raw-mode nil.~|"
+                  nil (standard-co *the-live-state*) *the-live-state* nil))
+           (return-from lp nil))
+          ((not *lp-ever-entered-p*)
+           (f-put-global 'saved-output-reversed nil state)
+           (push-current-acl2-world 'saved-output-reversed *the-live-state*)
+           (set-initial-cbd)
+           (eval `(in-package ,*startup-package-name*)) ;only changes raw Lisp pkg
 
 ; We formerly set *debugger-hook* at the top level using setq, just below the
 ; definition of our-abort.  But that didn't work in Lispworks, where that value
@@ -9460,14 +9482,14 @@
 ; globally to nil when input comes from a file, which is how ACL2 is built,
 ; rather than standard-input,
 
-       #-(and gcl (not cltl2))
-       (setq *debugger-hook* 'our-abort)
+           #-(and gcl (not cltl2))
+           (setq *debugger-hook* 'our-abort)
 
 ; We have found it necessary to extend the LispWorks stack size, in particular
 ; for community books books/concurrent-programs/bakery/stutter2 and
 ; books/unicode/read-utf8.lisp.
 
-       #+lispworks (hcl:extend-current-stack 400)
+           #+lispworks (hcl:extend-current-stack 400)
 
 ; David Rager agrees that the following block of code is fine to delete (note
 ; that as of 11/2017 (hcl:current-stack-length) is 399998 when ACL2 comes up,
@@ -9488,25 +9510,25 @@
 ;;;
 ;;;           (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
 
-       #+sbcl
-       (define-our-sbcl-putenv) ; see comment on this in acl2-fns.lisp
+           #+sbcl
+           (define-our-sbcl-putenv) ; see comment on this in acl2-fns.lisp
 
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:
 
-       (let* ((save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
-                                (and s
-                                     (not (equal s ""))
-                                     (not (equal (string-upcase s)
-                                                 "NIL")))))
-              (fast-cert-mode-val
-               (and (null (f-get-global 'fast-cert-status state))
-                    (let ((x (getenv$-raw "ACL2_FAST_CERT")))
-                      (and x
-                           (cond ((equal x "") nil)
-                                 ((string-equal x "accept") :accept)
-                                 (t t))))))
-              (book-hash-alistp-env
+           (let* ((save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
+                                    (and s
+                                         (not (equal s ""))
+                                         (not (equal (string-upcase s)
+                                                     "NIL")))))
+                  (fast-cert-mode-val
+                   (and (null (f-get-global 'fast-cert-status state))
+                        (let ((x (getenv$-raw "ACL2_FAST_CERT")))
+                          (and x
+                               (cond ((equal x "") nil)
+                                     ((string-equal x "accept") :accept)
+                                     (t t))))))
+                  (book-hash-alistp-env
 
 ; A non-nil value of this variable indicates that we are to use the "book-hash"
 ; mechanism of storing an alist in the .cert file, instead of a numeric
@@ -9514,51 +9536,53 @@
 ; default is defeated when the indicated environment variable has value (up to
 ; case) "NIL".
 
-               (let ((s (getenv$-raw "ACL2_BOOK_HASH_ALISTP")))
-                 (or (null s) ; default case
-                     (not (equal (string-upcase s)
-                                 "NIL")))))
-              (os-user-home-dir-path (our-user-homedir-pathname))
-              (os-user-home-dir0 (and os-user-home-dir-path
-                                      (our-truename os-user-home-dir-path
-                                                    "Note: Calling OUR-TRUENAME ~
-                                                  from LP.")))
-              (os-user-home-dir (and os-user-home-dir0
-                                     (if (eql (char os-user-home-dir0
-                                                    (1- (length os-user-home-dir0)))
-                                              *directory-separator*)
-                                         (subseq os-user-home-dir0
-                                                 0
-                                                 (1- (length os-user-home-dir0)))
-                                       os-user-home-dir0)))
-              (user-home-dir (and os-user-home-dir
-                                  (pathname-os-to-unix
-                                   os-user-home-dir
-                                   (os (w *the-live-state*))
-                                   *the-live-state*)))
-              (system-dir0 (getenv$-raw "ACL2_SYSTEM_BOOKS")))
-         (when save-expansion
-           (f-put-global 'save-expansion-file t *the-live-state*))
-         (when fast-cert-mode-val
-           (set-fast-cert fast-cert-mode-val state))
-         (when book-hash-alistp-env
-           (f-put-global 'book-hash-alistp t *the-live-state*))
-         (when user-home-dir
-           (f-put-global 'user-home-dir user-home-dir *the-live-state*))
+                   (let ((s (getenv$-raw "ACL2_BOOK_HASH_ALISTP")))
+                     (or (null s) ; default case
+                         (not (equal (string-upcase s)
+                                     "NIL")))))
+                  (os-user-home-dir-path (our-user-homedir-pathname))
+                  (os-user-home-dir0 (and os-user-home-dir-path
+                                          (our-truename
+                                           os-user-home-dir-path
+                                           "Note: Calling OUR-TRUENAME from ~
+                                            LP.")))
+                  (os-user-home-dir
+                   (and os-user-home-dir0
+                        (if (eql (char os-user-home-dir0
+                                       (1- (length os-user-home-dir0)))
+                                 *directory-separator*)
+                            (subseq os-user-home-dir0
+                                    0
+                                    (1- (length os-user-home-dir0)))
+                          os-user-home-dir0)))
+                  (user-home-dir (and os-user-home-dir
+                                      (pathname-os-to-unix
+                                       os-user-home-dir
+                                       (os (w *the-live-state*))
+                                       *the-live-state*)))
+                  (system-dir0 (getenv$-raw "ACL2_SYSTEM_BOOKS")))
+             (when save-expansion
+               (f-put-global 'save-expansion-file t *the-live-state*))
+             (when fast-cert-mode-val
+               (set-fast-cert fast-cert-mode-val state))
+             (when book-hash-alistp-env
+               (f-put-global 'book-hash-alistp t *the-live-state*))
+             (when user-home-dir
+               (f-put-global 'user-home-dir user-home-dir *the-live-state*))
 ; The following needs to wait for user-homedir-pathname.
-         (establish-project-dir-alist system-dir0 'lp *the-live-state*)
-         )
-       (set-gag-mode-fn :goals *the-live-state*)
-       (f-put-global 'serialize-character-system #\Z state)
-       (f-put-global 'pc-info
-                     (make pc-info
-                           :print-macroexpansion-flg nil
-                           :print-prompt-and-instr-flg t
-                           :prompt "->: "
-                           :prompt-depth-prefix "#")
-                     state)
-       #+(and (not acl2-loop-only) acl2-rewrite-meter)
-       (setq *rewrite-depth-alist* nil)
+             (establish-project-dir-alist system-dir0 'lp *the-live-state*)
+             )
+           (set-gag-mode-fn :goals *the-live-state*)
+           (f-put-global 'serialize-character-system #\Z state)
+           (f-put-global 'pc-info
+                         (make pc-info
+                               :print-macroexpansion-flg nil
+                               :print-prompt-and-instr-flg t
+                               :prompt "->: "
+                               :prompt-depth-prefix "#")
+                         state)
+           #+(and (not acl2-loop-only) acl2-rewrite-meter)
+           (setq *rewrite-depth-alist* nil)
 
 ; Without the following call, it was impossible to read and write with ACL2 I/O
 ; functions to *standard-co* in CLISP 2.30.  Apparently the appropriate Lisp
@@ -9566,7 +9590,7 @@
 ; up.  So we "refresh" the appropriate property lists with the current such
 ; Lisp streams.
 
-       (setup-standard-io)
+           (setup-standard-io)
 
 ; The following applies to CLISP 2.30, where charset:iso-8859-1 is defined, not to
 ; CLISP 2.27, where charset:utf-8 is not defined.  It apparently has to be
@@ -9574,73 +9598,77 @@
 ; before saving an image, but the value of custom:*default-file-encoding* at
 ; startup was #<ENCODING CHARSET:ASCII :UNIX>.
 
-       #+(and clisp unicode)
-       (setq custom:*default-file-encoding* charset:iso-8859-1)
-       (ld-acl2-customization state)
-       (let ((val (getenv$-raw "ACL2_CHECK_INVARIANT_RISK")))
-         (when (and val (not (equal val "")))
-           (let* ((val1 (string-upcase val))
-                  (val2 (cond
-                         ((equal val1 "NIL") nil)
-                         ((equal val1 "T") t)
-                         ((member-equal val1 '(":ERROR" "ERROR"))
-                          :ERROR)
-                         ((member-equal val1 '(":WARNING" "WARNING"))
-                          :WARNING)
-                         (t (error "Error detected in ~
-                                    initialize-state-globals:~%Illegal value, ~
-                                    ~s, for environment variable ~
-                                    ACL2_CHECK_INVARIANT_RISK.~%See :DOC ~
-                                    invariant-risk."
-                                   val1)))))
-             (ld-fn (put-assoc-eq
-                     'standard-oi
-                     `((set-check-invariant-risk ,val2))
-                     (put-assoc-eq 'ld-pre-eval-print
-                                   t
-                                   (f-get-ld-specials *the-live-state*)))
-                    *the-live-state*
-                    t))))
-       (f-put-global 'ld-error-action :continue *the-live-state*)))
-     (with-suppression ; package locks, not just warnings; to read 'cl::foo
-      (cond ((and *return-from-lp*
-                  (not *lp-ever-entered-p*))
-             (f-put-global 'standard-oi
-                           `(,*return-from-lp* (value :q))
-                           *the-live-state*)
-             (setq *return-from-lp* nil)
-             (setq *lp-ever-entered-p* t)
-             (state-free-global-let*
-              ((ld-verbose nil)
-               (ld-prompt nil)
-               (ld-post-eval-print nil))
-              (ld-fn (f-get-ld-specials *the-live-state*)
-                     *the-live-state*
-                     nil)))
-            (t (setq *lp-ever-entered-p* t)
-               (f-put-global 'standard-oi *standard-oi* *the-live-state*)
-               (cond
-                (*lp-init-forms*
-                 (let ((standard-oi (append *lp-init-forms* *standard-oi*)))
-                   (setq *lp-init-forms* nil)
-                   (ld-fn (put-assoc-eq 'standard-oi
-                                        standard-oi
-                                        (f-get-ld-specials *the-live-state*))
-                          *the-live-state*
-                          nil)))
-                (t (ld-fn (f-get-ld-specials *the-live-state*)
-                          *the-live-state*
-                          nil)))
-               (fms "Exiting the ACL2 read-eval-print loop.  To re-enter, ~
-                     execute (LP)."
-                    nil *standard-co* *the-live-state* nil))))
-     #+(and acl2-par lispworks)
-     (spawn-extra-lispworks-listener)
-     (values))))
+           #+(and clisp unicode)
+           (setq custom:*default-file-encoding* charset:iso-8859-1)
+           (ld-acl2-customization state)
+           (let ((val (getenv$-raw "ACL2_CHECK_INVARIANT_RISK")))
+             (when (and val (not (equal val "")))
+               (let* ((val1 (string-upcase val))
+                      (val2 (cond
+                             ((equal val1 "NIL") nil)
+                             ((equal val1 "T") t)
+                             ((member-equal val1 '(":ERROR" "ERROR"))
+                              :ERROR)
+                             ((member-equal val1 '(":WARNING" "WARNING"))
+                              :WARNING)
+                             (t (error "Error detected in ~
+                                        initialize-state-globals:~%Illegal ~
+                                        value, ~s, for environment variable ~
+                                        ACL2_CHECK_INVARIANT_RISK.~%See :DOC ~
+                                        invariant-risk."
+                                       val1)))))
+                 (ld-fn (put-assoc-eq
+                         'standard-oi
+                         `((set-check-invariant-risk ,val2))
+                         (put-assoc-eq 'ld-pre-eval-print
+                                       t
+                                       (f-get-ld-specials *the-live-state*)))
+                        *the-live-state*
+                        t))))
+           (f-put-global 'ld-error-action :continue *the-live-state*)))
+         (with-suppression ; package locks, not just warnings; to read 'cl::foo
+          (cond ((and *return-from-lp*
+                      (not *lp-ever-entered-p*))
+                 (f-put-global 'standard-oi
+                               `(,*return-from-lp* (value :q))
+                               *the-live-state*)
+                 (setq *return-from-lp* nil)
+                 (setq *lp-ever-entered-p* t)
+                 (state-free-global-let*
+                  ((ld-verbose nil)
+                   (ld-prompt nil)
+                   (ld-post-eval-print nil))
+                  (ld-fn (f-get-ld-specials *the-live-state*)
+                         *the-live-state*
+                         nil)))
+                (t (setq *lp-ever-entered-p* t)
+                   (f-put-global 'standard-oi *standard-oi* *the-live-state*)
+                   (cond
+                    (*lp-init-forms*
+                     (let ((standard-oi (append *lp-init-forms* *standard-oi*)))
+                       (setq *lp-init-forms* nil)
+                       (ld-fn (put-assoc-eq 'standard-oi
+                                            standard-oi
+                                            (f-get-ld-specials *the-live-state*))
+                              *the-live-state*
+                              nil)))
+                    (t (ld-fn (f-get-ld-specials *the-live-state*)
+                              *the-live-state*
+                              nil)))
+                   (fms "Exiting the ACL2 read-eval-print loop.  To re-enter, ~
+                         execute (LP)."
+                        nil *standard-co* *the-live-state* nil))))
+         #+(and acl2-par lispworks)
+         (spawn-extra-lispworks-listener)
+         (values))
+     (setq *features* (remove :acl2-loop-only *features*
+                              :test 'eq)))))
 
-(defmacro lp! (&rest args)
-  `(let ((*features* (add-to-set-eq :acl2-loop-only *features*)))
-     (lp ,@args)))
+(defun lp! (&rest args)
+  (declare (ignore args))
+  (error "LP! is no longer supported or necessary.
+Evaluate (LP) to enter the ACL2 read-eval-print loop
+such that feature :acl2-loop-only is true."))
 
 ;                   COMPILING, SAVING, AND RESTORING
 
@@ -10512,9 +10540,9 @@
 ; showed significant slowdown upon including new memoization code from Centaur
 ; on 3/28/2013:
 ; ; old:
-; 24338.570u 1357.200s 1:19:02.75 541.7%	0+0k 0+1918864io 0pf+0w
+; 24338.570u 1357.200s 1:19:02.75 541.7%        0+0k 0+1918864io 0pf+0w
 ; ; new:
-; 33931.460u 1017.070s 1:43:24.28 563.2%	0+0k 392+1931656io 0pf+0w
+; 33931.460u 1017.070s 1:43:24.28 563.2%        0+0k 392+1931656io 0pf+0w
 ; After restoring (start-sol-gc) in function acl2h-init, we regained the old
 ; level of performance for a UT CS ACL2(h) regression, with the new memoization
 ; code.

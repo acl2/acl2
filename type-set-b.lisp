@@ -1451,7 +1451,10 @@
     (& nil)))
 
 (defrec certify-book-info
-  (cert-op . full-book-name)
+
+; See the defun of cert-op for values of cert-op.
+
+  (cert-op full-book-name . event-data-channel)
   nil) ; could replace with t sometime
 
 (defrec useless-runes
@@ -1516,10 +1519,17 @@
          (and (eq (access useless-runes useless-runes :tag) 'THEORY)
               (access useless-runes useless-runes :data)))))
 
-(defun useless-runes-filename (full-book-string)
+(defconst *dot-sys-dir*
+  #-non-standard-analysis ".sys"
+  #+non-standard-analysis ".sysr")
 
-; This is analogous to expansion-filename, but for the file containing
-; useless-runes information.  See expansion-filename.
+(defun dot-sys-filename (full-book-string suffix)
+
+; This is analogous to expansion-filename, but for creating an absolute
+; pathname for the book indicated by full-book-string, with the indicated
+; suffix at the end, and for subdirectory .sys (or, for ACL2(r), .sysr).  This
+; code was originally for the function useless-runes-filename, and comments
+; below focus on that use; but now we also use it for event-data-filename.
 
   (let ((len (length full-book-string))
         (posn (search *directory-separator-string* full-book-string
@@ -1527,7 +1537,7 @@
     (assert$ (and (equal (subseq full-book-string (- len 5) len) ".lisp")
                   posn)
              (concatenate 'string
-                          (subseq full-book-string 0 posn)
+                          (subseq full-book-string 0 (1+ posn))
 
 ; Currently, the function useless-runes-value avoids creation of useless-runes
 ; files with ACL2(r).  If that is changed, the designation below of distinct
@@ -1544,10 +1554,15 @@
 ; it's also not clear that there's much reason to change either one at this
 ; point.
 
-                          #-non-standard-analysis "/.sys"
-                          #+non-standard-analysis "/.sysr"
+                          *dot-sys-dir*
                           (subseq full-book-string posn (- len 5))
-                          "@useless-runes.lsp"))))
+                          suffix))))
+
+(defun useless-runes-filename (full-book-string)
+  (dot-sys-filename full-book-string "@useless-runes.lsp"))
+
+(defun event-data-filename (full-book-string)
+  (dot-sys-filename full-book-string "@event-data.lsp"))
 
 (defun active-useless-runes-filename (state)
 
@@ -4563,70 +4578,70 @@
 
 ; original
 ; Unmodified from the worse-than implementation in Version_7.0:
-; 52692.173u 1924.728s 2:26:28.33 621.4%	0+0k 1209904+5209720io 862pf+0w
+; 52692.173u 1924.728s 2:26:28.33 621.4%        0+0k 1209904+5209720io 862pf+0w
 
 ; run-1
 ; No memoization of worse-than-builtin, except in stv2c.lisp:
-; 51938.137u 1917.763s 2:22:16.90 630.8%	0+0k 1054112+5206800io 865pf+0w
+; 51938.137u 1917.763s 2:22:16.90 630.8%        0+0k 1054112+5206800io 865pf+0w
 
 ; run-2
 ; No memoization of any worse-than-xx, but use clocked version (bottom
 ; out at nil):
-; 52311.357u 1912.043s 2:23:35.01 629.4%	0+0k 841976+5208048io 521pf+0w
+; 52311.357u 1912.043s 2:23:35.01 629.4%        0+0k 841976+5208048io 521pf+0w
 
 ; run-3
 ; No memoization of any worse-than-xx, but use clocked version (bottom
 ; out at t):
-; 52186.933u 1910.623s 2:23:30.81 628.2%	0+0k 835600+5207784io 688pf+0w
+; 52186.933u 1910.623s 2:23:30.81 628.2%        0+0k 835600+5207784io 688pf+0w
 
 ; run-4
 ; No memoization of any worse-than-xx at the top level, but use
 ; clocked version that bottoms out at a memoized version:
-; 51934.529u 1929.868s 2:20:54.27 637.1%	0+0k 1328800+5207736io 939pf+0w
+; 51934.529u 1929.868s 2:20:54.27 637.1%        0+0k 1328800+5207736io 939pf+0w
 
 ; run-5-try1
 ; As just above, but clearing memo tables only between proofs (had
 ; tried to do so as in Jared's scheme but had a bug) -- so should be
 ; much like run-4:
-; 51968.175u 1876.825s 2:23:26.50 625.6%	0+0k 1378000+5207784io 984pf+0w
+; 51968.175u 1876.825s 2:23:26.50 625.6%        0+0k 1378000+5207784io 984pf+0w
 
 ; run-5
 ; As in run-4, but clearing memo tables as per Jared's scheme, not
 ; just between proofs.
-; 52139.274u 1908.239s 2:22:38.12 631.5%	0+0k 1537656+5207808io 1120pf+0w
+; 52139.274u 1908.239s 2:22:38.12 631.5%        0+0k 1537656+5207808io 1120pf+0w
 
 ;;; GCL
 
 ; original
 ; Unmodified from the worse-than implementation in Version_7.0:
-; 63181.644u 1732.384s 2:39:00.22 680.4%	0+0k 7886424+10142248io 6495pf+0w
+; 63181.644u 1732.384s 2:39:00.22 680.4%        0+0k 7886424+10142248io 6495pf+0w
 
 ; run-2
 ; No memoization of any worse-than-xx, but use clocked version (bottom
 ; out at nil):
-; 62302.405u 1732.200s 2:36:22.51 682.4%	0+0k 7585424+10141528io 6709pf+0w
+; 62302.405u 1732.200s 2:36:22.51 682.4%        0+0k 7585424+10141528io 6709pf+0w
 
 ; run-3
 ; No memoization of any worse-than-xx, but use clocked version (bottom
 ; out at t) -- done kind of late in the game, so might not correspond
 ; exactly to run-3 for ccl, but should be close:
-; 62325.511u 1752.913s 2:40:06.65 667.0%	0+0k 7911496+10141232io 6432pf+0w
+; 62325.511u 1752.913s 2:40:06.65 667.0%        0+0k 7911496+10141232io 6432pf+0w
 
 ; run-4
 ; No memoization of any worse-than-xx at the top level, but use
 ; clocked version that bottoms out at a memoized version:
-; 62211.735u 1773.406s 2:42:14.22 657.3%	0+0k 7263696+9823120io 6140pf+0w
+; 62211.735u 1773.406s 2:42:14.22 657.3%        0+0k 7263696+9823120io 6140pf+0w
 
 ; run-5-try1
 ; As just above, but clearing memo tables only between proofs (had
 ; tried to do so as in Jared's scheme but had a bug) -- so should be
 ; much like run-4:
-; 62414.848u 1681.773s 2:38:58.45 671.9%	0+0k 6878536+9799112io 5834pf+0w
+; 62414.848u 1681.773s 2:38:58.45 671.9%        0+0k 6878536+9799112io 5834pf+0w
 
 ; run-5
 ; As in run-4, but clearing memo tables as per Jared's scheme, not
 ; just between proofs.
-; 62541.228u 1765.406s 2:38:42.69 675.2%	0+0k 6730944+9798968io 5749pf+0w
+; 62541.228u 1765.406s 2:38:42.69 675.2%        0+0k 6730944+9798968io 5749pf+0w
 
     )
 
@@ -6429,47 +6444,62 @@
      (cons (merge-accumulated-persistence new-alist (cadr alist-stack))
            (cddr alist-stack)))))
 
+(defun accumulated-persistence-fn (flg state)
+
+; The errors below are HARD because we don't have state (actually, we do, but
+; we can't write to it).  The flg error is succinct because it should never
+; happen.  The only time this function should be called is by
+; accumulated-persistence macro, which is well-guarded.  But no harm will come
+; if the user invokes it directly.
+
+  (declare (ignorable state)) ; we don't always see state!
+  (cond
+   #+acl2-par ; the following test is always false when #-acl2-par
+   ((f-get-global 'waterfall-parallelism state)
+    (er hard! 'accumulated-persistence
+        "~x0 is not supported when waterfall-parallelism is enabled."
+        'accumulated-persistence))
+   ((not (member flg '(t nil :all)))
+    (er hard 'accumulated-persistence
+        "Unrecognized flg argument ~x0."
+        flg))
+   (t (wormhole-eval
+       'accumulated-persistence
+       '(lambda (whs)
+          (set-wormhole-data whs
+                             (if flg
+                                 (make accp-info
+                                       :cnt-s 0
+                                       :cnt-f 0
+                                       :stack-s nil
+                                       :stack-f nil
+                                       :xrunep (eq flg :all)
+                                       :totals '(nil)
+                                       :old-accp-info
+                                       (let ((info (wormhole-data whs)))
+                                         (cond (info
+; We avoid holding on to every past structure; one seems like enough.
+                                                (change accp-info info
+                                                        :old-accp-info
+                                                        nil))
+                                               (t nil))))
+                                 nil)))
+       nil))))
+
 (defmacro accumulated-persistence (flg)
 
-; Warning: Keep this in sync with set-waterfall-parallelism-fn.
+; Warning: Keep this in sync with set-waterfall-parallelism-fn.  In particular,
+; we do not allow parallelism and accumulated-persistence to be turned on
+; concurrently.
 
 ; Our convention is that if accumulated persistence is enabled, the data of the
 ; accumulated-persistence wormhole is non-nil.  If accumulated persistence is
 ; not enabled, the data is nil.
 
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil :all ':all))))
-  (let* ((flg (if (consp flg) (cadr flg) flg))
-         (collect-hyp-and-conc-xrunes (eq flg :all)))
-    `(cond
-      #+acl2-par ; the following test is always false when #-acl2-par
-      ((f-get-global 'waterfall-parallelism state)
-       (er hard! 'accumulated-persistence
-           "~x0 is not supported when waterfall-parallelism is enabled."
-           'accumulated-persistence))
-      (t (wormhole-eval
-          'accumulated-persistence
-          '(lambda (whs)
-             (set-wormhole-data whs
-                                (if ,flg
-                                    (make accp-info
-                                          :cnt-s 0
-                                          :cnt-f 0
-                                          :stack-s nil
-                                          :stack-f nil
-                                          :xrunep ,collect-hyp-and-conc-xrunes
-                                          :totals '(nil)
-                                          :old-accp-info
-                                          (let ((info (wormhole-data whs)))
-                                            (cond (info
-; We avoid holding on to every past structure; one seems like enough.
-                                                   (change accp-info info
-                                                           :old-accp-info
-                                                           nil))
-                                                  (t nil))))
-                                  nil)))
-          nil)))))
+  `(accumulated-persistence-fn ,flg state))
 
-(defmacro accumulated-persistence-oops ()
+(defun accumulated-persistence-oops-fn ()
   (wormhole-eval
    'accumulated-persistence
    '(lambda (whs)
@@ -6481,6 +6511,9 @@
                               accumulated-persistence-oops.~|")
                          whs)))))
    nil))
+
+(defmacro accumulated-persistence-oops ()
+  '(accumulated-persistence-oops-fn))
 
 (defmacro set-accumulated-persistence (flg)
   `(accumulated-persistence ,flg))
@@ -6906,6 +6939,59 @@
                       header-for-results
                       msg-for-results))))))))
 
+(defun show-accumulated-persistence-fn (sortkey display)
+
+; The errors below are HARD because we don't have state.  They're succinct
+; because they should never happen.  The only time this function should be
+; called is by the show-accumulated-persistence macro, which is well-guarded.
+; But no harm will come if the user invokes it directly.
+
+  (cond
+   ((not (member-eq sortkey
+                    '(:ratio
+                      :frames :frames-s :frames-f :frames-a
+                      :tries :tries-s :tries-f :tries-a
+                      :useless
+                      :runes)))
+    (er hard 'show-accumulated-persistence
+        "Unrecognized sortkey argument ~x0."
+        sortkey))
+   ((not (member-eq display
+                    '(t nil :raw :merge :list)))
+    (er hard 'show-accumulated-persistence
+        "Unrecognized display argument ~x0."
+        display))
+   (t (wormhole
+       'accumulated-persistence
+       '(lambda (whs)
+          (set-wormhole-entry-code whs :ENTER))
+       (cons sortkey display)
+       '(state-global-let*
+         ((print-base 10 set-print-base)
+          (print-radix nil set-print-radix))
+         (pprogn
+          (io? temporary nil state
+               nil
+               (fms "~@0"
+                    (list (cons #\0
+                                (show-accumulated-persistence-phrase
+                                 (f-get-global 'wormhole-input state)
+                                 (wormhole-data
+                                  (f-get-global 'wormhole-status state)))))
+                    *standard-co*
+                    state nil))
+          (value :q)))
+       :ld-prompt  nil
+       :ld-missing-input-ok nil
+       :ld-pre-eval-filter :all
+       :ld-pre-eval-print nil
+       :ld-post-eval-print :command-conventions
+       :ld-evisc-tuple nil
+       :ld-error-triples  t
+       :ld-error-action :error
+       :ld-query-control-alist nil
+       :ld-verbose nil))))
+
 (defmacro show-accumulated-persistence (&optional (sortkey ':frames)
                                                   (display 't))
   (declare (xargs :guard
@@ -6929,36 +7015,7 @@
 ; code was :SKIP, the data was nil anyway.  Once inside, if the data is
 ; :RETURN-TO-SKIP we set the entry code back to :SKIP.
 
-  `(wormhole 'accumulated-persistence
-             '(lambda (whs)
-                (set-wormhole-entry-code whs :ENTER))
-             ',(cons sortkey display)
-             '(state-global-let*
-               ((print-base 10 set-print-base)
-                (print-radix nil set-print-radix))
-               (pprogn
-                (io? temporary nil state
-                     nil
-                     (fms "~@0"
-                          (list (cons #\0
-                                      (show-accumulated-persistence-phrase
-                                       (f-get-global 'wormhole-input state)
-                                       (wormhole-data
-                                        (f-get-global 'wormhole-status state)))))
-                          *standard-co*
-                          state nil))
-                (value :q)))
-             :ld-prompt  nil
-             :ld-missing-input-ok nil
-             :ld-always-skip-top-level-locals nil
-             :ld-pre-eval-filter :all
-             :ld-pre-eval-print nil
-             :ld-post-eval-print :command-conventions
-             :ld-evisc-tuple nil
-             :ld-error-triples  t
-             :ld-error-action :error
-             :ld-query-control-alist nil
-             :ld-verbose nil))
+  (show-accumulated-persistence-fn sortkey display))
 
 (defun push-accp-fn (rune x-info info)
   (let ((xrune (cond ((natp x-info)

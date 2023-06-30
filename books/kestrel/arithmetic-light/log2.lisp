@@ -233,7 +233,9 @@
                 (< 0 x))
            (< (expt 2 (log2 x)) x))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable log2))))
+  :hints (("Goal" :in-theory (e/d (log2)
+                                  (<=-of-expt-2-of-log2-linear ; for speed
+                                   )))))
 
 ;; todo: Gen to any constant
 (defthm <-of-log2-and-0

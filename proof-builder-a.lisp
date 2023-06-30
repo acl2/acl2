@@ -1283,8 +1283,7 @@
                                       col))
                          state)
                        (value (car instr-list)))
-             (with-infixp-nil
-              (read-object instr-list state)))
+             (read-object instr-list state))
            (cond
             (erp
 

@@ -72,8 +72,7 @@
 (defthm bvsx-when-unsigned-byte-p
   (implies (and (unsigned-byte-p (+ -1 old-size) x)
                 (<= old-size new-size)
-                (integerp new-size)
-                (integerp old-size))
+                (integerp new-size))
            (equal (bvsx new-size old-size x)
                   x))
   :hints (("Goal" :in-theory (enable bvsx))))
@@ -228,8 +227,7 @@
                 (<= old-size size) ;this case
                 (natp size)
                 (natp new-size)
-                (posp old-size)
-                (<= old-size new-size))
+                (posp old-size))
            (equal (unsigned-byte-p size (bvsx new-size old-size x))
                   (equal 0 (getbit (+ -1 old-size) x))))
   :hints (("Goal" :in-theory (e/d (bvsx) (REPEATBIT-OF-1-ARG2)))))

@@ -12,7 +12,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "declares0")
+(include-book "declares0") ; for all-declarep
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/butlast" :dir :system))
 (local (include-book "kestrel/utilities/assoc-keyword" :dir :system))

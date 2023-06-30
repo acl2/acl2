@@ -2059,7 +2059,7 @@
         (mv erp nil state)
       (if provedp
           (b* ((- (cw "(Making the theorem ~x0.~%" defthm-name))
-               (state (submit-events
+               (state (submit-events-brief
                        ;;where should this go?  should we use a clause processor?
                        ;;ffixme perhaps miter-and-merge should submit the defthm??
                        ;;skip-proofs here are bad?

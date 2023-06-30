@@ -1,6 +1,6 @@
 ; A tool to call Axe-related scripts
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,12 +13,11 @@
 (include-book "kestrel/utilities/include-book-dir-dollar" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 
-(defttag call-axe-script) ; because we call sys-call+
-
-(local (in-theory (disable sys-call+ state-p get-global)))
+(local (in-theory (disable state-p get-global)))
 
 ;move
 ;optimize
+;generalize the separator
 (defund concatenate-strings-with-spaces (strings)
   (declare (xargs :guard (string-listp strings)))
   (if (endp strings)
@@ -52,6 +51,7 @@
     ;;   (sys-call+ script-path script-args state)
     ;;   (declare (ignore output))
     (mv-let (status output)
+      ;; tshell-call seems better than sys-call, because it doesn't fork the ACL2 process:
       (tshell-call (concatenate 'string script-path " " (concatenate-strings-with-spaces script-args)) :save nil)
       (declare (ignore output)) ; not captured, since :save is nil
       ;; todo: check the output directly instead of re-directing to a file?

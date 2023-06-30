@@ -1,7 +1,7 @@
 ; More rules about bit vectors
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,12 +13,14 @@
 
 ;; TODO: Organize this material
 
-(include-book "kestrel/arithmetic-light/floor" :dir :system)
-(include-book "kestrel/arithmetic-light/ash" :dir :system)
+;(include-book "kestrel/arithmetic-light/floor" :dir :system)
+;(include-book "kestrel/arithmetic-light/ash" :dir :system)
 (include-book "logext")
 (include-book "bvplus")
 (include-book "bv-syntax")
 (include-book "rules") ;(local (include-book "rules"))
+(local (include-book "logior"))
+(local (include-book "logxor-b"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))

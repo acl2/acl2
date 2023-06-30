@@ -235,8 +235,7 @@
                                     nil
                                     (fms0 "Please supply an event name (or :A to ~
                                    abort)~%>> "))
-                               (with-infixp-nil
-                                (read-object *standard-oi* state))))))
+                               (read-object *standard-oi* state)))))
             (if (eq event-name :a)
                 (pprogn (io? proof-builder nil state
                              nil
@@ -938,27 +937,25 @@
 ; :bye objects in the tag-tree, there is no checking of the load mode, and the
 ; warning above.
 
-  (prog2$
-   (initialize-brr-stack state)
-   (er-let* ((ttree
-              (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
-                                        state
-                                        (splitter-output)
-                                        hints))
-                    (clauses (list (list term))))
-                (if (f-get-global 'in-verify-flg state) ;interactive
-                    (state-global-let*
-                     ((saved-output-p t)
-                      (saved-output-token-lst :all))
-                     (pprogn (f-put-global 'saved-output-reversed nil state)
-                             (push-current-acl2-world 'saved-output-reversed
-                                                      state)
-                             (prove-loop clauses pspv hints ens wrld ctx
-                                         state)))
-                  (prove-loop clauses pspv hints ens wrld ctx state)))))
-            (er-progn
-             (chk-assumption-free-ttree ttree ctx state)
-             (value ttree)))))
+  (er-let* ((ttree
+             (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
+                                       state
+                                       (splitter-output)
+                                       hints))
+                   (clauses (list (list term))))
+               (if (f-get-global 'in-verify-flg state) ;interactive
+                   (state-global-let*
+                    ((saved-output-p t)
+                     (saved-output-token-lst :all))
+                    (pprogn (f-put-global 'saved-output-reversed nil state)
+                            (push-current-acl2-world 'saved-output-reversed
+                                                     state)
+                            (prove-loop clauses pspv hints ens wrld ctx
+                                        state)))
+                   (prove-loop clauses pspv hints ens wrld ctx state)))))
+    (er-progn
+     (chk-assumption-free-ttree ttree ctx state)
+     (value ttree))))
 
 (defun abbreviations-alist-? (abbreviations)
   ;; Same as abbreviations-alist, except that we assume that we
@@ -4014,8 +4011,7 @@
                             above:) "
                            (list (cons #\0 (strip-cars ss-alist)))))
                 (mv-let (erp val state)
-                        (with-infixp-nil
-                         (read-object *standard-oi* state))
+                        (read-object *standard-oi* state)
                         (declare (ignore erp))
                         (retrieve-fn val state)))))
      ((not (symbolp name))

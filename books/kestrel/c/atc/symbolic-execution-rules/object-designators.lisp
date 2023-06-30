@@ -38,7 +38,7 @@
      theorems generated for symbolic execution of array member accesses.")
    (xdoc::p
     "The remaining rules are used in the modular proofs
-     aboud variables in symbol tables.")
+     about variables in symbol tables.")
    (xdoc::p
     "The constant that collects the rules also includes
      some rules proved elsewhere."))
@@ -100,6 +100,41 @@
              compustate-frames-number
              len))
 
+  (defruled objdesign-of-var-of-add-frame-when-read-object-static
+    (implies (valuep (read-object (objdesign-static var) compst))
+             (equal (objdesign-of-var var (add-frame fun compst))
+                    (objdesign-static var)))
+    :enable (objdesign-of-var
+             objdesign-of-var-aux
+             add-frame
+             push-frame
+             top-frame
+             read-object)
+    :disable omap::in-when-in-tail)
+
+  (defruled objdesign-of-var-aux-iff-var-in-scopes
+    (iff (objdesign-of-var-aux var frame scopes)
+         (var-in-scopes-p var scopes))
+    :induct t
+    :enable (objdesign-of-var-aux
+             var-in-scopes-p))
+
+  (defruled objdesign-of-var-of-update-var
+    (iff (objdesign-of-var var (update-var var2 val compst))
+         (or (equal (ident-fix var)
+                    (ident-fix var2))
+             (objdesign-of-var var compst)))
+    :enable (objdesign-of-var
+             update-var
+             push-frame
+             pop-frame
+             top-frame
+             compustate-frames-number
+             var-in-scopes-p
+             objdesign-of-var-aux-iff-var-in-scopes
+             var-in-scopes-p-of-update-var-aux
+             len))
+
   (defruled read-object-of-objdesign-of-var-of-add-var
     (implies (objdesign-of-var var (add-var var2 val compst))
              (equal (read-object (objdesign-of-var var (add-var var2 val compst))
@@ -121,6 +156,19 @@
     :enable (read-object-of-objdesign-of-var-to-read-var
              read-var-of-enter-scope
              objdesign-of-var-of-enter-scope-iff))
+
+  (defruled read-object-of-objdesign-var-of-update-var
+    (implies (objdesign-of-var var (update-var var2 val compst))
+             (equal (read-object
+                     (objdesign-of-var var (update-var var2 val compst))
+                     (update-var var2 val compst))
+                    (if (equal (ident-fix var2)
+                               (ident-fix var))
+                        (remove-flexible-array-member val)
+                      (read-object (objdesign-of-var var compst) compst))))
+    :enable (read-object-of-objdesign-of-var-to-read-var
+             read-var-of-update-var
+             objdesign-of-var-of-update-var))
 
   (defval *atc-object-designator-rules*
     '(objdesign-of-var-when-static

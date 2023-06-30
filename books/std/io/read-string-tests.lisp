@@ -64,7 +64,11 @@
 ;; Some things that had better fail:
 
 (test-fail "3.5")
-(test-fail "'#.(list 1 2 3)")
+; Matt K. mod: The following now causes an ACL2 hard error, rather than a raw
+; Lisp error that is caught by the raw Lisp code for read-string-fn.  Perhaps
+; we could catch the raw-ev-fncall tag or such in read-string-fn to avoid this
+; hard error, but it doesn't seem worth the trouble.
+;; (test-fail "'#.(list 1 2 3)")
 
 ;; Note: some older versions of SBCL can't handle the following tests due to a
 ;; bug, e.g., see https://bugs.launchpad.net/sbcl/+bug/1333327.  This seems to

@@ -34,6 +34,12 @@
               (string-listp x)))
   :hints (("Goal" :in-theory (enable string-listp))))
 
+;; The non-standard param names are to match the rule in std.
+(defthm string-listp-of-remove-equal
+  (implies (string-listp x)
+           (string-listp (remove-equal a x)))
+  :hints (("Goal" :in-theory (enable string-listp))))
+
 (defthm string-listp-forward-to-true-listp
   (implies (string-listp x)
            (true-listp x))

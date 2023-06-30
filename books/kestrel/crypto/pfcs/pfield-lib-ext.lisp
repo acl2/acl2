@@ -39,3 +39,9 @@
   :induct t
   :enable nat-listp)
 
+(defrule fe-listp-fw-to-nat-listp
+  (implies (fe-listp x p)
+           (nat-listp x))
+  :rule-classes :forward-chaining
+  :induct t
+  :enable nat-listp)

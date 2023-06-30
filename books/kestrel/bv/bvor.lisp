@@ -1,7 +1,7 @@
 ; Bitwise or
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,9 @@
 
 (in-package "ACL2")
 
-(include-book "logior-b") ; make local?
-(include-book "bvchop")
+;(include-book "bvchop")
 (include-book "getbit")
+(local (include-book "logior-b"))
 (local (include-book "unsigned-byte-p"))
 
 (defund bvor (size x y)

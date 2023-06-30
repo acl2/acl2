@@ -929,28 +929,35 @@
 ; an alias for cons, then :kons x y will parse into (cons 'x 'y) and keyp will
 ; be (:kons x y).
 
-  (mv-let (eofp val state)
-    (read-standard-oi state)
-    (pprogn
-     (cond ((int= (f-get-global 'ld-level state) 1)
-            (let ((last-index (iprint-last-index state)))
-              (cond ((> last-index (iprint-soft-bound state))
-                     (rollover-iprint-ar nil last-index state))
-                    (t state))))
-           (t state))
-     (cond (eofp (mv t nil nil nil state))
-           ((keywordp val)
-            (mv-let (erp keyp form state)
-              (ld-read-keyword-command val state)
-              (mv nil erp keyp form state)))
-           ((stringp val)
-            (let ((upval (string-upcase val)))
-              (cond ((find-non-hidden-package-entry
-                      upval
-                      (global-val 'known-package-alist (w state)))
-                     (mv nil nil nil `(in-package ,upval) state))
-                    (t (mv nil nil nil val state)))))
-           (t (mv nil nil nil (ld-fix-command val) state))))))
+  (pprogn
+
+; We need the following call, or the corresponding one in waterfall-step, or
+; both, for successful certification of community book
+; books/demos/brr-test-book.
+
+   (brr-evisc-tuple-oracle-update state)
+   (mv-let (eofp val state)
+     (read-standard-oi state)
+     (pprogn
+      (cond ((int= (f-get-global 'ld-level state) 1)
+             (let ((last-index (iprint-last-index state)))
+               (cond ((> last-index (iprint-soft-bound state))
+                      (rollover-iprint-ar nil last-index state))
+                     (t state))))
+            (t state))
+      (cond (eofp (mv t nil nil nil state))
+            ((keywordp val)
+             (mv-let (erp keyp form state)
+               (ld-read-keyword-command val state)
+               (mv nil erp keyp form state)))
+            ((stringp val)
+             (let ((upval (string-upcase val)))
+               (cond ((find-non-hidden-package-entry
+                       upval
+                       (global-val 'known-package-alist (w state)))
+                      (mv nil nil nil `(in-package ,upval) state))
+                     (t (mv nil nil nil val state)))))
+            (t (mv nil nil nil (ld-fix-command val) state)))))))
 
 (defun ld-print-command (keyp form col state)
   (with-base-10
@@ -1117,8 +1124,7 @@
                       output-channel state)
 
 ; The following raw code is identical to the logic code below except that the
-; raw code handles infix and raw-mode printing (which are, at the moment,
-; entirely extra-logical).
+; raw code handles raw-mode printing (which is entirely extra-logical).
 
               #-acl2-loop-only
               (let ((col
@@ -1126,20 +1132,8 @@
                          (length (f-get-global 'triple-print-prefix state))
                        0))
                     (evg (cadr eviscerated-valx)))
-                (cond
-                 #+acl2-infix
-                 ((and (live-state-p state)
-                       (output-in-infixp state))
-                  (print-infix
-                   evg
-                   nil
-                   (- (fmt-hard-right-margin state) col)
-                   0 col
-                   (get-output-stream-from-channel output-channel)
-                   t)
-                  *the-live-state*)
-                 (t (ppr? evg (cadr valx) stobjs-out col output-channel
-                          state))))
+                (ppr? evg (cadr valx) stobjs-out col output-channel
+                      state))
               #+acl2-loop-only
               (ppr (cadr eviscerated-valx)
                    (if (stringp (f-get-global 'triple-print-prefix state))
@@ -1149,20 +1143,7 @@
               (newline output-channel state)))))
           (t (pprogn
               #-acl2-loop-only
-              (cond
-               #+acl2-infix
-               ((and (live-state-p state)
-                     (output-in-infixp state))
-                (print-infix
-                 eviscerated-valx
-                 nil
-                 (fmt-hard-right-margin state)
-                 0 0
-                 (get-output-stream-from-channel output-channel)
-                 t)
-                *the-live-state*)
-               (t (ppr? eviscerated-valx valx stobjs-out 0 output-channel
-                        state)))
+              (ppr? eviscerated-valx valx stobjs-out 0 output-channel state)
               #+acl2-loop-only
               (ppr eviscerated-valx 0 output-channel state t)
               (newline output-channel state))))))))))
@@ -2560,8 +2541,7 @@
         (list (cons #\0 file))
         state)))
      (cond ((eq ans :until)
-            (with-infixp-nil
-             (read-object *standard-oi* state)))
+            (read-object *standard-oi* state))
            (t (value ans))))))
 
 (defun rebuild-fn (file filter filterp dir state)
@@ -5199,6 +5179,11 @@
                    :iprint :same))
 
 (defun-for-state set-term-evisc-tuple (val state))
+
+(defun set-brr-evisc-tuple (val state)
+  (set-evisc-tuple val
+                   :sites :brr
+                   :iprint :same))
 
 (defun without-evisc-fn (form state)
   (state-global-let*

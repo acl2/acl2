@@ -35,7 +35,7 @@
 (defsection atc-exec-arrsub-rules-generation
   :short "Code to generate the rules for executing array subscript expressions."
 
-  (define atc-exec-arrsub-rules-gen-1 ((atype typep))
+  (define atc-exec-arrsub-rules-gen ((atype typep))
     :guard (type-nonchar-integerp atype)
     :returns (mv (name symbolp)
                  (event pseudo-event-formp))
@@ -81,105 +81,29 @@
                             ,value-array-read-when-apred))))
       (mv name event)))
 
-  (define atc-exec-arrsub-rules-gen-2 ((atype typep)
-                                       (itype typep)
-                                       (genthm symbolp))
-    :guard (and (type-nonchar-integerp atype)
-                (type-nonchar-integerp itype))
-    :returns (mv (name symbolp)
-                 (event pseudo-event-formp))
-    :parents nil
-    (b* ((afixtype (integer-type-to-fixtype atype))
-         (ifixtype (integer-type-to-fixtype itype))
-         (apred (pack afixtype '-arrayp))
-         (ipred (pack ifixtype 'p))
-         (atype-array-itype-index-okp
-          (pack afixtype '-array- ifixtype '-index-okp))
-         (atype-array-read-itype
-          (pack afixtype '-array-read- ifixtype))
-         (integer-from-itype (pack 'integer-from- ifixtype))
-         (name (pack 'exec-arrsub-when- apred '-and- ipred))
-         (formula
-          `(implies
-            (and ,(atc-syntaxp-hyp-for-expr-pure 'x)
-                 ,(atc-syntaxp-hyp-for-expr-pure 'y)
-                 (equal ex (apconvert-expr-value (expr-value x objdes-x)))
-                 (expr-valuep ex)
-                 (equal a (expr-value->value ex))
-                 (value-case a :pointer)
-                 (value-pointer-validp a)
-                 (equal (value-pointer->reftype a)
-                        ,(type-to-maker atype))
-                 (equal objdes (value-pointer->designator a))
-                 (equal array (read-object objdes compst))
-                 (,apred array)
-                 (,ipred y)
-                 (,atype-array-itype-index-okp array y))
-            (equal (exec-arrsub (expr-value x objdes-x)
-                                (expr-value y objdes-y)
-                                compst)
-                   (expr-value (,atype-array-read-itype array y)
-                               (objdesign-element objdes
-                                                  (,integer-from-itype y))))))
-         (event `(defruled ,name
-                   ,formula
-                   :enable (,genthm
-                            ,(pack atype-array-itype-index-okp '-alt-def)
-                            ,(pack atype-array-read-itype '-alt-def)
-                            integer-from-cinteger-alt-def))))
-      (mv name event)))
-
-  (define atc-exec-arrsub-rules-gen-loop-itypes ((atype typep)
-                                                 (itypes type-listp)
-                                                 (genthm symbolp))
-    :guard (and (type-nonchar-integerp atype)
-                (type-nonchar-integer-listp itypes))
+  (define atc-exec-arrsub-rules-gen-loop ((atypes type-listp))
+    :guard (type-nonchar-integer-listp atypes)
     :returns (mv (names symbol-listp)
                  (events pseudo-event-form-listp))
     :parents nil
-    (b* (((when (endp itypes)) (mv nil nil))
-         ((mv name event) (atc-exec-arrsub-rules-gen-2 atype
-                                                       (car itypes)
-                                                       genthm))
-         ((mv names events)
-          (atc-exec-arrsub-rules-gen-loop-itypes atype
-                                                 (cdr itypes)
-                                                 genthm)))
-      (mv (cons name names) (cons event events))))
-
-  (define atc-exec-arrsub-rules-gen-loop-atypes ((atypes type-listp)
-                                                 (itypes type-listp))
-    :guard (and (type-nonchar-integer-listp atypes)
-                (type-nonchar-integer-listp itypes))
-    :returns (mv (names symbol-listp)
-                 (names-deprecated symbol-listp)
-                 (events pseudo-event-form-listp))
-    :parents nil
-    (b* (((when (endp atypes)) (mv nil nil nil))
-         ((mv name event) (atc-exec-arrsub-rules-gen-1 (car atypes)))
-         ((mv names-deprecated events)
-          (atc-exec-arrsub-rules-gen-loop-itypes (car atypes) itypes name))
-         ((mv more-names more-names-deprecated more-events)
-          (atc-exec-arrsub-rules-gen-loop-atypes (cdr atypes) itypes)))
-      (mv (append (list name) more-names)
-          (append names-deprecated more-names-deprecated)
-          (append (list event) events more-events))))
+    (b* (((when (endp atypes)) (mv nil nil))
+         ((mv name event) (atc-exec-arrsub-rules-gen (car atypes)))
+         ((mv more-names more-events)
+          (atc-exec-arrsub-rules-gen-loop (cdr atypes))))
+      (mv (cons name more-names)
+          (cons event more-events))))
 
   (define atc-exec-arrsub-rules-gen-all ()
     :returns (event pseudo-event-formp)
     :parents nil
-    (b* (((mv names names-deprecated events)
-          (atc-exec-arrsub-rules-gen-loop-atypes
-           *nonchar-integer-types*
-           *nonchar-integer-types*)))
+    (b* (((mv names events)
+          (atc-exec-arrsub-rules-gen-loop *nonchar-integer-types*)))
       `(progn
          (defsection atc-exec-arrsub-rules
            :short "Rules for executing array subscript expressions."
            ,@events
            (defval *atc-exec-arrsub-rules*
-             '(,@names))
-           (defval *atc-exec-arrsub-rules-deprecated*
-             '(,@names-deprecated)))))))
+             '(,@names)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

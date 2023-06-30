@@ -17,6 +17,7 @@
 ;; book deal with the memoization (and one of them also passes through the
 ;; info, and one takes print arguments).
 
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "wf-dagp")
 ;(include-book "numeric-lists")
 ;(include-book "kestrel/typed-lists-light/all-less" :dir :system)

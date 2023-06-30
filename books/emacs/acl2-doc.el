@@ -659,7 +659,57 @@ for confirmation."
          (acl2-doc-display-message (car *acl2-doc-history*)))
         (t (error "Empty history: No `where' to display!"))))
 
-(defun acl2-doc-display-basic (entry &optional extra)
+(defun xdoc-tag-alist-fancy-p (val)
+
+;;; Keep this in sync with function xdoc-tag-alist-fancy-p in
+;;; books/system/doc/display.lisp.
+
+  (or (null val)
+      (equal val "")
+      (equal (upcase val) "FANCY")))
+
+(defvar *acl2-manual-dir*
+  (concat *acl2-sources-dir*
+	  "books/doc/manual/"))
+
+(defvar *img-prefix*
+  (byte-to-string 25))
+
+(defvar *img-suffix*
+  (byte-to-string 26))
+
+(defun acl2-doc-handle-images (display-graphic-p)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((go t))
+      (while go
+	(let ((start (search-forward *img-prefix* nil t)))
+	  (cond
+	   (start
+	    (let* ((end (search-forward *img-suffix*))
+		   (src (buffer-substring start (1- end))))
+	      (delete-region (1- start) end)
+	      (cond
+	       (display-graphic-p
+		(insert-image
+		 (create-image (concat *acl2-manual-dir* src)))
+		(insert "\n"))
+	       (t (insert "{IMAGE}")))))
+	   (t (setq go nil))))))))
+
+(defun acl2-doc-handle-color ()
+
+;;; This function removes color indicators for Select Graphic Rendition (SGR)
+;;; in the current buffer.  If we want color, then we should use
+;;; ansi-color-apply-on-region to set color properties; if we want plain text
+;;; without color then we should use ansi-color-filter-region, which anyhow is
+;;; much more efficient than ansi-color-apply-on-region.
+
+  (if (xdoc-tag-alist-fancy-p (getenv "ACL2_XDOC_TAGS"))
+      (ansi-color-apply-on-region (point-min) (point-max))
+    (ansi-color-filter-region (point-min) (point-max))))
+
+(defun acl2-doc-display-basic (entry &optional extra no-handle-images)
 
 ;;; Entry is a history entry, hence of the form (point name parents
 ;;; string).
@@ -671,12 +721,15 @@ for confirmation."
   (setq buffer-read-only nil)
   (erase-buffer)
   (acl2-doc-print-topic (cdr entry))  ; entry is (cons position tuple)
-  (setq buffer-read-only t)
+  (acl2-doc-handle-color)
+  (when (not no-handle-images)
+    (acl2-doc-handle-images (display-graphic-p))
+    (setq buffer-read-only t))
   (goto-char (nth 0 entry))
   (push (car (cdr entry)) *acl2-doc-all-topics-rev*)
   (acl2-doc-display-message entry extra))
 
-(defun acl2-doc-display (name &optional extra new-buffer)
+(defun acl2-doc-display (name &optional extra new-buffer no-handle-images)
 
 ;;; Name should be a symbol.  We display the topic and adjust the
 ;;; history and return history.  Do not use this for the "l" or "r"
@@ -692,7 +745,7 @@ for confirmation."
                                *acl2-doc-history*)))
                    (push new-entry *acl2-doc-history*)
                    (setq *acl2-doc-return* nil)
-                   (acl2-doc-display-basic new-entry extra)))
+                   (acl2-doc-display-basic new-entry extra no-handle-images)))
           (t (error "Not found: %s" name)))))
 
 (defun acl2-doc-topic-at-point ()
@@ -1283,11 +1336,18 @@ command is buffer-local like the \",\" command."
       (let ((acl2-doc-search-file-name (acl2-doc-search-file-name))
             (large-file-warning-threshold
              (acl2-doc-large-file-warning-threshold)))
+
+; We assume that acl2-doc-search-file was written without Select Graphic
+; Rendition (SGR) markings; see without-fancy-xdoc-tags and its use in
+; books/xdoc/save-rendered.lisp.
+
         (and acl2-doc-search-file-name
              (file-exists-p acl2-doc-search-file-name)
              (find-file-noselect acl2-doc-search-file-name)))
       (let ((buf (get-buffer-create *acl2-doc-search-buffer-name*))
-            (alist (acl2-doc-state-alist)))
+            (alist (acl2-doc-state-alist))
+            (large-file-warning-threshold nil)
+            (undo-outer-limit nil))
         (with-current-buffer
             buf
           (while alist
@@ -1295,8 +1355,32 @@ command is buffer-local like the \",\" command."
             (insert *acl2-doc-search-separator*)
             (insert "\n")
             (acl2-doc-print-topic (pop alist)))
+
+; Since we are writing the acl2-doc-search buffer, we need to remove
+; Select Graphic Rendition (SGR) markings.  We leave the images, however.
+
+	  (acl2-doc-handle-color)
           (setq buffer-read-only t))
         buf)))
+
+(defun within-graphics ()
+  (let ((saved-point (point)))
+    (save-excursion
+      (let ((start (cond ((search-backward "\n" nil t)
+			  (forward-char 1)
+			  (point))
+			 (t (point-min)))))
+	(goto-char saved-point)
+	(cond ((search-backward *img-prefix* start t)
+
+;;; We are on a line "... ^Y ... p ..." where p indicates the original
+;;; point (the beginning of a found string) and ^Y indicates the
+;;; furthest-right control-y preceding p.  We look for control-z
+;;; inbetween the two, and when one isn't found, that's when we are
+;;; within a control-y/control-z pair.
+
+	       (not (search-forward *img-suffix* saved-point t)))
+	      (t nil))))))
 
 (defun acl2-doc-search-aux-1 (continue-p str regexp-p)
 
@@ -1330,7 +1414,13 @@ command is buffer-local like the \",\" command."
         (search-backward *acl2-doc-search-separator*)
         (forward-line 1)
         (let ((point-start (point)))
-          (cons (1+ (- point-found point-start)) ;; (point-min) = 1
+
+;;; Why do we add 2 just below?  We add 1 because (point-min) = 1, and
+;;; we add one more because acl2-doc-print-topic prints a blank line
+;;; below the ":DOC source" line but the acl2-doc-search buffer is
+;;; printed without that blank line.
+
+          (cons (+ 2 (- point-found point-start))
                 (let ((beg (+ point-start 7)))   ;;"Topic: "
                   (end-of-line)
                   (intern (buffer-substring beg (point)))))))))
@@ -1365,21 +1455,24 @@ command is buffer-local like the \",\" command."
             (cond ((null tmp)
                    (setq done t))
                   ((acl2-doc-under-limit-topic-p (cdr tmp) ht)
-                   (setq pair tmp done t)))))
+		   (if (not (within-graphics))
+		       (setq pair tmp done t))))))
         (setq position (point))))
     (cond (pair
            ;; The first two assignments are redundant if continue-p is true.
            (setq *acl2-doc-search-string* str)
            (setq *acl2-doc-search-regexp-p* regexp-p)
            (setq *acl2-doc-search-position* position)
-           (let ((topic (cdr pair)))
-             (cond
-              ((and (acl2-doc-buffer-p (current-buffer))
-                    *acl2-doc-history*
-                    (eq topic (car (cdr (car *acl2-doc-history*)))))
-               (acl2-doc-display-message (car *acl2-doc-history*)))
-              (t (acl2-doc-display topic))))
+
+;;; At one time we could use the current buffer if it's the one
+;;; containing the search string.  But we need to go to the
+;;; appropriate character, (car pair), before we eliminate the
+;;; Ctl-Y/Ctl-Z pairs.
+
+	   (acl2-doc-display (cdr pair) nil nil t)
            (goto-char (car pair))
+	   (acl2-doc-handle-images (display-graphic-p))
+	   (setq buffer-read-only t)
            (acl2-doc-update-top-history-entry (current-buffer)))
           (continue-p (setq *acl2-doc-search-position*
                             (with-current-buffer
@@ -1494,21 +1587,6 @@ searching from the bottom if no link is below the cursor."
       (push (cadr (car x)) ans)
       (setq x (cdr x)))
     (reverse ans)))
-
-(defun acl2-doc-history-buffer ()
-;;; Return the history buffer, creating it first if necessary.
-  (or (get-buffer *acl2-doc-history-buffer-name*)
-      (let ((buf (get-buffer-create *acl2-doc-history-buffer-name*))
-            (alist (acl2-doc-state-alist)))
-        (with-current-buffer
-            buf
-          (while alist
-            (insert "\n")
-            (insert *acl2-doc-search-separator*)
-            (insert "\n")
-            (acl2-doc-print-topic (pop alist)))
-          (setq buffer-read-only t))
-        buf)))
 
 (defun acl2-doc-history ()
 

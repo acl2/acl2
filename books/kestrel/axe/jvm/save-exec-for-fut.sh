@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # A script to save an executable ACL2 image containing the Formal Unit Tester
 #
 # Copyright (C) 2008-2011 Eric Smith and Stanford University
@@ -9,8 +11,6 @@
 # Author: Eric Smith (eric.smith@kestrel.edu)
 
 ################################################################################
-
-#!/bin/bash
 
 set -e
 

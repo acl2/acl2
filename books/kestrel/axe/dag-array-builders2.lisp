@@ -16,6 +16,7 @@
 ;; dag-array-builders-maybe.lisp, the functions in this book do not assume that
 ;; the dag-array and dag-parent-array have particular names.
 
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "wf-dagp")
 (include-book "numeric-lists")
 (include-book "make-dag-constant-alist")

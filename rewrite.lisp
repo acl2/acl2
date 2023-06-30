@@ -7157,14 +7157,26 @@ its attachment is ignored during proofs"))))
 
 ; X is a rewrite-rule or linear-lemma record.  If the field is inappropriate
 ; but the field is one as expected by the guard, then we return the special
-; value :get-rule-field-none.
+; value :get-rule-field-none.  Caveat: If x is a rewrite-rule of subclass
+; rewrite-quoted-constant of form [2], we switch the interpretation of :lhs and
+; :rhs!
 
-  (declare (xargs :guard (let ((fields '(:rune :hyps :lhs :rhs)))
+  (declare (xargs :guard (let ((fields '(:rune :hyps :lhs :rhs :max-term)))
                            (and (not (member-eq x fields))
                                 (member-eq field fields)))))
   `(let ((x ,x))
      (cond ((eq (record-type x) 'rewrite-rule)
-            (access rewrite-rule x ,field))
+            ,(cond ((member-eq field '(:lhs :rhs))
+                    `(cond ((and (eq (access rewrite-rule x :subclass)
+                                     'rewrite-quoted-constant)
+                                 (eql (car (access rewrite-rule x
+                                                   :heuristic-info))
+                                      2))
+                            (access rewrite-rule x
+                                    ,(if (eq field :lhs) :rhs :lhs)))
+                           (t (access rewrite-rule x ,field))))
+                   ((eq field ':max-term) :get-rule-field-none)
+                   (t `(access rewrite-rule x ,field))))
            ((eq (record-type x) 'linear-lemma)
             ,(cond ((member-eq field '(:lhs :rhs)) :get-rule-field-none)
                    (t `(access linear-lemma x ,field))))
@@ -7325,495 +7337,702 @@ its attachment is ignored during proofs"))))
                     '(term-evisc-tuple t state))
                  ,frames))
 
-; Essay on "Break-Rewrite"
+; Essay on Break-Rewrite
 ; Essay on BRR
 
-; We wish to develop the illusion of a recursive function we will call
-; "break-rewrite".  In particular, when a rule is to be applied by
-; rewrite-with-lemma and that rule is monitored (i.e., its rune is on
-; brr-monitored-runes) then we imagine the rule is actually applied by
-; "break-rewrite", which is analogous to rewrite-with-lemma but instrumented to
-; allow the user to watch the attempt to apply the rule.  Rewrite-fncall and
-; add-linear-lemma are similarly affected.  Because we find "break-rewrite" a
-; tedious name (in connection with user-available macros for accessing context
-; sensitive information) we shorten it to simply brr when we need a name that
-; is connected with the implementation of "break-rewrite."  There is no
-; "break-rewrite" function -- its presence is an illusion -- and we reserve the
-; string "break-rewrite" to refer to this mythical function.
+; The ``interactive rewriter,'' break-rewrite or brr, is an illusion created by
+; the use of a wormhole to maintain a state machine and to interact with the
+; user without influencing the ultimate behavior of the rewriter.  We implement
+; it this way, rather than directly in rewrite, to make it obvious that
+; interacting with break-rewrite will not change the behavior of rewrite.
 
-; Rather than actually implement "break-rewrite" we sprinkle "break points"
-; through the various rewrite functions.  These break points are the functions
-; brkpt1 and brkpt2.  The reason we do this is so that we don't have to
-; maintain two parallel versions of rewrite-with-lemma (and others) as
-; discussed above.  It is not clear this is justification for what is a
-; surprisingly complicated alternative, especially since a recursive call to
-; the rewriter would make it possible to :EVAL more than once.  (For example,
-; if the :EVAL says that the attempt failed because hyp 3 rewrote to xyz, we
-; might want to :monitor some other rules and do the :EVAL again to see what
-; went wrong.)  But since we haven't pursued any other approach, it is not
-; clear that the complications are isolated in this one.
+; This essay describes the implementation of brr.  However, before reading this
+; essay we recommend that you familiarize yourself how to use brr by reading
+; :doc break-rewrite and :doc monitor.
 
-; The main complication is that if we really had a recursive "break-rewrite"
-; then we could have local variables associated with each attempt to apply a
-; given rule.  This would allow us, for example, to set a variable early in
-; "break-rewrite" and then test it late, without having to worry that recursive
-; calls of "break-rewrite" in between will see the setting.  An additional
-; complication is that to interact with the user we must enter a wormhole and
-; thus have no effect on the state.
+; Since break-rewrite is implemented via a wormhole, to add or correct the
+; functionality of break-rewrite you have to be a ``wormhole programmer.''
+; Please read :doc wormhole-programming-tips.  In addition, you should be
+; familiar with the user's view of break-rewrite.  To that end, read :doc
+; break-rewrite and its subtopics including :doc brr-commands and :doc monitor.
 
-; Our first step is to implement a slightly different interface to wormholes that
-; will provide us with global variables that retain their values from one exit to
-; the next entrance but that can be overwritten conveniently upon entrance.  See
-; brr-wormhole below.  Assume that we have such a wormhole interface providing
-; what we call "brr-globals."
+; To help you explore break-rewrite for yourself we have provided a sample
+; script, at the end of this essay, together with a line-by-line commentary on
+; what is going on.  The sample script can also be found as Scenario 1 in
+; books/demos/brr-test-input.lsp.  The file books/demos/brr-test-log.txt
+; contains the output produced by running that script.  But we suggest not
+; playing with the sample script until you've read through the material below.
 
-; We use the notion of brr-globals to implement "brr-locals."  Of course, what
-; we implement is a stack.  That stack is named brr-stack and it is a
-; brr-global.  By virtue of being a brr-global it retains its value from one
-; call of brr-wormhole to the next.
+; The break-rewrite wormhole is named brr.  The status of the wormhole is
+; maintained as a defrec named brr-status.  The fields of that record are
+; described below and we then give an example that actually comes from the
+; sample script.
 
-; Imagine then that we have this stack.  Its elements are frames.  Each frame
-; specifies the local bindings of various variables.  Inside brkpt1 and brkpt2
-; we access these "brr-locals" via the top-most frame on the stack.  Brkpt1
-; pushes a new frame, appropriately binding the locals.  brkpt2 pops that frame
-; when it exits "break-rewrite".
+; entry-code -- :skip or :enter as normal for wormholes
 
-; For sanity, each frame will contain the gstack for the brkpt1 that built it.
-; Any function accessing a brr-local will present its own gstack as proof that
-; it is accessing the right frame.  One might naively assume that the presented
-; gstack will always be equal to the gstack in the top-most frame and that
-; failure of this identity check might as well signal a hard error.  How might
-; this error occur?  The most obvious route is that we have neglected to pop a
-; frame upon exit from the virtual "break-rewrite", i.e., we have forgotten to
-; call brkpt2 on some exit of rewrite-with-lemma.  More devious is the
-; possibility that brkpt2 was called but failed to pop because we have
-; misinterpreted our various flags and locally monitored runes.  These routes
-; argue for a hard error because they ought never to occur and the error
-; clearly indicates a coding mistake.  But it is possible for the stack to get
-; "out of sync" in an entirely user controlled way!
+; brr-monitored-runes -- list of monitored runes and their break criteria
 
-; Suppose we are in brkpt1.  It has pushed a frame with the current gstack.
-; The user, typing to "break-rewrite" (the brr-wormhole in brkpt1) invokes the
-; theorem prover and we enter another brkpt1.  It pushes its frame.  The user
-; issues the command to proceed (i.e., to attempt to establish the hypotheses).
-; The inner brkpt1 is terminated and control returns to rewrite.  Note that we
-; are still in the inner "break-rewrite" because we are pursuing the hyps of
-; the inner rule.  Consistent with this note is the fact that the stack
-; contains two frames, the top-most one being that pushed by the inner brkpt1.
-; Control is flowing toward the inner brkpt2 where, normally, the user would
-; see the results of trying to establish the inner hyps.  But then the user
-; aborts.  Control is thrown to the outer brkpt1, because all of this action
-; has occurred in response to a recursive invocation of the theorem prover from
-; within that wormhole.  But now the stack at that brkpt1 is out of sync: the
-; gstack of the wormhole is different from the gstack in the top-most frame.
-; So we see that this situation is unavoidable and must be handled gracefully.
+; brr-gstack: a representation of the rewriter's call stack leading to the
+;    current application of the monitored rune that caused the current break.
+;    When you execute the brr-command :path (e.g., command [2] in the script)
+;    in a brr interactive break you are seeing a display of the gstack as
+;    printed by cw-gstack.  By the way, it should be the case that when in raw
+;    Lisp under a brr break, the value of the :brr-gstack component of the
+;    brr-status is equal to the value of the raw Lisp special var
+;    *deep-gstack*.
 
-; Therefore, to access the value of a brr-local we use a function which
-; patiently looks up the stack until it finds the right frame.  It simply
-; ignores "dead" frames along the way.  We could pop them off, but then we
-; would have to side-effect state to update the stack.  The way a frame binds
-; local variables is simply in an alist.  If a variable is not bound at the
-; right frame we scan on up the stack looking for the next binding.  Thus,
-; variables inherit their bindings from higher levels of "break-rewrite" as
-; though the function opened with (let ((var1 var1) (var2 var2) ...) ...).
-; When we "pop a frame" we actually pop all the frames up to and including the
-; one for the gstack presented to pop.  Finally, we need the function that
-; empties the stack.
+; brr-local-alist -- an alist binding variables that rewrite passed to the brr
+;    wormhole.  These variables are all related to the current break, e.g.,
+;    the LEMMA being applied, the TARGET, etc.
 
-; So much for the overview.  We begin by implementing brr-wormholes and
-; brr-globals.
+; brr-previous-status -- the brr-status from the previous (immediately
+;    superior) call of (the fictitious) break-rewrite.  Thus, you can think of
+;    a brr-status record as a stack of frames, each frame containing
+;    :brr-monitored-runes, :brr-gstack, and :brr-local-alist.
 
-; While a normal wormhole provides one "global variable" that persists over
-; entries and exits (namely, in the wormhole data field of the
-; wormhole-status), the brr-wormhole provides several.  These are called
-; "brr-globals."  The implementation of brr-globals is in two places: entry to
-; and exit from the wormhole.  The entry modification is to alter the supplied
-; form so that it first moves the variable values from the wormhole-input and
-; previous wormhole-status vectors into true state global variables.  See
-; brr-wormhole.  The exit modification is to provide exit-brr-wormhole which
-; moves the final values of the globals to the wormhole-status vector to be
-; preserved for the next entrance.
+; See the (defrec brr-status ...) event below for the actual layout of the
+; record.
 
-; NOTE: To add a new brr-global, look for all the functions containing the
-; string "Note: To add a new brr-global" and change them appropriately.  No
-; other changes are necessary (except, of course, passing in the desired values
-; for the new global and using it).
+; Here is an example brr-status object.  Actually, this is not the object
+; itself but a term that constructs a brr-status record.  The record itself is
+; hard to read and is, in fact, often huge because of the values of the RCNST
+; bindings in the :BRR-LOCAL-ALISTs.  The text below was printed by the
+; (print-brr-status t) command at line [ 3] of the sample brr script.  That
+; function substitutes the symbol |some-rewrite-constant| for each RCNST
+; binding in the brr-status stack.  In addition, it substitutes |some-nume| for
+; the :nume field of each rewrite-rule and linear-lemma.  The latter
+; substitution is done so that we can use print-brr-status in run-script books
+; (like books/demo/brr-test-book.lisp) which record in a -log.txt file the
+; correct output.  But numes change from one build of ACL2 to another if the
+; number of ACL2 system functions or lemmas are changed.  If you want to
+; actually see the RCNST bindings and NUME values, use (print-brr-status nil).
 
-(defun restore-brr-globals1 (name new-alist old-alist)
+; (MAKE BRR-STATUS
+;       :ENTRY-CODE ':ENTER
+;       :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+;       :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
+;                                         REWRITE-RULE (:REWRITE A)
+;                                         |some-nume| ((BFN X))
+;                                         IFF (AFN X)
+;                                         'T
+;                                         BACKCHAIN NIL NIL T)
+;                     (REWRITE 2 (AFN X) NIL . ?)
+;                     (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+;                                      (AFN X)))
+;       :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+;                                 |some-nume| ((BFN X))
+;                                 IFF (AFN X)
+;                                 'T
+;                                 BACKCHAIN NIL NIL T)
+;                          (TARGET AFN X)
+;                          (UNIFY-SUBST (X . X))
+;                          (TYPE-ALIST ((EFN X) -129))
+;                          (POT-LIST)
+;                          (ANCESTORS)
+;                          (RCNST . |some-rewrite-constant|)
+;                          (INITIAL-TTREE))
+;       :BRR-PREVIOUS-STATUS
+;       (MAKE BRR-STATUS
+;             :ENTRY-CODE ':ENTER
+;             :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+;             :BRR-GSTACK 'NIL
+;             :BRR-LOCAL-ALIST 'NIL
+;             :BRR-PREVIOUS-STATUS NIL))
 
-; Retrieve the value of name under new-alist, if a value is specified;
-; otherwise use the value of name under old-alist.  See brr-wormhole.
+; This ``stack'' has two ``frames,'' the top-most frame being the frame in
+; which the rewriter is about to try to apply the :rewrite rule A to the target
+; (AFN X), and the deeper one being the status of brr at the top-level of ACL2.
 
-  (let ((pair (assoc-eq name new-alist)))
-    (cond (pair (cdr pair))
-          (t (cdr (assoc-eq name old-alist))))))
+; Break-rewrite is implemented by sprinkling calls of three ``break point
+; handlers'' into the rewrite clique.  (As of this writing -- May, 2023 --
+; there are 30 such calls in the clique.)  In each call, rewrite passes input
+; into the brr wormhole and that wormhole interprets the input and the current
+; status and decides whether to enter a read-eval-print loop.
 
-(defun restore-brr-globals (state)
+; The three break point handlers are functions named near-miss-brkpt1, brkpt1,
+; and brkpt2.  All three use a macro named brr-wormhole which is just a call of
+; wormhole, except that brr-wormhole puts a certain wrapper around the
+; wormhole's ``first form.''  Before wormhole evaluates that elaborated first
+; form, it sets the state global variables WORMHOLE-INPUT and WORMHOLE-STATUS.
+; All calls of the break-point handlers supply the rewriter's current gstack
+; and relevant variable bindings, to be assigned to wormhole-input by wormhole.
+; Wormhole also sets state global 'wormhole-status to the brr persistent-whs.
 
-; We assign incoming values to the brr-globals.  When brr-wormhole
-; enters a wormhole, this function is the first thing that is done.  See
-; brr-wormhole.
+; (Quick review of wormhole terminology from the Essay on Wormholes: the
+; ``persistent-whs'' of a wormhole named name is the last remembered wormhole
+; status of name and is kept in that part of raw Lisp's memory best thought of
+; as outside the reach of normal ACL2 terms.  The raw Lisp varible
+; *wormhole-status-alist* holds the persistent-whs of every known wormhole but
+; is only accessible in raw Lisp.  To get the persistent-whs of a wormhole from
+; inside ACL2 (as opposed to raw Lisp) involves reading the ACL2 oracle.  When
+; inside the name wormhole, its status is stored in the state global variable
+; 'wormhole-status.  That copy of the status is called the ``ephemeral-whs''
+; because it disappears when the wormhole is exited.  :Doc
+; wormhole-programming-tips discusses several issues related to these two
+; concepts, namely ``wormhole coherence,'' whether to care about it, and how to
+; maintain it.  The brr wormhole is always coherent: the persistent-whs and
+; ephemeral-whs are equal whenever you look.)
 
-; NOTE: To add a new brr-global, this function must be changed.
+; The wrapper supplied by brr-wormhole sets the prompt to be the brr prompt and
+; gives special meaning to the value component of the error triple returned by
+; the first form.  If the first form returns (value t) the interactive loop is
+; started and if the first form returns (value nil) the wormhole is silently
+; exited.  (Note that brr-wormhole, like wormhole, also has an entry-lambda and
+; so it is possible for the entry lambda to say :enter and then the first form
+; to exit silently.)
 
-  (let ((new-alist (f-get-global 'wormhole-input state))
-        (old-alist (wormhole-data (f-get-global 'wormhole-status state))))
-    (pprogn
-     (f-put-global 'brr-monitored-runes
-                   (restore-brr-globals1 'brr-monitored-runes
-                                         new-alist old-alist)
-                   state)
-     (f-put-global 'brr-evisc-tuple
-                   (restore-brr-globals1 'brr-evisc-tuple
-                                         new-alist old-alist)
-                   state)
-     (f-put-global 'brr-stack
-                   (restore-brr-globals1 'brr-stack
-                                         new-alist old-alist)
-                   state)
-     (f-put-global 'brr-gstack
-                   (restore-brr-globals1 'brr-gstack
-                                         new-alist old-alist)
-                   state)
-     (f-put-global 'brr-alist
-                   (restore-brr-globals1 'brr-alist
-                                         new-alist old-alist)
-                   state))))
+; The near-miss-brkpt1 and brkpt1 are similar in that if they :ENTER they look
+; at the wormhole-input (containing a gstack and an alist of rewrite variables)
+; and the wormhole-status (the old brr-status) and ``push'' a new frame onto
+; the old one.  See push-brr-status.
 
-(defun save-brr-globals (state)
+; The third handler, brkpt2, prints information, possibly interacts with the
+; user, and then pops the status stack, setting it to the :brr-previous-status.
+; See pop-brr-status.
 
-; We collect into an alist all of the brr-globals and their current values and
-; store that alist into the wormhole data field of (@ wormhole-status).  When
-; exiting from a brr-wormhole, this is the last thing that ought to be done.
-; See exit-brr-wormhole.
+; Every near-miss-brkpt1 call in the rewrite clique is balanced by a brkpt2
+; call.  Similarly, every brkpt1 call is balanced by brkpt2 call.  (Weird
+; clarification: There are 3 calls of near-miss-brkpt1, 4 calls of brkpt1, and
+; 23 calls of brkpt2.  So we mean ``balanced'' in the dynamic sense.  Typically
+; after a call of brkpt1, the rewrite code case splits as it tries to apply the
+; lemma and on each exit from that case split there will be a call of brkpt2
+; reporting the results.  Only one of those many brkpt2 calls is executed.)
+; Near-miss-brkpt1 and brkpt1 print a banner indicating a new ``call'' into the
+; fictitious break-rewrite and brkpt2 prints a final message indicating a
+; ``return'' from break-rewrite.  The first two interpret keyword commands as
+; per *brkpt1-aliases* and the last interprets them as per *brkpt2-aliases*.
 
-; NOTE: To add a new brr-global, this function must be changed.
+; Near-miss-brkpt1 is called every time the rewriter attempts to unify a rule's
+; pattern with the rewriter's target but unification fails.  (By a rule's
+; ``pattern'' we mean, for example, the left-hand side of a :rewrite rule.)
+; The entry-lambda in near-miss-brkpt1 determines whether the rule's pattern is
+; a near miss to the target according to the break criteria, if any, associated
+; with the rule's rune in :brr-monitored-runes.  If so, we :ENTER the wormhole.
+; The first form of the wormhole assembles and pushes the new status onto the
+; old status (via push-brr-status), prints an ``entry to break-rewrite'' banner
+; with a near-miss message, and returns (value t), which means additional
+; interactive input from the user is read.  What happens after that is
+; the same as in brkpt1, so just read on.
 
-  (f-put-global 'wormhole-status
-                (make-wormhole-status
-                 (f-get-global 'wormhole-status state)
-                 :ENTER
-                 (list
-                  (cons 'brr-monitored-runes
-                        (f-get-global 'brr-monitored-runes state))
-                  (cons 'brr-evisc-tuple
-                        (f-get-global 'brr-evisc-tuple state))
-                  (cons 'brr-stack
-                        (f-get-global 'brr-stack state))
-                  (cons 'brr-gstack
-                        (f-get-global 'brr-gstack state))
-                  (cons 'brr-alist
-                        (f-get-global 'brr-alist state))))
-                state))
+; Brkpt1 is called every time a rule's pattern successfully unifies.  The
+; entry-lambda just checks whether the rule's rune has an entry on
+; :brr-monitored-runes and if so :ENTERs.  The first form assembles and pushes
+; the new status (via push-brr-status) and then evals the rune's :condition
+; expression to see if it is satisfied.  If so, it prints the break-rewrite
+; entry banner and returns (value t), soliciting further input from the user.
+; If not, it pops the status (via pop-brr-status) and returns (value nil),
+; silently exiting the wormhole.
 
-(defun get-brr-global (var state)
+; So now let's suppose we're in either near-miss-brkpt1 or brkpt1 and reading
+; input from the user.  Keyword commands are interpretted as specified by
+; *brkpt1-aliases*.  See :doc brr-commands.  Most commands just display
+; information like the :target being rewritten, the :path rewrite took to reach
+; this target, etc.  Typically the user will inspect the current state of the
+; rewriter with these commands.  But ultimately the user will either want to
+; abort the proof attempt because he or she finally understands what's going
+; wrong, or will want to allow the rewriter to proceed to try to use the rule.
+; Proceeding here means to try to relieve the rule's hypotheses, rewrite the
+; right-hand side, etc.  To abort the user types the command :a!.  To proceed
+; the user types one several commands (:ok, :go, :eval, or their variants)
+; depending on the user's interest in seeing the
+; results of the current attempt to apply the rule.  See :doc brr-commands.
 
-; This function should be used whenever we wish to access a brr-global.  That
-; is, we should write (get-brr-global 'brr-stack state) instead of either
-; (f-get-global 'brr-stack state) or (@ brr-stack), even those these
-; alternative forms are equivalent when we are in a brr-wormhole.  But if we
-; are not in a brr-wormhole, these alternative forms might cause arbitrary lisp
-; errors because the brr-globals are not (generally) bound outside of wormholes
-; (though there is nothing to prevent us from using the same symbols as
-; "normal" state globals -- their values would just be unavailable to us from
-; within brr-wormholes because they get over-written upon entry to the
-; wormhole.)  Thus, this function checks that the variable really is bound and
-; causes a hard error if it is not.  That is generally an indication that a
-; function intended to be used only inside wormholes is being called outside.
+; If the user aborts, the cleanup form in wormhole1 will set the brr
+; persistent-whs back to the status brr had at the top-level.  In particular,
+; it pops the brr-status stack all the way back to the first frame and saves
+; that frame to persistent-whs.  This behavior by the cleanup form is unique to
+; the brr wormhole.  Aborts from other wormholes just save the current
+; ephemeral-whs to persistent-whs.
 
-; NOTE: To add a new brr-global, this function must be changed.
+; If, on the other hand, the user proceeds from near-miss-brkpt1 or brkpt1,
+; e.g., with :ok, :go, or :eval, this is what happens: First, we adjust the
+; current status by adding two new bindings to the :brr-local-alist.  THese
+; bindings are intended to tell the eventual brkpt2 handler how to behave when
+; it is called on the current brr-status.  The first new binding saves the
+; current value of standard-oi so that if the user changes it in an inferior
+; break it can be restored when returning to this brr-status.  The second new
+; binding adds a value for the symbol ACTION.  The possible values are SILENT
+; (if we exited with some form of :ok), PRINT (some form of :go), or BREAK
+; (some form of :eval).  The ACTION binding tells brkpt2 what to do when we get
+; back to this brr-status.  Then proceed-from-brkpt1 returns (value :q) which
+; exits the ld and wormhole.  The cleanup form (in the non-abort situation)
+; saves the brr ephemeral-whs to persistent-whs and then undoes all state
+; changes that occurred in the wormhole.  Finally, near-miss-brkpt1 or brkpt1,
+; appropriately, is exited.
 
-  (cond ((eq (f-get-global 'wormhole-name state) 'brr)
-         (case var
-               (brr-monitored-runes
-                (f-get-global 'brr-monitored-runes state))
-               (brr-evisc-tuple
-                (f-get-global 'brr-evisc-tuple state))
-               (brr-stack
-                (f-get-global 'brr-stack state))
-               (brr-gstack
-                (f-get-global 'brr-gstack state))
-               (brr-alist
-                (f-get-global 'brr-alist state))
-               (otherwise
-                (illegal 'get-brr-global
-                         "Unrecognized brr-global, ~x0."
-                         (list (cons #\0 var))))))
-        (t (illegal 'get-brr-global
-                    "It is illegal to call get-brr-global unless you are ~
-                     under break-rewrite and you are not.  The argument to ~
-                     get-brr-global was ~x0."
-                    (list (cons #\0 var))))))
+; The rewriter continues to do whatever it was doing.  But eventually (in the
+; absence of interrupts and aborts) it reaches the balancing call of brkpt2.
 
-(defun exit-brr-wormhole (state)
+; Of course, in between the exit from the first handler and the entry to the
+; second, many more entries and exits of the handlers are encountered but they
+; don't do anything if the relevant runes are not being monitored.  So the
+; question arises: which calls of brkpt2 match ``open'' calls of brkpt1 (or
+; near-miss-brkpt1) and which don't?  That is one reason why :brr-gstack is a
+; component of brr-status.  When brkpt2 is called and the current rewrite
+; gstack is equal to the :brr-gstack in the current brr-status, it means this
+; call of brkpt2 should be :ENTERed and act like it is continuing the earlier
+; brkpt1 call.  (We are being sloppy: we should say ``brkpt1 or
+; near-miss-brkpt1 call.''  Brkpt2 handles them the same way and so we persist
+; now in being sloppy and just talking as though brkpt1 built the status brkpt2
+; is seeing.)
 
-; This function should be called on every exit from a brr-wormhole.  It saves
-; the brr-globals into the wormhole-status to be preserved for future entries
-; and then it returns (value :q) which will cause us to exit the wormhole.
+; Once inside the resulting brkpt2, the first form augments the bindings in the
+; :BRR-LOCAL-ALIST with the alist bindings passed by wormhole from rewrite into
+; from wormhole-input.  Those new bindings include whether the rule was
+; successfully applied or not (the value of the binding of WONP) and what the
+; results were or why it failed.  The first form then inspects the binding of
+; ACTION.  If ACTION is bound to SILENT, then the earlier brkpt1 exited with a
+; version of :ok and brkpt2 just exits, popping the stack with pop-brr-stack.
+; If ACTION is bound to PRINT (i.e., a :go exit), brkpt2 explains what rewrite
+; did and then pops the stack and exits.  If ACTION is bound to BREAK (i.e., an
+; :eval exit), brkpt2 solicits input from the user.  Keyword commands are
+; interpreted as by *brkpt2-aliases* where all the exit commands pop the stack
+; and exit (see exit-brr).
 
-  (pprogn (save-brr-globals state)
-          (value :q)))
+; (By the way, if you're looking at a brr-status and there is a binding for
+; WONP it means you're in brkpt2.  If you're in brkpt2 and the binding of of
+; FAILURE-REASON is NEAR-MISS then this brkpt2 closes a near-miss-brkpt1 and
+; otherwise it closes a brkpt1.)
+
+; Changing break-rewrite can require editing several different ACL2 source files.
+; Some possibly unexpected places you should definitely look at are:
+
+; * the clean-up code in the #-acl2-loop-only code in wormhole1 treats the brr
+;   wormhole differently than all other wormholes
+
+; * from the name brr-evisc-tuple you might think it is a component of the
+;   brr-status, but it is not.  It is a state global variable that is mirrored
+;   by the raw Lisp special *wormhole-brr-evisc-tuple* and magically set by
+;   brr-evisc-tuple-oracle-update which is called in some possibly unexpected
+;   places, including ld-read-command and waterfall-step.
+
+; -----------------------------------------------------------------
+; A Sample Script to Exercise Break-Rewrite
+
+; So below is the sample script that shows how you might explore break-rewrite.
+; See also books/demos/brr-test-input.lsp which is a ``run-script'' book that
+; replays several sessions with break-rewrite.  The log file from those sessions
+; is books/demos/brr-test-log.txt.
+
+; But we recommend, first, that you replay the following script in a fresh ACL2
+; session so you see the interaction ``live.''  First do this setup, which
+; introduces some rules, defines a function to check whether the brr wormhole
+; is coherent (persistent-whs and ephemeral-whs are equal), and then enables
+; brr and installs a monitor on rule a.  By the way, the coherence checker
+; below is unnecessary but we want to show you how to get your hands on the
+; persistent-whs and ephemeral-whs when you're in the brr wormhole.  Note that
+; the persistent-whs is ``read'' via the ACL2 oracle.
+
+; (encapsulate ((afn (x) t)
+;               (bfn (x) t)
+;               (cfn (x) t)
+;               (dfn (x) t)
+;               (efn (x) t))
+;   (local (defun afn (x) (declare (ignore x)) t))
+;   (local (defun bfn (x) (declare (ignore x)) t))
+;   (local (defun cfn (x) (declare (ignore x)) t))
+;   (local (defun dfn (x) (declare (ignore x)) t))
+;   (local (defun efn (x) (declare (ignore x)) t))
+;   (defthm a (implies (bfn x)(afn x)))
+;   (defthm b (implies (cfn x)(bfn x)))
+;   (defthm c (implies (dfn x)(cfn x)))
+;   (defthm d (implies (efn x)(dfn x)))
+;   )
+; (defun brr-coherentp (state)
+;   (declare (xargs :mode :program :stobjs (state)))
+;   (if (eq (f-get-global 'wormhole-name state) 'brr)
+;       (er-let*
+;           ((persistent-whs (get-persistent-whs 'brr state))
+;            (ephemeral-whs (value (f-get-global 'wormhole-status state))))
+;         (value (equal persistent-whs ephemeral-whs)))
+;       (value t)))
+; (brr t)
+; (monitor 'a t)
+
+; Now execute each line below and make sure preserve the commented line
+; numbers.  Our description of what happens refers to these commands by the
+; line number and you will want to look at your output and compare it to our
+; descriptions.
+
+; (thm (implies (efn x) (afn x))) ; [ 0]
+; :target                         ; [ 1]
+; :path                           ; [ 2]
+; (print-brr-status t)            ; [ 3]
+; (brr-coherentp state)           ; [ 4]
+; (monitor 'b t)                  ; [ 5]
+; (print-brr-status t)            ; [ 6]
+; (monitored-runes)               ; [ 7]
+; :eval                           ; [ 8]
+; (print-brr-status t)            ; [ 9]
+; :ok                             ; [10]
+; (print-brr-status t)            ; [11]
+; :ok                             ; [12]
+; (print-brr-status t)            ; [13]
+
+; Trying the read the script above and the descriptions below WITHOUT the
+; interactive output is quite confusing.  Don't do it.  Replay the script and
+; look at the output as you read the following!  Alternatively, look at
+; books/demos/brr-test-log.txt (but the line number comments are missing).  (We
+; don't want to dump the output into this comment because it just too long!)
+
+; When we executed the thm command at [ 0] the rewriter eventually tried to
+; apply the rule A to (AFN X) and caused a break because rule A is monitored.
+; So we enter a break.  The prompt printed looks like this:
+
+; (1 Breaking (:REWRITE A) on (AFN X):
+
+; telling us we're at depth 1 in break-rewrite.
+
+; The commands at [ 1] and [ 2] print the target and the path the rewriter took
+; to get here.
+
+; The command at [ 3] is the term (print-brr-status t), which is of no interest
+; to the user but is an invaluable asset to the developer.  It prints the
+; current brr status.  It doesn't actually print the status object itself but
+; ``prettyifies'' it into a make brr-status term so it is easier to read.  The
+; t argument means ``hide the values of RCNST in the :brr-local-alist.'' We
+; advise always using the t argument.  An argument of NIL prints the actual
+; RCNST value.  RCNST is a rewrite-constant record that typically includes
+; several very large objects including the current enabled structure.  Note
+; also that print-brr-status does not return the object or the prettyified
+; version.  It just prints it because it has to fetch it from a wormhole and
+; works whether you're in a break or not (see the [13] where we call it at the
+; top-level).
+
+; Compare the output of the :path command at [ 2] to the :BRR-GSTACK component
+; of the status printed by [ 3].
+
+; Also note the value of :BRR-LOCAL-ALIST printed by [ 3].  It's an alist that
+; binds variables the rewriter passed into the wormhole via the wormhole-input
+; state global.  For example, LEMMA is bound to the actual rewrite-rule object
+; that caused the break, TARGET is bound to the target being rewritten (printed
+; by the :target command at [ 1], etc.  Note that RCNST's value has been
+; skipped in this print out.
+
+; Finally, notice the :BRR-PREVIOUS-STATUS component of [ 3].  It is the
+; top-level status, where only (:REWRITE A) is monitored and the other
+; components are empty.  As you can see, the brr-status is actually a stack and
+; the deepest status in the stack is the one from the top-level of ACL2 when
+; this proof started.
+
+; The command at [ 4] checks whether the brr wormhole is coherent.  It is.
+; Coherence is discussed in :doc wormhole-programming-tips and the function
+; brr-coherentp is not a defined system function but is defined in the sample
+; script.  You might study the definition there.  The brr wormhole is always
+; coherent.
+
+; At command [ 5] we install a monitor on the rewrite rule B.  It prints the new
+; list of monitored runes.  Comparing the print-brr-status at [ 3] to that at
+; [ 6] reveals that the only change is the value of :BRR-MONITORED-RUNES.
+
+; The (monitored-runes) command at [ 7] just prints that component of the
+; status.
+
+; At command [ 8] we :eval the rule A.
+
+; What happens at this point is that the rewriter proceeds to try to apply the
+; rule A to the target.  The rewriter does its thing and eventually tries to
+; apply rule B to target (BFN X).  Since we've installed a monitor on rule B,
+; that provokes a new break at depth 2.
+
+; (2 Breaking (:REWRITE B) on (BFN X):
+
+; Intuitively, the new break just pushes a new status on top of the old status
+; stack.  You can see this by comparing the status printed at [ 6] with the
+; status printed at [ 9].  Count the MAKEs.  There were two (meaning we were at
+; depth 1) and now there are three (meaning we are at depth 2).
+
+; The top-most status is different: it contains the same :BRR-MONITORED-RUNES
+; (although that would change if we monitored or unmonitored runes at this
+; depth), but the :BRR-GSTACK is now deeper, showing that we're rewriting (BFN
+; X) and trying to apply rule (:REWRITE B).  The :BRR-LOCAL-ALIST has the local
+; variables for this application of rewrite, and the :BRR-PREVIOUS-STATUS is --
+; ALMOST -- exactly the status shown by [ 6].  We say ``almost'' because note
+; that the :BRR-LOCAL-ALIST of the :BRR-PREVIOUS-STATUS differs from that in [
+; 6] by the addition of new bindings for SAVED-STANDARD-IO and ACTION.
+
+; Those values were stored when the :eval at [ 8] was executed.  When,
+; eventually, we pop back to that earlier status, break-rewrite will restore
+; STANDARD-IO to the saved value -- it might be changed in an inferior break --
+; and the ACTION tells break-rewrite that when we get back here we are to
+; interact with the user again.  Had we proceeded at [ 8] with, say, :ok
+; instead of :eval, we would have stored a different ACTION.  In short, when we
+; proceed from a break to try the rule, break-rewrite saves information so that
+; when it gets back here it knows what to do.
+
+; So now we're at break depth 2 and we issue the :ok command at [10].  That
+; releases the break on B and allows the rewriter to continue.  It succeeds and
+; we return to the break on A having rewritten the :target, (AFN X), to T.
+
+; Intuitively we just pop the status stack.  But look at the top-most status at
+; [11].  It is almost the status we saw just before we :eval'd at [ 8] except
+; for the SAVED-STANDARD-IO and ACTION bindings noted above (stored by :eval)
+; and bindings for WONP, FAILURE-REASON, BRR-RESULT, and FINAL-TTREE which are
+; completely new.
+
+; Those new bindings were put there when we popped the stack from depth 2 back
+; to depth 1.  The break at depth 2 is passing information up to the break at
+; depth 1.  So now the ACTION tells the us to enter an interactive loop again
+; and the new variables tell us rule A successfully applied and rewrote the
+; target to whatever BRR-RESULT is (i.e., T).
+
+; At [12] we issue the :ok command which exits depth 1 by popping the stack.
+; The proof completes with Q.E.D and the status printed at [13] is the
+; top-level one, where only rule A is monitored.
+
+; --- End of Essay on Break-Rewrite ---
+
+; The brr-status must be a cheap record because entry-code must be the car!  If
+; you wish to inspect a brr-status object, consider using the function
+; prettyify-brr-status, which hides the typically large value of the RCNST
+; binding in :brr-local-alist.
+
+(defrec brr-status
+  (entry-code (brr-monitored-runes . brr-gstack)
+              . (brr-local-alist . brr-previous-status))
+  t)
+
+(defun make-initial-brr-status (monitored-runes)
+  (make brr-status
+        :entry-code :enter
+        :brr-monitored-runes monitored-runes
+        :brr-gstack nil
+        :brr-local-alist nil
+        :brr-previous-status nil))
+
+(defun dive-to-deepest-brr-status (whs)
+  (let ((prev-whs (access brr-status  whs :brr-previous-status)))
+    (if (null prev-whs)
+        whs
+        (dive-to-deepest-brr-status prev-whs))))
+
+(defun top-level-brr-status (whs)
+
+; Given a brr-status, whs, we construct the corresponding top-level status.
+; This function is used by wormhole1 when aborting from whs up to the
+; top-level.  The top-level monitored runes are those originally found at the
+; top-level when the first break-rewrite frame was entered (which is now the
+; deepest brr-previous-status of whs).  All other fields are empty.  We expect
+; that the deepest brr-previous-status is exactly same as the status we
+; construct below, but we just want to be certain that the other fields are
+; empty.
+
+  (make-initial-brr-status
+   (access brr-status (dive-to-deepest-brr-status whs) :brr-monitored-runes)))
+
+(defun brr-depth1 (whs)
+; Whs is a brr-status.  Notice that it is actually a stack of statuses chained
+; through the brr-previous-status component.  We compute its depth.
+  (let ((prev-whs (access brr-status whs :brr-previous-status)))
+    (cond
+     ((null prev-whs)
+      0)
+     (t (+ 1 (brr-depth1 prev-whs))))))
+
+(defun brr-depth (state)
+  (brr-depth1 (f-get-global 'wormhole-status state)))
 
 (defmacro brr-wormhole (entry-lambda input-alist test-form aliases)
 
-; A brr-wormhole is a particular kind of wormhole.  A quick summary of the
-; differences:
-; (0) while our normal convention is that the entry code for all wormholes
-;     should be :ENTER, brr-wormholes really do use the :SKIP option and
-;     toggle between :SKIP and :ENTER frequently; the status of the
-;     brr-wormhole is thus (:key data), where data is the alist mapping
-;     brr-globals to their values as described below
-; (1) brr-wormhole implements brr-global variables which are set
-;     from input-alist (or else retain their values from the
-;     last exit of the 'brr wormhole).
-; (2) test-form returns (value t) or (value nil) indicating whether
-;     a break is to occur.
-; (3) the LD specials are manipulated so that no output appears before
-;     test-form is eval'd and an error in the test-form throws you out of
-;     the wormhole.  If the test-form returns (value nil), the wormhole
-;     entry/exit are entirely silent.
+; A brr-wormhole is just a wormhole except we put a wrapper around the first
+; form (here called the test-form) so that (value t) means enter the
+; interactive loop and (value nil) means silently exit.  (By the way, if the
+; test-form returns (value nil) it ought to pop-brr-status if it pushed one.)
+; The wrapper also sets the ld-keyword-aliases and the ld-prompt appropriately.
 
   (let ((aliases `(append ,aliases
                           '((:exit
                              0 (lambda nil
                                  (prog2$ (cw "The keyword command :EXIT is ~
                                               disabled inside BRR.  Exit BRR ~
-                                              with :ok or use :p! to pop or ~
-                                              :a! to abort; or exit ACL2 ~
-                                              entirely with ~x0.~%"
+                                              with :ok or :go, or use :a! to ~
+                                              abort; or exit ACL2 entirely ~
+                                              with ~x0.~%"
                                              '(exit))
                                          (value :invisible))))
                             (:quit
                              0 (lambda nil
                                  (prog2$ (cw "The keyword command :QUIT is ~
                                               disabled inside BRR.  Quit BRR ~
-                                              with :ok or use :p! to pop or ~
-                                              :a! to abort; or quit ACL2 ~
-                                              entirely with ~x0.~%"
+                                              with :ok or :go, or use :a! to ~
+                                              abort; or quit ACL2 entirely ~
+                                              with ~x0.~%"
                                              '(quit))
                                          (value :invisible))))))))
     `(wormhole 'brr
                ,entry-lambda
                ,input-alist
-               `(pprogn (restore-brr-globals state)
-                        (er-progn
-                         (set-ld-keyword-aliases! ,,aliases)
-                         (set-ld-prompt 'brr-prompt state)
+               `(er-progn
+                 (set-ld-keyword-aliases! ,,aliases)
+                 (set-ld-prompt 'brr-prompt state)
 
 ; The above reference to the function symbol brr-prompt is a little startling
 ; because we haven't defined it yet.  But we will define it before we use this
 ; macro.
 
+                 (mv-let (erp val state)
+                   ,,test-form
+                   (cond
+                    (erp
 
-                         (mv-let (erp val state)
-                                 ,,test-form
-                                 (cond
-                                  (erp (exit-brr-wormhole state))
-                                  (val
-                                   (er-progn
-                                    (set-ld-error-action :continue state)
-                                    (with-output
-                                      :off :all
-                                      (disable-ubt
-                                       (msg "Note that ~x0 was executed when ~
-                                             an interactive break occurred ~
-                                             due to a monitored rule; see ~
-                                             :DOC break-rewrite."
-                                            'disable-ubt)))
-; The aliases had better ensure that every exit is via exit-brr-wormhole.
-                                    (value :invisible)))
-                                  (t (exit-brr-wormhole state))))))
+; If an error is signaled by the test-form we've made a programming mistake.
+; Check all callers of brr-wormhole!  Every test-form should either return
+; (value t) or (value nil).  The form should always clean up the brr-status
+; before returning (value nil) -- only the form knows whether it pushed a
+; brr-status frame that should be popped or not.
+
+                     (value
+                      (er hard 'brr-wormhole
+                          "The test-form provided to brr-wormhole has ~
+                           signalled an error.  This is a programming error ~
+                           by the ACL2 developers.  Please report this.")))
+                    (val
+
+; Entering the interactive loop.  All exits are as specified by the aliases, which
+; use proceed-from-brkpt1 or exit-brr, cleaning up the brr-status.
+
+                     (er-progn
+                      (set-ld-error-action :continue state)
+                      (with-output
+                        :off :all
+                        (disable-ubt
+                         (msg "Note that ~x0 was executed when an interactive ~
+                               break occurred due to a monitored rule; see ~
+                               :DOC break-rewrite."
+                              'disable-ubt)))
+
+; We solicit user input now.  The aliases control all exits via
+; proceed-from-brkpt1 or exit-brr, appropriately dealing with the brr-status.
+
+                      (value :invisible)))
+                    (t
+
+; The test-form returned (value nil) and is assumed to have cleaned up the
+; brr-status before doing so.
+
+                       (value :q)))))
                :ld-prompt  nil
                :ld-missing-input-ok nil
                :ld-always-skip-top-level-locals nil
                :ld-pre-eval-filter :all
                :ld-pre-eval-print  nil
                :ld-post-eval-print :command-conventions
-               :ld-evisc-tuple nil
+;              :ld-evisc-tuple nil ; the ld-evisc-tuple stays the same
                :ld-error-triples  t
                :ld-error-action :error
                :ld-query-control-alist nil
                :ld-verbose nil)))
 
-(defun initialize-brr-stack (state)
-
-; This is a no-op that returns nil.  But it has the secret side effect of
-; setting the brr-global brr-stack to nil.  We don't want to reset all the
-; brr-globals: brr-monitored-runes and brr-evisc-tuple should persist.  The
-; others are irrelevant because they will be assigned before they are read.
-
-  (and (f-get-global 'gstackp state)
-       (brr-wormhole '(lambda (whs)
-                        (set-wormhole-entry-code whs :ENTER))
-                     '((brr-stack . nil))
-                     '(value nil)
-                     nil)))
-
-; This completes the implementation of brr-wormholes (except that we must be sure to
-; exit via exit-brr-wormhole always).
+; This completes the implementation of brr-wormholes, though we must remember
+; to use them properly!  E.g., when the test form pushes a new status but
+; returns (value nil) it should pop that status, and if it enters the loop it
+; must exit via proceed-from-brkpt1 or exit-brr.
 
 ; We now move on to the implementation of brr-locals.
 
-(defun lookup-brr-stack (var-name stack)
-
-; See the Essay on "Break-Rewrite".  Stack is a list of frames.  Each frame is
-; of the form (gstack' . alist).  We assoc-eq up the alists of successive
-; frames until we find one binding var-name.  We return the value with which
-; var-name is paired, or else nil if no binding is found.
-
-  (cond ((endp stack) nil)
-        (t (let ((temp (assoc-eq var-name (cdar stack))))
-             (cond (temp (cdr temp))
-                   (t (lookup-brr-stack var-name (cdr stack))))))))
-
-(defun clean-brr-stack1 (gstack stack)
-  (declare (xargs :guard (alistp stack)))
-  (cond ((endp stack)
-         nil)
-        ((equal gstack (caar stack)) stack)
-        (t (clean-brr-stack1 gstack (cdr stack)))))
-
-(defconst *cryptic-brr-message*
-  "If you are seeing this message after you have caused a console interrupt ~
-   (or otherwise have made a break into Lisp) or during a new prover call ~
-   made from within BRR, then it is likely that this is a bit of routine BRR ~
-   housekeeping.  (In the latter case, of a new prover call made from within ~
-   BRR, you can probably avoid this message by calling :brr nil before making ~
-   that new prover call.)  Otherwise, the ACL2 implementors would appreciate ~
-   a script showing how to reproduce this message.")
-
-(defun clean-brr-stack (gstack stack)
-
-; See the Essay on "Break-Rewrite".  Stack is a list of frames.  Each frame is
-; of the form (gstack' . alist), where the frames are ordered so that each
-; successive gstack' is at a higher level than the previous one.  (But note
-; that they do not ascend in increments of one.  That is, suppose the
-; top frame of stack is marked with gstack' and the next-to-top frame is
-; marked with gstack''.  Then gstack' is an extension of gstack'', i.e.,
-; some cdr of gstack' is gstack''.  We sweep down stack looking for
-; the frame marked by gstack.  We return the stack that has this frame on
-; top, or else we return nil.
-
-; We used (Version_2.7 and earlier) to cause a hard error if we did
-; not find a suitable frame because we thought it indicated a coding
-; error.  Now we just return the empty stack because this situation
-; can arise through interrupt processing.  Suppose we are in rewrite
-; and push a new frame with brkpt1.  We're supposed to get to brkpt2
-; eventually and pop it.  An interrupt could prevent that, leaving the
-; frame unpopped.  Suppose that is the last time a brkpt occurs in
-; that simplification.  Then the old stack survives.  Suppose the
-; waterfall carries out an elim and then brings us back to
-; simplification.  Now the gstack is completely different but the
-; preserved brr-stack in *wormhole-status-alist* is still the old one.
-; Clearly, we should ignore it -- had no interrupt occurred it would
-; have been popped down to nil.
-
-  (declare (xargs :guard (alistp stack)))
-  (let ((cleaned-stack (clean-brr-stack1 gstack stack)))
-    (prog2$
-     (if (not (equal cleaned-stack stack))
-         (cw "~%~%Cryptic BRR Message 1:  Sweeping dead frames off ~
-              brr-stack.  ~@0~%~%"
-             *cryptic-brr-message*)
-
-; If anybody ever reports the problem described above, it indicates
-; that frames are being left on the brr-stack as though the
-; pop-brr-stack-frame supposedly performed by brkpt2 is not being
-; executed.  This could leave the brr-stack arbitrarily wrong, as a
-; non-nil stack could survive into the simplification of a subsequent,
-; independent subgoal sharing no history at all with brr-gstack.
-
-       nil)
-     cleaned-stack)))
-
 (defun get-brr-local (var state)
 
-; This function may be used inside code executed under "break-rewrite".  It is
-; NOT for use in general purpose calls of wormhole because it is involved with
-; the local variable illusion associated with "break-rewrite".  A typical use
-; is (get-brr-local 'unify-subst state) which fetches the local binding of
-; 'unify-subst in the frame of brr-stack that is labeled with the current
-; brr-gstack.
+; We fetch the value of var in the :brr-local-alist of the brr ephemeral-whs.
 
-  (let ((clean-stack (clean-brr-stack (get-brr-global 'brr-gstack state)
-                                      (get-brr-global 'brr-stack state))))
-    (lookup-brr-stack var clean-stack)))
+; Warning: This function should only be used under break-rewrite (i.e., under
+; one of the brkpt handlers).  It can't be used in the lambda expressions for
+; wormhole-eval (since there may not be an ephemeral-whs there).  If you want
+; the value of a local variable in wormhole-eval (where the lambda formal is
+; named whs) use (cdr (assoc-eq var (access brr-status whs :brr-local-alist))).
 
-(defun put-brr-local1 (gstack var val stack)
-
-; See the Essay on "Break-Rewrite" and the comment in brr-@ above.  We assign
-; val to var in the frame labeled by gstack.  This function returns the
-; resulting stack but does not side-effect state (obviously).  Dead frames at
-; the top of the stack are removed by this operation.
-
-  (let ((clean-stack (clean-brr-stack gstack stack)))
-    (cons (cons gstack (put-assoc-eq var val (cdar clean-stack)))
-          (cdr clean-stack))))
+  (let ((whs (f-get-global 'wormhole-status state)))
+    (cdr (assoc-eq var (access brr-status whs :brr-local-alist)))))
 
 (defun put-brr-local (var val state)
 
-; This function may be used inside code executed within "break-rewrite".  It is
-; NOT for use in general purpose calls of wormhole because it is involved with
-; the local variable illusion associated with "break-rewrite".  A typical use
-; is (put-brr-local 'unify-subst val state) which stores val as the local
-; binding of 'unify-subst in the frame of brr-stack that is labeled with the
-; current brr-gstack.
+; Put val as the value of var in :brr-local-alist of the ephemeral-whs.
 
-  (f-put-global 'brr-stack
-                (put-brr-local1 (get-brr-global 'brr-gstack state)
-                                var val
-                                (get-brr-global 'brr-stack state))
-                state))
+; Warning: This function should only be used under break-rewrite (i.e., under
+; one of the brkpt handlers).
 
-(defun put-brr-local-lst (alist state)
-  (cond ((null alist) state)
-        (t (pprogn (put-brr-local (caar alist)  (cdar alist) state)
-                   (put-brr-local-lst (cdr alist) state)))))
+; Expects and ensures Wormhole Coherence.
 
-(defun some-cdr-equalp (little big)
-
-; We return t if some cdr of big, including big itself, is equal to little.
-
-  (cond ((equal little big) t)
-        ((null big) nil)
-        (t (some-cdr-equalp little (cdr big)))))
-
-(defun push-brr-stack-frame (state)
-
-; This function may be used inside code executed within "break-rewrite".  It
-; pushes the new frame, (gstack . alist) on the brr-stack, where gstack is the
-; current value of (get-brr-global 'brr-gstack state) and alist is
-; (get-brr-global 'brr-alist state).
-
-  (let ((gstack (get-brr-global 'brr-gstack state))
-        (brr-stack (get-brr-global 'brr-stack state)))
-    (cond
-     ((or (null brr-stack)
-          (and (not (equal (caar brr-stack) gstack))
-               (some-cdr-equalp (caar brr-stack) gstack)))
-      (f-put-global 'brr-stack
-                    (cons (cons gstack (get-brr-global 'brr-alist state))
-                          brr-stack)
-                    state))
-     (t
+  (if (eq (f-get-global 'wormhole-name state) 'brr)
+      (let* ((whs (f-get-global 'wormhole-status state))
+             (alist (access brr-status whs :brr-local-alist))
+             (new-whs (change brr-status whs
+                              :brr-local-alist
+                              (put-assoc-eq var val alist))))
+        (set-persistent-whs-and-ephemeral-whs 'brr new-whs state))
       (prog2$
-       (cw "~%~%Cryptic BRR Message 2:  Discarding dead brr-stack.  ~@0~%~%"
-           *cryptic-brr-message*)
-       (f-put-global 'brr-stack
-                    (cons (cons gstack (get-brr-global 'brr-alist state))
-                          nil)
-                    state))))))
+       (illegal 'put-brr-local
+                "It is illegal to call put-brr-local unless you are under ~
+                 break-rewrite and you are not.  The arguments to ~
+                 put-brr-local were ~x0 and ~x1"
+                (list (cons #\0 var)
+                      (cons #\1 val)))
+       state)))
 
-(defun pop-brr-stack-frame (state)
+(defun put-brr-locals (alist state)
 
-; This function may be used inside code executed within "break-rewrite".  It
-; pops the top-most frame off the brr-stack.  Actually, it pops all the frames
-; up through the one labeled with the current brr-gstack.
+; We merge the bindings in alist with those in the :brr-local-alist of the
+; ephemeral-whs.  This function may overwrite values of locals aready bound in
+; the :brr-local-alist.  New bindings appear at the end.
 
-  (f-put-global 'brr-stack
-                (cdr (clean-brr-stack (get-brr-global 'brr-gstack state)
-                                      (get-brr-global 'brr-stack state)))
-                state))
+; Warning: This function should only be used under break-rewrite (i.e., under
+; one of the brkpt handlers).
+
+; Expects and ensures Wormhole Coherence.
+
+  (if (eq (f-get-global 'wormhole-name state) 'brr)
+      (let* ((whs (f-get-global 'wormhole-status state))
+             (alist1 (access brr-status whs :brr-local-alist))
+             (new-whs (change brr-status whs
+                              :brr-local-alist
+                              (put-assoc-eq-alist alist1 alist))))
+        (set-persistent-whs-and-ephemeral-whs 'brr new-whs state))
+      (prog2$
+       (illegal 'put-brr-locals
+                "It is illegal to call put-brr-locals unless you are under ~
+                 break-rewrite and you are not.  The alist argument to ~
+                 put-brr-locals was ~x0."
+                (list (cons #\0 alist)))
+       state)))
+
+(defun push-brr-status (state)
+
+; This function is called when either near-miss-brkpt1 or brkpt1 enters the
+; wormhole.  At the time this function is called, we have just entered the brr
+; wormhole but it is incompletely initialized.  The generic state globals
+; wormhole-name, wormhole-input, and wormhole-status have been set by wormhole.
+; The wormhole-input is just an alist specifying values for brr-gstack and
+; brr-local-alist, where the gstack value is the gstack that rewrite passed to
+; the brkpt1 handlers and the alist value is an alist binding variables from
+; rewrite that brr might be interested in, e.g., the lemma, target,
+; unify-subst, etc.  We push a new brr-status onto the current status and make
+; the new status the current one (i.e., this function side-effects
+; *wormhole-status-alist*).
+
+; Expects and ensures Wormhole Coherence.
+
+  (let* ((input (f-get-global 'wormhole-input state))
+         (gstack (cdr (assoc-eq 'brr-gstack input)))
+         (alist (cdr (assoc-eq 'brr-local-alist input)))
+         (whs (f-get-global 'wormhole-status state))
+         (new-whs
+          (change brr-status whs
+                  :brr-gstack gstack
+                  :brr-local-alist alist
+                  :brr-previous-status whs)))
+    (set-persistent-whs-and-ephemeral-whs 'brr new-whs state)))
+
+(defun pop-brr-status (state)
+
+; This function sets the brr-status to the :brr-previous-status (unless
+; that's nil, in which case we're already at the top-level of ACL2).
+
+; Expects and ensures Wormhole Coherence.
+
+  (let* ((whs (f-get-global 'wormhole-status state))
+         (prev-whs (access brr-status whs :brr-previous-status)))
+    (if (null prev-whs)
+        state
+        (set-persistent-whs-and-ephemeral-whs 'brr prev-whs state))))
 
 (defun decode-type-alist (type-alist)
 
@@ -7845,19 +8064,27 @@ its attachment is ignored during proofs"))))
 (defun eval-break-condition (rune term ctx state)
   (cond
    ((equal term *t*) (value t))
+   ((not (termp term (w state)))
+    (er soft ctx
+        "The monitored rune ~x0 has a non-trivial break :condition, ~X12, ~
+         which is no longer a term.  This is presumably because an undo ~
+         erased some critical definition after the monitor was installed.  We ~
+         are aborting this proof attempt and suggest you inspect ~
+         :monitored-runes."
+        rune term nil))
    (t (mv-let (erp okp latches)
-              (ev term
-                  (list (cons 'state (coerce-state-to-object state)))
-                  state nil nil t)
-              (declare (ignore latches))
-              (cond
-               (erp (pprogn
-                     (error-fms nil ctx nil (car okp) (cdr okp) state)
-                     (er soft ctx
-                         "The break condition installed on ~x0 could not be ~
-                          evaluated."
-                         rune)))
-               (t (value okp)))))))
+        (ev term
+            (list (cons 'state (coerce-state-to-object state)))
+            state nil nil t)
+        (declare (ignore latches))
+        (cond
+         (erp (pprogn
+               (error-fms nil ctx nil (car okp) (cdr okp) state)
+               (er soft ctx
+                   "The break condition installed on ~x0 could not be ~
+                    evaluated.  We are aborting this proof attempt."
+                   rune)))
+         (t (value okp)))))))
 
 (defconst *default-free-vars-display-limit* 30)
 
@@ -8081,7 +8308,7 @@ its attachment is ignored during proofs"))))
   (the2s
    (signed-byte 30)
    (fmt1 "~F0 ~s1~sr ~@2>"
-         (list (cons #\0 (get-brr-local 'depth state))
+         (list (cons #\0 (brr-depth state))
                (cons #\1 (f-get-global 'current-package state))
                (cons #\2 (defun-mode-prompt-string state))
                (cons #\r
@@ -8599,61 +8826,39 @@ its attachment is ignored during proofs"))))
   (list "" "~@*" "~@*" "~@*"
          (tilde-*-ancestors-stack-msg1 0 ancestors wrld evisc-tuple)))
 
-(defun brr-evisc-tuple (state)
+(defun semi-initialize-brr-wormhole (state)
+
+; This function (sort of) initializes the persistent-whs for the brr wormhole.
+; More precisely, if the brr wormhole has not been set up yet, this function
+; initializes it so that all fields are nil.  If it has been set up and we're
+; not in the brr wormhole, it preserves the BRR-MONITORED-RUNES and nils out
+; the others.  If we are in the brr wormhole then the status has already been
+; set up and brr processing in flight is depending on it, so we do nothing.
+
+; Before this function is first called, there is no entry for BRR on the
+; *wormhole-status-alist*.  That means the persistent-whs for brr is NIL.  That
+; is actually ok.  All brr-status fields of NIL are NIL.  According to the
+; definition of wormhole1, any non-:SKIP entry code is equivalent to :ENTER.
+
+; Warning: One might be tempted to do this update with
+; set-persistent-whs-and-ephemeral-whs but that would be wrong!  If we used
+; that function while we're in the brr wormhole we'd overwrite the active
+; status!  This is a case where we must use wormhole-eval, make sure we're not
+; already in brr, and only write to the persistent-whs.
+
   (cond
    ((eq (f-get-global 'wormhole-name state) 'brr)
-    (let ((val (get-brr-global 'brr-evisc-tuple state)))
-      (if (eq val :DEFAULT)
-          (term-evisc-tuple t state)
-        val)))
-   (t (er hard 'brr-evisc-tuple
-          "It is illegal to call ~x0 unless you are under ~
-           break-rewrite and you are not.  Consider instead evaluating ~x1."
-          'brr-evisc-tuple
-          '(show-brr-evisc-tuple)))))
-
-(defun set-brr-evisc-tuple (val state)
-  (pprogn
-   (f-put-global 'brr-evisc-tuple-initialized t state)
-   (cond
-    ((eq (f-get-global 'wormhole-name state) 'brr)
-     (f-put-global 'brr-evisc-tuple val state))
-    (t (prog2$
-        (brr-wormhole
-         '(lambda (whs)
-            (set-wormhole-entry-code whs :ENTER))
-         nil
-         `(pprogn (f-put-global 'brr-evisc-tuple ',val state)
-                  (value nil))
-         nil)
-        state)))))
-
-(defun maybe-initialize-brr-evisc-tuple (state)
-  (cond ((f-get-global 'brr-evisc-tuple-initialized state)
-; The test above is always true inside :brr.
-         state)
-        (t (set-brr-evisc-tuple :DEFAULT state))))
-
-(defun show-brr-evisc-tuple-fn (state)
-  (pprogn
-   (maybe-initialize-brr-evisc-tuple state)
-   (cond
-    ((eq (f-get-global 'wormhole-name state) 'brr)
-     (prog2$ (cw "~Y01~|" (brr-evisc-tuple state) nil)
-             (value :invisible)))
-    (t
-     (prog2$
-      (brr-wormhole
+; Brr status is already set up.
+    nil)
+   (t (wormhole-eval
+       'brr
        '(lambda (whs)
-          (set-wormhole-entry-code whs :ENTER))
-       nil
-       `(prog2$ (cw "~Y01~|" (brr-evisc-tuple state) nil)
-                (value nil))
-       nil)
-      (value :invisible))))))
-
-(defmacro show-brr-evisc-tuple ()
-  '(show-brr-evisc-tuple-fn state))
+          (change brr-status whs
+;                 :brr-monitored-runes is left unchanged!
+                  :brr-gstack nil
+                  :brr-local-alist nil
+                  :brr-previous-status nil))
+       nil))))
 
 (defun show-ancestors-stack-msg (state evisc-tuple)
   (msg "Ancestors stack (most recent entry on top):~%~*0~%Use ~x1 to see ~
@@ -8726,6 +8931,353 @@ its attachment is ignored during proofs"))))
          quotep!"
         q)))
 
+(defun get-brr-one-way-unify-info (lemma rcnst)
+
+; This function returns (mv rune brk-cmd-name pattern restrictions) in
+; accordance with how lemma is matched in the rewrite clique.
+
+; This function knows everything there is to know about how one-way-unify is
+; used in the rewrite clique!  We need this when we try to explain near-misses
+; on monitored rules.  As of this writing, only two classes of rules are
+; monitored, namely rewrite-rules (which include definitions and
+; rewrite-quoted-constant rules as subclasses) and linear-lemmas.  The former
+; access the pattern with :lhs (see caveat) and the latter access pattern with
+; :max-term.  (Caveat: when a rewrite-rule is actually of subclass
+; rewrite-quoted-constant of form 2, the pattern we attempt to match is
+; actually the :rhs!  While that pattern is always a variable, restrictions
+; could prevent it from matching.  In any case, the break command :lhs will
+; display the pattern.)  Both :lhs and :max-term are set up in *brkpt1-aliases*
+; and *brkpt2-aliases*, so we can refer to those field names as brkpt commands
+; in our messages, but we must extract the pattern actually used, the
+; restrictions, and what the break command used to view the pattern in the
+; break environment.  Linear rules don't have restrictions.
+
+  (declare (xargs :guard
+                  (and (or (weak-rewrite-rule-p lemma)
+                           (weak-linear-lemma-p lemma))
+                       (weak-rewrite-constant-p rcnst))))
+
+; Note: The two ``guard issues'' tagged below are guaranteed to be true if
+; lemma really is a well-formed rewrite-rule (as all of our stored
+; rewrite-rules are).  But we don't want to characterize what that means, so we
+; suffer the runtime checks just so we can verify the guards of this function.
+
+  (if (eq (record-type lemma) 'rewrite-rule)
+      (mv (access rewrite-rule lemma :rune)
+          :lhs
+          (if (and (eq (access rewrite-rule lemma :subclass)
+                       'rewrite-quoted-constant)
+                   (let ((heuristic-info
+                          (access rewrite-rule lemma :heuristic-info)))
+                     (and (consp heuristic-info) ; guard issue
+                          (eql (car heuristic-info) 2))))
+              (access rewrite-rule lemma :rhs)
+              (access rewrite-rule lemma :lhs))
+          (let ((restrictions-alist (access rewrite-constant rcnst
+                                            :restrictions-alist)))
+            (if (alistp restrictions-alist) ; guard issue
+                (cdr (assoc-equal
+                      (access rewrite-rule lemma :rune)
+                      restrictions-alist))
+                nil)))
+      (mv (access linear-lemma lemma :rune)
+          :max-term
+          (access linear-lemma lemma :max-term)
+          nil)))
+
+(mutual-recursion
+
+(defun abstract-pat1 (k-flg pat vars)
+
+; K-flg may be a nat, in which case we abstract down to level k-flg, or t, in
+; which case we abstract all quoted lambdas.  The lambda abstraction ignores
+; ilks.
+
+  (declare (xargs :guard (and (or (eq k-flg t)
+                                  (natp k-flg))
+                              (pseudo-termp pat)
+                              (true-listp vars))
+                  :verify-guards nil
+                  :measure (acl2-count pat)))
+  (cond
+   ((eql k-flg 0)
+    (let ((new-var (genvar 'brr "GENSYM" 0 vars)))
+      (mv new-var (cons new-var vars))))
+   ((variablep pat) (mv pat vars))
+   ((fquotep pat)
+    (cond ((and (eq k-flg t)
+                (consp (unquote pat))
+                (eq (car (unquote pat)) 'lambda))
+           (let ((new-var (genvar 'brr "GENSYM" 0 vars)))
+             (mv new-var (cons new-var vars))))
+          (t (mv pat vars))))
+   (t (mv-let (new-args new-vars)
+        (abstract-pat1-lst (if (natp k-flg)
+                                   (- k-flg 1)
+                                   k-flg)
+                               (fargs pat) vars)
+        (mv (fcons-term (ffn-symb pat) new-args)
+            new-vars)))))
+
+(defun abstract-pat1-lst (k-flg pats vars)
+  (declare (xargs :guard (and (or (eq k-flg t)
+                                  (natp k-flg))
+                              (pseudo-term-listp pats)
+                              (true-listp vars))
+                  :measure (acl2-count pats)))
+  (cond
+   ((endp pats) (mv nil vars))
+   (t (mv-let (new-arg new-vars)
+        (abstract-pat1 k-flg (car pats) vars)
+        (mv-let (new-args new-vars)
+          (abstract-pat1-lst k-flg (cdr pats) new-vars)
+          (mv (cons new-arg new-args) new-vars)))))))
+
+(defun abstract-pat (k-flg pat)
+  (declare (xargs :guard (and (or (eq k-flg t) (natp k-flg))
+                              (pseudo-termp pat))))
+  (mv-let (new-pat vars)
+    (abstract-pat1 k-flg pat (all-vars pat))
+    (declare (ignore vars))
+    new-pat))
+
+(defun alistp-listp (x)
+  (declare (xargs :guard t))
+  (cond
+   ((atom x) (eq x nil))
+   (t (and (alistp (car x))
+           (alistp-listp (cdr x))))))
+
+(defun one-way-unify-restrictions1 (pat term restrictions)
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp-listp restrictions))))
+  (cond
+   ((endp restrictions)
+    (mv nil nil))
+   (t (mv-let (unify-ans unify-subst)
+              (one-way-unify1 pat term (car restrictions))
+              (cond
+               (unify-ans (mv unify-ans unify-subst))
+               (t (one-way-unify-restrictions1 pat term (cdr restrictions))))))))
+
+(defun one-way-unify-restrictions (pat term restrictions)
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp-listp restrictions))))
+  (cond
+   ((null restrictions)
+    (one-way-unify pat term))
+   (t (one-way-unify-restrictions1 pat term restrictions))))
+
+(defun symbol-alist-to-keyword-value-list (alist)
+
+; We convert a symbol alist to a keyword-value-listp (but showing the full
+; translations of terms, not their untranslations).  We assume the keys in
+; alist are keywords!
+
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        (t (cons (car (car alist))
+                 (cons (cdr (car alist))
+                       (symbol-alist-to-keyword-value-list (cdr alist)))))))
+
+(defun brr-criteria-alistp (alist)
+  (declare (xargs :guard t))
+  (cond
+   ((atom alist) (equal alist nil))
+   ((not (consp (car alist))) nil)
+   ((eq (car (car alist)) :depth)
+    (and (natp (cdr (car alist)))
+         (brr-criteria-alistp (cdr alist))))
+   ((eq (car (car alist)) :abstraction)
+    (and (pseudo-termp (cdr (car alist)))
+         (brr-criteria-alistp (cdr alist))))
+   ((eq (car (car alist)) :lambda)
+    (and (booleanp (cdr (car alist)))
+         (brr-criteria-alistp (cdr alist))))
+   (t (brr-criteria-alistp (cdr alist)))))
+
+(defun make-built-in-brr-near-miss-msg (brr-cmd-name
+                                        pat alist
+                                        depth-criterion-satisfiedp
+                                        abstraction-criterion-satisfiedp
+                                        lambda-criterion-satisfiedp)
+
+; Pat is the pattern that nearly matched :target and alist is the (translated)
+; criteria alist.  Assuming that one or more of the criteria is satisfied, we
+; return a message that explains which criteria are satisfied.  We assume the
+; message here will be printed as part of a message with an introductory
+; sentence like ``Near-Miss of (:REWRITE FOO): The rule's pattern, (F X (G X
+; Y)), did not match the current :TARGET, (F aaa (G bbb ccc)) (under the
+; restrictions (((X XXX)))), but ...'', where the ... is this message as
+; printed with ~@ as part of the introductory sentence produced by the function
+; near-miss-brkpt1.
+
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (brr-criteria-alistp alist)
+                              (implies depth-criterion-satisfiedp
+                                       (natp (cdr (assoc-eq :depth alist)))))))
+
+; We nfix below because :depth must be bound to a natp.  In fact, we know it is,
+; by the :guard above, except for the fact that we don't know
+  (let* ((depth-msg
+          (if depth-criterion-satisfiedp
+              (list (msg "* The abstraction of ~x0 to depth ~x1, namely the ~
+                          pattern ~X23, matches :TARGET."
+                         brr-cmd-name
+                         (cdr (assoc-eq :depth alist))
+                         (abstract-pat
+                          (cdr (assoc-eq :depth alist))
+                          pat)
+                         nil))
+              nil))
+         (abstraction-msg
+          (if abstraction-criterion-satisfiedp
+              (list (msg "* The :ABSTRACTION pattern provided in your ~
+                          monitor, ~x0, matches :TARGET."
+                         (cdr (assoc-eq :abstraction alist))))
+              nil))
+         (lambda-msg
+          (if lambda-criterion-satisfiedp
+              (list (msg "* ~x0 matches :TARGET except at one or more quoted ~
+                          LAMBDA constants."
+                         brr-cmd-name))
+              nil))
+         (reasons (append depth-msg
+                          abstraction-msg
+                          lambda-msg)))
+    (msg "However, this is considered a NEAR MISS under the break criteria, ~
+          ~X01, specified when this rule was monitored.  The following ~
+          ~#2~[criterion is~/criteria are~] satisfied.~%~%~*3"
+         (symbol-alist-to-keyword-value-list alist)
+         nil
+         (if (cdr reasons) 1 0)
+         (list "" "~@*~%~%" "~@*~%~%" "~@*~%~%"
+               reasons))))
+
+(defun built-in-brr-near-missp (msgp lemma target rcnst criteria-alist)
+
+; We know that that the pattern in lemma failed to match the target term to
+; which it was applied.  This predicate determines whether it was a near-miss
+; according to the criteria-alist.  If so, depending on msgp, we either return
+; t or a message explaining the near miss.  To do this we must extract from the
+; lemma the component that was (unsuccessfully) matched against target.  That
+; information could have been passed down the call hierarchy to here but there
+; is a reason we didn't do it that way: we view this function as the built-in
+; default value for brr-near-missp, to which we want the user to be able to
+; attach more elaborate senses of ``near miss.''  So we designed an interface
+; at a slightly higher level than we would have otherwise.
+
+; This built-in function is only checks the criteria :depth, :abstraction, and
+; :lambda and ignores all other keys.  We assume that if :depth is specified,
+; its value is a natural, if :abstraction is specified, its value is a
+; translated term, and if :lambda is specified its value is a Boolean.  Note
+; that we try the criteria in the order :depth, :abstraction, :lambda, and quit
+; as soon as one is satisfied (provided we are only looking for a Boolean
+; answer).  If msgp is t then, of course, we try all the criteria.
+
+  (declare (xargs :guard (and (or (weak-rewrite-rule-p lemma)
+                                  (weak-linear-lemma-p lemma))
+                              (pseudo-termp target)
+                              (weak-rewrite-constant-p rcnst)
+                              (brr-criteria-alistp criteria-alist))))
+  (mv-let (rune brr-cmd-name pattern restrictions)
+    (get-brr-one-way-unify-info lemma rcnst)
+    (declare (ignore rune))
+    (cond
+     ((and (pseudo-termp pattern)
+           (alistp-listp restrictions))
+
+; In order to verify the guards on this function we must make sure pattern and
+; restrictions are the right shapes.  We know they are when lemma and rcnst are
+; actually as maintained by us!  But we don't want to prove that and so we
+; suffer the necessary runtime checks to allow guard verification here.  If
+; pattern and restrictions are not appropriate, we just indicate that there was
+; no near-miss.
+
+      (let* ((depth-arg (assoc-eq :depth criteria-alist))
+             (depth-criterion-satisfiedp
+              (if (cdr depth-arg)
+                  (mv-let (flg unify-subst)
+                    (one-way-unify-restrictions
+                     (abstract-pat (cdr depth-arg) pattern)
+                     target
+                     restrictions)
+                    (declare (ignore unify-subst))
+                    flg)
+                  nil))
+             (abstraction-arg (if (and (not msgp) depth-criterion-satisfiedp)
+                                  nil
+                                  (assoc-eq :abstraction criteria-alist)))
+             (abstraction-criterion-satisfiedp
+              (if (cdr abstraction-arg)
+                  (mv-let (flg unify-subst)
+                    (one-way-unify-restrictions
+                     (cdr abstraction-arg)
+                     target
+                     restrictions)
+                    (declare (ignore unify-subst))
+                    flg)
+                  nil))
+             (lambda-arg (if (and (not msgp)
+                                  (or depth-criterion-satisfiedp
+                                      abstraction-criterion-satisfiedp))
+                             nil
+                             (assoc-eq :lambda criteria-alist)))
+             (lambda-criterion-satisfiedp
+              (if (cdr lambda-arg)
+                  (mv-let (flg unify-subst)
+                    (one-way-unify-restrictions
+                     (abstract-pat (cdr lambda-arg) pattern)
+                     target
+                     restrictions)
+                    (declare (ignore unify-subst))
+                    flg)
+                  nil)))
+        (if (or depth-criterion-satisfiedp
+                abstraction-criterion-satisfiedp
+                lambda-criterion-satisfiedp)
+            (if msgp
+                (make-built-in-brr-near-miss-msg brr-cmd-name
+                                                     pattern
+                                                     criteria-alist
+                                                     depth-criterion-satisfiedp
+                                                     abstraction-criterion-satisfiedp
+                                                     lambda-criterion-satisfiedp)
+                t)
+            nil)))
+     (t nil))))
+
+(defun brr-near-missp (msgp lemma target rcnst criteria-alist)
+
+; This function should be replaced by a constrained function to which
+; built-in-brr-near-missp is attached.
+
+; The rewriter has tried to match the pattern in lemma to target under the
+; restrictions in rcnst.  The match failed.  We determine whether this
+; constitutes a near miss according to the criteria in criteria-alist.  If so,
+; we return t or, if msgp is non-nil, a message explaining the near miss.  If
+; not, we return nil.
+
+; The alist is a symbol-alist that pairs keywords to their translated values.
+; It is the translated version of the keyword-value-list provided to the
+; :monitor command when the lemma was monitored.  E.g., it is
+
+; ((:condition . 't) (:depth . 3) (:abstraction . (f '44 (car (cdr z))))),
+
+; rather than
+
+; (:condition t :depth 3 :abstraction (f 44 (cadr z)))!
+
+  (declare (xargs :guard (and (or (weak-rewrite-rule-p lemma)
+                                  (weak-linear-lemma-p lemma))
+                              (pseudo-termp target)
+                              (weak-rewrite-constant-p rcnst)
+                              (brr-criteria-alistp criteria-alist))))
+
+  (built-in-brr-near-missp msgp lemma target rcnst criteria-alist))
+
 (mutual-recursion
 
 (defun tilde-@-failure-reason-free-phrase (hyp-number alist level unify-subst
@@ -8772,6 +9324,8 @@ its attachment is ignored during proofs"))))
                                                       state)
   (cond ((eq failure-reason 'time-out)
          "we ran out of time.")
+        ((eq failure-reason 'near-miss)
+         "the pattern (:LHS or :MAX-TERM) did not match the :TARGET.")
         ((eq failure-reason 'loop-stopper)
          "it permutes a big term forward.")
         ((eq failure-reason 'too-many-ifs-pre-rewrite)
@@ -8951,6 +9505,11 @@ its attachment is ignored during proofs"))))
 
 ; Keep this in sync (as appropriate) with *brkpt2-aliases*.
 
+; Note: proceed-from-brkpt1 used below is not yet defined but it doesn't matter
+; since this is just a quoted constant.  Proceed-from-brkpt1 has to check that
+; the indicated runes are monitorable, which we can't define until we've
+; introduced certain certain history management utilities.
+
   (flet ((not-yet-evaled-fn ()
                             `(lambda nil
                                (prog2$
@@ -8958,6 +9517,34 @@ its attachment is ignored during proofs"))))
                                     (get-rule-field (get-brr-local 'lemma state)
                                                     :rune))
                                 (value :invisible))))
+         (lhs-fn (plusp)
+                 `(lambda nil
+                    (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                               :lhs)))
+                      (cond
+                       ((eq val :get-rule-field-none) ; linear lemma
+                        (er soft :LHS
+                            ":LHS is only legal for a :REWRITE rule."))
+                       (t
+                        (prog2$
+                         (cw "~X01~|" val ,(if plusp
+                                               nil
+                                               '(brr-evisc-tuple state)))
+                         (value :invisible)))))))
+         (max-term-fn (plusp)
+                      `(lambda nil
+                         (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                                    :max-term)))
+                           (cond
+                            ((eq val :get-rule-field-none) ; rewrite rule
+                             (er soft :MAX-TERM
+                                 ":MAX-TERM is only legal for a :LINEAR rule."))
+                            (t
+                             (prog2$
+                              (cw "~X01~|" val ,(if plusp
+                                                    nil
+                                                    '(brr-evisc-tuple state)))
+                              (value :invisible)))))))
          (ancestors-fn (plusp)
                        `(lambda nil
                           (prog2$
@@ -8970,7 +9557,8 @@ its attachment is ignored during proofs"))))
          (btm-fn (plusp)
                  `(lambda nil
                     (prog2$
-                     (let ((gstack (get-brr-global 'brr-gstack state)))
+                     (let* ((whs (f-get-global 'wormhole-status state))
+                            (gstack (access brr-status whs :brr-gstack)))
                        (cw-gframe (length gstack) nil (car gstack)
                                   ,(if plusp
                                        nil
@@ -8978,8 +9566,9 @@ its attachment is ignored during proofs"))))
                      (value :invisible))))
          (frame-fn (plusp)
                    `(lambda (n)
-                      (let ((rgstack
-                             (reverse (get-brr-global 'brr-gstack state))))
+                      (let* ((whs (f-get-global 'wormhole-status state))
+                             (rgstack
+                              (reverse (access brr-status whs :brr-gstack))))
                         (cond
                          ((and (integerp n)
                                (>= n 1)
@@ -9047,8 +9636,11 @@ its attachment is ignored during proofs"))))
                     (prog2$
                      (cw-gframe 1
                                 nil
-                                (car (reverse (get-brr-global 'brr-gstack
-                                                              state)))
+                                (car (reverse
+                                      (access brr-status
+                                              (f-get-global 'wormhole-status
+                                                            state)
+                                              :brr-gstack)))
                                 ,(if plusp
                                      nil
                                    '(brr-evisc-tuple state)))
@@ -9097,7 +9689,7 @@ its attachment is ignored during proofs"))))
            (proceed-from-brkpt1 'break t :eval state)))
       (:eval!
        0 (lambda nil
-           (proceed-from-brkpt1 'break nil :eval! state)))
+           (proceed-from-brkpt1 'break :none :eval! state)))
       (:eval$
        1 (lambda (runes)
            (proceed-from-brkpt1 'break runes :eval$ state)))
@@ -9118,7 +9710,7 @@ its attachment is ignored during proofs"))))
            (proceed-from-brkpt1 'print t :go state)))
       (:go!
        0 (lambda nil
-           (proceed-from-brkpt1 'print nil :go! state)))
+           (proceed-from-brkpt1 'print :none :go! state)))
       (:go$
        1 (lambda (runes)
            (proceed-from-brkpt1 'print runes :go$ state)))
@@ -9154,30 +9746,19 @@ its attachment is ignored during proofs"))))
       (:initial-ttree+
        0 ,(initial-ttree-fn t))
       (:lhs
-       0 (lambda nil
-           (let ((val (get-rule-field (get-brr-local 'lemma state)
-                                      :lhs)))
-             (cond
-              ((eq val :get-rule-field-none) ; linear lemma
-               (er soft :LHS
-                   ":LHS is only legal for a :REWRITE rule."))
-              (t
-               (prog2$
-                (cw "~x0~|" val)
-                (value :invisible)))))))
+       0 ,(lhs-fn nil))
+      (:lhs+
+       0 ,(lhs-fn t))
+      (:max-term
+       0 ,(max-term-fn nil))
+      (:max-term+
+       0 ,(max-term-fn t))
       (:ok
        0 (lambda nil
-
-; Note:  Proceed-from-brkpt1 is not defined in this file!  It is here used
-; in a constant, fortunately, because it cannot yet be defined.  The problem
-; is that it involves chk-acceptable-monitors, which in turn must look at
-; the rules named by given runes, which is a procedure we can define only
-; after introducing certain history management utilities.
-
            (proceed-from-brkpt1 'silent t :ok state)))
       (:ok!
        0 (lambda nil
-           (proceed-from-brkpt1 'silent nil :ok! state)))
+           (proceed-from-brkpt1 'silent :none :ok! state)))
       (:ok$
        1 (lambda (runes)
            (proceed-from-brkpt1 'silent runes :ok$ state)))
@@ -9195,8 +9776,8 @@ its attachment is ignored during proofs"))))
        0 ,(pot-list-fn t))
       (:q
        0 (lambda nil
-           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
-                      :p! to pop or :a! to abort.~%")
+           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or ~
+                        use :a! to abort.~%")
                    (value :invisible))))
       (:rewritten-rhs
        0 ,(not-yet-evaled-fn))
@@ -9238,11 +9819,42 @@ its attachment is ignored during proofs"))))
 
 ; Keep this in sync (as appropriate) with *brkpt1-aliases*.
 
+; Note: exit-brr used below is not yet defined but it doesn't matter since
+; this is just a quoted constant.
+
   (flet ((already-evaled-fn ()
                             '(lambda nil
                                (prog2$ (cw "You already have run some flavor ~
                                             of :eval.~%")
                                        (value :invisible))))
+         (lhs-fn (plusp)
+                 `(lambda nil
+                    (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                               :lhs)))
+                      (cond
+                       ((eq val :get-rule-field-none) ; linear lemma
+                        (er soft :LHS
+                            ":LHS is only legal for a :REWRITE rule."))
+                       (t
+                        (prog2$
+                         (cw "~X01~|" val ,(if plusp
+                                               nil
+                                               '(brr-evisc-tuple state)))
+                         (value :invisible)))))))
+         (max-term-fn (plusp)
+                      `(lambda nil
+                         (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                                    :max-term)))
+                           (cond
+                            ((eq val :get-rule-field-none) ; rewrite rule
+                             (er soft :MAX-TERM
+                                 ":MAX-TERM is only legal for a :LINEAR rule."))
+                            (t
+                             (prog2$
+                              (cw "~X01~|" val ,(if plusp
+                                                    nil
+                                                    '(brr-evisc-tuple state)))
+                              (value :invisible)))))))
          (ancestors-fn (plusp)
                        `(lambda nil
                           (prog2$
@@ -9255,7 +9867,8 @@ its attachment is ignored during proofs"))))
          (btm-fn (plusp)
                  `(lambda nil
                     (prog2$
-                     (let ((gstack (get-brr-global 'brr-gstack state)))
+                     (let* ((whs (f-get-global 'wormhole-status state))
+                            (gstack (access brr-status whs :brr-gstack)))
                        (cw-gframe (length gstack) nil (car gstack)
                                   ,(if plusp
                                        nil
@@ -9297,8 +9910,9 @@ its attachment is ignored during proofs"))))
                                    (value :invisible)))))))
          (frame-fn (plusp)
                    `(lambda (n)
-                      (let ((rgstack
-                             (reverse (get-brr-global 'brr-gstack state))))
+                      (let* ((whs (f-get-global 'wormhole-status state))
+                             (rgstack (reverse
+                                       (access brr-status whs :brr-gstack))))
                         (cond
                          ((and (integerp n)
                                (>= n 1)
@@ -9307,12 +9921,12 @@ its attachment is ignored during proofs"))))
                            (cw-gframe n
                                       (if (= n 1)
                                           nil
-                                        (access gframe (nth (- n 2) rgstack)
-                                                :sys-fn))
+                                          (access gframe (nth (- n 2) rgstack)
+                                                  :sys-fn))
                                       (nth (- n 1) rgstack)
                                       ,(if plusp
                                            nil
-                                         '(brr-evisc-tuple state)))
+                                           '(brr-evisc-tuple state)))
                            (value :invisible)))
                          (t (er soft :frame
                                 ":FRAME must be given an integer argument ~
@@ -9410,8 +10024,11 @@ its attachment is ignored during proofs"))))
                     (prog2$
                      (cw-gframe 1
                                 nil
-                                (car (reverse (get-brr-global 'brr-gstack
-                                                              state)))
+                                (car (reverse
+                                      (access brr-status
+                                              (f-get-global 'wormhole-status
+                                                            state)
+                                              :brr-gstack)))
                                 ,(if plusp
                                      nil
                                    '(brr-evisc-tuple state)))
@@ -9520,23 +10137,15 @@ its attachment is ignored during proofs"))))
       (:initial-ttree+
        0 ,(initial-ttree-fn t))
       (:lhs
-       0 (lambda nil
-           (let ((val (get-rule-field (get-brr-local 'lemma state)
-                                      :lhs)))
-             (cond
-              ((eq val :get-rule-field-none) ; linear lemma
-               (er soft :LHS
-                   ":LHS is only legal for a :REWRITE rule."))
-              (t
-               (prog2$
-                (cw "~x0~|" val)
-                (value :invisible)))))))
+       0 ,(lhs-fn nil))
+      (:lhs+
+       0 ,(lhs-fn t))
+      (:max-term
+       0 ,(max-term-fn nil))
+      (:max-term+
+       0 ,(max-term-fn t))
       (:ok
        0 (lambda nil
-
-; Note:  Exit-brr is not yet defined because it calls proceed-from-brkpt1.
-; See the note above about that function.
-
            (exit-brr state)))
       (:ok!
        0 (lambda nil
@@ -9559,8 +10168,8 @@ its attachment is ignored during proofs"))))
        0 ,(pot-list-fn t))
       (:q
        0 (lambda nil
-           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
-                      :p! to pop or :a! to abort.~%")
+           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, ~
+                       or use :a! to abort.~%")
                    (value :invisible))))
       (:rewritten-rhs
        0 ,(rewritten-rhs-fn nil))
@@ -9893,7 +10502,7 @@ its attachment is ignored during proofs"))))
 ; respect the original order of rewrites, as a convenience to the user.
 
   (declare (xargs :stobjs state))
-  (er-let* ((status (get-wormhole-status 'brr-data state)))
+  (er-let* ((status (get-persistent-whs 'brr-data state)))
     (value (let ((data (wormhole-data status)))
              (cond ((consp data)
 
@@ -9947,12 +10556,92 @@ its attachment is ignored during proofs"))))
                   ((f-get-global 'waterfall-parallelism state)
                    (er soft 'with-brr-data
                        "~x0 is not supported in ACL2(p) with waterfall ~
-                       parallelism on.  See :DOC ~
-                       unsupported-waterfall-parallelism-features."
+                        parallelism on.  See :DOC ~
+                        unsupported-waterfall-parallelism-features."
                        'with-brr-data))
                   (t ,form3))))
     `(prog2$ (clear-brr-data-lst)
              ,form4)))
+
+(defun near-miss-brkpt1 (lemma target type-alist ancestors initial-ttree
+                               gstack rcnst simplify-clause-pot-lst state)
+
+; This function is called when lemma failed to match target!  It causes a break
+; similar to the one caused by brkpt1 IF the lemma's monitor specified a
+; near-miss break criteria that is satisfied by the target.  See brkpt1.
+
+; #+ACL2-PAR note: see brkpt1.
+
+  (cond
+   #+acl2-par ; test is always false anyhow when #-acl2-par
+   ((f-get-global 'waterfall-parallelism state)
+    nil)
+   ((not (f-get-global 'gstackp state))
+    nil)
+   (t
+    (mv-let (rune brr-cmd-name pattern restrictions)
+      (get-brr-one-way-unify-info lemma rcnst)
+      (brr-wormhole
+       '(lambda (whs)
+          (set-wormhole-entry-code
+           whs
+
+; Most failed matches inevitably are on unmonitored lemmas (since the vast
+; majority of lemmas will be unmonitored).  So we optimize the case that there
+; is no monitor on lemma.  Pair is either nil -- for an unmonitored rune -- or
+; a pair of the form (rune . criteria-alist), where criteria-alist may or may
+; not contain near-miss criteria.
+
+           (let ((pair
+                  (assoc-equal
+                   (get-rule-field lemma :rune)
+                   (access brr-status whs :brr-monitored-runes))))
+             (cond
+              ((null pair)
+               :SKIP)
+              ((brr-near-missp nil ; no msg required
+                               lemma target rcnst (cdr pair))
+
+; We :ENTER if this is a near miss.  But we don't need a msg here, just a
+; simple Boolean: is this a near miss?
+               :ENTER)
+              (t :SKIP)))))
+       `((brr-gstack . ,gstack)
+         (brr-local-alist . ((rune . ,rune)
+                             (brr-cmd-name-for-pattern . ,brr-cmd-name)
+                             (pattern . ,pattern)
+                             (restrictions . ,restrictions)
+                             (lemma . ,lemma)
+                             (target . ,target)
+                             (type-alist . ,type-alist)
+                             (pot-list . ,simplify-clause-pot-lst)
+                             (ancestors . ,ancestors)
+                             (rcnst . ,rcnst)
+                             (initial-ttree . ,initial-ttree))))
+       '(pprogn
+         (push-brr-status state)
+         (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|~%The pattern in this ~
+                      rule failed to match the target~#4~[~/ under the ~
+                      restrictions ~x5~].  ~@6"
+                     (brr-depth state)
+                     (get-rule-field (get-brr-local 'lemma state)
+                                     :rune)
+                     (get-brr-local 'target state)
+                     (brr-evisc-tuple state)
+                     (if (get-brr-local 'restrictions state) 1 0)
+                     (get-brr-local 'restrictions state)
+                     (brr-near-missp
+                      t ; msg required
+                      (get-brr-local 'lemma state)
+                      (get-brr-local 'target state)
+                      (get-brr-local 'restrictions state)
+                      (cdr (assoc-equal (get-brr-local 'rune state)
+                                        (access brr-status
+                                                (f-get-global 'wormhole-status
+                                                              state)
+                                                :brr-monitored-runes)))))
+                 (value t)))
+       *brkpt1-aliases*)))))
 
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
                      gstack rcnst simplify-clause-pot-lst state)
@@ -10003,46 +10692,58 @@ its attachment is ignored during proofs"))))
              (set-wormhole-entry-code
               whs
               (if (assoc-equal (get-rule-field lemma :rune)
-                               (cdr (assoc-eq 'brr-monitored-runes
-                                              (wormhole-data whs))))
+                               (access brr-status whs :brr-monitored-runes))
                   :ENTER
                 :SKIP)))
           `((brr-gstack . ,gstack)
-            (brr-alist . ((lemma . ,lemma)
-                          (target . ,target)
-                          (unify-subst . ,unify-subst)
-                          (type-alist . ,type-alist)
-                          (pot-list . ,simplify-clause-pot-lst)
-                          (ancestors . ,ancestors)
-                          (rcnst . ,rcnst)
-                          (initial-ttree . ,initial-ttree))))
+            (brr-local-alist . ((lemma . ,lemma)
+                                (target . ,target)
+                                (unify-subst . ,unify-subst)
+                                (type-alist . ,type-alist)
+                                (pot-list . ,simplify-clause-pot-lst)
+                                (ancestors . ,ancestors)
+                                (rcnst . ,rcnst)
+                                (initial-ttree . ,initial-ttree))))
           '(pprogn
-            (push-brr-stack-frame state)
-            (put-brr-local 'depth (1+ (or (get-brr-local 'depth state) 0))
-                           state)
-            (let ((pair
-                   (assoc-equal (get-rule-field (get-brr-local 'lemma state)
-                                                :rune)
-                                (get-brr-global 'brr-monitored-runes state))))
+            (push-brr-status state)
+            (let ((pair (assoc-equal (get-rule-field (get-brr-local 'lemma
+                                                                    state)
+                                                     :rune)
+                                     (access brr-status
+                                             (f-get-global 'wormhole-status
+                                                           state)
+                                             :brr-monitored-runes))))
 ; We know pair is non-nil because of the entrance test on wormhole above
-              (er-let*
-                  ((okp (eval-break-condition (car pair) (cadr pair) 'wormhole
-                                              state)))
+              (mv-let (erp okp state)
+                (eval-break-condition (car pair)
+                                      (cdr (assoc-eq :condition (cdr pair)))
+                                      'wormhole state)
                 (cond
+                 (erp
+
+; If evaling the break condition caused an error, we abort.  The error message
+; has already been printed by eval-break-condition.  To continue silently will
+; most likely just cause the error to be printed repeatedly as the lemma is
+; tried repeatedly.  To enter the interactive loop might leave an offline proof
+; just hanging.
+
+                  (pprogn
+                   (stuff-standard-oi '(:a!) state)
+                   (value t)))
                  (okp
                   (pprogn
                    (cond ((true-listp okp)
                           (stuff-standard-oi okp state))
                          (t state))
                    (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|"
-                               (get-brr-local 'depth state)
+                               (brr-depth state)
                                (get-rule-field (get-brr-local 'lemma state)
                                                :rune)
                                (get-brr-local 'target state)
                                (brr-evisc-tuple state))
                            (value t))))
                  (t (pprogn
-                     (pop-brr-stack-frame state)
+                     (pop-brr-status state)
                      (value nil)))))))
           *brkpt1-aliases*))))))))
 
@@ -10066,43 +10767,47 @@ its attachment is ignored during proofs"))))
           '(lambda (whs)
              (set-wormhole-entry-code
               whs
-              (if (assoc-equal gstack
-                               (cdr (assoc-eq 'brr-stack (wormhole-data whs))))
+              (if (equal gstack (access brr-status whs :brr-gstack))
                   :ENTER
                 :SKIP)))
           `((brr-gstack . ,gstack)
-            (brr-alist . ((wonp . ,wonp)
-                          (failure-reason . ,failure-reason)
-                          (unify-subst . ,unify-subst) ; maybe changed
-                          (brr-result . ,brr-result)
-                          (rcnst . ,rcnst)
-                          (final-ttree . ,final-ttree))))
+            (brr-local-alist . ((wonp . ,wonp)
+                                (failure-reason . ,failure-reason)
+                                (unify-subst . ,unify-subst) ; maybe changed
+                                (brr-result . ,brr-result)
+                                (rcnst . ,rcnst)
+                                (final-ttree . ,final-ttree))))
           '(cond
             ((eq (get-brr-local 'action state) 'silent)
-             (prog2$ (cw "~F0)~%" (get-brr-local 'depth state))
+
+; We ought, perhaps, start by using put-brr-locals to augment the
+; :brr-local-alist inherited from brkpt1 with the additional locals (above)
+; passed to brkpt2.  But the action 'silent requires no use of those new
+; locals so we avoid the unnecessary work.
+
+             (prog2$ (cw "~F0)~%" (brr-depth state))
                      (pprogn
-                      (f-put-global 'brr-monitored-runes
-                                    (get-brr-local 'saved-brr-monitored-runes
-                                                   state)
-                                    state)
-                      (f-put-global 'brr-evisc-tuple
-                                    (get-brr-local 'saved-brr-evisc-tuple
-                                                   state)
-                                    state)
-                      (pop-brr-stack-frame state)
+                      (pop-brr-status state)
                       (value nil))))
             ((eq (get-brr-local 'action state) 'print)
+
+; In order to print the results we need to augment the :brr-local-alist with
+; the new inputs.
+
              (pprogn
-              (put-brr-local-lst (f-get-global 'brr-alist state) state)
+              (put-brr-locals (cdr (assoc-eq 'brr-local-alist
+                                             (f-get-global 'wormhole-input
+                                                           state)))
+                              state)
               (prog2$ (if (get-brr-local 'wonp state)
                           (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%"
-                              (get-brr-local 'depth state)
+                              (brr-depth state)
                               (get-rule-field (get-brr-local 'lemma state)
                                               :rune)
                               (brr-result state)
                               (brr-evisc-tuple state))
                         (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%"
-                            (get-brr-local 'depth state)
+                            (brr-depth state)
                             (get-rule-field (get-brr-local 'lemma state) :rune)
                             (tilde-@-failure-reason-phrase
                              (get-brr-local 'failure-reason state)
@@ -10112,54 +10817,49 @@ its attachment is ignored during proofs"))))
                              (free-vars-display-limit state)
                              state)))
                       (pprogn
-                       (f-put-global 'brr-monitored-runes
-                                     (get-brr-local 'saved-brr-monitored-runes
-                                                    state)
-                                     state)
-                       (f-put-global 'brr-evisc-tuple
-                                     (get-brr-local 'saved-brr-evisc-tuple
-                                                    state)
-                                     state)
-                       (pop-brr-stack-frame state)
+                       (pop-brr-status state)
                        (value nil)))))
             (t (pprogn
-                (put-brr-local-lst (f-get-global 'brr-alist state) state)
+
+; To interact with the user we need to augment the :brr-local-alist with the
+; new inputs.
+
+                (put-brr-locals (cdr (assoc-eq 'brr-local-alist
+                                               (f-get-global 'wormhole-input
+                                                             state)))
+                                state)
                 (er-progn
                  (set-standard-oi
                   (get-brr-local 'saved-standard-oi state)
                   state)
                  (cond ((consp (f-get-global 'standard-oi state))
                         (set-ld-pre-eval-print t state))
-                       (t (value nil)))
-                 (pprogn
-                  (f-put-global 'brr-monitored-runes
-                                (get-brr-local 'saved-brr-monitored-runes
-                                               state)
-                                state)
-                  (f-put-global 'brr-evisc-tuple
-                                (get-brr-local 'saved-brr-evisc-tuple
-                                               state)
-                                state)
-                  (prog2$
-                   (if (get-brr-local 'wonp state)
-                       (cw "~%~F0! ~F1 produced ~X23.~|~%"
-                           (get-brr-local 'depth state)
-                           (get-rule-field (get-brr-local 'lemma state) :rune)
-                           (brr-result state)
-                           (brr-evisc-tuple state))
-                     (cw "~%~F0x ~F1 failed because ~@2~|~%"
-                         (get-brr-local 'depth state)
-                         (get-rule-field (get-brr-local 'lemma state) :rune)
-                         (tilde-@-failure-reason-phrase
-                          (get-brr-local 'failure-reason state)
-                          1
-                          (get-brr-local 'unify-subst state)
-                          (brr-evisc-tuple state)
-                          (free-vars-display-limit state)
-                          state)))
-                   (value t)))))))
+                       (t (value nil))) ; This (value nil) is not an exit!
+                 (prog2$
+                  (if (get-brr-local 'wonp state)
+                      (cw "~%~F0! ~F1 produced ~X23.~|~%"
+                          (brr-depth state)
+                          (get-rule-field (get-brr-local 'lemma state) :rune)
+                          (brr-result state)
+                          (brr-evisc-tuple state))
+                    (cw "~%~F0x ~F1 failed because ~@2~|~%"
+                        (brr-depth state)
+                        (get-rule-field (get-brr-local 'lemma state) :rune)
+                        (tilde-@-failure-reason-phrase
+                         (get-brr-local 'failure-reason state)
+                         1
+                         (get-brr-local 'unify-subst state)
+                         (brr-evisc-tuple state)
+                         (free-vars-display-limit state)
+                         state)))
+
+; We enter the interactive loop.  All exits are handled by the keyword aliases
+; and ought to pop-brr-status.
+
+                  (value t))))))
           *brkpt2-aliases*)
-         (and (eq gstackp :brr-data)
+         (and (not (eq failure-reason 'near-miss))
+              (eq gstackp :brr-data)
               (brkpt2-brr-data-entry ancestors gstack rcnst state)
               (wormhole-eval 'brr-data
                              '(lambda (whs)
@@ -10354,8 +11054,7 @@ its attachment is ignored during proofs"))))
             (alist1 msg)
             (fms msg alist1 *standard-co* state (ld-evisc-tuple state)))
        (er-let*
-        ((ans (with-infixp-nil
-               (read-object *standard-oi* state))))
+        ((ans (read-object *standard-oi* state)))
         (let ((temp (and (symbolp ans)
                          (assoc-keyword
                           (intern (symbol-name ans) "KEYWORD")
@@ -10796,22 +11495,6 @@ its attachment is ignored during proofs"))))
           (expand-permission-result term rcnst geneqv wrld)
           (declare (ignore hyp unify-subst rune))
           (and new-term new-rcnst)))
-
-(defun one-way-unify-restrictions1 (pat term restrictions)
-  (cond
-   ((null restrictions)
-    (mv nil nil))
-   (t (mv-let (unify-ans unify-subst)
-              (one-way-unify1 pat term (car restrictions))
-              (cond
-               (unify-ans (mv unify-ans unify-subst))
-               (t (one-way-unify-restrictions1 pat term (cdr restrictions))))))))
-
-(defun one-way-unify-restrictions (pat term restrictions)
-  (cond
-   ((null restrictions)
-    (one-way-unify pat term))
-   (t (one-way-unify-restrictions1 pat term restrictions))))
 
 (defun ev-fncall! (fn args state aok)
 
@@ -12950,28 +13633,6 @@ its attachment is ignored during proofs"))))
 ; WARNING: This macro assumes that the given rw-cache is non-empty.
 
   `(eq (car ,cache) t))
-
-(defun merge-symbol-alistp (a1 a2)
-  (cond ((endp a1) a2)
-        ((endp a2) a1)
-        ((symbol< (caar a1) (caar a2))
-         (cons (car a1)
-               (merge-symbol-alistp (cdr a1) a2)))
-        (t
-         (cons (car a2)
-               (merge-symbol-alistp a1 (cdr a2))))))
-
-(defun merge-sort-symbol-alistp (alist)
-  (cond ((endp (cdr alist)) alist)
-        ((endp (cddr alist))
-         (cond ((symbol< (car (car alist)) (car (cadr alist)))
-                alist)
-               (t (list (cadr alist) (car alist)))))
-        (t (let* ((n (length alist))
-                  (a (ash n -1)))
-             (merge-symbol-alistp
-              (merge-sort-symbol-alistp (take a alist))
-              (merge-sort-symbol-alistp (nthcdr a alist)))))))
 
 (defun cdr-sort-rw-cache (cache)
 
@@ -17745,7 +18406,16 @@ its attachment is ignored during proofs"))))
                                          unify-subst gstack nil nil
                                          rcnst ancestors state)
                                  (mv step-limit nil term ttree)))))))))
-                       (t (mv step-limit nil term ttree))))))
+                       (t (progn$
+                           (near-miss-brkpt1 lemma term type-alist
+                                             ancestors ttree
+                                             gstack rcnst
+                                             simplify-clause-pot-lst
+                                             state)
+                           (brkpt2 nil 'near-miss
+                                   unify-subst gstack nil nil
+                                   rcnst ancestors state)
+                           (mv step-limit nil term ttree)))))))
            (t (mv step-limit nil term ttree))))))
 
 (defun rewrite-with-lemmas1 (term lemmas
@@ -18176,15 +18846,25 @@ its attachment is ignored during proofs"))))
                                              simplify-clause-pot-lst
                                              (access rewrite-constant rcnst
                                                      :pt)))))))))))
-                (t (prepend-step-limit
-                    2
-                    (rewrite-solidify term type-alist obj geneqv
-                                      (access rewrite-constant rcnst
-                                              :current-enabled-structure)
-                                      wrld ttree
-                                      simplify-clause-pot-lst
-                                      (access rewrite-constant rcnst
-                                              :pt))))))))))))
+                (t
+                 (progn$
+                  (near-miss-brkpt1 rule term type-alist
+                                    ancestors ttree
+                                    gstack rcnst
+                                    simplify-clause-pot-lst
+                                    state)
+                  (brkpt2 nil 'near-miss
+                          unify-subst gstack nil nil
+                          rcnst ancestors state)
+                  (prepend-step-limit
+                   2
+                   (rewrite-solidify term type-alist obj geneqv
+                                     (access rewrite-constant rcnst
+                                             :current-enabled-structure)
+                                     wrld ttree
+                                     simplify-clause-pot-lst
+                                     (access rewrite-constant rcnst
+                                             :pt)))))))))))))
 
 (defun rewrite-with-lemmas (term ; &extra formals
                             rdepth step-limit
@@ -18819,7 +19499,16 @@ its attachment is ignored during proofs"))))
                          unify-subst gstack nil nil
                          rcnst ancestors state)
                  (mv step-limit nil simplify-clause-pot-lst))))))))
-       (t (mv step-limit nil simplify-clause-pot-lst)))))))
+       (t (progn$
+           (near-miss-brkpt1 lemma term type-alist
+                             ancestors nil ; ttree
+                             gstack rcnst
+                             simplify-clause-pot-lst
+                             state)
+           (brkpt2 nil 'near-miss
+                   unify-subst gstack nil nil
+                   rcnst ancestors state)
+           (mv step-limit nil simplify-clause-pot-lst))))))))
 
 (defun add-linear-lemmas (term linear-lemmas ; &extra formals
                                rdepth step-limit

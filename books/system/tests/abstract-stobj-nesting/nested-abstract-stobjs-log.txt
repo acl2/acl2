@@ -1810,6 +1810,10 @@ must not be applied to the wrong stobj.
 
 
 
+
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(UBT 'FLD4$A)
    d      54:x(DEFUN-NX CREATE-ST4$A NIL ...)
 ACL2 !>>(DEFUN-NX FLD4$A (X)
@@ -2300,6 +2304,10 @@ export FLD5 declares as a stobj the formal parameter, ST5$C.  This
 is illegal because ST5$C is the foundational stobj for the proposed
 abstract stobj, ST5.
 
+
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST5 ...):  See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(DEFUN-NX FLD5$C-ALT (X)
                   (DECLARE (XARGS :GUARD (NON-EXEC (ST5$CP X))))
                   (FLD5$C X))

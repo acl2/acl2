@@ -1,6 +1,6 @@
 ; A linter for ACL2
 ;
-; Copyright (C) 2018-2020 Kestrel Institute
+; Copyright (C) 2018-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -78,7 +78,7 @@
 (include-book "format-strings")
 (include-book "quote")
 (include-book "my-get-event")
-(include-book "defining-forms")
+(include-book "defining-forms") ; for DEFUN-OR-MUTUAL-RECURSION-FORMP
 (include-book "world")
 (include-book "conjunctions")
 (include-book "conjuncts-and-disjuncts2") ;todo: use the simpler version?
@@ -86,6 +86,7 @@
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
+(include-book "kestrel/world-light/fn-primitivep" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "book-of-event")
 (include-book "fresh-names")
@@ -632,9 +633,10 @@
               nil
             (if (eq 'if fn) ; separate because we process the args differently
                 (lint-call-of-if term subst type-alist iff-flag thing-being-checked suppress state)
-              (prog2$ (lint-terms (fargs term) subst type-alist
-                                   nil ; iff-flag
-                                   thing-being-checked suppress state)
+              ;; Regular function or lambda:
+              (progn$ (lint-terms (fargs term) subst type-alist
+                                  nil ; iff-flag
+                                  thing-being-checked suppress state)
                       ;; TODO: Use the subst for these?
                       (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
                           (check-call-of-fmt-function term thing-being-checked)
@@ -652,14 +654,21 @@
                                       (check-call-of-illegal term thing-being-checked suppress)
                                     (if (consp fn) ;check for lambda
                                         (lint-term (lambda-body fn)
-                                                    ;; new subst, since we are in a lambda body
-                                                    (pairlis$ (lambda-formals fn)
-                                                              (sublis-var-simple-lst subst (fargs term)))
-                                                    type-alist iff-flag thing-being-checked suppress state)
-                                      (and (not (member-eq :ground-term suppress))
-                                           (not (eq 'synp (ffn-symb term))) ; synp calls are usually ground terms
-                                           (quote-listp (fargs term))
-                                           (cw "(In ~s0,~% ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))))))))))))))))
+                                                   ;; new subst, since we are in a lambda body
+                                                   (pairlis$ (lambda-formals fn)
+                                                             (sublis-var-simple-lst subst (fargs term)))
+                                                   type-alist iff-flag thing-being-checked suppress state)
+                                      nil))))))))
+                      ;; Check for ground term:
+                      (and (not (member-eq :ground-term suppress))
+                           (not (eq 'synp fn)) ; synp calls are usually ground terms
+                           (not (member-eq fn '(hard-error error1 illegal))) ; these have side effects that shoud be kept
+                           ;; don't report ground calls of constrained functions:
+                           (or (flambdap fn)
+                               (fn-primitivep fn (w state))
+                               (fn-definedp fn (w state)))
+                           (quote-listp (fargs term))
+                           (cw "(In ~s0,~% ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))))))))
 
  (defun lint-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
@@ -691,14 +700,19 @@
                 state)
       state)))
 
+;; Applies the linter to FN, which should be a function that exists in (w state).
 ;; Returns state.
 (defun lint-defun (fn assume-guards suppress step-limit state)
-  (declare (xargs :stobjs state
+  (declare (xargs :guard (and (symbolp fn)
+                              (booleanp assume-guards)
+                              (keyword-listp suppress) ;strengthen?
+                              (natp step-limit))
+                  :stobjs state
                   :mode :program))
-  (b* ((body (fn-body fn t (w state)))
+  (b* ((body (fn-body fn t (w state))) ; translated
        ;; (formals (fn-formals fn (w state)))
        (event (my-get-event fn (w state)))
-       (declares (and (defun-or-mutual-recursion-formp event)
+       (declares (and (defun-or-mutual-recursion-formp event) ; todo: what if not (e.g., a define?)
                       (get-declares-from-event fn event)))
        (xargs (get-xargs-from-declares declares))
        (guard-debug-res (assoc-keyword :guard-debug xargs))
@@ -712,6 +726,7 @@
     (progn$ (and (not (member-eq :guard-debug suppress))
                  guard-debug-res
                  (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
+            ;; Apply the linter to the guard:
             (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninterseting
                  (lint-term guard
                              nil ;empty substitution
@@ -719,6 +734,7 @@
                              t   ;iff-flag
                              (concatenate 'string "guard of " (symbol-to-string fn))
                              suppress state))
+            ;; Apply the linter to the body:
             (lint-term body
                         nil ;empty substitution
                         type-alist
@@ -1035,11 +1051,11 @@
 
 ;; Returns state.
 (defun lint-defthm (name ;assume-guards
+                    body ; translated
                     suppress step-limit state)
   (declare (xargs :stobjs state
                   :mode :program))
-  (b* ((body (defthm-body name (w state)))
-       ;;optimize this?
+  (b* (;;optimize this?
        (untouchable-fns-in-body (intersection-eq (all-fnnames body)
                                                  (global-val 'untouchable-fns (w state))))
        ((when untouchable-fns-in-body)
@@ -1059,14 +1075,16 @@
                       nil ;type-alist
                       nil ;iff-flag todo
                       name
-                      suppress state))
+                      (add-to-set-eq :equality-variant suppress) ; don't suggest using things other than equal, since this is a defthm
+                      state))
        ;; Check the conclusion, including checking for ground terms ,etc:
        (- (lint-term conclusion
                      nil ;empty substitution
                      nil ;type-alist
                      nil ;iff-flag todo
                      name
-                     (cons :resolvable-test suppress) ; don't report clearly true conjuncts in the conclusion (what about true disjuncts?)
+                     (add-to-set-eq :equality-variant ; don't suggest using things other than equal, since this is a defthm
+                                    (add-to-set-eq :resolvable-test suppress)) ; don't report clearly true conjuncts in the conclusion (what about true disjuncts?)
                      state))
        (non-synp-hyps (drop-calls-of 'synp hyps))
        (non-synp-hyps (drop-calls-of 'axe-syntaxp non-synp-hyps))
@@ -1109,6 +1127,7 @@
            (state (if checkp
                       (progn$ (cw "~s0 ~x1.~%" (describe-event-location name (w state)) name)
                               (lint-defthm name ;assume-guards
+                                           (defthm-body name (w state))
                                            suppress step-limit state))
                     state)))
       (lint-defthms (rest names) ;assume-guards
@@ -1155,7 +1174,7 @@
                      (intersection-eq event-names all-defuns)))
        (all-defthms (if (eq event-names :all)
                         all-defthms
-                     (intersection-eq event-names all-defthms)))
+                      (intersection-eq event-names all-defthms)))
        (state (if check-defuns
                   (prog2$ (cw "Applying linter to ~x0 defuns:~%~%" (len all-defuns))
                           (lint-defuns all-defuns assume-guards suppress skip-fns step-limit state))
@@ -1163,19 +1182,19 @@
        (state (if check-defthms
                   (prog2$ (cw "~%Applying linter to ~x0 defthms:~%~%" (len all-defthms))
                           (lint-defthms all-defthms ; assume-guards
-                                         suppress
-                                         nil ;todo
-                                         step-limit
-                                         state))
+                                        suppress
+                                        nil ;todo
+                                        step-limit
+                                        state))
                 state)))
     state))
 
-;; Call this macro to check every defun in the current ACL2 world.
+;; Call this macro to check every defun and defthm in the current ACL2 world.
 (defmacro run-linter (&key (event-range ':after-linter) ;; either :after-linter (check only events introduced after the linter was included) or :all
                            (event-names ':all) ;; List of specific names to lint, or :all (meaning don't filter by name)
                            (suppress '(:ground-term :context)) ;; types of check to skip
                            (assume-guards 't) ;; whether to assume guards when analyzing function bodies
-                           (skip-fns 'nil) ;; functions to skip checking
+                           (skip-fns 'nil)    ;; functions to not check
                            (check-defuns 't)
                            (check-defthms 't)
                            (step-limit '1000)

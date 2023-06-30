@@ -15,6 +15,7 @@
 (include-book "rebuild-nodes") ;todo: reduce
 (include-book "remove-duplicates-from-sorted-list")
 (include-book "kestrel/lists-light/repeat" :dir :system)
+(local (include-book "numeric-lists"))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
