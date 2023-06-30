@@ -38,6 +38,7 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/all-included-books" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
+(include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
 (include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
 (include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
@@ -434,36 +435,41 @@
           (name (first defthm-args))
           (body (second defthm-args))
           (keyword-value-list (rest (rest defthm-args)))
-          (hintsp (assoc-keyword :hints keyword-value-list))
-          ;; TODO: Try deleting the :otf-flg
-          ;; Try removing hints:
-          (state (if (not hintsp)
-                     state ; no hints to try dropping
-                   (let ((event-without-hints `(,defthm-variant ,name ,body ,@(remove-keyword :hints keyword-value-list)))
-                         (drop-hints-message (concatenate 'string (newline-string) "  Drop all :hints.")))
-                     (mv-let (improvement-foundp state)
-                       (try-improved-event event-without-hints drop-hints-message state)
-                       (if improvement-foundp
-                           state
-                         ;; could not drop all hints, so try one by one:
-                         (let* ((hints (cadr hintsp))
-                                (alist (defthms-with-removed-hints defthm-variant name body hints)))
-                           (mv-let (improvement-foundp state)
-                             (try-improved-events alist nil state)
-                             (declare (ignore improvement-foundp)) ;todo: don't bother to return this?
-                             state)))))))
-          ;; Apply the linter:
-          (state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
-     ;; Try to speed up the proof:
-     (mv-let (erp state)
-       (speed-up-defthm event print state)
-       (if erp
-           (mv erp state)
-         (prog2$ (and print (cw ")~%"))
-                 ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
-                 (submit-event event nil nil state)))))))
+          (hintsp (assoc-keyword :hints keyword-value-list)))
+     (if (defthm-or-defaxiom-symbolp name (w state))
+         ;; It already exists (presumably identical):
+         (prog2$ (cw "  Drop (redundant).)~%") ; no more checking to do, though we have seen a redundant event with a bad subst in the hints...
+                 (mv nil state))
+       (let* ( ;; TODO: Try deleting the :otf-flg
+              ;; Try removing hints:
+              (state (if (not hintsp)
+                         state ; no hints to try dropping
+                       (let ((event-without-hints `(,defthm-variant ,name ,body ,@(remove-keyword :hints keyword-value-list)))
+                             (drop-hints-message (concatenate 'string (newline-string) "  Drop all :hints.")))
+                         (mv-let (improvement-foundp state)
+                           (try-improved-event event-without-hints drop-hints-message state)
+                           (if improvement-foundp
+                               state
+                             ;; could not drop all hints, so try one by one:
+                             (let* ((hints (cadr hintsp))
+                                    (alist (defthms-with-removed-hints defthm-variant name body hints)))
+                               (mv-let (improvement-foundp state)
+                                 (try-improved-events alist nil state)
+                                 (declare (ignore improvement-foundp)) ;todo: don't bother to return this?
+                                 state)))))))
+              ;; Apply the linter:
+              (state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
+         ;; Try to speed up the proof:
+         (mv-let (erp state)
+           (speed-up-defthm event print state)
+           (if erp
+               (mv erp state)
+             (prog2$ (and print (cw ")~%"))
+                     ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
+                     (submit-event event nil nil state)))))))))
 
 ;; Returns (mv erp state).
+;; TODO: Check for redundant.
 (defun improve-defun-event (event rest-events print state)
   (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
@@ -541,7 +547,7 @@
          (prog2$ (cw "~%   Skipping: already included in session).~%")
                  (submit-event-expect-no-error event nil state))
        (if (member-equal full-path (all-included-books (w state)))
-           (prog2$ (cw "~%   Drop (redundant).)~%" event nil)
+           (prog2$ (cw "~%   Drop include (redundant).)~%" event nil)
                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                    (submit-event-expect-no-error event nil state))
          (mv-let (successp state)
@@ -553,7 +559,7 @@
                ;; Somehow avoid suggesting to drop books that introduce names used
                ;; in macros (they will seem like they can be dropped, unless the
                ;; book contains an actual call of the macro).
-               (prog2$ (cw "~%   Drop.)~%" event nil)
+               (prog2$ (cw "~%   Drop include.)~%" event nil)
                        ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                        (submit-event-expect-no-error event nil state))
              ;;failed to submit the rest of the events, so we can't just skip this one:

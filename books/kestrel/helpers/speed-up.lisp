@@ -45,7 +45,7 @@
     (declare (ignore value))
     (mv erp state)))
 
-;; Returns (mv erp provedp elapsed-time state)
+;; Returns (mv erp provedp elapsed-time state).
 ;move
 (defun prove$-nice-with-time (term
                               hints
@@ -145,41 +145,34 @@
     (if instructionsp
         (progn$ ;; (cw "Not trying to speed up ~x0 because it uses :instructions." name) ; todo: elsewhere, could try to prove without instructions
          (mv nil state))
-      ;; Record the start time:
-      (mv-let (start-time state)
-        (acl2::get-real-time state)
-        ;; Do the proof and time it:
-        (mv-let (erp provedp state)
-          (prove$-nice-fn body
-                          hints
-                          nil
-                          otf-flg
-                          nil ; time-limit
-                          nil ; step-limit
-                          state)
-          ;; Record the end time:
-          (mv-let (end-time state)
-            (acl2::get-real-time state)
-            (if erp
-                (mv erp state)
-              (if (not provedp)
-                  (prog2$ (er hard? 'speed-up-defthm "~x0 was expected to prove, but it failed." name)
-                          (mv :failed state))
-                (let* ((elapsed-time (- end-time start-time)))
-                  (if (< elapsed-time 1/100)
-                      (prog2$ (and (print-level-at-least-tp print)
-                                   (progn$ (cw "  ~%(Not trying to speed up ~x0 because it only takes " name)
-                                           (print-to-hundredths elapsed-time)
-                                           (cw " seconds)~%")))
-                              (mv nil state))
-                    (prog2$ (and (print-level-at-least-tp print)
-                                 (progn$ (cw "(Original time for ~x0: " name)
-                                         (print-to-hundredths elapsed-time)
-                                         (cw " seconds)~%")))
-                            ;; Get the list of runes used in the proof:
-                            (let* ((runes-used (get-event-data 'rules state))
-                                   (state (try-to-drop-rules-from-defthm (drop-fake-runes runes-used) body hints otf-flg elapsed-time print state)))
-                              (mv nil state)))))))))))))
+      ;; Do the proof and time it:
+      (mv-let (erp provedp elapsed-time state)
+        (prove$-nice-with-time body
+                               hints
+                               nil
+                               otf-flg
+                               nil ; time-limit
+                               nil ; step-limit
+                               state)
+        (if erp
+            (mv erp state)
+          (if (not provedp)
+              (prog2$ (er hard? 'speed-up-defthm "~x0 was expected to prove, but it failed." name)
+                      (mv :failed state))
+            (if (< elapsed-time 1/100)
+                (prog2$ (and (print-level-at-least-tp print)
+                             (progn$ (cw "  ~%(Not trying to speed up ~x0 because it only takes " name)
+                                     (print-to-hundredths elapsed-time)
+                                     (cw " seconds)~%")))
+                        (mv nil state))
+              (prog2$ (and (print-level-at-least-tp print)
+                           (progn$ (cw "(Original time for ~x0: " name)
+                                   (print-to-hundredths elapsed-time)
+                                   (cw " seconds)~%")))
+                      ;; Get the list of runes used in the proof:
+                      (let* ((runes-used (get-event-data 'rules state))
+                             (state (try-to-drop-rules-from-defthm (drop-fake-runes runes-used) body hints otf-flg elapsed-time print state)))
+                        (mv nil state))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
