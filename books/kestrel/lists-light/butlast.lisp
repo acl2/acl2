@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (local (include-book "take"))
-(local (include-book "true-list-fix"))
+;(local (include-book "true-list-fix"))
 
 (in-theory (disable butlast))
 

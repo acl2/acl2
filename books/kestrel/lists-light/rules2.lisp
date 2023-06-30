@@ -22,7 +22,7 @@
 (include-book "update-subrange2" )
 (include-book "take2" )
 (include-book "repeat-tail" )
-(include-book "perm" )
+;(include-book "perm" )
 (include-book "subrange" )
 (include-book "reverse-list" )
 (include-book "firstn" )
@@ -125,8 +125,9 @@
                 )
            (equal (SUBRANGE 0 n (UPDATE-NTH m val lst))
                   (append (SUBRANGE 0 (+ -1 n) lst) (list val))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (subrange update-nth append) (take-update-nth)))))
+  ;; :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  ;;          :in-theory (e/d (subrange update-nth append) (take-update-nth))))
+  )
 
 ;move to axe?
 (defthmd cons-iff (iff (cons x y) t))
@@ -396,7 +397,7 @@
                 )
            (equal (subrange start end (update-nth n val lst))
                   (subrange start end lst)))
-  :hints (("Goal" :in-theory (enable take update-nth-rewrite subrange))))
+  :hints (("Goal" :in-theory (enable update-nth-rewrite subrange))))
 
 ;bozo gen
 (defthm subsetp-equal-of-nthcdr-and-nthcdr

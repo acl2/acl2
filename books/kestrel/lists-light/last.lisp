@@ -56,8 +56,7 @@
 
 (defthm last-iff
   (iff (last l)
-       l)
-  :hints (("Goal" :in-theory (enable last))))
+       l))
 
 (defthm len-of-last
   (equal (len (last l))
@@ -69,19 +68,16 @@
 (defthm <=-of-acl2-count-of-last-linear
   (<= (acl2-count (last x))
       (acl2-count x))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable last))))
+  :rule-classes :linear)
 
 (defthm <-of-acl2-count-of-last-linear
   (implies (< 1 (len x))
            (< (acl2-count (last x))
               (acl2-count x)))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable last))))
+  :rule-classes :linear)
 
 (defthm last-when-not-cdr-cheap
   (implies (not (cdr x))
            (equal (last x)
                   x))
-  :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (enable last))))
+  :rule-classes ((:rewrite :backchain-limit-lst (1))))
