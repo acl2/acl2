@@ -3546,7 +3546,7 @@
                          (improve-recsp 't)
                          (print 't)
                          (server-url 'nil)
-                         (timeout '40) ; for both connection timeout and read timeout
+                         (timeout '60) ; for both connection timeout and read timeout
                          (debug 'nil)
                          (step-limit ':auto)
                          (time-limit ':auto)
@@ -3654,7 +3654,7 @@
                       (n '10) ; num-recs-per-model
                       (print 't)
                       (server-url 'nil)
-                      (timeout '40) ; for both connection timeout and read timeout
+                      (timeout '60) ; for both connection timeout and read timeout
                       (debug 'nil)
                       (step-limit ':auto)
                       (time-limit ':auto)
@@ -3815,7 +3815,7 @@
                        (improve-recsp 't)
                        (print 't)
                        (server-url 'nil)
-                       (timeout '40) ; for both connection timeout and read timeout
+                       (timeout '60) ; for both connection timeout and read timeout
                        (debug 'nil)
                        (step-limit ':auto)
                        (time-limit ':auto)
