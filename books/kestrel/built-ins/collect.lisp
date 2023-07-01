@@ -560,7 +560,6 @@
     standard-char-listp-forward-to-character-listp
     atom-listp-forward-to-true-listp
     eqlable-listp-forward-to-atom-listp
-    good-atom-listp-forward-to-atom-listp
     true-listp-revappend-type-prescription
     true-listp-take
     keyword-value-listp-forward-to-true-listp

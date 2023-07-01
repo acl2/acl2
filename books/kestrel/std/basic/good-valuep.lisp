@@ -32,9 +32,7 @@
    (xdoc::p
     "These good values are the only ones that can be constructed in execution.
      However, in the ACL2 logic, there may be bad atoms,
-     or @(tsee cons) pairs that contain, directly or indirectly, bad atoms.")
-   (xdoc::p
-    "Also see @(tsee good-atom-listp) in the ACL2 sources."))
+     or @(tsee cons) pairs that contain, directly or indirectly, bad atoms."))
   (or (acl2-numberp x)
       (characterp x)
       (stringp x)

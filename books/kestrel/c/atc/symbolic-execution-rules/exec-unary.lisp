@@ -22,7 +22,7 @@
 (include-book "value-integer-get")
 (include-book "apconvert")
 
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))

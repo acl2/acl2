@@ -25,7 +25,7 @@
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
