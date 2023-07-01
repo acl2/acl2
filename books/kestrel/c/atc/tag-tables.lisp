@@ -13,7 +13,7 @@
 
 (include-book "defstruct")
 
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 

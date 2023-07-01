@@ -491,7 +491,7 @@ A macro that locally turns off @('cgen') testing and then calls @('defthmd').
     (if (< lx ly) x y)))
 
 (defun best-package-symbl-list (l s)
-  (declare (xargs :guard (and (good-atom-listp l) (stringp s))))
+  (declare (xargs :guard (and (atom-listp l) (stringp s))))
   (cond ((endp l) s)
         ((symbolp (car l))
          (best-package-symbl-list
@@ -500,11 +500,11 @@ A macro that locally turns off @('cgen') testing and then calls @('defthmd').
         (t (best-package-symbl-list (cdr l) s))))
 
 (defthm best-package-symbl-list-stringp
-  (implies (and (good-atom-listp l) (stringp s))
+  (implies (and (atom-listp l) (stringp s))
            (stringp (best-package-symbl-list l s))))
 
 (defthm best-package-symbl-list-not-empty
-  (implies (and (good-atom-listp l) (pkgp s))
+  (implies (and (atom-listp l) (pkgp s))
            (not (equal (best-package-symbl-list l s) ""))))
 
 #|
@@ -525,7 +525,7 @@ Now in defthm.lisp
   `(intern-in-package-of-symbol ,string (fix-sym ,sym)))
 
 (defun pack-to-string (l)
-  (declare (xargs :guard (good-atom-listp l)))
+  (declare (xargs :guard (atom-listp l)))
   (coerce (packn1 l) 'string))
 
 (defun gen-sym-sym (l sym)
@@ -533,7 +533,7 @@ Now in defthm.lisp
 ; This is a version of packn-pos that fixes the package (so that it's not
 ; *main-lisp-package-name*).
 
-  (declare (xargs :guard (and (good-atom-listp l)
+  (declare (xargs :guard (and (atom-listp l)
                               (symbolp sym))))
   (fix-intern-in-pkg-of-sym (pack-to-string l) sym))
 
@@ -571,7 +571,7 @@ Now in defthm.lisp
 (verify-guards gen-sym-sym)
 
 (defun gen-sym-pkg (l pkg)
-  (declare (xargs :guard (and (good-atom-listp l)
+  (declare (xargs :guard (and (atom-listp l)
                               (or (null pkg) (pkgp pkg)))))
   (fix-intern$ (pack-to-string l) pkg))
 
@@ -582,13 +582,13 @@ Now in defthm.lisp
 |#
 
 (defun make-symbl (l pkg)
-  (declare (xargs :guard (and (good-atom-listp l)
+  (declare (xargs :guard (and (atom-listp l)
                               (or (null pkg) (pkgp pkg)))))
   (fix-intern$ (pack-to-string l)
                (if pkg pkg (best-package-symbl-list l "ACL2"))))
 
 (defun mk-acl2s-sym (l)
-  (declare (xargs :guard (good-atom-listp l)))
+  (declare (xargs :guard (atom-listp l)))
   (make-symbl l "ACL2S"))
 
 (defmacro make-sym (s suf &optional pkg)

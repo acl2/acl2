@@ -14,7 +14,7 @@
 (include-book "../language/integer-ranges")
 
 (local (include-book "arithmetic-3/top" :dir :system))
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 

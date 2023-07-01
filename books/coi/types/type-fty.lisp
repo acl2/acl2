@@ -57,6 +57,14 @@
       (symbolp x)
       (characterp x)
       (stringp x)))
+
+; Matt K. addition summer 2023 to compensate for deletion of good-atom-listp
+; from ACL2:
+(defun good-atom-listp (lst)
+  (declare (type t lst))
+  (cond ((atom lst) (eq lst nil))
+        (t (and (good-atomp (car lst))
+                (good-atom-listp (cdr lst))))))
   
 (def::und safe-packn-pos (lst witness)
   (declare (xargs :signature ((good-atom-listp symbolp) symbolp)))

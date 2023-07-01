@@ -4436,7 +4436,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cons (+ 2 (car *tau-natp-pair*))
         'POSP))
 (defconst *tau-minusp-pair*
-  (cons (+ 14 (car *tau-natp-pair*))
+  (cons (+ 13 (car *tau-natp-pair*))
         'MINUSP))
 
 (defun rewrite-lambda-modep (x)
@@ -5323,24 +5323,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defthm eqlable-listp-forward-to-atom-listp
   (implies (eqlable-listp x)
-           (atom-listp x))
-  :rule-classes :forward-chaining)
-
-(defun good-atom-listp (lst)
-
-; Keep this in sync with bad-atom.
-
-  (declare (xargs :guard t
-                  :mode :logic))
-  (cond ((atom lst) (eq lst nil))
-        (t (and (or (acl2-numberp (car lst))
-                    (symbolp (car lst))
-                    (characterp (car lst))
-                    (stringp (car lst)))
-                (good-atom-listp (cdr lst))))))
-
-(defthm good-atom-listp-forward-to-atom-listp
-  (implies (good-atom-listp x)
            (atom-listp x))
   :rule-classes :forward-chaining)
 
@@ -16967,10 +16949,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; This function prints as though the print-radix is nil.  For a version that
 ; uses the print-radix, see explode-atom+.
 
-  (declare (xargs :guard (and (or (acl2-numberp x)
-                                  (characterp x)
-                                  (stringp x)
-                                  (symbolp x))
+  (declare (xargs :guard (and (atom x)
                               (print-base-p print-base))
                   :mode :program))
   (cond ((rationalp x)
@@ -17000,17 +16979,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; This case should never arise!
 
          (coerce "SOME IRRATIONAL OR COMPLEX IRRATIONAL NUMBER" 'list))
-        (t (coerce (symbol-name x) 'list))))
+        ((symbolp x) (coerce (symbol-name x) 'list))
+        (t (coerce "SOME BAD ATOM" 'list))))
 
 (verify-termination-boot-strap ; and guards
  explode-atom
  (declare (xargs :mode :logic)))
 
 (defun explode-atom+ (x print-base print-radix)
-  (declare (xargs :guard (and (or (acl2-numberp x)
-                                  (characterp x)
-                                  (stringp x)
-                                  (symbolp x))
+  (declare (xargs :guard (and (atom x)
                               (print-base-p print-base))
                   :mode :program))
   (cond ((null print-radix)
@@ -17871,10 +17848,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; the specification of the real Common Lisp princ is concerning the
 ; insertion of spaces and newlines into the resulting text.
 
-  (declare (xargs :guard (and (or (acl2-numberp x)
-                                  (characterp x)
-                                  (stringp x)
-                                  (symbolp x))
+  (declare (xargs :guard (and (atom x)
                               (state-p1 state-state)
                               (symbolp channel)
                               (open-output-channel-p1
@@ -21321,10 +21295,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;  prin1$ differs from prin1 in several ways.  The second arg is state, not
 ;  a stream.  prin1$ returns the modified state, not x.
 
-  (declare (xargs :guard (and (or (acl2-numberp x)
-                                  (characterp x)
-                                  (stringp x)
-                                  (symbolp x))
+  (declare (xargs :guard (and (atom x)
                               (state-p state)
                               (open-output-channel-p channel :character state))))
   #-acl2-loop-only
@@ -21429,7 +21400,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           (prin1-with-slashes x #\" channel state))
                          (t (princ$ x channel state)))
                    (princ$ #\" channel state))))
-        (t
+        ((symbolp x)
          (pprogn
           (cond ((keywordp x) (princ$ #\: channel state))
                 ((symbol-in-current-package-p x state)
@@ -21449,7 +21420,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (princ$ #\| channel state)
                   (prin1-with-slashes (symbol-name x) #\| channel state)
                   (princ$ #\| channel state)))
-                (t (princ$ x channel state)))))))
+                (t (princ$ x channel state)))))
+        (t (princ$ x channel state))))
 )
 
 
