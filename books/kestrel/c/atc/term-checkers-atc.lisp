@@ -17,8 +17,8 @@
 
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 
-(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 (local (include-book "projects/apply/loop" :dir :system))
 (local (in-theory (disable acl2::loop-book-theory)))

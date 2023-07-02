@@ -32,10 +32,10 @@
 (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
 (local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
-(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
