@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function open-output-channel!
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -69,7 +69,7 @@
   :hints (("Goal" :in-theory (enable open-output-channel!))))
 
 (defthm state-p-of-open-output-channel!
-  (implies (and (state-p1 state)
+  (implies (and (state-p state)
                 (stringp fname)
                 (member type *file-types*))
            (state-p (mv-nth 1 (open-output-channel! fname type state))))

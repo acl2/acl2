@@ -47,13 +47,12 @@
                                      open-input-channel-p
                                      open-input-channel-p1))))
 
-;; (defthm state-p-of-mv-nth-1-of-read-bytes-from-channel
-;;   (implies (and
-;;                 (open-input-channel-p channel :byte state)
-;;                 ;; (true-listp acc)
-;;                 (state-p state))
-;;            (state-p (mv-nth 1 (read-bytes-from-channel channel acc state))))
-;;   :hints (("Goal" :in-theory (enable state-p))))
+(defthm state-p-of-mv-nth-1-of-read-bytes-from-channel
+  (implies (and (open-input-channel-p channel :byte state)
+                ;; (true-listp acc)
+                (state-p state))
+           (state-p (mv-nth 1 (read-bytes-from-channel channel acc state))))
+  :hints (("Goal" :in-theory (enable state-p))))
 
 ;todo
 ;; (defthm open-input-channels-of-mv-nth-1-of-read-bytes-from-channel
