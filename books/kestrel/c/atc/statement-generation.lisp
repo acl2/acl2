@@ -964,14 +964,9 @@
          :thm-index gin.thm-index
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
-       (premises (atc-context->premises gin.context))
-       (items-new-premises (atc-context->premises items-new-context))
-       ((unless (prefixp premises items-new-premises))
-        (raise "Internal error: context ~x0 is not a prefix of context ~x1."
-               gin.context items-new-context)
-        (irr-stmt-gout))
-       (premises-diff (nthcdr (len premises) items-new-premises))
-       (new-compst (atc-contextualize-compustate gin.compst-var premises-diff))
+       (new-compst (atc-contextualize-compustate gin.compst-var
+                                                 gin.context
+                                                 items-new-context))
        (uterm (untranslate$ term nil state))
        (formula1 `(equal (exec-block-item-list ',all-items
                                                ,gin.compst-var

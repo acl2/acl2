@@ -2672,14 +2672,9 @@
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       (premises-start (atc-context->premises context-start))
-       (premises-end (atc-context->premises context-end))
-       ((unless (prefixp premises-start premises-end))
-        (raise "Internal error: prefix ~x0 is not a prefix of context ~x1."
-               context-start context-end)
-        (mv '(_) nil nil))
-       (premises-diff (nthcdr (len premises-start) premises-end))
-       (compst-term (atc-contextualize-compustate compst-var premises-diff))
+       (compst-term (atc-contextualize-compustate compst-var
+                                                  context-start
+                                                  context-end))
        (formula `(equal (pop-frame ,compst-term)
                         ,compst0-var))
        (formula (atc-contextualize formula
