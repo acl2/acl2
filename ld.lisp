@@ -56,8 +56,7 @@
 ; Warning:  If you change the default prompt format, be sure to change it
 ; in eval-event-lst, where we print it by hand.
 
-  (let ((prompt-memo (and (f-boundp-global 'prompt-memo state)
-                          (f-get-global 'prompt-memo state))))
+  (let ((prompt-memo (f-get-global 'prompt-memo state)))
     (cond
      ((and prompt-memo
            (equal (access ld-prompt-memo prompt-memo :current-package)
@@ -1228,11 +1227,9 @@
   nil)
 
 (defun adjust-ld-history (x state)
-  (declare (xargs :stobjs state
-                  :guard (and (or (and (integerp x)
+  (declare (xargs :guard (and (or (and (integerp x)
                                        (not (zerop x)))
                                   (booleanp x))
-                              (f-boundp-global 'ld-history state)
                               (consp (f-get-global 'ld-history state)))))
   (let* ((ld-history (f-get-global 'ld-history state))
          (len (len ld-history))
@@ -1300,8 +1297,7 @@
 
 (defun extend-ld-history (input error-flg trans-ans state)
   (declare (xargs :stobjs state
-                  :guard (and (f-boundp-global 'ld-history state)
-                              (consp (f-get-global 'ld-history state)))))
+                  :guard (consp (f-get-global 'ld-history state))))
   (let* ((ld-history (f-get-global 'ld-history state))
          (new-entry (make ld-history-entry
                           :input input
