@@ -2998,7 +2998,7 @@
                      body.events
                      body.thm-name
                      body.type
-                     new-context
+                     body.context
                      (change-stmt-gin
                       gin
                       :thm-index body.thm-index
