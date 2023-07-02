@@ -5953,7 +5953,7 @@
         sym))))
 
 (defun pack-to-string (l)
-  (declare (xargs :guard (good-atom-listp l)))
+  (declare (xargs :guard (atom-listp l)))
   (coerce (packn1 l) 'string))
 
 (defun gen-sym-sym (l sym)
@@ -5961,7 +5961,7 @@
 ; This is a version of packn-pos that fixes the package (so that it's not
 ; *main-lisp-package-name*).
 
-  (declare (xargs :guard (and (good-atom-listp l)
+  (declare (xargs :guard (and (atom-listp l)
                               (symbolp sym))))
   (fix-intern-in-pkg-of-sym (pack-to-string l) sym))
 

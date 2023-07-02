@@ -2887,8 +2887,27 @@
     :induct
     (princ$-data-region-string-helper fat32$c len channel state))))
 
-(verify-guards
-  princ$-data-region-string-helper)
+(encapsulate
+  ()
+
+; Matt K. mod for (verify-guards princ$-data-region-string-helper) to
+; accommodate change to princ$ guard summer 2023:
+
+  (local (defthm nth-of-data-regionp-is-atom
+           (implies (data-regionp x)
+                    (not (consp (nth i x))))
+           :hints (("Goal" :in-theory (enable data-regionp nth)))))
+
+  (local (defthm lofat-fs-p-forward-to-atom-data-regioni
+           (implies (lofat-fs-p fat32$c)
+                    (not (consp (data-regioni i fat32$c))))
+           :hints (("Goal" :in-theory '(lofat-fs-p fat32$c-p data-regioni
+                                                   nth-of-data-regionp-is-atom)))
+           :rule-classes ((:forward-chaining :trigger-terms
+                                             ((data-regioni i fat32$c))))))
+
+  (verify-guards
+    princ$-data-region-string-helper))
 
 (defthm
   data-region-string-helper-of-binary-append

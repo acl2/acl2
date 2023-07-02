@@ -7030,19 +7030,19 @@
   nil)
 
 (defun packn1 (lst)
-  (declare (xargs :guard (good-atom-listp lst)))
+  (declare (xargs :guard (atom-listp lst)))
   (cond ((endp lst) nil)
         (t (append (explode-atom (car lst) 10)
                    (packn1 (cdr lst))))))
 
 (defun packn-pos (lst witness)
-  (declare (xargs :guard (and (good-atom-listp lst)
+  (declare (xargs :guard (and (atom-listp lst)
                               (symbolp witness))))
   (intern-in-package-of-symbol (coerce (packn1 lst) 'string)
                                witness))
 
 (defun find-first-non-cl-symbol (lst)
-  (declare (xargs :guard (good-atom-listp lst)))
+  (declare (xargs :guard (atom-listp lst)))
   (cond ((endp lst) nil)
         ((and (symbolp (car lst))
               (not (equal (symbol-package-name (car lst))
@@ -7051,7 +7051,7 @@
         (t (find-first-non-cl-symbol (cdr lst)))))
 
 (defun packn (lst)
-  (declare (xargs :guard (good-atom-listp lst)))
+  (declare (xargs :guard (atom-listp lst)))
 
 ; This function produces a symbol which is named by concatenating string
 ; representations of the elements of lst, which may be any good atoms.  The

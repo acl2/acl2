@@ -20,7 +20,6 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/lists/butlast" :dir :system))
 (local (include-book "std/lists/last" :dir :system))
 
@@ -640,6 +639,12 @@
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Matt K. mod, summer 2023 when removing good-atom-listp: The following local
+; include-book serves as a replacement.  But it is here instead of near the top
+; of this book, because otherwise the include-book phase of certify-book was
+; failing.
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 (define integer-type-bits-nulfun ((type typep))
   :guard (type-integerp type)
