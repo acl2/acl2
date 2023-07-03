@@ -268,19 +268,19 @@
                       (mv nil state))))))))))))
 
 ;; Returns (mv erp state).
-(defun speed-up-event-fn (event print state)
+(defun speed-up-event-fn (form print state)
   (declare (xargs :guard (print-levelp print) ; todo: finish threading this through
                   :mode :program
                   :stobjs state))
-  (if (not (consp event))
+  (if (not (consp form))
       (prog2$ (er hard? 'speed-up-event-fn "~x0 is not a valid event.")
               (mv :invalid-event state))
-    (let ((fn (ffn-symb event)))
+    (let ((fn (ffn-symb form)))
       (case fn
-        ((defthm defthmd) (speed-up-defthm event print state))
-        ((defrule defruled) (speed-up-defrule event state))
-        (otherwise (prog2$ (er hard? 'speed-up-event-fn "Unsupported event type: ~X01." event nil)
+        ((defthm defthmd) (speed-up-defthm form print state))
+        ((defrule defruled) (speed-up-defrule form state))
+        (otherwise (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~X01." form nil)
                            (mv :unsupported-event state)))))))
 
-(defmacro speed-up-event (event)
-  `(speed-up-event-fn ',event :brief state))
+(defmacro speed-up-event (form)
+  `(speed-up-event-fn ',form :brief state))
