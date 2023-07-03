@@ -283,4 +283,4 @@
                            (mv :unsupported-event state)))))))
 
 (defmacro speed-up-event (event)
-  `(speed-up-event-fn ',event state))
+  `(speed-up-event-fn ',event :brief state))
