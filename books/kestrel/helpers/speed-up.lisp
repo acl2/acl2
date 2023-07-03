@@ -284,3 +284,5 @@
 
 (defmacro speed-up-event (form)
   `(speed-up-event-fn ',form :brief state))
+
+;; TODO: Add a way to apply to all events in a book.
