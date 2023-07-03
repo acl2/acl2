@@ -1389,13 +1389,16 @@
                                 (test-thm symbolp)
                                 (then-thm symbolp)
                                 (else-thm symbolp)
-                                (then-context atc-contextp)
-                                (else-context atc-contextp)
+                                (then-context-start atc-contextp)
+                                (else-context-start atc-contextp)
+                                (then-context-end atc-contextp)
+                                (else-context-end atc-contextp)
                                 (test-events pseudo-event-form-listp)
                                 (then-events pseudo-event-form-listp)
                                 (else-events pseudo-event-form-listp)
                                 (gin stmt-ginp)
                                 state)
+  (declare (ignore then-context-end else-context-end))
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C @('if') or @('if')-@('else') statement
           from an ACL2 term."
@@ -1500,7 +1503,7 @@
                                               ,gin.limit-var)
                                    (mv ,then-uterm ,gin.compst-var)))
        (then-stmt-formula1 (atc-contextualize then-stmt-formula1
-                                              then-context
+                                              then-context-start
                                               gin.fn
                                               gin.fn-guard
                                               gin.compst-var
@@ -1510,7 +1513,7 @@
                                               wrld))
        (then-stmt-formula2 `(,type-pred ,then-uterm))
        (then-stmt-formula2 (atc-contextualize then-stmt-formula2
-                                              then-context
+                                              then-context-start
                                               gin.fn
                                               gin.fn-guard
                                               nil
@@ -1525,7 +1528,7 @@
                                               ,gin.limit-var)
                                    (mv ,else-uterm ,gin.compst-var)))
        (else-stmt-formula1 (atc-contextualize else-stmt-formula1
-                                              else-context
+                                              else-context-start
                                               gin.fn
                                               gin.fn-guard
                                               gin.compst-var
@@ -1535,7 +1538,7 @@
                                               wrld))
        (else-stmt-formula2 `(,type-pred ,else-uterm))
        (else-stmt-formula2 (atc-contextualize else-stmt-formula2
-                                              else-context
+                                              else-context-start
                                               gin.fn
                                               gin.fn-guard
                                               nil
@@ -1978,13 +1981,16 @@
                                   :proofs gin.proofs
                                   :deprecated gin.deprecated)
                                  state))
-             ((erp (stmt-gout then) then-context)
-              (b* (((reterr) (irr-stmt-gout) nil)
+             ((erp (stmt-gout then)
+                   then-context-start
+                   then-context-end)
+              (b* (((reterr)
+                    (irr-stmt-gout) (irr-atc-context) (irr-atc-context))
                    (then-cond (untranslate$ test.term t state))
                    (then-premise (atc-premise-test then-cond))
                    (premises (atc-context->premises gin.context))
                    (then-premises (append premises (list then-premise)))
-                   (then-context
+                   (then-context-start
                     (change-atc-context gin.context :premises then-premises))
                    ((mv then-inscope
                         then-enter-scope-context
@@ -1995,14 +2001,14 @@
                         (atc-gen-enter-inscope gin.fn
                                                gin.fn-guard
                                                gin.inscope
-                                               then-context
+                                               then-context-start
                                                gin.compst-var
                                                gin.prec-tags
                                                test.thm-index
                                                test.names-to-avoid
                                                wrld)
                       (mv (cons nil gin.inscope)
-                          then-context
+                          then-context-start
                           nil
                           test.thm-index
                           test.names-to-avoid)))
@@ -2015,21 +2021,26 @@
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
                                    :proofs test.proofs)
-                                  state)))
+                                  state))
+                   (then-context-end (stmt-gout->context gout)))
                 (retok
                  (change-stmt-gout gout
                                    :events (append
                                             then-enter-scope-events
                                             (stmt-gout->events gout)))
-                 then-context)))
-             ((erp (stmt-gout else) else-context)
-              (b* (((reterr) (irr-stmt-gout) nil)
+                 then-context-start
+                 then-context-end)))
+             ((erp (stmt-gout else)
+                   else-context-start
+                   else-context-end)
+              (b* (((reterr)
+                    (irr-stmt-gout) (irr-atc-context) (irr-atc-context))
                    (not-test-term `(not ,test.term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
                    (premises (atc-context->premises gin.context))
                    (else-premises (append premises (list else-premise)))
-                   (else-context
+                   (else-context-start
                     (change-atc-context gin.context :premises else-premises))
                    ((mv else-inscope
                         else-enter-scope-context
@@ -2040,14 +2051,14 @@
                         (atc-gen-enter-inscope gin.fn
                                                gin.fn-guard
                                                gin.inscope
-                                               else-context
+                                               else-context-start
                                                gin.compst-var
                                                gin.prec-tags
                                                then.thm-index
                                                then.names-to-avoid
                                                wrld)
                       (mv (cons nil gin.inscope)
-                          else-context
+                          else-context-start
                           nil
                           then.thm-index
                           then.names-to-avoid)))
@@ -2060,19 +2071,22 @@
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
                                    :proofs test.proofs)
-                                  state)))
+                                  state))
+                   (else-context-end (stmt-gout->context gout)))
                 (retok
                  (change-stmt-gout gout
                                    :events (append
                                             else-enter-scope-events
                                             (stmt-gout->events gout)))
-                 else-context))))
+                 else-context-start
+                 else-context-end))))
           (atc-gen-if/ifelse-stmt test.term then.term else.term
                                   test.expr then.items else.items
                                   test.type then.type else.type
                                   then.limit else.limit
                                   test.thm-name then.thm-name else.thm-name
-                                  then-context else-context
+                                  then-context-start else-context-start
+                                  then-context-end else-context-end
                                   test.events then.events else.events
                                   (change-stmt-gin
                                    gin
