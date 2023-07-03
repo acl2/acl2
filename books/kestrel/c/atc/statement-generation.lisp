@@ -281,7 +281,7 @@
                                  (compst-var symbolp)
                                  (fenv-var symbolp)
                                  (limit-var symbolp)
-                                 (compst-term pseudo-termp)
+                                 (compst-term "An untranslated term.")
                                  (prec-tags atc-string-taginfo-alistp)
                                  (thm-index posp)
                                  (names-to-avoid symbol-listp)
@@ -323,12 +323,11 @@
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (result-uterm (untranslate$ result-term nil state))
-       (compst-uterm (untranslate$ compst-term nil state))
        (formula1 `(equal (exec-block-item ',item
                                           ,compst-var
                                           ,fenv-var
                                           ,limit-var)
-                         (mv ,result-uterm ,compst-uterm)))
+                         (mv ,result-uterm ,compst-term)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var limit-var item-limit t wrld))
        (formula (if result-term
@@ -832,7 +831,7 @@
                                      (compst-var symbolp)
                                      (fenv-var symbolp)
                                      (limit-var symbolp)
-                                     (compst-term pseudo-termp)
+                                     (compst-term "An untranslated term.")
                                      (prec-tags atc-string-taginfo-alistp)
                                      (thm-index posp)
                                      (names-to-avoid symbol-listp)
@@ -873,12 +872,11 @@
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (result-uterm (untranslate$ result-term nil state))
-       (compst-uterm (untranslate$ compst-term nil state))
        (formula1 `(equal (exec-block-item-list ',items
                                                ,compst-var
                                                ,fenv-var
                                                ,limit-var)
-                         (mv ,result-uterm ,compst-uterm)))
+                         (mv ,result-uterm ,compst-term)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var limit-var items-limit t wrld))
        (type-pred (and result-term
@@ -1398,7 +1396,6 @@
                                 (else-events pseudo-event-form-listp)
                                 (gin stmt-ginp)
                                 state)
-  (declare (ignore then-context-end else-context-end))
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C @('if') or @('if')-@('else') statement
           from an ACL2 term."
@@ -1497,11 +1494,31 @@
        (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
+       (then-context-end
+        (change-atc-context
+         then-context-end
+         :premises (append (atc-context->premises then-context-end)
+                           (list (make-atc-premise-compustate
+                                  :var gin.compst-var
+                                  :term `(exit-scope ,gin.compst-var))))))
+       (else-context-end
+        (change-atc-context
+         else-context-end
+         :premises (append (atc-context->premises else-context-end)
+                           (list (make-atc-premise-compustate
+                                  :var gin.compst-var
+                                  :term `(exit-scope ,gin.compst-var))))))
+       (then-new-compst (atc-contextualize-compustate gin.compst-var
+                                                      then-context-start
+                                                      then-context-end))
+       (else-new-compst (atc-contextualize-compustate gin.compst-var
+                                                      else-context-start
+                                                      else-context-end))
        (then-stmt-formula1 `(equal (exec-stmt ',then-stmt
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                                   (mv ,then-uterm ,gin.compst-var)))
+                                   (mv ,then-uterm ,then-new-compst)))
        (then-stmt-formula1 (atc-contextualize then-stmt-formula1
                                               then-context-start
                                               gin.fn
@@ -1526,7 +1543,7 @@
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                                   (mv ,else-uterm ,gin.compst-var)))
+                                   (mv ,else-uterm ,else-new-compst)))
        (else-stmt-formula1 (atc-contextualize else-stmt-formula1
                                               else-context-start
                                               gin.fn
@@ -1600,11 +1617,13 @@
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (uterm (untranslate$ term nil state))
+       (test-uterm (untranslate$ test-term nil state))
+       (new-compst `(if* ,test-uterm ,then-new-compst ,else-new-compst))
        (if-stmt-formula1 `(equal (exec-stmt ',stmt
                                             ,gin.compst-var
                                             ,gin.fenv-var
                                             ,gin.limit-var)
-                                 (mv ,uterm ,gin.compst-var)))
+                                 (mv ,uterm ,new-compst)))
        (if-stmt-formula1 (atc-contextualize if-stmt-formula1
                                             gin.context
                                             gin.fn
@@ -1680,6 +1699,10 @@
                    gin.context nil nil nil nil nil nil wrld)
                  :hints (("Goal"
                           :in-theory '(acl2::if*-when-true test*))))
+          (claim ,(atc-contextualize
+                   `(equal ,new-compst ,then-new-compst)
+                   gin.context nil nil gin.compst-var nil nil nil wrld)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-true test*))))
           (prove :hints ,if-stmt-hints)
           (claim ,(atc-contextualize `(test* (not ,test-term))
                                      gin.context nil nil nil nil nil nil wrld)
@@ -1689,8 +1712,11 @@
                    `(equal (if* ,test-term ,then-term ,else-term)
                            ,else-term)
                    gin.context nil nil nil nil nil nil wrld)
-                 :hints (("Goal"
-                          :in-theory '(acl2::if*-when-false test*))))
+                 :hints (("Goal" :in-theory '(acl2::if*-when-false test*))))
+          (claim ,(atc-contextualize
+                   `(equal ,new-compst ,else-new-compst)
+                   gin.context nil nil gin.compst-var nil nil nil wrld)
+                 :hints (("Goal" :in-theory '(acl2::if*-when-false test*))))
           (prove :hints ,if-stmt-hints)))
        ((mv if-stmt-event &)
         (evmac-generate-defthm if-stmt-thm
@@ -1707,7 +1733,7 @@
                                  stmt if-stmt-limit if-stmt-thm
                                  type term
                                  gin.compst-var gin.fenv-var gin.limit-var
-                                 gin.compst-var gin.prec-tags
+                                 new-compst gin.prec-tags
                                  thm-index names-to-avoid state))
        ((mv items
             items-limit
@@ -1719,15 +1745,21 @@
                                      item item-limit item-thm-name
                                      type term
                                      gin.compst-var gin.fenv-var gin.limit-var
-                                     gin.compst-var gin.prec-tags
-                                     thm-index names-to-avoid state)))
+                                     new-compst gin.prec-tags
+                                     thm-index names-to-avoid state))
+       (new-context (change-atc-context
+                     gin.context
+                     :premises (append (atc-context->premises gin.context)
+                                       (list (make-atc-premise-compustate
+                                              :var gin.compst-var
+                                              :term new-compst))))))
     (retok
      (make-stmt-gout
       :items items
       :type type
       :term term
       :compst-term gin.compst-var
-      :context gin.context
+      :context new-context
       :limit items-limit
       :events (append test-events
                       then-events
