@@ -124,7 +124,8 @@
       (case fn
         (local (if (= 1 (len (cdr event)))
                    (concatenate 'string "(local "
-                                (abbreviate-event (cadr event)))
+                                (abbreviate-event (cadr event))
+                                ")")
                  "(local ...)" ; can this happen?
                  ))
         (include-book (print-to-string event))
