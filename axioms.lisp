@@ -15342,6 +15342,30 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Let us use state-p1 in our theorem-proving.
 (in-theory (disable state-p1))
 
+(defthm all-boundp-preserves-assoc-equal
+  (implies (and (all-boundp tbl1 tbl2)
+                (assoc-equal x tbl1))
+           (assoc-equal x tbl2))
+  :rule-classes nil)
+
+(defthm all-boundp-initial-global-table
+
+; This is disabled by default near the end of the boot-strap, to avoid the
+; possibility of slowing down the rewriter, since otherwise it would have to
+; look at this rule for every assoc-equal call.  But quite possibly that
+; slowdown is trivial, so perhaps this rule could reasonably be left enabled.
+; It is left enabled until near the end of the boot-strap to help with proofs,
+; such as the guard conjecture for debugger-enable.
+
+  (implies (and (state-p1 state)
+                (assoc-eq x *initial-global-table*))
+           (assoc-equal x (nth 2 state)))
+  :hints (("Goal" :use
+           ((:instance all-boundp-preserves-assoc-equal
+                       (tbl1 *initial-global-table*)
+                       (tbl2 (nth 2 state))))
+           :in-theory (disable all-boundp))))
+
 ; The following could conceivably be useful before rewriting a literal
 ; containing state-p.
 
@@ -17991,8 +18015,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (f-get-global 'current-acl2-world state))
 
 (defun get-serialize-character (state)
-  (declare (xargs :guard (and (state-p state)
-                              (boundp-global 'serialize-character state))))
+  (declare (xargs :guard t))
   (f-get-global 'serialize-character state))
 
 (defun set-serialize-character-fn (c system-p state)
@@ -18039,25 +18062,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (or (null c)
                                   (member c '(#\Y #\Z))))))
   (set-serialize-character-fn c t state))
-
-; The following may have been created in support of print-object$.
-(defthm all-boundp-preserves-assoc-equal
-  (implies (and (all-boundp tbl1 tbl2)
-                (assoc-equal x tbl1))
-           (assoc-equal x tbl2))
-  :rule-classes nil)
-
-; The following may have been created in support of print-object$.
-(local
- (defthm all-boundp-initial-global-table
-  (implies (and (state-p1 state)
-                (assoc-eq x *initial-global-table*))
-           (assoc x (nth 2 state)))
-  :hints (("Goal" :use
-           ((:instance all-boundp-preserves-assoc-equal
-                       (tbl1 *initial-global-table*)
-                       (tbl2 (nth 2 state))))
-           :in-theory (disable all-boundp)))))
 
 (defun print-object$+-alist (x)
   (declare (xargs :guard (keyword-value-listp x)))
@@ -19210,8 +19214,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defparameter *acl2-read-suppress* nil)
 
 (defun raw-mode-p (state)
-  (declare (xargs :guard (and (state-p state)
-                              (boundp-global 'acl2-raw-mode-p state))))
+  (declare (xargs :guard t))
   (f-get-global 'acl2-raw-mode-p state))
 
 #-acl2-loop-only
@@ -20096,10 +20099,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun needs-slashes (x state)
   (declare (xargs :guard (and (stringp x)
-                              (state-p state)
-                              (boundp-global 'print-escape state)
-                              (boundp-global 'print-readably state)
-                              (boundp-global 'print-base state))))
+                              (state-p state))))
   (and (or (f-get-global 'print-escape state)
            (f-get-global 'print-readably state))
        (may-need-slashes-fn x (print-base))))
@@ -20810,8 +20810,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (state-p state)))
   (mv-let (current-time state)
     (read-run-time state)
-    (let ((old-value (cond ((and (f-boundp-global 'main-timer state)
-                                 (rationalp (f-get-global 'main-timer state)))
+    (let ((old-value (cond ((rationalp (f-get-global 'main-timer state))
                             (f-get-global 'main-timer state))
                            (t 0))))
       (let ((state (f-put-global 'main-timer current-time state)))
@@ -20881,11 +20880,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (t ; (equal test 'equal)
     `(put-assoc-equal ,name ,val ,alist))))
 
-(local
- (defthm timer-alist-bound-in-state-p1
-   (implies (state-p1 s)
-            (boundp-global1 'timer-alist s))
-   :hints (("Goal" :in-theory (enable state-p1)))))
+(defthm all-boundp-initial-global-table-alt
+  (implies (and (state-p1 state)
+                (assoc-eq x *initial-global-table*))
+           (boundp-global1 x state)))
 
 (local (in-theory (disable boundp-global1)))
 
@@ -21184,8 +21182,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun print-rational-as-decimal (x channel state)
   (declare (xargs :guard (and (rationalp x)
                               (symbolp channel)
-                              (state-p state)
-                              (boundp-global 'print-base state)
                               (equal (print-base) 10)
                               (open-output-channel-p channel :character state))))
   (let ((x00 (round (* 100 (abs x)) 1)))
@@ -21205,8 +21201,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun print-timer (name channel state)
   (declare (xargs :guard (and (symbolp name)
-                              (state-p state)
-                              (boundp-global 'print-base state)
                               (symbolp channel)
                               (open-output-channel-p channel :character state)
                               (equal (print-base) 10)
@@ -21267,9 +21261,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;  Prin1
 
 (defun symbol-in-current-package-p (x state)
-  (declare (xargs :guard (and (symbolp x)
-                              (state-p state)
-                              (f-boundp-global 'current-package state))))
+  (declare (xargs :guard (symbolp x)))
   #+acl2-loop-only
   (or (equal (symbol-package-name x)
              (f-get-global 'current-package state))
@@ -21296,7 +21288,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;  a stream.  prin1$ returns the modified state, not x.
 
   (declare (xargs :guard (and (atom x)
-                              (state-p state)
+                              (symbolp channel)
                               (open-output-channel-p channel :character state))))
   #-acl2-loop-only
   (cond ((live-state-p state)
@@ -27267,8 +27259,7 @@ Lisp definition."
 ; Next: debugger control
 
 (defun debugger-enable (state)
-  (declare (xargs :guard (and (state-p state)
-                              (boundp-global 'debugger-enable state))))
+  (declare (xargs :guard t))
   (f-get-global 'debugger-enable state))
 
 (defun break$ ()
@@ -27405,13 +27396,11 @@ Lisp definition."
         t))
 
 (defun debugger-enabledp (state)
-  (declare (xargs :guard (and (state-p state)
-                              (boundp-global 'debugger-enable state))))
+  (declare (xargs :guard t))
   (debugger-enabledp-val (f-get-global 'debugger-enable state)))
 
 (defun maybe-print-call-history (state)
-  (declare (xargs :guard (and (state-p state)
-                              (boundp-global 'debugger-enable state))))
+  (declare (xargs :guard t))
   (and (member-eq (f-get-global 'debugger-enable state)
                   '(:bt :break-bt :bt-break))
        (print-call-history)))
@@ -27445,10 +27434,28 @@ Lisp definition."
   (declare (xargs :guard (and (state-p state)
                               (member-eq val '(t nil :never :break :bt
                                                  :break-bt :bt-break)))
-                  :guard-hints (("Goal" :in-theory (e/d (state-p1)
-                                                        ()
-                                                        ;;(all-boundp)
-                                                        )))))
+                  :guard-hints
+                  (("Goal"
+                    :in-theory
+                    (e/d (state-p1)
+                         (global-val
+                          true-listp
+                          ordered-symbol-alistp
+                          assoc
+                          sgetprop
+                          integer-listp
+                          rational-listp
+                          true-list-listp
+                          open-channels-p
+                          all-boundp
+                          plist-worldp
+                          timer-alistp
+                          known-package-alistp
+                          file-clock-p
+                          readable-files-p
+                          written-files-p
+                          read-files-p
+                          writeable-files-p))))))
   #+(and (not acl2-loop-only)
          (and gcl (not cltl2)))
   (when (live-state-p state)

@@ -15,8 +15,8 @@
 
 (include-book "../arrays")
 
-(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/true-list-listp" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (xdoc::set-default-parents atc-symbolic-execution-rules))

@@ -17,6 +17,8 @@
 ;;; The following section was written by Matt Kaufmann.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (in-theory (enable all-boundp-initial-global-table)))
+
 (verify-termination collect-by-position) ; and guards
 
 ; Copied exactly (11/18/2015) from ACL2 source file axioms.lisp, towards guard

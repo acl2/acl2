@@ -12839,6 +12839,5 @@
 ; structure for testing fns that take an ens arg:
 
 (defun ens (state)
-  (declare (xargs :guard (and (state-p state)
-                              (f-boundp-global 'global-enabled-structure state))))
+  (declare (xargs :guard t))
   (f-get-global 'global-enabled-structure state))
