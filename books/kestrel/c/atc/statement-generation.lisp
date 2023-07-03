@@ -3051,7 +3051,7 @@
                       :names-to-avoid body.names-to-avoid
                       :proofs body.proofs)
                      state)))
-                (retok (change-stmt-gout items-gout :proofs nil))))
+                (retok items-gout)))
              ((unless (eq wrapper? nil))
               (reterr (raise "Internal error: LET wrapper is ~x0." wrapper?)))
              ((unless (atc-affecting-term-for-let-p val-term gin.prec-fns))
