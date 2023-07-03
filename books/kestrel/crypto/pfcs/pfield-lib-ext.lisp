@@ -14,6 +14,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "std/lists/list-fix" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -45,3 +47,12 @@
   :rule-classes :forward-chaining
   :induct t
   :enable nat-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield::fe-listp-of-append
+  (equal (pfield::fe-listp (append x y) p)
+         (and (pfield::fe-listp (true-list-fix x) p)
+              (pfield::fe-listp y p)))
+  :induct t
+  :enable append)
