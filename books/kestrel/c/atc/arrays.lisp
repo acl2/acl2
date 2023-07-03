@@ -17,9 +17,9 @@
 
 (include-book "symbolic-execution-rules/integers")
 
-(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

@@ -704,6 +704,10 @@
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(in-theory
+; See the coment about this in the defun of all-boundp-initial-global-table.
+ (disable all-boundp-initial-global-table))
+
 ; To see our reason for putting this here, see the comment containing this form
 ; in boot-strap-pass-2-a.lisp.
 (verify-termination-boot-strap clear-brr-data-lst) ; and guards

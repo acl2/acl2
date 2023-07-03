@@ -16,10 +16,10 @@
 
 (include-book "kestrel/std/system/close-lambdas" :dir :system)
 
-(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -964,14 +964,9 @@
          :thm-index gin.thm-index
          :names-to-avoid gin.names-to-avoid
          :proofs nil))
-       (premises (atc-context->premises gin.context))
-       (items-new-premises (atc-context->premises items-new-context))
-       ((unless (prefixp premises items-new-premises))
-        (raise "Internal error: context ~x0 is not a prefix of context ~x1."
-               gin.context items-new-context)
-        (irr-stmt-gout))
-       (premises-diff (nthcdr (len premises) items-new-premises))
-       (new-compst (atc-contextualize-compustate gin.compst-var premises-diff))
+       (new-compst (atc-contextualize-compustate gin.compst-var
+                                                 gin.context
+                                                 items-new-context))
        (uterm (untranslate$ term nil state))
        (formula1 `(equal (exec-block-item-list ',all-items
                                                ,gin.compst-var
@@ -3003,7 +2998,7 @@
                      body.events
                      body.thm-name
                      body.type
-                     new-context
+                     body.context
                      (change-stmt-gin
                       gin
                       :thm-index body.thm-index

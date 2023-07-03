@@ -721,7 +721,9 @@
     natp-conjoin-clause-sets-bound
     d-pos-listp-forward-to-true-listp
     true-listp-chars-for-tilde-@-clause-id-phrase/periods
-    state-p1-read-acl2-oracle))
+    state-p1-read-acl2-oracle
+    all-boundp-initial-global-table
+    all-boundp-initial-global-table-alt))
 
 (defconst *builtin-defaxiom/defthm-tau*
   '(basic-tau-rules

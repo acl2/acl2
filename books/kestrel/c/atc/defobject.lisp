@@ -24,8 +24,8 @@
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/error-value-tuples" :dir :system)
 
-(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

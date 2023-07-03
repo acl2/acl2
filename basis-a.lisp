@@ -2825,8 +2825,7 @@
         state))))
 
 (defun write-for-read (state)
-  (declare (xargs :guard (and (state-p state)
-                              (f-boundp-global 'write-for-read state))))
+  (declare (xargs :guard t))
   (f-get-global 'write-for-read state))
 
 (defun spaces1 (n col hard-right-margin channel state)
@@ -3772,8 +3771,7 @@
 ; tweak the set of uses of the abbrev-evisc-tuple.  This comment should
 ; similarly not be viewed as definitive if it is long after January 2009.
 
-  (declare (xargs :stobjs state
-                  :guard (f-boundp-global 'abbrev-evisc-tuple state)))
+  (declare (xargs :guard t))
   (let ((evisc-tuple (f-get-global 'abbrev-evisc-tuple state)))
     (cond
      ((eq evisc-tuple :default)
@@ -6127,8 +6125,7 @@
   t)
 
 (defun push-io-record (io-marker form state)
-  (declare (xargs :stobjs state
-                  :guard (f-boundp-global 'saved-output-reversed state)))
+  (declare (xargs :guard t))
   (f-put-global 'saved-output-reversed
                 (cons (make io-record
                             :io-marker io-marker
@@ -6140,8 +6137,6 @@
   (declare (xargs :stobjs state
                   :guard
                   (and (symbolp token)
-                       (f-boundp-global 'saved-output-p state)
-                       (f-boundp-global 'saved-output-token-lst state)
                        (or (eq (f-get-global 'saved-output-token-lst state)
                                :all)
                            (true-listp (f-get-global 'saved-output-token-lst

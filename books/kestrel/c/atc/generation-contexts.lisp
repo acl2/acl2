@@ -235,38 +235,67 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-contextualize-compustate ((compst-var symbolp)
-                                      (premises atc-premise-listp))
+                                      (context-start atc-contextp)
+                                      (context-end atc-contextp))
   :returns (term "An untranslated term.")
-  :short "Put a computation state into context."
+  :short "Put a computation state into a context
+          that is the difference between two contexts."
   :long
   (xdoc::topstring
    (xdoc::p
+    "When generating modular proofs,
+     in certain cases we need to contextualize the computation state
+     to the ``difference'' between a starting context and an ending context,
+     where the latter is an extension of the former.
+     This ACL2 function accomplished this.")
+   (xdoc::p
     "The initial computation state is expressed as a variable,
-     passed to this ACL2 function as @('compst-var').
-     We go through the premises and wrap the computation state variable
+     passed to this ACL2 function as @('compst-var').")
+   (xdoc::p
+    "We ensure that the starting context is a prefix of the ending context,
+     i.e. it has the same preamble and a prefix of the premises.
+     This should be always the case when this ACL2 function is called,
+     but we defensively check that, stopping with an error if the check fails.")
+   (xdoc::p
+    "We calculate the premises in the ending context
+     that are not in the starting context,
+     and we go through them,
+     wrapping the computation state variable
      with @(tsee let)s corresponding to binding of
      computation states and C variables.")
    (xdoc::p
-    "This is used to calculate an updated (symbolic) computation state
-     after the execution of some code, e.g. a list of block items.
-     The caller takes the ``difference'' between
-     the context before and after that execution,
-     and passes it to this function.")
-   (xdoc::p
-    "Note that this function takes as input a list of premises, not a context.
-     This is the ``difference'' betweeen the two contexts mentioned above.")
-   (xdoc::p
     "We skip any test encountered in the list of premises.
      Because of the way this function is used, this is adeguate.
-     The context difference may include tests in upcoming modular proofs,
+     The context difference may include tests in modular proofs,
      so it would be inappropriate to stop with an error
      upon encountering a test here."))
-  (b* (((when (endp premises)) compst-var)
-       (premise (car premises)))
-    (atc-premise-case
-     premise
-     :compustate `(let ((,premise.var ,premise.term))
-                    ,(atc-contextualize-compustate compst-var (cdr premises)))
-     :cvalue `(let ((,premise.var ,premise.term))
-                ,(atc-contextualize-compustate compst-var (cdr premises)))
-     :test (atc-contextualize-compustate compst-var (cdr premises)))))
+  (b* (((unless (equal (atc-context->preamble context-start)
+                       (atc-context->preamble context-end)))
+        (raise "Internal error: different context preambles ~x0 and ~x1."
+               (atc-context->preamble context-start)
+               (atc-context->preamble context-end)))
+       (premises-start (atc-context->premises context-start))
+       (premises-end (atc-context->premises context-end))
+       ((unless (prefixp premises-start premises-end))
+        (raise "Internal error: premises ~x0 not a prefix of premises ~x1."
+               premises-start premises-end))
+       (premises-diff (nthcdr (len premises-start) premises-end)))
+    (atc-contextualize-compustate-aux compst-var premises-diff))
+
+  :prepwork
+  ((define atc-contextualize-compustate-aux ((compst-var symbolp)
+                                             (premises atc-premise-listp))
+     :returns (term "An untranslated term.")
+     :parents nil
+     (b* (((when (endp premises)) compst-var)
+          (premise (car premises)))
+       (atc-premise-case
+        premise
+        :compustate `(let ((,premise.var ,premise.term))
+                       ,(atc-contextualize-compustate-aux compst-var
+                                                          (cdr premises)))
+        :cvalue `(let ((,premise.var ,premise.term))
+                   ,(atc-contextualize-compustate-aux compst-var
+                                                      (cdr premises)))
+        :test (atc-contextualize-compustate-aux compst-var
+                                                (cdr premises)))))))

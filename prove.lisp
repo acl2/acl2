@@ -8052,7 +8052,6 @@
 
 (defun push-current-acl2-world (name state)
   (declare (xargs :guard (and (symbolp name)
-                              (f-boundp-global 'acl2-world-alist state)
                               (alistp (f-get-global 'acl2-world-alist state)))))
   (prog2$ (or (symbolp name) ; always true if guard is checked
               (er hard 'push-current-acl2-world
@@ -8067,7 +8066,6 @@
 
 (defun pop-current-acl2-world (name state)
   (declare (xargs :guard (and (symbolp name)
-                              (f-boundp-global 'acl2-world-alist state)
                               (alistp (f-get-global 'acl2-world-alist state))
                               (assoc-eq name (f-get-global 'acl2-world-alist
                                                            state)))))
