@@ -34,7 +34,6 @@
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/split-path" :dir :system)
-(include-book "kestrel/utilities/linter" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/all-included-books" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
@@ -43,6 +42,7 @@
 (include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
 (include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
+(include-book "linter")
 (include-book "speed-up")
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 

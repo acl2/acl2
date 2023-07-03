@@ -75,21 +75,21 @@
 ;; TODO: Look for (nil ...) in CASE, which is an unreachable case (empty list
 ;; of keys).  Will need to look at the untranslated terms.
 
-(include-book "format-strings")
-(include-book "quote")
-(include-book "my-get-event")
-(include-book "defining-forms") ; for DEFUN-OR-MUTUAL-RECURSION-FORMP
-(include-book "world")
-(include-book "conjunctions")
-(include-book "conjuncts-and-disjuncts2") ;todo: use the simpler version?
+(include-book "kestrel/utilities/format-strings" :dir :system)
+(include-book "kestrel/utilities/quote" :dir :system)
+(include-book "kestrel/utilities/my-get-event" :dir :system)
+(include-book "kestrel/utilities/defining-forms" :dir :system) ; for DEFUN-OR-MUTUAL-RECURSION-FORMP
+(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/utilities/conjunctions" :dir :system)
+(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system) ;todo: use the simpler version?
+(include-book "kestrel/utilities/book-of-event" :dir :system)
+(include-book "kestrel/utilities/fresh-names" :dir :system)
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (include-book "kestrel/world-light/fn-primitivep" :dir :system)
 (include-book "tools/prove-dollar" :dir :system)
-(include-book "book-of-event")
-(include-book "fresh-names")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
