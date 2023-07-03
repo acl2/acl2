@@ -2630,9 +2630,8 @@
 
 (define atc-gen-pop-frame-thm ((fn symbolp)
                                (fn-guard symbolp)
-                               (context-start atc-contextp)
                                (compst-var symbolp)
-                               (context-end atc-contextp)
+                               (context atc-contextp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (thm-event pseudo-event-formp)
@@ -2648,7 +2647,7 @@
      yields the initial computation state;
      this is only the case for the functions
      for which we support the generation of this theorem, of course;
-     it is not true in general, and we will need to generalize it.")
+     it is not true in general, and we will generalize this.")
    (xdoc::p
     "we ``save'' the initial computation state
      in a variable that we obtain by adding @('0')
@@ -2656,29 +2655,18 @@
      We should refine this to ensure that the variable does not interfere
      with other variables.")
    (xdoc::p
-    "The @('context-start') parameter of this ACL2 function is
-     the context at the start of the function body
-     (incorporating the function parameters);
-     this is used to contextualize the theorem.
-     The @('context-end') parameter of this ACL2 function is
+    "The @('context') parameter of this ACL2 function is
      the context at the end of the function body;
      this is used to contextualize the computation state
-     from where the frame is popped.
-     More precisely, the ``difference'' between the ending and starting context
-     is used to contextualize the computation state;
-     we double-check that
-     the starting context is a prefix of the ending context."))
+     from where the frame is popped."))
   (b* ((compst0-var (pack compst-var "0"))
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       (compst-term (atc-contextualize-compustate compst-var
-                                                  context-start
-                                                  context-end))
-       (formula `(equal (pop-frame ,compst-term)
+       (formula `(equal (pop-frame ,compst-var)
                         ,compst0-var))
        (formula (atc-contextualize formula
-                                   context-start
+                                   context
                                    fn
                                    fn-guard
                                    compst-var
@@ -2687,8 +2675,20 @@
                                    nil
                                    wrld))
        (formula `(let ((,compst0-var ,compst-var)) ,formula))
-       (hints `(("Goal" :in-theory '(pop-frame-of-add-var
-                                     pop-frame-of-add-frame))))
+       (hints
+        `(("Goal" :in-theory '(pop-frame-of-if*
+                               update-var-of-enter-scope
+                               update-var-of-add-var
+                               exit-scope-of-enter-scope
+                               exit-scope-of-add-var
+                               compustate-frames-number-of-add-var-not-zero
+                               compustate-frames-number-of-enter-scope-not-zero
+                               compustate-frames-number-of-add-frame-not-zero
+                               compustatep-of-add-var
+                               compustatep-of-enter-scope
+                               pop-frame-of-add-var
+                               pop-frame-of-add-frame
+                               acl2::if*-when-same))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -2995,7 +2995,6 @@
                  body.proofs)
             (atc-gen-pop-frame-thm fn
                                    fn-guard
-                                   context
                                    compst-var
                                    body.context
                                    names-to-avoid
