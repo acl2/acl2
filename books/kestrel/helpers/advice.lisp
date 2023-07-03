@@ -1212,7 +1212,7 @@
          (b* (        ; Try to include the recommended book:
               ((mv erp state) (acl2::submit-event include-book-form nil nil state))
               ((when erp) ; can happen if there is a name clash
-               (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
+               (cw "NOTE: Event failed (name clash? uncertified book?): ~x0.~%" include-book-form)
                (mv nil nil state))
               ;; Check that we didn't bring in the current-book:
               ((when (and avoid-current-bookp

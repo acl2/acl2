@@ -199,3 +199,13 @@
                   (update-nth n val lst)))
   :hints (("Goal" :induct t
            :in-theory (enable update-nth))))
+
+;; rename?
+;; Kept disabled by default.
+(defthmd update-nth-rw
+  (implies (and (natp n)
+                (< n (len lst)))
+           (equal (update-nth n val lst)
+                  (append (take n lst)
+                          (list val)
+                          (nthcdr (+ 1 n) lst)))))

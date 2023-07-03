@@ -20,9 +20,12 @@
   :parents (helpers)
   :short "Suggest improvements for a book."
   :description
-  (xdoc::topparas "@('Improve-book') tries many things to improve a book and its contents.  It prints suggestions for the user to consider.
+  (xdoc::topparas "@('Improve-book') tries many things to improve a book and its contents.  It prints suggestions for the user to consider, but does not actually change the book.
 
-@('Improve-book') should be invoked in a fresh ACL2 session (except for including the @('improve-book') tool itself), usually while connected to the directory of the book to be improved.
+To apply @('improve-book') to some book FOO, start ACL2 in the directory that contains FOO.  The ACL2 session should contain as few events as possible.  FOO may need to be certified so that @('improve-book') can load its @(tsee portcullis) commands.  Then do:
+
+@('(include-book \"kestrel/helpers/improve-book\" :dir :system)')
+@('(improve-book \"FOO\")')
 
 Improvements at the book level include including dropping @(tsee include-book)s and @(tsee local) events.
 
@@ -33,8 +36,8 @@ Improvements to defuns include various things checked by our Linter tool.
 Support for additional kinds of events, such as @('define'), @('mutual-recursion'), and nested events, is in-progress.
 
 Note that all suggestions made by @('improve-book') are independent.  There is no guarantee that multiple suggested changes can be made together.")
-  :arg-descriptions ((bookname "The name of the book to improve.")
-                     (dir "The directory of the book, where @(':cbd') indicates the @('cbd').")
+  :arg-descriptions ((bookname "The name of the book to improve, with or without the @('.lisp') extension.")
+                     (dir "The directory of the book, where @(':cbd') indicates the @(tsee cbd).")
                      (print "How much to print: @('nil'), @(':brief'), @('t'), or @(':verbose').")))
 
 (defxdoc-for-macro improve-books
@@ -48,4 +51,5 @@ Note that all suggestions made by @('improve-book') are independent.  There is n
   :short "Suggest improvements for all books in a directory, including subdirectories."
   :arg-descriptions ((print "How much to print: @('nil'), @(':brief'), @('t'), or @(':verbose').")))
 
-;; TODO: Document the Linter
+;; TODO: Document the Linter (and move it to this dir)
+;; TODO: Document speed-up
