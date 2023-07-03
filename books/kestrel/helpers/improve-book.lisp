@@ -469,6 +469,8 @@
                      ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
                      (submit-event event nil nil state)))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp state).
 ;; TODO: Check for redundant.
 (defun improve-defun-event (event rest-events print state)
@@ -597,41 +599,40 @@
                               (string-listp initial-included-books))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
-  ;; TODO: Do the submit-event outside this:
+  ;; TODO: Do the submit-event outside this (but currently defuns must be submitted before linting):
+  ;; todo: for some of these, we should print the event before submitting it:
+  ;; TODO: Add more event types here.
   (case (car event)
-    (local (improve-local-event event rest-events print initial-included-books state))
-    (include-book (improve-include-book-event event rest-events initial-included-books print state) )
-    ((defthm defthmd) (improve-defthm-event event rest-events print state))
-    ((defun defund) (improve-defun-event event rest-events print state))
-    ((defrule defruled) (improve-defrule-event event rest-events print state))
-    ((in-package) (improve-in-package-event event rest-events print state))
-    ;; todo: for these, we should print the event before submitting it:
-    ((deflabel) (submit-event event nil nil state) ; can't think of anything to do for labels
-     )
-    ((defstub) (submit-event event nil nil state) ; anything to do?
-     )
-    ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
-     )
-    ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
-     )
-    ((defmacro) (submit-event event nil nil state) ; todo: check the body?
-     )
-    ((defconst) (submit-event event nil nil state) ; todo: check the body?
-     )
-    ((encapsulate) (submit-event event nil nil state) ; todo: handle!
-     )
-    ((theory-invariant) (submit-event event nil nil state) ; todo: handle!  could warn about a name that is not defined.
-     )
-    ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
-     )
-    ((defcong) (submit-event event nil nil state) ; todo: try to clean up hints
-     )
     ;; Since it's just an assert, we can continue after an error, so we just warn:
     ((assert-event assert-equal)
      (let ((state (submit-event-handle-error event nil :warn state)))
        (mv nil state)))
-    ;; TODO: Try dropping include-books.
-    ;; TODO: Add more event types here.
+    ((defcong) (submit-event event nil nil state) ; todo: try to clean up hints
+     )
+    ((defconst) (submit-event event nil nil state) ; todo: check the body?
+     )
+    ((deflabel) (submit-event event nil nil state) ; can't think of anything to do for labels
+     )
+    ((defmacro) (submit-event event nil nil state) ; todo: check the body?
+     )
+    ((defrule defruled) (improve-defrule-event event rest-events print state))
+    ((defstub) (submit-event event nil nil state) ; anything to do?
+     )
+    ((defthm defthmd) (improve-defthm-event event rest-events print state))
+    ((defun defund) (improve-defun-event event rest-events print state))
+    ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
+     )
+    ((encapsulate) (submit-event event nil nil state) ; todo: handle!
+     )
+    (include-book (improve-include-book-event event rest-events initial-included-books print state) )
+    ((in-package) (improve-in-package-event event rest-events print state))
+    ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
+     )
+    (local (improve-local-event event rest-events print initial-included-books state))
+    ((theory-invariant) (submit-event event nil nil state) ; todo: handle!  could warn about a name that is not defined.
+     )
+    ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
+     )
     (t (prog2$ (cw " (Just submitting unhandled event ~x0)~%" (abbreviate-event event))
                (submit-event-expect-no-error event nil state)))))
 
