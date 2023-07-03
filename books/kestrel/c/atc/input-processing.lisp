@@ -37,10 +37,10 @@
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 
-(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

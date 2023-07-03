@@ -32,10 +32,10 @@
 (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
 (local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
-(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -2672,14 +2672,9 @@
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       (premises-start (atc-context->premises context-start))
-       (premises-end (atc-context->premises context-end))
-       ((unless (prefixp premises-start premises-end))
-        (raise "Internal error: prefix ~x0 is not a prefix of context ~x1."
-               context-start context-end)
-        (mv '(_) nil nil))
-       (premises-diff (nthcdr (len premises-start) premises-end))
-       (compst-term (atc-contextualize-compustate compst-var premises-diff))
+       (compst-term (atc-contextualize-compustate compst-var
+                                                  context-start
+                                                  context-end))
        (formula `(equal (pop-frame ,compst-term)
                         ,compst0-var))
        (formula (atc-contextualize formula
