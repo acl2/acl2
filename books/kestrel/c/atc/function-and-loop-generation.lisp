@@ -1473,9 +1473,7 @@
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
                                   (limit pseudo-termp)
-                                  (deprecated keyword-listp)
                                   state)
-  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (exported-events pseudo-event-form-listp)
                (name symbolp :hyp (symbol-symbol-alistp fn-thms)))
@@ -2841,7 +2839,6 @@
                         (init-fun-env-thm symbolp)
                         (fn-thms symbol-symbol-alistp)
                         (print evmac-input-print-p)
-                        (deprecated keyword-listp)
                         (names-to-avoid symbol-listp)
                         state)
   :guard (not (eq fn 'quote))
@@ -2971,8 +2968,7 @@
                        :prec-objs prec-objs
                        :thm-index 1
                        :names-to-avoid names-to-avoid
-                       :proofs proofs
-                       :deprecated deprecated)
+                       :proofs proofs)
                       state))
        (names-to-avoid body.names-to-avoid)
        ((when (and (type-case body.type :void)
@@ -3073,7 +3069,6 @@
                                                     fn-thms
                                                     fn-fun-env-thm
                                                     limit
-                                                    deprecated
                                                     state)))
                       (mv local-events exported-events name names-to-avoid))))
                  (progress-start?
@@ -3633,9 +3628,7 @@
                                        (prec-tags atc-string-taginfo-alistp)
                                        (prec-objs atc-string-objinfo-alistp)
                                        (names-to-avoid symbol-listp)
-                                       (deprecated keyword-listp)
                                        state)
-  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-test-thm symbolp)
                (updated-names-to-avoid symbol-listp
@@ -3808,9 +3801,7 @@
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
                                        (names-to-avoid symbol-listp)
-                                       (deprecated keyword-listp)
                                        state)
-  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-body-thm symbolp)
                (updated-names-to-avoid symbol-listp
@@ -4261,7 +4252,6 @@
                       (fn-appconds symbol-symbol-alistp)
                       (appcond-thms keyword-symbol-alistp)
                       (print evmac-input-print-p)
-                      (deprecated keyword-listp)
                       (names-to-avoid symbol-listp)
                       state)
   :guard (and (function-symbolp fn (w state))
@@ -4330,8 +4320,7 @@
                                            :prec-objs prec-objs
                                            :thm-index 1
                                            :names-to-avoid names-to-avoid
-                                           :proofs nil
-                                           :deprecated deprecated)
+                                           :proofs nil)
                            state))
        (names-to-avoid loop.names-to-avoid)
        ((erp local-events
@@ -4395,7 +4384,6 @@
                                                  prec-tags
                                                  prec-objs
                                                  names-to-avoid
-                                                 deprecated
                                                  state))
                  ((mv body-local-events
                       correct-body-thm
@@ -4413,7 +4401,6 @@
                                                  fn-thms
                                                  loop.limit-body
                                                  names-to-avoid
-                                                 deprecated
                                                  state))
                  ((mv correct-local-events
                       correct-exported-events

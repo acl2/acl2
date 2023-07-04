@@ -54,8 +54,7 @@
    (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool)
-   (deprecated symbol-list))
+   (proofs bool))
   :pred pexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2631,8 +2630,7 @@
    (compst-var symbol)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool)
-   (deprecated symbol-list))
+   (proofs bool))
   :pred pexprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2704,8 +2702,7 @@
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
-                            :proofs gin.proofs
-                            :deprecated gin.deprecated)
+                            :proofs gin.proofs)
                            state))
        ((erp (pexprs-gout rest))
         (atc-gen-expr-pure-list (cdr terms)
@@ -2748,8 +2745,7 @@
    (prec-tags atc-string-taginfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool)
-   (deprecated symbol-list))
+   (proofs bool))
   :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2834,8 +2830,7 @@
                                            :compst-var gin.compst-var
                                            :thm-index gin.thm-index
                                            :names-to-avoid gin.names-to-avoid
-                                           :proofs gin.proofs
-                                           :deprecated gin.deprecated)
+                                           :proofs gin.proofs)
                            state))
        (bound '(quote 1))
        ((when (not pure.proofs))
@@ -2980,8 +2975,7 @@
                                        :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
-                                       :proofs gin.proofs
-                                       :deprecated gin.deprecated)
+                                       :proofs gin.proofs)
                                       state))
              ((unless (equal args.types in-types))
               (reterr
