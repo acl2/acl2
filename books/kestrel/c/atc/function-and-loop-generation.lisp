@@ -2988,7 +2988,7 @@
             pop-frame-thm
             names-to-avoid)
         (if (and proofs
-                 body.proofs)
+                 body.thm-name)
             (atc-gen-pop-frame-thm fn
                                    fn-guard
                                    compst-var
@@ -3032,7 +3032,7 @@
                       fn-correct-exported-events
                       fn-correct-thm
                       names-to-avoid)
-                  (if body.proofs
+                  (if body.thm-name
                       (atc-gen-fun-correct-thm fn
                                                fn-guard
                                                fn-def*
@@ -3086,7 +3086,7 @@
                                        (list push-init-thm-event)
                                        init-inscope-events
                                        body.events
-                                       (and body.proofs
+                                       (and body.thm-name
                                             (list pop-frame-event))
                                        fn-result-events
                                        fn-correct-local-events
