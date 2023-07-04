@@ -34,7 +34,6 @@
 (include-book "kestrel/utilities/strings" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/split-path" :dir :system)
-(include-book "kestrel/utilities/linter" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/all-included-books" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
@@ -43,6 +42,7 @@
 (include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
 (include-book "kestrel/strings-light/strip-suffix-from-strings" :dir :system)
 (include-book "replay-book-helpers") ; todo: reduce, for load-port...
+(include-book "linter")
 (include-book "speed-up")
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
@@ -124,7 +124,8 @@
       (case fn
         (local (if (= 1 (len (cdr event)))
                    (concatenate 'string "(local "
-                                (abbreviate-event (cadr event)))
+                                (abbreviate-event (cadr event))
+                                ")")
                  "(local ...)" ; can this happen?
                  ))
         (include-book (print-to-string event))
@@ -204,10 +205,11 @@
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
-  ;; First, quickly detect mentions of names that would fail in the second pass
-  ;; of certify-book (local incompatibility check).  We skip local events here
-  ;; to prevent a local event from making a bad name mention seem ok.  We skip
-  ;; proofs to help this fail fast.
+  ;; First, quickly detect whether something would fail in the second pass of
+  ;; certify-book (local incompatibility check).  We skip local events here to
+  ;; prevent a local event from making a bad name mention seem ok.  We skip
+  ;; proofs to help this fail fast.  TODO: Do we really need to start this check at the beginning
+  ;; of the book, in case there was already a local event which masks a failure here?
   (mv-let (erp res state)
     (revert-world (submit-and-check-events-error-triple events t t print state))
     (declare (ignore res))
@@ -468,6 +470,8 @@
                      ;; TODO: This means we may submit the event multiple times -- can we do something other than call revert-world above?
                      (submit-event event nil nil state)))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp state).
 ;; TODO: Check for redundant.
 (defun improve-defun-event (event rest-events print state)
@@ -554,8 +558,7 @@
            (events-would-succeedp rest-events nil state)
            (if successp
                ;; This event could be skipped: (but that might break books that use
-               ;; this book) TODO: Also try reducing what is included?  TODO: What
-               ;; if this is redundant, given stuff already in the world?  TODO:
+               ;; this book) TODO: Also try reducing what is included?  TODO:
                ;; Somehow avoid suggesting to drop books that introduce names used
                ;; in macros (they will seem like they can be dropped, unless the
                ;; book contains an actual call of the macro).
@@ -567,6 +570,28 @@
               (cw ")~%" event)
               (submit-event-expect-no-error event nil state)))))))))
 
+(defun improve-local-event (event rest-events print initial-included-books state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state)
+           (ignore print initial-included-books))
+  ;; For a local event, try skipping it and see if the rest of the events
+  ;; work.  If so, deleting the event should be safe, since the event is local.
+  (prog2$
+   (cw " (For ~s0:" (abbreviate-event event))
+   (mv-let (successp state)
+     (events-would-succeedp rest-events nil state)
+     (if successp
+         ;; This event could be skipped:  TODO: Still, try improving it (it may be a defthm, etc.)?
+         ;; TODO: What if this is redundant, given stuff already in the world?
+         (prog2$ (cw "~%   Drop ~X01.)~%" event nil)
+                 ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
+                 (submit-event-expect-no-error event nil state))
+       ;;failed to submit the rest of the events, so we can't just skip this one:
+       (progn$ ;(cw " Cannot be dropped.)~%" event)
+        (cw ")~%" event)
+        (submit-event-expect-no-error event nil state))))))
+
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
 (defun improve-event (event rest-events print initial-included-books state)
@@ -575,57 +600,40 @@
                               (string-listp initial-included-books))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
+  ;; TODO: Do the submit-event outside this (but currently defuns must be submitted before linting):
+  ;; todo: for some of these, we should print the event before submitting it:
+  ;; TODO: Add more event types here.
   (case (car event)
-    (local
-     ;; For a local event, try skipping it and see if the rest of the events
-     ;; work.  If so, deleting the event should be safe, since the event is local.
-     (prog2$
-      (cw " (For ~s0:" (abbreviate-event event))
-      (mv-let (successp state)
-        (events-would-succeedp rest-events nil state)
-        (if successp
-            ;; This event could be skipped:  TODO: Still, try improving it (it may be a defthm, etc.)?
-            ;; TODO: What if this is redundant, given stuff already in the world?
-            (prog2$ (cw "~%   Drop ~X01.)~%" event nil)
-                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
-                    (submit-event-expect-no-error event nil state))
-          ;;failed to submit the rest of the events, so we can't just skip this one:
-          (progn$ ;(cw " Cannot be dropped.)~%" event)
-           (cw ")~%" event)
-           (submit-event-expect-no-error event nil state))))))
-    (include-book
-     (improve-include-book-event event rest-events initial-included-books print state)
-)    ((defthm defthmd) (improve-defthm-event event rest-events print state))
-    ((defun defund) (improve-defun-event event rest-events print state))
-    ((defrule defruled) (improve-defrule-event event rest-events print state))
-    ((in-package) (improve-in-package-event event rest-events print state))
-    ;; todo: for these, we should print the event before submitting it:
-    ((deflabel) (submit-event event nil nil state) ; can't think of anything to do for labels
-     )
-    ((defstub) (submit-event event nil nil state) ; anything to do?
-     )
-    ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
-     )
-    ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
-     )
-    ((defmacro) (submit-event event nil nil state) ; todo: check the body?
-     )
-    ((defconst) (submit-event event nil nil state) ; todo: check the body?
-     )
-    ((encapsulate) (submit-event event nil nil state) ; todo: handle!
-     )
-    ((theory-invariant) (submit-event event nil nil state) ; todo: handle!  could warn about a name that is not defined.
-     )
-    ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
-     )
-    ((defcong) (submit-event event nil nil state) ; todo: try to clean up hints
-     )
     ;; Since it's just an assert, we can continue after an error, so we just warn:
     ((assert-event assert-equal)
      (let ((state (submit-event-handle-error event nil :warn state)))
        (mv nil state)))
-    ;; TODO: Try dropping include-books.
-    ;; TODO: Add more event types here.
+    ((defcong) (submit-event event nil nil state) ; todo: try to clean up hints
+     )
+    ((defconst) (submit-event event nil nil state) ; todo: check the body?
+     )
+    ((deflabel) (submit-event event nil nil state) ; can't think of anything to do for labels
+     )
+    ((defmacro) (submit-event event nil nil state) ; todo: check the body?
+     )
+    ((defrule defruled) (improve-defrule-event event rest-events print state))
+    ((defstub) (submit-event event nil nil state) ; anything to do?
+     )
+    ((defthm defthmd) (improve-defthm-event event rest-events print state))
+    ((defun defund) (improve-defun-event event rest-events print state))
+    ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
+     )
+    ((encapsulate) (submit-event event nil nil state) ; todo: handle!
+     )
+    (include-book (improve-include-book-event event rest-events initial-included-books print state) )
+    ((in-package) (improve-in-package-event event rest-events print state))
+    ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
+     )
+    (local (improve-local-event event rest-events print initial-included-books state))
+    ((theory-invariant) (submit-event event nil nil state) ; todo: handle!  could warn about a name that is not defined.
+     )
+    ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
+     )
     (t (prog2$ (cw " (Just submitting unhandled event ~x0)~%" (abbreviate-event event))
                (submit-event-expect-no-error event nil state)))))
 

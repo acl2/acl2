@@ -33,7 +33,7 @@
   :hints (("Goal" :in-theory (enable read-char$))))
 
 (defthm state-p-of-mv-nth-1-of-read-char$
-  (implies (and (state-p1 state)
+  (implies (and (state-p state)
                 (assoc-equal channel (open-input-channels state)))
            (state-p (mv-nth 1 (read-char$ channel state))))
   :hints (("Goal" :in-theory (enable state-p))))
