@@ -46,6 +46,12 @@
   :hints (("Goal" :use (:instance unsigned-byte-listp-of-mv-nth-1-of-read-file-into-byte-list)
            :in-theory (disable unsigned-byte-listp-of-mv-nth-1-of-read-file-into-byte-list))))
 
+(defthm state-p1-of-mv-nth-2-of-read-file-into-byte-list
+  (implies (and (stringp path-to-file)
+                (state-p1 state))
+           (state-p1 (mv-nth 2 (read-file-into-byte-list path-to-file state))))
+  :hints (("Goal" :in-theory (enable read-file-into-byte-list state-p))))
+
 (defthm state-p-of-mv-nth-2-of-read-file-into-byte-list
   (implies (and (stringp path-to-file)
                 (state-p state))

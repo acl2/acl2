@@ -217,8 +217,7 @@
    (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool)
-   (deprecated symbol-list))
+   (proofs bool))
   :pred stmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -241,14 +240,12 @@
   ((items block-item-list)
    (type type)
    (term pseudo-termp)
-   (compst-term pseudo-termp)
    (context atc-context)
    (limit pseudo-term)
    (events pseudo-event-form-list)
    (thm-name symbol)
    (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+   (names-to-avoid symbol-list))
   :pred stmt-goutp)
 
 ;;;;;;;;;;
@@ -259,14 +256,12 @@
   :body (make-stmt-gout :items nil
                         :type (irr-type)
                         :term nil
-                        :compst-term nil
                         :context (irr-atc-context)
                         :limit nil
                         :events nil
                         :thm-name nil
                         :thm-index 1
-                        :names-to-avoid nil
-                        :proofs nil))
+                        :names-to-avoid nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,8 +571,7 @@
                        :prec-tags gin.prec-tags
                        :thm-index gin.thm-index
                        :names-to-avoid gin.names-to-avoid
-                       :proofs gin.proofs
-                       :deprecated gin.deprecated)
+                       :proofs gin.proofs)
                       state))
        ((unless (equal prev-type rhs.type))
         (reterr
@@ -615,7 +609,7 @@
        (expr-limit `(binary-+ '1 ,asg-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
-       ((when (or (not rhs.proofs)
+       ((when (or (not rhs.thm-name)
                   (atc-var-info->externalp var-info))) ; <- temporary
         (retok item
                rhs.term
@@ -954,14 +948,12 @@
          :items all-items
          :type items-type
          :term term
-         :compst-term gin.compst-var
          :context (make-atc-context :preamble nil :premises nil)
          :limit all-items-limit
          :events (append item-events items-events)
          :thm-name nil
          :thm-index gin.thm-index
-         :names-to-avoid gin.names-to-avoid
-         :proofs nil))
+         :names-to-avoid gin.names-to-avoid))
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
                                                  items-new-context))
@@ -1012,7 +1004,6 @@
     (make-stmt-gout :items all-items
                     :type items-type
                     :term term
-                    :compst-term gin.compst-var
                     :context items-new-context
                     :limit all-items-limit
                     :events (append item-events
@@ -1020,8 +1011,7 @@
                                     (list event))
                     :thm-name thm-name
                     :thm-index thm-index
-                    :names-to-avoid names-to-avoid
-                    :proofs t))
+                    :names-to-avoid names-to-avoid))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1086,8 +1076,7 @@
                                      :prec-tags gin.prec-tags
                                      :thm-index gin.thm-index
                                      :names-to-avoid gin.names-to-avoid
-                                     :proofs gin.proofs
-                                     :deprecated gin.deprecated)
+                                     :proofs gin.proofs)
                       state))
        ((unless (equal expr.affect must-affect))
         (reterr
@@ -1120,21 +1109,20 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
-       ((when (not expr.proofs))
+       ((when (not expr.thm-name))
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
                 :term expr.term
-                :compst-term expr.compst-term
                 :context (make-atc-context :preamble nil :premises nil)
                 :limit (pseudo-term-fncall
                         'binary-+
                         (list (pseudo-term-quote 3)
                               expr.limit))
                 :events expr.events
+                :thm-name nil
                 :thm-index expr.thm-index
-                :names-to-avoid expr.names-to-avoid
-                :proofs nil)))
+                :names-to-avoid expr.names-to-avoid)))
        (stmt-limit (pseudo-term-fncall
                     'binary-+
                     (list (pseudo-term-quote 1)
@@ -1214,7 +1202,6 @@
     (retok (make-stmt-gout :items items
                            :type expr.type
                            :term expr.term
-                           :compst-term expr.compst-term
                            :context gin.context
                            :limit items-limit
                            :events (append expr.events
@@ -1223,8 +1210,7 @@
                                            (list items-thm-event))
                            :thm-name items-thm-name
                            :thm-index thm-index
-                           :names-to-avoid names-to-avoid
-                           :proofs t)))
+                           :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1290,14 +1276,12 @@
         (retok (make-stmt-gout :items then-items
                                :type then-type
                                :term term
-                               :compst-term gin.compst-var
                                :context (atc-context nil nil)
                                :limit then-limit
                                :events then-events
                                :thm-name nil
                                :thm-index gin.thm-index
-                               :names-to-avoid gin.names-to-avoid
-                               :proofs nil)))
+                               :names-to-avoid gin.names-to-avoid)))
        (lemma-name (pack gin.fn '-if-mbt- gin.thm-index))
        ((mv lemma-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                         lemma-name nil gin.names-to-avoid wrld))
@@ -1359,7 +1343,6 @@
     (retok (make-stmt-gout :items then-items
                            :type then-type
                            :term term
-                           :compst-term gin.compst-var
                            :context then-context
                            :limit then-limit
                            :events (append then-events
@@ -1367,8 +1350,7 @@
                                                  thm-event))
                            :thm-name thm-name
                            :thm-index thm-index
-                           :names-to-avoid names-to-avoid
-                           :proofs t)))
+                           :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1462,7 +1444,6 @@
           :items (list (block-item-stmt stmt))
           :type type
           :term term
-          :compst-term gin.compst-var
           :context (make-atc-context :preamble nil :premises nil)
           :limit (pseudo-term-fncall
                   'binary-+
@@ -1474,8 +1455,7 @@
           :events (append test-events then-events else-events)
           :thm-name nil
           :thm-index gin.thm-index
-          :names-to-avoid gin.names-to-avoid
-          :proofs nil)))
+          :names-to-avoid gin.names-to-avoid)))
        (thm-index gin.thm-index)
        (names-to-avoid gin.names-to-avoid)
        (then-stmt-thm (pack gin.fn '-correct- thm-index))
@@ -1758,7 +1738,6 @@
       :items items
       :type type
       :term term
-      :compst-term gin.compst-var
       :context new-context
       :limit items-limit
       :events (append test-events
@@ -1771,8 +1750,7 @@
                       (list items-thm-event))
       :thm-name items-thm-name
       :thm-index thm-index
-      :names-to-avoid names-to-avoid
-      :proofs t)))
+      :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1987,7 +1965,7 @@
                    (gin (change-stmt-gin gin
                                          :thm-index then.thm-index
                                          :names-to-avoid then.names-to-avoid
-                                         :proofs then.proofs)))
+                                         :proofs (and then.thm-name t))))
                 (atc-gen-mbt-block-items test-arg-term
                                          then.term
                                          else-term
@@ -2010,8 +1988,7 @@
                                   :compst-var gin.compst-var
                                   :thm-index gin.thm-index
                                   :names-to-avoid gin.names-to-avoid
-                                  :proofs gin.proofs
-                                  :deprecated gin.deprecated)
+                                  :proofs gin.proofs)
                                  state))
              ((erp (stmt-gout then)
                    then-context-start
@@ -2029,7 +2006,7 @@
                         then-enter-scope-events
                         thm-index
                         names-to-avoid)
-                    (if test.proofs
+                    (if test.thm-name
                         (atc-gen-enter-inscope gin.fn
                                                gin.fn-guard
                                                gin.inscope
@@ -2052,7 +2029,7 @@
                                    :inscope then-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs test.proofs)
+                                   :proofs (and test.thm-name t))
                                   state))
                    (then-context-end (stmt-gout->context gout)))
                 (retok
@@ -2079,7 +2056,7 @@
                         else-enter-scope-events
                         thm-index
                         names-to-avoid)
-                    (if test.proofs
+                    (if test.thm-name
                         (atc-gen-enter-inscope gin.fn
                                                gin.fn-guard
                                                gin.inscope
@@ -2102,7 +2079,7 @@
                                    :inscope else-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs test.proofs)
+                                   :proofs (and test.thm-name t))
                                   state))
                    (else-context-end (stmt-gout->context gout)))
                 (retok
@@ -2124,9 +2101,10 @@
                                    gin
                                    :thm-index else.thm-index
                                    :names-to-avoid else.names-to-avoid
-                                   :proofs (and test.proofs
-                                                then.proofs
-                                                else.proofs))
+                                   :proofs (and test.thm-name
+                                                then.thm-name
+                                                else.thm-name
+                                                t))
                                   state)))
        ((mv okp var? vars indices val-term body-term wrapper?)
         (atc-check-mv-let term))
@@ -2190,8 +2168,7 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs
-                                   :deprecated gin.deprecated)
+                                   :proofs gin.proofs)
                                   state))
                    ((when (or (type-case init.type :pointer)
                               (type-case init.type :array)))
@@ -2247,14 +2224,12 @@
                         :items (cons item body.items)
                         :type type
                         :term term
-                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
                         :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+                        :names-to-avoid body.names-to-avoid))))
              ((when (eq wrapper? 'assign))
               (b* ((var var?)
                    ((mv info? innermostp &) (atc-check-var var gin.inscope))
@@ -2286,8 +2261,7 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs
-                                   :deprecated gin.deprecated)
+                                   :proofs gin.proofs)
                                   state))
                    ((unless (equal prev-type rhs.type))
                     (reterr
@@ -2347,14 +2321,12 @@
                         :items (cons item body.items)
                         :type type
                         :term term
-                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
                         :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+                        :names-to-avoid body.names-to-avoid))))
              ((unless (eq wrapper? nil))
               (reterr
                (raise "Internal error: MV-LET wrapper is ~x0." wrapper?)))
@@ -2416,14 +2388,12 @@
                   :items items
                   :type type
                   :term term
-                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
                   :thm-index body.thm-index
-                  :names-to-avoid body.names-to-avoid
-                  :proofs nil))))
+                  :names-to-avoid body.names-to-avoid))))
        ((mv okp var val-term body-term wrapper?) (atc-check-let term))
        ((when okp)
         (b* ((val-instance (fty-fsublis-var gin.var-term-alist val-term))
@@ -2456,8 +2426,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs gin.proofs)
                                        state))
                    ((unless (equal ptr.type (type-pointer type)))
                     (reterr
@@ -2478,8 +2447,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index ptr.thm-index
                                         :names-to-avoid ptr.names-to-avoid
-                                        :proofs ptr.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs (and ptr.thm-name t))
                                        state))
                    ((unless (equal int.type type))
                     (reterr
@@ -2513,7 +2481,6 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
-                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append ptr.events
@@ -2521,8 +2488,7 @@
                                         body.events)
                         :thm-name nil
                         :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+                        :names-to-avoid body.names-to-avoid))))
              ((erp okp sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
@@ -2548,8 +2514,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs gin.proofs)
                                        state))
                    ((erp (pexpr-gout sub))
                     (atc-gen-expr-pure sub-term
@@ -2562,8 +2527,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index arr.thm-index
                                         :names-to-avoid arr.names-to-avoid
-                                        :proofs arr.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs (and arr.thm-name t))
                                        state))
                    ((erp (pexpr-gout elem))
                     (atc-gen-expr-pure elem-term
@@ -2576,8 +2540,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index sub.thm-index
                                         :names-to-avoid sub.names-to-avoid
-                                        :proofs sub.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs (and sub.thm-name t))
                                        state))
                    ((unless (and (type-case arr.type :array)
                                  (equal (type-array->of arr.type)
@@ -2632,7 +2595,6 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
-                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append arr.events
@@ -2641,8 +2603,7 @@
                                         body.events)
                         :thm-name nil
                         :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+                        :names-to-avoid body.names-to-avoid))))
              ((erp okp member-term tag member-name member-type)
               (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
@@ -2663,8 +2624,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs gin.proofs)
                                        state))
                    ((erp pointerp)
                     (cond
@@ -2701,8 +2661,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
-                                        :proofs struct.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs (and struct.thm-name t))
                                        state))
                    ((unless (equal member.type member-type))
                     (reterr
@@ -2740,7 +2699,6 @@
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type body.type
-                        :compst-term gin.compst-var
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
@@ -2748,8 +2706,7 @@
                                         member.events)
                         :thm-name nil
                         :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+                        :names-to-avoid body.names-to-avoid))))
              ((erp okp index-term elem-term tag member elem-type)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
@@ -2770,8 +2727,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index gin.thm-index
                                         :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs gin.proofs)
                                        state))
                    ((erp pointerp)
                     (cond
@@ -2808,8 +2764,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index struct.thm-index
                                         :names-to-avoid struct.names-to-avoid
-                                        :proofs struct.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs (and struct.thm-name t))
                                        state))
                    ((unless (type-integerp index.type))
                     (reterr
@@ -2832,8 +2787,7 @@
                                         :compst-var gin.compst-var
                                         :thm-index index.thm-index
                                         :names-to-avoid index.names-to-avoid
-                                        :proofs index.proofs
-                                        :deprecated gin.deprecated)
+                                        :proofs (and index.thm-name t))
                                        state))
                    ((unless (equal elem.type elem-type))
                     (reterr
@@ -2873,7 +2827,6 @@
                         :items (cons item body.items)
                         :type body.type
                         :term term
-                        :compst-term gin.compst-var
                         :context (make-atc-context :preamble nil :premises nil)
                         :limit limit
                         :events (append struct.events
@@ -2882,8 +2835,7 @@
                                         body.events)
                         :thm-name nil
                         :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid
-                        :proofs nil))))
+                        :names-to-avoid body.names-to-avoid))))
              ((mv info? innermostp errorp) (atc-check-var var gin.inscope))
              ((when errorp)
               (reterr
@@ -2922,8 +2874,7 @@
                                    :prec-tags gin.prec-tags
                                    :thm-index gin.thm-index
                                    :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs
-                                   :deprecated gin.deprecated)
+                                   :proofs gin.proofs)
                                   state))
                    ((when (or (type-case init.type :pointer)
                               (type-case init.type :array)))
@@ -2964,7 +2915,7 @@
                                                gin.prec-tags
                                                init.thm-index
                                                init.names-to-avoid
-                                               init.proofs
+                                               (and init.thm-name t)
                                                state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
@@ -2975,7 +2926,7 @@
                                    :inscope inscope-body
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs init.proofs)
+                                   :proofs (and init.thm-name t))
                                   state))
                    (term* (acl2::close-lambdas
                            `((lambda (,var) ,body.term) ,init.term))))
@@ -2996,7 +2947,7 @@
                    gin
                    :thm-index body.thm-index
                    :names-to-avoid body.names-to-avoid
-                   :proofs body.proofs)
+                   :proofs (and body.thm-name t))
                   state))))
              ((unless (atc-var-assignablep var innermostp gin.affect))
               (reterr
@@ -3049,7 +3000,7 @@
                       gin
                       :thm-index body.thm-index
                       :names-to-avoid body.names-to-avoid
-                      :proofs body.proofs)
+                      :proofs (and body.thm-name t))
                      state)))
                 (retok items-gout)))
              ((unless (eq wrapper? nil))
@@ -3102,14 +3053,12 @@
                   :items items
                   :type type
                   :term term
-                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
                   :thm-index body.thm-index
-                  :names-to-avoid body.names-to-avoid
-                  :proofs nil))))
+                  :names-to-avoid body.names-to-avoid))))
        ((when (and (pseudo-term-case term :var)
                    (equal gin.affect
                           (list (pseudo-term-var->name term)))))
@@ -3123,14 +3072,12 @@
                   :items nil
                   :type (type-void)
                   :term term
-                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit (pseudo-term-quote 1)
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
-                  :names-to-avoid gin.names-to-avoid
-                  :proofs nil))))
+                  :names-to-avoid gin.names-to-avoid))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (b* (((unless (>= (len terms) 2))
@@ -3147,15 +3094,13 @@
             (retok (make-stmt-gout :items nil
                                    :type (type-void)
                                    :term term
-                                   :compst-term gin.compst-var
                                    :context (make-atc-context :preamble nil
                                                               :premises nil)
                                    :limit (pseudo-term-quote 1)
                                    :events nil
                                    :thm-name nil
                                    :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid
-                                   :proofs nil)))
+                                   :names-to-avoid gin.names-to-avoid)))
            ((equal (cdr terms) gin.affect)
             (b* ((gin (change-stmt-gin gin :proofs nil)))
               (atc-gen-return-stmt (car terms) gin nil state)))
@@ -3213,28 +3158,24 @@
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
                   :term term
-                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit limit
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
-                  :names-to-avoid gin.names-to-avoid
-                  :proofs nil))))
+                  :names-to-avoid gin.names-to-avoid))))
        ((when (equal term `(,gin.fn ,@(formals+ gin.fn wrld))))
         (if gin.loop-flag
             (retok (make-stmt-gout
                     :items nil
                     :type (type-void)
                     :term term
-                    :compst-term gin.compst-var
                     :context (make-atc-context :preamble nil :premises nil)
                     :limit (pseudo-term-quote 1)
                     :events nil
                     :thm-name nil
                     :thm-index gin.thm-index
-                    :names-to-avoid gin.names-to-avoid
-                    :proofs nil))
+                    :names-to-avoid gin.names-to-avoid))
           (reterr
            (msg "When generating code for the recursive function ~x0, ~
                  a recursive call to the loop function occurs ~
@@ -3276,8 +3217,7 @@
                                        :compst-var gin.compst-var
                                        :thm-index gin.thm-index
                                        :names-to-avoid gin.names-to-avoid
-                                       :proofs gin.proofs
-                                       :deprecated gin.deprecated)
+                                       :proofs gin.proofs)
                                       state))
              ((unless (equal args.types in-types))
               (reterr
@@ -3293,14 +3233,12 @@
                   :items (list (block-item-stmt (stmt-expr call-expr)))
                   :type (type-void)
                   :term term
-                  :compst-term gin.compst-var
                   :context (make-atc-context :preamble nil :premises nil)
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
                   :thm-name nil
                   :thm-index args.thm-index
-                  :names-to-avoid args.names-to-avoid
-                  :proofs nil))))
+                  :names-to-avoid args.names-to-avoid))))
        ((when gin.loop-flag)
         (reterr
          (msg "A loop body must end with ~
@@ -3363,8 +3301,7 @@
    (prec-objs atc-string-objinfo-alist)
    (thm-index pos)
    (names-to-avoid symbol-list)
-   (proofs bool)
-   (deprecated symbol-list))
+   (proofs bool))
   :pred lstmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -3391,8 +3328,7 @@
    (events pseudo-event-form-list)
    (thm-name symbol)
    (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+   (names-to-avoid symbol-list))
   :pred lstmt-goutp)
 
 ;;;;;;;;;;
@@ -3409,8 +3345,7 @@
                          :events nil
                          :thm-name nil
                          :thm-index 1
-                         :names-to-avoid nil
-                         :proofs nil))
+                         :names-to-avoid nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3496,8 +3431,7 @@
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
-                            :proofs gin.proofs
-                            :deprecated gin.deprecated)
+                            :proofs gin.proofs)
                            state))
        (formals (formals+ gin.fn wrld))
        ((mv okp affect)
@@ -3531,8 +3465,7 @@
                        :prec-objs gin.prec-objs
                        :thm-index test.thm-index
                        :names-to-avoid test.names-to-avoid
-                       :proofs test.proofs
-                       :deprecated gin.deprecated)
+                       :proofs (and test.thm-name t))
                       state))
        ((unless (type-case body.type :void))
         (reterr
@@ -3555,8 +3488,7 @@
                             :limit-all limit
                             :thm-name nil
                             :thm-index body.thm-index
-                            :names-to-avoid body.names-to-avoid
-                            :proofs nil)))
+                            :names-to-avoid body.names-to-avoid)))
   :measure (pseudo-term-count term)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :guard-hints (("Goal" :in-theory (enable acl2::pseudo-fnsym-p)))

@@ -194,26 +194,16 @@
       (cons (list (car items))
             (enlist-all (cdr items)))))
 
-(defun number-character-string-or-symbol-list (items)
-  (declare (xargs :guard t))
-  (if (atom items)
-      t
-    (and (or (acl2-numberp (car items))
-             (characterp (car items))
-             (stringp (car items))
-             (symbolp (car items)))
-         (number-character-string-or-symbol-list (cdr items)))))
-
 ;deprecated?
 (defun mypackn1 (lst)
-  (declare (xargs :guard (number-character-string-or-symbol-list lst)))
+  (declare (xargs :guard (atom-listp lst)))
   (cond ((atom lst) nil)
         (t (append (explode-atom (car lst) 10)
                    (mypackn1 (cdr lst))))))
 
 ;deprecated?
 (defund mypackn (lst)
-  (declare (xargs :guard (number-character-string-or-symbol-list lst)))
+  (declare (xargs :guard (atom-listp lst)))
   (let ((ans (intern (coerce (mypackn1 lst) 'string)
                      "ACL2")))
        ans))
