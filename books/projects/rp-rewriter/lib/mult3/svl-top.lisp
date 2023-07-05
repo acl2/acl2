@@ -655,6 +655,15 @@
     :hints (("goal"
              :in-theory (e/d (bitp) ()))))
 
+  (def-rp-rule 4vec-?-is-binary-?-when-bitp-2
+    (implies (and (bitp x)
+                  (bitp y)
+                  (bitp z))
+             (equal (sv::4vec-? (-- x) y z)
+                    (binary-? x y z)))
+    :hints (("goal"
+             :in-theory (e/d (bitp) ()))))
+
   (def-rp-rule 4vec-?-is-binary-?-when-integerp-1
     (implies (and (integerp x)
                   (natp start)
@@ -2078,3 +2087,26 @@ z)
                                            other2))))))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
+
+
+;; split +1 cases:
+
+;; (def-rp-rule s-c-spec-with-1
+;;   (and 
+;;    (equal (s-c-spec (list 1 x y))
+;;           (list (s-spec (list 1 x y))
+;;                 (c-spec (list 1 x y))))
+;;    (equal (s-c-spec (list x 1 y))
+;;           (list (s-spec (list 1 x y))
+;;                 (c-spec (list 1 x y))))
+;;    (equal (s-c-spec (list x y 1))
+;;           (list (s-spec (list 1 x y))
+;;                 (c-spec (list 1 x y))))
+;;    (equal (s-c-spec (list 1 x))
+;;           (list (s-spec (list 1 x))
+;;                 (c-spec (list 1 x))))
+;;    (equal (s-c-spec (list x 1))
+;;           (list (s-spec (list 1 x))
+;;                 (c-spec (list 1 x)))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d (s-c-spec s-spec c-spec) ()))))

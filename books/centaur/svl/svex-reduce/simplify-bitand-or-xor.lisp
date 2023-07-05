@@ -2088,7 +2088,6 @@ x
                                svex-eval-of-bitand/bitor-cancel-repeated-aux-correct-1
                                svex-eval-of-bitand/bitor-cancel-repeated-aux-correct-2
                                ))))))
-  
 
   (svex-eval-lemma-tmpl
    (defret svex-eval-of-bitand/or/xor-cancel-repeated-correct-env=nil
@@ -2350,7 +2349,7 @@ x
            (svex-simplify-bitand/or/xor (cdar alist))
            (svex-alist-simplify-bitand/or/xor (cdr alist))))
   ///
-  
+
   (svex-eval-lemma-tmpl
    (defret svex-alist-eval-of-<fn>
      (implies (and (sv::svex-alist-p alist)
@@ -2494,7 +2493,6 @@ x
                                                      (context 'context)
                                                      (config 'config))
     `(svex-simplify-bitand/or/xor-outside-in*-fn ,x ,env ,context ,config nil))
-  
 
   (svex-eval-lemma-tmpl
    (defret-mutual svex-eval-of-<fn>
@@ -2565,7 +2563,7 @@ x
            (svex-simplify-bitand/or/xor-outside-in* (cdar alist))
            (svex-alist-simplify-bitand/or/xor-outside-in (cdr alist))))
   ///
-  
+
   (svex-eval-lemma-tmpl
    (defret svex-alist-eval-of-<fn>
      (implies (and (sv::svex-alist-p alist)
@@ -2825,18 +2823,17 @@ x
                                      (svex-eval-bitor-lst lst env))
                          (svex-eval-bitor-lst lst env)))))))
 
-(local
- (svex-eval-lemma-tmpl
-  (defthm svex-eval-bitor/and-lst-of-remove-duplicates-equal
-    (and (equal (svex-eval-bitor-lst (remove-duplicates-equal lst) env)
-                (svex-eval-bitor-lst lst env))
-         (equal (svex-eval-bitand-lst (remove-duplicates-equal lst) env)
-                (svex-eval-bitand-lst lst env)))
-    :hints (("Goal"
-             :in-theory (e/d (svex-eval-bitor-lst
-                              svex-eval-bitand-lst
-                              remove-duplicates-equal)
-                             ()))))))
+(svex-eval-lemma-tmpl
+ (defthm svex-eval-bitor/and-lst-of-remove-duplicates-equal
+   (and (equal (svex-eval-bitor-lst (remove-duplicates-equal lst) env)
+               (svex-eval-bitor-lst lst env))
+        (equal (svex-eval-bitand-lst (remove-duplicates-equal lst) env)
+               (svex-eval-bitand-lst lst env)))
+   :hints (("Goal"
+            :in-theory (e/d (svex-eval-bitor-lst
+                             svex-eval-bitand-lst
+                             remove-duplicates-equal)
+                            ())))))
 
 (define bitxor/or/and-equiv-aux ((svex)
                                  (fn)
