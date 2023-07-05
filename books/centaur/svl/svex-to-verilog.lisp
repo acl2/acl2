@@ -100,6 +100,55 @@
 
 (defbadge STR::FAST-STRING-APPEND)
 
+(define svex-to-verilog--quoted-aux (val
+                                     &key
+                                     ((verilog-lines string-listp) 'verilog-lines)
+                                     ((svex-to-wires alistp) 'svex-to-wires)
+                                     ((wire-cnt natp) 'wire-cnt))
+  :mode :program
+  (cond ((equal val 0)
+         (svex-to-verilog-ret "" 0 nil))
+        ((equal val (sv::4vec-x))
+         (svex-to-verilog-ret "x" 1 t))
+        ((equal val (sv::4vec-z))
+         (svex-to-verilog-ret "z" 1 t))
+        ((equal val -1)
+         (svex-to-verilog-ret "1" 1 t))
+        (t (b* (((sv::4vec c) (sv::4vec-part-select 0 1 val))
+                ((svex-to-verilog-ret rest-expr rest-size rest-signed)
+                 (svex-to-verilog--quoted-aux (sv::4vec-rsh 1 val))))
+             (svex-to-verilog-ret 
+              (str::cat rest-expr (cond ((equal c 1) "1")
+                                        ((equal c 0) "0")
+                                        ((equal c.upper 1) "z")
+                                        ((equal c.lower 1) "x")))
+              (1+ rest-size)
+              rest-signed))))
+  ///
+  (define svex-to-verilog--quoted (val
+                                   &key
+                                   ((verilog-lines string-listp) 'verilog-lines)
+                                   ((svex-to-wires alistp) 'svex-to-wires)
+                                   ((wire-cnt natp) 'wire-cnt))
+    :mode :program
+    (b* (((when (equal val 0))
+          (svex-to-verilog-ret "0" 0 nil))
+         ((svex-to-verilog-ret expr size signed)
+          (svex-to-verilog--quoted-aux val)))
+      (svex-to-verilog-ret (str::cat (str::intstr size) "'b" expr) size signed)))
+  )
+
+;; (define svex-to-verilog-aux--size-val ((val-expr stringp)
+;;                                        (size integerp))
+;;   :mode :program
+;;   (b* ((sd (search "'d" val-expr))
+;;        (sb (search "'b" val-expr))
+;;        ((Unless (or sd sb))
+;;         (str::cat (str::intstr size) "'d" val-expr))
+       
+       
+
+
 (defines svex-to-verilog-aux
   (define svex-to-verilog-break-to-wire ((x sv::svex-p)
                                          &key
@@ -169,7 +218,9 @@
                     (str::cat "wire " signed-txt "[" (str::intstr (1- width)) ":0] " new-wire-name ";")))
             "
     "
-            (str::cat "assign " new-wire-name " = " current-expr ";"))
+            (str::cat "assign " new-wire-name " = "
+                      (str-remove-sur-parant current-expr "(" ")")
+                      ";"))
            verilog-lines)))
       (svex-to-verilog-ret new-wire-name width signed)))
 
@@ -228,15 +279,14 @@
              nil)
        :quote (b* ((val x.val)
                    ((when (integerp val))
-                    (svex-to-verilog-ret 
-                     (str::intstr (abs val))
+                    (svex-to-verilog-ret
+                     ;;(str::intstr (abs val))
+                     (if (equal val 0)
+                         "0"
+                       (str::cat (str::intstr (integer-length val)) "'d" (str::intstr (abs val))))
                      (integer-length val)
-                     (< val 0)))
-                   ((sv::4vec val))
-                   ;; TODO: this needs revision for 4vec values........
-                   ((when (equal val.upper 0)) (svex-to-verilog-ret "Z" (integer-length val.lower) nil))
-                   ((when (equal val.lower 0)) (svex-to-verilog-ret "X" (integer-length val.upper) nil)))
-                (svex-to-verilog-ret (raise "Unexpected quoted: ~p0 ~%" val) nil nil))
+                     (< val 0))))
+                (svex-to-verilog--quoted val))
        :call
        (b* (((svex-to-verilog-ret current-expr width signed break-to-wire2?)
              (cond
@@ -260,7 +310,9 @@
                     ((svex-to-verilog-ret arg1 ?width1 ?signed1)
                      (if (or (not width1)
                              (and #|signed1|# (> width0 width1)))
-                         ;; when signed, break into a wire but do not save because widths do not match.
+                         ;; break into  a wire when  the concat size  is larger
+                         ;; but do  not save because  breaking the wire  with a
+                         ;; custom width
                          (svex-to-verilog-break-to-wire term1
                                                         :current-expr arg1 :width width0 :signed nil
                                                         :do-not-save t
@@ -269,10 +321,11 @@
 
                     (arg2 (str-remove-sur-parant arg2 "{" "}"))
 
-                    (lsb (if (and (sv::4vec-p (second x.args))
-                                  (not (str::prefixp "_" arg1)))
+                    (lsb arg1
+                         #|(if (and (integerp (second x.args))
+                                  (not (str::strprefixp "_" arg1)))
                              (str::cat (str::intstr width0) "'d" arg1)
-                           arg1
+                           arg1)|#
                            #|(if (and (or (natp width1)
                                         (rp::cwe "Warning! Size of this svex inside concat couldn't be calculated: ~p0~%" arg1))
                                     (< width1 width0))
@@ -283,11 +336,13 @@
                                          ;; arg1  is broken  into a  wire
                                          ;; above.
                                          ", " arg1 "/* extra */}")
-                             arg1)|#))
+                             arg1)|#)
 
-                    (msb (if (integerp (third x.args))
-                             (str::cat (str::intstr width2) "'d" arg2)
-                           arg2))
+                    (msb arg2 #|(if (and (integerp (third x.args))
+                                           (not (str::strprefixp "_" arg2))
+                                           )
+                                      (str::cat (str::intstr width2) "'d" arg2)
+                                arg2)|#)
 
                     (current-expr (if (equal (third x.args) 0) ;; freaks out when it sees "0'd0" in verilog code.
                                       lsb
@@ -353,6 +408,13 @@
                                       ((eq x.fn 'sv::==) 1)
                                       ((eq x.fn 'sv::==??) 1)))))
                  (svex-to-verilog-ret current-expr width signed nil)))
+              ((and* (eq x.fn 'sv::bitnot)
+                     (equal-len x.args 1))
+               (b* (((svex-to-verilog-ret arg1 width1 ?signed1) (svex-to-verilog-aux (first x.args)))
+                    (current-expr (str::cat "(~" arg1 ")"))
+                    (signed t)
+                    (width width1))
+                 (svex-to-verilog-ret current-expr width signed t)))
               ((and* (or (eq x.fn 'sv::unfloat)
                          (eq x.fn 'sv::id))
                      (equal-len x.args 1))
@@ -375,8 +437,10 @@
                                                     ;;:maybe-width (+ s w)
                                                     ))
 
-                    ((svex-to-verilog-ret arg1 width1 &)
-                     (if (and signed1 ;;(< width1 (+ s w)) 
+                    ;; when it is signed break again in case its size is smaller so it is safely sign extended.
+                    ((svex-to-verilog-ret arg1 width1 signed1)
+                     (if (and signed1 (or (not (and (natp w) (natp width1) (natp s)))
+                                          (< width1 (+ s w)))
                               )
                          (svex-to-verilog-break-to-wire
                           term
@@ -388,7 +452,8 @@
                        (svex-to-verilog-ret arg1 width1 signed1)))
                     
                     ((when (and (equal s 0)
-                                (equal w width1)))
+                                (equal w width1)
+                                (not signed1)))
                      (svex-to-verilog-ret arg1 w nil nil))
 
                     (w (if (and (natp w) (natp width1) (natp s))
@@ -396,7 +461,7 @@
                          w))
 
                     (current-expr (cond ((<= w 0)
-                                         "0")
+                                         "0") 
                                         ((equal w 1)
                                          (str::cat arg1 "[" (str::intstr s) "]"))
                                         (t
@@ -414,8 +479,10 @@
                                             (cond ((eq x.fn 'sv::lsh) " >> ")
                                                   ((eq x.fn 'sv::rsh) " << "))
                                             (str::intstr w)))
-                    (width (cond ((eq x.fn 'sv::lsh) (+ (ifix w) width1))
-                                 ((eq x.fn 'sv::rsh) (+ (- (ifix w)) width1)))))
+                    (width (if (integerp width1)
+                               (cond ((eq x.fn 'sv::lsh) (+ (ifix w) width1))
+                                     ((eq x.fn 'sv::rsh) (+ (- (ifix w)) width1)))
+                             nil)))
                  (svex-to-verilog-ret current-expr width signed1 nil)))
 
               ((and* (or (eq x.fn 'sv::signx))
@@ -439,12 +506,12 @@
                      (equal-len x.args 1))
                (b* (((svex-to-verilog-ret arg1 ?width1 ?signed1)
                      (svex-to-verilog-break-to-wire (first x.args)))
-                    (current-expr (str::cat ;;"(signed'("
+                    (current-expr (str::cat "("
                                             (cond ((eq x.fn 'sv::uor) "|")
                                                   ((eq x.fn 'sv::uand) "&")
                                                   ((eq x.fn 'sv::uxor) "^"))
                                             arg1
-                                            ;;"))"
+                                            ")"
                                             )))
                  (svex-to-verilog-ret current-expr 1 t t)))
 
@@ -492,7 +559,7 @@
                                 break-to-wire2?
                                 ;; if the expressions grow too large, break it into a wire.
                                 (> (length current-expr)
-                                   250)))
+                                   300)))
 
             ((svex-to-verilog-ret current-expr width signed)
              (svex-to-verilog-break-to-wire x
