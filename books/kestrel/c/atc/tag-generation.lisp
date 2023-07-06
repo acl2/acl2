@@ -423,10 +423,13 @@
                                        (fixer symbolp)
                                        (fixer-recognizer-thm symbolp)
                                        (not-error-thm symbolp)
+                                       (valuep-thm symbolp)
+                                       (value-kind-thm symbolp)
                                        (type-of-value-thm symbolp)
                                        (meminfo defstruct-member-infop)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
+  (declare (ignore not-error-thm type-of-value-thm))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-write-thms symbol-listp)
                (updated-names-to-avoid symbol-listp
@@ -493,7 +496,8 @@
                                                  nil
                                                  names-to-avoid
                                                  wrld))
-             (typep (type-to-recognizer type wrld))
+             (fixtype (pack (type-kind type)))
+             (typep (pack fixtype 'p))
              ((unless typep)
               (raise "Internal error: unsupported member type ~x0." type)
               (mv nil nil nil))
@@ -551,196 +555,129 @@
                                (write-object (value-pointer->designator ptr)
                                              (,writer val struct)
                                              compst))))
+             (reader-return-thm
+              (defstruct-member-info->reader-return-thm meminfo))
              (writer-return-thm
               (defstruct-member-info->writer-return-thm meminfo))
+             (valuep-when-typep (pack 'valuep-when- typep))
+             (value-kind-when-typep (pack 'value-kind-when- typep))
+             (consp-when-typep (pack 'consp-when- typep))
+             (type-fix-when-typep (pack fixtype '-fix-when- typep))
              (hints-member
               `(("Goal"
                  :in-theory
                  '(exec-expr-asg
-                   not-errorp-when-valuep
-                   valuep-when-ucharp
-                   valuep-when-scharp
-                   valuep-when-ushortp
-                   valuep-when-sshortp
-                   valuep-when-uintp
-                   valuep-when-sintp
-                   valuep-when-ulongp
-                   valuep-when-slongp
-                   valuep-when-ullongp
-                   valuep-when-sllongp
-                   consp-when-ucharp
-                   consp-when-scharp
-                   consp-when-ushortp
-                   consp-when-sshortp
-                   consp-when-uintp
-                   consp-when-sintp
-                   consp-when-ulongp
-                   consp-when-slongp
-                   consp-when-ullongp
-                   consp-when-sllongp
-                   uchar-fix-when-ucharp
-                   schar-fix-when-scharp
-                   ushort-fix-when-ushortp
-                   sshort-fix-when-sshortp
-                   uint-fix-when-uintp
-                   sint-fix-when-sintp
-                   ulong-fix-when-ulongp
-                   slong-fix-when-slongp
-                   ullong-fix-when-ullongp
-                   sllong-fix-when-sllongp
-                   ,writer
-                   ,not-error-thm
-                   ,recognizer
-                   ,fixer-recognizer-thm
-                   ,type-of-value-thm
-                   not-errorp-when-expr-valuep
-                   apconvert-expr-value-when-not-value-array-alt
-                   value-kind-when-ucharp
-                   value-kind-when-scharp
-                   value-kind-when-ushortp
-                   value-kind-when-sshortp
-                   value-kind-when-uintp
-                   value-kind-when-sintp
-                   value-kind-when-ulongp
-                   value-kind-when-slongp
-                   value-kind-when-ullongp
-                   value-kind-when-sllongp
-                   expr-value-fix-when-expr-valuep
-                   exec-ident
+                   exec-expr-pure-when-member-no-syntaxp
+                   exec-expr-pure-when-ident-no-syntaxp
+                   exec-ident-open-via-object
                    exec-member
-                   read-object-of-objdesign-of-var-to-read-var
-                   write-object-of-objdesign-of-var-to-write-var
-                   write-object
-                   value-struct-read
-                   acl2::mv-nth-of-cons
-                   expr-fix-when-exprp
-                   exprp-of-expr-binary->arg1
-                   exprp-of-expr-member->target
+                   not-errorp-when-expr-valuep
+                   expr-value-fix-when-expr-valuep
                    expr-valuep-of-expr-value
                    expr-value->value-of-expr-value
                    expr-value->object-of-expr-value
+                   apconvert-expr-value-when-not-value-array-alt
+                   not-errorp-when-valuep
                    value-fix-when-valuep
+                   mv-nth-of-cons
+                   (:e zp)
+                   objdesign-of-var-when-valuep-of-read-var
+                   read-object-of-objdesign-of-var-to-read-var
+                   write-object-of-objdesign-of-var-to-write-var
+                   write-object
                    objdesign-option-fix
                    objdesign-fix-when-objdesignp
                    return-type-of-objdesign-member
-                   objdesign-of-var-when-valuep-of-read-var
                    objdesignp-of-objdesign-of-var-when-valuep-of-read-var
                    objdesign-member->super-of-objdesign-member
                    objdesign-member->name-of-objdesign-member
-                   (:e zp)
-                   (:e ident)
-                   (:e ident-fix)
-                   (:t objdesign-member))
-                 :expand
-                 ((exec-expr-pure (expr-binary->arg1 e)
-                                  compst)
-                  (exec-expr-pure (expr-member->target (expr-binary->arg1 e))
-                                  compst))
-                 :use
-                 (:instance
-                  ,writer-return-thm
-                  (val (expr-value->value
-                        (exec-expr-pure (expr-binary->arg2 e) compst)))
-                  (struct (b* ((left (expr-binary->arg1 e))
-                               (target (expr-member->target left))
-                               (var (expr-ident->get target))
-                               (struct (read-var var compst)))
-                            struct))))))
+                   (:t objdesign-member)
+                   ident-fix-when-identp
+                   identp-of-ident
+                   ,valuep-when-typep
+                   ,consp-when-typep
+                   ,value-kind-when-typep
+                   ,type-fix-when-typep
+                   ,fixer-recognizer-thm
+                   ,valuep-thm
+                   ,value-kind-thm
+                   ,reader
+                   ,writer)
+                 :use ((:instance
+                        ,reader-return-thm
+                        (struct (read-var (expr-ident->get
+                                           (expr-member->target
+                                            (expr-binary->arg1 e)))
+                                          compst)))
+                       (:instance
+                        ,writer-return-thm
+                        (val (expr-value->value
+                              (exec-expr-pure (expr-binary->arg2 e) compst)))
+                        (struct (read-var (expr-ident->get
+                                           (expr-member->target
+                                            (expr-binary->arg1 e)))
+                                          compst)))))))
              (hints-memberp
               `(("Goal"
                  :in-theory
                  '(exec-expr-asg
-                   not-errorp-when-valuep
-                   valuep-when-ucharp
-                   valuep-when-scharp
-                   valuep-when-ushortp
-                   valuep-when-sshortp
-                   valuep-when-uintp
-                   valuep-when-sintp
-                   valuep-when-ulongp
-                   valuep-when-slongp
-                   valuep-when-ullongp
-                   valuep-when-sllongp
-                   consp-when-ucharp
-                   consp-when-scharp
-                   consp-when-ushortp
-                   consp-when-sshortp
-                   consp-when-uintp
-                   consp-when-sintp
-                   consp-when-ulongp
-                   consp-when-slongp
-                   consp-when-ullongp
-                   consp-when-sllongp
-                   uchar-fix-when-ucharp
-                   schar-fix-when-scharp
-                   ushort-fix-when-ushortp
-                   sshort-fix-when-sshortp
-                   uint-fix-when-uintp
-                   sint-fix-when-sintp
-                   ulong-fix-when-ulongp
-                   slong-fix-when-slongp
-                   ullong-fix-when-ullongp
-                   sllong-fix-when-sllongp
-                   ,writer
-                   ,not-error-thm
-                   ,recognizer
-                   ,fixer-recognizer-thm
-                   ,type-of-value-thm
-                   not-errorp-when-expr-valuep
-                   apconvert-expr-value-when-not-value-array-alt
-                   value-kind-when-ucharp
-                   value-kind-when-scharp
-                   value-kind-when-ushortp
-                   value-kind-when-sshortp
-                   value-kind-when-uintp
-                   value-kind-when-sintp
-                   value-kind-when-ulongp
-                   value-kind-when-slongp
-                   value-kind-when-ullongp
-                   value-kind-when-sllongp
-                   expr-value-fix-when-expr-valuep
-                   exec-ident
+                   exec-expr-pure-when-memberp-no-syntaxp
+                   exec-expr-pure-when-ident-no-syntaxp
+                   exec-ident-open-via-object
                    exec-memberp
-                   read-object-of-objdesign-of-var-to-read-var
-                   value-struct-read
-                   acl2::mv-nth-of-cons
-                   expr-fix-when-exprp
-                   exprp-of-expr-binary->arg1
-                   exprp-of-expr-memberp->target
+                   not-errorp-when-expr-valuep
+                   expr-value-fix-when-expr-valuep
                    expr-valuep-of-expr-value
                    expr-value->value-of-expr-value
                    expr-value->object-of-expr-value
+                   apconvert-expr-value-when-not-value-array-alt
+                   not-errorp-when-valuep
                    value-fix-when-valuep
+                   mv-nth-of-cons
+                   (:e zp)
                    objdesign-of-var-when-valuep-of-read-var
+                   read-object-of-objdesign-of-var-to-read-var
+                   write-object
                    objdesign-option-fix
                    objdesign-fix-when-objdesignp
                    return-type-of-objdesign-member
                    objdesignp-of-value-pointer->designator
                    objdesign-member->super-of-objdesign-member
                    objdesign-member->name-of-objdesign-member
-                   (:e zp)
-                   (:e ident)
-                   (:e ident-fix)
-                   (:t objdesign-member))
-                 :expand
-                 ((exec-expr-pure (expr-binary->arg1 e) compst)
-                  (exec-expr-pure (expr-memberp->target (expr-binary->arg1 e))
-                                  compst)
-                  (:free (x y z w) (write-object (objdesign-member x y) z w))
-                  (:free (x y) (read-object (objdesign-member->super x) y)))
-                 :use
-                 (:instance
-                  ,writer-return-thm
-                  (val (expr-value->value
-                        (exec-expr-pure (expr-binary->arg2 e) compst)))
-                  (struct (b* ((left (expr-binary->arg1 e))
-                               (target (expr-memberp->target left))
-                               (ptr (read-var (expr-ident->get target)
-                                              compst))
-                               (struct (read-object
-                                        (value-pointer->designator ptr)
-                                        compst)))
-                            struct))))))
+                   (:t objdesign-member)
+                   ident-fix-when-identp
+                   identp-of-ident
+                   ,valuep-when-typep
+                   ,consp-when-typep
+                   ,value-kind-when-typep
+                   ,type-fix-when-typep
+                   ,fixer-recognizer-thm
+                   ,reader
+                   ,writer
+                   ,recognizer)
+                 :use ((:instance
+                        ,reader-return-thm
+                        (struct (read-object
+                                 (value-pointer->designator
+                                  (read-var
+                                   (expr-ident->get
+                                    (expr-memberp->target
+                                     (expr-binary->arg1 e)))
+                                   compst))
+                                 compst)))
+                       (:instance
+                        ,writer-return-thm
+                        (val (expr-value->value
+                              (exec-expr-pure (expr-binary->arg2 e)
+                                              compst)))
+                        (struct (read-object
+                                 (value-pointer->designator
+                                  (read-var
+                                   (expr-ident->get
+                                    (expr-memberp->target
+                                     (expr-binary->arg1 e)))
+                                   compst))
+                                 compst)))))))
              ((mv event-member &)
               (evmac-generate-defthm thm-member-name
                                      :formula formula-member
@@ -1083,6 +1020,8 @@
    (fixer symbolp)
    (fixer-recognizer-thm symbolp)
    (not-error-thm symbolp)
+   (valuep-thm symbolp)
+   (value-kind-thm symbolp)
    (type-of-value-thm symbolp)
    (meminfos defstruct-member-info-listp)
    (names-to-avoid symbol-listp)
@@ -1107,6 +1046,8 @@
                                        fixer
                                        fixer-recognizer-thm
                                        not-error-thm
+                                       valuep-thm
+                                       value-kind-thm
                                        type-of-value-thm
                                        (car meminfos)
                                        names-to-avoid
@@ -1117,6 +1058,8 @@
                                            fixer
                                            fixer-recognizer-thm
                                            not-error-thm
+                                           valuep-thm
+                                           value-kind-thm
                                            type-of-value-thm
                                            (cdr meminfos)
                                            names-to-avoid
@@ -1166,6 +1109,8 @@
        (fixer (defstruct-info->fixer info))
        (fixer-recognizer-thm (defstruct-info->fixer-recognizer-thm info))
        (not-error-thm (defstruct-info->not-error-thm info))
+       (valuep-thm (defstruct-info->valuep-thm info))
+       (value-kind-thm (defstruct-info->value-kind-thm info))
        (type-of-value-thm (defstruct-info->type-of-value-thm info))
        (struct-declons (atc-gen-struct-declon-list memtypes))
        ((mv read-thm-events read-thm-names names-to-avoid)
@@ -1186,6 +1131,8 @@
                                                fixer
                                                fixer-recognizer-thm
                                                not-error-thm
+                                               valuep-thm
+                                               value-kind-thm
                                                type-of-value-thm
                                                meminfos
                                                names-to-avoid

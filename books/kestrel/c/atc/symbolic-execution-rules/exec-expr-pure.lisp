@@ -200,6 +200,12 @@
                     (exec-ident (expr-ident->get e) compst)))
     :enable exec-expr-pure)
 
+  (defruled exec-expr-pure-when-ident-no-syntaxp
+    (implies (equal (expr-kind e) :ident)
+             (equal (exec-expr-pure e compst)
+                    (exec-ident (expr-ident->get e) compst)))
+    :enable exec-expr-pure)
+
   (defruled exec-expr-pure-when-const
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :const))
@@ -230,9 +236,25 @@
                     (exec-member eval (expr-member->name e))))
     :enable exec-expr-pure)
 
+  (defruled exec-expr-pure-when-member-no-syntaxp
+    (implies (and (equal (expr-kind e) :member)
+                  (equal eval (exec-expr-pure (expr-member->target e) compst))
+                  (expr-valuep eval))
+             (equal (exec-expr-pure e compst)
+                    (exec-member eval (expr-member->name e))))
+    :enable exec-expr-pure)
+
   (defruled exec-expr-pure-when-memberp
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :memberp)
+                  (equal eval (exec-expr-pure (expr-memberp->target e) compst))
+                  (expr-valuep eval))
+             (equal (exec-expr-pure e compst)
+                    (exec-memberp eval (expr-memberp->name e) compst)))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-memberp-no-syntaxp
+    (implies (and (equal (expr-kind e) :memberp)
                   (equal eval (exec-expr-pure (expr-memberp->target e) compst))
                   (expr-valuep eval))
              (equal (exec-expr-pure e compst)
