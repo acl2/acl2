@@ -14,7 +14,11 @@
 (include-book "improve-book")
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 
+;; TODO: Document the Linter (and move it to this dir)
+
 (defxdoc helpers :short "Tools for finding, improving, and repairing proofs and books.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc-for-macro improve-book
   :parents (helpers)
@@ -51,5 +55,10 @@ Note that all suggestions made by @('improve-book') are independent.  There is n
   :short "Suggest improvements for all books in a directory, including subdirectories."
   :arg-descriptions ((print "How much to print: @('nil'), @(':brief'), @('t'), or @(':verbose').")))
 
-;; TODO: Document the Linter (and move it to this dir)
-;; TODO: Document speed-up
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc-for-macro speed-up-event
+  :parents (helpers improve-book)
+  :short "Suggest ways to speed up an event."
+  :description "Wrapping an event in a call of @('speed-up-event') causes attempts to be made to speed it up (e.g., by deleting hints).  Currently, only @(tsee defthm) and @(tsee defrule) events are supported."
+  :arg-descriptions ((form "The entire event to speed up (e.g., a @('defthm') form).")))
