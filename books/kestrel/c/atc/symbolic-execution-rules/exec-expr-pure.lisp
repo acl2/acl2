@@ -253,6 +253,14 @@
                     (exec-memberp eval (expr-memberp->name e) compst)))
     :enable exec-expr-pure)
 
+  (defruled exec-expr-pure-when-memberp-no-syntaxp
+    (implies (and (equal (expr-kind e) :memberp)
+                  (equal eval (exec-expr-pure (expr-memberp->target e) compst))
+                  (expr-valuep eval))
+             (equal (exec-expr-pure e compst)
+                    (exec-memberp eval (expr-memberp->name e) compst)))
+    :enable exec-expr-pure)
+
   (defruled exec-expr-pure-when-arrsub-of-member
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :arrsub)
