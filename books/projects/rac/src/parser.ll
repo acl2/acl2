@@ -4,19 +4,26 @@
 
 Rac (rac|RAC|Rac)
 lineba ^"#"\ [0-9]+\ \"[^\"]*\".*\n
+
 %{
 #include <stdio.h>
-extern int yylex();
+#include "expressions.h"
+#include "functions.h"
 #include "parser.h"
-#include "parser.tab.h"
+#include "parser.tab.hpp"
+#include "statements.h"
+#include "types.h"
+
+extern int yylex ();
 extern void yyerror(const char *);
-static void comment();
-char* tokstr();
+static bool comment();
+char *tokstr();
 static void lineba();
 char yyfilenm[1024];
 %}
 
 %%
+
 
 {lineba}                    {lineba();}
 
@@ -25,14 +32,10 @@ char yyfilenm[1024];
 
 <INITIAL>.*\n               {}
 
-"/*"                        {comment();}
-\/\/{Rac}\:?.*              {yyless(6); return RAC;}
-\/\/\ {Rac}\:?.*            {yyless(7); return RAC;}
+"/*"                        { if (!comment()) return 1; }
 "//".*                      {}
-"Hector::".*                {}
 "#pragma".*                 {}
 [ \n\t]                     {}
-.*print.*                   {}
 
 "typedef"                   {return TYPEDEF;}
 "template"                  {return TEMPLATE;}
@@ -124,29 +127,44 @@ char yyfilenm[1024];
 
 %%
 
-static void comment() {
-  int c;
-  while ((c = yyinput()) != 0) {
-    if (c == '*') {
-      while ((c = yyinput()) == '*') {}
-      if (c == '/') return;
-      if (c == 0) break;
+static bool
+comment ()
+{
+  int c = yyinput();
+
+  while (c != '\0')
+    {
+      if (c == '*')
+        {
+          c = yyinput();
+          if (c == '/')
+            return true;
+        }
+      else {
+        c = yyinput();
+      }
     }
-  }
-  yyerror("unterminated comment");
+  yyerror ("unterminated comment");
+  return false;
 }
 
-char* tokstr() {
-  char *str = new char[yyleng+1];
-  strcpy(str, yytext);
+char *
+tokstr ()
+{
+  char *str = new char[yyleng + 1];
+  strcpy (str, yytext);
   return str;
 }
 
-int yywrap(void) {  // called at end of input
+int
+yywrap (void)
+{ // called at end of input
   return 1;
 }
 
-static void lineba() {
+static void
+lineba ()
+{
   char *i = strtok(yytext, "# \"");
   char *f = strtok(nullptr, "# \"");
   sscanf(i, "%d", &yylineno);
