@@ -1,3 +1,9 @@
+;;
+;; Copyright (C) 2014, David Greve
+;; License: A 3-clause BSD license.
+;; See the LICENSE file distributed with ACL2.
+;;
+
 ; Matt K. mod, 8/6/2022: coi/util/def-defpkg.lsp no longer exists.
 ; (ld "coi/util/def-defpkg.lsp" :dir :system)
 (include-book "coi/util/portcullis" :dir :system)
