@@ -278,7 +278,7 @@
                        (pseudo-termp (cdr (car hyps)))
                        (lambda-free-termp (cdr (car hyps)))
                        (axe-rule-hyp-listp (cdr hyps))
-                       (consp hyps)
+                       ;; (consp hyps)
                        (not (equal 'quote (car (,instantiate-hyp-name (cdr (car hyps)) alist interpreted-function-alist)))))
                   (alist-suitable-for-hyp-args-and-hypsp alist
                                                          (cdr (,instantiate-hyp-name (cdr (car hyps)) alist interpreted-function-alist))

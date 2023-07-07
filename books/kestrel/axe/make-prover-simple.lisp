@@ -4930,7 +4930,7 @@
                                         wrld)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                     (true-listp literal-nodenums-or-quoteps)
+                                     ;; (true-listp literal-nodenums-or-quoteps)
                                      (bounded-darg-listp literal-nodenums-or-quoteps dag-len)
                                      (all-rule-alistp rule-alists)
                                      (interpreted-function-alistp interpreted-function-alist)
@@ -4993,7 +4993,7 @@
 
        (defthm ,(pack$ prove-disjunction-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (true-listp literal-nodenums-or-quoteps)
+                       ;; (true-listp literal-nodenums-or-quoteps)
                        (bounded-darg-listp literal-nodenums-or-quoteps dag-len)
                        (all-rule-alistp rule-alists)
                        (interpreted-function-alistp interpreted-function-alist)
