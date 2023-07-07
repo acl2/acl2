@@ -3,7 +3,7 @@ all : install
 parse: parser.ll parser.yy parser.h expressions.cpp functions.cpp types.cpp output.cpp main.cpp
 	bison -d -v -o parser.tab.cpp parser.yy
 	flex -o lex.yy.cpp parser.ll
-	clang++-12 -std=c++17 -g -o parse functions.cpp expressions.cpp statements.cpp parser.tab.cpp lex.yy.cpp types.cpp output.cpp main.cpp
+	g++ -Wall -Wextra -pedantic -std=c++17 -o3 -o parse functions.cpp expressions.cpp statements.cpp parser.tab.cpp lex.yy.cpp types.cpp output.cpp main.cpp
 
 #We should execute this rule every time, since it depends on some environment
 #variables.
