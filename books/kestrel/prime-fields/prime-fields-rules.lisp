@@ -249,7 +249,7 @@
 (defthm mul-when-constant-reduce-arg1
   (implies (and (syntaxp (and (quotep x)
                               (quotep p)))
-                (<= p x) ;x is too big
+                (<= p x) ;x is too big (prevents loops)
                 ;; (integerp x)
                 ;; (integerp y)
                 ;; (natp p)
@@ -875,8 +875,9 @@
                               (quotep p)))
                 (not (fep x p)) ; gets computed
                 ;; these two hyps ensure that the mod will return a fep:
-                (integerp x)
-                (posp p))
+                (integerp x) ; may be needed to prevent loops
+                (posp p) ; may be needed to prevent loops
+                )
            (equal (mul x y p)
                   ;; the (mod x p) gets computed:
                   (mul (mod x p) y p))))
