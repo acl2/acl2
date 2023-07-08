@@ -2251,3 +2251,13 @@ SVEX-CALL->FN)
                             ())))))
 
 ;;;;;;
+
+
+(define add-quotes-to-4vec-values-in-alist ((x alistp))
+  (if (atom x)
+      nil
+    (acons (caar x)
+           (if (sv::4vec-p (cdar x))
+               (list 'quote (cdar x))
+             (cdar x))
+           (add-quotes-to-4vec-values-in-alist (cdr x)))))
