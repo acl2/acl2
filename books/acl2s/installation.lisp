@@ -53,7 +53,44 @@ connection. You can use your computer while the installation is
 occurring.
 </p>
 
-<h3>Instructions</h3>
+<h3>Installing using the installer</h3>
+<p>
+The easiest way to install ACL2s on Windows is to use the installer.
+</p>
+<ol>
+<li>Download the installer <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.7/ACL2sInstaller.exe\">from here</a>./li>
+<li>Double click on the installer and allow the installer to run if Windows asks.</li>
+<li>Follow the steps that the installer specifies. If you don't have
+VcXsrv installed and you are on Windows 10, the installer will ask you
+whether you would like it to automatically download and install it for
+you. You should do so and follow VcXsrv's installer as well,
+remembering to click \"close\" inside VcXsrv's installer when that
+installation is done. Windows 11 users don't need to install VcXsrv.</li>
+<li>Note that the installer will show a window that says \"Importing WSL distribution file, this may take a while...\" at some point during installation. <b>This step may take between 5 and 30 minutes depending on your machine.</b> Disabling any virus scanners may significantly speed this up.</li>
+<li>Create a folder for your CS2800 files on your @('C:') drive
+<ol>
+  <li>Open File Explorer, select \"This PC\" on the left, double click
+  on \"Local Disk (C:)\", right-click on an empty area inside of
+  that folder, and select \"New Folder\". Name the folder whatever
+  you would like.</li>
+</ol>
+</li>
+<ol>
+<li>Run ACL2s
+<ol>
+  <li>Run ACL2s, by searching for and running \"Start ACL2s\" in the Windows start menu.</li>
+  <li>When Eclipse asks for a workspace, enter @('/mnt/c/<FOLDER>'),
+  where @('<FOLDER>') should be replaced with the name of the folder
+  that you just created.</li>
+</ol>
+</li>
+</ol>
+
+<h3>Manual install instructions</h3>
+<p>
+You almost certainly don't want to install ACL2s this way, but we provide instructions in case
+you are in a particular situation that precludes the use of the above installer.
+</p>
 <ol>
 <li>Install WSL
   <ol>
@@ -69,7 +106,7 @@ occurring.
 </li>
 <li>Download and set up the ACL2s WSL image
   <ol>
-  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.6/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.</li>
+  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.7/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.</li>
   <li>Open up a new <b>non-admininistrator</b> terminal by opening the Windows
       menu at the bottom left hand side of the screen and searching for
       @('cmd').
@@ -79,23 +116,22 @@ occurring.
   <li>Run @('wsl -d acl2s') and confirm that you get some output (e.g. not a blank line). If so, you can close the terminal. Note that this may take some time and you may see some errors about @('DISPLAY') first.</li>
   </ol>
 </li>
-<li>Install Xming and launch it
+<li>Install VcXsrv and launch it
   <ol>
   <li>Download the installer
-  <a href=\"https://cs2800.atwalter.com/cs2800/Xming-6-9-0-31-setup.exe\"><b>here</b></a>
+  <a href=\"https://sourceforge.net/projects/vcxsrv/files/vcxsrv/1.20.14.0/vcxsrv.1.20.14.0.installer.exe/download\"><b>here</b></a>
   and run it.</li>
-  <li><strong>Do not</strong> uncheck the option to associate .xlaunch files with
-  Xming during installation! <strong>Do</strong> uncheck the option to launch
-  Xming after the installation is complete.</li>
-  <li>Download our Xming launch profile
-  <a href=\"https://cs2800.atwalter.com/cs2800/ACL2sXming.xlaunch\"><b>here</b></a>
+  <li><uncheck the option to launch
+  VcXsrv after the installation is complete.</li>
+  <li>Download our VcXsrv launch profile
+  <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.7/acl2s-vcxsrv.xlaunch\"><b>here</b></a>
   and put it somewhere memorable. <b>You may need to right-click on
   the link and select \"Save As...\" if your browser doesn't
   download it automatically.</b></li>
-  <li>Double click on our Xming launch profile to start Xming. If
-  Windows asks you which networks you want to allow Xming to
+  <li>Double click on our VcXsrv launch profile to start VcXsrv. If
+  Windows asks you which networks you want to allow VcXsrv to
   access, make sure you allow it to access both private and
-  public networks.<b>Note that double clicking on ACL2sXming.xlaunch
+  public networks.<b>Note that double clicking on acl2s-vcxsrv.xlaunch
   will not open a new window.</b> It will add an item to the system
   tray on the right-hand side of the task bar, and you may need to click
   on the up caret (^) to see it.
@@ -112,7 +148,7 @@ occurring.
 </li>
 <li>Run Eclipse
 <ol>
-  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.6/run-acl2s.bat\">run-acl2s.bat</a> and save it somewhere memorable. Note that depending on your browser, you might get a warning when you download this file, but you should click \"Keep\" or \"Download Anyways\".</li>
+  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.7/run-acl2s.bat\">run-acl2s.bat</a> and save it somewhere memorable. Note that depending on your browser, you might get a warning when you download this file, but you should click \"Keep\" or \"Download Anyways\".</li>
   <li>Double click on @('run-acl2s.bat') to launch a WSL terminal and Eclipse. A window titled \"Windows protected your PC\" may appear. If so, click on \"More info\" and then \"Run anyways\" at the bottom of the window.</li>
   <li>When Eclipse asks for a workspace, enter @('/mnt/c/<FOLDER>'),
   where @('<FOLDER>') should be replaced with the name of the folder
@@ -132,7 +168,7 @@ occurring.
 <ul>
 <li>at least 5GB of free hard drive space</li>
 <li>at least 4GB of RAM</li>
-<li>macOS Catalina (10.15), Big Sur (11), or Monterey (12)</li>
+<li>macOS Big Sur (11), Monterey (12), or Ventura (13)</li>
 </ul>
 <p>Installation should take less than an hour, though installation time
 will depend on your computer's specs and on the speed of your internet
@@ -148,16 +184,16 @@ topic.
 <p>A video walking through installation is available
 <a href=\"https://youtu.be/AFluHK99-A0\" target=\"_blank\">here</a>.</p>
 <ol>
-<li>Determine if your Mac uses an M1 processor and check your macOS version<ol>
+<li>Determine if your Mac uses an M1/M2 processor and check your macOS version<ol>
 <li>Click on the Apple icon at the top left of the screen and
 select \"About This Mac\". On the screen that pops up, check the
 text next to \"Processor\" or \"Chip\". If the text includes
-\"Apple\", you have an M1 processor in your Mac. Otherwise, if
+\"Apple\", you have an M1/M2 processor in your Mac. Otherwise, if
 the text includes \"Intel\", you have an x86 Mac.</li>
 <li>In the \"About This Mac\" window, double check that you are
-running one of \"macOS Catalina\", \"macOS Big Sur\", or \"macOS
-Monterey\". If you are using a different version of macOS, you
-will likely need to use the Khoury Virtual Desktops
+running one of \"macOS Big Sur\", \"macOS
+Monterey\", or \"macOS Ventura\". If you are using a different version
+of macOS, you will likely need to use the Khoury Virtual Desktop
 Infrastructure (VDI).</li></ol></li>
 <li>Install Homebrew<ol>
 <li>Open the Terminal app, either by searching for it or via
@@ -174,13 +210,13 @@ times throughout the process.</li>
 <li>Run <code>brew tap mister-walter/acl2s</code> and then <code>brew install acl2s --force-bottle</code> inside of Terminal.</li></ol></li>
 <li>Install Java<ol>
 <li>Download and install Java 17 or 18. The easiest way to do this is to go to <a href=\"https://www.oracle.com/java/technologies/downloads/#jdk17-mac\">this link</a>
-and download either the Arm64 DMG installer (if you are on a M1
+and download either the Arm64 DMG installer (if you are on a M1/M2
 Mac) or the x64 DMG installer. Then, open the DMG and run the
 installer inside of it.</li></ol></li>
 <li>Install Eclipse<ol>
-<li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-platform-4.25-macosx-cocoa-aarch64.dmg&amp;r=1\">M1
+<li>Download the Eclipse version appropriate for your machine: <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.27-202303020300/eclipse-platform-4.27-macosx-cocoa-aarch64.dmg&r=1\">M1/M2
 Mac</a>
-or <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-platform-4.25-macosx-cocoa-x86_64.dmg&amp;r=1\">x86
+or <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.27-202303020300/eclipse-platform-4.27-macosx-cocoa-x86_64.dmg&r=1\">x86
 Mac</a>.</li>
 <li>Open the downloaded file and click and drag the Eclipse icon
   into your Applications folder.</li>
@@ -204,8 +240,9 @@ window, enter @('ACL2s') next to \"Name:\" and
 @('http://cs2800.atwalter.com/p2') next to \"Location\". Then, click
 \"Add\", which will close the pop-up.</li>
 <li>The middle of the window should now show \"ACL2s Plugin Update
-Site\". Click on the checkbox to the left of it and click \"Next&gt;\"
-at the bottom of the window.</li>
+Site\". Click on the checkbox to the left of it as well as the
+\"Handproof\" item and click \"Next&gt;\" at the bottom of the
+window.</li>
 <li>In the next window, click \"Finish\" at the bottom right of the
 screen. If a pop-up appears that says \"Trust\" at the top and has two entries in a table at the top, click \"Select All\" and then \"Trust Selected\" at the bottom.</li>
 <li>After the installation is complete, Eclipse will ask you if you
@@ -251,7 +288,7 @@ times throughout the process.</li>
 <li>Tap and install ACL2s<ol>
 <li>Run <code>brew tap mister-walter/acl2s</code> and then <code>brew install acl2s --force-bottle</code> inside of a terminal. <b>Do not</b> follow any of Homebrew's suggestions regarding installing @('gcc').</li></ol></li>
 <li>Install Eclipse<ol>
-<li>Download <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.25-202208311800/eclipse-platform-4.25-linux-gtk-x86_64.tar.gz&amp;r=1\">Eclipse</a> and unpack it somewhere on your computer.</li>
+<li>Download <a href=\"https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.27-202303020300/eclipse-platform-4.27-linux-gtk-x86_64.tar.gz&r=1\">Eclipse</a> and unpack it somewhere on your computer.</li>
 <li>Run Eclipse by running <code>./eclipse/eclipse</code> from the directory
 that you unpacked the Eclipse package inside of.</li>
 <li>In the menu bar, click on Help &rarr; Install New Software...</li>
@@ -260,7 +297,8 @@ window, enter @('ACL2s') next to \"Name:\" and
 @('http://cs2800.atwalter.com/p2') next to \"Location\". Then, click
 \"Add\", which will close the pop-up.</li>
 <li>The middle of the window should now show \"ACL2s Plugin Update
-Site\". Click on the checkbox to the left of it and click \"Next&gt;\" 
+Site\". Click on the checkbox to the left of it as well as the
+\"Handproof\" item and click \"Next&gt;\" 
 at the bottom of the window.</li>
 <li>In the next window, click \"Finish\" at the bottom right of the
 screen. If a pop-up appears that says \"Trust\" at the top and has two entries in a table at the top, click \"Select All\" and then \"Trust Selected\" at the bottom.</li>
