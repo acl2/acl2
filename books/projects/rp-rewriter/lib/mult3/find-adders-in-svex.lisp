@@ -2690,7 +2690,7 @@
                                                         (hons-acons key new-entry collected)
                                                         :enabled enabled)))
     ///
-    
+
     (defret <fn>-is-correct
       (implies (and (exploded-args-and-args-alist-inv collected env)
                     (or (not enabled)
@@ -2725,15 +2725,15 @@
             (safe-take (1- num) (cdr x)))))
 
   #|(local
-   (defthm EXPLODED-ARGS-AND-ARGS-ALIST-P-implies-true-listp
-     (implies (EXPLODED-ARGS-AND-ARGS-ALIST-P x)
-              (true-listp x))))|#
+  (defthm EXPLODED-ARGS-AND-ARGS-ALIST-P-implies-true-listp
+  (implies (EXPLODED-ARGS-AND-ARGS-ALIST-P x)
+  (true-listp x))))|#
 
   (local
    (defthmd dumb-true-listp-lemma
      (implies (true-listp x)
               (iff (consp x)
-                     x))
+                   x))
      ))
 
   (define process-fa/ha-c-chain-pattern-args ((pattern-alist pattern-alist-p)
@@ -2788,7 +2788,6 @@
                                 (t
                                  exploded-args ;; maybe make it remove duplicates or something.
                                  )))
-           
 
            ;; All viable keys could have been removed above deu to removing-pairs
            ;; if that's the case, then extend keys to make sure we can have a hit:
@@ -2805,7 +2804,7 @@
            (collected (process-fa/ha-c-chain-pattern-args-collect-aux keys exploded-args-and-args collected))
 
            (exploded-args-changed? (not (equal exploded-args-orig exploded-args)))
-           (collected 
+           (collected
             ;; do this below when removing duplicates/pairs changes something.
             (process-fa/ha-c-chain-pattern-args-collect-aux keys
                                                             (and exploded-args-changed?
@@ -2815,8 +2814,7 @@
                                                             collected
                                                             :enabled exploded-args-changed?))
 
-            
-            )
+           )
         (process-fa/ha-c-chain-pattern-args (cdr pattern-alist) collected)))
     ///
 
@@ -3016,7 +3014,7 @@
                      (subsetp-equal args (cdr svex))
                      (subsetp-equal (cdr svex) args)
                      (cwe "WARNING: Careful search found something that should have been matched in the quick search stage.~%"))
-                    
+
                     (mv args exploded-ags))))
 
         ;;if exist-branch is not 3, then keep searching for other matches.
@@ -7172,7 +7170,8 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
 
        ;;(- (design_res-broken svex-alist "beginning of find-f/h-adders-in-svex-alist"))
 
-       (- (and (equal pass-num 1)
+       (first-pass? (= pass-num 1)) 
+       (- (and first-pass?
                (cw "--- Searching for ~s0 patterns now. ~%" adder-str)))
        (- (cw "-- Pass #~p0:~%" pass-num))
 
@@ -7187,6 +7186,21 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        (- (cw "- Quick search found and replaced ~p0 ~s1 patterns. ~%" replaced-pattern-cnt adder-str))
        ;; ;(- (fast-alist-free pattern-alist))
 
+
+       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;; Only for the first pass of FA, also do an vector adder search.
+       ;; This is not necessary but can  help with performance by reducing pass
+       ;; count.
+       (fa-first-pass? (and first-pass? (eq adder-type 'fa)))
+       (- (and fa-first-pass? (cw "- Looking and rewriting for vector adder patterns... ~%"))) 
+       (new-svex-alist2 (if fa-first-pass? (ppx-simplify-alist new-svex-alist) new-svex-alist))
+       (vector-adder-changed (and fa-first-pass? (not (equal new-svex-alist2 new-svex-alist))))
+       (new-svex-alist2 (and fa-first-pass? (global-zero-fa-c-chain-extra-arg-alist new-svex-alist2)))
+       ((when vector-adder-changed)
+        (progn$ (cw "-> Success! Rewriting for vector adder made some changes. Let's make another pass. ~%")
+                (find-f/h-adders-in-svex-alist new-svex-alist2 (1- limit))))
+       (- (and fa-first-pass? (cw "-> No change from vector adder simplification. ~%")))
+       
        ((unless (equal svex-alist new-svex-alist))
         (progn$ ;;(cw "-> Structed changed. Let's make another pass. ~%")
          (fast-alist-free pattern-alist)
@@ -7283,7 +7297,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        (svex-alist (global-zero-fa-c-chain-extra-arg-alist new-svex-alist))
        ((when vector-adder-changed)
         (progn$ (cw "-> Success! Rewriting for vector adder made some changes. Let's make another pass. ~%")
-                (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
+                (find-f/h-adders-in-svex-alist svex-alist (1- limit))))
        (- (cw "-> No change from vector adder simplification. ~%"))
 
        ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8365,7 +8379,6 @@ pattern
               :in-theory (e/d (BITP ha+1-s-chain)
                               ())))))
 
-
   (local
    (defthm negate-of-s-spec-with-1
      (implies (and (bitp x)
@@ -8374,7 +8387,7 @@ pattern
                      (S-SPEC (LIST x y))))
      :hints (("Goal"
               :in-theory (e/d (bitp) ())))))
-  
+
   (local
    (defthm s/c-spec-move-consts
      (and (equal (c-spec (list x y 1))
@@ -8945,7 +8958,7 @@ was ~st seconds."))
           (svl::svex-alist-to-svexl-alist svex-alist)))|#
 
           (- (acl2::sneaky-save 'after-fa svex-alist))
-          (- (cw "Access the svexl-alist after full-adder search: ~
+          (- (cw "Access the svexl-alist after full-adder search:
 (b* (((mv res state) (acl2::sneaky-load 'rp::after-fa state)))
    (mv state (svl::svex-alist-to-svexl-alist res))) ~%"))
 
@@ -9881,7 +9894,8 @@ svex-alist)
            ,@args
            :fns ,*adder-fncs*
            :defthm-macro ,(if then-fgl 'defthmrp-then-fgl 'defthmrp)
-           )))))
+           )
+         ))))
 
 ;;;;;
 
@@ -9963,28 +9977,36 @@ svex-alist)
          )
       `(encapsulate
          nil
-         (local
-          (,defthm-macro ,local-thm-name
-            (implies (and ,@warrant-hyps)
-                     ,thm-body)
-            ,@args))
+          (with-output
+            ;;:off :all
+            :gag-mode nil
+            :on (summary error)
+            :stack :pop
+            (local
+             (,defthm-macro ,local-thm-name
+               (implies (and ,@warrant-hyps)
+                        ,thm-body)
+               ,@args)))
 
-         (with-output :off :all :on (error) :gag-mode nil
+         ;;(with-output :off :all :on (error) :gag-mode nil
            (local
             (defun my-badge-userfn (fn)
               (declare (xargs :guard t))
-              (cond ,@my-badge-userfn-body))))
+              (cond ,@my-badge-userfn-body)))
+           ;;)
 
-         (with-output :off :all :on (error) :gag-mode nil
+         ;;(with-output :off :all :on (error) :gag-mode nil
            (local
             (defun my-apply$-userfn (fn args)
               (declare (xargs :guard (True-listp args)))
-              (cond ,@my-apply$-userfn-body))))
+              (cond ,@my-apply$-userfn-body)))
+           ;;)
 
-         (with-output
-           :off :all
-           :gag-mode nil
-           :on (summary error)
+         ;; (with-output
+         ;;   :off :all
+         ;;   :gag-mode nil
+         ;;   ;;:on (summary error)
+         ;;   :stack :pop
            (defthm ,thm-name
              ,thm-body
              :otf-flg t
@@ -10019,14 +10041,20 @@ svex-alist)
                          (:executable-counterpart my-badge-userfn))))
                      #|(and stable-under-simplificationp
                      '(:in-theory (e/d () ())))|#
-                     )))
+                     ))
+           ;;)
 
          )))
 
   (defmacro defthm-with-temporary-warrants (thm-name thm-body
                                                      &rest args)
-    `(make-event
-      (defthm-with-temporary-warrants-fn ',thm-name ',thm-body ',args state))
+    `(with-output
+       :off :all
+       :gag-mode nil
+       :on (error)
+       :stack :push
+       (make-event
+        (defthm-with-temporary-warrants-fn ',thm-name ',thm-body ',args state)))
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

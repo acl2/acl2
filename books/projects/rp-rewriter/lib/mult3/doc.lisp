@@ -91,17 +91,18 @@ coming soon.   </p>
 <p> Our framework currently supports  (System) Verilog. In one of our schemes,
 we use @(see sv::defsvtv$) (also see @(see sv::sv-tutorial)) to simulate
 designs. This SVTV system has been used for complex design at Centaur
-Technology and now at Intel Corporation. SVTV system flattens designs. It can
-support other simulators such as @(see SVL) but we only use SVTV now. </p>
+Technology and now at Intel Corporation. SVTV system flattens designs. The
+multiplier verification program still
+supports other simulators such as @(see SVL) but we now only use SVTV. </p>
 
-<p>  Our  library  uses  various  heuristics  and  modes  to  simplify  various
-designs. We give the users the  option to enable/disable some of the heuristics
+<p>  This  library  uses  various  heuristics  and  modes  to  simplify  various
+designs. Users have the  option to enable/disable some of the heuristics
 that might help speed-up the proofs (and/or reduce memory use) or in some cases
-help proofs finish.   We enable very aggressive heuristics by  default for best
+help proofs finish.     Aggressive heuristics are enabled by  default for best
 coverage.   If   you  wish  to   tune  the   performance  of  your   proofs  by
 enabling/disabling    these   heuristics,    you    can    check   out    @(see
 Multiplier-Verification-Heuristics). Enabling/disabling these heuristics might
-help a proof attempt to go through, and in some cases, it may cause them to fail. </p>
+help a proof attempt to go through, but in some cases, it may cause others to fail. </p>
 
 <h3>Quick Start</h3>
 
@@ -126,8 +127,8 @@ follow these steps. </p>
 <li> Verify that design:
 <code> @('
 (verify-svtv-of-mult :name my-multiplier-example
-                     :concl (equal result ;; output signal name
-                                   ;; specification:
+                     :concl (equal result ;; -> output signal name
+                                   ;; design specification ->
                                    (loghead 128 (* (logext 64 in1)
                                                    (logext 64 in2)))))
 ')
@@ -139,7 +140,7 @@ Here, @(see logext) sign-extends its argument, and @(see loghead) zero-extends i
 </ol>
 
 <p> See @(see parse-and-create-svtv) and @(see verify-svtv-of-mult) for more
-ways to use these tools. </p>
+ways to use these utilities. </p>
 
 
 <p> Including projects/rp-rewriter/lib/mult3/top everytime can take a long time
@@ -157,9 +158,9 @@ complex designs where a stand-alone integer multiplier is reused as a submodule
 for various operations  such as MAC dot-product and  merged multiplication. It
 also shows a simple verification case on a sequential circuit. Finally, @(see
 Multiplier-Verification-demo-3) shows how hierarchical reasoning may be used if
-it every becomes necessary to help vescmul. </p>
+it ever becomes necessary to provide hints to the program. </p>
 
-<h3>Calling SAT Solver after rewriting is done </h3>
+<h3>Calling a SAT solver after rewriting is done </h3>
 
 <p> This library can be used to quickly generate counterexamples using an
 external SAT solver, or help finish proofs with a SAT solver when our library
@@ -171,8 +172,7 @@ call FGL, which will invoke a SAT solver after VeSCmul finishes rewriting:
 <code> @('
 (verify-svtv-of-mult :name my-multiplier-example
                      :then-fgl t
-                     :concl (equal result ;; output signal name
-                                   ;; specification:
+                     :concl (equal result 
                                    (loghead 128 (* (logext 64 in1)
                                                    (logext 64 in2)))))
 ')
@@ -180,43 +180,43 @@ call FGL, which will invoke a SAT solver after VeSCmul finishes rewriting:
 </p>
 
 
-<h3>Exporting a Verilog file with adder hierarchy after the adder detection stage</h3>
+<h3>Exporting a Verilog file after the adder detection stage</h3>
 
 <p> VeSCmul allows users to export a Verilog file after the adder detection
 stage. The exported file contains basic adder modules and a large Verilog module
-instantiating those adder modules. That large module is expected to be
+instantiating those adder modules.  The exported module is expected to be
 equivalant to the original design. The difference will be the exported Verilog
 module will have the design hierarchy around adder
 components (even if the original design did not have any design hierarchy). If
 the original design had any complex adders (e.g., 4-to-2 compressors, parallel
 prefix adders), the exported module is expected to have replaced those with
-only simple full/half-adders.
- Researchers may use this feature in their tool flows. </p>
+only simple full/half-adders. Researchers may use this feature in their verification flows. </p>
 
 <p> To use this tool, simply run: </p>
 
 <code>
-@('(export-to-verilog-after-adder-detection \"mult_module_with_hier\")')
+@('(export-to-verilog-after-adder-detection \"my-mult_module_with_hier\")')
 </code>
-<p> The string argument can be customized to be used as file and module
-names. This program
+<p> IMPORTANT: This program
 should be run after the @(see verify-svtv-of-mult) event for the desired
 multiplier design. The verify-svtv-of-mult event does not need to succeed for
-this to work; that is, you can try to prove a false conjecture and the
-export-to-verilog-after-adder-detection program will still export the processed design
-for you. </p>
+this to work; that is, you can set the :keep-going flag and try to prove a false conjecture and the
+export-to-verilog-after-adder-detection program can still export the processed design
+for you anyway.  </p>
 
 
 <p> The Verilog translation  is not
 verified and it can potentially output a design with problems (syntactical or
-purely functional). However, users can tell the program to do a sanity
-check, which performs
+purely functional). Therefore, users are strongly recommended to perform a
+sanity check.  This program allows a reliable sanity
+check mechanism, which performs
 formal equivalance checking between the exported desig the original one. For
 sanity check, run the following events:
 </p>
 
 <code>
 @('
+;; First load some libraries and setup AIG transforms for fast equivalance checking.
 (progn
   (local (include-book \"centaur/ipasir/ipasir-backend\" :dir :system))
   (local (include-book \"centaur/aignet/transforms\" :dir :system))
@@ -241,24 +241,29 @@ sanity check, run the following events:
            (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
   (local (defattach fgl::fgl-toplevel-sat-check-config monolithic-sat-with-transforms)))
 
-(export-to-verilog-after-adder-detection \"mult_module_with_hier\" :sanity-check t)
+;; Export the multiplier design and perform the sanity check. 
+(export-to-verilog-after-adder-detection \"my-mult_module_with_hier\"
+                                         :sanity-check t)
 
 ')
 </code>
 
-<p> The first set of events configures FGL to perform AIG transformations which are
+<p> Above, the first set of events configures FGL to perform AIG transformations which are
 essential for equivalance checking to finish in a timely manner. You may need
-to set up the @(see ipasir::ipasir) libraries if it is not done yet. If the
+to set up the @(see ipasir::ipasir) libraries before this if you are setting up
+for the first time. If the
 above export-to-verilog-after-adder-detection event succeeds, it means that the
 exported design is proved to be equivalant to the original design. Speed of
-sanity check is usually high but it can vary, and modifying the parameters in
-transforms-config may make a big difference.
-
-
+sanity check is usually high but it can vary, and tweaking and tuning the parameters
+above in
+transforms-config may make a huge difference.
 </p>
-
-
-
+<p> If need be, another way to perform sanity check is as follows. The run-time performance of this
+method may be better or worse. </p>
+<code>
+(export-to-verilog-after-adder-detection \"my-mult_module_with_hier\"
+                                         :sanity-check :rp-then-fgl)
+</code>
 
 "
   )

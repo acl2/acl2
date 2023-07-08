@@ -1143,7 +1143,10 @@
                   (equal (svl::bits (adder-and x y) 0 size )
                          (adder-and x y))
                   (equal (svl::bits (adder-or x y) 0 size )
-                         (adder-or x y))))
+                         (adder-or x y))
+                  (implies (bitp (f2 x))
+                           (equal (svl::bits (f2 x) 0 size )
+                                  (f2 x)))))
     :hints (("goal"
              :do-not '(preprocess)
              :in-theory (e/d (bits-of-binary-fns-lemma-2)
