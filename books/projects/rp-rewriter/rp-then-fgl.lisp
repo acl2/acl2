@@ -82,43 +82,55 @@
              :in-theory (e/d (ACL2::DISJOIN) ())))))
 
 (defmacro defthmrp-then-fgl (name term &rest args)
-  (b* ((__FUNCTION__ 'defthmrp-then-fgl)
-       ((std::extract-keyword-args
-         :allowed-keys #!keyword'(rule-classes
-                                  new-synps
-                                  disable-meta-rules
-                                  enable-meta-rules
-                                  enable-rules
-                                  disable-rules
-                                  runes runes-outside-in cases
-                                  lambda-opt disabled
-                                  disabled-for-rp
-                                  disabled-for-ACL2
-                                  rw-direction
-                                  supress-warnings
-                                  add-rp-rule
-                                  ruleset)
-         (new-synps 'nil)
-         (runes 'nil)
-         (runes-outside-in 'nil)
-         (cases 'nil))
-        args)
-       (override-hints `(:hints
-                         ('(:clause-processor
-                            (rp-cl :runes ,runes
-                                   :runes-outside-in ,runes-outside-in
-                                   :new-synps ,new-synps
-                                   :cases ,cases
-                                   :suppress-not-simplified-error t))
-                          '(:clause-processor (cmr::let-abstract-full-clause-proc-exclude-hyps
-                                               clause 'var))
-                          '(:clause-processor fgl::expand-an-implies-cp)
-                          '(:clause-processor (fgl::fgl-interp-cp clause (fgl::default-fgl-config)
-                                                                  fgl::interp-st
-                                                                  state))
-                          ))))
-    `(defthmrp ,name ,term
-       :override-cl-hints ,override-hints)))
+  `(make-event
+    (b* ((name ',name)
+         (term ',term)
+         (args ',args)
+         (__FUNCTION__ 'defthmrp-then-fgl)
+         ((std::extract-keyword-args
+           :allowed-keys #!keyword'(rule-classes
+                                    new-synps
+                                    disable-meta-rules
+                                    enable-meta-rules
+                                    enable-rules
+                                    disable-rules
+                                    runes runes-outside-in cases
+                                    lambda-opt disabled
+                                    disabled-for-rp
+                                    disabled-for-ACL2
+                                    rw-direction
+                                    supress-warnings
+                                    add-rp-rule
+                                    ruleset)
+           (new-synps 'nil)
+           (runes 'nil)
+           (runes-outside-in 'nil)
+           (cases 'nil))
+          args)
+         (world (w state))
+         ((acl2::er cases)
+          (translate-lst cases t t nil 'defthmrp-then-fgl world state))
+         ((acl2::er new-synps-vals) ;; new-synps is an alist...
+          (translate-lst (strip-cdrs new-synps) t t nil 'defthmrp-then-fgl world state))
+         (new-synps (pairlis$ (strip-cars new-synps) new-synps-vals))
+       
+         (override-hints `(:hints
+                           ('(:clause-processor
+                              (rp-cl :runes ,runes
+                                     :runes-outside-in ,runes-outside-in
+                                     :new-synps ,new-synps
+                                     :cases ,cases
+                                     :suppress-not-simplified-error t))
+                            '(:clause-processor (cmr::let-abstract-full-clause-proc-exclude-hyps
+                                                 clause 'var))
+                            '(:clause-processor fgl::expand-an-implies-cp)
+                            '(:clause-processor (fgl::fgl-interp-cp clause (fgl::default-fgl-config)
+                                                                    fgl::interp-st
+                                                                    state))
+                            ))))
+      (value
+       `(defthmrp ,name ,term
+          :override-cl-hints ,override-hints)))))
 
 #|(defmacro defthmrp-then-fgl (name term
 &key

@@ -126,6 +126,27 @@
        (resolve-assoc-eq-val-rec key `',rest1)))
     (& `(assoc-eq-val (quote ,key) ,alist))))
 
+(defun resolve-assoc-equal-rec (key alist)
+  (declare (xargs :guard t))
+  (case-match alist
+    (('cons ('cons ('quote key2) &)
+            rest)
+     (if (equal key key2)
+         (second alist)
+       (resolve-assoc-equal-rec key rest)))
+    (('cons ('quote (key2 . &)) ;; when val is nil
+            rest)
+     (if (equal key2 key)
+         (second alist)
+       (resolve-assoc-equal-rec key rest)))
+    (''nil
+     ''nil)
+    (('quote ((key1 . val1) . rest1))
+     (if (equal key key1)
+         `'(,key1 . ,val1)
+       (resolve-assoc-equal-rec key `',rest1)))
+    (& `(assoc-equal (quote ,key) ,alist))))
+
 
 (defund alistp-meta-term (term)
   (declare (xargs :guard t))
@@ -183,6 +204,7 @@
     (&
      `(assoc-eq-vals ,keys ,alist))))
 
+
 (defun resolve-assoc-eq-vals (term)
   (declare (xargs :guard t))
   (case-match term
@@ -214,7 +236,16 @@
          (('falist ('quote fast-alist) &)
           (mv (hons-get-list-values-term keys fast-alist) t))
          (& (mv (resolve-assoc-eq-vals term) t)))))
-    (& (mv (resolve-assoc-eq-vals term) t))))
+    (('assoc-equal ('quote key) falist)
+     (b* ((falist (ex-from-rp falist)))
+       (case-match falist
+         (('falist ('quote fast-alist) &)
+          (b* ((e (hons-get key fast-alist)))
+            (if (consp e)
+                (mv `(cons ',key ,(cdr e)) t)
+              (mv ''nil t))))
+         (& (mv (resolve-assoc-equal-rec key falist) `(nil t t))))))
+    (& (mv term nil))))
 
 (def-formula-checks-default-evl
   rp-evl
@@ -296,6 +327,24 @@
                                (:REWRITE DEFAULT-CAR)
                                (:TYPE-PRESCRIPTION ACL2::APPLY$-BADGEP))))))
 
+   (defthm rp-termp-resolve-assoc-equal-rec
+     (implies (and ;(rp-termp key)
+               (rp-termp alist))
+              (rp-termp (resolve-assoc-equal-rec key alist)))
+     :hints (("Goal"
+              :induct (resolve-assoc-equal-rec key alist)
+              :do-not-induct t
+              :in-theory (e/d (resolve-assoc-equal-rec)
+                              ((:DEFINITION ACL2::APPLY$-BADGEP)
+                               (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                               (:DEFINITION TRUE-LISTP)
+                               (:TYPE-PRESCRIPTION RP-TERMP)
+                               (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                               (:REWRITE DEFAULT-CDR)
+                               (:REWRITE IS-IF-RP-TERMP)
+                               (:REWRITE DEFAULT-CAR)
+                               (:TYPE-PRESCRIPTION ACL2::APPLY$-BADGEP))))))
+
    (defthm rp-termp-hons-get-meta
      (implies (and (rp-termp term))
               (rp-termp (mv-nth 0 (hons-get-meta term))))
@@ -321,7 +370,7 @@
      :hints (("Goal"
               :do-not-induct t
               :induct (resolve-assoc-eq-vals-rec keys alist)
-              :in-theory (e/d (RESOLVE-ASSOC-EQ-VALS-REC) ()))))
+              :in-theory (e/d (resolve-assoc-eq-vals-rec) ()))))
 
    (local
     (defthm rp-termp-hons-get-list-values-term-1
@@ -337,7 +386,7 @@
     (defthm lemma3-lemma
       (implies (and (rp-termp term)
                     (case-match term
-                      (('assoc-eq-vals ('quote &) falist)
+                      ((& ('quote &) falist)
                        (b* ((falist (ex-from-rp falist)))
                          (case-match falist
                            (('falist ('quote &) &) t) (& nil))))
@@ -350,7 +399,7 @@
       (implies (and 
                     (rp-termp term)
                     (case-match term
-                      (('assoc-eq-vals ('quote &) falist)
+                      ((& ('quote &) falist)
                        (b* ((falist (ex-from-rp falist)))
                          (case-match falist
                            (('falist ('quote &) &) t) (& nil))))
@@ -388,7 +437,9 @@
      (implies (and (rp-termp term))
               (rp-termp (mv-nth 0 (assoc-eq-vals-meta term))))
      :hints (("Goal"
-              :in-theory (e/d ( assoc-eq-vals-meta) ()))))))
+              :use ((:instance RP-TERMP-EX-FROM-RP))
+              :in-theory (e/d (assoc-eq-vals-meta)
+                              (hons-get)))))))
 
 (local
  (encapsulate
@@ -438,6 +489,18 @@
               (rp-termp (resolve-assoc-eq-val-rec key alist)))
      :hints (("Goal"
               :in-theory (e/d (resolve-assoc-eq-val-rec)
+                              ((:REWRITE DEFAULT-CAR)
+                               (:REWRITE DEFAULT-CDR)
+                               
+                               (:REWRITE ACL2::FN-CHECK-DEF-NOT-QUOTE)
+                               (:TYPE-PRESCRIPTION QUOTEP))))))
+
+   (defthm all-falist-consistent-resolve-assoc-equal-rec
+     (implies (and ;(rp-termp key)
+               (rp-termp alist))
+              (rp-termp (resolve-assoc-equal-rec key alist)))
+     :hints (("Goal"
+              :in-theory (e/d (resolve-assoc-equal-rec)
                               ((:REWRITE DEFAULT-CAR)
                                (:REWRITE DEFAULT-CDR)
                                
@@ -511,6 +574,20 @@
                (equal (rp-evlt (resolve-assoc-eq-val-rec key alist) a)
                       (assoc-eq-val key (rp-evlt alist a))))
       :hints (("Goal" :in-theory (e/d (assoc-eq-val)
+                                      ((:REWRITE
+                                        RP-TERMP-IMPLIES-CDR-LISTP)
+                                       (:REWRITE
+                                        RP-TERMP-IMPLIES-SUBTERMS)
+                                       (:REWRITE DEFAULT-CDR)))))))
+
+   (local
+    (defthm resolve-assoc-equal-rec-correct
+      (implies (and ;(rp-termp alist)
+                (rp-evl-meta-extract-global-facts)
+                (hons-get-meta-formula-checks state))
+               (equal (rp-evlt (resolve-assoc-equal-rec key alist) a)
+                      (assoc-equal key (rp-evlt alist a))))
+      :hints (("Goal" :in-theory (e/d (assoc-equal)
                                       ((:REWRITE
                                         RP-TERMP-IMPLIES-CDR-LISTP)
                                        (:REWRITE
@@ -799,7 +876,7 @@
    (defthm falist-consistent-aux-lemma1
      (implies (and (rp-termp term)
                    (case-match term
-                     (('assoc-eq-vals ('quote &) falist)
+                     ((& ('quote &) falist)
                       (b* ((falist (ex-from-rp falist)))
                         (case-match falist
                           (('falist ('quote &) &) t) (& nil))))
@@ -813,7 +890,7 @@
     (defthm lemma15
       (implies (and (rp-termp term)
                     (case-match term
-                      (('assoc-eq-vals ('quote &) falist)
+                      ((& ('quote &) falist)
                        (b* ((falist (ex-from-rp falist)))
                          (case-match falist
                            (('falist ('quote &) &) t) (& nil))))
@@ -857,6 +934,17 @@
                (valid-sc (resolve-assoc-eq-val-rec key alist) a))
       :hints (("Goal"
                :in-theory (e/d (resolve-assoc-eq-val-rec
+                                is-rp
+                                is-equals
+                                is-if)
+                               ())))))
+
+   (local
+    (defthm valid-sc-resolve-assoc-equal-rec
+      (implies (valid-sc alist a)
+               (valid-sc (resolve-assoc-equal-rec key alist) a))
+      :hints (("Goal"
+               :in-theory (e/d (resolve-assoc-equal-rec
                                 is-rp
                                 is-equals
                                 is-if)
@@ -909,6 +997,15 @@
                                is-equals
                                is-rp) ()))))
 
+   (defthm valid-sc-cdr-hons-equal-falist-consistent-aux2
+     (implies
+      (valid-sc term-alist a)
+      (valid-sc (resolve-assoc-equal-rec key term-alist) a))
+     :hints (("Goal"
+              :in-theory (e/d (is-if
+                               is-equals
+                               is-rp) ()))))
+
    (local
     (defthm valid-sc-hons-get-rp-meta-lemma
       (implies (and (valid-sc term a)
@@ -951,8 +1048,14 @@
               :use ((:instance valid-sc-hons-get-list-values-term-lemma
                                (keys (CADR (CADR TERM)))
                                (falist (CADR (CADR (EX-FROM-RP (CADDR TERM)))))
-                               (term-alist (CAdDR (EX-FROM-RP (CADDR TERM))))))
-              :in-theory (e/d (assoc-eq-vals-meta is-equals is-if is-rp) ()))))))
+                               (term-alist (CAdDR (EX-FROM-RP (CADDR TERM)))))
+                    (:instance valid-sc-hons-get-rp-meta-lemma
+                               (falist (CADR (CADR (EX-FROM-RP (CADDR TERM)))))
+                               (key (CADR (CADR TERM)))
+                               (term  (CAdDR (EX-FROM-RP (CADDR TERM))))))
+              :in-theory (e/d (assoc-eq-vals-meta is-equals is-if is-rp)
+                              (valid-sc-hons-get-rp-meta-lemma
+                               hons-get)))))))
 
 #|(local
  (encapsulate
@@ -1095,6 +1198,13 @@
 (rp::add-meta-rule
  :meta-fnc assoc-eq-vals-meta
  :trig-fnc assoc-eq-vals
+ :formula-checks hons-get-meta-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc assoc-eq-vals-meta
+ :trig-fnc assoc-equal
  :formula-checks hons-get-meta-formula-checks
  :valid-syntaxp t
  :returns (mv term dont-rw))
