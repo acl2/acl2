@@ -437,8 +437,8 @@ following loop:</p>
 
   (defthm tail-insert
     (equal (tail (insert a X))
-           (cond ((empty X) (sfix X))
-                 ((<< a (head X)) (sfix X))
+           (cond ((empty X) nil)
+                 ((<< a (head X)) X)
                  ((equal a (head X)) (tail X))
                  (t (insert a (tail X))))))
 
