@@ -550,11 +550,11 @@ following loop:</p>
 ; Now we are interested in setting up theories and in disabling most of the
 ; potentially bad issues that might arise.
 ;
-; You should never need to use primitive-theory unless you are using non-set
+; You should never need to use primitive-rules unless you are using non-set
 ; functions, e.g. cons, to build sets.
 ;
-; The primitive order theory is intended to be disabled for typical reasoning,
-; but is needed for some theorems in the membership level.
+; The order-rules are intended to be disabled for typical reasoning,
+; but are needed for some theorems in the membership level.
 
 (def-ruleset primitive-rules
   '(setp empty head tail sfix insert))
