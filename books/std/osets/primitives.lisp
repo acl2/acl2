@@ -159,7 +159,7 @@ non-set convention and always returns true for ill-formed sets.</p>"
              (setp X))))
 
 (defthm empty-set-unique
-  ;; BOZO probably expensive.  We don't export this from sets.lisp, and we keep
+  ;; BOZO probably expensive.  We don't export this from top.lisp, and we keep
   ;; it out of the docs above.
   (implies (and (setp X)
                 (setp Y)
