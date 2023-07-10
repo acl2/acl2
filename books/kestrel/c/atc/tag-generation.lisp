@@ -435,16 +435,12 @@
 
 (define atc-gen-tag-member-write-thms ((tag identp)
                                        (recognizer symbolp)
-                                       (fixer symbolp)
                                        (fixer-recognizer-thm symbolp)
-                                       (not-error-thm symbolp)
                                        (valuep-thm symbolp)
                                        (value-kind-thm symbolp)
-                                       (type-of-value-thm symbolp)
                                        (meminfo defstruct-member-infop)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
-  (declare (ignore fixer not-error-thm type-of-value-thm))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-write-thms symbol-listp)
                (updated-names-to-avoid symbol-listp
@@ -1091,12 +1087,9 @@
 (define atc-gen-tag-member-write-all-thms
   ((tag identp)
    (recognizer symbolp)
-   (fixer symbolp)
    (fixer-recognizer-thm symbolp)
-   (not-error-thm symbolp)
    (valuep-thm symbolp)
    (value-kind-thm symbolp)
-   (type-of-value-thm symbolp)
    (meminfos defstruct-member-info-listp)
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
@@ -1117,24 +1110,18 @@
        ((mv events thms names-to-avoid)
         (atc-gen-tag-member-write-thms tag
                                        recognizer
-                                       fixer
                                        fixer-recognizer-thm
-                                       not-error-thm
                                        valuep-thm
                                        value-kind-thm
-                                       type-of-value-thm
                                        (car meminfos)
                                        names-to-avoid
                                        wrld))
        ((mv more-events more-thms names-to-avoid)
         (atc-gen-tag-member-write-all-thms tag
                                            recognizer
-                                           fixer
                                            fixer-recognizer-thm
-                                           not-error-thm
                                            valuep-thm
                                            value-kind-thm
-                                           type-of-value-thm
                                            (cdr meminfos)
                                            names-to-avoid
                                            wrld)))
@@ -1185,7 +1172,6 @@
        (not-error-thm (defstruct-info->not-error-thm info))
        (valuep-thm (defstruct-info->valuep-thm info))
        (value-kind-thm (defstruct-info->value-kind-thm info))
-       (type-of-value-thm (defstruct-info->type-of-value-thm info))
        (struct-declons (atc-gen-struct-declon-list memtypes))
        ((mv read-thm-events read-thm-names names-to-avoid)
         (if proofs
@@ -1202,12 +1188,9 @@
         (if proofs
             (atc-gen-tag-member-write-all-thms tag-ident
                                                recognizer
-                                               fixer
                                                fixer-recognizer-thm
-                                               not-error-thm
                                                valuep-thm
                                                value-kind-thm
-                                               type-of-value-thm
                                                meminfos
                                                names-to-avoid
                                                wrld)
