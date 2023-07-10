@@ -435,16 +435,12 @@
 
 (define atc-gen-tag-member-write-thms ((tag identp)
                                        (recognizer symbolp)
-                                       (fixer symbolp)
                                        (fixer-recognizer-thm symbolp)
-                                       (not-error-thm symbolp)
                                        (valuep-thm symbolp)
                                        (value-kind-thm symbolp)
-                                       (type-of-value-thm symbolp)
                                        (meminfo defstruct-member-infop)
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
-  (declare (ignore not-error-thm type-of-value-thm))
   :returns (mv (local-events pseudo-event-form-listp)
                (member-write-thms symbol-listp)
                (updated-names-to-avoid symbol-listp
@@ -749,17 +745,17 @@
         (pack elemfixtype '-array-fix-when- elemfixtype '-arrayp))
        (elemfixtype-array-length-of-elemfixtype-array-write
         (pack elemfixtype '-array-length-of- elemfixtype '-array-write))
-       (type-of-value-when-elemfixtype-arrayp
-        (pack 'type-of-value-when- elemfixtype '-arrayp))
-       (value-array->length-when-elemfixtype-arrayp
-        (pack 'value-array->length-when- elemfixtype '-arrayp))
+       ;; (type-of-value-when-elemfixtype-arrayp
+       ;;  (pack 'type-of-value-when- elemfixtype '-arrayp))
+       ;; (value-array->length-when-elemfixtype-arrayp
+       ;;  (pack 'value-array->length-when- elemfixtype '-arrayp))
        (valuep-when-elemfixtypep (pack 'valuep-when- elemfixtype 'p))
        (consp-when-elemfixtypep (pack 'consp-when- elemfixtype 'p))
        (apconvert-expr-value-when-elemfixtype-arrayp
         (pack 'apconvert-expr-value-when- elemfixtype '-arrayp))
        (value-array->elemtype-when-elemtype-arrayp
         (pack 'value-array->elemtype-when- elemfixtype '-arrayp))
-       (type-elemfixtype (pack 'type- elemfixtype))
+       ;; (type-elemfixtype (pack 'type- elemfixtype))
        (elemfixtypep-of-elemfixtype-array-read
         (pack elemfixtype 'p-of- elemfixtype '-array-read))
        (value-array-read-when-elemfixtype-arrayp
@@ -936,7 +932,8 @@
                        (expr-binary->arg1 e))
                       compst)))
                    (expr-value->value
-                    (exec-expr-pure (expr-binary->arg2 e) compst))
+                    (exec-expr-pure
+                     (expr-binary->arg2 e) compst))
                    (value-struct-read
                     (ident ,(ident->name memname))
                     (read-var
@@ -948,28 +945,33 @@
              (struct (read-var
                       (expr-ident->get
                        (expr-member->target
-                        (expr-arrsub->arr (expr-binary->arg1 e))))
+                        (expr-arrsub->arr
+                         (expr-binary->arg1 e))))
                       compst))))
            :in-theory ',theory-member)))
        (theory-memberp
-        `(acl2::mv-nth-of-cons
-          (:e zp)
-          ,valuep-when-elemfixtypep
-          valuep-of-expr-value->value
-          (:t expr-value->value)
-          exec-ident
-          expr-fix-when-exprp
-          exprp-of-expr-binary->arg1
-          exprp-of-expr-arrsub->arr
-          exprp-of-expr-memberp->target
+        `(exec-expr-asg
+          not-errorp-when-expr-valuep
           expr-valuep-of-expr-value
-          exec-memberp
+          mv-nth-of-cons
+          (:e zp)
+          not-errorp-when-valuep
+          ,valuep-when-elemfixtypep
+          ,consp-when-elemfixtypep
+          exec-expr-pure-when-arrsub-of-memberp-no-syntaxp
+          exec-expr-pure-when-ident-no-syntaxp
+          exec-ident-open-via-object
+          objdesign-of-var-when-valuep-of-read-var
+          exec-arrsub-of-memberp
           read-object-of-objdesign-of-var-to-read-var
           apconvert-expr-value-when-not-value-array-alt
           expr-value->value-of-expr-value
           value-fix-when-valuep
           expr-value-fix-when-expr-valuep
-          exec-arrsub
+          ,recognizer
+          ,reader
+          ,fixer-recognizer-thm
+          ,valuep-when-elemtype-arrayp
           ,apconvert-expr-value-when-elemfixtype-arrayp
           return-type-of-objdesign-member
           return-type-of-value-pointer
@@ -979,65 +981,94 @@
           pointer-valid->get-of-pointer-valid
           objdesign-fix-when-objdesignp
           read-object-of-objdesign-member
+          ,value-kind-when-elemfixtype-arrayp
           value-pointer->reftype-of-value-pointer
+          type-fix-when-typep
+          ,return-type-of-type-elemfixtype
           ,value-array->elemtype-when-elemtype-arrayp
-          (:e type-fix)
-          (:e ,type-elemfixtype)
+          cintegerp-when-cintegerp-of-apconvert-expr-value
+          value-kind-not-array-when-cintegerp
+          value-integerp-when-cintegerp
+          ,checker
+          integer-range-p
+          value-integer->get-when-cintegerp
           ,value-array-read-when-elemfixtype-arrayp
+          ,elemfixtype-array-index-okp
           ,elemfixtypep-of-elemfixtype-array-read
           expr-value->object-of-expr-value
           objdesign-option-fix
           (:t objdesign-element)
           return-type-of-objdesign-element
+          write-object
           objdesign-element->super-of-objdesign-element
           objdesign-element->index-of-objdesign-element
-          objdesign-member->super-of-objdesign-member
-          objdesign-member->name-of-objdesign-member
           nfix
-          objdesignp-of-value-pointer->designator
-          (:e ident-fix)
-          objdesign-of-var-when-valuep-of-read-var
-          write-object
-          exec-expr-asg
-          ,recognizer
-          value-struct-read
-          not-errorp-when-valuep
-          ,valuep-when-elemtype-arrayp
-          (:e ident)
-          ,value-kind-when-elemfixtype-arrayp
-          not-errorp-when-expr-valuep
-          ,checker
-          integer-range-p
-          value-integer->get-when-cintegerp
-          ,value-array-write-when-elemfixtype-arrayp
-          ,elemfixtype-array-index-okp
-          ,elemfixtype-arrayp-of-elemfixtype-array-write
-          ,writer-element
           ,writer
-          value-integerp-when-cintegerp
-          ,elemfixtype-array-fix-when-elemfixtype-arrayp
-          ,reader
-          ,fixer
+          ,value-array-write-when-elemfixtype-arrayp
+          ,elemfixtype-arrayp-of-elemfixtype-array-write
           ,elemfixtype-array-length-of-elemfixtype-array-write
+          objdesign-member->super-of-objdesign-member
+          objdesignp-of-value-pointer->designator
+          objdesign-member->name-of-objdesign-member
+          ,elemfixtype-array-fix-when-elemfixtype-arrayp
+          ,writer-element
+          value-struct-read
           value-struct-write
-          return-type-of-value-struct
-          not-errorp-when-member-value-listp
-          member-value-listp-of-value-struct-write-aux
-          ,type-of-value-when-elemfixtype-arrayp
-          ,value-array->length-when-elemfixtype-arrayp
+          (:e ident)
+          (:e ident-fix)
           ,@(and length (list length))))
        (hints-memberp
         `(("Goal"
-           :expand
-           ((exec-expr-pure (expr-binary->arg1 e)
-                            compst)
-            (exec-expr-pure (expr-arrsub->arr (expr-binary->arg1 e))
-                            compst)
-            (exec-expr-pure (expr-memberp->target
-                             (expr-arrsub->arr (expr-binary->arg1 e)))
-                            compst))
+           :use
+           ((:instance
+             ,reader-return-thm
+             (struct
+              (read-object
+               (value-pointer->designator
+                (read-var
+                 (expr-ident->get
+                  (expr-memberp->target
+                   (expr-arrsub->arr
+                    (expr-binary->arg1 e))))
+                 compst))
+               compst)))
+            (:instance
+             ,writer-return-thm
+             (val
+              (value-array-write
+               (integer-from-cinteger
+                (expr-value->value
+                 (exec-expr-pure
+                  (expr-arrsub->sub
+                   (expr-binary->arg1 e))
+                  compst)))
+               (expr-value->value
+                (apconvert-expr-value
+                 (exec-expr-pure
+                  (expr-binary->arg2 e) compst)))
+               (value-struct-read
+                (ident ,(ident->name memname))
+                (read-object
+                 (value-pointer->designator
+                  (read-var
+                   (expr-ident->get
+                    (expr-memberp->target
+                     (expr-arrsub->arr
+                      (expr-binary->arg1 e))))
+                   compst))
+                 compst))))
+             (struct
+              (read-object
+               (value-pointer->designator
+                (read-var
+                 (expr-ident->get
+                  (expr-memberp->target
+                   (expr-arrsub->arr
+                    (expr-binary->arg1 e))))
+                 compst))
+               compst))))
            :in-theory ',theory-memberp)))
-      ((mv event-member &)
+       ((mv event-member &)
         (evmac-generate-defthm thm-member-name
                                :formula formula-member
                                :hints hints-member
@@ -1056,12 +1087,9 @@
 (define atc-gen-tag-member-write-all-thms
   ((tag identp)
    (recognizer symbolp)
-   (fixer symbolp)
    (fixer-recognizer-thm symbolp)
-   (not-error-thm symbolp)
    (valuep-thm symbolp)
    (value-kind-thm symbolp)
-   (type-of-value-thm symbolp)
    (meminfos defstruct-member-info-listp)
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
@@ -1082,24 +1110,18 @@
        ((mv events thms names-to-avoid)
         (atc-gen-tag-member-write-thms tag
                                        recognizer
-                                       fixer
                                        fixer-recognizer-thm
-                                       not-error-thm
                                        valuep-thm
                                        value-kind-thm
-                                       type-of-value-thm
                                        (car meminfos)
                                        names-to-avoid
                                        wrld))
        ((mv more-events more-thms names-to-avoid)
         (atc-gen-tag-member-write-all-thms tag
                                            recognizer
-                                           fixer
                                            fixer-recognizer-thm
-                                           not-error-thm
                                            valuep-thm
                                            value-kind-thm
-                                           type-of-value-thm
                                            (cdr meminfos)
                                            names-to-avoid
                                            wrld)))
@@ -1150,7 +1172,6 @@
        (not-error-thm (defstruct-info->not-error-thm info))
        (valuep-thm (defstruct-info->valuep-thm info))
        (value-kind-thm (defstruct-info->value-kind-thm info))
-       (type-of-value-thm (defstruct-info->type-of-value-thm info))
        (struct-declons (atc-gen-struct-declon-list memtypes))
        ((mv read-thm-events read-thm-names names-to-avoid)
         (if proofs
@@ -1167,12 +1188,9 @@
         (if proofs
             (atc-gen-tag-member-write-all-thms tag-ident
                                                recognizer
-                                               fixer
                                                fixer-recognizer-thm
-                                               not-error-thm
                                                valuep-thm
                                                value-kind-thm
-                                               type-of-value-thm
                                                meminfos
                                                names-to-avoid
                                                wrld)

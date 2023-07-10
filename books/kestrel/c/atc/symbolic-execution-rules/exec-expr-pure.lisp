@@ -333,6 +333,30 @@
              not-errorp-when-expr-valuep)
     :disable equal-of-type-struct) ; <-- to reduce splits
 
+  (defruled exec-expr-pure-when-arrsub-of-memberp-no-syntaxp
+    (implies (and (equal (expr-kind e) :arrsub)
+                  (equal arr (expr-arrsub->arr e))
+                  (expr-case arr :memberp)
+                  (equal evalstr
+                         (exec-expr-pure (expr-memberp->target arr) compst))
+                  (expr-valuep evalstr)
+                  (equal evalsub
+                         (exec-expr-pure (expr-arrsub->sub e) compst))
+                  (expr-valuep evalsub))
+             (equal (exec-expr-pure e compst)
+                    (exec-arrsub-of-memberp evalstr
+                                            (expr-memberp->name arr)
+                                            evalsub
+                                            compst)))
+    :expand ((exec-expr-pure e compst)
+             (exec-expr-pure (expr-arrsub->arr e) compst))
+    :enable (exec-memberp
+             exec-arrsub
+             exec-arrsub-of-memberp
+             apconvert-expr-value
+             not-errorp-when-expr-valuep)
+    :disable equal-of-type-struct) ; <-- to reduce splits
+
   (defruled exec-expr-pure-when-unary
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :unary)
