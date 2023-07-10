@@ -2319,7 +2319,7 @@
                    read-member)
         (packn-pos (list fixtypep '-of- read-member-element)
                    read-member-element)
-        (packn-pos (list fixtype-arrayp '-of- write-member)
+        (packn-pos (list struct-tag-p '-of- write-member)
                    write-member)
         (packn-pos (list struct-tag-p '-of- write-member-element)
                    write-member-element)))

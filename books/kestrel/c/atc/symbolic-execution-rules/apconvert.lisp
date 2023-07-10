@@ -16,6 +16,8 @@
 
 (include-book "../../language/dynamic-semantics")
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -137,12 +139,18 @@
     :enable (apconvert-expr-value
              value-array->elemtype-when-sllong-arrayp))
 
-  ; used in tag-generation.lisp, not included in *atc-apconvert-rules* below:
   (defruled apconvert-expr-value-when-not-value-array-alt
     (implies (not (equal (value-kind (expr-value->value eval)) :array))
              (equal (apconvert-expr-value eval)
                     (expr-value-fix eval)))
     :enable apconvert-expr-value)
+
+  (defruled cintegerp-when-cintegerp-of-apconvert-expr-value
+    (implies (and (expr-valuep (apconvert-expr-value eval))
+                  (cintegerp (expr-value->value (apconvert-expr-value eval))))
+             (cintegerp (expr-value->value eval)))
+    :enable (apconvert-expr-value
+             cintegerp))
 
   (defval *atc-apconvert-rules*
     '(apconvert-expr-value-when-not-value-array
