@@ -106,7 +106,7 @@ you are in a particular situation that precludes the use of the above installer.
 </li>
 <li>Download and set up the ACL2s WSL image
   <ol>
-  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.7/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.</li>
+  <li>Download <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/distro.tar.gz\">distro.tar.gz</a> to your Downloads folder.</li>
   <li>Open up a new <b>non-admininistrator</b> terminal by opening the Windows
       menu at the bottom left hand side of the screen and searching for
       @('cmd').
@@ -124,7 +124,7 @@ you are in a particular situation that precludes the use of the above installer.
   <li><uncheck the option to launch
   VcXsrv after the installation is complete.</li>
   <li>Download our VcXsrv launch profile
-  <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.7/acl2s-vcxsrv.xlaunch\"><b>here</b></a>
+  <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/acl2s-vcxsrv.xlaunch\"><b>here</b></a>
   and put it somewhere memorable. <b>You may need to right-click on
   the link and select \"Save As...\" if your browser doesn't
   download it automatically.</b></li>
