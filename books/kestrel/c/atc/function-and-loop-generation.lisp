@@ -2987,15 +2987,12 @@
        ((mv pop-frame-event
             pop-frame-thm
             names-to-avoid)
-        (if (and proofs
-                 body.thm-name)
-            (atc-gen-pop-frame-thm fn
-                                   fn-guard
-                                   compst-var
-                                   body.context
-                                   names-to-avoid
-                                   wrld)
-          (mv '(_) nil names-to-avoid)))
+        (atc-gen-pop-frame-thm fn
+                               fn-guard
+                               compst-var
+                               body.context
+                               names-to-avoid
+                               wrld))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id body.type))
        (fundef (make-fundef :tyspec tyspec
