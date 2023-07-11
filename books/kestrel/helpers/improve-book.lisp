@@ -437,7 +437,8 @@
           (name (first defthm-args))
           (body (second defthm-args))
           (keyword-value-list (rest (rest defthm-args)))
-          (hintsp (assoc-keyword :hints keyword-value-list)))
+          (hintsp (assoc-keyword :hints keyword-value-list))
+          (hints (cadr hintsp)))
      (if (defthm-or-defaxiom-symbolp name (w state))
          ;; It already exists (presumably identical):
          (prog2$ (cw "  Drop (redundant).)~%") ; no more checking to do, though we have seen a redundant event with a bad subst in the hints...
@@ -453,14 +454,13 @@
                            (if improvement-foundp
                                state
                              ;; could not drop all hints, so try one by one:
-                             (let* ((hints (cadr hintsp))
-                                    (alist (defthms-with-removed-hints defthm-variant name body hints)))
+                             (let* ((alist (defthms-with-removed-hints defthm-variant name body hints)))
                                (mv-let (improvement-foundp state)
                                  (try-improved-events alist nil state)
                                  (declare (ignore improvement-foundp)) ;todo: don't bother to return this?
                                  state)))))))
               ;; Apply the linter:
-              (state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) nil 100000 state)))
+              (state (lint-defthm name (translate-term body 'improve-defthm-event (w state)) hints nil 100000 state)))
          ;; Try to speed up the proof:
          (mv-let (erp state)
            (speed-up-defthm event print state)
