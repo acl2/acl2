@@ -12,7 +12,7 @@
 
 (include-book "write-bytes-to-channel")
 (local (include-book "open-output-channel-bang"))
-(local (include-book "kestrel/utilities/w" :dir :system))
+;(local (include-book "kestrel/utilities/w" :dir :system))
 
 ;; Needed because we call open-output-channel! below:
 (defttag file-io!)
