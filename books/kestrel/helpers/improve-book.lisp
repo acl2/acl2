@@ -568,7 +568,7 @@
           (full-path (extend-pathname$ (or dir ".") (concatenate 'string book ".lisp") state)))
      (if (member-equal full-path initial-included-books)
          ;; Redundant and unable to trying dropping it (probably because it is included by improve-book itself):
-         (prog2$ (cw "~%   Skipping: already included in session).~%")
+         (prog2$ (cw "~%   Skipping: Already included before improve-book was called.)~%")
                  (submit-event-expect-no-error event nil state))
        (if (member-equal full-path (all-included-books (w state)))
            (prog2$ (cw "~%   Drop include (redundant).)~%" event nil)

@@ -98,12 +98,11 @@
                                    mul-of-neg-arg1
                                    mul-of-neg-arg2)))))
 
-
 (defthm neg-of-mul-of-add-of-add-of-neg-arg1-arg2-arg2
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp k) ;may often be a constant
-                (integerp w)
+  (implies (and ;(integerp x)
+                ;(integerp y)
+                ;(integerp k) ;may often be a constant
+                ;(integerp w)
                 (posp p))
            (equal (neg (mul (add k (add w (neg x p) p) p) y p) p)
                   (mul (add (neg k p) (add (neg w p) x p) p) y p)))
@@ -113,9 +112,9 @@
                                    mul-of-neg-arg2)))))
 
 (defthm neg-of-mul-of-add-of-neg-arg2-arg2
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp k) ;may often be a constant
+  (implies (and ;(integerp x)
+                ;(integerp y)
+                ;(integerp k) ;may often be a constant
                 (posp p))
            (equal (neg (mul y (add k (neg x p) p) p) p)
                   (mul y (add (neg k p) x p) p)))
