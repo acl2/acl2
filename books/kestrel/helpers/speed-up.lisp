@@ -45,35 +45,6 @@
     (declare (ignore value))
     (mv erp state)))
 
-;; Returns (mv erp provedp elapsed-time state).
-;move
-(defun prove$-nice-with-time (term
-                              hints
-                              instructions
-                              otf-flg
-                              time-limit ; warning: not portable!
-                              step-limit
-                              state)
-  (declare (xargs :guard (and (booleanp otf-flg)
-                              (or (and (rationalp time-limit)
-                                       (<= 0 time-limit))
-                                  (null time-limit))
-                              (or (natp step-limit)
-                                  (null step-limit)))
-                  :mode :program
-                  :stobjs state))
-  ;; Record the start time:
-  (mv-let (start-time state)
-    (acl2::get-real-time state)
-    (mv-let (erp provedp state)
-      (prove$-nice-fn term hints instructions otf-flg time-limit step-limit state)
-      ;; Record the end time:
-      (mv-let (end-time state)
-        (acl2::get-real-time state)
-        (if erp
-            (mv erp nil nil state)
-          (mv nil provedp (- end-time start-time) state))))))
-
 ;; in seconds
 (defconst *minimum-time-savings-to-report* 1/10)
 
