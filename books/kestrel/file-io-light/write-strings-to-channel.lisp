@@ -49,8 +49,7 @@
 
 (defthm open-output-channel-any-p1-of-write-strings-to-channel
   (implies (open-output-channel-any-p1 channel state)
-           (open-output-channel-any-p1 channel (write-strings-to-channel strings channel2 state)))
-  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
+           (open-output-channel-any-p1 channel (write-strings-to-channel strings channel2 state))))
 
 (defthm open-output-channel-any-p-of-write-strings-to-channel
   (implies (open-output-channel-any-p channel state)
