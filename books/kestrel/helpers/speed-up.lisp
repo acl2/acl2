@@ -130,13 +130,13 @@
          (mv nil state))
       ;; Do the proof and time it:
       (mv-let (erp provedp elapsed-time state)
-        (prove$-nice-with-time body
-                               hints
-                               nil
-                               otf-flg
-                               nil ; time-limit
-                               nil ; step-limit
-                               state)
+        (prove$-twice-with-time body
+                                hints
+                                nil
+                                otf-flg
+                                nil ; time-limit
+                                nil ; step-limit
+                                state)
         (if erp
             (mv erp state)
           (if (not provedp)
@@ -229,7 +229,7 @@
     ;; Record the start time:
     (mv-let (start-time state)
       (acl2::get-real-time state)
-      ;; Do the proof and time it:
+      ;; Do the proof and time it (todo: do it twice, like we do for defthm, for better timings):
       (mv-let (erp state)
         (submit-and-revert-event `(saving-event-data ,event) nil nil state)
         ;; Record the end time:
