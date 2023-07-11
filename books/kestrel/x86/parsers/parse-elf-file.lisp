@@ -265,7 +265,7 @@
        (64-bitp (eq :elfclass64 class))
        (result (acons :class class result))
        ;; Now we can set the magic number:
-       (result (acons :magic (if :elfclass64 :elf-64 :elf-32) result)) ; for use by parsed-executable-type
+       (result (acons :magic (if 64-bitp :elf-64 :elf-32) result)) ; for use by parsed-executable-type
        (ei_data (nth 5 e_ident))
        (data (lookup-safe ei_data *data-encodings*))
        (result (acons :data data result))
