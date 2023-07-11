@@ -16,7 +16,8 @@
 
 ;; TODO: Document the Linter (and move it to this dir)
 
-(defxdoc helpers :short "Tools for finding, improving, and repairing proofs and books.")
+(defxdoc helpers :short "Tools for finding, improving, and repairing proofs and books."
+  :parents (kestrel-books))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
