@@ -429,13 +429,13 @@ reinstall Xming if you already have it installed.
 <ul class=\"morespace\">
   <li><span class=\"question\">When I run <code>brew install acl2s --force-bottle</code>
       , Homebrew tells me there is no bottle available!</span><br/>  If
-    you are on a M1 Mac and you are not running macOS Monterey, you
-    can either update to macOS Monterey and re-run the command, or you
+    you are on a M1/M2 Mac and you are not running macOS Ventura, you
+    can either update to macOS Ventura and re-run the command, or you
     can build ACL2s from scratch, which will take a fair amount of
     time (at least an hour). To build ACL2s from scratch, run
     <code>brew install acl2s</code>.<br/>If you are on an Intel Mac and
-    are running macOS Mojave or earlier, you can either update to
-    macOS Catalina or later (if that is supported on your computer),
+    are running macOS Catalina or earlier, you can either update to
+    macOS Big Sur or later (if that is supported on your computer),
     or build ACL2s from scratch using the instructions above.
   </li>
   <li><span class=\"question\">Eclipse is using the dark theme, and I can't read any of the
@@ -451,7 +451,7 @@ reinstall Xming if you already have it installed.
     brew, it sometimes will print out a message saying \"Run these
     two commands in your terminal to add Homebrew to your PATH\". If
     you don't run the two commands, Homebrew will not function
-    correctly. Assuming you are on a M1 Mac, try running the command
+    correctly. Assuming you are on a M1/M2 Mac, try running the command
     <code>echo 'eval $(/opt/homebrew/bin/brew shellenv)' &gt;&gt; ~/.zprofile</code>
     and opening a new Terminal window.
   </li>
