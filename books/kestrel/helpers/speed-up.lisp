@@ -22,6 +22,16 @@
 
 ;; move these:
 
+(verify-termination get-event-data-1)
+;(verify-guards get-event-data-1) ; todo: needs a guard, perhaps (and (symbolp key) (symbol-alistp event-data)).
+;; Requires NAME to have been submitted inside a call of saving-event-data.
+(defund runes-used-for-event (name state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (get-event-data-1 'rules (cadr (hons-get name (f-get-global 'event-data-fal state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp val state) where erp is non-nil if the event failed. val is always nil.
 ;; This wrapper returns an error triple, so we can wrap it in a call to revert-world.
 ;;todo: name clash
@@ -44,6 +54,8 @@
     (revert-world (submit-event-error-triple2 event print throw-errorp state))
     (declare (ignore value))
     (mv erp state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; in seconds
 (defconst *minimum-time-savings-to-report* 1/10)
@@ -206,6 +218,8 @@
     (let ((state (try-to-drop-rune-from-event (first runes) event time-to-beat state)))
       (try-to-drop-runes-from-event (rest runes) event time-to-beat state))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp state).
 ;; Each line printed starts with a newline.
 (defun speed-up-defrule (event state)
@@ -231,7 +245,7 @@
                    ;; (cw " seconds)")
                    (mv nil state))
                 ;; Get the list of runes used in the proof:
-                (let* ((runes-used (get-event-data-1 'rules (cadr (hons-get name (f-get-global 'event-data-fal state))))))
+                (let* ((runes-used (runes-used-for-event name state)))
                   (if (not runes-used)
                       (prog2$ (cw "~%WARNING: No runes reported as used by ~x0." name)
                               (mv nil state))
