@@ -30,7 +30,7 @@
                            get-global
                            put-global)))
 
-(local (in-theory (enable not-member-equal-when-not-writable-file-listp1)))
+;(local (in-theory (enable not-member-equal-when-not-writable-file-listp1)))
 
 ;; We use TYPE and VAL here instead of TYP and VALUE to match what std does
 (defthm open-output-channel-p1-of-put-global
