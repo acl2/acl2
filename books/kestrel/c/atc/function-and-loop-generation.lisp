@@ -3006,95 +3006,93 @@
             fn-result-thm
             fn-correct-thm
             names-to-avoid)
-        (if proofs
-            (b* ((fn-fun-env-event
-                  (atc-gen-cfun-fun-env-thm fn
-                                            fn-fun-env-thm
-                                            prog-const
-                                            finfo
-                                            init-fun-env-thm))
-                 ((mv fn-result-events
-                      fn-result-thm
-                      names-to-avoid)
-                  (atc-gen-fn-result-thm fn
-                                         body.type
-                                         affect
-                                         typed-formals
-                                         prec-fns
-                                         prec-tags
-                                         prec-objs
-                                         names-to-avoid
-                                         state))
-                 ((mv fn-correct-local-events
-                      fn-correct-exported-events
-                      fn-correct-thm
-                      names-to-avoid)
-                  (if body.thm-name
-                      (atc-gen-fun-correct-thm fn
-                                               fn-guard
-                                               fn-def*
-                                               init-formals
-                                               context-preamble
-                                               prog-const
-                                               compst-var
-                                               fenv-var
-                                               limit-var
-                                               fn-thms
-                                               fn-fun-env-thm
-                                               init-scope-expand-thm
-                                               init-scope-scopep-thm
-                                               push-init-thm
-                                               pop-frame-thm
-                                               body.thm-name
-                                               body.type
-                                               body.limit
-                                               prec-tags
-                                               names-to-avoid
-                                               state)
-                    (b* (((mv local-events exported-events name)
-                          (atc-gen-cfun-correct-thm fn
-                                                    typed-formals
-                                                    body.type
-                                                    affect
-                                                    prec-fns
-                                                    prec-tags
-                                                    prec-objs
-                                                    prog-const
-                                                    compst-var
-                                                    fenv-var
-                                                    limit-var
-                                                    fn-thms
-                                                    fn-fun-env-thm
-                                                    limit
-                                                    state)))
-                      (mv local-events exported-events name names-to-avoid))))
-                 (progress-start?
-                  (and (evmac-input-print->= print :info)
-                       `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
-                 (progress-end? (and (evmac-input-print->= print :info)
-                                     `((cw-event " done.~%"))))
-                 (local-events (append progress-start?
-                                       (list fn-fun-env-event)
-                                       (list fn-guard-event)
-                                       fn-def*-events
-                                       formals-events
-                                       (list init-scope-expand-event)
-                                       (list init-scope-scopep-event)
-                                       (list push-init-thm-event)
-                                       init-inscope-events
-                                       body.events
-                                       (and body.thm-name
-                                            (list pop-frame-event))
-                                       fn-result-events
-                                       fn-correct-local-events
-                                       progress-end?))
-                 (exported-events fn-correct-exported-events))
-              (mv local-events
-                  exported-events
+        (b* ((fn-fun-env-event
+              (atc-gen-cfun-fun-env-thm fn
+                                        fn-fun-env-thm
+                                        prog-const
+                                        finfo
+                                        init-fun-env-thm))
+             ((mv fn-result-events
                   fn-result-thm
+                  names-to-avoid)
+              (atc-gen-fn-result-thm fn
+                                     body.type
+                                     affect
+                                     typed-formals
+                                     prec-fns
+                                     prec-tags
+                                     prec-objs
+                                     names-to-avoid
+                                     state))
+             ((mv fn-correct-local-events
+                  fn-correct-exported-events
                   fn-correct-thm
-                  names-to-avoid))
-          (mv nil nil nil nil names-to-avoid)))
+                  names-to-avoid)
+              (if body.thm-name
+                  (atc-gen-fun-correct-thm fn
+                                           fn-guard
+                                           fn-def*
+                                           init-formals
+                                           context-preamble
+                                           prog-const
+                                           compst-var
+                                           fenv-var
+                                           limit-var
+                                           fn-thms
+                                           fn-fun-env-thm
+                                           init-scope-expand-thm
+                                           init-scope-scopep-thm
+                                           push-init-thm
+                                           pop-frame-thm
+                                           body.thm-name
+                                           body.type
+                                           body.limit
+                                           prec-tags
+                                           names-to-avoid
+                                           state)
+                (b* (((mv local-events exported-events name)
+                      (atc-gen-cfun-correct-thm fn
+                                                typed-formals
+                                                body.type
+                                                affect
+                                                prec-fns
+                                                prec-tags
+                                                prec-objs
+                                                prog-const
+                                                compst-var
+                                                fenv-var
+                                                limit-var
+                                                fn-thms
+                                                fn-fun-env-thm
+                                                limit
+                                                state)))
+                  (mv local-events exported-events name names-to-avoid))))
+             (progress-start?
+              (and (evmac-input-print->= print :info)
+                   `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
+             (progress-end? (and (evmac-input-print->= print :info)
+                                 `((cw-event " done.~%"))))
+             (local-events (append progress-start?
+                                   (list fn-fun-env-event)
+                                   (list fn-guard-event)
+                                   fn-def*-events
+                                   formals-events
+                                   (list init-scope-expand-event)
+                                   (list init-scope-scopep-event)
+                                   (list push-init-thm-event)
+                                   init-inscope-events
+                                   body.events
+                                   (and body.thm-name
+                                        (list pop-frame-event))
+                                   fn-result-events
+                                   fn-correct-local-events
+                                   progress-end?))
+             (exported-events fn-correct-exported-events))
+          (mv local-events
+              exported-events
+              fn-result-thm
+              fn-correct-thm
+              names-to-avoid)))
        (info (make-atc-fn-info
               :out-type body.type
               :in-types (atc-var-info-list->type-list
@@ -3107,8 +3105,8 @@
               :fun-env-thm fn-fun-env-thm
               :limit limit)))
     (retok fundef
-           local-events
-           exported-events
+           (and proofs local-events)
+           (and proofs exported-events)
            (acons fn info prec-fns)
            names-to-avoid))
   :guard-hints
