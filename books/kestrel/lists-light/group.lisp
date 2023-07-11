@@ -198,13 +198,6 @@
                   (not (equal 1 n))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-
-
-(defthm <-of-+-cancel-first-and-first
-  (equal (< (+ x y) (+ x z))
-         (< y z)))
-
-
 ;; (defthm cdr-of-firstn
 ;;   (implies (and (natp n)
 ;;                 (< n (len lst)) ;move to conc?
