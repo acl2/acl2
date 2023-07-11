@@ -106,7 +106,7 @@
           "Checking built-in event"
         (if (eq :top-level loc)
             "Checking top-level event"
-          (concatenate 'string loc " checking"))))))
+          (concatenate 'string (book-name-to-filename loc wrld 'describe-event-location) " checking"))))))
 
 ;dup
 (defun enquote-list (items)

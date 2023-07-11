@@ -1,6 +1,6 @@
 ; A simple function to append a list of lists all together
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,8 +18,3 @@
   (if (endp xs)
       nil
     (append (first xs) (append-all (rest xs)))))
-
-(defthm true-listp-of-append-all
-  (implies (true-list-listp x)
-           (true-listp (append-all x)))
-  :hints (("Goal" :in-theory (enable append-all))))
