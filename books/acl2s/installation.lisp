@@ -55,35 +55,34 @@ occurring.
 
 <h3>Installing using the installer</h3>
 <p>
-The easiest way to install ACL2s on Windows is to use the installer.
+  The easiest way to install ACL2s on Windows is to use the installer.
 </p>
 <ol>
-<li>Download the installer <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/ACL2sInstaller.exe\">from here</a>./li>
-<li>Double click on the installer and allow the installer to run if Windows asks.</li>
-<li>Follow the steps that the installer specifies. If you don't have
-VcXsrv installed and you are on Windows 10, the installer will ask you
-whether you would like it to automatically download and install it for
-you. You should do so and follow VcXsrv's installer as well,
-remembering to click \"close\" inside VcXsrv's installer when that
-installation is done. Windows 11 users don't need to install VcXsrv.</li>
-<li>Note that the installer will show a window that says \"Importing WSL distribution file, this may take a while...\" at some point during installation. <b>This step may take between 5 and 30 minutes depending on your machine.</b> Disabling any virus scanners may significantly speed this up.</li>
-<li>Create a folder for your CS2800 files on your @('C:') drive
-<ol>
-  <li>Open File Explorer, select \"This PC\" on the left, double click
-  on \"Local Disk (C:)\", right-click on an empty area inside of
-  that folder, and select \"New Folder\". Name the folder whatever
-  you would like.</li>
-</ol>
-</li>
-<ol>
-<li>Run ACL2s
-<ol>
-  <li>Run ACL2s, by searching for and running \"Start ACL2s\" in the Windows start menu.</li>
-  <li>When Eclipse asks for a workspace, enter @('/mnt/c/<FOLDER>'),
-  where @('<FOLDER>') should be replaced with the name of the folder
-  that you just created.</li>
-</ol>
-</li>
+  <li>Download the installer <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/ACL2sInstaller.exe\">from here</a>.</li>
+  <li>Double click on the installer and allow the installer to run if Windows asks.</li>
+  <li>Follow the steps that the installer specifies. If you don't have
+    VcXsrv installed and you are on Windows 10, the installer will ask you
+    whether you would like it to automatically download and install it for
+    you. You should do so and follow VcXsrv's installer as well,
+    remembering to click \"close\" inside VcXsrv's installer when that
+    installation is done. Windows 11 users don't need to install VcXsrv.</li>
+  <li>Note that the installer will show a window that says \"Importing WSL distribution file, this may take a while...\" at some point during installation. <b>This step may take between 5 and 30 minutes depending on your machine.</b> Disabling any virus scanners may significantly speed this up.</li>
+  <li>Create a folder for your CS2800 files on your @('C:') drive.
+    <ol>
+      <li>Open File Explorer, select \"This PC\" on the left, double click
+        on \"Local Disk (C:)\", right-click on an empty area inside of
+        that folder, and select \"New Folder\". Name the folder whatever
+        you would like.</li>
+    </ol>
+  </li>
+  <li>Run ACL2s
+    <ol>
+      <li>Run ACL2s, by searching for and running \"Start ACL2s\" in the Windows start menu.</li>
+      <li>When Eclipse asks for a workspace, enter @('/mnt/c/<FOLDER>'),
+          where @('<FOLDER>') should be replaced with the name of the folder
+            that you just created.</li>
+    </ol>
+  </li>
 </ol>
 
 <h3>Manual install instructions</h3>
@@ -121,7 +120,7 @@ you are in a particular situation that precludes the use of the above installer.
   <li>Download the installer
   <a href=\"https://sourceforge.net/projects/vcxsrv/files/vcxsrv/1.20.14.0/vcxsrv.1.20.14.0.installer.exe/download\"><b>here</b></a>
   and run it.</li>
-  <li><uncheck the option to launch
+  <li>At the end of the installation process, uncheck the option to launch
   VcXsrv after the installation is complete.</li>
   <li>Download our VcXsrv launch profile
   <a href=\"https://github.com/mister-walter/homebrew-acl2s/releases/download/acl2s-0.1.8/acl2s-vcxsrv.xlaunch\"><b>here</b></a>
@@ -134,8 +133,7 @@ you are in a particular situation that precludes the use of the above installer.
   public networks.<b>Note that double clicking on acl2s-vcxsrv.xlaunch
   will not open a new window.</b> It will add an item to the system
   tray on the right-hand side of the task bar, and you may need to click
-  on the up caret (^) to see it.
-  </li>
+  on the up caret (^) to see it.</li>
   </ol>
 </li>
 <li>Create a folder for your CS2800 files on your @('C:') drive
