@@ -74,7 +74,7 @@
                                      unsigned-byte-listp))))
 
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-bytes-from-channel
-  (implies (and (open-input-channel-p channel typ state)
+  (implies (and (open-input-channel-p1 channel typ state)
                 (state-p1 state))
            (open-input-channel-p1 channel typ (mv-nth 1 (read-bytes-from-channel channel2 acc state))))
   :hints (("Goal" :in-theory (enable read-bytes-from-channel))))

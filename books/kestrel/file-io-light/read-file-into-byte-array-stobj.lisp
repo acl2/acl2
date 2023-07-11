@@ -65,7 +65,7 @@
 
 (local
  (defthm state-p1-of-mv-nth-1-of-read-bytes-into-byte-array-stobj
-   (implies (and (open-input-channel-p channel :byte state)
+   (implies (and (open-input-channel-p channel :byte state) ; should this be open-input-channel-p1?
                  (state-p1 state))
             (state-p1 (mv-nth 1 (read-bytes-into-byte-array-stobj next-index len channel byte-array-stobj state))))
    :hints (("Goal" :in-theory (enable read-bytes-into-byte-array-stobj open-input-channel-p)))))
