@@ -77,6 +77,16 @@
 
 (defsection atc-exec-block-item-list-rules
   :short "Rules for @(tsee exec-block-item-list)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first two rules should be obvious in purpose.")
+   (xdoc::p
+    "The third rule is used in modular proofs.
+     Instead of decomposing a non-empty list of block items
+     into the first one and the list of remaining ones,
+     it decomposes them into the singleton list of the first one
+     and the list of remaining ones."))
 
   (defruled exec-block-item-list-of-nil
     (implies (and (not (zp limit))
@@ -101,6 +111,28 @@
                                             compst1
                                             fenv
                                             (1- limit)))))
+    :enable exec-block-item-list)
+
+  (defruled exec-block-item-list-of-append-one
+    (implies (and (syntaxp (quotep items))
+                  (consp items)
+                  (not (zp limit))
+                  (equal val?+compst1
+                         (exec-block-item-list (list (car items))
+                                               compst
+                                               fenv
+                                               limit))
+                  (equal val? (mv-nth 0 val?+compst1))
+                  (value-optionp val?)
+                  (equal compst1 (mv-nth 1 val?+compst1)))
+             (equal (exec-block-item-list items compst fenv limit)
+                    (if (valuep val?)
+                        (mv val? compst1)
+                      (exec-block-item-list (cdr items)
+                                            compst1
+                                            fenv
+                                            (1- limit)))))
+    :expand (exec-block-item-list (list (car items)) compst fenv limit)
     :enable exec-block-item-list)
 
   (defval *atc-exec-block-item-list-rules*
