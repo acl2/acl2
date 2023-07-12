@@ -22,6 +22,16 @@
 
 ;; move these:
 
+(verify-termination get-event-data-1)
+;(verify-guards get-event-data-1) ; todo: needs a guard, perhaps (and (symbolp key) (symbol-alistp event-data)).
+;; Requires NAME to have been submitted inside a call of saving-event-data.
+(defund runes-used-for-event (name state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (get-event-data-1 'rules (cadr (hons-get name (f-get-global 'event-data-fal state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp val state) where erp is non-nil if the event failed. val is always nil.
 ;; This wrapper returns an error triple, so we can wrap it in a call to revert-world.
 ;;todo: name clash
@@ -45,34 +55,7 @@
     (declare (ignore value))
     (mv erp state)))
 
-;; Returns (mv erp provedp elapsed-time state).
-;move
-(defun prove$-nice-with-time (term
-                              hints
-                              instructions
-                              otf-flg
-                              time-limit ; warning: not portable!
-                              step-limit
-                              state)
-  (declare (xargs :guard (and (booleanp otf-flg)
-                              (or (and (rationalp time-limit)
-                                       (<= 0 time-limit))
-                                  (null time-limit))
-                              (or (natp step-limit)
-                                  (null step-limit)))
-                  :mode :program
-                  :stobjs state))
-  ;; Record the start time:
-  (mv-let (start-time state)
-    (acl2::get-real-time state)
-    (mv-let (erp provedp state)
-      (prove$-nice-fn term hints instructions otf-flg time-limit step-limit state)
-      ;; Record the end time:
-      (mv-let (end-time state)
-        (acl2::get-real-time state)
-        (if erp
-            (mv erp nil nil state)
-          (mv nil provedp (- end-time start-time) state))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; in seconds
 (defconst *minimum-time-savings-to-report* 1/10)
@@ -147,13 +130,13 @@
          (mv nil state))
       ;; Do the proof and time it:
       (mv-let (erp provedp elapsed-time state)
-        (prove$-nice-with-time body
-                               hints
-                               nil
-                               otf-flg
-                               nil ; time-limit
-                               nil ; step-limit
-                               state)
+        (prove$-twice-with-time body
+                                hints
+                                nil
+                                otf-flg
+                                nil ; time-limit
+                                nil ; step-limit
+                                state)
         (if erp
             (mv erp state)
           (if (not provedp)
@@ -235,6 +218,8 @@
     (let ((state (try-to-drop-rune-from-event (first runes) event time-to-beat state)))
       (try-to-drop-runes-from-event (rest runes) event time-to-beat state))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp state).
 ;; Each line printed starts with a newline.
 (defun speed-up-defrule (event state)
@@ -244,7 +229,7 @@
     ;; Record the start time:
     (mv-let (start-time state)
       (acl2::get-real-time state)
-      ;; Do the proof and time it:
+      ;; Do the proof and time it (todo: do it twice, like we do for defthm, for better timings):
       (mv-let (erp state)
         (submit-and-revert-event `(saving-event-data ,event) nil nil state)
         ;; Record the end time:
@@ -260,7 +245,7 @@
                    ;; (cw " seconds)")
                    (mv nil state))
                 ;; Get the list of runes used in the proof:
-                (let* ((runes-used (get-event-data-1 'rules (cadr (hons-get name (f-get-global 'event-data-fal state))))))
+                (let* ((runes-used (runes-used-for-event name state)))
                   (if (not runes-used)
                       (prog2$ (cw "~%WARNING: No runes reported as used by ~x0." name)
                               (mv nil state))

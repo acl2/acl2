@@ -50,10 +50,9 @@
   (implies (and (stringp path-to-file)
                 (state-p1 state))
            (state-p1 (mv-nth 2 (read-file-into-byte-list path-to-file state))))
-  :hints (("Goal" :in-theory (enable read-file-into-byte-list state-p))))
+  :hints (("Goal" :in-theory (enable read-file-into-byte-list))))
 
 (defthm state-p-of-mv-nth-2-of-read-file-into-byte-list
   (implies (and (stringp path-to-file)
                 (state-p state))
-           (state-p (mv-nth 2 (read-file-into-byte-list path-to-file state))))
-  :hints (("Goal" :in-theory (enable read-file-into-byte-list state-p))))
+           (state-p (mv-nth 2 (read-file-into-byte-list path-to-file state)))))

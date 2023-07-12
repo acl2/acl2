@@ -30,7 +30,7 @@
                            get-global
                            put-global)))
 
-(local (in-theory (enable not-member-equal-when-not-writable-file-listp1)))
+;(local (in-theory (enable not-member-equal-when-not-writable-file-listp1)))
 
 ;; We use TYPE and VAL here instead of TYP and VALUE to match what std does
 (defthm open-output-channel-p1-of-put-global
@@ -62,18 +62,13 @@
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
 
 (defthm state-p1-of-open-output-channel!
-  (implies (and (state-p1 state)
-                (stringp fname)
-                (member type *file-types*))
+  (implies (state-p1 state)
            (state-p1 (mv-nth 1 (open-output-channel! fname type state))))
   :hints (("Goal" :in-theory (enable open-output-channel!))))
 
 (defthm state-p-of-open-output-channel!
-  (implies (and (state-p state)
-                (stringp fname)
-                (member type *file-types*))
-           (state-p (mv-nth 1 (open-output-channel! fname type state))))
-  :hints (("Goal" :in-theory (enable state-p))))
+  (implies (state-p state)
+           (state-p (mv-nth 1 (open-output-channel! fname type state)))))
 
 (defthm w-of-mv-nth-1-of-open-output-channel!
   (equal (w (mv-nth 1 (open-output-channel! file-name type state)))
