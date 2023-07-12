@@ -515,6 +515,114 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-var-decl ((var symbolp)
+                                     (var-info? atc-var-info-optionp)
+                                     (val-term pseudo-termp)
+                                     (gin stmt-ginp)
+                                     state)
+  :returns (mv erp
+               (item block-itemp)
+               (val-term* pseudo-termp)
+               (limit pseudo-termp)
+               (events pseudo-event-form-listp)
+               (thm-name symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
+  :short "Generate a C block item statement that consists of
+          a variable declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The information about the variable,
+     retrieved in @(tsee atc-get-stmt) and passed here,
+     must be absent (i.e. @('nil')):
+     the declared variable must be new."))
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+       ((stmt-gin gin) gin)
+       ((when var-info?)
+        (reterr
+         (msg "The variable ~x0 in the function ~x1 ~
+               is already in scope and cannot be re-declared."
+              var gin.fn)))
+       ((unless (paident-stringp (symbol-name var)))
+        (reterr
+         (msg "The symbol name ~s0 of ~
+               the LET variable ~x1 of the function ~x2 ~
+               must be a portable ASCII C identifier, ~
+               but it is not."
+              (symbol-name var) var gin.fn)))
+       ((erp (expr-gout init))
+        (atc-gen-expr val-term
+                      (make-expr-gin
+                       :context gin.context
+                       :var-term-alist gin.var-term-alist
+                       :inscope gin.inscope
+                       :fn gin.fn
+                       :fn-guard gin.fn-guard
+                       :compst-var gin.compst-var
+                       :fenv-var gin.fenv-var
+                       :limit-var gin.limit-var
+                       :prec-fns gin.prec-fns
+                       :prec-tags gin.prec-tags
+                       :thm-index gin.thm-index
+                       :names-to-avoid gin.names-to-avoid
+                       :proofs gin.proofs)
+                      state))
+       ((when (or (type-case init.type :pointer)
+                  (type-case init.type :array)))
+        (reterr
+         (msg "When generating C code for the function ~x0, ~
+               the term ~x1 of type ~x2 ~
+               is being assigned to a new variable ~x3. ~
+               This is currently disallowed, ~
+               because it would create an alias."
+              gin.fn val-term init.type var)))
+       ((when (consp init.affect))
+        (reterr
+         (msg "The term ~x0 to which the variable ~x1 is bound ~
+               must not affect any variables, ~
+               but it affects ~x2 instead."
+              val-term var init.affect)))
+       ((mv item
+            item-limit
+            item-events
+            item-thm
+            inscope-body
+            context-body
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-declon gin.fn
+                                   gin.fn-guard
+                                   gin.context
+                                   var
+                                   init.type
+                                   init.expr
+                                   init.term
+                                   init.limit
+                                   init.thm-name
+                                   gin.inscope
+                                   gin.compst-var
+                                   gin.fenv-var
+                                   gin.limit-var
+                                   gin.prec-tags
+                                   init.thm-index
+                                   init.names-to-avoid
+                                   (and init.thm-name t)
+                                   state)))
+    (retok item
+           init.term
+           item-limit
+           (append init.events item-events)
+           item-thm
+           inscope-body
+           context-body
+           thm-index
+           names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-block-item-var-asg ((var symbolp)
                                     (var-info? atc-var-info-optionp)
                                     (val-term pseudo-termp)
@@ -2847,108 +2955,53 @@
                      This is disallowed."
                     gin.fn var)))
              ((when (eq wrapper? 'declar))
-              (b* (((when info?)
-                    (reterr
-                     (msg "The variable ~x0 in the function ~x1 ~
-                           is already in scope and cannot be re-declared."
-                          var gin.fn)))
-                   ((unless (paident-stringp (symbol-name var)))
-                    (reterr
-                     (msg "The symbol name ~s0 of ~
-                           the LET variable ~x1 of the function ~x2 ~
-                           must be a portable ASCII C identifier, ~
-                           but it is not."
-                          (symbol-name var) var gin.fn)))
-                   ((erp (expr-gout init))
-                    (atc-gen-expr val-term
-                                  (make-expr-gin
-                                   :context gin.context
-                                   :var-term-alist gin.var-term-alist
-                                   :inscope gin.inscope
-                                   :fn gin.fn
-                                   :fn-guard gin.fn-guard
-                                   :compst-var gin.compst-var
-                                   :fenv-var gin.fenv-var
-                                   :limit-var gin.limit-var
-                                   :prec-fns gin.prec-fns
-                                   :prec-tags gin.prec-tags
-                                   :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
-                                  state))
-                   ((when (or (type-case init.type :pointer)
-                              (type-case init.type :array)))
-                    (reterr
-                     (msg "When generating C code for the function ~x0, ~
-                           the term ~x1 of type ~x2 ~
-                           is being assigned to a new variable ~x3. ~
-                           This is currently disallowed, ~
-                           because it would create an alias."
-                          gin.fn val-term init.type var)))
-                   ((when (consp init.affect))
-                    (reterr
-                     (msg "The term ~x0 to which the variable ~x1 is bound ~
-                           must not affect any variables, ~
-                           but it affects ~x2 instead."
-                          val-term var init.affect)))
-                   ((mv item
-                        item-limit
-                        item-events
-                        item-thm
-                        inscope-body
-                        context-body
-                        thm-index
-                        names-to-avoid)
-                    (atc-gen-block-item-declon gin.fn
-                                               gin.fn-guard
-                                               gin.context
-                                               var
-                                               init.type
-                                               init.expr
-                                               init.term
-                                               init.limit
-                                               init.thm-name
-                                               gin.inscope
-                                               gin.compst-var
-                                               gin.fenv-var
-                                               gin.limit-var
-                                               gin.prec-tags
-                                               init.thm-index
-                                               init.names-to-avoid
-                                               (and init.thm-name t)
-                                               state))
+              (b* (((erp decl-item
+                         decl-term
+                         decl-limit
+                         decl-events
+                         decl-thm
+                         new-inscope
+                         new-context
+                         thm-index
+                         names-to-avoid)
+                    (atc-gen-block-item-var-decl var
+                                                 info?
+                                                 val-term
+                                                 gin
+                                                 state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
-                                   :context context-body
+                                   :context new-context
                                    :var-term-alist var-term-alist-body
-                                   :inscope inscope-body
+                                   :inscope new-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs (and init.thm-name t))
+                                   :proofs (and decl-thm t))
                                   state))
-                   (term* (acl2::close-lambdas
-                           `((lambda (,var) ,body.term) ,init.term))))
-                (retok
-                 (atc-gen-block-item-list-cons
-                  term*
-                  item
-                  item-limit
-                  (append init.events item-events)
-                  item-thm
-                  body.items
-                  body.limit
-                  body.events
-                  body.thm-name
-                  body.type
-                  body.context
-                  (change-stmt-gin
-                   gin
-                   :thm-index body.thm-index
-                   :names-to-avoid body.names-to-avoid
-                   :proofs (and body.thm-name t))
-                  state))))
+                   (term (acl2::close-lambdas
+                          `((lambda (,var) ,body.term) ,decl-term)))
+                   (items-gout
+                    (atc-gen-block-item-list-cons
+                     term
+                     decl-item
+                     decl-limit
+                     decl-events
+                     decl-thm
+                     body.items
+                     body.limit
+                     body.events
+                     body.thm-name
+                     body.type
+                     body.context
+                     (change-stmt-gin
+                      gin
+                      :thm-index body.thm-index
+                      :names-to-avoid body.names-to-avoid
+                      :proofs (and body.thm-name t))
+                     state)))
+                (retok items-gout)))
              ((unless (atc-var-assignablep var innermostp gin.affect))
               (reterr
                (msg "When generating C code for the function ~x0, ~
