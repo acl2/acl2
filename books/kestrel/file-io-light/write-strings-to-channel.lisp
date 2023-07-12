@@ -30,13 +30,12 @@
   (implies (and (state-p1 state)
                 (open-output-channel-p channel :character state))
            (state-p1 (write-strings-to-channel strings channel state)))
-  :hints (("Goal" :in-theory (enable write-strings-to-channel OPEN-OUTPUT-CHANNEL-P))))
+  :hints (("Goal" :in-theory (enable write-strings-to-channel))))
 
 (defthm state-p-of-write-strings-to-channel
   (implies (and (state-p state)
                 (open-output-channel-p channel :character state))
-           (state-p (write-strings-to-channel strings channel state)))
-  :hints (("Goal" :in-theory (enable state-p))))
+           (state-p (write-strings-to-channel strings channel state))))
 
 (defthm open-output-channel-p1-of-write-strings-to-channel
   (implies (open-output-channel-p1 channel typ state)
@@ -50,13 +49,11 @@
 
 (defthm open-output-channel-any-p1-of-write-strings-to-channel
   (implies (open-output-channel-any-p1 channel state)
-           (open-output-channel-any-p1 channel (write-strings-to-channel strings channel2 state)))
-  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
+           (open-output-channel-any-p1 channel (write-strings-to-channel strings channel2 state))))
 
 (defthm open-output-channel-any-p-of-write-strings-to-channel
   (implies (open-output-channel-any-p channel state)
-           (open-output-channel-any-p channel (write-strings-to-channel strings channel2 state)))
-  :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
+           (open-output-channel-any-p channel (write-strings-to-channel strings channel2 state))))
 
 (defthm w-of-write-strings-to-channel
   (equal (w (write-strings-to-channel strings channel state))

@@ -491,6 +491,7 @@
           (cons pair (filter-subst (rest subst) vars))
         (filter-subst (rest subst) vars)))))
 
+;move
 ;; Recognize the translated form of mbt, possibly with not(s) wrapped around it.
 (defun possibly-negated-mbtp (term)
   (declare (xargs :guard (pseudo-termp term)))
@@ -634,41 +635,49 @@
             (if (eq 'if fn) ; separate because we process the args differently
                 (lint-call-of-if term subst type-alist iff-flag thing-being-checked suppress state)
               ;; Regular function or lambda:
-              (progn$ (lint-terms (fargs term) subst type-alist
-                                  nil ; iff-flag
-                                  thing-being-checked suppress state)
-                      ;; TODO: Use the subst for these?
-                      (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
-                          (check-call-of-fmt-function term thing-being-checked)
-                        (if (eq fn 'equal)
-                            (check-call-of-equal (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
-                          (if (eq fn 'eql)
-                              (check-call-of-eql (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
-                            (if (eq fn 'eq)
-                                (check-call-of-eq (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
-                              (if (eq fn '=)
-                                  (check-call-of-= (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
-                                (if (eq fn 'hard-error)
-                                    (check-call-of-hard-error term thing-being-checked suppress)
-                                  (if (eq fn 'illegal)
-                                      (check-call-of-illegal term thing-being-checked suppress)
-                                    (if (consp fn) ;check for lambda
-                                        (lint-term (lambda-body fn)
-                                                   ;; new subst, since we are in a lambda body
-                                                   (pairlis$ (lambda-formals fn)
-                                                             (sublis-var-simple-lst subst (fargs term)))
-                                                   type-alist iff-flag thing-being-checked suppress state)
-                                      nil))))))))
-                      ;; Check for ground term:
-                      (and (not (member-eq :ground-term suppress))
-                           (not (eq 'synp fn)) ; synp calls are usually ground terms
-                           (not (member-eq fn '(hard-error error1 illegal))) ; these have side effects that shoud be kept
-                           ;; don't report ground calls of constrained functions:
-                           (or (flambdap fn)
-                               (fn-primitivep fn (w state))
-                               (fn-definedp fn (w state)))
-                           (quote-listp (fargs term))
-                           (cw "(In ~s0,~% ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))))))))
+              (progn$
+                ;; First, lint all the argument terms:
+                (lint-terms (fargs term) subst type-alist
+                            nil ; iff-flag
+                            thing-being-checked
+                            (if (possibly-negated-mbtp term)
+                                ;; Suppress messages about resolvable tests inside an mbt (could we do anything better, like
+                                ;; clearing the type-alist here instead?):
+                                (add-to-set-eq :resolvable-test suppress)
+                              suppress)
+                            state)
+                ;; TODO: Use the subst for these?
+                (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
+                    (check-call-of-fmt-function term thing-being-checked)
+                  (if (eq fn 'equal)
+                      (check-call-of-equal (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
+                    (if (eq fn 'eql)
+                        (check-call-of-eql (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
+                      (if (eq fn 'eq)
+                          (check-call-of-eq (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
+                        (if (eq fn '=)
+                            (check-call-of-= (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
+                          (if (eq fn 'hard-error)
+                              (check-call-of-hard-error term thing-being-checked suppress)
+                            (if (eq fn 'illegal)
+                                (check-call-of-illegal term thing-being-checked suppress)
+                              (if (consp fn) ;check for lambda
+                                  (lint-term (lambda-body fn)
+                                             ;; new subst, since we are in a lambda body
+                                             (pairlis$ (lambda-formals fn)
+                                                       (sublis-var-simple-lst subst (fargs term)))
+                                             type-alist iff-flag thing-being-checked suppress state)
+                                nil))))))))
+                ;; Check for ground term:
+                (and (not (member-eq :ground-term suppress))
+                     (not (eq 'synp fn)) ; synp calls are usually ground terms
+                     (not (member-eq fn '(hard-error error1 illegal))) ; these have side effects that shoud be kept
+                     ;; don't report ground calls of constrained functions:
+                     (or (flambdap fn)
+                         (fn-primitivep fn (w state))
+                         (fn-definedp fn (w state)))
+                     (quote-listp (fargs term))
+                     (cw "(In ~s0,~% ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))))))))
 
  (defun lint-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
@@ -857,7 +866,7 @@
 
 ;; Checks whether any of the HYPS can be dropped from ALL-HYPS, while still
 ;; allowing CONCLUSION to be proved.  Returns state.
-(defun check-for-droppable-hyps (ctx hyps all-hyps conclusion step-limit state)
+(defun check-for-droppable-hyps (ctx hyps all-hyps conclusion hints step-limit state)
   (declare (xargs :stobjs state
                   :mode :program))
   (if (endp hyps)
@@ -865,7 +874,7 @@
     (b* ((hyp (first hyps))
          (other-hyps (remove-equal hyp all-hyps))
          ((mv erp res state)
-          (prove$ `(implies ,(make-conjunction-from-list other-hyps) ,conclusion) :step-limit step-limit :ignore-ok t))
+          (prove$ `(implies ,(make-conjunction-from-list other-hyps) ,conclusion) :hints hints :step-limit step-limit :ignore-ok t))
          ((when erp)
           (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
           state)
@@ -875,7 +884,7 @@
                   (let* ((weakenings (get-weakenings hyp))
                          (state (try-to-prove-with-some-hyp ctx weakenings other-hyps conclusion hyp step-limit state)))
                     state))))
-      (check-for-droppable-hyps ctx (rest hyps) all-hyps conclusion step-limit state))))
+      (check-for-droppable-hyps ctx (rest hyps) all-hyps conclusion hints step-limit state))))
 
 (mutual-recursion
  (defun non-variable-subterms (term)
@@ -1050,12 +1059,13 @@
       (cons (first terms) (drop-calls-of fn (rest terms))))))
 
 ;; Returns state.
-(defun lint-defthm (name ;assume-guards
-                    body ; translated
+(defun lint-defthm (name
+                    body  ; translated
+                    hints
                     suppress step-limit state)
   (declare (xargs :stobjs state
                   :mode :program))
-  (b* (;;optimize this?
+  (b* ( ;;optimize this?
        (untouchable-fns-in-body (intersection-eq (all-fnnames body)
                                                  (global-val 'untouchable-fns (w state))))
        ((when untouchable-fns-in-body)
@@ -1103,11 +1113,31 @@
                                        step-limit
                                        state))
        ;; Check for hyps that can be dropped:
-       (state (check-for-droppable-hyps name non-synp-hyps non-synp-hyps conclusion step-limit state))
+       (state (check-for-droppable-hyps name non-synp-hyps non-synp-hyps conclusion hints step-limit state))
        ;; Check for possible generalizations:
        (state (check-for-theorem-generalizations name body step-limit state))
        )
     state))
+
+;move
+;; Returns a list of hints.
+(defund defthm-hints (defthm-name wrld)
+  (declare (xargs :guard (and (symbolp defthm-name)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let ((event (get-event defthm-name wrld)))
+    ;; Skip 'defthm, name, and body:
+    (cadr (assoc-keyword :hints (cdddr event)))))
+
+;; Returns a list of hints.
+;;todo: use below:
+(defund defthm-otf-flg (defthm-name wrld)
+  (declare (xargs :guard (and (symbolp defthm-name)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (let ((event (get-event defthm-name wrld)))
+    ;; Skip 'defthm, name, and body:
+    (cadr (assoc-keyword :otf-flg (cdddr event)))))
 
 ;; Returns state.
 (defun lint-defthms (names ;assume-guards
@@ -1126,8 +1156,9 @@
            (checkp (not (member-eq name names-to-skip)))
            (state (if checkp
                       (progn$ (cw "~s0 ~x1.~%" (describe-event-location name (w state)) name)
-                              (lint-defthm name ;assume-guards
+                              (lint-defthm name
                                            (defthm-body name (w state))
+                                           (defthm-hints name (w state))
                                            suppress step-limit state))
                     state)))
       (lint-defthms (rest names) ;assume-guards

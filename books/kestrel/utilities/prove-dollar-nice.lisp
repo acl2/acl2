@@ -112,3 +112,78 @@
 ;; (prove$-nice '(equal (car (cons x y)) x) :step-limit 2) ; fails quietly (call last-prover-steps to see that the step limit was reached)
 ;; (let ((time-limit nil)) (prove$-nice '(equal (car (cons x y)) x) :time-limit time-limit)) ; works
 ;; (prove$-nice '(let ((w 1)) (equal (car (cons x y)) x))) ; no error about W
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Calls prove$ on TERM using the HINTS and/or INSTRUCTIONS and/or OTF-FLG.
+;; Returns (mv erp provedp elapsed-time state), where if the error indicator,
+;; ERP, is non-nil, then PROVEDP indicates whether the proof succeeded, and
+;; ELAPSED-TIME is in seconds for the proof attempt or failure.
+;; TODO: Consider also returning the number of proof steps.
+(defun prove$-nice-with-time (term
+                              hints
+                              instructions
+                              otf-flg
+                              time-limit ; warning: not portable!
+                              step-limit
+                              state)
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (and (rationalp time-limit)
+                                       (<= 0 time-limit))
+                                  (null time-limit))
+                              (or (natp step-limit)
+                                  (null step-limit)))
+                  :mode :program
+                  :stobjs state))
+  ;; Record the start time:
+  (mv-let (start-time state)
+    (acl2::get-real-time state)
+    (mv-let (erp provedp state)
+      (prove$-nice-fn term hints instructions otf-flg time-limit step-limit state)
+      ;; Record the end time:
+      (mv-let (end-time state)
+        (acl2::get-real-time state)
+        (if erp
+            (mv erp nil nil state)
+          (mv nil provedp (- end-time start-time) state))))))
+
+
+;; Returns (mv erp provedp elapsed-time state).
+;; Like prove$-nice-with-time, except this one does the proof twice to avoid
+;; inaccurate timing info due to garbage collection.
+(defun prove$-twice-with-time (term
+                               hints
+                               instructions
+                               otf-flg
+                               time-limit ; warning: not portable!
+                               step-limit
+                               state)
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (and (rationalp time-limit)
+                                       (<= 0 time-limit))
+                                  (null time-limit))
+                              (or (natp step-limit)
+                                  (null step-limit)))
+                  :mode :program
+                  :stobjs state))
+  (mv-let (erp provedp1 elapsed-time1 state)
+    (prove$-nice-with-time term hints instructions otf-flg time-limit step-limit state)
+    (if erp
+        (mv erp nil nil state)
+      (mv-let (erp provedp2 elapsed-time2 state)
+        (prove$-nice-with-time term hints instructions otf-flg time-limit step-limit state)
+        (if erp
+            (mv erp nil nil state)
+          (if (not (equal provedp1 provedp2))
+              ;; I suppose this might happen due to garbage collection triggering a time-limit:
+              ;; Can we actually detect whether a time-limit or step-limit was reached?
+              (prog2$ (cw "WARNING: The two tries differ on whether the goal was proved.~%")
+                      ;; We return the time for the attempt that worked:
+                      (if provedp1
+                          (mv nil t elapsed-time1 state)
+                        (if provedp2
+                            (mv nil t elapsed-time2 state)
+                          (mv :bad-provedp-value nil nil state))))
+            ;; Either both proved or both failed:
+            ;; We return the min, so as to try to get the time without garbage collection:
+            (mv nil provedp1 (min elapsed-time1 elapsed-time2) state)))))))

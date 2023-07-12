@@ -15,7 +15,7 @@
 (local (include-book "channels"))
 (local (include-book "open-input-channel-p"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
-(local (include-book "kestrel/lists-light/cdr" :dir :system))
+;(local (include-book "kestrel/lists-light/cdr" :dir :system))
 
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-char$))
@@ -50,8 +50,7 @@
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-char$-gen
   (implies (open-input-channel-any-p1 channel state)
-           (open-input-channel-any-p1 channel (mv-nth 1 (read-char$ channel2 state))))
-  :hints (("Goal" :in-theory (enable open-input-channel-any-p1))))
+           (open-input-channel-any-p1 channel (mv-nth 1 (read-char$ channel2 state)))))
 
 (defthm open-input-channels-of-mv-nth-1-of-read-char$
   (implies (and (state-p1 state)
@@ -79,8 +78,7 @@
   :hints (("Goal" :use (:instance character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                                   (channels (open-input-channels state)))
            :in-theory (e/d (read-char$ channel-contents open-input-channel-p1 open-input-channel-p)
-                           (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                            true-listp)))))
+                           (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp)))))
 
 (defthm characterp-of-mv-nth-0-of-read-char$-iff
   (implies (and (open-input-channel-p channel :character state)
@@ -89,9 +87,8 @@
                 (mv-nth 0 (read-char$ channel state))))
   :hints (("Goal" :use (:instance character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                                   (channels (open-input-channels state)))
-           :in-theory (e/d (read-char$ channel-contents character-listp open-input-channel-p1 open-input-channel-p)
-                           (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                            true-listp)))))
+           :in-theory (e/d (read-char$ open-input-channel-p1 open-input-channel-p)
+                           (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp)))))
 
 (defthm <-of-len-of-channel-contents-of-mv-nth-1-of-read-char$
   (implies (consp (channel-contents channel state))
@@ -105,4 +102,4 @@
   (implies (consp (cddr (assoc-equal channel (open-input-channels state))))
            (< (len (cddr (assoc-equal channel (open-input-channels (mv-nth 1 (read-char$ channel state))))))
               (len (cddr (assoc-equal channel (open-input-channels state))))))
-  :hints (("Goal" :in-theory (enable read-char$ channel-contents))))
+  :hints (("Goal" :in-theory (enable read-char$))))
