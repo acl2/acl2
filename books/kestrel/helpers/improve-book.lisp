@@ -46,6 +46,26 @@
 (include-book "speed-up")
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
+;move
+(defund duplicate-items-aux (lst acc)
+  (declare (xargs :guard (and (true-listp lst)
+                              (true-listp acc))))
+  (if (endp lst)
+      acc
+    (let ((item (first lst))
+          (rest (rest lst)))
+      (if (and (member-equal item rest) ; it's a dup
+               (not (member-equal item acc)) ; don't report more than once
+               )
+          (duplicate-items-aux (rest lst) (cons item acc))
+        (duplicate-items-aux (rest lst) acc)))))
+
+;; Returns a list of the items that appear more than once in LST.
+;move
+(defund duplicate-items (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (duplicate-items-aux lst nil))
+
 ;; Returns state
 ;move
 (defun set-cbd-simple (cbd state)
@@ -639,7 +659,7 @@
 
 ;; Submits each event, after printing suggestions for improving it.
 ;; Returns (mv erp state).
-(defun improve-events (events initial-included-books print state)
+(defun improve-events-aux (events initial-included-books print state)
   (declare (xargs :guard (and (true-listp events)
                               (string-listp initial-included-books))
                   :mode :program
@@ -650,7 +670,20 @@
       (improve-event (first events) (rest events) initial-included-books print state)
       (if erp
           (mv erp state)
-        (improve-events (rest events) initial-included-books print state)))))
+        (improve-events-aux (rest events) initial-included-books print state)))))
+
+(defun improve-events (events initial-included-books print state)
+  (declare (xargs :guard (and (true-listp events)
+                              (string-listp initial-included-books))
+                  :mode :program
+                  :stobjs state))
+  (prog2$ (let ((dupes (duplicate-items events)))
+            (and dupes
+                 ;; Some dupes may be okay, such as (logic) and (program), but
+                 ;; that seems like bad style.
+                 (cw "(Duplicate events: ~X01.)~%" dupes nil)))
+          ;; todo: do local incompat checking without include-books (or making them local) here?
+          (improve-events-aux events initial-included-books print state)))
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?

@@ -15,7 +15,6 @@
 (local (include-book "intersection-equal"))
 (local (include-book "set-difference-equal"))
 (local (include-book "subsetp-equal"))
-(local (include-book "member-equal"))
 
 (defthm not-intersection-equal-of-set-difference-equal-arg1
   (not (intersection-equal (set-difference-equal x y) y))
