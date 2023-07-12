@@ -84,12 +84,12 @@
 ;(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system) ;todo: use the simpler version?
 (include-book "kestrel/utilities/book-of-event" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
+(include-book "kestrel/utilities/prove-dollar-nice" :dir :system)
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (include-book "kestrel/world-light/fn-primitivep" :dir :system)
-(include-book "tools/prove-dollar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
@@ -868,7 +868,14 @@
 (defun check-for-droppable-hyp (ctx hyp other-hyps conclusion hints step-limit state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((mv erp res state)
-        (prove$ `(implies ,(make-conjunction-from-list other-hyps) ,conclusion) :hints hints :step-limit step-limit :ignore-ok t))
+        ;; Avoids error if hints are bad:
+        (prove$-nice-trying-hints `(implies ,(make-conjunction-from-list other-hyps) ,conclusion)
+                                  hints
+                                  nil ; instructions
+                                  nil ; otf-flg ; todo: use the original?
+                                  nil ; time-limit
+                                  step-limit
+                                  state))
        ((when erp)
         (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
         state)
@@ -1222,7 +1229,8 @@
                                         nil ;todo
                                         step-limit
                                         state))
-                state)))
+                state))
+       (- (cw "Linter run complete.~%")))
     state))
 
 ;; Call this macro to check every defun and defthm in the current ACL2 world.
