@@ -187,3 +187,31 @@
             ;; Either both proved or both failed:
             ;; We return the min, so as to try to get the time without garbage collection:
             (mv nil provedp1 (min elapsed-time1 elapsed-time2) state)))))))
+
+;; Tries the given HINTS and INSTRUCTIONS but tries again without them if there
+;; is an error (maybe they mention something that was only locally defined).
+;; Returns (mv erp provedp state).
+(defun prove$-nice-trying-hints (term
+                                 hints
+                                 instructions
+                                 otf-flg
+                                 time-limit ; warning: not portable!
+                                 step-limit
+                                 state)
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (and (rationalp time-limit)
+                                       (<= 0 time-limit))
+                                  (null time-limit))
+                              (or (natp step-limit)
+                                  (null step-limit)))
+                  :mode :program
+                  :stobjs state))
+  ;; First try with the original hints and instructions, though they may now be illegal:
+  (mv-let (erp provedp state)
+    ;; todo: add with-output argument to prove$-nice-fn and pass :off :all here:
+    (prove$-nice-fn term hints instructions otf-flg time-limit step-limit state)
+    (if erp
+        ;; Try again with no hints and no instructions (maybe the hints/instructions mentioned something that doesn't exist):
+        (prove$-nice-fn term nil nil otf-flg time-limit step-limit state)
+      ;; No error:
+      (mv nil provedp state))))
