@@ -212,6 +212,7 @@
     (prove$-nice-fn term hints instructions otf-flg time-limit step-limit state)
     (if erp
         ;; Try again with no hints and no instructions (maybe the hints/instructions mentioned something that doesn't exist):
+        ;; TODO: Perhaps we could do better by keeping parts of the hints are legal:
         (prove$-nice-fn term nil nil otf-flg time-limit step-limit state)
       ;; No error:
       (mv nil provedp state))))
