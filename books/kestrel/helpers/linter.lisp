@@ -81,7 +81,7 @@
 (include-book "kestrel/utilities/defining-forms" :dir :system) ; for DEFUN-OR-MUTUAL-RECURSION-FORMP
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
-(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system) ;todo: use the simpler version?
+;(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system) ;todo: use the simpler version?
 (include-book "kestrel/utilities/book-of-event" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
