@@ -276,7 +276,7 @@
                                  (compst-var symbolp)
                                  (fenv-var symbolp)
                                  (limit-var symbolp)
-                                 (compst-term "An untranslated term.")
+                                 (new-compst "An untranslated term.")
                                  (prec-tags atc-string-taginfo-alistp)
                                  (thm-index posp)
                                  (names-to-avoid symbol-listp)
@@ -322,7 +322,7 @@
                                           ,compst-var
                                           ,fenv-var
                                           ,limit-var)
-                         (mv ,result-uterm ,compst-term)))
+                         (mv ,result-uterm ,new-compst)))
        (formula1 (atc-contextualize formula1 context fn fn-guard
                                     compst-var limit-var item-limit t wrld))
        (formula (if result-term
@@ -728,10 +728,10 @@
                gin.context
                rhs.thm-index
                rhs.names-to-avoid))
-       (compst-term `(update-var (ident ',(symbol-name var))
-                                 ,rhs.term
-                                 ,gin.compst-var))
-       (compst-uterm (untranslate$ compst-term nil state))
+       (new-compst `(update-var (ident ',(symbol-name var))
+                                ,rhs.term
+                                ,gin.compst-var))
+       (new-compst (untranslate$ new-compst nil state))
        (asg-thm-name (pack gin.fn '-correct- rhs.thm-index))
        ((mv asg-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
@@ -741,7 +741,7 @@
                                            ,gin.compst-var
                                            ,gin.fenv-var
                                            ,gin.limit-var)
-                            ,compst-uterm))
+                            ,new-compst))
        (asg-formula (atc-contextualize asg-formula
                                        gin.context
                                        gin.fn
@@ -799,7 +799,7 @@
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
                                                     ,gin.limit-var)
-                             ,compst-uterm))
+                             ,new-compst))
        (expr-formula (atc-contextualize expr-formula
                                         gin.context
                                         gin.fn
@@ -830,7 +830,7 @@
                                         ,gin.compst-var
                                         ,gin.fenv-var
                                         ,gin.limit-var)
-                             (mv nil ,compst-uterm)))
+                             (mv nil ,new-compst)))
        (stmt-formula (atc-contextualize stmt-formula
                                         gin.context
                                         gin.fn
@@ -863,7 +863,7 @@
                                  gin.compst-var
                                  gin.fenv-var
                                  gin.limit-var
-                                 compst-term
+                                 new-compst
                                  gin.prec-tags
                                  thm-index
                                  names-to-avoid
@@ -1000,7 +1000,7 @@
                                      (item-thm symbolp)
                                      (result-type typep)
                                      (result-term pseudo-termp)
-                                     (compst-term "An untranslated term.")
+                                     (new-compst "An untranslated term.")
                                      (gin stmt-ginp)
                                      state)
   :returns (mv (items block-item-listp :hyp (block-itemp item))
@@ -1042,7 +1042,7 @@
                                                ,gin.compst-var
                                                ,gin.fenv-var
                                                ,gin.limit-var)
-                         (mv ,result-uterm ,compst-term)))
+                         (mv ,result-uterm ,new-compst)))
        (formula1 (atc-contextualize formula1 gin.context gin.fn gin.fn-guard
                                     gin.compst-var gin.limit-var
                                     items-limit t wrld))
