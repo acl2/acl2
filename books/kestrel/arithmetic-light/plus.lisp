@@ -37,6 +37,7 @@
                   (integerp (fix y))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
+;; TODO: Drop (see fold-consts-in-+)
 (defthm +-combine-constants
   (implies (syntaxp (and (quotep k2) ;tested first to fail fast
                          (quotep k1)))

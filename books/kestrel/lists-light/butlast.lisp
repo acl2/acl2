@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function butlast.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 (defthm consp-of-butlast
   (equal (consp (butlast lst n))
          (< (nfix n) (len lst)))
-  :hints (("Goal" :in-theory (enable consp butlast))))
+  :hints (("Goal" :in-theory (enable butlast))))
 
 (defthm car-of-butlast
   (equal (car (butlast lst n))
