@@ -24,29 +24,7 @@
 ;; (prove$ '(let ((w 1)) (equal (car (cons x y)) x))) ; error about ignored var W, should be suppressed by default
 
 (include-book "tools/prove-dollar" :dir :system)
-
-;; move to kestrel/utilities/tables.lisp?
-;; Overwrites the entire table named TABLE-NAME with ALIST.
-;; Returns an error triple, (mv erp val state).
-(defun overwrite-table-programmatic (table-name alist state)
-  (declare (xargs :mode :program :stobjs state))
-  (with-output! :off :all ; silence TABLE-FN (Is this needed?)
-    (table-fn table-name
-              (list nil (kwote alist) :clear)
-              state
-              `(table ,table-name nil ',alist :clear))))
-
-;; Sets KEY to VALUE in the table whose name is TABLE-NAME.
-;; move to kestrel/utilities/tables.lisp?
-;; Returns an error triple, (mv erp val state).
-(defun set-table-entry-programmatic (table-name key value state)
-  (declare (xargs :guard (symbolp table-name) ; keys and values can be anything
-                  :mode :program :stobjs state))
-  (with-output! :off :all ; silence TABLE-FN (Is this needed?)
-    (table-fn table-name
-              (list (kwote key) (kwote value))
-              state
-              `(table ,table-name nil ',key ',value))))
+(include-book "tables")
 
 ;; Turns on inhibiting of the error type indicated by STR (case insensitive).
 ;; Returns an error triple, (mv erp val state).
