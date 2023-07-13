@@ -1,6 +1,6 @@
-; A wrapper for prove$ that provides nicer behavior
+; Wrappers for prove$
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,9 +25,9 @@
 
 (include-book "tools/prove-dollar" :dir :system)
 
-;; move to kestrel/utilities/tables.lisp?  Or redo to be like the function there?
-;; Sets the value of the table to ALIST, overwriting anything that was there.
-;; Returns an error triple.
+;; move to kestrel/utilities/tables.lisp?
+;; Overwrites the entire table named TABLE-NAME with ALIST.
+;; Returns an error triple, (mv erp val state).
 (defun overwrite-table-programmatic (table-name alist state)
   (declare (xargs :mode :program :stobjs state))
   (with-output! :off :all ; silence TABLE-FN (Is this needed?)
@@ -36,20 +36,23 @@
               state
               `(table ,table-name nil ',alist :clear))))
 
-;; move to kestrel/utilities/tables.lisp?  Or redo to be like the function there?
-;; Returns an error triple.
+;; Sets KEY to VALUE in the table whose name is TABLE-NAME.
+;; move to kestrel/utilities/tables.lisp?
+;; Returns an error triple, (mv erp val state).
 (defun set-table-entry-programmatic (table-name key value state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :guard (symbolp table-name) ; keys and values can be anything
+                  :mode :program :stobjs state))
   (with-output! :off :all ; silence TABLE-FN (Is this needed?)
     (table-fn table-name
               (list (kwote key) (kwote value))
               state
               `(table ,table-name nil ',key ',value))))
 
-;; Returns an error triple.
+;; Turns on inhibiting of the error type indicated by STR (case insensitive).
+;; Returns an error triple, (mv erp val state).
 (defun add-inhibit-er-programmatic (str state)
   (declare (xargs :guard (stringp str) :mode :program :stobjs state))
-  ;; For some reason, keys are set to nil in this table:
+  ;; Oddly, keys are set to nil in this table (the values are irrelevant):
   (set-table-entry-programmatic 'inhibit-er-table str nil state))
 
 ;; Returns (mv erp provedp state).
