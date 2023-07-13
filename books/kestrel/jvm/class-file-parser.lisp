@@ -159,10 +159,10 @@
 
 ; helps in backchaining
 ;for termination of parse-fieldtype
-(local
- (defthm if-hack-99
-  (equal (< (if (< x y) y x) x)
-         nil)))
+;; (local
+;;  (defthm if-hack-99
+;;   (equal (< (if (< x y) y x) x)
+;;          nil)))
 
 ;dup:
 ;(defforall all-unsigned-byte-p (size lst) (unsigned-byte-p size lst) :fixed size :declares ((type t size lst)))
