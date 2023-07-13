@@ -106,7 +106,7 @@
           "Checking built-in event"
         (if (eq :top-level loc)
             "Checking top-level event"
-          (concatenate 'string (book-name-to-filename loc wrld 'describe-event-location) " checking"))))))
+          (concatenate 'string "In " (book-name-to-filename loc wrld 'describe-event-location) ": checking"))))))
 
 ;dup
 (defun enquote-list (items)
@@ -254,6 +254,7 @@
       (symbol-to-string thing)
     thing))
 
+;; A newline is printed before each item
 (defun check-first-arg-as-ctx (form thing-being-checked)
   (let ((ctx (farg1 form)))
     (and (quotep ctx)
@@ -266,20 +267,20 @@
            (not (my-prefixp ctx-chars thing-being-checked-chars)))
          ;; Suppress warning for context from ASSERT, STATE-GLOBAL-LET*, etc:
          (not (member-eq (unquote ctx) '(assert$ state-global-let*)))
-         (cw "(In ~s0,~% context ~x1 is used in call of ~x2.)~%~%" (thing-being-checked-to-string thing-being-checked) ctx (ffn-symb form)))))
+         (cw "~%   Context ~x0 is used in call of ~x1." ctx (ffn-symb form)))))
 
-(defun check-keys-of-alist-wrt-format-string (string alist thing-being-checked call)
+(defun check-keys-of-alist-wrt-format-string (string alist call)
   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
          (alist-keys (symbolic-strip-cars alist))
          (quoted-args-mentioned (enquote-list args-mentioned)))
     (progn$ (if (not (no-duplicatesp alist-keys))
-                (cw "(In ~s0,~% questionable format string use in ~x1. Duplicate keys in alist: ~x2)~%~%" (thing-being-checked-to-string thing-being-checked) call alist-keys)
+                (cw "~%   Questionable format string use in ~x0. Duplicate keys in alist: ~x1" call alist-keys)
               nil)
      (if (not (subsetp-equal quoted-args-mentioned alist-keys))
-                (cw "(In ~s0,~% questionable format string use in ~x1. Missing args? Mentioned args are ~x2 but alist keys are ~x3)~%~%" (thing-being-checked-to-string thing-being-checked) call quoted-args-mentioned alist-keys)
+                (cw "~%   Questionable format string use in ~x0. Missing args? Mentioned args are ~x1 but alist keys are ~x2" call quoted-args-mentioned alist-keys)
               nil)
             (if (not (subsetp-equal alist-keys quoted-args-mentioned))
-                (cw "(In ~s0,~% questionable format string use in ~x1. Extra args? Mentioned args are ~x2 but alist keys are ~x3)~%~%" (thing-being-checked-to-string thing-being-checked) call quoted-args-mentioned alist-keys)
+                (cw "~%   Questionable format string use in ~x0. Extra args? Mentioned args are ~x1 but alist keys are ~x2" call quoted-args-mentioned alist-keys)
               nil))))
 
 ;; (defun check-vals-of-alist-wrt-format-string (string alist thing-being-checked call)
@@ -288,16 +289,16 @@
 ;;          (alist-vals (symbolic-strip-cdrs alist))
 ;;          (len-vals (len alist-vals)))
 ;;     (if (<= len-vals max-arg-mentioned)
-;;         (cw "(In ~s0,~% questionable format string use in ~x1. Not enough args given?)~%~%" (thing-being-checked-to-string thing-being-checked) call)
+;;         (cw "~%  questionable format string use in ~x1. Not enough args given?" (thing-being-checked-to-string thing-being-checked) call)
 ;;       nil)))
 
-(defun check-call-of-fmt-function (call thing-being-checked)
+(defun check-call-of-fmt-function (call)
   (let ((string (farg1 call)))
     (and (quotep string)
          (let ((string (unquote string))
                (alist (farg2 call)))
            ;; we check the vals of the alist since the keys are always the digits 0 through 9:
-           (check-keys-of-alist-wrt-format-string string alist thing-being-checked call)))))
+           (check-keys-of-alist-wrt-format-string string alist call)))))
 
 (defun check-call-of-hard-error (call thing-being-checked suppress)
   (prog2$ (and (not (member-eq :context suppress))
@@ -306,7 +307,7 @@
             (and (quotep string)
                  (let ((string (unquote string))
                        (alist (farg3 call)))
-                   (check-keys-of-alist-wrt-format-string string alist thing-being-checked call))))))
+                   (check-keys-of-alist-wrt-format-string string alist call))))))
 
 (defun check-call-of-illegal (call thing-being-checked suppress)
   (prog2$ (and (not (member-eq :context suppress))
@@ -315,12 +316,12 @@
             (and (quotep string)
                  (let ((string (unquote string))
                        (alist (farg3 call)))
-                   (check-keys-of-alist-wrt-format-string string alist thing-being-checked call))))))
+                   (check-keys-of-alist-wrt-format-string string alist call))))))
 
 ;; For a call of EQUAL, report an issue if EQ, EQL, or = could be used instead.
 (defun check-call-of-equal (term ; let-bound vars have been replaced in this
                             orig-term
-                            type-alist thing-being-checked
+                            type-alist
                             suppress
                             state)
   (declare (xargs :guard (pseudo-termp term)
@@ -330,7 +331,7 @@
    (and (not (member-eq :equal-self suppress))
         (equal (farg1 term) (farg2 term))
         ;; substitution may have occured, so the args of term may not actually be idential forms
-        (cw "(In ~s0,~% EQUAL test ~x1 compares a value with an identical value.)~%~%" (thing-being-checked-to-string thing-being-checked) orig-term))
+        (cw "~%   EQUAL test ~x0 compares a value with an identical value." orig-term))
    (and (not (member-eq :equality-variant suppress))
         (b* ((arg1 (farg1 term))
              (arg2 (farg2 term))
@@ -352,38 +353,31 @@
                                 (ts-subsetp type-set2 *ts-character*))))
           (progn$ (if arg1-symbolp
                       (if arg2-symbolp
-                          (cw "(In ~s0,~% EQUAL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                              (thing-being-checked-to-string thing-being-checked) orig-term)
-                        (cw "(In ~s0,~% EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                            (thing-being-checked-to-string thing-being-checked) orig-term arg1))
+                          (cw "~%   EQUAL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
+                        (cw "~%   EQUAL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
                     (if arg2-symbolp
-                        (cw "(In ~s0,~% EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                            (thing-being-checked-to-string thing-being-checked) orig-term arg2)
+                        (cw "~%   EQUAL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
                       nil))
                   (and arg1-numberp
                        arg2-numberp
-                       (cw "(In ~s0,~% EQUAL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term))
+                       (cw "~%   EQUAL test ~x0 could use = since both arguments are known to be numbers." orig-term))
                   (and (not arg1-symbolp)
                        (not arg2-symbolp)
                        (not (and arg1-numberp
                                  arg2-numberp))
                        (if arg1-eqlablep
                            (if arg2-eqlablep
-                               (cw "(In ~s0,~% EQUAL test ~x1 could use EQL since both arguments are known to be numbers, symbols, or characters.)~%~%"
-                                   (thing-being-checked-to-string thing-being-checked) orig-term)
-                             (cw "(In ~s0,~% EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
-                                 (thing-being-checked-to-string thing-being-checked) orig-term arg1))
+                               (cw "~%   EQUAL test ~x0 could use EQL since both arguments are known to be numbers, symbols, or characters." orig-term)
+                             (cw "~%   EQUAL test ~x0 could use EQL since ~x1 is known to be a number, symbol, or character." orig-term arg1))
                          (if arg2-eqlablep
-                             (cw "(In ~s0,~% EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
-                                 (thing-being-checked-to-string thing-being-checked) orig-term arg2)
+                             (cw "~%   EQUAL test ~x0 could use EQL since ~x1 is known to be a number, symbol, or character." orig-term arg2)
                            nil))))))))
 
 ;; For a call of EQL, report an issue if both arguments are known to be
 ;; non-eqlable.  Also report if EQ or = could be used instead.
 (defun check-call-of-eql (term ; let-bound vars have been replaced in this
                           orig-term
-                          type-alist thing-being-checked suppress state)
+                          type-alist suppress state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
@@ -391,7 +385,7 @@
    (and (not (member-eq :equal-self suppress))
         (equal (farg1 term) (farg2 term))
         ;; substitution may have occured, so the args of term may not actually be idential forms
-        (cw "(In ~s0,~% EQL test ~x1 compares a value with an identical value.)~%~%" (thing-being-checked-to-string thing-being-checked) orig-term))
+        (cw "~%   EQL test ~x0 compares identical values." orig-term))
    (and (not (member-eq :equality-variant suppress))
         (b* ((arg1 (farg1 term))
              (arg2 (farg2 term))
@@ -410,27 +404,22 @@
                                              *ts-acl2-number*))))
           (progn$ (if arg1-symbolp
                       (if arg2-symbolp
-                          (cw "(In ~s0,~% EQL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                              (thing-being-checked-to-string thing-being-checked) orig-term)
-                        (cw "(In ~s0,~% EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                            (thing-being-checked-to-string thing-being-checked) orig-term arg1))
+                          (cw "~%   EQL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
+                        (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
                     (if arg2-symbolp
-                        (cw "(In ~s0,~% EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                            (thing-being-checked-to-string thing-being-checked) orig-term arg2)
+                        (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
                       nil))
                   (and arg1-numberp
                        arg2-numberp
-                       (cw "(In ~s0,~% EQL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term))
+                       (cw "~%   EQL test ~x0 could use = since both arguments are known to be numbers." orig-term))
                   (and (ts-disjointp type-set1 ts-eqlable)
                        (ts-disjointp type-set2 ts-eqlable)
-                       (cw "(In ~s0,~% ill-guarded call ~x1 since both ~x2 and ~x3 are not numbers, symbols, or characters.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2)))))))
+                       (cw "~%   ill-guarded call ~x0 since both ~x1 and ~x2 are not numbers, symbols, or characters." orig-term arg1 arg2)))))))
 
 ;; For a call of EQ, report an issue if both arguments are known to be non-symbols.
 (defun check-call-of-eq (term ; let-bound vars have been replaced in this
                          orig-term
-                         type-alist thing-being-checked suppress state)
+                         type-alist suppress state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
@@ -438,7 +427,7 @@
    (and (not (member-eq :equal-self suppress))
         (equal (farg1 term) (farg2 term))
         ;; substitution may have occured, so the args of term may not actually be idential forms
-        (cw "(In ~s0,~% EQ test ~x1 compares a value with an identical value.)~%~%" (thing-being-checked-to-string thing-being-checked) orig-term))
+        (cw "~%   EQ test ~x0 compares identical values." orig-term))
    (and (not (member-eq :equality-variant suppress))
         (b* ((arg1 (farg1 term))
              (arg2 (farg2 term))
@@ -451,13 +440,12 @@
              )
           (progn$ (and (ts-disjointp type-set1 *ts-symbol*)
                        (ts-disjointp type-set2 *ts-symbol*)
-                       (cw "(In ~s0,~% ill-guarded call ~x1 since both ~x2 and ~x3 are not symbols.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2)))))))
+                       (cw "~%   ill-guarded call ~x0 since both ~x1 and ~x2 are not symbols." orig-term arg1 arg2)))))))
 
 ;; For a call of =, report an issue if either argument is known to be a non-number.
 (defun check-call-of-= (term ; let-bound vars have been replaced in this
                         orig-term
-                        type-alist thing-being-checked suppress state)
+                        type-alist suppress state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
@@ -465,7 +453,7 @@
    (and (not (member-eq :equal-self suppress))
         (equal (farg1 term) (farg2 term))
         ;; substitution may have occured, so the args of term may not actually be idential forms
-        (cw "(In ~s0,~% = test ~x1 compares a value with an identical value.)~%~%" (thing-being-checked-to-string thing-being-checked) orig-term))
+        (cw "~%   = test ~x0 compares identical values." orig-term))
    (and (not (member-eq :equality-variant suppress))
         (b* ((arg1 (farg1 term))
              (arg2 (farg2 term))
@@ -477,11 +465,9 @@
              ;;(decoded-ts2 (decode-type-set type-set2))
              )
           (progn$ (and (ts-disjointp type-set1 *ts-acl2-number*)
-                       (cw "(In ~s0,~% ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term arg1))
+                       (cw "~%   ill-guarded call ~x0 since ~x1 is not a number." orig-term arg1))
                   (and (ts-disjointp type-set2 *ts-acl2-number*)
-                       (cw "(In ~s0,~% ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term arg2)))))))
+                       (cw "~%   ill-guarded call ~x0 since ~x1 is not a number." orig-term arg2)))))))
 
 (defun filter-subst (subst vars)
   (if (endp subst)
@@ -554,19 +540,19 @@
              (:true (and (not (or (call-of 'synp test)  ; syntaxp and bind-free hyps are known true, but that is not interesting
                                   (call-of 'axe-syntaxp test)))
                          (progn$
-                          (cw "(In ~s0,~% the IF test in ~x1 is known to be true~%" (thing-being-checked-to-string thing-being-checked) term)
-                          (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
+                          (cw "~%   (The IF test in ~x0 is known to be true.~%" term)
+                          (cw "    Type-alist: ~x0~%" (decode-type-alist type-alist))
                           (let ((relevant-subst (filter-subst subst (all-vars test))))
                             (if relevant-subst
-                                (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
-                              (cw ")~%~%"))))))
+                                (cw "    Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
+                              (cw ")"))))))
              (:false (progn$
-                      (cw "(In ~s0,~% the IF test in ~x1 is known to be false~%" (thing-being-checked-to-string thing-being-checked) term)
-                      (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
+                      (cw "~%   (The IF test in ~x0 is known to be false.~%" term)
+                      (cw "    Type-alist: ~x0~%" (decode-type-alist type-alist))
                       (let ((relevant-subst (filter-subst subst (all-vars test))))
                         (if relevant-subst
-                            (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
-                          (cw ")~%~%")))))
+                            (cw "    Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
+                          (cw ")")))))
              ((nil) nil))))
     ;; Check the test recursively:
     (lint-term (farg1 term) subst type-alist
@@ -595,7 +581,7 @@
                      iff-flag ; lets us catch branches that are resolvable but not constants, assuming the whole IF is in an IFF context
                      thing-being-checked suppress state))))
     (and (equal (farg2 term) (farg3 term))
-         (cw "(In ~s0,~% both branches of ~x1 are the same.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))
+         (cw "~%   both branches of ~x0 are the same." term))))
 
  ;; add constant-surprising arg...
  (defun lint-term (term subst type-alist iff-flag thing-being-checked suppress state)
@@ -609,19 +595,19 @@
          (let ((res (try-to-resolve term subst type-alist state)))
            (case res
              (:true
-              (progn$ (cw "(In ~s0,~% ~x1 is known to be true and is used in an IFF context~%" (thing-being-checked-to-string thing-being-checked) term)
+              (progn$ (cw "~%   (True term ~x0 used in an IFF context~%" term)
                       (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                       (let ((relevant-subst (filter-subst subst (all-vars term))))
                         (if relevant-subst
                             (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
-                          (cw ")~%~%")))))
+                          (cw ")")))))
              (:false
-              (progn$ (cw "(In ~s0,~% ~x1 is known to be false and is used in an IFF context~%" (thing-being-checked-to-string thing-being-checked) term)
+              (progn$ (cw "~%   (False term ~x0 used in an IFF context~%" term)
                       (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                       (let ((relevant-subst (filter-subst subst (all-vars term))))
                         (if relevant-subst
                             (cw "  Relevant substitutions ~X01)~%~%" relevant-subst *subst-evisc-tuple*)
-                          (cw ")~%~%")))))
+                          (cw ")")))))
              ((nil) nil))))
     (if (variablep term)
         nil
@@ -648,15 +634,15 @@
                             state)
                 ;; TODO: Use the subst for these?
                 (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
-                    (check-call-of-fmt-function term thing-being-checked)
+                    (check-call-of-fmt-function term)
                   (if (eq fn 'equal)
-                      (check-call-of-equal (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
+                      (check-call-of-equal (sublis-var-simple subst term) term type-alist suppress state)
                     (if (eq fn 'eql)
-                        (check-call-of-eql (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
+                        (check-call-of-eql (sublis-var-simple subst term) term type-alist suppress state)
                       (if (eq fn 'eq)
-                          (check-call-of-eq (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
+                          (check-call-of-eq (sublis-var-simple subst term) term type-alist suppress state)
                         (if (eq fn '=)
-                            (check-call-of-= (sublis-var-simple subst term) term type-alist thing-being-checked suppress state)
+                            (check-call-of-= (sublis-var-simple subst term) term type-alist suppress state)
                           (if (eq fn 'hard-error)
                               (check-call-of-hard-error term thing-being-checked suppress)
                             (if (eq fn 'illegal)
@@ -677,7 +663,7 @@
                          (fn-primitivep fn (w state))
                          (fn-definedp fn (w state)))
                      (quote-listp (fargs term))
-                     (cw "(In ~s0,~% ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))))))))
+                     (cw "~%   ground term ~x0 is present." term))))))))))
 
  (defun lint-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
@@ -705,7 +691,7 @@
         (er hard? 'check-for-contradiction "Error checking for contradiction in ~s0: ~X12." description term nil)
         state))
     (if res
-        (prog2$ (cw "(In ~x0,~% ~s1 ~x2 is provably contradictory.)~%" ctx description term)
+        (prog2$ (cw "~%   ~s1 ~x2 is contradictory." ctx description term)
                 state)
       state)))
 
@@ -734,7 +720,7 @@
           (mv nil nil nil nil nil))))
     (progn$ (and (not (member-eq :guard-debug suppress))
                  guard-debug-res
-                 (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
+                 (cw "(~x0 has a :guard-debug xarg, ~x1." fn (second guard-debug-res)))
             ;; Apply the linter to the guard:
             (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninterseting
                  (lint-term guard
@@ -764,8 +750,10 @@
     (let* ((fn (first fns))
            (checkp (not (member-eq fn skip-fns)))
            (state (if checkp
-                      (progn$ (cw "~s0 ~x1.~%" (describe-event-location fn (w state)) fn)
-                              (lint-defun fn assume-guards suppress step-limit state))
+                      (progn$ (cw "(~s0 ~x1: " (describe-event-location fn (w state)) fn)
+                              (let ((state (lint-defun fn assume-guards suppress step-limit state)))
+                                (prog2$ (cw ")~%")
+                                        state)))
                     state)))
       (lint-defuns (rest fns) assume-guards suppress skip-fns step-limit state))))
 
@@ -788,7 +776,7 @@
          ((when erp)
           (er hard? 'check-for-implied-terms-aux "Error checking for implication in ~s0 in ~x1." description ctx)
           state)
-         (- (and res (cw "(In ~x0,~% ~s1 ~x2 is provably implied by others.)~%" ctx description term))))
+         (- (and res (cw "~%   ~s1 ~x2 is implied by others." ctx description term))))
       (check-for-implied-terms-aux ctx description (rest terms) all-terms step-limit state))))
 
 ;; Checks whether any of the TERMS is implied by the others.  Returns state.
@@ -860,7 +848,7 @@
          ((when erp)
           (er hard? 'try-to-prove-with-some-hyp "Error attempting to weaken a hyp ~x0 in ~x1 to ~x2." original-hyp ctx hyp)
           state)
-         (- (and res (cw "(In ~x0,~% hyp ~x1 can be provably weakened to ~x2)~%" ctx original-hyp hyp))))
+         (- (and res (cw "~%   Hyp ~x1 can be weakened to ~x2." ctx original-hyp hyp))))
       (try-to-prove-with-some-hyp ctx (rest hyps) other-hyps conclusion original-hyp step-limit state))))
 
 ;; Checks whether HYP can be dropped (or weakened), given the OTHER-HYPS, while
@@ -879,7 +867,7 @@
        ((when erp)
         (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
         state)
-       (- (and res (cw "(In ~x0,~% hyp ~x1 is provably unnecessary.)~%" ctx hyp)))
+       (- (and res (cw "~%  Hyp ~x1 is provably unnecessary." ctx hyp)))
        (state (if res
                   state ;; don't try to weaken, since the hyp can be dropped
                 (let* ((weakenings (get-weakenings hyp))
@@ -975,7 +963,7 @@
         (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
         state)
        ((when res)
-        (cw "(In ~x0,~% body can be generalized by replacing ~x1 with a fresh variable.)~%" ctx subterm)
+        (cw "~%   body can be generalized by replacing ~x1 with a fresh variable." ctx subterm)
         state)
        ;; todo: skip this if the above succeeds:
 
@@ -990,7 +978,7 @@
        ((when erp)
         (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
         state)
-       (- (and res (cw "(In ~x0,~% body can be generalized by replacing ~x1 with a fresh variable, ~x2, satisfying ~x3)~%"
+       (- (and res (cw "~%   body can be generalized by replacing ~x1 with a fresh variable, ~x2, satisfying ~x3."
                        ctx subterm new-var
                        (type-set-to-term new-var subterm-ts state)))))
     state))
@@ -1113,14 +1101,14 @@
        (non-synp-hyps (drop-calls-of 'axe-bind-free non-synp-hyps))
        ;; Check for contradictory hyps:
        (state (check-for-contradiction name
-                                       "hyp"
+                                       "Hyp"
                                        (make-conjunction-from-list non-synp-hyps)
                                        step-limit
                                        state))
        ;; todo: check for duplicate hyps
        ;; Check for hyps that are implied by others:
        (state (check-for-implied-terms name
-                                       "hyp"
+                                       "Hyp"
                                        non-synp-hyps
                                        step-limit
                                        state))
@@ -1167,15 +1155,16 @@
     (let* ((name (first names))
            (checkp (not (member-eq name names-to-skip)))
            (state (if checkp
-                      (progn$ (cw "~s0 ~x1.~%" (describe-event-location name (w state)) name)
-                              (lint-defthm name
-                                           (defthm-body name (w state))
-                                           (defthm-hints name (w state))
-                                           suppress step-limit state))
+                      (progn$ (cw "(~s0 ~x1: " (describe-event-location name (w state)) name)
+                              (let ((state (lint-defthm name
+                                                        (defthm-body name (w state))
+                                                        (defthm-hints name (w state))
+                                                        suppress step-limit state)))
+                                (prog2$ (cw ")~%")
+                                        state)))
                     state)))
       (lint-defthms (rest names) ;assume-guards
                     suppress names-to-skip step-limit state))))
-
 
 ;todo: add support for more here
 (defconst *warning-types*
