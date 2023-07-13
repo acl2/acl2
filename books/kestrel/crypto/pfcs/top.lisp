@@ -66,12 +66,14 @@
       and can supports more modular
       verification, analysis, transformation, and synthesis."))
    (xdoc::p
-    "Currently this library contains an abstract syntax of PFCSes,
+    "Currently this library contains
+     a concrete syntax of PFCSes,
+     an abstract syntax of PFCSes,
      some operations on the abstract syntax,
      a notion of well-formedness,
      a semantics expressed as a shallow embedding,
      a semantics expressed as a deep embedding,
-     and some preliminary tools to support proofs about PFCSes;
+     and some tools to support proofs about PFCSes;
      see the documentation of these artifacts for more information.
      This library also includes some examples.
      This library is a work in progress;
