@@ -3023,7 +3023,8 @@
             fn-correct-exported-events
             fn-correct-thm
             names-to-avoid)
-        (if body.thm-name
+        (if (and body.thm-name
+                 (not (type-case body.type :void))) ; temporary
             (atc-gen-fun-correct-thm fn
                                      fn-guard
                                      fn-def*
