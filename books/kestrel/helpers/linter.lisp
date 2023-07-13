@@ -81,15 +81,15 @@
 (include-book "kestrel/utilities/defining-forms" :dir :system) ; for DEFUN-OR-MUTUAL-RECURSION-FORMP
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
-(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system) ;todo: use the simpler version?
+;(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system) ;todo: use the simpler version?
 (include-book "kestrel/utilities/book-of-event" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
+(include-book "kestrel/utilities/prove-dollar-nice" :dir :system)
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (include-book "kestrel/world-light/fn-primitivep" :dir :system)
-(include-book "tools/prove-dollar" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
@@ -863,27 +863,39 @@
          (- (and res (cw "(In ~x0,~% hyp ~x1 can be provably weakened to ~x2)~%" ctx original-hyp hyp))))
       (try-to-prove-with-some-hyp ctx (rest hyps) other-hyps conclusion original-hyp step-limit state))))
 
+;; Checks whether HYP can be dropped (or weakened), given the OTHER-HYPS, while
+;; still allowing CONCLUSION to be proved.  Returns state.
+(defun check-for-droppable-hyp (ctx hyp other-hyps conclusion hints step-limit state)
+  (declare (xargs :stobjs state :mode :program))
+  (b* (((mv erp res state)
+        ;; Avoids error if hints are bad:
+        (prove$-nice-trying-hints `(implies ,(make-conjunction-from-list other-hyps) ,conclusion)
+                                  hints
+                                  nil ; instructions
+                                  nil ; otf-flg ; todo: use the original?
+                                  nil ; time-limit
+                                  step-limit
+                                  state))
+       ((when erp)
+        (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
+        state)
+       (- (and res (cw "(In ~x0,~% hyp ~x1 is provably unnecessary.)~%" ctx hyp)))
+       (state (if res
+                  state ;; don't try to weaken, since the hyp can be dropped
+                (let* ((weakenings (get-weakenings hyp))
+                       (state (try-to-prove-with-some-hyp ctx weakenings other-hyps conclusion hyp step-limit state)))
+                  state))))
+    state))
 
-;; Checks whether any of the HYPS can be dropped from ALL-HYPS, while still
+;; Checks whether any of the HYPS can be dropped from ALL-HYPS (or weakened), while still
 ;; allowing CONCLUSION to be proved.  Returns state.
 (defun check-for-droppable-hyps (ctx hyps all-hyps conclusion hints step-limit state)
-  (declare (xargs :stobjs state
-                  :mode :program))
+  (declare (xargs :stobjs state :mode :program))
   (if (endp hyps)
       state
     (b* ((hyp (first hyps))
          (other-hyps (remove-equal hyp all-hyps))
-         ((mv erp res state)
-          (prove$ `(implies ,(make-conjunction-from-list other-hyps) ,conclusion) :hints hints :step-limit step-limit :ignore-ok t))
-         ((when erp)
-          (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
-          state)
-         (- (and res (cw "(In ~x0,~% hyp ~x1 is provably unnecessary.)~%" ctx hyp)))
-         (state (if res
-                    state ;; don't try to weaken, since the hyp can be dropped
-                  (let* ((weakenings (get-weakenings hyp))
-                         (state (try-to-prove-with-some-hyp ctx weakenings other-hyps conclusion hyp step-limit state)))
-                    state))))
+         (state (check-for-droppable-hyp ctx hyp other-hyps conclusion hints step-limit state)))
       (check-for-droppable-hyps ctx (rest hyps) all-hyps conclusion hints step-limit state))))
 
 (mutual-recursion
@@ -1217,7 +1229,8 @@
                                         nil ;todo
                                         step-limit
                                         state))
-                state)))
+                state))
+       (- (cw "Linter run complete.~%")))
     state))
 
 ;; Call this macro to check every defun and defthm in the current ACL2 world.

@@ -12,6 +12,7 @@
 (in-package "JVM")
 
 (include-book "kestrel/utilities/forms" :dir :system) ;; for farg1
+(include-book "class-names")
 
 ;;;
 ;;; Primitive Types (see JVM Spec 2.3)
@@ -47,15 +48,6 @@
 ;;; Reference Types (see JVM Spec 2.4)
 ;;;
 
-(defund class-namep (name) (declare (xargs :guard t)) (stringp name))
-
-;TODO: use this more instead of stringp and also, in many cases, instead of class-namep:
-(defund class-or-interface-namep (name) (declare (xargs :guard t)) (stringp name))
-
-(defthm class-or-interface-namep-forward-to-stringp
-  (implies (class-or-interface-namep name)
-           (stringp name))
-  :rule-classes :forward-chaining)
 
 ;; TODO: Prove that the various types are disjoint.
 
