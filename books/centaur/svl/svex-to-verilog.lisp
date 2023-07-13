@@ -99,7 +99,7 @@
                   append)))
     str))
 
-(defbadge str::fast-string-append)
+(defwarrant str::fast-string-append)
 
 (define svex-to-verilog--quoted-aux (val
                                      &key
@@ -679,8 +679,8 @@
   )
 
 (progn
-  (defbadge str::fast-string-append-lst)
-  (defbadge str::int-to-dec-string$inline)
+  (defwarrant str::fast-string-append-lst)
+  (defwarrant str::int-to-dec-string$inline)
   (define deep-flatten (x)
     (if (atom x)
         (if (equal x nil) x (list x))
