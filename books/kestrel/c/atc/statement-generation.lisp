@@ -922,15 +922,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-list-none ((gin stmt-ginp)
+(define atc-gen-block-item-list-none ((term pseudo-termp)
+                                      (gin stmt-ginp)
                                       state)
-  :returns (mv (limit pseudo-termp)
-               (events pseudo-event-form-listp)
-               (thm-name symbolp)
-               (thm-index posp
-                          :hyp (posp thm-index)
-                          :rule-classes (:rewrite :type-prescription))
-               (names-to-avoid symbol-listp))
+  :returns (gout stmt-goutp)
   :short "Generate an empty list of block items."
   :long
   (xdoc::topstring
@@ -949,7 +944,16 @@
        (wrld (w state))
        (limit (pseudo-term-quote 1))
        ((when (not gin.proofs))
-        (mv limit nil nil gin.thm-index gin.names-to-avoid))
+        (make-stmt-gout
+         :items nil
+         :type (type-void)
+         :term term
+         :context gin.context
+         :limit limit
+         :events nil
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid))
        (name (pack gin.fn '-correct- gin.thm-index))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
@@ -978,7 +982,16 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv limit (list event) name thm-index names-to-avoid)))
+    (make-stmt-gout
+     :items nil
+     :type (type-void)
+     :term term
+     :context gin.context
+     :limit limit
+     :events (list event)
+     :thm-name name
+     :thm-index thm-index
+     :names-to-avoid names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3182,18 +3195,7 @@
                    a recursive call on every path, ~
                    but in the function ~x0 it ends with ~x1 instead."
                   gin.fn term))
-          (b* (((mv limit events thm thm-index names-to-avoid)
-                (atc-gen-block-item-list-none gin state)))
-            (retok (make-stmt-gout
-                    :items nil
-                    :type (type-void)
-                    :term term
-                    :context gin.context
-                    :limit limit
-                    :events events
-                    :thm-name thm
-                    :thm-index thm-index
-                    :names-to-avoid names-to-avoid)))))
+          (retok (atc-gen-block-item-list-none term gin state))))
        ((mv okp terms) (fty-check-list-call term))
        ((when okp)
         (b* (((unless (>= (len terms) 2))
