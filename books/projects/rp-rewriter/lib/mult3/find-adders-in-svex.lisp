@@ -51,57 +51,13 @@
   use-arithmetic-5
   :disabled t))
 
-;; (acl2::defines
-;;    equal-cwe
-;;    :parents (rp-equal)
-;;    :short "Same as @(see rp::rp-equal) but prints a mismatch."
-;;    (define equal-cwe (term1 term2)
-;;      :enabled t
-;;      (declare (xargs :mode :logic
-;;                      :guard t #|(and (rp-termp term1)
-;;                      (rp-termp term2))||#))
-;;      "Check syntactic equivalance of two terms by ignoring all the rp terms"
-;;      (let* ((term1 (ex-from-rp term1))
-;;             (term2 (ex-from-rp term2)))
-;;        (cond
-;;         ((or (atom term1)
-;;              (atom term2)
-;;              (acl2::fquotep term1)
-;;              (acl2::fquotep term2))
-;;          (or (equal term1 term2)
-;;              (cw "Mismatch: term1=~p0, term2=~p1 ~%" term1 term2)))
-;;         (t (and (or (equal (car term1) (car term2))
-;;                     (cwe "Mismatch: term1=~p0, term2=~p1 ~%" term1 term2))
-;;                 (equal-cwe-subterms (cdr term1) (cdr term2)))))))
-
-;;    (define equal-cwe-subterms (subterm1 subterm2)
-;;      :enabled t
-;;      (declare (xargs :mode :logic
-;;                      :guard t #|(and (rp-term-listp subterm1)
-;;                      (rp-term-listp subterm2))||#))
-;;      (if (or (atom subterm1)
-;;              (atom subterm2))
-;;          (or (equal subterm1 subterm2)
-;;              (cw "Mismatch: subterm1=~p0, sunterm2=~p1 ~%" subterm1 subterm2))
-;;        (and (equal-cwe (car subterm1) (car subterm2))
-;;             (equal-cwe-subterms (cdr subterm1) (cdr subterm2))))))
-
-;; (define design_res-broken (x message)
-;;   (b* (((sv::assocs design_res design_is_correct)
-;;         x)
-;;        (res2 (case-match design_is_correct
-;;                (('SV::?
-;;                 ('SV::PARTSEL 0 1 ('SV::== & x))
-;;                 1 0)
-;;                 x)
-;;                (& (raise "Bad design_is_correct pattern: ~p0"
-;;                          design_is_correct))))
-;;        ((unless (equal design_res res2))
-;;         (progn$ (equal-cwe res2 design_res)
-;;                 (raise "Here: ~p0" message))))
-;;     nil))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Define some functions to help enable/disable some heuristics.
 
 (progn
+  ;; Whether the overall search should be more aggressive or not. This may help
+  ;; find more adders, but also in some  cases, it may prevent the program from
+  ;; finding adders.
   (encapsulate
     (((aggressive-find-adders-in-svex) => *))
     (local
@@ -116,6 +72,10 @@
   (enable-aggressive-find-adders-in-svex nil))
 
 (progn
+  ;; Pick if the expressions after adder-detection  should be cleaned up a tiny
+  ;; bit more.  merge-fa-chains will replace instances such as (fa-c-chain ...)
+  ;; and (fa-s-chain  ...) with a full-adder  function. This may help  speed up
+  ;; the proofs.
   (encapsulate
     (((merge-fa-chains) => *))
     (local
@@ -128,6 +88,63 @@
       `(defattach merge-fa-chains return-nil)))
 
   (enable-merge-fa-chains t))
+
+(progn
+  ;; For shifted multiplier cases, truncations  may prevent some patterns to be
+  ;; detected. This heuristic  tries to put back a carry  pattern of half-adder
+  ;; back without the usual checks. Enabled by default as no harm from this has
+  ;; been observed.
+  (encapsulate
+    (((search-and-add-ha-c-for-shifted-enabled) => *))
+    (local
+     (defun search-and-add-ha-c-for-shifted-enabled ()
+       nil)))
+
+  (defmacro enable-search-and-add-ha-c-for-shifted (enable)
+    (if enable
+        `(defattach search-and-add-ha-c-for-shifted-enabled return-t)
+      `(defattach search-and-add-ha-c-for-shifted-enabled return-nil)))
+
+  (enable-search-and-add-ha-c-for-shifted t))
+
+(progn
+  ;; During pattern matching iterations,  global simplification function may be
+  ;; called. This may help in some cases  but it is disabled by default because
+  ;; it can also mess  up with the structure too much and  cause patterns to be
+  ;; missed.
+  (encapsulate
+    (((find-adders-global-bitand/or/xor-simplification-enabled) => *))
+    (local
+     (defun find-adders-global-bitand/or/xor-simplification-enabled ()
+       nil)))
+
+  (defmacro enable-find-adders-global-bitand/or/xor-simplification (enable)
+    (if enable
+        `(defattach find-adders-global-bitand/or/xor-simplification-enabled return-t)
+      `(defattach find-adders-global-bitand/or/xor-simplification-enabled return-nil)))
+
+  (enable-find-adders-global-bitand/or/xor-simplification nil))
+
+(progn
+  ;; Probably not useful  for a lot of people. This  determines whether to keep
+  ;; missing variables  in an svex environment  in the svex or  not.  When nil,
+  ;; those missing variables will be dont-cares, otherwise their variable names
+  ;; will stay in the svex.
+  (encapsulate
+    (((keep-missing-env-vars-in-svex) => *))
+    (local
+     (defun keep-missing-env-vars-in-svex ()
+       nil)))
+
+  (defmacro enable-keep-missing-env-vars-in-svex (enable)
+    (if enable
+        `(defattach keep-missing-env-vars-in-svex return-t)
+      `(defattach keep-missing-env-vars-in-svex return-nil)))
+
+  (enable-keep-missing-env-vars-in-svex nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Define some lemmas.
 
 (defsection svex-pattern-matching-lemmas
   (defthm cdr-of-x-is-svexlist-p-when-kind-is-svex-fn-call
@@ -276,8 +293,17 @@
            (len l))))
 
 (local
+ (defthm svexlist-p-of-remove-duplicates
+   (implies (sv::Svexlist-p x)
+            (sv::Svexlist-p (remove-duplicates-equal x)))))
+
+(local
  (in-theory (disable acl2::merge-sort-lexorder
                      acl2::merge-lexorder)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Define  some  data  structures  to  help with  programming  and  the  tool's
+;; verification.
 
 (defsection pattern-fn-call
 
@@ -364,28 +390,6 @@
     :val-type true-listp
     :true-listp t)
 
-  #|(define pattern-alist-p (x)
-  :enabled t
-  :returns (valid)
-  (if (atom x)
-  (equal x nil)
-  (and (consp (car x))
-  (sv::svexlist-p (caar x))
-  (true-listp (cdar x))
-  (pattern-alist-p (cdr x))))
-  ///
-  (defret <fn>-with-hons-assoc-equal
-  (implies (and (pattern-alist-p x)
-  (case-split (hons-assoc-equal key x)))
-  (and (consp (hons-assoc-equal key x))
-  (sv::svexlist-p (car (hons-assoc-equal key x)))
-  (true-listp (cdr (hons-assoc-equal key x)))))
-  :rule-classes (:rewrite :forward-chaining))
-
-  (defthm <fn>-implies-alistp
-  (implies (pattern-alist-p x)
-  (alistp x))))|#
-
   (define pattern-fn-call-provide-good-measure-p ((x sv::Svex-p)
                                                   (pattern-fn-call pattern-fn-call-p))
     :guard-hints (("Goal"
@@ -417,13 +421,14 @@
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; adder pattern functions...
+;; adder pattern functions.
 
 (local
  (in-theory (e/d (sv::svex-kind)
                  ((:e tau-system)))))
 
 (local
+ ;; some more lemmas first.
  (defsection 4vec-lemmas
 
    (defthm 4vec-concat$-to-logapp
@@ -432,9 +437,9 @@
                    (integerp y))
               (equal (svl::4vec-concat$ size x y)
                      (logapp size x y)))
-     :hints (("Goal"
-              :in-theory (e/d (SVL::4VEC-CONCAT$
-                               SVL::LOGAPP-TO-4VEC-CONCAT)
+     :hints (("goal"
+              :in-theory (e/d (svl::4vec-concat$
+                               svl::logapp-to-4vec-concat)
                               ()))))
 
    (defthm sv::4vec-bitops-to-logops
@@ -449,39 +454,39 @@
           (implies (integerp x)
                    (equal (sv::4vec-bitnot x)
                           (lognot x))))
-     :hints (("Goal"
+     :hints (("goal"
               :do-not-induct t
               :in-theory (e/d* (sv::4vec
                                 sv::4vec-bitand
-                                SV::3VEC-BITAND
-                                SV::3VEC-BITOR
+                                sv::3vec-bitand
+                                sv::3vec-bitor
                                 sv::4vec-bitor
-                                SV::3VEC-BITNOT
+                                sv::3vec-bitnot
                                 sv::4vec-bitnot
                                 bitops::ihsext-inductions
                                 bitops::ihsext-recursive-redefs
                                 sv::4vec-bitxor
-                                SV::4VEC->LOWER
-                                SV::4VEC->UPPER
-                                SV::4VEC-RSH
-                                sv::4VEC-SHIFT-CORE
-                                svl::Bits
-                                SV::4VEC-PART-SELECT
-                                SV::4VEC-CONCAT)
+                                sv::4vec->lower
+                                sv::4vec->upper
+                                sv::4vec-rsh
+                                sv::4vec-shift-core
+                                svl::bits
+                                sv::4vec-part-select
+                                sv::4vec-concat)
                                (floor
-                                SVL::EQUAL-OF-4VEC-CONCAT-WITH-SIZE=1
-                                logand
-                                )))))
+                                svl::equal-of-4vec-concat-with-size=1
+                                logand)))))
 
-   ))
+   (defthm sv::svexlist-eval$-when-consp
+     (implies (consp lst)
+              (equal (sv::svexlist-eval$ lst env)
+                     (cons (sv::svex-eval$ (car lst) env)
+                           (sv::svexlist-eval$ (cdr lst) env)))))))
 
-(local
- (defthm SV::SVEXLIST-EVAL$-when-consp
-   (implies (consp lst)
-            (equal (SV::SVEXLIST-EVAL$ lst env)
-                   (CONS (SV::SVEX-EVAL$ (CAR lst) env)
-                         (SV::SVEXLIST-EVAL$ (CDR lst) env))))))
-
+;; Macro to  help create adder search  patterns.  This will help  quickly prove
+;; the  correctness of  patterns.  Also  a measure  showing  that applying  the
+;; pattern  will  shrink  the  expression.  This measure  lemma  might  now  be
+;; redundant.
 (defmacro create-look-for-pattern-fnc (&key name
                                             body
                                             warrant-hyps
@@ -607,6 +612,7 @@
 
 (defsection fa-s-chain
 
+  ;; define the spec for full-adder sum chains.
   (define fa-s-chain (x y z)
     :verify-guards nil
     (sv::4vec-bitxor x (sv::4vec-bitxor y z))
@@ -627,9 +633,12 @@
   (defconst *fa-s-chain-rule*
     (hons-copy '(member-equal 'fa-c-chain found-patterns)))
 
+  ;; match itself. This is useful in  later iterations to know what patterns we
+  ;; have already found and applied.
   (create-case-match-macro fa-s-chain-itself-pattern
                            ('fa-s-chain x y z))
 
+  ;; classic case: x ^ y ^ z
   (create-look-for-pattern-fnc :name fa-s-chain-pattern-1
                                :prepwork ((create-case-match-macro fa-s-chain-pattern-1
                                                                    ('sv::bitxor ('sv::bitxor x y) z))
@@ -646,6 +655,7 @@
                                               :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-s-chain)))
 
+  ;; same above with pattern priority switched around.
   (create-look-for-pattern-fnc :name fa-s-chain-pattern-2
                                :prepwork ((create-case-match-macro fa-s-chain-pattern-2
                                                                    ('sv::bitxor x ('sv::bitxor y z)))
@@ -662,6 +672,7 @@
                                               :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-s-chain)))
 
+  ;; create the main pattern function for full-adder sum. This calls the other functions defined above.
   (create-look-for-pattern-fnc :name fa-s-chain-pattern
                                :prepwork ()
                                :body (append (look-for-fa-s-chain-pattern-1 svex)
@@ -671,13 +682,20 @@
                                :inline nil))
 
 (defsection fa-c-chain
+
+  ;; Look for Full-adder carry patterns.
+
+  ;; Define   the   spec   function   that  will   replace   full-adder   carry
+  ;; patterns. Unfortunaly, four-valued logic and that arguments can be vectors
+  ;; make it  a challange to  define a  simple function. So  different possible
+  ;; patterns are separated with another method argument. When we can show that
+  ;; the  arguments are  all two-valued  (integer) and  their size/width  is 1,
+  ;; these should all be equivalent to each other.
   (define fa-c-chain (method x y z)
     :verify-guards nil
-    ;; !!!!!!!!!!!
-    ;; unfortunately, 4vec-bitxor is differently defined than other stuff like 4vec-bitand, so
-    ;; arguments cannot be commuted around for the fa-carry pattern that
-    ;; involves bitxor. So I have to do this stuff:
-    ;; !!!!!!!!!!!
+    ;; unfortunately, 4vec-bitxor is defined  differently than other stuff like
+    ;; 4vec-bitand, so  arguments cannot  be commuted  around for  the fa-carry
+    ;; pattern that involves bitxor. So I have to do this stuff:
     (cond ((= method 1)
            (sv::4vec-bitor (sv::4vec-bitand y z)
                            (sv::4vec-bitand x
@@ -706,6 +724,7 @@
     ///
     (defwarrant-rp fa-c-chain)
 
+    ;; Need an invariance for the arguments of the fa-c-chain pattern:
     (define valid-fa-c-chain-args-p (method x)
       :enabled t
       (and (integerp method) ;; this to reduce svex-eval$ of method cases.
@@ -727,6 +746,7 @@
                                  valid-fa-c-chain-args-p)
                                 ())))))
 
+    ;; rewrite in terms of known functions.
     (def-rp-rule :disabled-for-acl2 t
       fa-c-chain-c-spec
       (implies (and (integerp x)
@@ -742,6 +762,8 @@
 
                :do-not-induct t))))
 
+  ;; auxiliary for pattern matching. It helps commutte arguments around without
+  ;; having to hardcode all combinations.
   (define look-for-fa-c-chain-pattern-aux (&key
                                            (x1 'x1)
                                            (x2 'x2)
@@ -778,11 +800,18 @@
       (mv x y z t))
     )
 
+  ;; application rule
   (defconst *fa-c-chain-rule*
-    t
-    ;;(hons-copy '(member-equal 'fa-s-chain found-patterns))
+    t ;; t so that found fa-c patterns with this rule can be applied right away
+    ;; without ensuring the  existing of a fa-s pattern. This  is kind of risky
+    ;; but fa-c  patterns are so  unique that I don't  expect this to  create a
+    ;; problem. This can actually help  for example in shifted multiplier cases
+    ;; when a counterpart fa-s pattern is missing..
+
+    ;; (hons-copy '(member-equal 'fa-s-chain found-patterns))
     )
 
+  ;; another application rule.
   (defconst *fa-c-chain-rule-convervative*
     ;;t
     (hons-copy '(member-equal 'fa-s-chain found-patterns))
@@ -813,25 +842,27 @@
                                                    (acl2::merge-sort-lexorder (list x y z))))))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
-  ;; most-common pattern
+  ;; Create pattern matching function for the most-common pattern: ab | bc | ac
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-01
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-0
                                                                    ('sv::bitor ('sv::bitor ('sv::bitand x1 y1)
                                                                                            ('sv::bitand x2 z1))
                                                                                ('sv::bitand y2 z2)))
+                                          ;; same pattern as above with swapped operator priority.
                                           (create-case-match-macro fa-c-chain-pattern-1
                                                                    ('sv::bitor  ('sv::bitand y2 z2)
                                                                                 ('sv::bitor ('sv::bitand x1 y1)
-                                                                                            ('sv::bitand
-                                                                                             x2 z1))))
+                                                                                            ('sv::bitand x2 z1))))
                                           (local
                                            (in-theory (enable fa-c-chain))))
                                :body
                                (cond ((fa-c-chain-pattern-0-p svex)
                                       (fa-c-chain-pattern-0-body
                                        svex
-                                       (b* (((mv x y z valid) (look-for-fa-c-chain-pattern-aux))
+                                       (b* (;; commute nodes around to see if a valid combination can be found.
+                                            ((mv x y z valid) (look-for-fa-c-chain-pattern-aux))
                                             ((unless valid) nil)
+                                            ;; sort the arguments so it can be matched with a corresponding fa-s.
                                             (args (acl2::merge-sort-lexorder (list x y z))))
                                          (list (make-pattern-fn-call
                                                 :fn 'fa-c-chain
@@ -851,8 +882,12 @@
                                                 :args args))))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
+  ;; another common pattern: "ab | c(a|b)" AND "ab | c(a^b)"
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-2a
-                               :prepwork ((create-case-match-macro fa-c-chain-pattern-2a
+                               :prepwork (;; this will be another pattern if yz
+                                          ;; variable  can be  shown to  be the
+                                          ;; same as y^z or y|z
+                                          (create-case-match-macro fa-c-chain-pattern-2a
                                                                    ('sv::bitor  ('sv::bitand y z)
                                                                                 ('sv::bitand x yz)))
                                           (local
@@ -866,6 +901,11 @@
                                                              (equal (car yz) 'sv::bitxor))
                                                         (car yz)))
                                           ((unless or/xor?) nil)
+                                          ;; sometimes  a syntactic  comparison
+                                          ;; is not enough. So perform a little
+                                          ;; bit  more complicated  equivalance
+                                          ;; check between y,z  and a suspected
+                                          ;; y|z or y^z pattern:
                                           (valid (svl::bitxor/or/and-equiv or/xor? y z yz))
                                           ((unless valid) nil)
                                           (args (acl2::merge-sort-lexorder (list x y z))))
@@ -883,6 +923,7 @@
                                               :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
+  ;; same patterns as fa-c-chain-pattern-2a but arguments are commutted
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-2b
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-2b
                                                                    ('sv::bitor  ('sv::bitand y z)
@@ -915,6 +956,7 @@
                                               :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
+  ;; same patterns as fa-c-chain-pattern-2a but arguments are commutted
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-2c
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-2c
                                                                    ('sv::bitor  ('sv::bitand x yz)
@@ -947,6 +989,7 @@
                                               :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
+  ;; same patterns as fa-c-chain-pattern-2a but arguments are commutted
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-2d
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-2d
                                                                    ('sv::bitor  ('sv::bitand yz x)
@@ -980,7 +1023,12 @@
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
   (set-ignore-ok t)
-  ;; when one arg is 1 and pattern simplifies. svex-reduce functions could handle it but trying not to rely on global simplification.
+
+  ;; Patterns for when one arg is 1.  This pattern matching should be redundant
+  ;; because svex-reduce  functions should  be able  to handle  these but  I am
+  ;; trying not to rely on these  global simplifications because they should be
+  ;; applied conservatively  and I  might want  to change  they are  applied or
+  ;; defined later. So it is safest to handle this pattern manually here.
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-3-1
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-3a
                                                                    ('sv::bitor ('sv::bitor x2
@@ -1027,6 +1075,8 @@
                                         :rule t
                                         :args args)))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
+
+  ;; same reasoning as fa-c-chain-pattern-3-1
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-3-2
                                :prepwork (
                                           (create-case-match-macro fa-c-chain-pattern-3d
@@ -1072,9 +1122,9 @@
                                         :args args)))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
-  ;; Plus 1 case.  Only apply if the  args are other functions  to prevent this
-  ;; from flooding the alists, also this can mess up with local simpflification
-  ;; search.
+  ;; Common plus 1 case.  Only apply if the args are other functions to prevent
+  ;; this  from  flooding  the  alists,  also  this  can  mess  up  with  local
+  ;; simpflification search. So this is currently not used. See below.
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-4a
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-4a
                                                                    ('sv::bitor x y))
@@ -1104,8 +1154,8 @@
                                               :args args)))))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
-  (set-ignore-ok t)
-  ;; strange plus 1 case. This happens when regular fa-c pattern with bitxor is reduced when one of the arguments is 1.
+  ;; Strange plus 1 case. This happens when regular fa-c pattern with bitxor is
+  ;; reduced when one of the arguments is 1.
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-4b
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-4b1
                                                                    ('sv::bitor ('sv::bitand x1 y1)
@@ -1141,23 +1191,28 @@
                                         :args args)))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
+  ;; Some odd  and very rare  cases of full-adder  carry.  It looks  like these
+  ;; might  be messing  up with  half-adder search,  so will  give these  a low
+  ;; priority  and apply  them  only  at half-adder  search  stage.  These  are
+  ;; probably here to satisfy some corner  cases, which the program will likely
+  ;; encounter very rarely.
   (create-look-for-pattern-fnc :name fa-c-chain-pattern-6
                                :prepwork ((create-case-match-macro fa-c-chain-pattern-6a-f
-                                                                   ('SV::BITXOR
-                                                                    ('SV::BITXOR 1
-                                                                                 ('SV::BITAND x ('SV::BITXOR y1 z1)))
-                                                                    ('SV::BITAND y z)))
+                                                                   ('sv::bitxor
+                                                                    ('sv::bitxor 1
+                                                                                 ('sv::bitand x ('sv::bitxor y1 z1)))
+                                                                    ('sv::bitand y z)))
                                           (create-case-match-macro fa-c-chain-pattern-6a
-                                                                   ('SV::BITXOR
-                                                                    ('SV::BITAND x ('SV::BITXOR y1 z1))
-                                                                    ('SV::BITAND y z)))
+                                                                   ('sv::bitxor
+                                                                    ('sv::bitand x ('sv::bitxor y1 z1))
+                                                                    ('sv::bitand y z)))
                                           (create-case-match-macro fa-c-chain-pattern-6b
-                                                                   ('SV::BITXOR
-                                                                    ('SV::BITAND y z)
-                                                                    ('SV::BITAND x ('SV::BITXOR y1 z1))))
+                                                                   ('sv::bitxor
+                                                                    ('sv::bitand y z)
+                                                                    ('sv::bitand x ('sv::bitxor y1 z1))))
 
                                           (local
-                                           (in-theory (enable FA-C-CHAIN))))
+                                           (in-theory (enable fa-c-chain))))
                                :correct-pattern-hints '(:in-theory (e/d (or*) ()))
                                :body
                                (b* (((Unless (and*-exec (consp svex) ;; redundant. hopefully will help with speed.
@@ -1195,6 +1250,7 @@
                                         :args args)))
                                :warrant-hyps ((apply$-warrant-fa-c-chain)))
 
+  ;; gather the above functions to create the main pattern matching function for fa-c
   (create-look-for-pattern-fnc :name fa-c-chain-pattern
                                :prepwork ()
                                :body (append (look-for-fa-c-chain-pattern-01 svex)
@@ -1214,6 +1270,7 @@
                                :inline nil))
 
 (defsection ha-s-chain
+  ;; Match half-adder sum patterns.
 
   (create-case-match-macro partsel-of-atom-pattern
                            ('sv::partsel start size term)
@@ -1250,14 +1307,14 @@
                                  ))))))
 
   (defconst *ha-s-chain-rule*
-    (hons-copy '(or (member-equal 'ha-c-chain found-patterns)
-                    ;; if the necessary 1 in bitxor chain is missing, then it is ok to match this with ha-s-chain
-                    ;;(member-equal 'ha+1-c-chain found-patterns)
-                    )))
+    (hons-copy '(or
+                 ;; match only when a counterpart ha-c is found.
+                 (member-equal 'ha-c-chain found-patterns)
+
+                 )))
 
   (create-look-for-pattern-fnc :name ha-s-chain-pattern
-                               :prepwork (
-                                          (create-case-match-macro ha-s-chain-pattern
+                               :prepwork ((create-case-match-macro ha-s-chain-pattern
                                                                    ('sv::bitxor x y)
                                                                    ;; When two of them are variables, then don't try to create a a half-adder.
                                                                    ;; This is redundant and only here for performance improvements.
@@ -1289,6 +1346,7 @@
                                :warrant-hyps ((apply$-warrant-ha-s-chain))))
 
 (defsection ha-c-chain
+  ;; match half-adder carry pattern.
 
   (create-case-match-macro bitand-pattern
                            ('sv::bitand x y))
@@ -1340,13 +1398,19 @@
                                                     :new-p nil
                                                     :args (acl2::merge-sort-lexorder (list x y))))))
 
-                                       ;; Putting this here because when this is applied at fa search stage, it is messing up with things. This way, this will have a less priority....
+                                       ;; Putting this  here because  when this
+                                       ;; is applied at fa  search stage, it is
+                                       ;; messing  up  with things.  This  way,
+                                       ;; this will have a less priority....
                                        (look-for-fa-c-chain-pattern-6 svex)
                                        )
                                :warrant-hyps ((apply$-warrant-ha-c-chain)
                                               (apply$-warrant-fa-c-chain))))
 
 (defsection ha+1-c-chain
+  ;; ha+1 are cases where two variables  are summed with a constant.  ha+1-c is
+  ;; the carry pattern for them.
+
   (define ha+1-c-chain  (x y)
     :verify-guards nil
     (sv::4vec-bitor x y)
@@ -1389,20 +1453,25 @@
                                        (b* ((args (acl2::merge-sort-lexorder (list x y))))
                                          (list (make-pattern-fn-call
                                                 :fn 'ha+1-c-chain
-                                                :rule nil
+                                                :rule nil ;; nil so that it will not try to replace anything.
                                                 :new-p nil
                                                 :args args))))))
                                :warrant-hyps ((apply$-warrant-ha+1-c-chain))))
 
 (defsection ha+1-s-chain
+  ;; sum for x+y+1 case.
+
   (define ha+1-s-chain (method x y)
     :verify-guards nil
-    (cond ((= method 10) ;; matching when 1 is missing in bitxor chain.
-           (sv::4vec-bitxor x y))
-          ((= method 0)
-           (sv::4vec-bitnot (sv::4vec-bitxor x y)))
-          (t
-           (sv::4vec-bitxor 1 (sv::4vec-bitxor x y))))
+    (cond  ((= method  10) ;;  when double  negation occurs,  they cancel  each
+            ;; other. So need to add this case for matching when 1
+            ;; is missing in bitxor chain.
+            (sv::4vec-bitxor x y))
+           ((= method 0)  ;; should never happen as  sv::4vec-bitnot is expected
+            ;; to be replaced already.
+            (sv::4vec-bitnot (sv::4vec-bitxor x y)))
+           (t ;; most common case.
+            (sv::4vec-bitxor 1 (sv::4vec-bitxor x y))))
     ///
     (defwarrant-rp ha+1-s-chain)
 
@@ -1410,7 +1479,7 @@
       ha+1-s-chain-to-s-spec
       (implies (and (integerp x)
                     (integerp y)
-                    (> method 10))
+                    (not (= method 10)))
                (equal (ha+1-s-chain method x y)
                       (if (equal method 0)
                           (svl::4vec-concat$
@@ -1589,8 +1658,7 @@
                                                 :args args))))))
                                :warrant-hyps ()))
 
-
-
+;; a complete full-adder spec.
 (define full-adder (x y z)
   :verify-guards nil
   (svl::4vec-list (fa-s-chain x y z)
@@ -1599,6 +1667,16 @@
   ///
   (defwarrant-rp full-adder))
 
+;; a complete half-adder spec.
+(define half-adder (x y)
+  :verify-guards nil
+  (svl::4vec-list (fa-s-chain x y 0)
+                  (fa-c-chain 0 x y 0)
+                  0)
+  ///
+  (defwarrant-rp half-adder))
+
+;; all warrants for second-order logic.
 (progn
   (defun warrants-for-adder-pattern-match ()
     (and (apply$-warrant-ha-c-chain)
@@ -1607,7 +1685,8 @@
          (apply$-warrant-ha+1-s-chain)
          (apply$-warrant-ha-s-chain)
          (apply$-warrant-fa-s-chain)
-         (apply$-warrant-full-adder)))
+         (apply$-warrant-full-adder)
+         (apply$-warrant-half-adder)))
 
   (defconst *adder-fncs*
     '(ha-c-chain
@@ -1616,54 +1695,71 @@
       ha+1-s-chain
       ha-s-chain
       fa-s-chain
-      full-adder))
+      full-adder
+      half-adder))
 
   (rp::add-rp-rule warrants-for-adder-pattern-match)
   (rp::disable-rules '((:e warrants-for-adder-pattern-match))))
 
-;; this is a better rule, works more quickly...
-(def-rp-rule fa/ha-chain-fncs-when-bitp
-  (and (implies (and (bitp x)
-                     (bitp y)
-                     (bitp z))
-                (and (equal (fa-c-chain 0 x y z)
-                            (c-spec (list x y z)))
-                     (implies (valid-fa-c-chain-args-p method x)
-                              (equal (fa-c-chain method x y z)
-                                     (c-spec (list x y z))))
-                     (equal (fa-s-chain x y z)
-                            (s-spec (list x y z)))))
-       (implies (and (bitp x)
-                     (bitp y))
-                (and (equal (ha-c-chain x y)
-                            (c-spec (list x y)))
-                     (equal (ha-s-chain x y)
-                            (s-spec (list x y)))
-                     (equal (ha+1-c-chain x y)
-                            (c-spec (list x y 1)))
-                     (equal (ha+1-s-chain 1 x y)
-                            (s-spec (list x y 1)))
-                     (equal (ha+1-s-chain 10 x y)
-                            (binary-not (s-spec (list x y 1)))))))
-  :hints (("goal"
-           :in-theory (e/d (fa-c-chain
-                            ha-c-chain
-                            ha+1-c-chain ;
-                            bitp)
-                           (fa-c-chain-c-spec)))))
+;; Trigger meta functions  for s-c-rewriting.  Some rules  were already defined
+;; above but this is a better rule, it works more quickly for bitp cases (which
+;; should be almost always).
+(progn
+  (def-rp-rule fa/ha-chain-fncs-when-bitp
+    (and (implies (and (bitp x)
+                       (bitp y)
+                       (bitp z))
+                  (and (equal (fa-c-chain 0 x y z)
+                              (c-spec (list x y z)))
+                       (implies (valid-fa-c-chain-args-p method x)
+                                (equal (fa-c-chain method x y z)
+                                       (c-spec (list x y z))))
+                       (equal (fa-s-chain x y z)
+                              (s-spec (list x y z)))))
+         (implies (and (bitp x)
+                       (bitp y))
+                  (and (equal (ha-c-chain x y)
+                              (c-spec (list x y)))
+                       (equal (ha-s-chain x y)
+                              (s-spec (list x y)))
+                       (equal (ha+1-c-chain x y)
+                              (c-spec (list x y 1)))
+                       (equal (ha+1-s-chain 1 x y)
+                              (s-spec (list x y 1)))
+                       (equal (ha+1-s-chain 10 x y)
+                              (binary-not (s-spec (list x y 1)))))))
+    :hints (("goal"
+             :in-theory (e/d (fa-c-chain
+                              ha-c-chain
+                              ha+1-c-chain ;
+                              bitp)
+                             (fa-c-chain-c-spec)))))
 
-(def-rp-rule full-adder-when-bitp
-  (implies (and (bitp x)
-                (bitp y)
-                (bitp z))
-           (equal (full-adder x y z)
-                  (b* ((res (s-c-spec (list x y z))))
-                    (svl::4vec-concat$ 1 (first res)
-                                       (second res)))))
-  :lambda-opt t
-  :hints (("Goal"
-           :in-theory (e/d (bitp) ()))))
+  (def-rp-rule full-adder-when-bitp
+    (implies (and (bitp x)
+                  (bitp y)
+                  (bitp z))
+             (equal (full-adder x y z)
+                    (b* ((res (s-c-spec (list x y z))))
+                      (svl::4vec-concat$ 1 (first res)
+                                         (second res)))))
+    :lambda-opt t
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ()))))
 
+  (def-rp-rule half-adder-when-bitp
+    (implies (and (bitp x)
+                  (bitp y))
+             (equal (half-adder x y)
+                    (b* ((res (s-c-spec (list x y))))
+                      (svl::4vec-concat$ 1 (first res)
+                                         (second res)))))
+    :lambda-opt t
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ())))))
+
+;; Main function  to call all the  above functions and return  matched patterns
+;; based on the given expression.
 (define adder-pattern-match ((svex sv::svex-p)
                              (adder-type))
   ;; returns list of matching key/pattern-name pairs
@@ -1706,6 +1802,7 @@
   (memoize 'adder-pattern-match))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Subtle: create some aux lemmas/functions to make this a meta-rule for RP-Rewriter.
 (progn
   (def-formula-checks-default-evl
     rp-evl
@@ -1724,6 +1821,7 @@
        fa-c-chain
        fa-s-chain
        full-adder
+       half-adder
        ha+1-c-chain
        ha+1-s-chain)))
 
@@ -1732,21 +1830,23 @@
     (and (find-adders-in-svex-formula-checks-small state)
          (svl::svex-ev-wog-formula-checks state) ;; using this here to save
          ;; certification time instead of adding all those svex-eval functions.
-         ))
-  )
+         )))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; For  svex  simplifications,  the  program   needs  to  know  the  width  and
+;; integerp-ness of  the given  expressions. Since  we define  custom functions
+;; such as ha-s-chain, we need to tell how to calculate these attributes.
+
+;; first define widths.
 (svl::create-width-of-svex-extn :fn ha-s-chain
                                 :formula #!SVL(safe-max (nth '0 widths)
                                                         (nth '1 widths)))
-
 (svl::create-width-of-svex-extn :fn ha-c-chain
                                 :formula #!SVL(safe-min (nth '0 widths)
                                                         (nth '1 widths)))
-
 (svl::create-width-of-svex-extn :fn ha+1-c-chain
                                 :formula #!SVL(safe-max (nth '0 widths)
                                                         (nth '1 widths)))
-
 (svl::create-width-of-svex-extn :fn fa-s-chain
                                 :formula #!SVL(safe-max
                                                (safe-max (nth '0 widths)
@@ -1757,7 +1857,6 @@
                                   (in-theory (e/d (svl::4vec-correct-width-p
                                                    svl::4vec-part-select-of-4vec-bitxor-better)
                                                   ())))))
-
 (svl::create-width-of-svex-extn :fn ha+1-s-chain
                                 :formula #!SVL(if (> (nth '0 args) '0)
                                                   (if (equal (nth '1 widths) '1)
@@ -1773,7 +1872,6 @@
                                                    SV::4VEC-FIX
                                                    svl::4vec-part-select-of-4vec-bitxor-better)
                                                   ())))))
-
 (svl::create-width-of-svex-extn :fn fa-c-chain
                                 ;; This is overconservative but I expect
                                 ;; everything to be width=1, so it shouldn't matter.
@@ -1818,39 +1916,39 @@
                                                    (:rewrite default-cdr)
                                                    (:rewrite acl2::integer-listp-of-cdr-when-integer-listp)
                                                    ))))))
-
 (svl::create-width-of-svex-extn :fn full-adder
                                 :formula '2
                                 :prepwork ((local
                                             (in-theory (e/d (svl::4vec-correct-width-p
                                                              svl::4vec-concat$))))))
+(svl::create-width-of-svex-extn :fn half-adder
+                                :formula '2
+                                :prepwork ((local
+                                            (in-theory (e/d (svl::4vec-correct-width-p
+                                                             svl::4vec-concat$))))))
 
+;; now define integerp-ness
 (svl::create-integerp-of-svex-extn :fn ha-s-chain
                                    :prepwork
                                    ((local
                                      (in-theory (disable
                                                  ha-s-chain-to-s-spec)))))
-
 (svl::create-integerp-of-svex-extn :fn ha-c-chain
                                    :prepwork
                                    ((local
                                      (in-theory (disable
                                                  ha-c-chain-to-c-spec)))))
-
 (svl::create-integerp-of-svex-extn :fn fa-c-chain)
-
 (svl::create-integerp-of-svex-extn :fn fa-s-chain
                                    :prepwork
                                    ((local
                                      (in-theory (disable
                                                  fa-s-chain-s-spec)))))
-
 (svl::create-integerp-of-svex-extn :fn ha+1-c-chain
                                    :prepwork
                                    ((local
                                      (in-theory (disable
                                                  ha+1-c-chain-c-spec)))))
-
 (svl::create-integerp-of-svex-extn :fn ha+1-s-chain
                                    :prepwork
                                    ((local
@@ -1858,68 +1956,57 @@
                                                  ha+1-s-chain-to-s-spec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ex-adder-fnc-from-unfloat ((svex sv::Svex-p))
-  :returns (res-svex sv::svex-p :hyp (sv::Svex-p svex))
-  (case-match svex
-    (('sv::unfloat ('id x))
-     (if (and (equal (sv::svex-kind x) :call)
-              (member-equal (sv::Svex-call->fn x)
-                            '(fa-c-chain
-                              fa-s-chain
-                              full-adder
-                              ha+1-c-chain
-                              ha+1-s-chain
-                              ha-c-chain
-                              ha-s-chain
-                              sv::bitand
-                              sv::bitor
-                              sv::bitxor
-                              )))
-         (cadr svex)
-       svex))
-    (('sv::unfloat x)
-     (if (and (equal (sv::svex-kind x) :call)
-              (member-equal (sv::Svex-call->fn x)
-                            '(fa-c-chain
-                              fa-s-chain
-                              full-adder
-                              ha+1-c-chain
-                              ha+1-s-chain
-                              ha-c-chain
-                              ha-s-chain
-                              sv::bitand
-                              sv::bitor
-                              sv::bitxor)))
-         x
-       svex))
-    (& svex))
-  ///
-  (defret <fn>-correct
-    (implies (and (warrants-for-adder-pattern-match))
-             (equal (sv::svex-eval$ res-svex env)
-                    (sv::svex-eval$ svex env)))
-    :hints (("Goal"
-             :expand ((SV::SVEX-CALL->FN SVEX)
-                      (SV::SVEX-CALL->ARGS SVEX)
-                      (SV::SVEX-CALL->FN (cadr SVEX))
-                      (SV::SVEX-CALL->ARGS (cadr SVEX))
-                      (:free (args) (sv::svex-apply 'id args))
-                      (:free (args) (sv::svex-apply 'sv::bitor args))
-                      (:free (args) (sv::svex-apply 'sv::bitxor args))
-                      (:free (args) (sv::svex-apply 'sv::bitand args))
-                      (:free (args) (sv::svex-apply 'sv::unfloat args)))
-             :in-theory (e/d (FA-C-CHAIN
-                              FA-s-CHAIN
-                              FULL-ADDER
-                              HA-C-CHAIN HA-s-CHAIN
-                              HA+1-S-CHAIN HA+1-C-CHAIN
-                              SV::SVEX-APPLY$)
-                             ())))))
+;; Now  more advanced  functions to  search for  pattern globally  and do  more
+;; simplifications etc.
 
+;; Globally search and get rid of things like unfloat/id when possible.
 (defines clear-adder-fnc-from-unfloat
-
   :verify-guards nil
+  :prepwork
+  ((define ex-adder-fnc-from-unfloat ((svex sv::Svex-p))
+     :returns (res-svex sv::svex-p :hyp (sv::Svex-p svex))
+     (case-match svex
+       (('sv::unfloat ('id x))
+        (if (and (equal (sv::svex-kind x) :call)
+                 (member-equal (sv::Svex-call->fn  x)
+                               '(fa-c-chain fa-s-chain   full-adder  half-adder
+                                            ha+1-c-chain  ha+1-s-chain   ha-c-chain  ha-s-chain
+                                            sv::bitand sv::bitor sv::bitxor)))
+            (cadr svex)
+          svex))
+       (('sv::unfloat x)
+        (if (and (equal (sv::svex-kind x) :call)
+                 (member-equal (sv::Svex-call->fn x)
+                               '(fa-c-chain fa-s-chain   full-adder   half-adder
+                                            ha+1-c-chain  ha+1-s-chain ha-c-chain  ha-s-chain
+                                            sv::bitand sv::bitor sv::bitxor)))
+            x svex))
+       (& svex))
+     ///
+     (defret <fn>-correct
+       (implies (and (warrants-for-adder-pattern-match))
+                (equal (sv::svex-eval$ res-svex env)
+                       (sv::svex-eval$ svex env)))
+       :hints (("Goal"
+                :expand ((sv::svex-call->fn svex)
+                         (sv::svex-call->args svex)
+                         (sv::svex-call->fn (cadr svex))
+                         (sv::svex-call->args (cadr svex))
+                         (:free (args) (sv::svex-apply 'id args))
+                         (:free (args) (sv::svex-apply 'sv::bitor args))
+                         (:free (args) (sv::svex-apply 'sv::bitxor args))
+                         (:free (args) (sv::svex-apply 'sv::bitand args))
+                         (:free (args) (sv::svex-apply 'sv::unfloat args)))
+                :in-theory (e/d (FA-C-CHAIN
+                                 FA-s-CHAIN
+                                 FULL-ADDER half-adder
+                                 HA-C-CHAIN HA-s-CHAIN
+                                 HA+1-S-CHAIN HA+1-C-CHAIN
+                                 SV::SVEX-APPLY$)
+                                ()))))))
+
   (define clear-adder-fnc-from-unfloat ((svex sv::svex-p))
     :returns (res-svex sv::svex-p :hyp (sv::svex-p svex))
     :measure (sv::Svex-count svex)
@@ -1931,7 +2018,6 @@
      (ex-adder-fnc-from-unfloat
       (sv::Svex-call svex.fn
                      (clear-adder-fnc-from-unfloat-lst svex.args)))))
-
   (define clear-adder-fnc-from-unfloat-lst ((lst sv::svexlist-p))
     :returns (res-lst sv::svexlist-p :hyp (sv::svexlist-p lst))
     :measure (sv::Svexlist-count lst)
@@ -1944,6 +2030,7 @@
 
   (memoize 'clear-adder-fnc-from-unfloat))
 
+;; create an unfloat instance. This can help above
 (define create-unfloat-for-adder-fnc (arg)
   :returns (res sv::Svex-p :hyp (sv::Svex-p arg))
   (case-match arg
@@ -1954,12 +2041,9 @@
     (('ha+1-s-chain & & &)
      arg)
     ((fn & &)
-     (if (member-equal fn '(sv::bitxor
-                            sv::bitor
-                            sv::bitand
-                            ha-c-chain
-                            ha-s-chain
-                            ha+1-s-chain))
+     (if (member-equal fn
+                       '(sv::bitxor sv::bitor
+                                    ha-c-chain ha-s-chain ha+1-c-chain))
          arg
        (svl::svex-reduce-w/-env-apply 'sv::unfloat (hons-list arg))))
     (&
@@ -1970,22 +2054,24 @@
              (equal (sv::svex-eval$ res env)
                     (sv::3vec-fix (sv::svex-eval$ arg env))))
     :hints (("Goal"
-             :in-theory (e/d (HA-C-CHAIN
-                              HA-S-CHAIN
-                              HA+1-S-CHAIN
-                              FA-S-CHAIN
-                              FA-C-CHAIN
-                              SV::SVEX-APPLY
-                              SV::SVEX-APPLY$
-                              SV::SVEX-CALL->FN
-                              SV::SVEX-CALL->args)
+             :in-theory (e/d (ha-c-chain
+                              ha-s-chain
+                              ha+1-s-chain
+                              ha+1-c-chain
+                              fa-s-chain
+                              fa-c-chain
+                              sv::svex-apply
+                              sv::svex-apply$
+                              sv::svex-call->fn
+                              sv::svex-call->args)
                              ())))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; 1. Gather applicable patterns and create a "pattern-alist"
+;; For simple, quick pattern finding.
 
+;; 1. Gather applicable patterns and create a "pattern-alist"
 (acl2::defines gather-adder-patterns-in-svex
   :prepwork
   ((define register-found-adder-patterns ((pattern-fn-call-list pattern-fn-call-list-p)
@@ -2328,7 +2414,7 @@
 (defsection fix-order-of-fa/ha-s-args
   ;; After replacements,  ordered-ness of  arguments might change,  which might
   ;; prevent patterns  from being found  when looking more carefully.   So This
-  ;; function goes around and reorders arguments in fa-s and ha-s arguments.
+  ;; function goes around and reorders arguments in ONLY fa-s and ha-s arguments.
   (defines fix-order-of-fa/ha-s-args
     :verify-guards nil
     (define fix-order-of-fa/ha-s-args ((x sv::svex-p))
@@ -2424,11 +2510,30 @@
   ;; found fa-c/ha-c is  a bitxor, these function also  "explode" that argument
   ;; for a  more comprehensive  search.  Since  xor chains  can be  large, this
   ;; explosion     is    done     with     a    depth     limit    given     in
-  ;; *process-fa/ha-c-chain-pattern-args-limit* .
+  ;; *process-fa/ha-c-chain-pattern-args-limit*.
 
+  ;; For example, assume we have: (fa-c-chain  x y (bitxor m n)). And somewhere
+  ;; else  in  the svex,  we  have  (bitxor m  (bitxor  x  (bitxor n  y))).   A
+  ;; corresponding full-adder  sum pattern can  be pulled out from  this bitxor
+  ;; chain.   So we  take this  already found  fa-c-chain pattern,  explode its
+  ;; bitxor arguments and create a possible  search clue list containing: x y m
+  ;; n. If we can  find an bitxor chain containing all  these values, then that
+  ;; bitxor chain can be marked as a counterpart full-adder sum pattern.
+
+  ;; The same thing  applies for when looking for half-adder  sum patterns from
+  ;; half-adder carry.
+
+  ;; These functions are not only useful for when looking for sum patterns from
+  ;; already  found carry.  But  they  are also  useful  for  when looking  for
+  ;; half-adder carry patterns from already found half-adder sum patterns.
+
+  ;; TODO: expand this for ha+1 cases.
+
+  ;; first define aux data types for easy programming.
   (fty::defprod exploded-args-and-args
-    ((exploded-args sv::Svexlist-p)
-     (args sv::Svexlist-p))
+    ((exploded-args sv::Svexlist-p) ;; exploded args
+     (args sv::Svexlist-p) ;; original args as appears in full-adder carry chain.
+     )
     :layout :fulltree
     ;;:hons t
     )
@@ -2450,15 +2555,18 @@
     :hints (("Goal"
              :in-theory (e/d (exploded-args-and-args-alist-p) ()))))
 
+  ;; define  an invariant  as need  to  know at  all times  that exploded  args
+  ;; correspond to original args.
   (define exploded-args-and-args-inv ((x exploded-args-and-args-p)
                                       env
                                       &key
                                       ((bit-fn symbolp) 'bit-fn))
     :verify-guards nil
     (b* (((exploded-args-and-args x) x))
-      (if (equal bit-fn 'sv::bitand)
+      (if (equal bit-fn 'sv::bitand) ;; when looking for ha-c from ha-s
           (equal (svl::svex-eval$-bitand-lst x.exploded-args env)
                  (svl::svex-eval$-bitand-lst x.args env))
+        ;; otherwise expect to find bitxor at all times.
         (equal (svl::svex-eval$-bitxor-lst x.exploded-args env)
                (svl::svex-eval$-bitxor-lst x.args env)))))
 
@@ -2492,14 +2600,21 @@
                :expand (EXPLODED-ARGS-AND-ARGS-LIST-INV NIL ENV)
                :in-theory (e/d () ())))))
 
+  ;; set a limit for explosion in order to save time.
   (define process-fa/ha-c-chain-pattern-args-limit ()
     :returns (res natp)
-    (if (aggressive-find-adders-in-svex)
+    (if (aggressive-find-adders-in-svex) ;; agressive search will trigger a deeper explosion.
         5
-      2)
+      2) ; 2 should be sufficient for the majority of cases if not all.
     ///
     (in-theory (disable (:e process-fa/ha-c-chain-pattern-args-limit))))
 
+  ;; Need to create a fast-alist to lookup possibly matching arguments quickly.
+  ;; This function pick a  the best key. It looks like it is  best for this key
+  ;; to not be  a partsel of a variable  OR when an argument is  a constant.  I
+  ;; cannot recall  why this  is the  case and  this may  now be  redundant. It
+  ;; probably helps with speed ups. Note that it may still select these as keys
+  ;; if no other leaf is left.
   (define cons-with-best-first-key (leaves rest-keys)
     ;; chosing constants or simple partsel of input operands is not a good choice usually...
     :returns (keys sv::svexlist-p :hyp (and (sv::Svexlist-p leaves)
@@ -2553,26 +2668,33 @@
                            (svl::svex-eval$-bitand-lst args env))))
       :fn process-fa/ha-c-chain-pattern-args-aux))
 
-  ;; create fast-alist entries to find exploded args and args.
+  ;; create fast-alist  entries to  find exploded-args and  args. Note  that it
+  ;; does not override already existing entries!!
   (define process-fa/ha-c-chain-pattern-args-collect-aux ((keys true-listp)
                                                           exploded-args-and-args
-                                                          collected)
+                                                          collected
+                                                          &key
+                                                          (enabled 't))
     :returns (collected-res exploded-args-and-args-alist-p
                             :hyp (and (exploded-args-and-args-alist-p collected)
-                                      (sv::svexlist-p keys)
-                                      (exploded-args-and-args-p exploded-args-and-args)))
+                                      (or (not enabled) (sv::svexlist-p keys))
+                                      (or (not enabled) (exploded-args-and-args-p exploded-args-and-args))))
     (if (atom keys)
         collected
-      (b* ((key (car keys))
+      (b* (((unless enabled) collected)
+           (key (car keys))
            (existing-entry (cdr (hons-get key collected)))
            (new-entry (cons exploded-args-and-args existing-entry)))
         (process-fa/ha-c-chain-pattern-args-collect-aux (cdr keys)
                                                         exploded-args-and-args
-                                                        (hons-acons key new-entry collected))))
+                                                        (hons-acons key new-entry collected)
+                                                        :enabled enabled)))
     ///
+
     (defret <fn>-is-correct
       (implies (and (exploded-args-and-args-alist-inv collected env)
-                    (exploded-args-and-args-inv exploded-args-and-args env))
+                    (or (not enabled)
+                        (exploded-args-and-args-inv exploded-args-and-args env)))
                (exploded-args-and-args-alist-inv collected-res env))
       :hints (("Goal"
                :in-theory (e/d (exploded-args-and-args-alist-inv
@@ -2581,8 +2703,10 @@
 
   (defthm svexlist-p-implies-true-listp
     (implies (sv::Svexlist-p x)
-             (true-listp x)))
+             (true-listp x))
+    :rule-classes (:rewrite))
 
+  ;; check inersection without consing.
   (define has-common-elements-p (l1 (l2 true-listp))
     (if (atom l1)
         nil
@@ -2600,6 +2724,18 @@
       (cons (car x)
             (safe-take (1- num) (cdr x)))))
 
+  #|(local
+  (defthm EXPLODED-ARGS-AND-ARGS-ALIST-P-implies-true-listp
+  (implies (EXPLODED-ARGS-AND-ARGS-ALIST-P x)
+  (true-listp x))))|#
+
+  (local
+   (defthmd dumb-true-listp-lemma
+     (implies (true-listp x)
+              (iff (consp x)
+                   x))
+     ))
+
   (define process-fa/ha-c-chain-pattern-args ((pattern-alist pattern-alist-p)
                                               (collected exploded-args-and-args-alist-p)
                                               &key
@@ -2607,12 +2743,13 @@
     :returns (collected-res exploded-args-and-args-alist-p
                             :hyp (and (exploded-args-and-args-alist-p collected)
                                       (pattern-alist-p pattern-alist)))
+    :guard-hints (("Goal")
+                  (and stable-under-simplificationp
+                       '(:in-theory (e/d (dumb-true-listp-lemma) ()))))
     (if (atom pattern-alist)
         collected
       (b* ((fns (cdar (pattern-alist-fix pattern-alist)))
-           ;; why partial match necessary?
-           ;; when looking carefully for ha-s, for example, we may have a matching unmarked ha-c pattern.
-           ;; the full-match-p thingy is just for debugging stuff for now...
+
            ((mv bit-fn match-p do-not-explode)
             (cond ((eq adder-type 'ha)
                    (mv 'sv::bitxor (subsetp-equal '(ha-c-chain) fns) nil))
@@ -2624,7 +2761,7 @@
                                        ;;too  and prevent  careful search  from
                                        ;;diving in....
                                        )
-                       (subsetp-equal '(ha-c-chain) fns) ;; if there is a full pattern, then don't explode..
+                       (subsetp-equal '(ha-c-chain) fns) ;; if there is already a full pattern, then don't explode..
                        ))
                   ((eq adder-type 'ha+1) ;; probably not fully implemented.
                    (mv 'sv::bitxor (subsetp-equal '(ha+1-c-chain) fns) nil))
@@ -2637,17 +2774,22 @@
             (if do-not-explode
                 (mv args args)
               (process-fa/ha-c-chain-pattern-args-aux args)))
-           (exploded-args-and-args (make-exploded-args-and-args :exploded-args exploded-args
-                                                                :args args))
 
            (keys (safe-take 1 keys)) ;; minimize the number of keys to prevent cluttering the collected alist
 
-           ;; remove duplicates to maximize changes
-           (exploded-args (if (equal bit-fn 'sv::bitxor)
-                              (svl::remove-pair-equal exploded-args)
-                            exploded-args ;; maybe make it remove duplicates or something.
-                            ))
-           ;; All keys could have been removed above when removing-pairs
+           (exploded-args-orig exploded-args)
+           ;; remove  duplicates to  maximize  changes  why remove  duplicates:
+           ;; because  the matching  pattern might  have already  simplifed the
+           ;; repeated elements.
+           (exploded-args (cond ((equal bit-fn 'sv::bitxor)
+                                 (svl::remove-pair-equal exploded-args))
+                                ((equal bit-fn 'sv::bitand)
+                                 (remove-duplicates-equal exploded-args))
+                                (t
+                                 exploded-args ;; maybe make it remove duplicates or something.
+                                 )))
+
+           ;; All viable keys could have been removed above deu to removing-pairs
            ;; if that's the case, then extend keys to make sure we can have a hit:
            (keys (if (implies (or keys ;;  keys might be intentionally empty if
                                   ;; so, then don't put  stuff in it unless the
@@ -2655,22 +2797,35 @@
                                   (aggressive-find-adders-in-svex))
                               (has-common-elements-p keys exploded-args))
                      keys
-                   (if (consp exploded-args)
-                       (append (safe-take 1 exploded-args) keys)
-                     keys)))
+                   (append (safe-take 1 exploded-args) keys)))
 
-           (collected (process-fa/ha-c-chain-pattern-args-collect-aux keys exploded-args-and-args collected)))
+           (?exploded-args-and-args (make-exploded-args-and-args :exploded-args exploded-args
+                                                                 :args args))
+           (collected (process-fa/ha-c-chain-pattern-args-collect-aux keys exploded-args-and-args collected))
+
+           (exploded-args-changed? (not (equal exploded-args-orig exploded-args)))
+           (collected
+            ;; do this below when removing duplicates/pairs changes something.
+            (process-fa/ha-c-chain-pattern-args-collect-aux keys
+                                                            (and exploded-args-changed?
+                                                                 (make-exploded-args-and-args
+                                                                  :exploded-args exploded-args-orig
+                                                                  :args args))
+                                                            collected
+                                                            :enabled exploded-args-changed?))
+
+           )
         (process-fa/ha-c-chain-pattern-args (cdr pattern-alist) collected)))
     ///
 
     (local
-     (defthm atom-REMOVE-PAIR-EQUAL-lemma
+     (defthm atom-remove-pair-equal-lemma
        (implies (bind-free '((env . env)) (env))
                 (iff (consp (svl::remove-pair-equal lst))
                      (not (and (hide (not (consp (svl::remove-pair-equal lst))))
                                (equal (svl::svex-eval$-bitxor-lst lst env)
                                       0)))))
-       :hints (("Goal"
+       :hints (("goal"
                 :use ((:instance svl::svex-eval$-bitxor-lst-of-remove-pair-equal
                                  (svl::lst lst)))
                 :do-not-induct t
@@ -2690,55 +2845,57 @@
                 (exploded-args-and-args-alist-inv collected-res env :bit-fn 'sv::bitxor)))
       :hints (("Goal"
                :do-not-induct t
-               :expand ((PROCESS-FA/HA-C-CHAIN-PATTERN-ARGS PATTERN-ALIST COLLECTED
-                                                            :ADDER-TYPE 'HA))
+               :expand ((process-fa/ha-c-chain-pattern-args pattern-alist collected
+                                                            :adder-type 'ha))
                :induct (process-fa/ha-c-chain-pattern-args pattern-alist collected)
                :in-theory (e/d (exploded-args-and-args
                                 exploded-args-and-args->exploded-args
                                 exploded-args-and-args->args
                                 exploded-args-and-args-inv)
-                               ())))))
-
-  ;; I pull an exploded-arg from each  arg to construct the fast-alist. So same
-  ;; entry is  repeated 2  (ha) or 3  (fa) times with  different keys.  I don't
-  ;; expect this to be necessarry but this  can help the search to move forward
-  ;; a bit more quickly. But maybe not..
-
-  ;; (process-fa/ha-c-chain-pattern-args '((((sv::bitxor x Y)
-  ;;                                        z (sv::bitxor m k))
-  ;;                                        . (fa-c-chain)))
-  ;;                                     nil
-  ;;                                     :adder-type 'fa)
-  ;; returns:
-  ;; ((M (X Y Z M K)
-  ;;     (SV::BITXOR X Y)
-  ;;     Z (SV::BITXOR M K))
-  ;;  (Z (X Y Z M K)
-  ;;     (SV::BITXOR X Y)
-  ;;     Z (SV::BITXOR M K))
-  ;;  (X (X Y Z M K)
-  ;;     (SV::BITXOR X Y)
-  ;;     Z (SV::BITXOR M K)))
-  )
+                               ()))))))
 
 (defsection find-s-from-found-c-in-svex-aux-explore
   ;; These functions perform  a "cheap" search to see if  all the exploded args
-  ;; appear as an  argument in the bitxor  chain of an svex. AND  it makes sure
-  ;; that  exploded args  are  distributed  into two  branches  of the  topmost
-  ;; bitxor, which  indicates that we are  ready to shuffle around  the svex to
-  ;; reveal the matching ha-s/fa-s pattern
+  ;; appear as an argument  in the bitxor (or bitand) chain of  an svex. AND it
+  ;; makes sure  that exploded args  are distributed  into two branches  of the
+  ;; topmost  bitxor/bitnad.  Why  topmost:  because we  want  to preserve  the
+  ;; original structure  as much  as possible  and this  indicates that  we are
+  ;; ready to  shuffle around  the svex to  reveal the  matching ha-s/fa-s/ha-c
+  ;; pattern.
 
-  (Local
+  ;; For example, assume we have already found this: (fa-c-chain x y z), and we
+  ;; are looking for a counterpart fa-s in this term:
+
+  ;; (bitxor (bitxor  x (bitxor  a (bitxor  y z))) (bitxor  k m)).   Since this
+  ;; bitxor chain has x, y and z, we can say that this includes our counterpart
+  ;; full-adder sum  pattern. One thing we  can do is shuffle  the arguments at
+  ;; this stage to pull out the fa-s as follows:
+  ;; (bitxor (fa-s-chain x y z) (bitxor a (bitxor k m)))
+  ;; Another  option is  to dive  into  the first  branch of  the main  bitxor:
+  ;; (bitxor  x (bitxor  a (bitxor  y z))),  and only  shuffle these  arguments
+  ;; around. So we'd get:
+  ;; (bitxor (bitxor a (fa-s-chain x y z)) (bitxor k m))
+  ;; a logically  equivalent term but  syntactically different. I  preferred to
+  ;; use the second  option because the first one causes  elements in bitxor to
+  ;; be  moved  around  too  much  and it  changes  the  original  structure  a
+  ;; lot. During development, this made it very difficult to debug things. So I
+  ;; now dive in as much as possible before shuffling elements around to reveal
+  ;; counterpart  full-adder sum  patterns.  It  is possible  that this  became
+  ;; redundant now and that this may not have any benefits anymore but there is
+  ;; no harm keeping  this system intact.  This may help  with debugging in the
+  ;; feature.
+
+  (local
    (defthm member-equal-of-hons-assoc-equal
      (implies (hons-assoc-equal x lst)
               (member-equal (hons-assoc-equal x lst)
                             lst))))
-
   (local
    (defthm sv::svexlist-p-implies-true-listp
      (implies (sv::svexlist-p lst)
               (true-listp lst))))
 
+  ;; Find a possible match from exploded-args-and-args-alist.
   (define find-s-from-found-c-in-svex-aux-explore-aux ((svex)
                                                        (exploded-args-and-args-alist)
                                                        (skip true-listp)
@@ -2749,8 +2906,9 @@
     (case-match svex
       ((fn x y)
        (and (equal bit-fn fn)
-            (or ;;  be careful: this ordering  in (and ...) makes sure that the
-             ;;  result of hons-get is returned...
+            (or  ;;  be  careful:  the  below ordering  in  (and  ...) is  very
+             ;;  important. This makes  sure that the result  of hons-get is
+             ;;  returned upon success. So do not swap!
              (and (not  (member-equal x skip))
                   (hons-get x exploded-args-and-args-alist))
              (and (not (member-equal y skip))
@@ -2846,10 +3004,18 @@
            (exist-branch (find-s-from-found-c-in-svex-aux-explore2 svex exploded-ags))
            ;; 3 means all exploded-args exist, and they are dispersed to the two branches.
            ((when (equal exist-branch 3))
-            (mv args exploded-ags)))
-        ;; TODO:  Consider adding  a  check  here that  when  ha/ha-c is  being
-        ;; searched, it didn't just match the svex itself. That would be stupid
-        ;; because it'd defy the purpose of careful search.
+            (progn$ (and*-exec
+                     ;; a  check  to print a warning message  when  ha/ha-c is  being
+                     ;; searched, it didn't just match the svex itself. Catching such a case
+                     ;; might indicate something went wrong along the way because that would
+                     ;; have been caught in quick search stage.
+                     (svl::equal-len args 2)
+                     (consp svex)
+                     (subsetp-equal args (cdr svex))
+                     (subsetp-equal (cdr svex) args)
+                     (cwe "WARNING: Careful search found something that should have been matched in the quick search stage.~%"))
+
+                    (mv args exploded-ags))))
 
         ;;if exist-branch is not 3, then keep searching for other matches.
         (find-s-from-found-c-in-svex-aux-explore-list svex (cdr exploded-args-and-args-list))))
@@ -4497,7 +4663,7 @@
              :induct (global-zero-fa-c-chain-extra-arg-alist alist)
              :in-theory (e/d (sv::svex-alist-eval$)
                              ())))))
-;;:i-am-here
+
 (defsection fix-order-of-fa/ha-chain-args
   ;; After replacements,  ordered-ness of  arguments might change,  which might
   ;; prevent patterns  from being found  when looking more carefully.   So This
@@ -6962,20 +7128,6 @@ y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(progn
-  (encapsulate
-    (((find-adders-global-bitand/or/xor-simplification-enabled) => *))
-    (local
-     (defun find-adders-global-bitand/or/xor-simplification-enabled ()
-       nil)))
-
-  (defmacro enable-find-adders-global-bitand/or/xor-simplification (enable)
-    (if enable
-        `(defattach find-adders-global-bitand/or/xor-simplification-enabled return-t)
-      `(defattach find-adders-global-bitand/or/xor-simplification-enabled return-nil)))
-
-  (enable-find-adders-global-bitand/or/xor-simplification nil))
-
 (fty::defprod find-f/h-adders-state
   ((pp-id-cleaned :default nil)
    (reduce-bit-negations :default nil)
@@ -7018,7 +7170,8 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
 
        ;;(- (design_res-broken svex-alist "beginning of find-f/h-adders-in-svex-alist"))
 
-       (- (and (equal pass-num 1)
+       (first-pass? (= pass-num 1)) 
+       (- (and first-pass?
                (cw "--- Searching for ~s0 patterns now. ~%" adder-str)))
        (- (cw "-- Pass #~p0:~%" pass-num))
 
@@ -7033,6 +7186,21 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        (- (cw "- Quick search found and replaced ~p0 ~s1 patterns. ~%" replaced-pattern-cnt adder-str))
        ;; ;(- (fast-alist-free pattern-alist))
 
+
+       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;; Only for the first pass of FA, also do an vector adder search.
+       ;; This is not necessary but can  help with performance by reducing pass
+       ;; count.
+       (fa-first-pass? (and first-pass? (eq adder-type 'fa)))
+       (- (and fa-first-pass? (cw "- Looking and rewriting for vector adder patterns... ~%"))) 
+       (new-svex-alist2 (if fa-first-pass? (ppx-simplify-alist new-svex-alist) new-svex-alist))
+       (vector-adder-changed (and fa-first-pass? (not (equal new-svex-alist2 new-svex-alist))))
+       (new-svex-alist2 (and fa-first-pass? (global-zero-fa-c-chain-extra-arg-alist new-svex-alist2)))
+       ((when vector-adder-changed)
+        (progn$ (cw "-> Success! Rewriting for vector adder made some changes. Let's make another pass. ~%")
+                (find-f/h-adders-in-svex-alist new-svex-alist2 (1- limit))))
+       (- (and fa-first-pass? (cw "-> No change from vector adder simplification. ~%")))
+       
        ((unless (equal svex-alist new-svex-alist))
         (progn$ ;;(cw "-> Structed changed. Let's make another pass. ~%")
          (fast-alist-free pattern-alist)
@@ -7129,7 +7297,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        (svex-alist (global-zero-fa-c-chain-extra-arg-alist new-svex-alist))
        ((when vector-adder-changed)
         (progn$ (cw "-> Success! Rewriting for vector adder made some changes. Let's make another pass. ~%")
-                (find-f/h-adders-in-svex-alist new-svex-alist (1- limit))))
+                (find-f/h-adders-in-svex-alist svex-alist (1- limit))))
        (- (cw "-> No change from vector adder simplification. ~%"))
 
        ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8112,6 +8280,47 @@ pattern
                     (sv::svex-call 'sv::partsel
                                    (hons-list 1 1
                                               (sv::svex-call 'full-adder (cdr args)))))
+
+                   ((and (eq x.fn 'ha-s-chain)
+                         (svl::equal-len x.args 2)
+                         (and* (svl::bitp-of-svex (first x.args))
+                               (svl::bitp-of-svex (second x.args))))
+                    (sv::svex-call 'sv::partsel
+                                   (hons-list 0 1
+                                              (sv::svex-call 'half-adder args))))
+                   ((and (eq x.fn 'ha-c-chain)
+                         (svl::equal-len x.args 2)
+                         (and* (svl::bitp-of-svex (first x.args))
+                               (svl::bitp-of-svex (second x.args))))
+                    (sv::svex-call 'sv::partsel
+                                   (hons-list 1 1
+                                              (sv::svex-call 'half-adder args))))
+
+                   ((and (eq x.fn 'ha+1-s-chain)
+                         (svl::equal-len x.args 3)
+                         (and* (integerp (first x.args))
+                               (not (equal (first x.args) 0))  ;; the 0 case is
+                               ;; defined   with
+                               ;; bitnot. Expected
+                               ;; to  never  use
+                               ;; that.
+                               (svl::bitp-of-svex (second x.args))
+                               (svl::bitp-of-svex (third x.args))))
+                    (b* ((base (sv::svex-call 'sv::partsel
+                                              (hons-list 0 1
+                                                         (sv::svex-call 'full-adder
+                                                                        (hons 1 (cdr args)))))))
+                      (if (equal (first x.args) 10) ;; when this is 10, it means it was matched with carry+1
+                          (sv::Svex-call 'sv::bitxor (hons-list 1 base))
+                        base)))
+                   ((and (eq x.fn 'ha+1-c-chain)
+                         (svl::equal-len x.args 2)
+                         (and* (svl::bitp-of-svex (first x.args))
+                               (svl::bitp-of-svex (second x.args))))
+                    (sv::svex-call 'sv::partsel
+                                   (hons-list 1 1
+                                              (sv::svex-call 'full-adder (hons 1 args)))))
+
                    (t (sv::svex-call x.fn args))))))
 
   (define merge-fa-s-c-chains-lst ((lst sv::svexlist-p)
@@ -8126,6 +8335,7 @@ pattern
       (hons (merge-fa-s-c-chains (car lst))
             (merge-fa-s-c-chains-lst (cdr lst)))))
   ///
+
   (verify-guards merge-fa-s-c-chains-fn)
 
   (memoize 'merge-fa-s-c-chains
@@ -8145,6 +8355,52 @@ pattern
               :in-theory (e/d (bitp
                                FA-C-CHAIN)
                               ())))))
+
+  (local
+   (defthm sv::4vec-part-select-of-fa-chains/s-c-spec-lemma-2
+     (implies (and (bitp x) (bitp y))
+              (and (equal (sv::4vec-part-select 0 1 (c-spec (list x y)))
+                          (c-spec (list x y)))
+                   (equal (sv::4vec-part-select 0 1 (s-spec (list x y)))
+                          (s-spec (list x y)))))
+     :hints (("Goal"
+              :in-theory (e/d (bitp
+                               FA-C-CHAIN)
+                              ())))))
+
+  (local
+   (defthm ha+1-s-chain-to-s-spec-lemma
+     (implies (and (bitp x) (bitp y) (not (equal m 0)))
+              (and (equal (ha+1-s-chain m x y)
+                          (if (equal m 10)
+                              (s-spec (list x y))
+                            (s-spec (list 1 x y))))))
+     :hints (("Goal"
+              :in-theory (e/d (BITP ha+1-s-chain)
+                              ())))))
+
+  (local
+   (defthm negate-of-s-spec-with-1
+     (implies (and (bitp x)
+                   (bitp y))
+              (equal (LOGXOR 1 (S-SPEC (LIST 1 x y)))
+                     (S-SPEC (LIST x y))))
+     :hints (("Goal"
+              :in-theory (e/d (bitp) ())))))
+
+  (local
+   (defthm s/c-spec-move-consts
+     (and (equal (c-spec (list x y 1))
+                 (c-spec (list 1 x y)))
+          (equal (s-spec (list x y 1))
+                 (s-spec (list 1 x y)))
+
+          (equal (s-spec (list 0 x y))
+                 (s-spec (list x y)))
+          (equal (c-spec (list 0 x y))
+                 (c-spec (list x y))))
+     :hints (("Goal"
+              :in-theory (e/d (c-spec s-spec SUM-LIST sum) ())))))
 
   (local
    (in-theory (disable svl::width-of-svex-extn-correct$-lst
@@ -8198,7 +8454,7 @@ pattern
                               SV::SVEXLIST-EVAL$
                               SV::SVEX-APPLY
                               sv::svex-apply$
-                              full-adder)
+                              full-adder half-adder)
                              ()))))
 
   (define merge-fa-s-c-chains-alist ((alist sv::svex-alist-p)
@@ -8257,6 +8513,7 @@ pattern
        (or (equal fn 'fa-c-chain)
            (equal fn 'fa-s-chain)
            (equal fn 'full-adder)
+           (equal fn 'half-adder)
            (equal fn 'ha-s-chain)
            (equal fn 'ha-c-chain)
            (equal fn 'ha+1-s-chain)
@@ -8506,18 +8763,7 @@ pattern
 (define search-and-add-ha-c-for-shifted ((x sv::Svex-alist-p))
   :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p x))
   :prepwork
-  ((encapsulate
-     (((search-and-add-ha-c-for-shifted-enabled) => *))
-     (local
-      (defun search-and-add-ha-c-for-shifted-enabled ()
-        nil)))
-
-   (defmacro enable-search-and-add-ha-c-for-shifted (enable)
-     (if enable
-         `(defattach search-and-add-ha-c-for-shifted-enabled return-t)
-       `(defattach search-and-add-ha-c-for-shifted-enabled return-nil)))
-
-   (enable-search-and-add-ha-c-for-shifted t))
+  ()
 
   (b* (((unless (search-and-add-ha-c-for-shifted-enabled))
         x)
@@ -8546,20 +8792,6 @@ pattern
                              ())))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(progn
-  (encapsulate
-    (((keep-missing-env-vars-in-svex) => *))
-    (local
-     (defun keep-missing-env-vars-in-svex ()
-       nil)))
-
-  (defmacro enable-keep-missing-env-vars-in-svex (enable)
-    (if enable
-        `(defattach keep-missing-env-vars-in-svex return-t)
-      `(defattach keep-missing-env-vars-in-svex return-nil)))
-
-  (enable-keep-missing-env-vars-in-svex nil))
-
 (make-event
  `(define svex-reduce-w/-env-config-1 ()
     :returns (config svl::svex-reduce-config-p)
@@ -8598,7 +8830,8 @@ pattern
            (apply$-warrant-ha+1-s-chain)
            (apply$-warrant-ha-s-chain)
            (apply$-warrant-fa-s-chain)
-           (apply$-warrant-full-adder))))
+           (apply$-warrant-full-adder)
+           (apply$-warrant-half-adder))))
    `(define check-context-for-adder-warrants ((context rp-term-listp))
       :returns valid
       (subsetp-equal ',w context)
@@ -8725,7 +8958,7 @@ was ~st seconds."))
           (svl::svex-alist-to-svexl-alist svex-alist)))|#
 
           (- (acl2::sneaky-save 'after-fa svex-alist))
-          (- (cw "Access the svexl-alist after full-adder search: ~
+          (- (cw "Access the svexl-alist after full-adder search:
 (b* (((mv res state) (acl2::sneaky-load 'rp::after-fa state)))
    (mv state (svl::svex-alist-to-svexl-alist res))) ~%"))
 
@@ -9160,7 +9393,8 @@ was ~st seconds."))
           ((and* (svl::equal-len args-lst 2)
                  (or (eq fnc 'ha-c-chain)
                      (eq fnc 'ha+1-c-chain)
-                     (eq fnc 'ha-s-chain)))
+                     (eq fnc 'ha-s-chain)
+                     (eq fnc 'half-adder)))
            (mv `(,fnc ,(first args-lst)
                       ,(second args-lst))
                `(nil t t t)))
@@ -9186,6 +9420,7 @@ was ~st seconds."))
          (create-regular-eval-lemma ha+1-s-chain 3 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma fa-s-chain 3 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma full-adder 3 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma half-adder 2 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma ha+1-c-chain 2 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma fa-c-chain 4 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma ha-c-chain 2 find-adders-in-svex-formula-checks)
@@ -9292,6 +9527,15 @@ was ~st seconds."))
                    (full-adder x y z)))
        :hints (("Goal"
                 :in-theory (e/d (full-adder) ())))))
+
+    (local
+     (defthm half-adder-of-4vec-fix
+       (and (equal (half-adder (sv::4vec-fix x) y)
+                   (half-adder x y))
+            (equal (half-adder x (sv::4vec-fix y))
+                   (half-adder x y)))
+       :hints (("Goal"
+                :in-theory (e/d (half-adder) ())))))
 
     (local
      (defthm ha+1-s-CHAIN-of-4vec-fix
@@ -9650,7 +9894,8 @@ svex-alist)
            ,@args
            :fns ,*adder-fncs*
            :defthm-macro ,(if then-fgl 'defthmrp-then-fgl 'defthmrp)
-           )))))
+           )
+         ))))
 
 ;;;;;
 
@@ -9732,28 +9977,36 @@ svex-alist)
          )
       `(encapsulate
          nil
-         (local
-          (,defthm-macro ,local-thm-name
-            (implies (and ,@warrant-hyps)
-                     ,thm-body)
-            ,@args))
+          (with-output
+            ;;:off :all
+            :gag-mode nil
+            :on (summary error)
+            :stack :pop
+            (local
+             (,defthm-macro ,local-thm-name
+               (implies (and ,@warrant-hyps)
+                        ,thm-body)
+               ,@args)))
 
-         (with-output :off :all :on (error) :gag-mode nil
+         ;;(with-output :off :all :on (error) :gag-mode nil
            (local
             (defun my-badge-userfn (fn)
               (declare (xargs :guard t))
-              (cond ,@my-badge-userfn-body))))
+              (cond ,@my-badge-userfn-body)))
+           ;;)
 
-         (with-output :off :all :on (error) :gag-mode nil
+         ;;(with-output :off :all :on (error) :gag-mode nil
            (local
             (defun my-apply$-userfn (fn args)
               (declare (xargs :guard (True-listp args)))
-              (cond ,@my-apply$-userfn-body))))
+              (cond ,@my-apply$-userfn-body)))
+           ;;)
 
-         (with-output
-           :off :all
-           :gag-mode nil
-           :on (summary error)
+         ;; (with-output
+         ;;   :off :all
+         ;;   :gag-mode nil
+         ;;   ;;:on (summary error)
+         ;;   :stack :pop
            (defthm ,thm-name
              ,thm-body
              :otf-flg t
@@ -9788,14 +10041,20 @@ svex-alist)
                          (:executable-counterpart my-badge-userfn))))
                      #|(and stable-under-simplificationp
                      '(:in-theory (e/d () ())))|#
-                     )))
+                     ))
+           ;;)
 
          )))
 
   (defmacro defthm-with-temporary-warrants (thm-name thm-body
                                                      &rest args)
-    `(make-event
-      (defthm-with-temporary-warrants-fn ',thm-name ',thm-body ',args state))
+    `(with-output
+       :off :all
+       :gag-mode nil
+       :on (error)
+       :stack :push
+       (make-event
+        (defthm-with-temporary-warrants-fn ',thm-name ',thm-body ',args state)))
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -9829,8 +10088,13 @@ module fa_s_chain(input a, input b, input c, output o);
 endmodule
 
 module full_adder(input a, input b, input c, output [1:0] o);
-    assign o = a + b + c;
-endmodule")
+    assign o = {a&b | a&c | b&c, a ^ b ^ c};
+endmodule
+
+module half_adder(input a, input b, output [1:0] o);
+    assign o = {a&b, a^b};
+endmodule
+")
 
 ;; (FGL::FGL-INTERP-CP CLAUSE #@333# FGL::INTERP-ST STATE)
 
@@ -9858,17 +10122,29 @@ endmodule")
               (local
                (make-event
                 `(:or
-                  (fgl::fgl-thm
-                   (implies (svl::exported-design-svtv-autohyps)
-                            (b* ((orig-out (sv::svex-alist-eval *orig-svex-alist*
-                                                                (svl::exported-design-svtv-autoins)))
-                                 (exported-out (sv::svtv-run (svl::exported-design-svtv)
-                                                             (svl::exported-design-svtv-autoins)))
-                                 (- (cw "~%Output values of the original design: ~p0~%" orig-out))
-                                 (- (cw "~%Output values of the exported design: ~p0~%" exported-out)))
-                            (equal orig-out exported-out))))
+                  ,(if (or ,(equal ,sanity-check :rp)
+                           ,(equal ,sanity-check :rp-then-fgl))
+                       `(progn (add-rp-rule svl::exported-design-svtv-autohyps)
+                               (add-rp-rule svl::exported-design-svtv-autoins)
+                               (defthmrp-multiplier sanity-check
+                                 ,@(and ,(equal ,sanity-check :rp-then-fgl) `(:then-fgl t))
+                                 (implies (svl::exported-design-svtv-autohyps)
+                                          (b* ((orig-out (sv::svex-alist-eval *orig-svex-alist*
+                                                                              (svl::exported-design-svtv-autoins)))
+                                               (exported-out (sv::svtv-run (svl::exported-design-svtv)
+                                                                           (svl::exported-design-svtv-autoins))))
+                                            (equal orig-out exported-out)))))
+                     `(fgl::fgl-thm
+                       (implies (svl::exported-design-svtv-autohyps)
+                                (b* ((orig-out (sv::svex-alist-eval *orig-svex-alist*
+                                                                    (svl::exported-design-svtv-autoins)))
+                                     (exported-out (sv::svtv-run (svl::exported-design-svtv)
+                                                                 (svl::exported-design-svtv-autoins)))
+                                     (- (cw "~%Output values of the original design: ~p0~%" orig-out))
+                                     (- (cw "~%Output values of the exported design: ~p0~%" exported-out)))
+                                  (equal orig-out exported-out)))))
                   (value-triple (hard-error 'export-to-verilog-after-adder-detection
                                             "Sanity check failed. Please see the counterexample above~%"
                                             nil)))))
               (value-triple :sanity-check-passed)))
-      (value '(value-triple :done))))))
+        (value '(value-triple :done))))))
