@@ -1022,8 +1022,8 @@
                                      (item-limit pseudo-termp)
                                      (item-events pseudo-event-form-listp)
                                      (item-thm symbolp)
-                                     (result-type typep)
                                      (result-term pseudo-termp)
+                                     (result-type typep)
                                      (new-compst "An untranslated term.")
                                      (new-context atc-contextp)
                                      (gin stmt-ginp)
@@ -1074,9 +1074,15 @@
                                                ,gin.fenv-var
                                                ,gin.limit-var)
                          (mv ,result-uterm ,new-compst)))
-       (formula1 (atc-contextualize formula1 gin.context gin.fn gin.fn-guard
-                                    gin.compst-var gin.limit-var
-                                    items-limit t wrld))
+       (formula1 (atc-contextualize formula1
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    gin.limit-var
+                                    items-limit
+                                    t
+                                    wrld))
        (type-pred (and result-term
                        (atc-type-to-recognizer result-type gin.prec-tags)))
        (formula (if result-term
@@ -1414,8 +1420,8 @@
                                         item-limit
                                         item-events
                                         item-thm-name
-                                        expr.type
                                         expr.term
+                                        expr.type
                                         gin.compst-var
                                         gin.context
                                         (change-stmt-gin
@@ -1951,8 +1957,8 @@
                                   item-limit
                                   item-events
                                   item-thm-name
-                                  type
                                   term
+                                  type
                                   new-compst
                                   new-context
                                   (change-stmt-gin
