@@ -867,7 +867,7 @@
        ((when erp)
         (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
         state)
-       (- (and res (cw "~%  Hyp ~x1 is provably unnecessary." ctx hyp)))
+       (- (and res (cw "~%  Hyp ~x1 is unnecessary." ctx hyp)))
        (state (if res
                   state ;; don't try to weaken, since the hyp can be dropped
                 (let* ((weakenings (get-weakenings hyp))
