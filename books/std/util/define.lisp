@@ -1549,7 +1549,7 @@ examples.</p>")
     `(with-output
        :stack :push
        ,@(and (not verbosep)
-              '(:on (acl2::error) :off :all))
+              '(:off (:other-than acl2::error)))
        (make-event
         (define-fn ',name ',args (w state))))))
 
