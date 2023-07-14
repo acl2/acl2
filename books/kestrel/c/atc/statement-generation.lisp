@@ -363,13 +363,15 @@
                                    (expr exprp)
                                    (expr-term pseudo-termp)
                                    (expr-limit pseudo-termp)
+                                   (expr-events pseudo-event-form-listp)
                                    (expr-thm symbolp)
                                    (gin stmt-ginp)
                                    state)
   :returns (mv (item block-itemp)
                (item-limit pseudo-termp :hyp (pseudo-termp expr-limit))
-               (thm-events pseudo-event-form-listp)
-               (thm-name symbolp)
+               (item-events pseudo-event-form-listp
+                            :hyp (pseudo-event-form-listp expr-events))
+               (item-thm symbolp)
                (new-inscope atc-symbol-varinfo-alist-listp)
                (new-context atc-contextp)
                (thm-index posp)
@@ -402,7 +404,7 @@
        ((when (not gin.proofs))
         (mv item
             item-limit
-            nil
+            expr-events
             nil
             (atc-add-var var varinfo gin.inscope)
             gin.context
@@ -527,9 +529,10 @@
                                  wrld)))
     (mv item
         item-limit
-        (list* initer-thm-event
-               item-thm-event
-               new-inscope-events)
+        (append expr-events
+                (list initer-thm-event
+                      item-thm-event)
+                new-inscope-events)
         item-thm-name
         new-inscope
         new-context
@@ -622,6 +625,7 @@
                                    init.expr
                                    init.term
                                    init.limit
+                                   init.events
                                    init.thm-name
                                    (change-stmt-gin
                                     gin
@@ -632,7 +636,7 @@
     (retok item
            init.term
            item-limit
-           (append init.events item-events)
+           item-events
            item-thm
            inscope-body
            context-body
