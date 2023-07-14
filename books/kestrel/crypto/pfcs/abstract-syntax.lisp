@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "Abstract syntax of PFCSes."
   :long
   (xdoc::topstring

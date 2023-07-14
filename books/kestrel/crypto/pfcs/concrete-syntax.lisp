@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ concrete-syntax
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "Concrete syntax of PFCSes."
   :long
   (xdoc::topstring

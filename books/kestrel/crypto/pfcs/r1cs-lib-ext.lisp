@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ r1cs-library-extensions
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "Extensions of the R1CS library."
   :long
   (xdoc::topstring

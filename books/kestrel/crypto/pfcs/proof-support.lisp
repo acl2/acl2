@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ proof-support
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "Proof support for PFCSes."
   :long
   (xdoc::topstring

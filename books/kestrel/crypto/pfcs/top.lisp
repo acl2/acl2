@@ -24,7 +24,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ prime-field-constraint-systems
+(defxdoc+ pfcs
   :parents (acl2::kestrel-books acl2::projects)
   :short "A library for PFCSes (Prime Field Constraint Systems)."
   :long
