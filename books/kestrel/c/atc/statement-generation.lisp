@@ -1133,7 +1133,7 @@
                                       (items-events pseudo-event-form-listp)
                                       (items-thm symbolp)
                                       (items-type typep)
-                                      (items-new-context atc-contextp)
+                                      (new-context atc-contextp)
                                       (gin stmt-ginp)
                                       state)
   :returns (gout stmt-goutp)
@@ -1149,7 +1149,7 @@
      to the execution of @('item') and @('items').")
    (xdoc::p
     "The context in @('gin') is the one before all the items,
-     while the context @('items-new-context') is the one after all the items.
+     while the context @('new-context') is the one after all the items.
      The former should be always a prefix of the latter.
      In order to calculate the computation state after all the items,
      we take the ``difference'' between the two contexts
@@ -1175,7 +1175,7 @@
          :names-to-avoid gin.names-to-avoid))
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
-                                                 items-new-context))
+                                                 new-context))
        (uterm (untranslate$ term nil state))
        (formula1 `(equal (exec-block-item-list ',all-items
                                                ,gin.compst-var
@@ -1223,7 +1223,7 @@
     (make-stmt-gout :items all-items
                     :type items-type
                     :term term
-                    :context items-new-context
+                    :context new-context
                     :limit all-items-limit
                     :events (append item-events
                                     items-events
