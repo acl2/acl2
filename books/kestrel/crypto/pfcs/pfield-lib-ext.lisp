@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ prime-field-library-extensions
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "Extensions of the prime fields library."
   :long
   (xdoc::topstring

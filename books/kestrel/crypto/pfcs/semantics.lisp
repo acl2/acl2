@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semantics
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "Semantics of PFCSes."
   :long
   (xdoc::topstring

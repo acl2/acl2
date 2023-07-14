@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ r1cs-subset
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "R1CS subset of PFCSes."
   :long
   (xdoc::topstring

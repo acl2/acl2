@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ r1cs-bridge
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "Bridge between PFCSes and R1CSes."
   :long
   (xdoc::topstring

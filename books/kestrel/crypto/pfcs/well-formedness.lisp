@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ well-formedness
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "Well-formedness of PFCSes."
   :long
   (xdoc::topstring

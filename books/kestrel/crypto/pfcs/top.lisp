@@ -24,7 +24,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ prime-field-constraint-systems
+(defxdoc+ pfcs
   :parents (acl2::kestrel-books acl2::projects)
   :short "A library for PFCSes (Prime Field Constraint Systems)."
   :long
@@ -33,7 +33,7 @@
     "The notion of PFCS (Prime Field Constraint System)
      is introduced by this library;
      it is not an existing notion that this library formalizes.
-     We write `PFCS` for the singular `Prime Field Constraint System',
+     We write `PFCS' for the singular `Prime Field Constraint System',
      and`PFCSes' for the plural `Prime Field Constraint Systems'.")
    (xdoc::p
     "A PFCS is a system of constraints over a prime field;
