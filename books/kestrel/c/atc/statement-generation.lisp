@@ -995,20 +995,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-list-one ((item block-itemp)
+(define atc-gen-block-item-list-one ((term pseudo-termp)
+                                     (item block-itemp)
                                      (item-limit pseudo-termp)
+                                     (item-events pseudo-event-form-listp)
                                      (item-thm symbolp)
                                      (result-type typep)
                                      (result-term pseudo-termp)
                                      (new-compst "An untranslated term.")
+                                     (new-context atc-contextp)
                                      (gin stmt-ginp)
                                      state)
-  :returns (mv (items block-item-listp :hyp (block-itemp item))
-               (items-limit pseudo-termp)
-               (thm-event pseudo-event-formp)
-               (thm-name symbolp)
-               (thm-index posp :rule-classes (:rewrite :type-prescription))
-               (names-to-avoid symbol-listp))
+  :returns (gout stmt-goutp)
   :short "Generate a list of C block items that consists of a given item."
   :long
   (xdoc::topstring
@@ -1033,6 +1031,17 @@
                      'binary-+
                      (list (pseudo-term-quote 1)
                            item-limit)))
+       ((when (not gin.proofs))
+        (make-stmt-gout
+         :items items
+         :type result-type
+         :term term
+         :context new-context
+         :limit items-limit
+         :events item-events
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid))
        (name (pack gin.fn '-correct- gin.thm-index))
        (thm-index (1+ gin.thm-index))
        ((mv name names-to-avoid)
@@ -1073,7 +1082,16 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv items items-limit event name thm-index names-to-avoid)))
+    (make-stmt-gout
+     :items items
+     :type result-type
+     :term term
+     :context new-context
+     :limit items-limit
+     :events (append item-events (list event))
+     :thm-name name
+     :thm-index thm-index
+     :names-to-avoid names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1360,34 +1378,24 @@
                                  expr.type expr.term
                                  gin.compst-var gin.fenv-var gin.limit-var
                                  gin.compst-var gin.prec-tags
-                                 thm-index names-to-avoid state))
-       ((mv items
-            items-limit
-            items-thm-event
-            items-thm-name
-            thm-index
-            names-to-avoid)
-        (atc-gen-block-item-list-one item item-limit item-thm-name
-                                     expr.type expr.term gin.compst-var
-                                     (change-stmt-gin
-                                      gin
-                                      :thm-index thm-index
-                                      :names-to-avoid names-to-avoid
-                                      :proofs (and item-thm-name t))
-                                     state)))
-    (retok (make-stmt-gout :items items
-                           :type expr.type
-                           :term expr.term
-                           :context gin.context
-                           :limit items-limit
-                           :events (append expr.events
-                                           (list stmt-event)
-                                           (list item-thm-event)
-                                           (list items-thm-event))
-                           :thm-name items-thm-name
-                           :thm-index thm-index
-                           :names-to-avoid names-to-avoid)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+                                 thm-index names-to-avoid state)))
+    (retok (atc-gen-block-item-list-one expr.term
+                                        item
+                                        item-limit
+                                        (append expr.events
+                                                (list stmt-event
+                                                      item-thm-event))
+                                        item-thm-name
+                                        expr.type
+                                        expr.term
+                                        gin.compst-var
+                                        gin.context
+                                        (change-stmt-gin
+                                         gin
+                                         :thm-index thm-index
+                                         :names-to-avoid names-to-avoid
+                                         :proofs (and item-thm-name t))
+                                        state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1891,20 +1899,6 @@
                                  gin.compst-var gin.fenv-var gin.limit-var
                                  new-compst gin.prec-tags
                                  thm-index names-to-avoid state))
-       ((mv items
-            items-limit
-            items-thm-event
-            items-thm-name
-            thm-index
-            names-to-avoid)
-        (atc-gen-block-item-list-one item item-limit item-thm-name
-                                     type term new-compst
-                                     (change-stmt-gin
-                                      gin
-                                      :thm-index thm-index
-                                      :names-to-avoid names-to-avoid
-                                      :proofs (and item-thm-name t))
-                                     state))
        (new-context (change-atc-context
                      gin.context
                      :premises (append (atc-context->premises gin.context)
@@ -1912,24 +1906,27 @@
                                               :var gin.compst-var
                                               :term new-compst))))))
     (retok
-     (make-stmt-gout
-      :items items
-      :type type
-      :term term
-      :context new-context
-      :limit items-limit
-      :events (append test-events
-                      then-events
-                      else-events
-                      (list then-stmt-event)
-                      (list else-stmt-event)
-                      (list if-stmt-event)
-                      (list item-thm-event)
-                      (list items-thm-event))
-      :thm-name items-thm-name
-      :thm-index thm-index
-      :names-to-avoid names-to-avoid)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+     (atc-gen-block-item-list-one term
+                                  item
+                                  item-limit
+                                  (append test-events
+                                          then-events
+                                          else-events
+                                          (list then-stmt-event
+                                                else-stmt-event
+                                                if-stmt-event
+                                                item-thm-event))
+                                  item-thm-name
+                                  type
+                                  term
+                                  new-compst
+                                  new-context
+                                  (change-stmt-gin
+                                   gin
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs (and item-thm-name t))
+                                  state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
