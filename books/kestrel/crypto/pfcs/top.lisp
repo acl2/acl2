@@ -33,7 +33,7 @@
     "The notion of PFCS (Prime Field Constraint System)
      is introduced by this library;
      it is not an existing notion that this library formalizes.
-     We write `PFCS` for the singular `Prime Field Constraint System',
+     We write `PFCS' for the singular `Prime Field Constraint System',
      and`PFCSes' for the plural `Prime Field Constraint Systems'.")
    (xdoc::p
     "A PFCS is a system of constraints over a prime field;
