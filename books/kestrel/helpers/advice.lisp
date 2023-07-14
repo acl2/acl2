@@ -1212,7 +1212,7 @@
          (b* (        ; Try to include the recommended book:
               ((mv erp state) (acl2::submit-event include-book-form nil nil state))
               ((when erp) ; can happen if there is a name clash
-               (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
+               (cw "NOTE: Event failed (name clash? uncertified book?): ~x0.~%" include-book-form)
                (mv nil nil state))
               ;; Check that we didn't bring in the current-book:
               ((when (and avoid-current-bookp
@@ -3546,7 +3546,7 @@
                          (improve-recsp 't)
                          (print 't)
                          (server-url 'nil)
-                         (timeout '40) ; for both connection timeout and read timeout
+                         (timeout '60) ; for both connection timeout and read timeout
                          (debug 'nil)
                          (step-limit ':auto)
                          (time-limit ':auto)
@@ -3654,7 +3654,7 @@
                       (n '10) ; num-recs-per-model
                       (print 't)
                       (server-url 'nil)
-                      (timeout '40) ; for both connection timeout and read timeout
+                      (timeout '60) ; for both connection timeout and read timeout
                       (debug 'nil)
                       (step-limit ':auto)
                       (time-limit ':auto)
@@ -3815,7 +3815,7 @@
                        (improve-recsp 't)
                        (print 't)
                        (server-url 'nil)
-                       (timeout '40) ; for both connection timeout and read timeout
+                       (timeout '60) ; for both connection timeout and read timeout
                        (debug 'nil)
                        (step-limit ':auto)
                        (time-limit ':auto)

@@ -11,10 +11,11 @@
 
 (in-package "JVM")
 
-(include-book "classes")
-(include-book "class-tables")
+(include-book "classes") ; for class-decl-methods
+;(include-book "class-tables")
 (include-book "method-designator-strings")
 (include-book "global-class-alist")
+;(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 
 ;; TODO: Deprecate:
 (defun acl2::get-method-info-fn (method-designator-string state)

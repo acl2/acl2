@@ -1,6 +1,6 @@
-; A wrapper for prove$ that provides nicer behavior
+; Wrappers for prove$
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,32 +24,13 @@
 ;; (prove$ '(let ((w 1)) (equal (car (cons x y)) x))) ; error about ignored var W, should be suppressed by default
 
 (include-book "tools/prove-dollar" :dir :system)
+(include-book "tables")
 
-;; move to kestrel/utilities/tables.lisp?  Or redo to be like the function there?
-;; Sets the value of the table to ALIST, overwriting anything that was there.
-;; Returns an error triple.
-(defun overwrite-table-programmatic (table-name alist state)
-  (declare (xargs :mode :program :stobjs state))
-  (with-output! :off :all ; silence TABLE-FN (Is this needed?)
-    (table-fn table-name
-              (list nil (kwote alist) :clear)
-              state
-              `(table ,table-name nil ',alist :clear))))
-
-;; move to kestrel/utilities/tables.lisp?  Or redo to be like the function there?
-;; Returns an error triple.
-(defun set-table-entry-programmatic (table-name key value state)
-  (declare (xargs :mode :program :stobjs state))
-  (with-output! :off :all ; silence TABLE-FN (Is this needed?)
-    (table-fn table-name
-              (list (kwote key) (kwote value))
-              state
-              `(table ,table-name nil ',key ',value))))
-
-;; Returns an error triple.
+;; Turns on inhibiting of the error type indicated by STR (case insensitive).
+;; Returns an error triple, (mv erp val state).
 (defun add-inhibit-er-programmatic (str state)
   (declare (xargs :guard (stringp str) :mode :program :stobjs state))
-  ;; For some reason, keys are set to nil in this table:
+  ;; Oddly, keys are set to nil in this table (the values are irrelevant):
   (set-table-entry-programmatic 'inhibit-er-table str nil state))
 
 ;; Returns (mv erp provedp state).
@@ -112,3 +93,107 @@
 ;; (prove$-nice '(equal (car (cons x y)) x) :step-limit 2) ; fails quietly (call last-prover-steps to see that the step limit was reached)
 ;; (let ((time-limit nil)) (prove$-nice '(equal (car (cons x y)) x) :time-limit time-limit)) ; works
 ;; (prove$-nice '(let ((w 1)) (equal (car (cons x y)) x))) ; no error about W
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Calls prove$ on TERM using the HINTS and/or INSTRUCTIONS and/or OTF-FLG.
+;; Returns (mv erp provedp elapsed-time state), where if the error indicator,
+;; ERP, is non-nil, then PROVEDP indicates whether the proof succeeded, and
+;; ELAPSED-TIME is in seconds for the proof attempt or failure.
+;; TODO: Consider also returning the number of proof steps.
+(defun prove$-nice-with-time (term
+                              hints
+                              instructions
+                              otf-flg
+                              time-limit ; warning: not portable!
+                              step-limit
+                              state)
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (and (rationalp time-limit)
+                                       (<= 0 time-limit))
+                                  (null time-limit))
+                              (or (natp step-limit)
+                                  (null step-limit)))
+                  :mode :program
+                  :stobjs state))
+  ;; Record the start time:
+  (mv-let (start-time state)
+    (acl2::get-real-time state)
+    (mv-let (erp provedp state)
+      (prove$-nice-fn term hints instructions otf-flg time-limit step-limit state)
+      ;; Record the end time:
+      (mv-let (end-time state)
+        (acl2::get-real-time state)
+        (if erp
+            (mv erp nil nil state)
+          (mv nil provedp (- end-time start-time) state))))))
+
+
+;; Returns (mv erp provedp elapsed-time state).
+;; Like prove$-nice-with-time, except this one does the proof twice to avoid
+;; inaccurate timing info due to garbage collection.
+(defun prove$-twice-with-time (term
+                               hints
+                               instructions
+                               otf-flg
+                               time-limit ; warning: not portable!
+                               step-limit
+                               state)
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (and (rationalp time-limit)
+                                       (<= 0 time-limit))
+                                  (null time-limit))
+                              (or (natp step-limit)
+                                  (null step-limit)))
+                  :mode :program
+                  :stobjs state))
+  (mv-let (erp provedp1 elapsed-time1 state)
+    (prove$-nice-with-time term hints instructions otf-flg time-limit step-limit state)
+    (if erp
+        (mv erp nil nil state)
+      (mv-let (erp provedp2 elapsed-time2 state)
+        (prove$-nice-with-time term hints instructions otf-flg time-limit step-limit state)
+        (if erp
+            (mv erp nil nil state)
+          (if (not (equal provedp1 provedp2))
+              ;; I suppose this might happen due to garbage collection triggering a time-limit:
+              ;; Can we actually detect whether a time-limit or step-limit was reached?
+              (prog2$ (cw "WARNING: The two tries differ on whether the goal was proved.~%")
+                      ;; We return the time for the attempt that worked:
+                      (if provedp1
+                          (mv nil t elapsed-time1 state)
+                        (if provedp2
+                            (mv nil t elapsed-time2 state)
+                          (mv :bad-provedp-value nil nil state))))
+            ;; Either both proved or both failed:
+            ;; We return the min, so as to try to get the time without garbage collection:
+            (mv nil provedp1 (min elapsed-time1 elapsed-time2) state)))))))
+
+;; Tries the given HINTS and INSTRUCTIONS but tries again without them if there
+;; is an error (maybe they mention something that was only locally defined).
+;; Returns (mv erp provedp state).
+(defun prove$-nice-trying-hints (term
+                                 hints
+                                 instructions
+                                 otf-flg
+                                 time-limit ; warning: not portable!
+                                 step-limit
+                                 state)
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (and (rationalp time-limit)
+                                       (<= 0 time-limit))
+                                  (null time-limit))
+                              (or (natp step-limit)
+                                  (null step-limit)))
+                  :mode :program
+                  :stobjs state))
+  ;; First try with the original hints and instructions, though they may now be illegal:
+  (mv-let (erp provedp state)
+    ;; todo: add with-output argument to prove$-nice-fn and pass :off :all here:
+    (prove$-nice-fn term hints instructions otf-flg time-limit step-limit state)
+    (if erp
+        ;; Try again with no hints and no instructions (maybe the hints/instructions mentioned something that doesn't exist):
+        ;; TODO: Perhaps we could do better by keeping parts of the hints are legal:
+        (prove$-nice-fn term nil nil otf-flg time-limit step-limit state)
+      ;; No error:
+      (mv nil provedp state))))

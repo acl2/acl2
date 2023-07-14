@@ -199,16 +199,16 @@
 
 (defconst *abstract-proofs-exports*
   '(last-elt r-step direct operator elt1 elt2 r-step-p make-r-step
-	     first-of-proof last-of-proof steps-up steps-down steps-valley
-	     proof-before-valley proof-after-valley inverse-r-step inverse-proof
-	     local-peak-p proof-measure proof-before-peak proof-after-peak
-	     local-peak peak-element))
+             first-of-proof last-of-proof steps-up steps-down steps-valley
+             proof-before-valley proof-after-valley inverse-r-step inverse-proof
+             local-peak-p proof-measure proof-before-peak proof-after-peak
+             local-peak peak-element))
 
 (defconst *cnf-package-exports*
   (union-eq *acl2-exports*
-	    (union-eq
-	     *common-lisp-symbols-from-main-lisp-package*
-	     *abstract-proofs-exports*)))
+            (union-eq
+             *common-lisp-symbols-from-main-lisp-package*
+             *abstract-proofs-exports*)))
 
 (defpkg "NWM" (cons 'multiset-diff *cnf-package-exports*))
 
@@ -227,9 +227,9 @@
 (defconst *import-symbols*
   (set-difference-eq
    (union-eq *acl2-exports*
-	     *common-lisp-symbols-from-main-lisp-package*)
+             *common-lisp-symbols-from-main-lisp-package*)
      '(null + * - < = / commutativity-of-* associativity-of-*
-	    commutativity-of-+ associativity-of-+ distributivity)))
+            commutativity-of-+ associativity-of-+ distributivity)))
 
 (defpkg "FLD"
   *import-symbols*)
@@ -239,16 +239,16 @@
 
 (defpkg "FUMON"
   (union-eq *import-symbols*
-	    '(FLD::fdp FUTER::terminop)))
+            '(FLD::fdp FUTER::terminop)))
 
 (defpkg "FUPOL"
   (union-eq *import-symbols*
-	    '(FUTER::naturalp FUTER::terminop FUMON::monomio FUMON::coeficiente
-			    FUMON::termino FUMON::monomiop)))
+            '(FUTER::naturalp FUTER::terminop FUMON::monomio FUMON::coeficiente
+                            FUMON::termino FUMON::monomiop)))
 
 (defpkg "FUNPOL"
   (set-difference-eq *import-symbols*
-		     '(rem)))
+                     '(rem)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

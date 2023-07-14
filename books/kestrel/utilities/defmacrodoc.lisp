@@ -243,23 +243,28 @@
         (extract-required-and-optional-and-keyword-args macro-args))
        (max-len (max (len-of-longest-macro-formal required-args 0)
                      (max (+ 1 (len-of-longest-macro-formal keyword-args 0)) ; plus 1 for the :
-                          (+ 2 (len-of-longest-macro-formal keyword-args 0)) ; plus 2 for the []
+                          (+ 2 (len-of-longest-macro-formal optional-args 0)) ; plus 2 for the []
                           ))))
-    (n-string-append (xdoc-for-macro-general-form-required-args required-args indent-space t)
+    (n-string-append (if required-args
+                         (xdoc-for-macro-general-form-required-args required-args indent-space t)
+                       ;; must at least start next arg on new line, for alignment:
+                       (n-string-append "; no required args" (newline-string)))
                      (if optional-args
                          (n-string-append indent-space
                                           "&optional"
                                           (newline-string))
                        "")
-                     (xdoc-for-macro-general-form-optional-args optional-args indent-space (not required-args) max-len package)
+                     (xdoc-for-macro-general-form-optional-args optional-args indent-space nil ;(not required-args)
+                                                                max-len package)
                      (if keyword-args
                          (n-string-append indent-space
                                           "&key"
                                           (newline-string))
                        "")
                      (xdoc-for-macro-general-form-keyword-args keyword-args indent-space
-                                                               (and (not required-args)
-                                                                    (not optional-args))
+                                                               nil
+                                                               ;; (and (not required-args)
+                                                               ;;      (not optional-args))
                                                                max-len package))))
 
 ;; Returns a string

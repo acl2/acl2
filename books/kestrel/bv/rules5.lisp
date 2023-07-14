@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 
 (include-book "rules")
 (include-book "overflow-and-underflow")
-(local (include-book "arith")) ; todo: drop
+(local (include-book "arith")) ; todo: drop (not easy)
 ;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -25,16 +25,6 @@
 ;; (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable LOGEXT-WHEN-NON-NEGATIVE-BECOMES-BVCHOP))) ;for speed
-
-;move
-(defthm bvminus-trim-arg1
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< size xsize)
-                (natp size)
-                (posp xsize))
-           (equal (bvminus size x y)
-                  (bvminus size (trim size x) y)))
-  :hints (("Goal" :in-theory (enable trim))))
 
 ;Normal case: no overflow or underflow.  Because of symmetry, we can reorder
 ;the arguments to signed-addition-overflowsp and signed-addition-underflowsp if
@@ -47,18 +37,25 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases
+                                          sbvlt
+                                          bvlt
+                                          GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
                                           GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                                          bvuminus bvcat logapp
-                                          ;expt-of-+
+                                          bvuminus
+                                          ;;bvcat
+                                          ;;logapp
+                                          ;;expt-of-+
+                                          <-of-0-and-logext-alt
+                                          *-of-expt-of-one-less
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   ;PLUS-BVCAT-WITH-0-ALT ;looped!
-                                   ;PLUS-BVCAT-WITH-0 ;looped!
-                                   bvlt-tighten-when-getbit-0-alt)))))
+;PLUS-BVCAT-WITH-0-ALT ;looped!
+;PLUS-BVCAT-WITH-0 ;looped!
+                                   )))))
 
 ;todo: add more versions
 (defthmd sbvlt-add-to-both-sides-normal-case-alt

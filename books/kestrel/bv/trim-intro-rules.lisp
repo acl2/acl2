@@ -145,3 +145,14 @@
 ;;            (equal (bvif size test y x)
 ;;                   (bvif size test y (trim size x))))
 ;;   :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvminus-trim-arg1
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+                (< size xsize)
+                (natp size)
+                (posp xsize))
+           (equal (bvminus size x y)
+                  (bvminus size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))

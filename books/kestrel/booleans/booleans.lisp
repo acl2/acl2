@@ -97,9 +97,9 @@
   (equal (not (equal nil x))
          (bool-fix x)))
 
-;do we want this?
-(defthm equal-of-nil-when-booleanp
-  (implies (booleanp x)
+;only for axe.  todo: move there
+(defthmd equal-of-nil-when-booleanp
+  (implies (booleanp x) ; hyp is not logically necessary
            (equal (equal nil x)
                   (not x))))
 

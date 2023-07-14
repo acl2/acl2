@@ -55,7 +55,6 @@
   (defruled not-zp-of-limit-minus-const
     (implies (and (syntaxp (quotep -c))
                   (integerp -c)
-                  (< -c 0)
                   (integerp limit)
                   (> limit (- -c)))
              (not (zp (binary-+ -c limit)))))

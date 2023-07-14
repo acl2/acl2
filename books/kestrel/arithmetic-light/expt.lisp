@@ -804,3 +804,12 @@
            (equal (equal (expt r i1) (expt r i2))
                   (equal i1 i2)))
   :hints (("Goal" :cases ((< i1 i2) (< i2 i1)))))
+
+;; could loop with the definition of expt?
+(defthmd *-of-expt-of-one-less
+  (implies (integerp i)
+           (equal (* r (expt r (+ -1 i)))
+                  (if (equal (fix r) 0)
+                      0
+                    (expt r i))))
+  :hints (("Goal" :in-theory (enable expt))))
