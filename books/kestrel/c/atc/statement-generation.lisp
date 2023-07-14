@@ -267,6 +267,7 @@
 
 (define atc-gen-block-item-stmt ((stmt stmtp)
                                  (stmt-limit pseudo-termp)
+                                 (stmt-events pseudo-event-form-listp)
                                  (stmt-thm symbolp)
                                  (result-term pseudo-termp)
                                  (result-type typep)
@@ -275,7 +276,8 @@
                                  state)
   :returns (mv (item block-itemp)
                (item-limit pseudo-termp)
-               (item-event pseudo-event-formp)
+               (item-events pseudo-event-form-listp
+                            :hyp (pseudo-event-form-listp stmt-events))
                (item-thm symbolp)
                (thm-index posp :rule-classes (:rewrite :type-prescription))
                (names-to-avoid symbol-listp))
@@ -347,7 +349,12 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv item item-limit event name thm-index names-to-avoid)))
+    (mv item
+        item-limit
+        (append stmt-events (list event))
+        name
+        thm-index
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -855,9 +862,13 @@
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
-       ((mv item item-limit item-event item-thm-name thm-index names-to-avoid)
+       ((mv item item-limit item-events item-thm-name thm-index names-to-avoid)
         (atc-gen-block-item-stmt stmt
                                  stmt-limit
+                                 (append rhs.events
+                                         (list asg-event
+                                               expr-event
+                                               stmt-event))
                                  stmt-thm-name
                                  nil
                                  (type-void)
@@ -903,11 +914,7 @@
                              names-to-avoid
                              wrld))
        (thm-index (1+ thm-index))
-       (events (append rhs.events
-                       (list asg-event
-                             expr-event
-                             stmt-event
-                             item-event)
+       (events (append item-events
                        new-inscope-events)))
     (retok item
            rhs.term
@@ -918,7 +925,11 @@
            new-context
            thm-index
            names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable pseudo-termp
+            acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1369,12 +1380,14 @@
                                                  :enable nil))
        ((mv item
             item-limit
-            item-thm-event
+            item-events
             item-thm-name
             thm-index
             names-to-avoid)
         (atc-gen-block-item-stmt stmt
                                  stmt-limit
+                                 (append expr.events
+                                         (list stmt-event))
                                  stmt-thm-name
                                  expr.term
                                  expr.type
@@ -1388,9 +1401,7 @@
     (retok (atc-gen-block-item-list-one expr.term
                                         item
                                         item-limit
-                                        (append expr.events
-                                                (list stmt-event
-                                                      item-thm-event))
+                                        item-events
                                         item-thm-name
                                         expr.type
                                         expr.term
@@ -1895,12 +1906,18 @@
                                :enable nil))
        ((mv item
             item-limit
-            item-thm-event
+            item-events
             item-thm-name
             thm-index
             names-to-avoid)
         (atc-gen-block-item-stmt stmt
                                  if-stmt-limit
+                                 (append test-events
+                                         then-events
+                                         else-events
+                                         (list then-stmt-event
+                                               else-stmt-event
+                                               if-stmt-event))
                                  if-stmt-thm
                                  term
                                  type
@@ -1921,13 +1938,7 @@
      (atc-gen-block-item-list-one term
                                   item
                                   item-limit
-                                  (append test-events
-                                          then-events
-                                          else-events
-                                          (list then-stmt-event
-                                                else-stmt-event
-                                                if-stmt-event
-                                                item-thm-event))
+                                  item-events
                                   item-thm-name
                                   type
                                   term
