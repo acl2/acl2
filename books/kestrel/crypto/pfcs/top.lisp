@@ -1,6 +1,7 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2023 Aleo Systems Inc. (https://www.aleo.org)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +14,7 @@
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
+(include-book "convenience-constructors")
 (include-book "well-formedness")
 (include-book "semantics")
 (include-book "proof-support")
