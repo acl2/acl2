@@ -1453,7 +1453,7 @@
                                  (then-limit pseudo-termp)
                                  (then-thm symbolp)
                                  (then-events pseudo-event-form-listp)
-                                 (then-context atc-contextp)
+                                 (new-context atc-contextp)
                                  (gin stmt-ginp)
                                  state)
   :returns (mv erp (gout stmt-goutp))
@@ -1495,7 +1495,10 @@
     "Since @(tsee atc-gen-fn-def*) replaces every @(tsee if) with @(tsee if*)
      in the whole body of the function,
      we need to perform this replacement in both the test and `else' branch,
-     because these are not recursively processed to generate code."))
+     because these are not recursively processed to generate code.")
+   (xdoc::p
+    "The @('new-context') parameter is the context just after the `then' branch,
+     which is also the context after the whole @(tsee if)."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1573,7 +1576,7 @@
     (retok (make-stmt-gout :items then-items
                            :type then-type
                            :term term
-                           :context then-context
+                           :context new-context
                            :limit then-limit
                            :events (append then-events
                                            (list lemma-event
