@@ -1654,7 +1654,12 @@
      for the same reason explained in @(tsee atc-gen-expr-bool-from-type).")
    (xdoc::p
     "We lift the theorem for the conditional statement
-     to a block item and to a singleton list of block items."))
+     to a block item and to a singleton list of block items.")
+   (xdoc::p
+    "The generation of modular proofs in this code currently assumes that
+     the @(tsee if) returns a single value that represents a C value.
+     This is reflected in the generated modular theorems.
+     This will need to be generalized."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
