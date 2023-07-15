@@ -13,6 +13,7 @@
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
+(include-book "convenience-constructors")
 (include-book "well-formedness")
 (include-book "semantics")
 (include-book "proof-support")

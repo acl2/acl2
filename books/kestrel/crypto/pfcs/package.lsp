@@ -20,6 +20,7 @@
                                           '(eval
                                             proof-tree))
                        '(define-sk
+                         defmacro+
                          defund-sk
                          defxdoc+
                          int

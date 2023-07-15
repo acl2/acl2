@@ -318,6 +318,9 @@
      This is more consistent with the concrete syntax.")
 
    (xdoc::p
+    "Convenience constructors for the abstract syntax have been added.")
+
+   (xdoc::p
     "The formal notion of system (in the PFCS sense) has been improved,
      to be more in line with the general notion of constraint system.")
 
