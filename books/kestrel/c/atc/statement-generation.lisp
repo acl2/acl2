@@ -1451,8 +1451,8 @@
                                  (then-items block-item-listp)
                                  (then-type typep)
                                  (then-limit pseudo-termp)
-                                 (then-thm symbolp)
                                  (then-events pseudo-event-form-listp)
+                                 (then-thm symbolp)
                                  (new-context atc-contextp)
                                  (gin stmt-ginp)
                                  state)
@@ -1498,7 +1498,12 @@
      because these are not recursively processed to generate code.")
    (xdoc::p
     "The @('new-context') parameter is the context just after the `then' branch,
-     which is also the context after the whole @(tsee if)."))
+     which is also the context after the whole @(tsee if).")
+   (xdoc::p
+    "The generation of modular proofs in this code currently assumes that
+     @('then-term') returns a single value that represents a C value.
+     This is reflected in the generated modular theorems.
+     This will need to be generalized."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2202,8 +2207,8 @@
                                          then.items
                                          then.type
                                          then.limit
-                                         then.thm-name
                                          then.events
+                                         then.thm-name
                                          then.context
                                          gin
                                          state)))
