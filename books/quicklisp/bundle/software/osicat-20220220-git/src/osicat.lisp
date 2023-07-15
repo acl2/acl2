@@ -318,7 +318,11 @@ PATHSPEC exists and is a symlink pointing to an existent file."
         (pathname (concatenate 'string system-tmpdir "/")))))
 
 ;; Windows has no MKSTEMP.
-#-windows
+;; 2023-07-14 ccl added here for now to prevent a compilcation error on ccl,
+;; which caused (asdf:load-system "osicat") to always recompile.
+;; To remove this condition on :ccl, hyou may be able to add (to fd-streams.lisp)
+;; a wrapper for osicat::make-fd-stream to call ccl::make-fd-stream.
+#-(or windows ccl)
 (defun %open-temporary-file/fd-streams (filename element-type external-format)
   (handler-case
       (multiple-value-bind (fd path)
