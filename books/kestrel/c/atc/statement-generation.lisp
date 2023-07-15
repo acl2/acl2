@@ -1157,7 +1157,19 @@
      obtaining the computation state after all the items;
      note that, at that spot in the generated theorem,
      the computation state variables already accumulates
-     the contextual premises in @('gin')."))
+     the contextual premises in @('gin').")
+   (xdoc::p
+    "Currently this function is only called on a @('term')
+     that returns a single value,
+     which is either the C result of the list of block items
+     (if @('items-type') is not @('void')),
+     or a side-effected variables (if that type is @('void')).
+     Thus, if the type if not @('void'),
+     we can take the whole term
+     as the first result of @(tsee exec-block-item-list).
+     In the future, this will need to be generalized
+     to be @('(mv-nth 0 term)') when the term returns multiple results
+     and the type is not @('void')."))
   (b* ((wrld (w state))
        ((stmt-gin gin) gin)
        (all-items (cons item items))
