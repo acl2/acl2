@@ -320,8 +320,9 @@ PATHSPEC exists and is a symlink pointing to an existent file."
 ;; Windows has no MKSTEMP.
 ;; 2023-07-14 ccl added here for now to prevent a compilcation error on ccl,
 ;; which caused (asdf:load-system "osicat") to always recompile.
-;; To remove this condition on :ccl, hyou may be able to add (to fd-streams.lisp)
+;; To remove this condition on :ccl, you may be able to add (to fd-streams.lisp)
 ;; a wrapper for osicat::make-fd-stream to call ccl::make-fd-stream.
+;; For more background See https://github.com/osicat/osicat/issues/37
 #-(or windows ccl)
 (defun %open-temporary-file/fd-streams (filename element-type external-format)
   (handler-case
