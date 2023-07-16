@@ -1157,7 +1157,19 @@
      obtaining the computation state after all the items;
      note that, at that spot in the generated theorem,
      the computation state variables already accumulates
-     the contextual premises in @('gin')."))
+     the contextual premises in @('gin').")
+   (xdoc::p
+    "Currently this function is only called on a @('term')
+     that returns a single value,
+     which is either the C result of the list of block items
+     (if @('items-type') is not @('void')),
+     or a side-effected variables (if that type is @('void')).
+     Thus, if the type if not @('void'),
+     we can take the whole term
+     as the first result of @(tsee exec-block-item-list).
+     In the future, this will need to be generalized
+     to be @('(mv-nth 0 term)') when the term returns multiple results
+     and the type is not @('void')."))
   (b* ((wrld (w state))
        ((stmt-gin gin) gin)
        (all-items (cons item items))
@@ -1439,9 +1451,9 @@
                                  (then-items block-item-listp)
                                  (then-type typep)
                                  (then-limit pseudo-termp)
-                                 (then-thm symbolp)
                                  (then-events pseudo-event-form-listp)
-                                 (then-context atc-contextp)
+                                 (then-thm symbolp)
+                                 (new-context atc-contextp)
                                  (gin stmt-ginp)
                                  state)
   :returns (mv erp (gout stmt-goutp))
@@ -1483,7 +1495,15 @@
     "Since @(tsee atc-gen-fn-def*) replaces every @(tsee if) with @(tsee if*)
      in the whole body of the function,
      we need to perform this replacement in both the test and `else' branch,
-     because these are not recursively processed to generate code."))
+     because these are not recursively processed to generate code.")
+   (xdoc::p
+    "The @('new-context') parameter is the context just after the `then' branch,
+     which is also the context after the whole @(tsee if).")
+   (xdoc::p
+    "The generation of modular proofs in this code currently assumes that
+     @('then-term') returns a single value that represents a C value.
+     This is reflected in the generated modular theorems.
+     This will need to be generalized."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1561,7 +1581,7 @@
     (retok (make-stmt-gout :items then-items
                            :type then-type
                            :term term
-                           :context then-context
+                           :context new-context
                            :limit then-limit
                            :events (append then-events
                                            (list lemma-event
@@ -1634,7 +1654,12 @@
      for the same reason explained in @(tsee atc-gen-expr-bool-from-type).")
    (xdoc::p
     "We lift the theorem for the conditional statement
-     to a block item and to a singleton list of block items."))
+     to a block item and to a singleton list of block items.")
+   (xdoc::p
+    "The generation of modular proofs in this code currently assumes that
+     the @(tsee if) returns a single value that represents a C value.
+     This is reflected in the generated modular theorems.
+     This will need to be generalized."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -2187,8 +2212,8 @@
                                          then.items
                                          then.type
                                          then.limit
-                                         then.thm-name
                                          then.events
+                                         then.thm-name
                                          then.context
                                          gin
                                          state)))

@@ -56,7 +56,7 @@
   :non-memoizable t)
 
 (defun-inline ar-index-guard (i cycle nvars)
-  (declare (type (unsigned-byte 60) i cycle nvars))  
+  (declare (type (unsigned-byte 60) i cycle nvars))
   (< (+ i (* cycle nvars))
      *2^60*))
 
@@ -535,7 +535,7 @@
 
 ; STV = array (evaluated values for each subterm), where index
 
-; Representation 4: generate a list of all unique 
+; Representation 4: generate a list of all unique
 
 ; Note: we convert A-sym-folded and b-sym-folded to A-sym-compressed
 ; and b-sym-compressed by finding and replacing each term with its
@@ -1024,7 +1024,7 @@ A-pre-vals[3] = nil
 (declaim (ftype (function ((unsigned-byte 60)
                            (unsigned-byte 60)
                            (unsigned-byte 60)
-                           (simple-array double-float (*)) 
+                           (simple-array double-float (*))
                            (simple-array double-float (*)))
                           (values (simple-array double-float (*))))
                 init-st-vals))
@@ -1135,7 +1135,12 @@ A-pre-vals[3] = nil
                            t
                            t
                            #+(and rec-stobj (not simple-vectors))
-                           (simple-array double-float (*)))
+                           (simple-array double-float (*))
+; Matt K. mod, 7/13/2023: Put in a type for the missing argument in the #-
+; case.  There may be a stronger type possible here (haven't really thought
+; about it).
+                           #-(and rec-stobj (not simple-vectors))
+                           t)
                           (values double-float))
                 back-ar))
 
