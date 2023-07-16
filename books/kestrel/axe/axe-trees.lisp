@@ -25,6 +25,7 @@
 ;like pseudo-termp but allows integers (nodenums in some DAG) to also appear
 ;; TODO: Make a more abstract interface to this (e.g., axe-tree-args instead of cdr)
 ;; See also bounded-axe-treep.
+;; todo: disable?
 (mutual-recursion
  (defun axe-treep (tree)
    (declare (xargs :guard t))
@@ -203,8 +204,11 @@
            (equal (len (nth 1 (car tree))) ;the lambda formals
                   (len (cdr tree))         ;the args
                   ))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :in-theory (disable ;; for speed:
+                              equal-of-len-and-0))))
 
+;todo: prove from the above
 (defthm len-of-nth-1-of-nth-0-when-axe-treep-cheap
   (implies (and (axe-treep tree)
                 (consp (car tree)))
