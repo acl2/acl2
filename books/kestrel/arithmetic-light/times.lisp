@@ -15,6 +15,7 @@
 (local (include-book "less-than"))
 (local (include-book "realpart"))
 (local (include-book "imagpart"))
+(local (include-book "complex"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ; note that the rules associativity-of-*, commutativity-of-*, and unicity-of-1
@@ -577,3 +578,17 @@
                 (equal y 1))))
   :hints (("Goal" :use (:instance equal-of-*-and-*-cancel (z 1))
            :in-theory (disable equal-of-*-and-*-cancel))))
+
+;; (a + bi) * (c + di) = ac-bd + (ad+bc)i
+(defthm realpart-of-*
+  (equal (realpart (* x y))
+         (- (* (realpart x) (realpart y))
+            (* (imagpart x) (imagpart y))))
+  :hints (("Goal" :in-theory (enable complex-opener))))
+
+;; (a + bi) * (c + di) = ac-bd + (ad+bc)i
+(defthm imagpart-of-*
+  (equal (imagpart (* x y))
+         (+ (* (realpart x) (imagpart y))
+            (* (imagpart x) (realpart y))))
+  :hints (("Goal" :in-theory (enable complex-opener))))
