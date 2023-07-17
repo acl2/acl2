@@ -1211,9 +1211,15 @@
                   (b* ((type-pred
                         (atc-type-to-recognizer items-type gin.prec-tags))
                        (formula2 `(,type-pred ,uterm))
-                       (formula2 (atc-contextualize formula2 gin.context
-                                                    gin.fn gin.fn-guard
-                                                    nil nil nil nil wrld)))
+                       (formula2 (atc-contextualize formula2
+                                                    gin.context
+                                                    gin.fn
+                                                    gin.fn-guard
+                                                    nil
+                                                    nil
+                                                    nil
+                                                    nil
+                                                    wrld)))
                     `(and ,formula1 ,formula2))))
        (hints `(("Goal" :in-theory '(exec-block-item-list-when-consp
                                      not-zp-of-limit-variable
@@ -1463,10 +1469,10 @@
   (xdoc::topstring
    (xdoc::p
     "A statement term may be an ACL2 @(tsee if) with an @(tsee mbt) test.
-     In this case, this represents the same as the `then' branch.
+     This represents the same C code as the `then' branch.
      Thus, @(tsee atc-gen-stmt), when encountering an @(tsee if) of this form,
      processes the `then' branch, obtaining
-     a list of block items and other results,
+     a list of block items and other related pieces of information,
      which are all passed to this function,
      along with the three argument terms of the @(tsee if).")
    (xdoc::p
@@ -1481,16 +1487,16 @@
      to avoid unwanted case splits.
      This lemma is proved using the guard theorem,
      and enabling the guard function,
-     @(tsee if*), @(tsee test*), and @(tsee declar),
+     @(tsee if*), @(tsee test*), @(tsee declar), and @(tsee assign),
      just like in the @('okp') theorems
      generated for expressions (e.g. see atc-gen-expr-unary).")
    (xdoc::p
-    "The second is the correctness theorem for the ACL2 conditional.
+    "The second one is the correctness theorem for the ACL2 conditional.
      It is just like the one for the `then' branch,
      except that it has the conditional (with @(tsee if*))
      instead of the `then' term.
      It is proved using the correctness theorem for the `then' branch,
-     and enabling the lemma described in the paragraph just above.")
+     and enabling the lemma described just above.")
    (xdoc::p
     "Since @(tsee atc-gen-fn-def*) replaces every @(tsee if) with @(tsee if*)
      in the whole body of the function,
@@ -1501,9 +1507,13 @@
      which is also the context after the whole @(tsee if).")
    (xdoc::p
     "The generation of modular proofs in this code currently assumes that
-     @('then-term') returns a single value that represents a C value.
+     @('then-term') returns a single value,
+     which is either a returned C value
+     or a side-effected C variable
+     (the distinction is based on @('then-type')).
      This is reflected in the generated modular theorems.
-     This will need to be generalized."))
+     This will need to be generalized to the case in which the term
+     returns multiple values."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1547,11 +1557,15 @@
        ((mv thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix thm-name nil names-to-avoid wrld))
        (thm-index (1+ thm-index))
+       (uterm (untranslate$ term nil state))
        (formula1 `(equal (exec-block-item-list ',then-items
                                                ,gin.compst-var
                                                ,gin.fenv-var
                                                ,gin.limit-var)
-                         (mv ,term ,gin.compst-var)))
+                         (mv ,(if (type-case then-type :void)
+                                  nil
+                                uterm)
+                             ,gin.compst-var)))
        (formula1 (atc-contextualize formula1
                                     gin.context
                                     gin.fn
@@ -1561,18 +1575,21 @@
                                     then-limit
                                     t
                                     wrld))
-       (type-pred (atc-type-to-recognizer then-type gin.prec-tags))
-       (formula2 `(,type-pred ,term))
-       (formula2 (atc-contextualize formula2
-                                    gin.context
-                                    gin.fn
-                                    gin.fn-guard
-                                    nil
-                                    nil
-                                    nil
-                                    nil
-                                    wrld))
-       (formula `(and ,formula1 ,formula2))
+       (formula (if (type-case then-type :void)
+                    formula1
+                  (b* ((type-pred
+                        (atc-type-to-recognizer then-type gin.prec-tags))
+                       (formula2 `(,type-pred ,term))
+                       (formula2 (atc-contextualize formula2
+                                                    gin.context
+                                                    gin.fn
+                                                    gin.fn-guard
+                                                    nil
+                                                    nil
+                                                    nil
+                                                    nil
+                                                    wrld)))
+                    `(and ,formula1 ,formula2))))
        (hints `(("Goal" :use ,then-thm :in-theory '(,lemma-name))))
        ((mv thm-event &) (evmac-generate-defthm thm-name
                                                 :formula formula
