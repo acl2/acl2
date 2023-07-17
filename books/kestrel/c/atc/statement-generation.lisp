@@ -1161,9 +1161,8 @@
    (xdoc::p
     "Currently this function is only called on a @('term')
      that returns a single value,
-     which is either the C result of the list of block items
-     (if @('items-type') is not @('void')),
-     or a side-effected variables (if that type is @('void')).
+     which is either the returned C value (if the C type is not @('void')),
+     or a side-effected variables (if the C type is @('void')).
      Thus, if the type if not @('void'),
      we can take the whole term
      as the first result of @(tsee exec-block-item-list).
@@ -1674,7 +1673,9 @@
      to a block item and to a singleton list of block items.")
    (xdoc::p
     "The generation of modular proofs in this code currently assumes that
-     the @(tsee if) returns a single value that represents a C value.
+     the @(tsee if) returns a single value,
+     which is either the returned C value (if the C type is not @('void')),
+     or a side-effected variables (if the C type is @('void')).
      This is reflected in the generated modular theorems.
      This will need to be generalized."))
   (b* (((reterr) (irr-stmt-gout))
@@ -1689,6 +1690,7 @@
                to make the branches of the same type."
               gin.fn then-term else-term then-type else-type)))
        (type then-type)
+       (voidp (type-case type :void))
        (then-stmt (make-stmt-compound :items then-items))
        (else-stmt (make-stmt-compound :items else-items))
        (stmt (if (consp else-items)
@@ -1728,12 +1730,18 @@
        ((mv else-stmt-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          else-stmt-thm nil names-to-avoid wrld))
-       (type-pred (atc-type-to-recognizer type gin.prec-tags))
-       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
+       (type-pred (and (not voidp)
+                       (atc-type-to-recognizer type gin.prec-tags)))
+       (valuep-when-type-pred (and (not voidp)
+                                   (atc-type-to-valuep-thm type gin.prec-tags)))
        (then-stmt-limit `(binary-+ '1 ,then-limit))
        (else-stmt-limit `(binary-+ '1 ,else-limit))
-       (then-uterm (untranslate$ then-term nil state))
-       (else-uterm (untranslate$ else-term nil state))
+       (then-uterm/nil (if voidp
+                           nil
+                         (untranslate$ then-term nil state)))
+       (else-uterm/nil (if voidp
+                           nil
+                         (untranslate$ else-term nil state)))
        (then-context-end
         (change-atc-context
          then-context-end
@@ -1758,7 +1766,7 @@
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                                   (mv ,then-uterm ,then-new-compst)))
+                                   (mv ,then-uterm/nil ,then-new-compst)))
        (then-stmt-formula1 (atc-contextualize then-stmt-formula1
                                               then-context-start
                                               gin.fn
@@ -1768,22 +1776,25 @@
                                               then-stmt-limit
                                               t
                                               wrld))
-       (then-stmt-formula2 `(,type-pred ,then-uterm))
-       (then-stmt-formula2 (atc-contextualize then-stmt-formula2
-                                              then-context-start
-                                              gin.fn
-                                              gin.fn-guard
-                                              nil
-                                              nil
-                                              nil
-                                              nil
-                                              wrld))
-       (then-stmt-formula `(and ,then-stmt-formula1 ,then-stmt-formula2))
+       (then-stmt-formula
+        (if voidp
+            then-stmt-formula1
+          (b* ((then-stmt-formula2 `(,type-pred ,then-uterm/nil))
+               (then-stmt-formula2 (atc-contextualize then-stmt-formula2
+                                                      then-context-start
+                                                      gin.fn
+                                                      gin.fn-guard
+                                                      nil
+                                                      nil
+                                                      nil
+                                                      nil
+                                                      wrld)))
+            `(and ,then-stmt-formula1 ,then-stmt-formula2))))
        (else-stmt-formula1 `(equal (exec-stmt ',else-stmt
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                                   (mv ,else-uterm ,else-new-compst)))
+                                   (mv ,else-uterm/nil ,else-new-compst)))
        (else-stmt-formula1 (atc-contextualize else-stmt-formula1
                                               else-context-start
                                               gin.fn
@@ -1793,17 +1804,20 @@
                                               else-stmt-limit
                                               t
                                               wrld))
-       (else-stmt-formula2 `(,type-pred ,else-uterm))
-       (else-stmt-formula2 (atc-contextualize else-stmt-formula2
-                                              else-context-start
-                                              gin.fn
-                                              gin.fn-guard
-                                              nil
-                                              nil
-                                              nil
-                                              nil
-                                              wrld))
-       (else-stmt-formula `(and ,else-stmt-formula1 ,else-stmt-formula2))
+       (else-stmt-formula
+        (if voidp
+            else-stmt-formula1
+          (b* ((else-stmt-formula2 `(,type-pred ,else-uterm/nil))
+               (else-stmt-formula2 (atc-contextualize else-stmt-formula2
+                                                      else-context-start
+                                                      gin.fn
+                                                      gin.fn-guard
+                                                      nil
+                                                      nil
+                                                      nil
+                                                      nil
+                                                      wrld)))
+            `(and ,else-stmt-formula1 ,else-stmt-formula2))))
        (then-stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-compound
                                (:e stmt-kind)
@@ -1813,7 +1827,8 @@
                                mv-nth-of-cons
                                (:e zp)
                                value-optionp-when-valuep
-                               ,valuep-when-type-pred
+                               ,@(and (not voidp)
+                                      (list valuep-when-type-pred))
                                exit-scope-of-enter-scope
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
@@ -1831,7 +1846,8 @@
                                mv-nth-of-cons
                                (:e zp)
                                value-optionp-when-valuep
-                               ,valuep-when-type-pred
+                               ,@(and (not voidp)
+                                      (list valuep-when-type-pred))
                                exit-scope-of-enter-scope
                                exit-scope-of-add-var
                                compustate-frames-number-of-add-frame-not-zero
@@ -1856,14 +1872,16 @@
         (fresh-logical-name-with-$s-suffix if-stmt-thm nil names-to-avoid wrld))
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
-       (uterm (untranslate$ term nil state))
+       (uterm/nil (if voidp
+                      nil
+                    (untranslate$ term nil state)))
        (test-uterm (untranslate$ test-term nil state))
        (new-compst `(if* ,test-uterm ,then-new-compst ,else-new-compst))
        (if-stmt-formula1 `(equal (exec-stmt ',stmt
                                             ,gin.compst-var
                                             ,gin.fenv-var
                                             ,gin.limit-var)
-                                 (mv ,uterm ,new-compst)))
+                                 (mv ,uterm/nil ,new-compst)))
        (if-stmt-formula1 (atc-contextualize if-stmt-formula1
                                             gin.context
                                             gin.fn
@@ -1873,17 +1891,20 @@
                                             if-stmt-limit
                                             t
                                             wrld))
-       (if-stmt-formula2 `(,type-pred ,uterm))
-       (if-stmt-formula2 (atc-contextualize if-stmt-formula2
-                                            gin.context
-                                            gin.fn
-                                            gin.fn-guard
-                                            nil
-                                            nil
-                                            nil
-                                            nil
-                                            wrld))
-       (if-stmt-formula `(and ,if-stmt-formula1 ,if-stmt-formula2))
+       (if-stmt-formula
+        (if voidp
+            if-stmt-formula1
+          (b* ((if-stmt-formula2 `(,type-pred ,uterm/nil))
+               (if-stmt-formula2 (atc-contextualize if-stmt-formula2
+                                                    gin.context
+                                                    gin.fn
+                                                    gin.fn-guard
+                                                    nil
+                                                    nil
+                                                    nil
+                                                    nil
+                                                    wrld)))
+            `(and ,if-stmt-formula1 ,if-stmt-formula2))))
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (value-kind-when-test-type-pred (pack 'value-kind-when- test-type-pred))
@@ -1895,7 +1916,8 @@
                                    not-zp-of-limit-variable
                                    (:e stmt-ifelse->test)
                                    ,test-thm
-                                   ,valuep-when-type-pred
+                                   ,@(and (not voidp)
+                                          (list valuep-when-type-pred))
                                    (:e stmt-ifelse->then)
                                    ,then-stmt-thm
                                    (:e stmt-ifelse->else)
@@ -1914,7 +1936,8 @@
                                  not-zp-of-limit-variable
                                  (:e stmt-if->test)
                                  ,test-thm
-                                 ,valuep-when-type-pred
+                                 ,@(and (not voidp)
+                                        (list valuep-when-type-pred))
                                  (:e stmt-if->then)
                                  ,then-stmt-thm
                                  ,valuep-when-test-type-pred
