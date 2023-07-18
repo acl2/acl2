@@ -36,6 +36,7 @@
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/all-included-books" :dir :system)
+(include-book "kestrel/utilities/extend-pathname-dollar" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
@@ -79,19 +80,6 @@
         (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
                 state)
       state)))
-
-;; Drop-in replacement for extend-pathname that doesn't fail on stuff like
-;; (extend-pathname "." "../foo" state).
-;; Note: This can add a slash if the filename is a dir.
-;move
-(defund extend-pathname$ (dir filename state)
-  (declare (xargs :guard (or (keywordp dir)
-                             (eq :system dir))
-                  :stobjs state
-                  :mode :program))
-  (if (keywordp dir)
-      (extend-pathname dir filename state)
-    (extend-pathname (canonical-pathname dir t state) filename state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
