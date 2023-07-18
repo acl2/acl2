@@ -80,15 +80,18 @@
                 state)
       state)))
 
-
 ;; Drop-in replacement for extend-pathname that doesn't fail on stuff like
 ;; (extend-pathname "." "../foo" state).
 ;; Note: This can add a slash if the filename is a dir.
 ;move
 (defund extend-pathname$ (dir filename state)
-  (declare (xargs :stobjs state
+  (declare (xargs :guard (or (keywordp dir)
+                             (eq :system dir))
+                  :stobjs state
                   :mode :program))
-  (extend-pathname (canonical-pathname dir t state) filename state))
+  (if (keywordp dir)
+      (extend-pathname dir filename state)
+    (extend-pathname (canonical-pathname dir t state) filename state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,14 +464,14 @@
           (hints (cadr hintsp)))
      (if (defthm-or-defaxiom-symbolp name (w state))
          ;; It already exists (presumably identical):
-         (prog2$ (cw "  Drop (redundant).)~%") ; no more checking to do, though we have seen a redundant event with a bad subst in the hints...
+         (prog2$ (cw "   Drop (redundant).)~%") ; no more checking to do, though we have seen a redundant event with a bad subst in the hints...
                  (mv nil state))
        (let* ( ;; TODO: Try deleting the :otf-flg
               ;; Try removing hints:
               (state (if (not hintsp)
                          state ; no hints to try dropping
                        (let ((event-without-hints `(,defthm-variant ,name ,body ,@(remove-keyword :hints keyword-value-list)))
-                             (drop-hints-message (concatenate 'string (newline-string) "  Drop all :hints.")))
+                             (drop-hints-message (concatenate 'string (newline-string) "   Drop all :hints.")))
                          (mv-let (improvement-foundp state)
                            (try-improved-event event-without-hints drop-hints-message state)
                            (if improvement-foundp
