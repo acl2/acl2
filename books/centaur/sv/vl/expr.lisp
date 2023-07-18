@@ -4552,7 +4552,7 @@ functions can assume all bits of it are good.</p>"
               (vl-assignpat-to-svex pattern type ss scopes x)))
           (mv (vwarn :type :vl-concat-treated-as-assignpat
                      :msg "Treated concatenation ~a0 as positional assignment pattern ~a1 in non-packed type context ~a2"
-                     :args (list x pattern type))
+                     :args (list x (make-vl-pattern :pat pattern) type))
               type-err svex))
              
         
