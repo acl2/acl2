@@ -304,7 +304,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+   (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p
@@ -316,6 +316,9 @@
      by using strings instead of symbols
      for names of relations and variables.
      This is more consistent with the concrete syntax.")
+
+   (xdoc::p
+    "Convenience constructors for the abstract syntax have been added.")
 
    (xdoc::p
     "The formal notion of system (in the PFCS sense) has been improved,
@@ -1114,7 +1117,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+   (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p
@@ -1707,7 +1710,7 @@ specialization of @(tsee r1cs::verify-r1cs).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+   (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p

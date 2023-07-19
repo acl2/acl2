@@ -265,30 +265,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-stmt ((fn symbolp)
-                                 (fn-guard symbolp)
-                                 (context atc-contextp)
-                                 (stmt stmtp)
+(define atc-gen-block-item-stmt ((stmt stmtp)
                                  (stmt-limit pseudo-termp)
+                                 (stmt-events pseudo-event-form-listp)
                                  (stmt-thm symbolp)
-                                 (result-type typep)
                                  (result-term pseudo-termp)
-                                 (compst-var symbolp)
-                                 (fenv-var symbolp)
-                                 (limit-var symbolp)
+                                 (result-type typep)
                                  (new-compst "An untranslated term.")
-                                 (prec-tags atc-string-taginfo-alistp)
-                                 (thm-index posp)
-                                 (names-to-avoid symbol-listp)
+                                 (gin stmt-ginp)
                                  state)
   :returns (mv (item block-itemp)
                (item-limit pseudo-termp)
-               (thm-event pseudo-event-formp)
-               (thm-name symbolp)
-               (thm-index posp
-                          :hyp (posp thm-index)
-                          :rule-classes (:rewrite :type-prescription))
-               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+               (item-events pseudo-event-form-listp
+                            :hyp (pseudo-event-form-listp stmt-events))
+               (item-thm symbolp)
+               (thm-index posp :rule-classes (:rewrite :type-prescription))
+               (names-to-avoid symbol-listp))
   :short "Generate a C block item that consists of a given statement."
   :long
   (xdoc::topstring
@@ -307,31 +299,45 @@
      1 more than the limit for the statement,
      because we need 1 to go from @(tsee exec-block-item)
      to the @(':stmt') case and @(tsee exec-stmt)."))
-  (b* ((wrld (w state))
+  (b* (((stmt-gin gin) gin)
+       (wrld (w state))
        (item (block-item-stmt stmt))
        (item-limit (pseudo-term-fncall
                     'binary-+
                     (list (pseudo-term-quote 1)
                           stmt-limit)))
-       (name (pack fn '-correct- thm-index))
-       (thm-index (1+ thm-index))
+       (name (pack gin.fn '-correct- gin.thm-index))
+       (thm-index (1+ gin.thm-index))
        ((mv name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+        (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
        (result-uterm (untranslate$ result-term nil state))
        (formula1 `(equal (exec-block-item ',item
-                                          ,compst-var
-                                          ,fenv-var
-                                          ,limit-var)
+                                          ,gin.compst-var
+                                          ,gin.fenv-var
+                                          ,gin.limit-var)
                          (mv ,result-uterm ,new-compst)))
-       (formula1 (atc-contextualize formula1 context fn fn-guard
-                                    compst-var limit-var item-limit t wrld))
+       (formula1 (atc-contextualize formula1
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    gin.limit-var
+                                    item-limit
+                                    t
+                                    wrld))
        (formula (if result-term
                     (b* ((type-pred
-                          (atc-type-to-recognizer result-type prec-tags))
+                          (atc-type-to-recognizer result-type gin.prec-tags))
                          (formula2 `(,type-pred ,result-uterm))
-                         (formula2 (atc-contextualize formula2 context
-                                                      fn fn-guard
-                                                      nil nil nil nil wrld)))
+                         (formula2 (atc-contextualize formula2
+                                                      gin.context
+                                                      gin.fn
+                                                      gin.fn-guard
+                                                      nil
+                                                      nil
+                                                      nil
+                                                      nil
+                                                      wrld)))
                       `(and ,formula1 ,formula2))
                   formula1))
        (hints `(("Goal" :in-theory '(exec-block-item-when-stmt
@@ -343,38 +349,33 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv item item-limit event name thm-index names-to-avoid)))
+    (mv item
+        item-limit
+        (append stmt-events (list event))
+        name
+        thm-index
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-declon ((fn symbolp)
-                                   (fn-guard symbolp)
-                                   (context atc-contextp)
-                                   (var symbolp)
+(define atc-gen-block-item-declon ((var symbolp)
                                    (type typep)
                                    (expr exprp)
                                    (expr-term pseudo-termp)
                                    (expr-limit pseudo-termp)
+                                   (expr-events pseudo-event-form-listp)
                                    (expr-thm symbolp)
-                                   (inscope atc-symbol-varinfo-alist-listp)
-                                   (compst-var symbolp)
-                                   (fenv-var symbolp)
-                                   (limit-var symbolp)
-                                   (prec-tags atc-string-taginfo-alistp)
-                                   (thm-index posp)
-                                   (names-to-avoid symbol-listp)
-                                   (proofs booleanp)
+                                   (gin stmt-ginp)
                                    state)
   :returns (mv (item block-itemp)
-               (item-limit pseudo-termp
-                           :hyp (pseudo-termp expr-limit))
-               (thm-events pseudo-event-form-listp)
-               (thm-name symbolp)
-               (new-inscope atc-symbol-varinfo-alist-listp
-                            :hyp (atc-symbol-varinfo-alist-listp inscope))
-               (new-context atc-contextp :hyp (atc-contextp context))
-               (thm-index posp :hyp (posp thm-index))
-               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+               (item-limit pseudo-termp :hyp (pseudo-termp expr-limit))
+               (item-events pseudo-event-form-listp
+                            :hyp (pseudo-event-form-listp expr-events))
+               (item-thm symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
   :short "Generate a C block item that consists of an object declaration."
   :long
   (xdoc::topstring
@@ -386,7 +387,8 @@
     "We generate a theorem about executing the initializer.
      We will soon generate an additional theorem,
      about executing the block item."))
-  (b* ((wrld (w state))
+  (b* (((stmt-gin gin) gin)
+       (wrld (w state))
        ((mv tyspec declor) (ident+type-to-tyspec+declor
                             (make-ident :name (symbol-name var))
                             type))
@@ -399,31 +401,39 @@
        (item (block-item-declon declon))
        (item-limit `(binary-+ '1 ,initer-limit))
        (varinfo (make-atc-var-info :type type :thm nil :externalp nil))
-       ((when (not proofs))
+       ((when (not gin.proofs))
         (mv item
             item-limit
+            expr-events
             nil
-            nil
-            (atc-add-var var varinfo inscope)
-            context
-            thm-index
-            names-to-avoid))
-       (initer-thm-name (pack fn '-correct- thm-index))
-       (thm-index (1+ thm-index))
+            (atc-add-var var varinfo gin.inscope)
+            gin.context
+            gin.thm-index
+            gin.names-to-avoid))
+       (initer-thm-name (pack gin.fn '-correct- gin.thm-index))
+       (thm-index (1+ gin.thm-index))
        ((mv initer-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix initer-thm-name
                                            nil
-                                           names-to-avoid
+                                           gin.names-to-avoid
                                            wrld))
        (initer-formula `(equal (exec-initer ',initer
-                                            ,compst-var
-                                            ,fenv-var
-                                            ,limit-var)
-                               (mv (init-value-single ,expr-term) ,compst-var)))
+                                            ,gin.compst-var
+                                            ,gin.fenv-var
+                                            ,gin.limit-var)
+                               (mv (init-value-single ,expr-term)
+                                   ,gin.compst-var)))
        (initer-formula
-        (atc-contextualize initer-formula context fn fn-guard
-                           compst-var limit-var initer-limit t wrld))
-       (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
+        (atc-contextualize initer-formula
+                           gin.context
+                           gin.fn
+                           gin.fn-guard
+                           gin.compst-var
+                           gin.limit-var
+                           initer-limit
+                           t
+                           wrld))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
        (initer-hints `(("Goal" :in-theory '(exec-initer-when-single
                                             (:e initer-kind)
                                             not-zp-of-limit-variable
@@ -437,8 +447,8 @@
                                                        :hints initer-hints
                                                        :enable nil))
        (new-compst
-        `(add-var (ident ',(symbol-name var)) ,expr-term ,compst-var))
-       (item-thm-name (pack fn '-correct- thm-index))
+        `(add-var (ident ',(symbol-name var)) ,expr-term ,gin.compst-var))
+       (item-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv item-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix item-thm-name
@@ -446,14 +456,22 @@
                                            names-to-avoid
                                            wrld))
        (item-formula `(equal (exec-block-item ',item
-                                              ,compst-var
-                                              ,fenv-var
-                                              ,limit-var)
-                             (mv nil ,(untranslate$ new-compst nil state))))
-       (item-formula (atc-contextualize item-formula context fn fn-guard
-                                        compst-var limit-var item-limit t wrld))
+                                              ,gin.compst-var
+                                              ,gin.fenv-var
+                                              ,gin.limit-var)
+                             (mv nil
+                                 ,(untranslate$ new-compst nil state))))
+       (item-formula (atc-contextualize item-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        item-limit
+                                        t
+                                        wrld))
        (type-of-value-when-type-pred
-        (atc-type-to-type-of-value-thm type prec-tags))
+        (atc-type-to-type-of-value-thm type gin.prec-tags))
        (e-type `(:e ,(car (type-to-maker type))))
        (item-hints
         `(("Goal"
@@ -496,16 +514,25 @@
                                                      :hints item-hints
                                                      :enable nil))
        ((mv new-inscope new-context new-inscope-events thm-index names-to-avoid)
-        (atc-gen-vardecl-inscope fn fn-guard inscope
-                                 context var type
+        (atc-gen-vardecl-inscope gin.fn
+                                 gin.fn-guard
+                                 gin.inscope
+                                 gin.context
+                                 var
+                                 type
                                  (untranslate$ expr-term nil state)
-                                 expr-thm compst-var prec-tags
-                                 thm-index names-to-avoid wrld)))
+                                 expr-thm
+                                 gin.compst-var
+                                 gin.prec-tags
+                                 thm-index
+                                 names-to-avoid
+                                 wrld)))
     (mv item
         item-limit
-        (list* initer-thm-event
-               item-thm-event
-               new-inscope-events)
+        (append expr-events
+                (list initer-thm-event
+                      item-thm-event)
+                new-inscope-events)
         item-thm-name
         new-inscope
         new-context
@@ -593,28 +620,23 @@
             context-body
             thm-index
             names-to-avoid)
-        (atc-gen-block-item-declon gin.fn
-                                   gin.fn-guard
-                                   gin.context
-                                   var
+        (atc-gen-block-item-declon var
                                    init.type
                                    init.expr
                                    init.term
                                    init.limit
+                                   init.events
                                    init.thm-name
-                                   gin.inscope
-                                   gin.compst-var
-                                   gin.fenv-var
-                                   gin.limit-var
-                                   gin.prec-tags
-                                   init.thm-index
-                                   init.names-to-avoid
-                                   (and init.thm-name t)
+                                   (change-stmt-gin
+                                    gin
+                                    :thm-index init.thm-index
+                                    :names-to-avoid init.names-to-avoid
+                                    :proofs (and init.thm-name t))
                                    state)))
     (retok item
            init.term
            item-limit
-           (append init.events item-events)
+           item-events
            item-thm
            inscope-body
            context-body
@@ -851,22 +873,22 @@
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
-       ((mv item item-limit item-event item-thm-name thm-index names-to-avoid)
-        (atc-gen-block-item-stmt gin.fn
-                                 gin.fn-guard
-                                 gin.context
-                                 stmt
+       ((mv item item-limit item-events item-thm-name thm-index names-to-avoid)
+        (atc-gen-block-item-stmt stmt
                                  stmt-limit
+                                 (append rhs.events
+                                         (list asg-event
+                                               expr-event
+                                               stmt-event))
                                  stmt-thm-name
-                                 (irr-type)
                                  nil
-                                 gin.compst-var
-                                 gin.fenv-var
-                                 gin.limit-var
+                                 (type-void)
                                  new-compst
-                                 gin.prec-tags
-                                 thm-index
-                                 names-to-avoid
+                                 (change-stmt-gin
+                                  gin
+                                  :thm-index thm-index
+                                  :names-to-avoid names-to-avoid
+                                  :proofs (and stmt-thm-name t))
                                  state))
        (premises (atc-context->premises gin.context))
        (new-premises
@@ -903,11 +925,7 @@
                              names-to-avoid
                              wrld))
        (thm-index (1+ thm-index))
-       (events (append rhs.events
-                       (list asg-event
-                             expr-event
-                             stmt-event
-                             item-event)
+       (events (append item-events
                        new-inscope-events)))
     (retok item
            rhs.term
@@ -918,7 +936,11 @@
            new-context
            thm-index
            names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable pseudo-termp
+            acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -995,20 +1017,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-list-one ((item block-itemp)
+(define atc-gen-block-item-list-one ((term pseudo-termp)
+                                     (item block-itemp)
                                      (item-limit pseudo-termp)
+                                     (item-events pseudo-event-form-listp)
                                      (item-thm symbolp)
-                                     (result-type typep)
                                      (result-term pseudo-termp)
+                                     (result-type typep)
                                      (new-compst "An untranslated term.")
+                                     (new-context atc-contextp)
                                      (gin stmt-ginp)
                                      state)
-  :returns (mv (items block-item-listp :hyp (block-itemp item))
-               (items-limit pseudo-termp)
-               (thm-event pseudo-event-formp)
-               (thm-name symbolp)
-               (thm-index posp :rule-classes (:rewrite :type-prescription))
-               (names-to-avoid symbol-listp))
+  :returns (gout stmt-goutp)
   :short "Generate a list of C block items that consists of a given item."
   :long
   (xdoc::topstring
@@ -1033,6 +1053,17 @@
                      'binary-+
                      (list (pseudo-term-quote 1)
                            item-limit)))
+       ((when (not gin.proofs))
+        (make-stmt-gout
+         :items items
+         :type result-type
+         :term term
+         :context new-context
+         :limit items-limit
+         :events item-events
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid))
        (name (pack gin.fn '-correct- gin.thm-index))
        (thm-index (1+ gin.thm-index))
        ((mv name names-to-avoid)
@@ -1043,9 +1074,15 @@
                                                ,gin.fenv-var
                                                ,gin.limit-var)
                          (mv ,result-uterm ,new-compst)))
-       (formula1 (atc-contextualize formula1 gin.context gin.fn gin.fn-guard
-                                    gin.compst-var gin.limit-var
-                                    items-limit t wrld))
+       (formula1 (atc-contextualize formula1
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    gin.limit-var
+                                    items-limit
+                                    t
+                                    wrld))
        (type-pred (and result-term
                        (atc-type-to-recognizer result-type gin.prec-tags)))
        (formula (if result-term
@@ -1073,7 +1110,16 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv items items-limit event name thm-index names-to-avoid)))
+    (make-stmt-gout
+     :items items
+     :type result-type
+     :term term
+     :context new-context
+     :limit items-limit
+     :events (append item-events (list event))
+     :thm-name name
+     :thm-index thm-index
+     :names-to-avoid names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1087,7 +1133,7 @@
                                       (items-events pseudo-event-form-listp)
                                       (items-thm symbolp)
                                       (items-type typep)
-                                      (items-new-context atc-contextp)
+                                      (new-context atc-contextp)
                                       (gin stmt-ginp)
                                       state)
   :returns (gout stmt-goutp)
@@ -1103,7 +1149,7 @@
      to the execution of @('item') and @('items').")
    (xdoc::p
     "The context in @('gin') is the one before all the items,
-     while the context @('items-new-context') is the one after all the items.
+     while the context @('new-context') is the one after all the items.
      The former should be always a prefix of the latter.
      In order to calculate the computation state after all the items,
      we take the ``difference'' between the two contexts
@@ -1111,7 +1157,19 @@
      obtaining the computation state after all the items;
      note that, at that spot in the generated theorem,
      the computation state variables already accumulates
-     the contextual premises in @('gin')."))
+     the contextual premises in @('gin').")
+   (xdoc::p
+    "Currently this function is only called on a @('term')
+     that returns a single value,
+     which is either the C result of the list of block items
+     (if @('items-type') is not @('void')),
+     or a side-effected variables (if that type is @('void')).
+     Thus, if the type if not @('void'),
+     we can take the whole term
+     as the first result of @(tsee exec-block-item-list).
+     In the future, this will need to be generalized
+     to be @('(mv-nth 0 term)') when the term returns multiple results
+     and the type is not @('void')."))
   (b* ((wrld (w state))
        ((stmt-gin gin) gin)
        (all-items (cons item items))
@@ -1129,7 +1187,7 @@
          :names-to-avoid gin.names-to-avoid))
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
-                                                 items-new-context))
+                                                 new-context))
        (uterm (untranslate$ term nil state))
        (formula1 `(equal (exec-block-item-list ',all-items
                                                ,gin.compst-var
@@ -1177,7 +1235,7 @@
     (make-stmt-gout :items all-items
                     :type items-type
                     :term term
-                    :context items-new-context
+                    :context new-context
                     :limit all-items-limit
                     :events (append item-events
                                     items-events
@@ -1351,43 +1409,39 @@
                                                  :enable nil))
        ((mv item
             item-limit
-            item-thm-event
+            item-events
             item-thm-name
             thm-index
             names-to-avoid)
-        (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
-                                 stmt stmt-limit stmt-thm-name
-                                 expr.type expr.term
-                                 gin.compst-var gin.fenv-var gin.limit-var
-                                 gin.compst-var gin.prec-tags
-                                 thm-index names-to-avoid state))
-       ((mv items
-            items-limit
-            items-thm-event
-            items-thm-name
-            thm-index
-            names-to-avoid)
-        (atc-gen-block-item-list-one item item-limit item-thm-name
-                                     expr.type expr.term gin.compst-var
-                                     (change-stmt-gin
-                                      gin
-                                      :thm-index thm-index
-                                      :names-to-avoid names-to-avoid
-                                      :proofs (and item-thm-name t))
-                                     state)))
-    (retok (make-stmt-gout :items items
-                           :type expr.type
-                           :term expr.term
-                           :context gin.context
-                           :limit items-limit
-                           :events (append expr.events
-                                           (list stmt-event)
-                                           (list item-thm-event)
-                                           (list items-thm-event))
-                           :thm-name items-thm-name
-                           :thm-index thm-index
-                           :names-to-avoid names-to-avoid)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+        (atc-gen-block-item-stmt stmt
+                                 stmt-limit
+                                 (append expr.events
+                                         (list stmt-event))
+                                 stmt-thm-name
+                                 expr.term
+                                 expr.type
+                                 gin.compst-var
+                                 (change-stmt-gin
+                                  gin
+                                  :thm-index thm-index
+                                  :names-to-avoid names-to-avoid
+                                  :proofs (and stmt-thm-name t))
+                                 state)))
+    (retok (atc-gen-block-item-list-one expr.term
+                                        item
+                                        item-limit
+                                        item-events
+                                        item-thm-name
+                                        expr.term
+                                        expr.type
+                                        gin.compst-var
+                                        gin.context
+                                        (change-stmt-gin
+                                         gin
+                                         :thm-index thm-index
+                                         :names-to-avoid names-to-avoid
+                                         :proofs (and item-thm-name t))
+                                        state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1397,9 +1451,9 @@
                                  (then-items block-item-listp)
                                  (then-type typep)
                                  (then-limit pseudo-termp)
-                                 (then-thm symbolp)
                                  (then-events pseudo-event-form-listp)
-                                 (then-context atc-contextp)
+                                 (then-thm symbolp)
+                                 (new-context atc-contextp)
                                  (gin stmt-ginp)
                                  state)
   :returns (mv erp (gout stmt-goutp))
@@ -1441,7 +1495,15 @@
     "Since @(tsee atc-gen-fn-def*) replaces every @(tsee if) with @(tsee if*)
      in the whole body of the function,
      we need to perform this replacement in both the test and `else' branch,
-     because these are not recursively processed to generate code."))
+     because these are not recursively processed to generate code.")
+   (xdoc::p
+    "The @('new-context') parameter is the context just after the `then' branch,
+     which is also the context after the whole @(tsee if).")
+   (xdoc::p
+    "The generation of modular proofs in this code currently assumes that
+     @('then-term') returns a single value that represents a C value.
+     This is reflected in the generated modular theorems.
+     This will need to be generalized."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1519,7 +1581,7 @@
     (retok (make-stmt-gout :items then-items
                            :type then-type
                            :term term
-                           :context then-context
+                           :context new-context
                            :limit then-limit
                            :events (append then-events
                                            (list lemma-event
@@ -1592,7 +1654,12 @@
      for the same reason explained in @(tsee atc-gen-expr-bool-from-type).")
    (xdoc::p
     "We lift the theorem for the conditional statement
-     to a block item and to a singleton list of block items."))
+     to a block item and to a singleton list of block items.")
+   (xdoc::p
+    "The generation of modular proofs in this code currently assumes that
+     the @(tsee if) returns a single value that represents a C value.
+     This is reflected in the generated modular theorems.
+     This will need to be generalized."))
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1881,30 +1948,28 @@
                                :enable nil))
        ((mv item
             item-limit
-            item-thm-event
+            item-events
             item-thm-name
             thm-index
             names-to-avoid)
-        (atc-gen-block-item-stmt gin.fn gin.fn-guard gin.context
-                                 stmt if-stmt-limit if-stmt-thm
-                                 type term
-                                 gin.compst-var gin.fenv-var gin.limit-var
-                                 new-compst gin.prec-tags
-                                 thm-index names-to-avoid state))
-       ((mv items
-            items-limit
-            items-thm-event
-            items-thm-name
-            thm-index
-            names-to-avoid)
-        (atc-gen-block-item-list-one item item-limit item-thm-name
-                                     type term new-compst
-                                     (change-stmt-gin
-                                      gin
-                                      :thm-index thm-index
-                                      :names-to-avoid names-to-avoid
-                                      :proofs (and item-thm-name t))
-                                     state))
+        (atc-gen-block-item-stmt stmt
+                                 if-stmt-limit
+                                 (append test-events
+                                         then-events
+                                         else-events
+                                         (list then-stmt-event
+                                               else-stmt-event
+                                               if-stmt-event))
+                                 if-stmt-thm
+                                 term
+                                 type
+                                 new-compst
+                                 (change-stmt-gin
+                                  gin
+                                  :thm-index thm-index
+                                  :names-to-avoid names-to-avoid
+                                  :proofs (and if-stmt-thm t))
+                                 state))
        (new-context (change-atc-context
                      gin.context
                      :premises (append (atc-context->premises gin.context)
@@ -1912,24 +1977,21 @@
                                               :var gin.compst-var
                                               :term new-compst))))))
     (retok
-     (make-stmt-gout
-      :items items
-      :type type
-      :term term
-      :context new-context
-      :limit items-limit
-      :events (append test-events
-                      then-events
-                      else-events
-                      (list then-stmt-event)
-                      (list else-stmt-event)
-                      (list if-stmt-event)
-                      (list item-thm-event)
-                      (list items-thm-event))
-      :thm-name items-thm-name
-      :thm-index thm-index
-      :names-to-avoid names-to-avoid)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+     (atc-gen-block-item-list-one term
+                                  item
+                                  item-limit
+                                  item-events
+                                  item-thm-name
+                                  term
+                                  type
+                                  new-compst
+                                  new-context
+                                  (change-stmt-gin
+                                   gin
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs (and item-thm-name t))
+                                  state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2150,8 +2212,8 @@
                                          then.items
                                          then.type
                                          then.limit
-                                         then.thm-name
                                          then.events
+                                         then.thm-name
                                          then.context
                                          gin
                                          state)))

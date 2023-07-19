@@ -657,13 +657,13 @@
                 ;; Check for ground term:
                 (and (not (member-eq :ground-term suppress))
                      (not (eq 'synp fn)) ; synp calls are usually ground terms
-                     (not (member-eq fn '(hard-error error1 illegal))) ; these have side effects that shoud be kept
+                     (not (member-eq fn '(hard-error error1 illegal))) ; these have side effects that should be kept
                      ;; don't report ground calls of constrained functions:
                      (or (flambdap fn)
                          (fn-primitivep fn (w state))
                          (fn-definedp fn (w state)))
                      (quote-listp (fargs term))
-                     (cw "~%   ground term ~x0 is present." term))))))))))
+                     (cw "~%   Ground term: ~x0." term))))))))))
 
  (defun lint-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
@@ -867,7 +867,7 @@
        ((when erp)
         (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
         state)
-       (- (and res (cw "~%  Hyp ~x1 is provably unnecessary." ctx hyp)))
+       (- (and res (cw "~%   Drop hyp ~x1." ctx hyp)))
        (state (if res
                   state ;; don't try to weaken, since the hyp can be dropped
                 (let* ((weakenings (get-weakenings hyp))
