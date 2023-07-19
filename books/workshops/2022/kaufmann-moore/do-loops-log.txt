@@ -36,14 +36,14 @@ ACL2 !>>(DEFWARRANT FLD)
 FLD is now warranted by APPLY$-WARRANT-FLD, with badge 
 (APPLY$-BADGE 1 1 . T).
 
- T
+ :WARRANTED
 ACL2 !>>(DEFWARRANT UPDATE-FLD)
 
 
 UPDATE-FLD is now warranted by APPLY$-WARRANT-UPDATE-FLD, with badge
 (APPLY$-BADGE 2 1 . T).
 
- T
+ :WARRANTED
 ACL2 !>>(LOOP$
          WITH SUM = 0 WITH LST = '(1 2 3 4)
          DO :VALUES (NIL ST)

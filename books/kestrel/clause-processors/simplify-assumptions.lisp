@@ -1,6 +1,6 @@
 ; A clause processor to simplify assumptions
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 (include-book "clause-to-clause-list")
 (include-book "kestrel/terms-light/drop-clearly-implied-conjuncts" :dir :system)
 (include-book "kestrel/terms-light/strengthen-conjuncts" :dir :system)
-(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
+;(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 
 ;dup
 ;; just changes the evaluator

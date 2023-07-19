@@ -497,7 +497,7 @@
         :res-type ,<type>p
         :short ,(str::cat "Right shift of a value of "
                           type1-string
-                          " by an integer C:6.5.7].")
+                          " by an integer [C:6.5.7].")
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer

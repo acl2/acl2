@@ -211,10 +211,22 @@
 ; funcall and intern, so as to avoid a package-lock read error when the symbol
 ; sb-impl::read-cycle-counter does not exist at read time.
 
-       (ignore-errors (funcall (intern "READ-CYCLE-COUNTER" "SB-IMPL")))
-   (format t "; Note: pushing :RDTSC onto *features*.~&")
-   (finish-output)
-   (pushnew :RDTSC *features*)))
+; We have gotten a report of sb-impl::read-cycle-counter returning 0 as both
+; values on an M1 Mac running SBCL.  So we check for that.  Since the rdtsc is
+; supposed to measure cycles since the machine's last reset, a return of two
+; zeroes plausibly indicates that read-cycle-counter (see its definition in
+; SBCL source file src/code/time.lisp, is punting.  (It is a bit tempting to
+; use the CYCLE-COUNTER feature that is used in that definition of
+; read-cycle-counter, but that feature is not present in our SBCL build -- it
+; must be temporary somehow.)
+
+       (ignore-errors
+         (mv-let (x y)
+           (funcall (intern "READ-CYCLE-COUNTER" "SB-IMPL"))
+           (not (and (eql x 0) (eql y 0)))))
+       (format t "; Note: pushing :RDTSC onto *features*.~&")
+       (finish-output)
+       (pushnew :RDTSC *features*)))
 
 #+rdtsc
 (defconstant *2^30-1-for-rdtsc*

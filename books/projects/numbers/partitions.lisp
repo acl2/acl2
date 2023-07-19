@@ -64,13 +64,14 @@
 ;; and we need only show that the two lists have the same length.
 
 ;; For the odd partitions, our list will consist of all odd sorted partitions of n, i.e.,
-;; those that are monotonically increasing with respect to the usual ordering of the integers.
-;; For distinct partitions, we shall do something similar, but it will be convenient to use
-;; a different ordering of the positive integers.  We must show that (1) and (2) hold for each
-;; list.  In fact, we shall prove a general result:  Given a total order t<= on the positive
-;; integers and a predicate pred defined on lists of positive integers thta invariant under
-;; permutation, if predl is a dlist consisting of all lists of positive integers that satisfy
-;; pred and are sorted with respect to t<=, then predl satisfies (1) and (2).
+;; those that are monotonically increasing with respect to the usual ordering of the
+;; integers.  For distinct partitions, we shall do something similar, but it will be 
+;; convenient to use a different ordering of the positive integers.  We must show that (1) 
+;; and (2) hold for each list.  In fact, we shall prove a general result:  Let t<= be a total 
+;; order on the positive integers and let pred be a predicate that characterizes a set of 
+;; lists of positive integers and is invariant under permutation.  If predl is a dlist 
+;; consisting of all lists of positive integers that satisfy pred and are sorted with respect 
+;; to t<=, then predl satisfies (1) and (2).
 
 ;; For this we use encapsulation and functional instantiation.
 
@@ -180,7 +181,7 @@
 ;;------------------------------------------------------------------------------------------------
 
 ;; For the odd partitions, we substitute the standard order <= for t<=.  The predicate and the
-;; sorting function corresponding to tsorted and sort are defined as follows:
+;; sorting function corresponding to tsorted and tsort are defined as follows:
 
 (defun sortedp (l)
   (if (and (consp l) (consp (cdr l)))
