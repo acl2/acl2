@@ -261,12 +261,12 @@ ACL2 !>>>(DEFWARRANT MY-ID)
 MY-ID is now warranted by APPLY$-WARRANT-MY-ID, with badge 
 (APPLY$-BADGE 1 1 . T).
 
-T
+:WARRANTED
 
 Summary
 Form:  ( PROGN (DEFUN MY-ID ...) ...)
 Rules: NIL
- T
+ :WARRANTED
 ACL2 !>>(DEFUN F3-BAD2 (Y Z)
           (MACROLET ((MAC (X)
                           (MAC-FN (APPLY$ 'MY-ID (LIST X)))))

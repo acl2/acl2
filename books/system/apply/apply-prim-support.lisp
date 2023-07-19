@@ -208,7 +208,7 @@
               (alt-def-from-to-by-recursion
                i (- j k) k (cons (+ i (* k (floor (- j i) k))) lst)))
              (t lst)))
-           (t nil))))  
+           (t nil))))
 
   (local
    (defthm from-to-by-ac-i-i
@@ -296,3 +296,4 @@
 
 #+acl2-devel
 (verify-termination apply$-prim) ; and guards
+

@@ -2345,18 +2345,18 @@
 
           (if (global-val 'boot-strap-flg wrld)
               state
-              (observation
-               (cons 'defwarrant fn)
-               "The function ~x0 is built-in and already has a warrant when ~
-                ACL2 starts up.  This event thus has no effect.~|~%"
-               fn))
+            (observation
+             (cons 'defwarrant fn)
+             "The function ~x0 is built-in and already has a warrant when ~
+              ACL2 starts up.  This event thus has no effect.~|~%"
+             fn))
           (value `(with-output
                     :stack :pop
                     (value-triple nil)))))
         (t
          (let ((events (car doublet-or-t))
                (badge (cadr doublet-or-t)))
-         (value
+           (value
 
 ; We know that events is either nil or a list of exactly two events: an
 ; observation explaining why we're about to prove a theorem and a defthm for
@@ -2366,60 +2366,66 @@
 ; time we used (progn ...) instead.  However, we found that defwarrant events
 ; were never redundant because of the defattach below.
 
-          `(encapsulate ; Read the warning above before changing to progn.
-             ()
-             ,@(if (eq events nil)
-                   nil
-                   `((with-output    ; First we lay down the observation
-                       :stack :pop   ; explaining that we're about to
-                       :off summary  ; prove a defthm that fn's measure
-                       ,(car events)); is a natp.
+            `(encapsulate ; Read the warning above before changing to progn.
+               ()
+               ,@(if (eq events nil)
+                     nil
+                   `((with-output     ; First we lay down the observation
+                       :stack :pop    ; explaining that we're about to
+                       :off summary   ; prove a defthm that fn's measure
+                       ,(car events)) ; is a natp.
 
-                     (with-output    ; Then we lay down the defthm.
+                     (with-output ; Then we lay down the defthm.
                        :stack :pop ,(cadr events))))
-             ,@(defwarrant-events fn (formals fn wrld) badge)
-             (table badge-table
-                    :badge-userfn-structure
-                    (put-badge-userfn-structure-tuple-in-alist
-                     (make-badge-userfn-structure-tuple
-                      ',fn T ',badge)
-                     (cdr (assoc :badge-userfn-structure
-                                 (table-alist 'badge-table world))))
-                    :put)
-             ,(if (getpropc fn 'predefined nil wrld)
-                  `(defattach (,(warrant-name fn)
-                               true-apply$-warrant)
-                     :system-ok t)
+               ,@(defwarrant-events fn (formals fn wrld) badge)
+               (table badge-table
+                      :badge-userfn-structure
+                      (put-badge-userfn-structure-tuple-in-alist
+                       (make-badge-userfn-structure-tuple
+                        ',fn T ',badge)
+                       (cdr (assoc :badge-userfn-structure
+                                   (table-alist 'badge-table world)))
+                       'defwarrant)
+                      :put)
+               ,(if (getpropc fn 'predefined nil wrld)
+                    `(defattach (,(warrant-name fn)
+                                 true-apply$-warrant)
+                       :system-ok t)
                   `(defattach ,(warrant-name fn) true-apply$-warrant))
-             ,@(if (eq (access apply$-badge badge :ilks) t)
-                   nil
+               ,@(if (eq (access apply$-badge badge :ilks) t)
+                     nil
                    (defcong-fn-equal-equal-events
                      (cons fn (formals fn wrld))
                      1
                      (access apply$-badge badge :ilks)))
-             (progn ,(if (global-val 'boot-strap-flg wrld)
-                         `(with-output
-                            :stack :pop
-                            (value-triple
-                             (prog2$
-                              (cw "~%~x0 is now warranted by ~x1, with badge ~x2.~%~%"
-                                  ',fn
-                                  ',(warrant-name fn)
-                                  ',badge)
-                              :warranted)))
+               (progn ,(if (global-val 'boot-strap-flg wrld)
+                           `(with-output
+                              :stack :pop
+                              (value-triple
+                               (prog2$
+                                (cw "~%~x0 is now warranted by ~x1, with badge ~x2.~%~%"
+                                    ',fn
+                                    ',(warrant-name fn)
+                                    ',badge)
+                                :warranted)))
                          `(side-effect-event
-                           (if (or (eq (ld-skip-proofsp state) 'include-book)
-                                   (eq (ld-skip-proofsp state) 'include-book-with-locals)
-                                   (eq (ld-skip-proofsp state) 'initialize-acl2))
+                           (if (or (eq (ld-skip-proofsp state)
+                                       'include-book)
+                                   (eq (ld-skip-proofsp state)
+                                       'include-book-with-locals)
+                                   (eq (ld-skip-proofsp state)
+                                       'initialize-acl2))
                                state
-                               (fms "~%~x0 is now warranted by ~x1, with badge ~x2.~%~%"
-                                    (list (cons #\0 ',fn)
-                                          (cons #\1 ',(warrant-name fn))
-                                          (cons #\2 ',badge))
-                                    (standard-co state) state nil))))
-                    (with-output
-                      :stack :pop
-                      (value-triple :warranted))))))))))))
+                             (fms "~%~x0 is now warranted by ~x1, with badge ~
+                                   ~x2.~%~%"
+                                  (list (cons #\0 ',fn)
+                                        (cons #\1 ',(warrant-name fn))
+                                        (cons #\2 ',badge))
+                                  (standard-co state) state nil))))
+                      (with-output
+                        :stack :pop
+                        (value-triple '(:return-value :warranted)
+                                      :on-skip-proofs t))))))))))))
 
 (defun defwarrant-fn (fn)
   (declare (xargs :mode :logic :guard t)) ; for execution speed in safe-mode
@@ -2564,19 +2570,28 @@
        (cond
         (msg
          (er soft ctx "~@0" msg))
-        (flg
-         (pprogn (observation (cons 'defbadge fn)
-                              "The function ~x0 already has a badge because ~
-                               it is built-in, or because defbadge or ~
-                               defwarrant has been previously invoked on it, ~
-                               or because :loop$-recursion t was declared).  ~
-                               This event thus has no effect.~|~%"
-                              fn)
-                 (value `(with-output
-                           :stack :pop
-                           (value-triple nil)))))
         (t
-         (value
+         (pprogn
+          (cond
+           (flg (cond ((f-get-global 'skip-proofs-by-system state)
+
+; Avoid the observation below when we are in include-book or the second pass of
+; an encapsulate.
+
+                       state)
+                      (t (observation (cons 'defbadge fn)
+                                      "The function ~x0 already has a badge ~
+                                       because it is built-in, or because ~
+                                       defbadge or defwarrant has been ~
+                                       previously invoked on it, or because ~
+                                       :loop$-recursion t was declared).  ~
+                                       This event thus has no effect.~|~%"
+                                      fn))))
+           (t (prog2$
+               (cw "~%~x0 is being given the badge ~x1 but has no warrant.~%~%"
+                   fn badge)
+               state)))
+          (value
 
 ; Otherwise, we store the badge for fn in the badge table.  Note that we set
 ; the warrantp flag of fn to NIL.  We know we're not overriding a previous
@@ -2587,23 +2602,20 @@
 ; time we used (progn ...) instead.  However, we found that defwarrant events
 ; were never redundant because of the defattach below.
 
-          `(encapsulate ; Read the warning above before changing to progn.
-             ()
-             (table badge-table
-                    :badge-userfn-structure
-                    (put-badge-userfn-structure-tuple-in-alist
-                     (make-badge-userfn-structure-tuple
-                      ',fn NIL ',badge)
-                     (cdr (assoc :badge-userfn-structure
-                                 (table-alist 'badge-table world))))
-                    :put)
-             (with-output
-               :stack :pop
-               (value-triple
-                (prog2$
-                 (cw "~%~x0 now has the badge ~x1 but has no warrant.~%~%"
-                     ',fn ',badge)
-                 :warranted)))))))))))
+           `(encapsulate ; Read the warning above before changing to progn.
+              ()
+              (table badge-table
+                     :badge-userfn-structure
+                     (put-badge-userfn-structure-tuple-in-alist
+                      (make-badge-userfn-structure-tuple ',fn NIL ',badge)
+                      (cdr (assoc :badge-userfn-structure
+                                  (table-alist 'badge-table world)))
+                      'defbadge)
+                     :put)
+              (with-output
+                :stack :pop
+                (value-triple '(:return-value :badged)
+                              :on-skip-proofs t)))))))))))
 
 (defun defbadge-fn (fn)
   (declare (xargs :mode :logic :guard t)) ; for execution speed in safe-mode
@@ -2630,7 +2642,7 @@
         :stack :pop
         ,(defbadge-fn fn))
       :on-behalf-of :quiet!
-; See note below.
+; See note above.
       :check-expansion t)))
 
 ; -----------------------------------------------------------------
