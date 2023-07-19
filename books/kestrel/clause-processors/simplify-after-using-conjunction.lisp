@@ -1,6 +1,6 @@
 ; A clause-processor that helps after :use-ing a conjunction
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,11 +15,11 @@
 (include-book "simple-subsumption")
 (include-book "push-unary-functions")
 (include-book "simplify-assumptions")
-(include-book "kestrel/booleans/booland" :dir :system) ; why?
-(include-book "kestrel/booleans/boolor" :dir :system) ; why?
-(include-book "kestrel/booleans/boolif" :dir :system) ; why?
-(include-book "kestrel/utilities/myif-def" :dir :system) ; why?
-(local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
+;(include-book "kestrel/booleans/booland" :dir :system) ; why?
+;(include-book "kestrel/booleans/boolor" :dir :system) ; why?
+;(include-book "kestrel/booleans/boolif" :dir :system) ; why?
+;(include-book "kestrel/utilities/myif-def" :dir :system) ; why?
+;(local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
 (local (include-book "kestrel/utilities/disjoin" :dir :system))
 
 ;; TODO: Have my-make-flag (or make-flag) put in the :ruler-extenders of the old function by default.
