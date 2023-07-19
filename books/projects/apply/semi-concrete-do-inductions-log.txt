@@ -2849,7 +2849,7 @@ ACL2 !>>(DEFWARRANT SQ)
 
 SQ is now warranted by APPLY$-WARRANT-SQ, with badge (APPLY$-BADGE 1 1 . T).
 
- T
+ :WARRANTED
 ACL2 !>>(THM
          (IMPLIES
            (AND (WARRANT SQ)
@@ -3620,7 +3620,7 @@ ACL2 !>>(DEFWARRANT MAKE-PAIR)
 MAKE-PAIR is now warranted by APPLY$-WARRANT-MAKE-PAIR, with badge
 (APPLY$-BADGE 2 1 . T).
 
- T
+ :WARRANTED
 ACL2 !>>(DEFUN APDH2 (I J ANS)
           (COND ((NATP J)
                  (COND ((< J 1) ANS)

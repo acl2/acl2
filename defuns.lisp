@@ -10398,7 +10398,8 @@
                                     (put-badge-userfn-structure-tuple-in-alist
                                      (make-badge-userfn-structure-tuple
                                       fn nil badge)
-                                     userfn-structure)
+                                     userfn-structure
+                                     ctx)
                                     badge-table)
                       wrld2))))
                (value wrld2))))
