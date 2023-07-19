@@ -4265,16 +4265,29 @@
 
   (list fn warrantp badge))
 
-(defun put-badge-userfn-structure-tuple-in-alist (tuple alist)
+(defun put-badge-userfn-structure-tuple-in-alist (tuple alist ctx)
 
 ; This is the way we put a new tuple into the badge-table -- or change the
 ; fields of an existing tuple for the fn.  However, if we know that fn is not
 ; already bound in the alist, we can just cons the tuple on instead of using
 ; this function.
 
-  (if (assoc-eq (car tuple) alist)
-      (put-assoc-eq (car tuple) (cdr tuple) alist)
-      (cons tuple alist)))
+  (let ((pair (assoc-eq (car tuple) alist)))
+    (cond (pair (cond ((equal (cddr pair) (cddr tuple))
+
+; The only difference is the warrantp flag.  We only update alist if we are
+; promoting from unwarranted to warranted.
+
+                       (cond ((and (not (cadr pair))
+                                   (cadr tuple))
+                              (put-assoc-eq (car tuple) (cdr tuple) alist))
+                             (t alist)))
+                      (t (er hard! ctx
+                             "The function symbol ~x0 already has the badge, ~
+                              ~x1.  So it is illegal to try to assign it the ~
+                              badge, ~x2."
+                             (car tuple) (cdr pair) (cdr tuple)))))
+          (t (cons tuple alist)))))
 
 (defun weak-badge-userfn-structure-tuplep (x)
 

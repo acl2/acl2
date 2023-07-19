@@ -18,7 +18,7 @@
   :rule-classes ())
 
 ;; Our objective is the converse, which was first observed by Girard in 1625.  Thus, given a 
-;; prime p with (mod p 4) = 1, we shall construct a pair natural number a and b such that
+;; prime p with (mod p 4) = 1, we shall construct a pair of natural numbers a and b such that
 ;; p = (+ (* a a) (* b b)):
 
 ;; (defthmd prime-sum-squares-converse
@@ -64,7 +64,7 @@
 	        (and (natp n)
 	             (<= (* n n) p)))))
 
-;; It follows from member-sqrt-list that (sqrt-list p) is a dlist:
+;; Note that (sqrt-list p) is a dlist:
 
 (defthmd dlistp-sqrt-list
   (implies (posp p)
@@ -197,8 +197,8 @@
 ;; Let (pair1 p) = (a1 . b1) and (pair2 p) = (a2 . b2).  Let j = (root1 -1 p).
 ;; Then (mod (- a1 (* j b1)) p) = (mod (- a2 (* j b2)) p), which implies
 ;; (mod (- a1 a2) p) = (mod (* j (- b1 b2)) p).  Let a3 = (- a1 a2) and b3 = (- b1 b2).
-;; Since (mod (* j j) p) = (mod -1 p), we have (mod (* a a) p) = (mod (- (* b b)) p),
-;; and (+ (* a a) (* b b)) is divisible by p.  But this sum is positive and less than
+;; Since (mod (* j j) p) = (mod -1 p), we have (mod (* a3 a3) p) = (mod (- (* b3 b3)) p),
+;; and (+ (* a3 a3) (* b3 b3)) is divisible by p.  But this sum is positive and less than
 ;; (* 2 p), and therefore equal to p.
 
 (defund a1 (p) (car (pair1 p)))

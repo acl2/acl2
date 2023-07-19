@@ -44,7 +44,6 @@ number theory.  It includes the following ACL2 books:
             <=>
           ((p-1)/2) * ((q-1)/2) is even.
 
-
   mersenne
       An application to the Mersenne prime problem by way of a theorem of Euler:
       if p and 2*p+1 are both prime and mod(p,4) = 3, then 2^p-1 is divisible by
@@ -53,8 +52,18 @@ number theory.  It includes the following ACL2 books:
   pratt
       Vaughn Pratt's method of prime certification applied to the prime 2^255 - 19.
 
+  girard
+      An odd prime p is a sum of two squares iff (mod p 4) = 1.
+
+  partitions
+      Euler's partition theorem: A partition of a positive integer n is a list of 
+      positive integers that sum to n.  Two partitions are equivalent if one is a
+      permutation of the other.  The number of equivalence classes of partitions of
+      n consisting of odd integers is equal to the number of equivalence classes of 
+      partitions of n consisting of distinct integers.
+
   z2q
       A bijection from the integers to the rartionals
 
-  girard
-      An odd prime p is a sum of two squares iff (mod p 4) = 1.
+  harmonic
+      Divergence of the harmonic series
