@@ -770,7 +770,7 @@
     "We locally install the ``trivial ancestor check'' from the library.
      We found at least a case in which ACL2's default heuristic ancestor check
      prevented a valid functional correctness theorem from being proved.
-     Since by construction the symbolic execution shoud always terminate,
+     Since by construction the symbolic execution should always terminate,
      it does not seem like ACL2's heuristic ancestor check
      would ever be helpful (if this turns out to be wrong, we will re-evaluate).
      Thus, we locally install the simpler ancestor check.")

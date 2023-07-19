@@ -36,6 +36,7 @@
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/all-included-books" :dir :system)
+(include-book "kestrel/utilities/extend-pathname-dollar" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
@@ -79,16 +80,6 @@
         (prog2$ (er hard? 'set-cbd-simple "Failed to set the cbd to ~x0." cbd)
                 state)
       state)))
-
-
-;; Drop-in replacement for extend-pathname that doesn't fail on stuff like
-;; (extend-pathname "." "../foo" state).
-;; Note: This can add a slash if the filename is a dir.
-;move
-(defund extend-pathname$ (dir filename state)
-  (declare (xargs :stobjs state
-                  :mode :program))
-  (extend-pathname (canonical-pathname dir t state) filename state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,14 +452,14 @@
           (hints (cadr hintsp)))
      (if (defthm-or-defaxiom-symbolp name (w state))
          ;; It already exists (presumably identical):
-         (prog2$ (cw "  Drop (redundant).)~%") ; no more checking to do, though we have seen a redundant event with a bad subst in the hints...
+         (prog2$ (cw "   Drop (redundant).)~%") ; no more checking to do, though we have seen a redundant event with a bad subst in the hints...
                  (mv nil state))
        (let* ( ;; TODO: Try deleting the :otf-flg
               ;; Try removing hints:
               (state (if (not hintsp)
                          state ; no hints to try dropping
                        (let ((event-without-hints `(,defthm-variant ,name ,body ,@(remove-keyword :hints keyword-value-list)))
-                             (drop-hints-message (concatenate 'string (newline-string) "  Drop all :hints.")))
+                             (drop-hints-message (concatenate 'string (newline-string) "   Drop all :hints.")))
                          (mv-let (improvement-foundp state)
                            (try-improved-event event-without-hints drop-hints-message state)
                            (if improvement-foundp
