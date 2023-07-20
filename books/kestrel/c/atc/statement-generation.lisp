@@ -1045,7 +1045,19 @@
     "The limit for the block item list is
      1 more than the limit for the block item,
      because we need 1 to go from @(tsee exec-block-item-list)
-     to @(tsee exec-block-item)."))
+     to @(tsee exec-block-item).")
+   (xdoc::p
+    "When this function is called on a block item
+     that is an @('if') that returns @('void'),
+     @('new-compst') is an @(tsee if*)
+     whose branches have the form @('(exit-scope ...)')
+     (after expanding @(tsee lets)s).
+     The combination of the rules
+     @('compustatep-of-exit-scope') and
+     @('compustatep-of-if*-when-both-compustatep')
+     serves to show that @(tsee compustatep) holds on the @(tsee if*),
+     as needed during the proof,
+     without having to expand the @(tsee if*)."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        (items (list item))
@@ -1101,11 +1113,15 @@
                                mv-nth-of-cons
                                (:e zp)
                                value-optionp-when-valuep
+                               (:e value-optionp)
+                               (:e valuep)
                                ,@(and result-term
                                       (list valuep-when-type-pred))
                                ,item-thm
                                exec-block-item-list-of-nil
-                               not-zp-of-limit-minus-const))))
+                               not-zp-of-limit-minus-const
+                               compustatep-of-exit-scope
+                               compustatep-of-if*-when-both-compustatep))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -1245,8 +1261,7 @@
                     :events (append item-events
                                     items-events
                                     (list event))
-                    :thm-name (and (consp items) ; temporary
-                                   thm-name)
+                    :thm-name thm-name
                     :thm-index thm-index
                     :names-to-avoid names-to-avoid))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
@@ -1826,6 +1841,7 @@
                                ,then-thm
                                mv-nth-of-cons
                                (:e zp)
+                               (:e value-optionp)
                                value-optionp-when-valuep
                                ,@(and (not voidp)
                                       (list valuep-when-type-pred))
@@ -1845,6 +1861,7 @@
                                ,else-thm
                                mv-nth-of-cons
                                (:e zp)
+                               (:e value-optionp)
                                value-optionp-when-valuep
                                ,@(and (not voidp)
                                       (list valuep-when-type-pred))
@@ -1930,8 +1947,8 @@
                                    ,valuep-when-test-type-pred
                                    apconvert-expr-value-when-not-value-array
                                    ,value-kind-when-test-type-pred)))
-          `(("Goal" :in-theory '(exec-stmt-when-ifelse-and-true
-                                 exec-stmt-when-ifelse-and-false
+          `(("Goal" :in-theory '(exec-stmt-when-if-and-true
+                                 exec-stmt-when-if-and-false
                                  (:e stmt-kind)
                                  not-zp-of-limit-variable
                                  (:e stmt-if->test)
@@ -1947,7 +1964,10 @@
                                  value-fix-when-valuep
                                  ,valuep-when-test-type-pred
                                  apconvert-expr-value-when-not-value-array
-                                 ,value-kind-when-test-type-pred)))))
+                                 ,value-kind-when-test-type-pred
+                                 compustatep-of-add-var
+                                 compustate-frames-number-of-add-var-not-zero
+                                 exit-scope-of-enter-scope)))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize
                        test-term
@@ -2001,7 +2021,7 @@
                                                else-stmt-event
                                                if-stmt-event))
                                  if-stmt-thm
-                                 term
+                                 (and (not voidp) term)
                                  type
                                  new-compst
                                  (change-stmt-gin
@@ -2022,7 +2042,7 @@
                                   item-limit
                                   item-events
                                   item-thm-name
-                                  term
+                                  (and (not voidp) term)
                                   type
                                   new-compst
                                   new-context
