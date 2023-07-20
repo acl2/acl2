@@ -273,11 +273,6 @@
   (declare (ignore step-limit term ttree))
   (make-list 10))
 (set-evisc-tuple (evisc-tuple 1 2 nil nil) :sites :all :iprint t) ; IPRINT on!
-; Matt: The output from the set-evisc-tuple above and the output from the go!
-; below seem correct with respect to the new settings.  But the output of the
-; value of the mv-let and of the subsequent make-list at the top-level are
-; wrong.  The -log.txt file at the moment reflects what ACTUALLY HAPPENS, not
-; what SHOULD HAPPEN!
 :go!
 (make-list 10)
 
@@ -296,10 +291,6 @@
  (thm (equal (len (cons a b)) (+ 1 (len b))))
  (value (make-list 10)))
 (set-evisc-tuple (evisc-tuple 1 2 nil nil) :sites :all :iprint t) ; IPRINT on!
-; Matt: The output from the set-evisc-tuple above and the output from the go!
-; below seem correct with respect to the new settings.  But the outputs from
-; all subsequent terms are wrong.  The -log.txt file at the moment reflects
-; what ACTUALLY HAPPENS, not what SHOULD HAPPEN!
 :go!
 (make-list 10)
 :ok
