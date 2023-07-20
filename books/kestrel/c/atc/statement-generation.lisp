@@ -1051,7 +1051,7 @@
      that is an @('if') that returns @('void'),
      @('new-compst') is an @(tsee if*)
      whose branches have the form @('(exit-scope ...)')
-     (after expanding @(tsee lets)s).
+     (after expanding @(tsee let)s).
      The combination of the rules
      @('compustatep-of-exit-scope') and
      @('compustatep-of-if*-when-both-compustatep')
