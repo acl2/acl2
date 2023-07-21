@@ -16,6 +16,9 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
+; Matt K. mod for conversion of eviscerate-top to logic mode:
+(local (in-theory (enable iprint-oracle-updates)))
+
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-object))
 

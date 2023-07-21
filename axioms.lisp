@@ -12509,16 +12509,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun bounded-integer-alistp (l n)
 
-; Check that l is a true-list of pairs, (n . x), where each n is
+; Check that l is a true-list of pairs, (k . x), where each k is
 ; either :header or a nonnegative integer less than n.
 
-  (declare (xargs :guard t))
+  (declare (xargs :guard (posp n)))
   (cond ((atom l) (null l))
         (t (and (consp (car l))
                 (let ((key (caar l)))
                   (and (or (eq key :header)
                            (and (integerp key)
-                                (integerp n)
                                 (>= key 0)
                                 (< key n)))
                        (bounded-integer-alistp (cdr l) n)))))))
@@ -14113,7 +14112,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     bdd-top ; (GCL only) si::sgc-on
     defstobj-field-fns-raw-defs ; call to memoize-flush
     times-mod-m31 ; gcl has raw code
-    iprint-ar-aref1
+    #+acl2-devel iprint-ar-aref1
     prove ; #+write-arithmetic-goals
     make-event-fn
     oops-warning
@@ -14362,6 +14361,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     brr-evisc-tuple-oracle-update
     iprint-oracle-updates
+    #-acl2-devel iprint-ar-aref1
   ))
 
 (defconst *initial-macros-with-raw-code*
@@ -14943,7 +14943,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (verbose-theory-warning . t)
     (verify-termination-on-raw-program-okp
      .
-     (apply$-lambda apply$-prim plist-worldp-with-formals ilks-plist-worldp))
+     (apply$-lambda apply$-prim plist-worldp-with-formals ilks-plist-worldp
+                    iprint-ar-aref1))
     (walkabout-alist . nil)
     (warnings-as-errors . nil) ; nil or a warnings-as-errors record
     (waterfall-parallelism . nil) ; for #+acl2-par
@@ -18641,6 +18642,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    '(assert$ ,test ,form)))
            ,form))
 
+(defmacro assert$? (test form)
+  `(prog2$ (or ,test
+               (er hard? 'assert$?
+                   "Assertion failed:~%~x0"
+                   '(assert$? ,test ,form)))
+           ,form))
+
 (defmacro assert* (test form)
   `(and (mbt* ,test)
         ,form))
@@ -19323,6 +19331,79 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (state-p1 (mv-nth 2 (read-acl2-oracle state))))
   :hints (("Goal" :in-theory (enable state-p1 read-acl2-oracle))))
 
+#-acl2-loop-only
+(defvar *iprint-read-state*
+
+; Possible values are:
+
+; nil      - no requirement on current iprint index
+; t        - either all indices must exceed iprint-last-index, or none does
+; (n . <=) - n, already read, is <= iprint-last-index; index must be too
+; (n .  >) - n, already read, is  > iprint-last-index; index must be too
+
+; The value is initially nil.  At a top-level read, it is set to nil if
+; iprint-fal is nil, else to t.  For the first index i that is read when the
+; value is t, we set the value to <= if (<= i iprint-last-index) and to >
+; otherwise.
+
+  nil)
+
+#-acl2-loop-only
+(defun iprint-oracle-updates-raw (state)
+
+; Warning: Keep in sync with iprint-oracle-updates.
+
+; See the discussion of wormholes in the Essay on Iprinting.
+
+  (let* ((ar *wormhole-iprint-ar*))
+    (when ar
+      (f-put-global 'iprint-ar (compress1 'iprint-ar ar) state)
+      (f-put-global 'iprint-fal *wormhole-iprint-fal* state)
+      (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
+      (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
+      (setq *wormhole-iprint-ar* nil))
+
+; We are presumably not in the middle of a read, from the standpoing of
+; reading, we are at the top level.  So it is fine to set *iprint-read-state*
+; to t or nil.
+
+    (setq *iprint-read-state*
+          (if (f-get-global 'iprint-fal state)
+              t
+            nil)))
+  state)
+
+(defun iprint-last-index* (iprint-ar)
+  (declare (xargs :guard (array1p 'iprint-ar iprint-ar)))
+  (let ((x (aref1 'iprint-ar iprint-ar 0)))
+    (if (consp x) ; iprinting is disabled
+        (car x)
+      x)))
+
+(defun iprint-array-p (ar max)
+
+; Ar is an iprint-array, hence an array1p.  This predicate checks that the
+; non-zero keys are positive integers less than max until the header is
+; reached.
+
+  (declare (xargs :guard (and (alistp ar)
+                              (posp max))))
+  (cond ((or (endp ar)
+             (eq (caar ar) :HEADER))
+         t)
+        ((eql (caar ar) 0)
+         (iprint-array-p (cdr ar) max))
+        (t (and (posp (caar ar))
+                (< (caar ar) max)
+                (iprint-array-p (cdr ar) max)))))
+
+(defun iprint-falp (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (symbolp x))
+        (t (and (consp (car x))
+                (posp (cdar x))
+                (iprint-falp (cdr x))))))
+
 (encapsulate ()
 
 ; This is an ugly proof but it gets the job done quickly (when doing "make
@@ -19396,25 +19477,33 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (mv-let (erp val state)
     (read-acl2-oracle state)
     (declare (ignore erp))
+    (let* ((val (true-list-fix val))
+           (iprint-ar (nth 0 val))
+           (iprint-hard-bound (1+ (nfix (nth 1 val))))
+           (iprint-soft-bound (1+ (nfix (nth 2 val))))
+           (iprint-fal (nth 3 val)))
+      (cond
+       ((and (array1p 'iprint-ar iprint-ar)
+             (natp (iprint-last-index* iprint-ar))
+             (iprint-array-p iprint-ar (1+ (iprint-last-index* iprint-ar)))
+             (< iprint-hard-bound
 
-; If we intend to reason about this function, then we might want to check that
-; val is a reasonable value.  But that seems not to be important, since very
-; little reasoning would be possible anyhow for this function.
+; Quoting the Essay on Iprinting:
+; "We maintain the invariant that the dimension of state global 'iprint-ar
+; exceeds the hard bound."
 
-    (let ((val (true-list-fix val)))
-      (pprogn (f-put-global 'iprint-ar
-                            (nth 0 val)
-                            state)
-              (f-put-global 'iprint-hard-bound
-                            (nfix (nth 1 val))
-                            state)
-              (f-put-global 'iprint-soft-bound
-                            (nfix (nth 2 val))
-                            state)
-              (f-put-global 'iprint-fal
-                            (nth 3 val)
-                            state)
-              state))))
+                (car (dimensions 'iprint-ar iprint-ar)))
+             (= (maximum-length 'iprint-ar iprint-ar)
+                (* 4 (car (dimensions 'iprint-ar iprint-ar))))
+             (<= (* 4 (1+ iprint-hard-bound))
+; See init-iprint-ar; this is necessary for array1p to hold of the new array.
+                 *maximum-positive-32-bit-integer*)
+             (iprint-falp iprint-fal))
+        (pprogn (f-put-global 'iprint-ar iprint-ar state)
+                (f-put-global 'iprint-hard-bound iprint-hard-bound state)
+                (f-put-global 'iprint-soft-bound iprint-soft-bound state)
+                (f-put-global 'iprint-fal iprint-fal state)))
+       (t state)))))
 )
 
 (defun read-object (channel state-state)
@@ -25001,7 +25090,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defparameter *inhibit-wormhole-activityp* nil)
 
-(defmacro bind-acl2-time-limit (form &optional (limit 'nil limit-p))
+(defmacro bind-acl2-time-limit (form)
 
 ; The raw Lisp code for this macro arranges that *acl2-time-limit* is restored
 ; to its global value (presumably nil) after we exit its top-level call.
@@ -25015,43 +25104,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; In summary, setting *acl2-time-limit* to 0 by our-abort will not change the
 ; global value of *acl2-time-limit*.
 
-; However, the description above is a bit flawed if we enter a wormhole.  We
-; really want a fresh binding of *acl2-time-limit* in that case, as illustrated
-; by the following example, which explains the call of bind-acl2-time-limit
-; around ld-fn in wormhole1.
-
-;   (defun foo (x) (cons x x))
-;   (brr t)
-;   (monitor '(:definition foo) t)
-;   ; The following succeeds if we type :go at the breaks.
-;   ; But suppose we don't:
-;   (with-prover-time-limit
-;    1/10
-;    (thm (equal (append (append x y) (foo z))
-;                (append x y (foo z)))))
-;   ; Now in the break...
-;   ; Try the following several times, and eventually you'll see it quit with an
-;   ; error due to being out of time!
-;   (thm (equal (append (append x y) z)
-;               (append x y z)))
-;   ; Without the call of bind-acl2-time-limit around ld-fn in wormhole1,
-;   ; the following fails after enough THM calls just above.  But that's not
-;   ; surprising, since time-limits are based on total cpu time, which includes
-;   ; time in the wormhole.
-;   :go
-
   #-acl2-loop-only
-  (cond (limit-p ; then definitely bind
-         `(let ((*acl2-time-limit-boundp* t)
-                (*acl2-time-limit* ,limit))
-            ,form))
-        (t `(if *acl2-time-limit-boundp*
-                ,form
-              (let ((*acl2-time-limit-boundp* t)
-                    (*acl2-time-limit* *acl2-time-limit*))
-                ,form))))
-  #+acl2-loop-only
-  (declare (ignore limit limit-p))
+  `(if *acl2-time-limit-boundp*
+       ,form
+     (let ((*acl2-time-limit-boundp* t)
+           (*acl2-time-limit* *acl2-time-limit*))
+       ,form))
   #+acl2-loop-only
   form)
 
@@ -25242,19 +25300,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        (f-put-global 'wormhole-status
                      (cdr (assoc-equal name *wormhole-status-alist*))
                      state)
-       (bind-acl2-time-limit
+       (ld-fn (append
+               `((standard-oi . (,form . ,*standard-oi*))
+                 (standard-co . ,(comment-window-co))
+                 (proofs-co . ,(comment-window-co)))
+               ld-specials)
+              state
+              t)
 
-; See the comments in bind-acl2-time-limit to understand why we are using it
-; here.
-
-        (ld-fn (append
-                `((standard-oi . (,form . ,*standard-oi*))
-                  (standard-co . ,(comment-window-co))
-                  (proofs-co . ,(comment-window-co)))
-                ld-specials)
-               state
-               t)
-        nil)
 ; [b] cleaning up after polite, normal exit.
 
        (eval
@@ -27262,17 +27315,11 @@ Lisp definition."
   (declare (xargs :guard t))
   (f-get-global 'debugger-enable state))
 
-(defun break$ ()
+#-acl2-loop-only
+(defun break$-raw ()
 
-; This function gets around a bug in Allegro CL (at least in Versions 7.0 and
-; 8.0), as admitted by Franz support, and in and CMU CL.  These Lisps pay
-; attention to *debugger-hook* even when (break) is invoked, but they
-; shouldn't.
+; See break$.
 
-; Keep this in sync with break-on-error-fn.
-
-  (declare (xargs :guard t))
-  #-acl2-loop-only
   (and (not (eq (debugger-enable *the-live-state*) :never))
        #+(and gcl (not cltl2))
        (break)
@@ -27282,7 +27329,31 @@ Lisp definition."
              (ccl::*break-hook* nil))
          #+ccl ; for CCL revisions before 12090
          (declare (ignorable ccl::*break-hook*))
-         (break)))
+         (break))))
+
+(defun break$ ()
+
+; This function gets around a bug in Allegro CL (at least in Versions 7.0 and
+; 8.0), as admitted by Franz support, and in and CMU CL.  These Lisps pay
+; attention to *debugger-hook* even when (break) is invoked, but they
+; shouldn't.
+
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (if *wormholep*
+
+; In a wormhole, we need to abort to the top level.  The reason is complicated,
+; but the bottom line is that it has to do with otherwise being left in an
+; incoherent wormhole state by brkpt1, brkpt2, etc.
+
+      (let ((finished nil))
+        (unwind-protect (progn (break$-raw)
+                               (setq finished t))
+          (when (not finished)
+            (format t "~%Aborting to top level from a wormhole break (see ~
+                       :DOC wormhole).~%~%")
+            (abort!))))
+    (break$-raw))
   nil)
 
 #-acl2-loop-only

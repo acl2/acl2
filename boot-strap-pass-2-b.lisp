@@ -712,6 +712,13 @@
 ; in boot-strap-pass-2-a.lisp.
 (verify-termination-boot-strap clear-brr-data-lst) ; and guards
 
+; With the conversion of eviscerate-top to guard-verified logic mode,
+; iprint-oracle-updates became much more complicated.  This increased the time
+; to certify lemma true-listp-mv-nth-1-parse-cube-file2 in
+; books/projects/sat/lrat/cube/cube.lisp from 7.76 seconds to more than 11,600
+; seconds before aborting.  After this disable the proof took 0.03 seconds.
+(in-theory (disable iprint-oracle-updates))
+
 (deftheory ground-zero
 
 ; We want to keep this near the end of *acl2-pass-2-files* in order for the
