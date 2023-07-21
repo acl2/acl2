@@ -56,7 +56,7 @@
 
 (include-book "centaur/svl/top-bare" :dir :system)
 
-(include-book "find-adders-in-svex")
+(include-book "find-adders/top")
 
 (include-book "doc")
 
