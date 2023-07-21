@@ -1720,7 +1720,10 @@ What you can enter at the SVTV-CHASE prompt:
          :hints(("Goal" :in-theory (enable w read-object
                                            ;; Matt K. addition for 5/8/2023 change to
                                            ;; read-object to call iprint-oracle-updates:
-                                           read-acl2-oracle update-acl2-oracle)))))
+                                           read-acl2-oracle update-acl2-oracle
+                                           ;; Matt K. mod for conversion of
+                                           ;; eviscerate-top to logic mode:
+                                           acl2::iprint-oracle-updates)))))
 
 (define svtv-chase-rep (&key
                         ((moddb moddb-ok) 'moddb)

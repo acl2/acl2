@@ -1090,12 +1090,34 @@
          (aref1 'sharp-atsign-ar *sharp-atsign-ar* i))
         (t (make-sharp-atsign i))))
 
+(defun iprint-alistp1 (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        ((atom (cdr x))
+         (and (consp (car x))
+              (posp (caar x))
+              (null (cdr x))))
+        (t (and (consp (car x))
+                (posp (caar x))
+                (consp (car (cdr x)))
+                (integerp (caar (cdr x)))
+                (< (caar (cdr x)) (caar x))
+                (iprint-alistp1 (cdr x))))))
+
+(defun iprint-alistp (x)
+  (declare (xargs :guard t))
+  (or (eq x t)
+      (natp x)
+      (iprint-alistp1 x)))
+
 (defun update-iprint-alist-fal (iprint-alist iprint-fal-new iprint-fal-old val)
 
 ; We are doing iprinting.  Iprint-alist is either a positive integer,
 ; representing the last-index but no accumulated iprint-alist, or else is a
 ; non-empty alist of entries (i . val_i).  See the Essay on Iprinting.
 
+  (declare (xargs :guard (and (iprint-alistp iprint-alist)
+                              (not (symbolp iprint-alist)))))
   (let ((pair (and iprint-fal-old
                    (or (hons-get val iprint-fal-new)
                        (hons-get val iprint-fal-old)))))
@@ -1135,12 +1157,21 @@
 ; essentially irrelevant; but as a sanity check, we insist that eager-p is nil
 ; in that case (as enforced by the assert$ call below).
 
+  (declare (xargs :guard (and (integerp v)
+                              (integerp max-v)
+                              (integerp max-n)
+                              (alistp alist)
+                              (symbol-listp hiding-cars)
+                              (iprint-alistp iprint-alist)
+                              (iprint-falp iprint-fal-new)
+                              (iprint-falp iprint-fal-old))
+                  :measure (1+ (* 2 (acl2-count x)))))
   (let* ((temp (or (hons-assoc-equal x alist)
                    (hons-assoc-equal x evisc-table)))
          (eager-pair (and eager-p
                           (null (cdr temp))
                           (consp x)
-                          (assert$
+                          (assert$?
                            iprint-fal-old
                            (or (hons-get x iprint-fal-new)
                                (hons-get x iprint-fal-old))))))
@@ -1181,12 +1212,22 @@
 
 (defun eviscerate1-lst (lst v n max-v max-n alist evisc-table hiding-cars
                             iprint-alist iprint-fal-new iprint-fal-old eager-p)
+  (declare (xargs :guard (and (integerp v)
+                              (natp n)
+                              (integerp max-v)
+                              (integerp max-n)
+                              (alistp alist)
+                              (symbol-listp hiding-cars)
+                              (iprint-alistp iprint-alist)
+                              (iprint-falp iprint-fal-new)
+                              (iprint-falp iprint-fal-old))
+                  :measure (* 2 (acl2-count lst))))
   (let* ((temp (or (hons-assoc-equal lst alist)
                    (hons-assoc-equal lst evisc-table)))
          (eager-pair (and eager-p
                           (null (cdr temp))
                           (consp lst)
-                          (assert$
+                          (assert$?
                            iprint-fal-old
                            (or (hons-get lst iprint-fal-new)
                                (hons-get lst iprint-fal-old))))))
@@ -1240,6 +1281,8 @@
 ; uses alist, evisc-table, hiding or the *anti-evisceration-mark* (assuming
 ; that print-level and print-length never max out).
 
+  (declare (xargs :guard (symbol-listp hiding-cars)
+                  :measure (1+ (* 2 (acl2-count x)))))
   (let ((temp (or (hons-assoc-equal x alist)
                   (hons-assoc-equal x evisc-table))))
     (cond ((cdr temp) t)
@@ -1250,6 +1293,8 @@
           (t (eviscerate1p-lst x alist evisc-table hiding-cars)))))
 
 (defun eviscerate1p-lst (lst alist evisc-table hiding-cars)
+  (declare (xargs :guard (symbol-listp hiding-cars)
+                  :measure (* 2 (acl2-count lst))))
   (let ((temp (or (hons-assoc-equal lst alist)
                   (hons-assoc-equal lst evisc-table))))
     (cond ((cdr temp) t)
@@ -1302,6 +1347,15 @@
 ; We consider a couple of special cases to reduce unnecessary consing
 ; of eviscerated values.
 
+  (declare (xargs :guard (and (or (null print-level)
+                                  (integerp print-level))
+                              (or (null print-length)
+                                  (integerp print-length))
+                              (alistp alist)
+                              (symbol-listp hiding-cars)
+                              (iprint-alistp iprint-alist)
+                              (iprint-falp iprint-fal-new)
+                              (iprint-falp iprint-fal-old))))
   (cond ((and (null print-level)
               (null print-length))
 
@@ -1335,6 +1389,12 @@
 ; This wrapper for eviscerate avoids the need to pass back multiple values when
 ; the iprint-alist is nil and we don't care if evisceration has occurred.
 
+  (declare (xargs :guard (and (or (null print-level)
+                                  (integerp print-level))
+                              (or (null print-length)
+                                  (integerp print-length))
+                              (alistp alist)
+                              (symbol-listp hiding-cars))))
   (mv-let (result null-iprint-alist null-iprint-fal)
     (eviscerate x print-level print-length alist evisc-table hiding-cars
                 nil nil
@@ -1345,7 +1405,12 @@
 ; for eager-p.
 
                 nil nil)
-    (assert$ (and (booleanp null-iprint-alist)
+
+; We use assert* instead of assert$ to avoid a runtime check, now that
+; eviscerate-simple is common-lisp-compliant.
+
+    (declare (ignorable null-iprint-alist null-iprint-fal)) ; for raw Lisp
+    (assert* (and (booleanp null-iprint-alist)
                   (null null-iprint-fal))
              result)))
 
@@ -1384,18 +1449,20 @@
 (defun iprint-soft-bound (state)
   (f-get-global 'iprint-soft-bound state))
 
-(defun iprint-last-index* (iprint-ar)
-  (declare (xargs :guard (array1p 'iprint-ar iprint-ar)))
-  (let ((x (aref1 'iprint-ar iprint-ar 0)))
-    (if (consp x) ; iprinting is disabled
-        (car x)
-      x)))
-
 (defun iprint-last-index (state)
+  (declare (xargs :guard (array1p 'iprint-ar (f-get-global 'iprint-ar state))))
   (iprint-last-index* (f-get-global 'iprint-ar state)))
 
 (defun iprint-ar-illegal-index (index state)
-  (declare (xargs :guard (and (natp index) (state-p state))))
+  (declare (xargs :guard
+                  (and (natp index)
+                       (array1p 'iprint-ar
+                                (f-get-global 'iprint-ar state))
+                       (natp (iprint-last-index state))
+                       (or (null (default 'iprint-ar
+                                   (f-get-global 'iprint-ar state)))
+                           (integerp (default 'iprint-ar
+                                       (f-get-global 'iprint-ar state)))))))
   (or (zp index)
       (let* ((iprint-ar (f-get-global 'iprint-ar state))
              (bound (default 'iprint-ar iprint-ar)))
@@ -1404,12 +1471,14 @@
           (> index bound)))))
 
 (defun iprint-enabledp (state)
+  (declare (xargs :guard (array1p 'iprint-ar (f-get-global 'iprint-ar state))))
   (natp (aref1 'iprint-ar (f-get-global 'iprint-ar state) 0)))
 
 (defun iprint-blockedp (state)
 
 ; Check for the effect off block-iprint-ar.
 
+  (declare (xargs :guard (array1p 'iprint-ar (f-get-global 'iprint-ar state))))
   (let ((x (aref1 'iprint-ar (f-get-global 'iprint-ar state) 0)))
     (and (consp x)
          (cdr x))))
@@ -1419,7 +1488,12 @@
 ; We do not try to determine if the index is appropriate, other than to avoid a
 ; guard violation on the aref1 call.  See the Essay on Iprinting.
 
-  (declare (xargs :guard (and (posp index) (state-p state))))
+  (declare (xargs :guard
+                  (and (posp index)
+                       (array1p 'iprint-ar (f-get-global 'iprint-ar state))
+                       (< index
+                          (car (dimensions 'iprint-ar
+                                           (f-get-global 'iprint-ar state)))))))
   (let ((iprint-ar (f-get-global 'iprint-ar state)))
 
 ;; PAPER:
@@ -1437,11 +1511,20 @@
             index)))
     (aref1 'iprint-ar iprint-ar index)))
 
+(defun iprint-alistp1-weak (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) (null x))
+        (t (and (consp (car x))
+                (posp (caar x))
+                (iprint-alistp1-weak (cdr x))))))
+
 (defun collect-posp-indices-to-header (ar acc)
 
 ; Accumulates the reverse of ar onto acc, skipping entries with index 0 and
 ; stopping just before the :header.
 
+  (declare (xargs :guard (and (array1p 'iprint-ar ar)
+                              (iprint-alistp1-weak acc))))
   (cond ((endp ar)
          (er hard 'collect-posp-indices-to-header
              "Implementation error: Failed to find :HEADER as expected!"))
@@ -1454,11 +1537,13 @@
                                            (cons (car ar) acc))))))
 
 (defun iprint-fal-name (iprint-fal)
+  (declare (xargs :guard (iprint-falp iprint-fal)))
   (if (consp iprint-fal)
       (cdr (last iprint-fal))
     iprint-fal))
 
 (defun iprint-eager-p (iprint-fal)
+  (declare (xargs :guard (iprint-falp iprint-fal)))
   (eq (iprint-fal-name iprint-fal)
       :eager))
 
@@ -1470,7 +1555,8 @@
 ; indices, and otherwise is the atom, :iprint-fal.  We choose a keyword so that
 ; fast-alist-summary can print that name nicely in any package.
 
-  (declare (xargs :guard (symbolp sym)))
+  (declare (xargs :guard (and (symbolp sym)
+                              (iprint-falp (f-get-global 'iprint-fal state)))))
   (let* ((old-iprint-fal (f-get-global 'iprint-fal state))
          (old-iprint-name (iprint-fal-name old-iprint-fal))
          (new-iprint-fal (cond ((null sym) nil)
@@ -1503,6 +1589,20 @@
 ; intended to extend state global 'iprint-ar, as the new (and compressed) value
 ; of state global 'iprint-ar.
 
+  (declare (xargs :guard
+                  (and (iprint-alistp1 iprint-alist)
+                       (consp iprint-alist)
+                       (iprint-falp (f-get-global 'iprint-fal state))
+                       (array1p 'iprint-ar (f-get-global 'iprint-ar state))
+                       (posp last-index)
+                       (equal last-index (caar iprint-alist))
+                       (iprint-array-p (f-get-global 'iprint-ar state)
+                                       last-index)
+                       (natp (f-get-global 'iprint-hard-bound state))
+                       (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
+                                                  state)))
+; See init-iprint-ar; this is necessary for array1p to hold of the new array.
+                           *maximum-positive-32-bit-integer*))))
   (let* ((old-iprint-ar (f-get-global 'iprint-ar state))
          (new-dim
 
@@ -1541,38 +1641,42 @@
 ; recompression.  See also corresponding comments in disable-iprint-ar and
 ; enable-iprint-ar.
 
-          (* 4 new-dim))
-         (new-header
-          (prog2$
-           (or (<= new-max-len *maximum-positive-32-bit-integer*)
-               (er hard 'rollover-iprint-ar
-                   "Attempted to expand iprint-ar to a maximum-length of ~x0, ~
-                    exceeding *maximum-positive-32-bit-integer*, which is ~x1."
-                   new-max-len
-                   *maximum-positive-32-bit-integer*))
-           `(:HEADER :DIMENSIONS     (,new-dim)
-                     :MAXIMUM-LENGTH ,new-max-len
-                     :DEFAULT        ,last-index
-                     :NAME           iprint-ar
-                     :ORDER          :none)))
-         (new-iprint-ar
-          (compress1 'iprint-ar
-                     (cons new-header
-                           (acons 0 0
-                                  (collect-posp-indices-to-header
-                                   old-iprint-ar
+          (* 4 new-dim)))
+    (cond
+     ((< *maximum-positive-32-bit-integer* new-max-len)
+      (prog2$
+       (er hard? 'rollover-iprint-ar
+           "Attempted to expand iprint-ar to a maximum-length of ~x0, ~
+            exceeding *maximum-positive-32-bit-integer*, which is ~x1."
+           new-max-len
+           *maximum-positive-32-bit-integer*)
+       state))
+     (t
+      (let* ((new-header
+              `(:HEADER :DIMENSIONS     (,new-dim)
+                        :MAXIMUM-LENGTH ,new-max-len
+                        :DEFAULT        ,last-index
+                        :NAME           iprint-ar
+                        :ORDER          :none))
+             (new-iprint-ar
+              (compress1 'iprint-ar
+                         (cons new-header
+                               (acons 0 0
+                                      (collect-posp-indices-to-header
+                                       old-iprint-ar
 
 ; If we change the :order to < from :none, then we need to reverse iprint-alist
 ; just below.  But first read the comment in disable-iprint-ar to see why
 ; changing the :order from :none requires some thought.
 
-                                   iprint-alist))))))
-    (mv-let (msg state)
-      (init-iprint-fal :same state)
-      (declare (ignore msg))
-      (f-put-global 'iprint-ar new-iprint-ar state))))
+                                       iprint-alist))))))
+      (mv-let (msg state)
+        (init-iprint-fal :same state)
+        (declare (ignore msg))
+        (f-put-global 'iprint-ar new-iprint-ar state)))))))
 
 (defun update-iprint-fal-rec (iprint-fal-new iprint-fal-old)
+  (declare (xargs :guard (iprint-falp iprint-fal-new)))
   (cond ((atom iprint-fal-new) iprint-fal-old)
         (t (update-iprint-fal-rec (cdr iprint-fal-new)
                                   (hons-acons (caar iprint-fal-new)
@@ -1580,6 +1684,7 @@
                                               iprint-fal-old)))))
 
 (defun update-iprint-fal (iprint-fal-new state)
+  (declare (xargs :guard (iprint-falp iprint-fal-new)))
   (cond
    ((atom iprint-fal-new) state) ; optimization
    (t (f-put-global 'iprint-fal
@@ -1593,6 +1698,28 @@
 ; We update state globals 'iprint-ar and 'iprint-fal by updating them with the
 ; pairs in iprint-alist and iprint-fal-new, respectively.
 
+  (declare (xargs :guard
+                  (and (iprint-alistp1 iprint-alist)
+                       (consp iprint-alist)
+                       (equal iprint-fal-old (f-get-global 'iprint-fal state))
+                       (iprint-falp iprint-fal-old)
+                       (array1p 'iprint-ar (f-get-global 'iprint-ar state))
+                       (iprint-array-p (f-get-global 'iprint-ar state)
+                                       (caar iprint-alist))
+                       (natp (f-get-global 'iprint-hard-bound state))
+                       (< (f-get-global 'iprint-hard-bound state)
+
+; Quoting the Essay on Iprinting:
+; "We maintain the invariant that the dimension of state global 'iprint-ar
+; exceeds the hard bound."
+
+                          (car (dimensions 'iprint-ar
+                                           (f-get-global 'iprint-ar state))))
+                       (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
+                                                  state)))
+; See init-iprint-ar; this is necessary for array1p to hold of the new array.
+                           *maximum-positive-32-bit-integer*)
+                       (iprint-falp iprint-fal-new))))
   (let ((last-index (caar iprint-alist)))
     (cond ((> last-index (iprint-hard-bound state))
 
@@ -1622,48 +1749,6 @@
                                       (f-get-global 'iprint-ar state))
                            state)))))))
 
-#-acl2-loop-only
-(defvar *iprint-read-state*
-
-; Possible values are:
-
-; nil      - no requirement on current iprint index
-; t        - either all indices must exceed iprint-last-index, or none does
-; (n . <=) - n, already read, is <= iprint-last-index; index must be too
-; (n .  >) - n, already read, is  > iprint-last-index; index must be too
-
-; The value is initially nil.  At a top-level read, it is set to nil if
-; iprint-fal is nil, else to t.  For the first index i that is read when the
-; value is t, we set the value to <= if (<= i iprint-last-index) and to >
-; otherwise.
-
-  nil)
-
-#-acl2-loop-only
-(defun iprint-oracle-updates-raw (state)
-
-; Warning: Keep in sync with iprint-oracle-updates.
-
-; See the discussion of wormholes in the Essay on Iprinting.
-
-  (let* ((ar *wormhole-iprint-ar*))
-    (when ar
-      (f-put-global 'iprint-ar (compress1 'iprint-ar ar) state)
-      (f-put-global 'iprint-fal *wormhole-iprint-fal* state)
-      (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
-      (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
-      (setq *wormhole-iprint-ar* nil))
-
-; We are presumably not in the middle of a read, from the standpoing of
-; reading, we are at the top level.  So it is fine to set *iprint-read-state*
-; to t or nil.
-
-    (setq *iprint-read-state*
-          (if (f-get-global 'iprint-fal state)
-              t
-            nil)))
-  state)
-
 (defun brr-evisc-tuple-oracle-update@par ()
   #-acl2-loop-only
   (f-put-global 'brr-evisc-tuple *wormhole-brr-evisc-tuple* *the-live-state*)
@@ -1689,8 +1774,40 @@
 ;                    (list (cons #\0 (make-list 10)))
 ;                    :evisc-tuple (evisc-tuple 5 6 nil nil)))
 
+  (declare (xargs :guard (array1p 'iprint-ar (f-get-global 'iprint-ar state))))
   (cond ((iprint-blockedp state) state)
         (t (iprint-oracle-updates state))))
+
+(defun eviscerate-top-state-p (state)
+  (declare (xargs :stobjs state))
+  (and (natp (f-get-global 'iprint-hard-bound state))
+       (iprint-falp (f-get-global 'iprint-fal state))
+       (array1p 'iprint-ar
+                (f-get-global 'iprint-ar state))
+       (consp (f-get-global 'iprint-ar state))
+       (natp (iprint-last-index state))
+       (iprint-array-p (f-get-global 'iprint-ar state)
+                       (1+ (iprint-last-index state)))
+       (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
+                                  state)))
+; See init-iprint-ar; this is necessary for array1p to hold of the new array.
+           *maximum-positive-32-bit-integer*)
+       (< (f-get-global 'iprint-hard-bound state)
+
+; Quoting the Essay on Iprinting:
+; "We maintain the invariant that the dimension of state global 'iprint-ar
+; exceeds the hard bound."
+
+          (car (dimensions 'iprint-ar
+                           (f-get-global 'iprint-ar
+                                         state))))
+       (= (maximum-length 'iprint-ar
+                          (f-get-global 'iprint-ar
+                                        state))
+          (* 4 (car (dimensions
+                     'iprint-ar
+                     (f-get-global 'iprint-ar
+                                   state)))))))
 
 (defun eviscerate-top (x print-level print-length alist evisc-table hiding-cars
                          state)
@@ -1700,6 +1817,13 @@
 ; evisceration of x.  See eviscerate and the Essay on Iprinting for more
 ; details.
 
+  (declare (xargs :guard (and (or (null print-level)
+                                  (integerp print-level))
+                              (or (null print-length)
+                                  (integerp print-length))
+                              (alistp alist)
+                              (symbol-listp hiding-cars)
+                              (eviscerate-top-state-p state))))
   (pprogn
 
 ; First we ensure that the result will reflect iprint and brr-evisc-tuple

@@ -316,18 +316,21 @@
 ; check-built-in-constants.
 
   (union-eq
-   '(SYNP                   ; restricts arguments
-     WORMHOLE1              ; restricts arguments
-     WORMHOLE-EVAL          ; restricts arguments
+   '(SYNP                                   ; restricts arguments
+     WORMHOLE1                              ; restricts arguments
+     WORMHOLE-EVAL                          ; restricts arguments
      SYNC-EPHEMERAL-WHS-WITH-PERSISTENT-WHS ; restricts arguments
      SET-PERSISTENT-WHS-AND-EPHEMERAL-WHS   ; restricts arguments
-     SYS-CALL               ; bad -- requires trust tag
-     HONS-CLEAR!            ; bad -- requires trust tag
-     HONS-WASH!             ; bad -- requires trust tag
-     UNTOUCHABLE-MARKER     ; bad -- untouchable
-     ASET1-TRUSTED          ; bad -- untouchable
-     COERCE-OBJECT-TO-STATE ; bad -- creates live state
-     CREATE-STATE           ; bad -- creates live state
+     SYS-CALL                               ; bad -- requires trust tag
+     HONS-CLEAR!                            ; bad -- requires trust tag
+     HONS-WASH!                             ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER                     ; bad -- untouchable
+     ASET1-TRUSTED                          ; bad -- untouchable
+     COERCE-OBJECT-TO-STATE                 ; bad -- creates live state
+     CREATE-STATE                           ; bad -- creates live state
+     INIT-IPRINT-FAL                        ; bad -- untouchable
+     UPDATE-IPRINT-FAL-REC                  ; bad -- untouchable
+     UPDATE-IPRINT-FAL                      ; bad -- untouchable
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that
@@ -468,6 +471,7 @@
     (COLLECT-BY-POSITION ACL2-COUNT FULL-DOMAIN)
     (COLLECT-LAMBDA-KEYWORDPS ACL2-COUNT LST)
     (COLLECT-NON-X ACL2-COUNT LST)
+    (COLLECT-POSP-INDICES-TO-HEADER ACL2-COUNT AR)
     (COMMENT-STRING-P)
     (COMMENT-STRING-P1 NFIX (BINARY-+ END (UNARY-- I)))
     (CONS-TERM1-MV2)
@@ -489,6 +493,18 @@
     (ER-CMP-FN)
     (EV$ :? A X)
     (EV$-LIST :? A X)
+    (EVISCERATE)
+    (EVISCERATE-SIMPLE)
+    (EVISCERATE-TOP)
+    (EVISCERATE-TOP-STATE-P)
+    (EVISCERATE1 BINARY-+ '1
+                 (BINARY-* '2 (ACL2-COUNT X)))
+    (EVISCERATE1-LST BINARY-* '2
+                     (ACL2-COUNT LST))
+    (EVISCERATE1P BINARY-+ '1
+                  (BINARY-* '2 (ACL2-COUNT X)))
+    (EVISCERATE1P-LST BINARY-* '2
+                      (ACL2-COUNT LST))
     (EXECUTABLE-BADGE)
     (EXECUTABLE-SUITABLY-TAMEP-LISTP ACL2-COUNT ARGS)
     (EXECUTABLE-TAMEP ACL2-COUNT X)
@@ -529,12 +545,27 @@
     (GENVAR1 :? CNT AVOID-LST CHAR-LST PKG-WITNESS)
     (GENVAR1-GUARDP)
     (GET-BRR-ONE-WAY-UNIFY-INFO)
+    (GET-SHARP-ATSIGN)
     (GSYM)
     (ILKS-PER-ARGUMENT-SLOT)
     (ILKS-PLIST-WORLDP)
     (ILLEGAL-FMT-STRING)
     (IMPLICATE)
     (INCLUDE-BOOK-DIR)
+    (INIT-IPRINT-FAL)
+    (IPRINT-ALISTP)
+    (IPRINT-ALISTP1 ACL2-COUNT X)
+    (IPRINT-ALISTP1-WEAK ACL2-COUNT X)
+    (IPRINT-AR-AREF1)
+    (IPRINT-AR-ILLEGAL-INDEX)
+    (IPRINT-BLOCKEDP)
+    (IPRINT-EAGER-P)
+    (IPRINT-ENABLEDP)
+    (IPRINT-FAL-NAME)
+    (IPRINT-HARD-BOUND)
+    (IPRINT-LAST-INDEX)
+    (IPRINT-ORACLE-UPDATES?)
+    (IPRINT-SOFT-BOUND)
     (LAMBDA-KEYWORDP)
     (LAMBDA-SUBTERMP ACL2-COUNT TERM)
     (LAMBDA-SUBTERMP-LST ACL2-COUNT TERMLIST)
@@ -566,6 +597,7 @@
     (MACRO-VARS-OPTIONAL ACL2-COUNT ARGS)
     (MAKE-BUILT-IN-BRR-NEAR-MISS-MSG)
     (MAKE-LAMBDA-APPLICATION)
+    (MAKE-SHARP-ATSIGN)
     (MATCH-CLAUSE)
     (MATCH-CLAUSE-LIST ACL2-COUNT CLAUSES)
     (MATCH-TESTS-AND-BINDINGS ACL2-COUNT PAT)
@@ -584,7 +616,9 @@
     (ONE-WAY-UNIFY)
     (ONE-WAY-UNIFY-RESTRICTIONS)
     (ONE-WAY-UNIFY-RESTRICTIONS1 ACL2-COUNT RESTRICTIONS)
-    (ONE-WAY-UNIFY1 MAKE-ORD '1 (BINARY-+ '1 (ACL2-COUNT PAT)) '2)
+    (ONE-WAY-UNIFY1 MAKE-ORD '1
+                    (BINARY-+ '1 (ACL2-COUNT PAT))
+                    '2)
     (ONE-WAY-UNIFY1-EQUAL MAKE-ORD '1
                           (BINARY-+ '2
                                     (BINARY-+ (ACL2-COUNT PAT1)
@@ -616,6 +650,7 @@
     (REMOVE-LAMBDAS)
     (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
     (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
+    (ROLLOVER-IPRINT-AR)
     (RUNEP)
     (SAVED-OUTPUT-TOKEN-P)
     (SCAN-PAST-WHITESPACE NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
@@ -679,6 +714,10 @@
     (UNTIL$+ ACL2-COUNT LST)
     (UNTIL$+-AC ACL2-COUNT LST)
     (UNTIL$-AC ACL2-COUNT LST)
+    (UPDATE-IPRINT-ALIST-FAL)
+    (UPDATE-IPRINT-AR-FAL)
+    (UPDATE-IPRINT-FAL)
+    (UPDATE-IPRINT-FAL-REC ACL2-COUNT IPRINT-FAL-NEW)
     (WARNING-OFF-P1)
     (WARNING1-CW)
     (WARRANTS-FOR-SUITABLY-TAMEP-LISTP ACL2-COUNT ARGS)

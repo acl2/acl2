@@ -635,9 +635,11 @@ foo
      (open-input-channel-p1 channel :object
                             (mv-nth 2 (read-object channel state))))
     ;; Matt K. addition for 5/8/2023 change to read-object to call
-    ;; iprint-oracle-updates:
+    ;; iprint-oracle-updates, further changed around 7/2023 for conversion of
+    ;; eviscerate-top to logic mode:
     :hints (("Goal" :in-theory (enable put-global read-acl2-oracle
-                                       update-acl2-oracle)))))
+                                       update-acl2-oracle
+                                       iprint-oracle-updates)))))
 
 (defsection state-preserved-after-eof
 
