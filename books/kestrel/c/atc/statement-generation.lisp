@@ -898,7 +898,7 @@
                               :term rhs.term)
                              (make-atc-premise-compustate
                               :var gin.compst-var
-                              :term `(update-var (ident ',(symbol-name var))
+                              :term `(update-var (ident ,(symbol-name var))
                                                  ,var
                                                  ,gin.compst-var)))))
        (notflexarrmem-thms
