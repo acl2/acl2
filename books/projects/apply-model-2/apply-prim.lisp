@@ -116,16 +116,21 @@
 ; prevent warrants.
 
   (union-eq
-   '(SYNP                   ; bad
-     WORMHOLE1              ; restricts arguments
-     WORMHOLE-EVAL          ; restricts arguments
-     SYS-CALL               ; bad -- requires trust tag
-     HONS-CLEAR!            ; bad -- requires trust tag
-     HONS-WASH!             ; bad -- requires trust tag
-     UNTOUCHABLE-MARKER     ; bad -- untouchable
-     ASET1-TRUSTED          ; bad -- untouchable
-     COERCE-OBJECT-TO-STATE ; bad -- creates live state
-     CREATE-STATE           ; bad -- creates live state
+   '(SYNP                                   ; restricts arguments
+     WORMHOLE1                              ; restricts arguments
+     WORMHOLE-EVAL                          ; restricts arguments
+     SYNC-EPHEMERAL-WHS-WITH-PERSISTENT-WHS ; restricts arguments
+     SET-PERSISTENT-WHS-AND-EPHEMERAL-WHS   ; restricts arguments
+     SYS-CALL                               ; bad -- requires trust tag
+     HONS-CLEAR!                            ; bad -- requires trust tag
+     HONS-WASH!                             ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER                     ; bad -- untouchable
+     ASET1-TRUSTED                          ; bad -- untouchable
+     COERCE-OBJECT-TO-STATE                 ; bad -- creates live state
+     CREATE-STATE                           ; bad -- creates live state
+     INIT-IPRINT-FAL                        ; bad -- untouchable
+     UPDATE-IPRINT-FAL-REC                  ; bad -- untouchable
+     UPDATE-IPRINT-FAL                      ; bad -- untouchable
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that
