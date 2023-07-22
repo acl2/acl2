@@ -1079,7 +1079,9 @@ x
                            (rp::cwe "integer-listp-of-svexlist check has failed for ~p0~%" leaves))))
           (mv svex nil))
          (res (bitand/or/xor-simple-constant-simplify 'sv::bitxor new-x new-y))
-         (res (clear-1s-from-bitxor res)))
+         (res (if under-xor ;; outermost bitxor should clear 1s  
+                  res
+                (clear-1s-from-bitxor res))))
       (mv res t)))
    #|((and (consp svex)
    (equal (car svex) 'sv::id) ; ; ;
@@ -2709,8 +2711,6 @@ x
 ;; not dive into svex nodes that are shared. 
 (define light-svex-alist-simplify-bitand/or/xor ((x sv::svex-alist-p)
                                                  &key
-                                                 (inside-out 't)
-                                                 (outside-in 't)
                                                  ((env) 'env)
                                                  ((context rp::rp-term-listp) 'context)
                                                  ((config svex-reduce-config-p) 'config))
@@ -2719,13 +2719,11 @@ x
        (svex-alist-stats (fast-alist-clean svex-alist-stats))
        (nodes-to-skip-alist (collected-shared-svex-nodes svex-alist-stats nil))
        (- (fast-alist-free svex-alist-stats))
-
-       (x (if outside-in
-              (svex-alist-simplify-bitand/or/xor-outside-in x)
-            x))
-       (x (if inside-out
-              (svex-alist-simplify-bitand/or/xor x)
-            x))
+       ;; inside-out   simplification   doesn't   make   sense   because   then
+       ;; nodes-to-skip-alist would become quickly useless when the inner nodes
+       ;; change.
+       (x (svex-alist-simplify-bitand/or/xor-outside-in x))
+       
        (- (fast-alist-free nodes-to-skip-alist)))
     x)
   ///
