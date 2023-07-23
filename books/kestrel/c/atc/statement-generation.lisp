@@ -890,16 +890,17 @@
                                   :names-to-avoid names-to-avoid
                                   :proofs (and stmt-thm-name t))
                                  state))
-       (premises (atc-context->premises gin.context))
-       (new-premises
-        (append premises
-                (list (make-atc-premise-cvalue :var var :term rhs.term)
-                      (make-atc-premise-compustate
-                       :var gin.compst-var
-                       :term `(update-var (ident ',(symbol-name var))
-                                          ,var
-                                          ,gin.compst-var)))))
-       (new-context (change-atc-context gin.context :premises new-premises))
+       (new-context
+        (atc-context-extend gin.context
+                            (list
+                             (make-atc-premise-cvalue
+                              :var var
+                              :term rhs.term)
+                             (make-atc-premise-compustate
+                              :var gin.compst-var
+                              :term `(update-var (ident ,(symbol-name var))
+                                                 ,var
+                                                 ,gin.compst-var)))))
        (notflexarrmem-thms
         (atc-type-to-notflexarrmem-thms rhs.type gin.prec-tags))
        (new-inscope-rules `(,rhs.thm-name
@@ -1758,19 +1759,15 @@
                            nil
                          (untranslate$ else-term nil state)))
        (then-context-end
-        (change-atc-context
-         then-context-end
-         :premises (append (atc-context->premises then-context-end)
-                           (list (make-atc-premise-compustate
-                                  :var gin.compst-var
-                                  :term `(exit-scope ,gin.compst-var))))))
+        (atc-context-extend then-context-end
+                            (list (make-atc-premise-compustate
+                                   :var gin.compst-var
+                                   :term `(exit-scope ,gin.compst-var)))))
        (else-context-end
-        (change-atc-context
-         else-context-end
-         :premises (append (atc-context->premises else-context-end)
-                           (list (make-atc-premise-compustate
-                                  :var gin.compst-var
-                                  :term `(exit-scope ,gin.compst-var))))))
+        (atc-context-extend else-context-end
+                            (list (make-atc-premise-compustate
+                                   :var gin.compst-var
+                                   :term `(exit-scope ,gin.compst-var)))))
        (then-new-compst (atc-contextualize-compustate gin.compst-var
                                                       then-context-start
                                                       then-context-end))
@@ -2030,12 +2027,10 @@
                                   :names-to-avoid names-to-avoid
                                   :proofs (and if-stmt-thm t))
                                  state))
-       (new-context (change-atc-context
-                     gin.context
-                     :premises (append (atc-context->premises gin.context)
-                                       (list (make-atc-premise-compustate
-                                              :var gin.compst-var
-                                              :term new-compst))))))
+       (new-context (atc-context-extend gin.context
+                                        (list (make-atc-premise-compustate
+                                               :var gin.compst-var
+                                               :term new-compst)))))
     (retok
      (atc-gen-block-item-list-one term
                                   item
@@ -2297,10 +2292,8 @@
                     (irr-stmt-gout) (irr-atc-context) (irr-atc-context))
                    (then-cond (untranslate$ test.term t state))
                    (then-premise (atc-premise-test then-cond))
-                   (premises (atc-context->premises gin.context))
-                   (then-premises (append premises (list then-premise)))
                    (then-context-start
-                    (change-atc-context gin.context :premises then-premises))
+                    (atc-context-extend gin.context (list then-premise)))
                    ((mv then-inscope
                         then-enter-scope-context
                         then-enter-scope-events
@@ -2347,10 +2340,8 @@
                    (not-test-term `(not ,test.term))
                    (else-cond (untranslate$ not-test-term t state))
                    (else-premise (atc-premise-test else-cond))
-                   (premises (atc-context->premises gin.context))
-                   (else-premises (append premises (list else-premise)))
                    (else-context-start
-                    (change-atc-context gin.context :premises else-premises))
+                    (atc-context-extend gin.context (list else-premise)))
                    ((mv else-inscope
                         else-enter-scope-context
                         else-enter-scope-events

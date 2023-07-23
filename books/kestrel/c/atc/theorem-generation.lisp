@@ -387,9 +387,7 @@
      to just @(tsee read-object) of @(tsee enter-scope)."))
   (b* ((premise (make-atc-premise-compustate :var compst-var
                                              :term `(enter-scope ,compst-var)))
-       (premises (atc-context->premises context))
-       (new-premises (append premises (list premise)))
-       (new-context (change-atc-context context :premises new-premises))
+       (new-context (atc-context-extend context (list premise)))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 read-object-of-objdesign-of-var-of-enter-scope
                 compustate-frames-number-of-add-frame-not-zero
@@ -440,9 +438,7 @@
        (cs-premise-term `(add-var (ident ,(symbol-name var)) ,var ,compst-var))
        (cs-premise (make-atc-premise-compustate :var compst-var
                                                 :term cs-premise-term))
-       (premises (atc-context->premises context))
-       (new-premises (append premises (list var-premise cs-premise)))
-       (new-context (change-atc-context context :premises new-premises))
+       (new-context (atc-context-extend context (list var-premise cs-premise)))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 objdesign-of-var-of-add-var-iff
                 read-object-of-objdesign-of-var-of-add-var

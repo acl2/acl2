@@ -2391,10 +2391,8 @@
                ((erp (pexpr-gout then))
                 (b* ((then-cond (untranslate$ test.term t state))
                      (then-premise (atc-premise-test then-cond))
-                     (premises (atc-context->premises gin.context))
-                     (then-premises (append premises (list then-premise)))
-                     (then-context
-                      (change-atc-context gin.context :premises then-premises)))
+                     (then-context (atc-context-extend gin.context
+                                                       (list then-premise))))
                   (atc-gen-expr-pure then-term
                                      (change-pexpr-gin
                                       gin
@@ -2407,10 +2405,8 @@
                 (b* ((not-test-term `(not ,test.term))
                      (else-cond (untranslate$ not-test-term nil state))
                      (else-premise (atc-premise-test else-cond))
-                     (premises (atc-context->premises gin.context))
-                     (else-premises (append premises (list else-premise)))
-                     (else-context
-                      (change-atc-context gin.context :premises else-premises)))
+                     (else-context (atc-context-extend gin.context
+                                                       (list else-premise))))
                   (atc-gen-expr-pure else-term
                                      (change-pexpr-gin
                                       gin
@@ -2484,9 +2480,7 @@
                 (atc-gen-expr-bool arg1-term gin state))
                (cond (untranslate$ arg1.term t state))
                (premise (atc-premise-test cond))
-               (premises (atc-context->premises gin.context))
-               (premises (append premises (list premise)))
-               (context (change-atc-context gin.context :premises premises))
+               (context (atc-context-extend gin.context (list premise)))
                ((erp (pexpr-gout arg2))
                 (atc-gen-expr-bool arg2-term
                                    (change-pexpr-gin
@@ -2518,9 +2512,7 @@
                 (atc-gen-expr-bool arg1-term gin state))
                (cond (untranslate$ `(not ,arg1.term) t state))
                (premise (atc-premise-test cond))
-               (premises (atc-context->premises gin.context))
-               (premises (append premises (list premise)))
-               (context (change-atc-context gin.context :premises premises))
+               (context (atc-context-extend gin.context (list premise)))
                ((erp (pexpr-gout arg2))
                 (atc-gen-expr-bool arg2-term
                                    (change-pexpr-gin
