@@ -1997,6 +1997,7 @@
        (svl::leave-depth 2)
        (leaves (svl::bitand/or/xor-collect-leaves remaining-bitor 'sv::bitor))
        (svl::nodes-to-skip-alist nil)
+       (svl::fn 'sv::bitor)
        ((mv fa-c-arg1 &) (svl::bitand/bitor-cancel-repeated-aux fa-c-arg1 leaves 0))
        ((mv fa-c-arg2 &) (svl::bitand/bitor-cancel-repeated-aux fa-c-arg2 leaves 0))
        ((mv fa-c-arg3 &) (svl::bitand/bitor-cancel-repeated-aux fa-c-arg3 leaves 0)))

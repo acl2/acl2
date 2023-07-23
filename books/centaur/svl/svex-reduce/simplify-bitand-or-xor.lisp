@@ -715,41 +715,47 @@ x
   ;; A quick  way to  clear repeated  1's from bitxors.  These are  expected to
   ;; appear in bitand/bitor-cancel-repeated
 
-  (define bitxor-has-1 (x)
+  (define bitxor-has-1 (x &key ((limit natp) 'limit))
     :returns (res)
     (case-match x
       (('sv::bitxor a b)
-       (or (equal a 1)
-           (equal b 1)
-           (bitxor-has-1 a)
-           (bitxor-has-1 b)))
+       (b* (((when (zp limit)) nil)
+            (limit (1- limit)))
+         (or (equal a 1)
+             (equal b 1)
+             (bitxor-has-1 a)
+             (bitxor-has-1 b))))
       (& (equal x 1))))
 
   (define remove-1-from-xor ((x svex-p)
                              &key
+                             ((limit natp) 'limit)
                              ((config svex-reduce-config-p)
                               'config))
     :returns (res svex-p :hyp (svex-p x))
-
+    :verify-guards :after-returns
     (case-match x
       (('sv::bitxor a b)
-       (cond ((equal a 1)
-              (svex-reduce-w/-env-apply 'sv::unfloat (hons-list b)))
-             ((equal b 1)
-              (svex-reduce-w/-env-apply 'sv::unfloat (hons-list a)))
-             ((bitxor-has-1 a)
-              (bitand/or/xor-simple-constant-simplify 'sv::bitxor
-                                                      (remove-1-from-xor a) b))
-             ((bitxor-has-1 b)
-              (bitand/or/xor-simple-constant-simplify 'sv::bitxor
-                                                      a
-                                                      (remove-1-from-xor b)))
-             (t x)
-             ))
+       (b* (((when (zp limit)) x)
+            (limit (1- limit)))
+         (cond ((equal a 1)
+                (svex-reduce-w/-env-apply 'sv::unfloat (hons-list b)))
+               ((equal b 1)
+                (svex-reduce-w/-env-apply 'sv::unfloat (hons-list a)))
+               ((bitxor-has-1 a)
+                (bitand/or/xor-simple-constant-simplify 'sv::bitxor
+                                                        (remove-1-from-xor a) b))
+               ((bitxor-has-1 b)
+                (bitand/or/xor-simple-constant-simplify 'sv::bitxor
+                                                        a
+                                                        (remove-1-from-xor b)))
+               (t x)
+               )))
       (& (if (equal x 1) 0 x))))
 
   (define clear-1s-from-bitxor ((x svex-p)
                                 &key
+                                ((limit natp) 'limit)
                                 ((config svex-reduce-config-p)
                                  'config))
     :returns (res svex-p :hyp (svex-p x))
@@ -1000,6 +1006,7 @@ x
    (leaves svexlist-p)
    (new-val integerp)
    &key
+   (parent-fn 'fn)
    (under-xor 'under-xor)
    ((limit natp) '*bitand/bitor-cancel-repeated-aux-limit*)
    ;;((require-integerp booleanp) 'require-integerp)
@@ -1049,7 +1056,7 @@ x
    ((and (consp svex)
          (equal (car svex) 'sv::bitor)
          (equal-len (cdr svex) 2))
-    (b* ((x (first (cdr svex))) (y (second (cdr svex)))
+    (b* ((fn 'sv::bitor) (x (first (cdr svex))) (y (second (cdr svex)))
          ((mv x changed-x) (bitand/bitor-cancel-repeated-aux x leaves new-val :limit (1- limit)))
          ((mv y changed-y) (bitand/bitor-cancel-repeated-aux y leaves new-val :limit (1- limit))))
       (if (or changed-x
@@ -1059,7 +1066,7 @@ x
    ((and (consp svex)
          (equal (car svex) 'sv::bitand)
          (equal-len (cdr svex) 2))
-    (b* ((x (first (cdr svex))) (y (second (cdr svex)))
+    (b* ((fn 'sv::bitand) (x (first (cdr svex))) (y (second (cdr svex)))
          ((mv x changed-x) (bitand/bitor-cancel-repeated-aux x leaves new-val :limit (1- limit)))
          ((mv y changed-y) (bitand/bitor-cancel-repeated-aux y leaves new-val :limit (1- limit))))
       (if (or changed-x
@@ -1069,7 +1076,7 @@ x
    ((and (consp svex)
          (equal (car svex) 'sv::bitxor)
          (equal-len (cdr svex) 2))
-    (b* ((x (first (cdr svex))) (y (second (cdr svex)))
+    (b* ((fn 'sv::bitxor) (x (first (cdr svex))) (y (second (cdr svex)))
          ((mv new-x changed-x) (bitand/bitor-cancel-repeated-aux x leaves new-val :limit (+ limit -1) :under-xor t))
          ((mv new-y changed-y) (bitand/bitor-cancel-repeated-aux y leaves new-val :limit (+ limit -1) :under-xor t))
          ((Unless (and (or changed-x changed-y) ;; this is and not and* becasue
@@ -1079,7 +1086,7 @@ x
                            (rp::cwe "integer-listp-of-svexlist check has failed for ~p0~%" leaves))))
           (mv svex nil))
          (res (bitand/or/xor-simple-constant-simplify 'sv::bitxor new-x new-y))
-         (res (if under-xor ;; outermost bitxor should clear 1s  
+         (res (if (equal parent-fn 'sv::bitxor) ;; outermost bitxor should clear 1s  
                   res
                 (clear-1s-from-bitxor res))))
       (mv res t)))
@@ -1150,7 +1157,8 @@ x
      :fn bitand/bitor-cancel-repeated-aux
      ;;:otf-flg t
      :hints (("Goal"
-              :induct (bitand/bitor-cancel-repeated-aux svex leaves  new-val :limit limit)
+              :induct (bitand/bitor-cancel-repeated-aux svex leaves  new-val
+                                                        :limit limit :parent-fn parent-fn)
               :do-not-induct t
               :expand ((:free (x)
                               (svex-apply 'sv::bitxor x))
@@ -1251,7 +1259,7 @@ x
      :fn bitand/bitor-cancel-repeated-aux
      :otf-flg t
      :hints (("goal"
-              :induct (bitand/bitor-cancel-repeated-aux svex leaves  new-val :limit limit)
+              :induct (bitand/bitor-cancel-repeated-aux svex leaves  new-val :limit limit :parent-fn parent-fn)
               :do-not-induct t
               :expand (;;(svex-eval svex env)
                        (:free (x)
@@ -2050,15 +2058,18 @@ x
 
                                 (new-val 0)
                                 (under-xor nil)
+                                (parent-fn 'bitor)
                                 (limit *bitand/bitor-cancel-repeated-aux-limit*))
                      (:instance svex-eval-of-bitand/bitor-cancel-repeated-aux-correct-1
                                 (svex (extract-from-unfloat x))
+                                (parent-fn 'bitor)
                                 (leaves (bitand/or/xor-collect-leaves
                                          (mv-nth 0
                                                  (bitand/bitor-cancel-repeated-aux
                                                   (extract-from-unfloat y)
                                                   (bitand/or/xor-collect-leaves (extract-from-unfloat x) 'bitor)
                                                   0
+                                                  :parent-fn 'bitor
                                                   :under-xor nil))
                                          'bitor))
                                 (new-val 0)
@@ -2066,6 +2077,7 @@ x
                                 (limit *bitand/bitor-cancel-repeated-aux-limit*))
                      (:instance svex-eval-of-bitand/bitor-cancel-repeated-aux-correct-2
                                 (svex (extract-from-unfloat y))
+                                (parent-fn 'bitand)
                                 (leaves (bitand/or/xor-collect-leaves (extract-from-unfloat x)
                                                                       'bitand))
 
@@ -2074,6 +2086,7 @@ x
                                 (limit *bitand/bitor-cancel-repeated-aux-limit*))
                      (:instance svex-eval-of-bitand/bitor-cancel-repeated-aux-correct-2
                                 (svex (extract-from-unfloat x))
+                                (parent-fn 'bitand)
                                 (leaves (bitand/or/xor-collect-leaves
                                          (mv-nth 0
                                                  (bitand/bitor-cancel-repeated-aux
@@ -2081,6 +2094,7 @@ x
                                                   (bitand/or/xor-collect-leaves (extract-from-unfloat x)
                                                                                 'bitand)
                                                   -1
+                                                  :parent-fn 'bitand
                                                   :under-xor nil))
                                          'bitand))
 
@@ -2126,15 +2140,18 @@ x
 
                                 (new-val 0)
                                 (under-xor nil)
+                                (parent-fn 'bitor)
                                 (limit *bitand/bitor-cancel-repeated-aux-limit*))
                      (:instance svex-eval-of-bitand/bitor-cancel-repeated-aux-correct-1
                                 (svex (extract-from-unfloat x))
+                                (parent-fn 'bitor)
                                 (leaves (bitand/or/xor-collect-leaves
                                          (mv-nth 0
                                                  (bitand/bitor-cancel-repeated-aux
                                                   (extract-from-unfloat y)
                                                   (bitand/or/xor-collect-leaves (extract-from-unfloat x) 'bitor)
                                                   0
+                                                  :parent-fn 'bitor
                                                   :under-xor nil))
                                          'bitor))
                                 (new-val 0)
@@ -2147,9 +2164,11 @@ x
 
                                 (new-val -1)
                                 (under-xor nil)
+                                (parent-fn 'bitand)
                                 (limit *bitand/bitor-cancel-repeated-aux-limit*))
                      (:instance svex-eval-of-bitand/bitor-cancel-repeated-aux-correct-2
                                 (svex (extract-from-unfloat x))
+                                (parent-fn 'bitand)
                                 (leaves (bitand/or/xor-collect-leaves
                                          (mv-nth 0
                                                  (bitand/bitor-cancel-repeated-aux
@@ -2157,6 +2176,7 @@ x
                                                   (bitand/or/xor-collect-leaves (extract-from-unfloat x)
                                                                                 'bitand)
                                                   -1
+                                                  :parent-fn 'bitand
                                                   :under-xor nil))
                                          'bitand))
 

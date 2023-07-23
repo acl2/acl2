@@ -1232,3 +1232,40 @@
                               sv::svex-alist-eval)
                              ())))))
 
+
+
+(defines adders-under-gates?
+  (define adders-under-gates? ((x sv::Svex-p)
+                               (under-gate?))
+    :measure (sv::Svex-count x)
+    (sv::svex-case
+     x
+     :var nil
+     :quote nil
+     :call
+     (b* ((under-gate? (or under-gate?
+                           (equal x.fn 'sv::bitand)
+                           (equal x.fn 'sv::bitor)))
+          ((when (and under-gate?
+                      (member-eq x.fn '(fa-c-chain fa-s-chain
+                                                   ha-s-chain ha-c-chain
+                                                   ha+1-s-chain ha+1-c-chain
+                                                   +))))
+           t))
+       (adders-under-gates?-lst x.args under-gate?))))
+
+  (define adders-under-gates?-lst ((lst sv::Svexlist-p)
+                                   (under-gate?))
+    :measure (sv::Svexlist-count lst)
+    (if (atom lst)
+        nil
+      (or (adders-under-gates? (car lst) under-gate?)
+          (adders-under-gates?-lst (cdr lst) under-gate?))))
+  ///
+  (memoize 'adders-under-gates?)
+  (define adders-under-gates?-alist ((alist sv::svex-alist-p))
+    (if (atom alist)
+        (progn$ (clear-memoize-table 'adders-under-gates?)
+                nil)
+      (or (adders-under-gates? (cdar alist) nil)
+          (adders-under-gates?-alist (cdr alist))))))
