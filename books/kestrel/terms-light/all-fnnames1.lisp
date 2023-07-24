@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function all-fnnnames1
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,4 +19,9 @@
   (implies (and (symbol-listp acc)
                 (if flg (pseudo-term-listp x) (pseudo-termp x)))
            (symbol-listp (all-fnnames1 flg x acc)))
+  :hints (("Goal" :in-theory (enable all-fnnames1))))
+
+(defthm true-listp-of-all-fnnnames1
+  (implies (true-listp acc)
+           (true-listp (all-fnnames1 flg x acc)))
   :hints (("Goal" :in-theory (enable all-fnnames1))))
