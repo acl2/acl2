@@ -1,7 +1,7 @@
 ; Axe trees
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,7 +25,7 @@
 ;like pseudo-termp but allows integers (nodenums in some DAG) to also appear
 ;; TODO: Make a more abstract interface to this (e.g., axe-tree-args instead of cdr)
 ;; See also bounded-axe-treep.
-;; todo: disable?
+;; TODO: Disable these:
 (mutual-recursion
  (defun axe-treep (tree)
    (declare (xargs :guard t))
@@ -134,7 +134,8 @@
   (defthm axe-tree-listp-when-pseudo-term-listp
     (implies (pseudo-term-listp trees)
              (axe-tree-listp trees))
-    :flag axe-tree-listp))
+    :flag axe-tree-listp)
+  :hints (("Goal" :in-theory (enable axe-treep axe-tree-listp))))
 
 ;; dargps are axe-trees.
 (defthm-flag-axe-treep
@@ -146,7 +147,8 @@
     (implies (all-dargp trees)
              (equal (axe-tree-listp trees)
                     (true-listp trees)))
-    :flag axe-tree-listp))
+    :flag axe-tree-listp)
+  :hints (("Goal" :in-theory (enable axe-treep axe-tree-listp))))
 
 (defthm axe-tree-listp-of-cons
   (equal (axe-tree-listp (cons tree trees))
@@ -171,7 +173,8 @@
   (implies (and (axe-treep tree)
                 (consp tree)
                 (not (equal 'quote (car tree))))
-           (axe-tree-listp (cdr tree))))
+           (axe-tree-listp (cdr tree)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthm axe-tree-listp-of-cdr-2
   (implies (axe-tree-listp trees)
@@ -189,14 +192,16 @@
                     (true-listp tree))
                (symbolp tree)
                (natp tree)))
-  :rule-classes :compound-recognizer)
+  :rule-classes :compound-recognizer
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 ;TODO: disable outside axe
 (defthm symbolp-of-car-when-axe-treep-cheap
   (implies (and (axe-treep tree)
                 (not (consp (car tree))))
            (symbolp (car tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthm len-of-nth-1-of-car-when-axe-treep-cheap
   (implies (and (axe-treep tree)
@@ -205,8 +210,9 @@
                   (len (cdr tree))         ;the args
                   ))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-  :hints (("Goal" :in-theory (disable ;; for speed:
-                              equal-of-len-and-0))))
+  :hints (("Goal" :in-theory (e/d (axe-treep)
+                                  ( ;; for speed:
+                                   equal-of-len-and-0)))))
 
 ;todo: prove from the above
 (defthm len-of-nth-1-of-nth-0-when-axe-treep-cheap
@@ -237,7 +243,8 @@
   (implies (equal 'quote (car tree))
            (equal (axe-treep tree)
                   (myquotep tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthm symbol-of-nth-0-when-axe-treep
   (implies (axe-treep tree)
@@ -273,8 +280,9 @@
            (equal (len (nth 0 tree))
                   (if (consp (nth 0 tree))
                       3
-                      0)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+                    0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthm axe-treep-of-nth
   (implies (and (axe-tree-listp trees)
