@@ -1155,60 +1155,87 @@
              term-orig)))
         (& term-orig))))
 
-  (define decompress-s-c ((term rp-termp) &key (limit '*large-number*))
-    :measure (nfix limit)
-    :guard (natp limit)
-    :returns (mv (res-term)
-                 (coughed-s)
-                 (coughed-pp))
-    :verify-guards nil
-    (b* (((when (zp limit)) (mv term ''nil ''nil))
-         (term-orig term)
-         (term (ex-from-rp$ term)))
-      (case-match term
-        (('s & pp ('list single-c))
-         (b* (((mv single-c coughed-s coughed-pp)
-               (decompress-s-c single-c :limit (1- limit)))
-              (- (and (not (equal coughed-s ''nil))
-                      (hard-error 'decompress-s-c
-                                  "We do not expect decompress-s-c to cough s
+  (defines decompress-s-c
+    :flag-local nil
+    (define decompress-s-c ((term rp-termp) &key (limit '*large-number*))
+      :measure (nfix limit)
+      :guard (natp limit)
+      :returns (mv (res-term)
+                   (coughed-s)
+                   (coughed-pp))
+      :verify-guards nil
+      (b* (((when (zp limit)) (mv term ''nil ''nil))
+           (term-orig term)
+           (term (ex-from-rp$ term)))
+        (case-match term
+          (('s & pp ('list single-c))
+           (b* (((mv single-c coughed-s coughed-pp)
+                 (decompress-s-c single-c :limit (1- limit)))
+                (- (and (not (equal coughed-s ''nil))
+                        (hard-error 'decompress-s-c
+                                    "We do not expect decompress-s-c to cough s
     terms to s instances yet... ~%" nil)))
-              (pp (pp-sum-merge pp coughed-s));; for proofs...
+                (pp (pp-sum-merge pp coughed-s)) ;; for proofs...
 
-              (pp (pp-sum-merge pp coughed-pp))
-              (pp (s-fix-args pp))
-              (c (create-list-instance (list single-c))))
-           (mv `(s ',(calculate-s-hash pp c) ,pp ,c)
-               ''nil
-               ''nil)))
-        (('c & s pp ('list single-c))
-         (b* (((mv single-c coughed-s coughed-pp)
-               (decompress-s-c single-c :limit (1- limit)))
-              (pp (pp-sum-merge pp coughed-pp))
-              ((mv coughed-pp pp) (c-fix-pp-args pp))
-              (s (s-sum-merge s coughed-s))
-              ((mv coughed-s s) (c-fix-s-args s))
-              (c (create-list-instance (list single-c))))
-           (mv `(c ',(calculate-c-hash s pp c) ,s ,pp ,c)
-               coughed-s
-               coughed-pp)))
-        (('c & s pp ''nil)
-         (b* (((mv coughed-pp pp) (c-fix-pp-args pp))
-              ((mv coughed-s s) (c-fix-s-args s))
-              (c ''nil))
-           (mv `(c ',(calculate-c-hash s pp c) ,s ,pp ,c)
-               coughed-s
-               coughed-pp)))
-        (& (mv term-orig ''nil ''nil))))
+                (pp (pp-sum-merge pp coughed-pp))
+                (pp (s-fix-args pp))
+                (c (create-list-instance (list single-c))))
+             (mv `(s ',(calculate-s-hash pp c) ,pp ,c)
+                 ''nil
+                 ''nil)))
+          (('c & s pp ('list . c-lst))
+           (b* (((mv c-lst coughed-s coughed-pp)
+                 (decompress-s-c-lst c-lst :limit (1- limit)))
+                (pp (pp-sum-merge pp coughed-pp))
+                ((mv coughed-pp pp) (c-fix-pp-args pp))
+                (s (s-sum-merge s coughed-s))
+                ((mv coughed-s s) (c-fix-s-args s))
+                (c (create-list-instance c-lst)))
+             (mv `(c ',(calculate-c-hash s pp c) ,s ,pp ,c)
+                 coughed-s
+                 coughed-pp)))
+          (('c & s pp ''nil)
+           (b* (((mv coughed-pp pp) (c-fix-pp-args pp))
+                ((mv coughed-s s) (c-fix-s-args s))
+                (c ''nil))
+             (mv `(c ',(calculate-c-hash s pp c) ,s ,pp ,c)
+                 coughed-s
+                 coughed-pp)))
+          (& (mv term-orig ''nil ''nil)))))
+    (define decompress-s-c-lst ((lst rp-term-listp) &key (limit '*large-number*))
+      :measure (nfix limit)
+      :guard (natp limit)
+      :returns (mv (res-term-lst)
+                   (coughed-s)
+                   (coughed-pp))
+      (b* (((when (zp limit)) (mv lst ''nil ''nil))
+           ((when (atom lst)) (mv nil ''nil ''nil))
+           (limit (1- limit))
+           ((mv cur coughed-s1 coughed-pp1)
+            (decompress-s-c (car lst) :limit limit))
+           ((mv rest coughed-s2 coughed-pp2)
+            (decompress-s-c-lst (cdr lst) :limit limit))
+           (coughed-s (s-sum-merge coughed-s1 coughed-s2))
+           (coughed-pp (pp-sum-merge coughed-pp1 coughed-pp2)))
+        (mv (cons cur rest)
+            coughed-s coughed-pp)))
+         
     ///
 
-    (acl2::defret
+    (defret-mutual
       rp-termp-of-<fn>
-      :hyp (rp-termp term)
-      (and (rp-termp res-term)
-           (rp-termp coughed-pp)
-           (rp-termp coughed-s)))
-
+      (defret rp-termp-of-<fn>
+        :hyp (rp-termp term)
+        (and (rp-termp res-term)
+             (rp-termp coughed-pp)
+             (rp-termp coughed-s))
+        :fn decompress-s-c)
+      (defret rp-termp-of-<fn>
+        :hyp (rp-term-listp lst)
+        (and (rp-term-listp res-term-lst)
+             (rp-termp coughed-pp)
+             (rp-termp coughed-s))
+        :fn decompress-s-c-lst))
     (verify-guards decompress-s-c-fn)))
 
 #|(progn

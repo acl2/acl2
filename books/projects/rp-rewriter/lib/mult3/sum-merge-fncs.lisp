@@ -1070,6 +1070,44 @@
          (or rep-ok (no-rep-p lst))
          (ordered-s/c-p-lst lst))))
 
+(defwarrant times-p)
+(defwarrant EX-FROM-RP/TIMES)
+(defwarrant list-to-lst)
+
+
+(defines s/c-has-times
+  (define s/c-has-times (term)
+    :mode :program
+    (b* ((term (ex-from-rp/times term)))
+      (case-match term
+        (('s & pp c)
+         (or (loop$ for x in (list-to-lst pp) thereis
+                    (times-p x))
+             (loop$ for x in (list-to-lst c) thereis
+                    (times-p x))
+             (s/c-has-times-lst (list-to-lst c))))
+        (('c & s pp c)
+         (or (loop$ for x in (list-to-lst c) thereis
+                    (times-p x))
+             (loop$ for x in (list-to-lst pp) thereis
+                    (times-p x))
+             (loop$ for x in (list-to-lst c) thereis
+                    (times-p x))
+             (s/c-has-times-lst (list-to-lst s))
+             (s/c-has-times-lst (list-to-lst c))))
+        (('s-c-res s & c)
+         (and (s/c-has-times-lst (list-to-lst s))
+              (s/c-has-times-lst (list-to-lst c))))
+        (& nil))))
+  (define s/c-has-times-lst (lst)
+    (if (atom lst)
+        nil
+      (or (s/c-has-times (car lst))
+          (s/c-has-times-lst (cdr lst)))))
+  ///
+  (memoize 's/c-has-times))
+  
+
 (defthm rp-term-listp-of-append-wog
   (implies (and (rp-term-listp lst1)
                 (rp-term-listp lst2))

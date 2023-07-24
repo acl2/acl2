@@ -712,51 +712,79 @@
               (equal (sum x y z)
                      (sum p)))))
 
-(defret decompress-s-c-correct
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state)
-                (valid-sc term a))
-           (and (valid-sc res-term a)
-                (valid-sc coughed-s a)
-                (valid-sc coughed-pp a)
-                (equal (sum (rp-evlt res-term a)
-                            (sum-list (rp-evlt coughed-s a))
-                            (sum-list (rp-evlt coughed-pp a)))
-                       (ifix (rp-evlt term a)))
-                (equal (sum (rp-evlt res-term a)
-                            (sum-list (rp-evlt coughed-s a))
-                            (sum-list (rp-evlt coughed-pp a))
-                            other)
-                       (sum (rp-evlt term a)
-                            other))))
-  :fn decompress-s-c
+
+
+
+(defret-mutual decompress-s-c-correct
+  (defret decompress-s-c-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc term a))
+             (and (valid-sc res-term a)
+                  (valid-sc coughed-s a)
+                  (valid-sc coughed-pp a)
+                  (equal (sum (rp-evlt res-term a)
+                              (sum-list (rp-evlt coughed-s a))
+                              (sum-list (rp-evlt coughed-pp a)))
+                         (ifix (rp-evlt term a)))
+                  (equal (sum (rp-evlt res-term a)
+                              (sum-list (rp-evlt coughed-s a))
+                              (sum-list (rp-evlt coughed-pp a))
+                              other)
+                         (sum (rp-evlt term a)
+                              other))))
+    :fn decompress-s-c)
+  (defret decompress-s-c-list-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc-subterms lst a))
+             (and (valid-sc-subterms res-term-lst a)
+                  (valid-sc coughed-s a)
+                  (valid-sc coughed-pp a)
+                  (equal (sum (sum-list (rp-evlt-lst res-term-lst a))
+                              (sum-list (rp-evlt coughed-s a))
+                              (sum-list (rp-evlt coughed-pp a)))
+                         (sum-list (rp-evlt-lst lst a)))
+                  (equal (sum (sum-list (rp-evlt-lst res-term-lst a))
+                              (sum-list (rp-evlt coughed-s a))
+                              (sum-list (rp-evlt coughed-pp a))
+                              other)
+                         (sum (sum-list (rp-evlt-lst lst a))
+                              other))))
+    :fn decompress-s-c-lst)
+  :mutual-recursion decompress-s-c
+ 
   :hints (("Goal"
            :do-not-induct t
-           :induct (decompress-s-c term :limit limit)
+           :expand ((RP-TRANS-LST (CDR (EX-FROM-RP TERM))))
            :in-theory (e/d (decompress-s-c
+                            decompress-s-c-lst
                             equivalence-of-two-f2-2
                             f2-of-times2-reverse
-                            RP-TRANS-LST-of-consp
+                            rp-trans-lst-of-consp
                             rp-evlt-of-ex-from-rp-reverse-only-atom
-;rp-evlt-of-ex-from-rp-reverse
+                            regular-rp-evl-of_c_when_mult-formula-checks_with-ex-from-rp
+                            regular-rp-evl-of_s_when_mult-formula-checks_with-ex-from-rp
+                            regular-rp-evl-of_c_when_mult-formula-checks
+                            regular-rp-evl-of_s_when_mult-formula-checks
                             )
                            (rp-evlt-of-ex-from-rp
                             f2-of-times2
-                            ;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
-                            (:TYPE-PRESCRIPTION VALID-SC)
-                            (:REWRITE VALID-SC-WHEN-SINGLE-C-P)
-                            (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
-                            (:REWRITE EX-FROM-SYNP-LEMMA1)
-                            (:REWRITE RP-EVL-OF-VARIABLE)
-                            (:DEFINITION EVAL-AND-ALL)
-                            (:REWRITE SUM-OF-NEGATED-ELEMENTS)
-                            (:REWRITE DEFAULT-CDR)
-                            (:DEFINITION INCLUDE-FNC-FN)
-                            (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                            (:DEFINITION INCLUDE-FNC-SUBTERMS-FN)
-                            (:REWRITE DEFAULT-CAR)
-
+                            (:type-prescription valid-sc)
+                            (:rewrite valid-sc-when-single-c-p)
+                            (:rewrite evl-of-extract-from-rp-2)
+                            (:rewrite ex-from-synp-lemma1)
+                            (:rewrite rp-evl-of-variable)
+                            (:definition eval-and-all)
+                            (:rewrite sum-of-negated-elements)
+                            (:rewrite default-cdr)
+                            (:definition include-fnc-fn)
+                            (:rewrite not-include-rp-means-valid-sc)
+                            (:definition include-fnc-subterms-fn)
+                            (:rewrite default-car)
+                            rp-trans-lst-of-consp
                             rp-termp
+                            rp-trans
                             rp-trans-lst)))))
 
 (defthm times2-of---
