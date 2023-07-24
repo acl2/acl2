@@ -159,7 +159,7 @@ non-set convention and always returns true for ill-formed sets.</p>"
              (setp X))))
 
 (defthm empty-set-unique
-  ;; BOZO probably expensive.  We don't export this from sets.lisp, and we keep
+  ;; BOZO probably expensive.  We don't export this from top.lisp, and we keep
   ;; it out of the docs above.
   (implies (and (setp X)
                 (setp Y)
@@ -437,8 +437,8 @@ following loop:</p>
 
   (defthm tail-insert
     (equal (tail (insert a X))
-           (cond ((empty X) (sfix X))
-                 ((<< a (head X)) (sfix X))
+           (cond ((empty X) nil)
+                 ((<< a (head X)) X)
                  ((equal a (head X)) (tail X))
                  (t (insert a (tail X))))))
 
@@ -550,11 +550,11 @@ following loop:</p>
 ; Now we are interested in setting up theories and in disabling most of the
 ; potentially bad issues that might arise.
 ;
-; You should never need to use primitive-theory unless you are using non-set
+; You should never need to use primitive-rules unless you are using non-set
 ; functions, e.g. cons, to build sets.
 ;
-; The primitive order theory is intended to be disabled for typical reasoning,
-; but is needed for some theorems in the membership level.
+; The order-rules are intended to be disabled for typical reasoning,
+; but are needed for some theorems in the membership level.
 
 (def-ruleset primitive-rules
   '(setp empty head tail sfix insert))

@@ -149,7 +149,7 @@
 (defthm least-moved-moved
   (let ((m (least-moved p)))
     (implies (< m (len p))
-	     (not (equal (nth m p) m))))	     
+	     (not (equal (nth m p) m))))
   :hints (("Goal" :use ((:instance least-moved-aux-moved (k 0))))))
 
 (defthm least-moved-least
@@ -217,7 +217,7 @@
     (implies (and (posp n)
                   (in p (sym n))
                   (< m n))
-             (transp (transpose m (nth m p) n) n)))	     
+             (transp (transpose m (nth m p) n) n)))
   :hints (("Goal" :in-theory (enable transp-transpose))))
 
 (local-defthmd permp-transpose-least-moved
@@ -235,7 +235,7 @@
 
 (defthmd permp-trans-list
   (implies (and (posp n) (trans-list-p l n))
-           (in (comp-perm-list l n) (sym n)))	   
+           (in (comp-perm-list l n) (sym n)))
   :hints (("subgoal *1/2" :use ((:instance permp-transp (p (car l)))))))
 
 
@@ -261,8 +261,8 @@
 		        (:instance least-moved-least (n k))
 		        (:instance nth-perm-ninit (x p) (k (least-moved p)))
 		        (:instance least-moved-transpose (i (least-moved p)) (j (nth (least-moved p) p)))
-		        (::instance least-moved-least (p (transpose (least-moved p) (nth (least-moved p) p) n)))
-		        (::instance least-moved-bounds (p (comp-perm (transpose (least-moved p) (nth (least-moved p) p) n) p n)))))))
+		        (:instance least-moved-least (p (transpose (least-moved p) (nth (least-moved p) p) n)))
+		        (:instance least-moved-bounds (p (comp-perm (transpose (least-moved p) (nth (least-moved p) p) n) p n)))))))
 
 (defthm perm-meas-dec
   (let ((m (least-moved p)))
@@ -270,7 +270,7 @@
                   (in p (sym n))
                   (< m n))
                (< (least-moved p)
-	          (least-moved (comp-perm (transpose m (nth m p) n) p n)))))	          
+	          (least-moved (comp-perm (transpose m (nth m p) n) p n)))))
   :hints (("Goal" :use ((:instance perm-meas-dec-1 (k (least-moved (comp-perm (transpose (least-moved p) (nth (least-moved p) p) n) p n))))
                         (:instance least-moved-moved (p (comp-perm (transpose (least-moved p) (nth (least-moved p) p) n) p n)))))))
 
@@ -293,8 +293,8 @@
   (implies (and (posp n) (in p (sym n)))
            (equal (comp-perm-list (trans-list p n) n)
 	          p))
-  :hints (("Subgoal *1/3" :use (least-moved-n-ninit))  
-          ("Subgoal *1/1" :use (permp-transpose-least-moved))	  
+  :hints (("Subgoal *1/3" :use (least-moved-n-ninit))
+          ("Subgoal *1/1" :use (permp-transpose-least-moved))
           ("Subgoal *1/2" :in-theory (enable transpose-involution)
 	                  :use (permp-transpose-least-moved trans-args-p-transpose-least-moved
 	                        (:instance sym-assoc (x (transpose (least-moved p) (nth (least-moved p) p) n))

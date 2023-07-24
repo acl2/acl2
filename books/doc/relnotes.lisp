@@ -321,6 +321,12 @@
     "Convenience constructors for the abstract syntax have been added.")
 
    (xdoc::p
+    "Utilities have been added to build indexed names,
+     useful for defining families of PFCS gadgets.
+     The utilities are accompanied by theorems,
+     useful to prove certain properties about the gadget families.")
+
+   (xdoc::p
     "The formal notion of system (in the PFCS sense) has been improved,
      to be more in line with the general notion of constraint system.")
 

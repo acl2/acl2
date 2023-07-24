@@ -14,6 +14,7 @@
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
+(include-book "indexed-names")
 (include-book "convenience-constructors")
 (include-book "well-formedness")
 (include-book "semantics")

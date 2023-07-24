@@ -136,6 +136,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-context-extend ((context atc-contextp) (premises atc-premise-listp))
+  :returns (new-context atc-contextp)
+  :short "Extend a context with a list of premises."
+  (change-atc-context context
+                      :premises (append (atc-context->premises context)
+                                        premises)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-contextualize ((formula "An untranslated term.")
                            (context atc-contextp)
                            (fn? symbolp)
