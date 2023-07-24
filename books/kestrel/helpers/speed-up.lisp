@@ -154,7 +154,7 @@
 ;; Returns (mv erp state).
 ;; TODO: Should we combine this with speed-up-defrule?
 (defun speed-up-defthm (event print state)
-  (declare (xargs :guard (member-eq print '(nil :brief t :verbose)) ; todo: caller doesn't allow t?
+  (declare (xargs :guard (print-levelp print) ; todo: caller doesn't allow t?
                   :mode :program
                   :stobjs state))
   (let* ( ;;(defthm-variant (first event))
@@ -213,7 +213,7 @@
                                               (prog2$ (cw "~%   Error adding :induct t." name)
                                                       state)
                                             (if provedp
-                                                (prog2$ (maybe-print-speedup-message provedp time-with-induct-t original-time "Add :induct t hint on Goal" :verbose)
+                                                (prog2$ (maybe-print-speedup-message provedp time-with-induct-t original-time "Add :induct t hint on Goal" print)
                                                         state)
                                               (prog2$ (and (print-level-at-least-tp print) (cw "~%   Adding :induct t caused the proof to break."))
                                                       ;; todo: print something here in verbose mode
