@@ -1,3 +1,0 @@
-(include-book "utilities")
-
-(certify-book "demo" ? t)

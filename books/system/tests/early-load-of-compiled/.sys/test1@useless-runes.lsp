@@ -1,2 +1,0 @@
-(T1-P)
-(SYMBOLP-WHEN-T1-P)

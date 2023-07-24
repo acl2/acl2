@@ -1,2 +1,0 @@
-; cert-flags: ? t :ttags (:fast-cons-memo :aig-vars :zz :sneaky-load)
-

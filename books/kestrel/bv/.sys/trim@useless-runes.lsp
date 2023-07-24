@@ -1,2 +1,0 @@
-(TRIM)
-(TRIM-OF-0-ARG1)

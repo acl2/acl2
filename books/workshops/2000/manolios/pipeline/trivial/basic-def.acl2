@@ -1,5 +1,0 @@
-(in-package "ACL2")
-(include-book "data-structures/portcullis" :dir :system)
-(certify-book "basic-def" ? t)
-
-

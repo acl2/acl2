@@ -1,1 +1,0 @@
-(LRAT::MAIN-TEST-FN)

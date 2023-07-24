@@ -1,3 +1,0 @@
-(in-package "ACL2")
-; cert-flags: ? t :ttags (:evalable-ld-printing)
-(certify-book "evalable-ld-printing" ? t :ttags (:evalable-ld-printing))

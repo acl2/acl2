@@ -1,3 +1,0 @@
-(MAKE-**)
-(BIND-**-CHECK)
-(BIND-**-BINDINGS)

@@ -1,2 +1,0 @@
-(include-book "centaur/gl/gl" :dir :system)
-(certify-book "gl-and-use-example" ?)

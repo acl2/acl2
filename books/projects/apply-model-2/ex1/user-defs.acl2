@@ -1,5 +1,0 @@
-(in-package "ACL2")
-(include-book "../portcullis")
-(include-book "../apply")
-(certify-book "user-defs" 2)
-

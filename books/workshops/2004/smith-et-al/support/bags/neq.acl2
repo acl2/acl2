@@ -1,2 +1,0 @@
-(include-book "bag-exports")
-(certify-book "neq" ? t)

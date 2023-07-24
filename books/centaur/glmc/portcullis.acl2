@@ -1,4 +1,0 @@
-
-
-(include-book "centaur/gl/portcullis" :dir :system)
-(include-book "centaur/aignet/portcullis" :dir :system)

@@ -1,2 +1,0 @@
-(<=-TRANSITIVE-1)
-(<=-TRANSITIVE-2)

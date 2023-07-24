@@ -1,5 +1,0 @@
-(include-book "lists")
-(include-book "list-exports")
-(include-book "mv-nth")
-
-(certify-book "list-top" ? t)

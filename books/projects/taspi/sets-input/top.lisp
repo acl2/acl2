@@ -1,8 +1,0 @@
-(in-package "ACL2")
-(include-book "consensus")
-(include-book "tree-compat")
-(include-book "tree-support-in-set")
-(include-book "mast")
-(include-book "multipolar-loose")
-(include-book "greedy")
-(include-book "mct")

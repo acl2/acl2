@@ -1,6 +1,0 @@
-(B-AND)
-(B-OR)
-(B-XOR)
-(B-AND-COMM)
-(B-OR-COMM)
-(B-XOR-COMM)

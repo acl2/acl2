@@ -1,2 +1,0 @@
-(include-book "../symbol-fns/symbol-fns")
-(certify-book "auxilary" ? t)

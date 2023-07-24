@@ -1,3 +1,0 @@
-(in-package "ACL2")
-; cert-flags: ? t :defaxioms-okp t
-(certify-book "bad-def1" ? t :defaxioms-okp t)

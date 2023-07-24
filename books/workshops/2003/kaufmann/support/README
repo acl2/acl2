@@ -1,9 +1,0 @@
-These supporting materials allow you to run the tool described in the paper "A
-Tool for Simplifying Files of ACL2 Definitions", on the small example described
-in that paper.  This directory should be placed under
-books/workshops/2003/kaufmann/.  It is organized into these subdirectories.
-
-input/		contains all input files
-output/		contains copies of files generated from input/ by running make
-		when standing in input/
-rtl/		rtl example from final section of the paper [see README]

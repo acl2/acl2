@@ -1,1 +1,0 @@
-(C::HIDE-OF-LAMBDA)

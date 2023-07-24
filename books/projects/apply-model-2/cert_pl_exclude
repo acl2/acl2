@@ -1,2 +1,0 @@
-This directory has a custom Makefile, so it is excluded from
-certification based on cert.pl.

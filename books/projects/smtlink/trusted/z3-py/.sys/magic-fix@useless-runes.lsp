@@ -1,1 +1,0 @@
-(SMT::MAGIC-FIX)

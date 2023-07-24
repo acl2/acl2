@@ -1,1 +1,0 @@
-(DEFTHM-STP-FN)

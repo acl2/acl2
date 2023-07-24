@@ -1,8 +1,0 @@
-vl-*.txt
-vl-lint.log
-check.log
-vl-warnings.json
-vl-warnings.ok
-ncverilog.history
-vl-warnings-suppressed.json
-vl-locations.json

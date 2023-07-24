@@ -1,4 +1,0 @@
-(LD "list-defpkg.lsp")
-
-; cert-flags: ? T
-

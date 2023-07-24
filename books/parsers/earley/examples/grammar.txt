@@ -1,5 +1,0 @@
-<S>       ::= <aux> <NP> <VP> | <VP>  | <NP> <VP>
-<NP>      ::= <proper-noun> | <det> <nominal> | <integer>
-<VP>      ::= <verb> <NP> 
-		  | <verb>
-<nominal> ::= <noun> <nominal> | <noun>

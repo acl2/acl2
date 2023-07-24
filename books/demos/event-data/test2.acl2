@@ -1,2 +1,0 @@
-; We specify :useless-runes nil so that the entirety of .sys can be removed
-; cert-flags: ? t :write-event-data t :useless-runes nil

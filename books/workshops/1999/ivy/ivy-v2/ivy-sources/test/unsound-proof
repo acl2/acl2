@@ -1,9 +1,0 @@
-;; BEGINNING OF PROOF OBJECT
-(
-(1 (input) (P) NIL)
-(2 (input) (not (Q)) NIL)
-(3 (instantiate 2 ()) (not (P)) (1))
-(4 (instantiate 1 ()) (P) (2))
-(5 (resolve 3 () 4 ()) false (3))
-)
-;; END OF PROOF OBJECT

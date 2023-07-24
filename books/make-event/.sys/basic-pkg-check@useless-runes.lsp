@@ -1,4 +1,0 @@
-(FOO::TEST1)
-(FOO::TEST2)
-(FOO::BAR)
-(FOO::BAR-PROP)

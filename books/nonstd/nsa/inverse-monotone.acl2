@@ -1,2 +1,0 @@
-(include-book "data-structures/portcullis" :dir :system)
-(certify-book "inverse-monotone" ? t)

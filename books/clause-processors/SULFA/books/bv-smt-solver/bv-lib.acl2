@@ -1,3 +1,0 @@
-(in-package "ACL2")
-; cert-flags: ? t :skip-proofs-okp t :ttags (sat sat-cl)
-(certify-book "bv-lib" ? t :skip-proofs-okp t :ttags (sat sat-cl))

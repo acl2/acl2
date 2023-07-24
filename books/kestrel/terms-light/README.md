@@ -1,1 +1,0 @@
-A lightweight library about (pseudo-)terms.

@@ -1,3 +1,0 @@
-(DOTPROD)
-(RCFN)
-(MAP-RCFN)

@@ -1,8 +1,0 @@
-(include-book "tools/run-script" :dir :system)
-(run-script "ld-history")
-
-; Help dependency scanner.
-#||
-(depends-on "ld-history-input.lsp")
-(depends-on "ld-history-log.txt")
-||#

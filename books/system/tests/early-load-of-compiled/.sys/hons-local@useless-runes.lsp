@@ -1,3 +1,0 @@
-(HL-FN
- (1 1 (:TYPE-PRESCRIPTION HL-FN))
- )

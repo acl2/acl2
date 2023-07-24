@@ -1,4 +1,0 @@
-;; Author - Harsh Raju Chamarthi (harshrc)
-
-;; [Jared] removed newline that was fooling dependency scanner.
-(ld "package.lsp")

@@ -1,2 +1,0 @@
-(BFIX-TEST1)
-(BFIX-TEST2)

@@ -1,1 +1,0 @@
-(MYDEFCONST-FN)

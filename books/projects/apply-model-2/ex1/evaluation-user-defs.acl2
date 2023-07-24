@@ -1,4 +1,0 @@
-(in-package "ACL2")
-(include-book "../portcullis")
-(include-book "evaluation-apply")
-(certify-book "evaluation-user-defs" 2)

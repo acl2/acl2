@@ -1,2 +1,0 @@
-(include-book "projects/rp-rewriter/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all

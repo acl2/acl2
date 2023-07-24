@@ -1,2 +1,0 @@
-(set-fast-cert nil state) ; see comment about this in ttag.lisp
-; cert-flags: ? t :ttags (:ttag-test)

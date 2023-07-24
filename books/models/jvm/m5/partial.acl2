@@ -1,2 +1,0 @@
-(include-book "utilities")
-(certify-book "partial" ? t)

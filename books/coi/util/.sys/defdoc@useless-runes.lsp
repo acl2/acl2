@@ -1,5 +1,0 @@
-(HREF)
-(DOCREF)
-(|n|)
-(VERBATIM)
-(QUOTED)

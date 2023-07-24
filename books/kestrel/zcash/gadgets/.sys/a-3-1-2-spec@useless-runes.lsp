@@ -1,1 +1,0 @@
-(ZCASH::CONDEQ-SPEC)

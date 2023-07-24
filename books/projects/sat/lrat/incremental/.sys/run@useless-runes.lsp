@@ -1,1 +1,0 @@
-(LRAT::LRAT-CHECK-FN)

@@ -1,2 +1,0 @@
-(include-book "theorems-a-and-b")
-(certify-book "find-k!" ? t)

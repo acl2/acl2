@@ -1,9 +1,0 @@
-(A
- (1 1 (:TYPE-PRESCRIPTION A))
- )
-(A1
- (1 1 (:TYPE-PRESCRIPTION A1))
- )
-(A2
- (1 1 (:TYPE-PRESCRIPTION A2))
- )

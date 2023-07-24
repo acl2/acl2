@@ -1,6 +1,0 @@
-(value :q)
-
-(lp)
-
-(include-book "utilities")
-(certify-book "vcg-examples" ? t)

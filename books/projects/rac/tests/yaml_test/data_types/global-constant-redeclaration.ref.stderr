@@ -1,1 +1,0 @@
-global-constant-redeclaration.cpp:4: Duplicate identifier declaration (could be an enum, a variable or template parameter) `a`

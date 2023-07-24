@@ -1,9 +1,0 @@
-(G{5}
- (1 1 (:TYPE-PRESCRIPTION G{5}))
- )
-(G{6}
- (1 1 (:TYPE-PRESCRIPTION G{6}))
- )
-(G{1}
- (1 1 (:TYPE-PRESCRIPTION G{1}))
- )

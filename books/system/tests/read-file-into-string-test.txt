@@ -1,2 +1,0 @@
-This file, which has 140 characters, should be kept in sync with the
-definition of *test-file-contents* in file read-file-into-string.lisp.

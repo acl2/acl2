@@ -1,7 +1,0 @@
-(include-book "coi/bags/top" :dir :system)
-
-#+acl2-par
-(set-waterfall-parallelism t)
-
-(certify-book "reverse-by-separation" ? t)
-

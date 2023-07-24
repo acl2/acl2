@@ -1,3 +1,0 @@
-(add-include-book-dir :itp13 "../../../proof-checker-itp13/")
-
-(include-book "portcullis" :dir :itp13)

@@ -1,8 +1,0 @@
-*.cert
-*.cert.*
-*~
-*.port
-*.lx64fsl
-temp-emacs-file.lsp
-Makefile-tmp
-.#*

@@ -1,6 +1,0 @@
-#+acl2-par
-; clause processors that modify state
-(set-waterfall-parallelism nil)
-
-(include-book "std/portcullis" :dir :system)
-

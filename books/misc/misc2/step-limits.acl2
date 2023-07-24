@@ -1,3 +1,0 @@
-#+acl2-par
-; Step counts are different when waterfall-parallelism is enabled.
-(set-waterfall-parallelism nil)

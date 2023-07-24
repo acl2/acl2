@@ -1,3 +1,0 @@
-(F)
-(INFINITE)
-(G)

@@ -1,5 +1,0 @@
-(FOO)
-(FOO2)
-(BAR)
-(FOO3)
-(FOO-OF-3)

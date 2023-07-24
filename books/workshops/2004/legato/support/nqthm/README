@@ -1,7 +1,0 @@
-Prior to processing the event files in this directory one must create the
-modularithmetic-98 arithmetic proof library.  This is done by bringing
-up nqthm-1992 within this directory, and executing the following command.
-
-(prove-file "modularithmetic-98")
-
-The remaining event files should then prove uneventfully.

@@ -1,4 +1,0 @@
-(F)
-(G)
-(H)
-(H-IMPLIES-CONSP)

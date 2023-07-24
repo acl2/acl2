@@ -1,5 +1,0 @@
-; cert.acl2
-; Just loads relevant packages
-
-(in-package "ACL2")
-; cert-flags: ? t

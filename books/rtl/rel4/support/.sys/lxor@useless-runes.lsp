@@ -1,6 +1,0 @@
-(FL)
-(BITS)
-(BITN)
-(LNOT)
-(BVECP)
-(ALL-ONES)

@@ -1,2 +1,0 @@
-(include-book "centaur/misc/iter" :dir :system)
-(certify-book "APSP" ?)

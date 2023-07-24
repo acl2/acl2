@@ -1,1 +1,0 @@
-(SIDEKICK::FORMAT$-FN)
