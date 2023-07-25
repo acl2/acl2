@@ -1,7 +1,7 @@
 (in-package "DM")
 
 (include-book "projects/groups/groups" :dir :system)
-(include-book "support/sum4squares")
+(local (include-book "support/sum4squares"))
 
 ;; A list of 4 integers:
 
@@ -281,7 +281,7 @@
  	     (and (posp r)
 	          (< r m)))))
 	      
-;; Applying reduce-int4 recursively, we have an int4 with sum of sqares p:
+;; Applying reduce-int4 recursively, we have an int4 with sum of squares p:
 
 (defun int4-prime-aux (l p)
   (declare (xargs :measure (nfix (sum-squares l))))
