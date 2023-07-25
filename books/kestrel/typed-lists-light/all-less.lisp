@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; Somewhat similar to bounded-integer-listp, which is built-in.
+
 (include-book "kestrel/sequences/defforall" :dir :system)
 
 ;; Checks whether each element of X is less than N.
