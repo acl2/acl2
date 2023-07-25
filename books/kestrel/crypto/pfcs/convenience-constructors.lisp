@@ -50,6 +50,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define constraint/constraintlist-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognize constraints and lists of constraints."
+  (or (constraintp x)
+      (constraint-listp x))
+  ///
+
+  (defrule constraint/constraintlist-p-when-constraintp
+    (implies (constraintp x)
+             (constraint/constraintlist-p x)))
+
+  (defrule constraint/constraintlist-p-when-constraint-listp
+    (implies (constraint-listp x)
+             (constraint/constraintlist-p x)))
+
+  (defrule not-constraintp-when-constraint-listp
+    (implies (pfcs::constraint-listp x)
+             (not (pfcs::constraintp x)))
+    :rule-classes :tau-system
+    :enable pfcs::constraintp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist constraint/constraintlist-listp (x)
+  :short "Recognize lists of constraints and lists of constraints."
+  (constraint/constraintlist-p x)
+  :true-listp t
+  :elementp-of-nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ pfconst (c)
   :short "Construct a constant expression."
   `(pfcs::expression-const ,c))
@@ -113,12 +144,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ pfdef (defname params &rest constraints)
+(defsection pfdef
   :short "Construct a definition with zero or more constraints."
-  `(pfcs::make-definition
-    :name ,defname
-    :para ,params
-    :body (list ,@constraints)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each of the @('constraints') arguments of this macro may be
+     either (a term returning) a single constraint
+     or (a term returning) a list of constraints.")
+   (xdoc::@def "pdef"))
+
+  (define pfdef-join ((list constraint/constraintlist-listp))
+    :returns (constrs constraint-listp)
+    :parents nil
+    (b* (((when (endp list)) nil)
+         (first (car list)))
+      (cond ((constraintp first) (cons first (pfdef-join (cdr list))))
+            ((constraint-listp first) (append first (pfdef-join (cdr list))))
+            (t (acl2::impossible))))
+    :enabled t
+    :guard-hints (("Goal" :in-theory (enable constraint/constraintlist-p))))
+
+  (defmacro pfdef (defname params &rest constraints)
+    `(pfcs::make-definition
+      :name ,defname
+      :para ,params
+      :body (pfdef-join (list ,@constraints)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
