@@ -23,7 +23,7 @@
 
   (make-event
    (mv-let (tree state)
-     (abnf::parse-grammar-from-file "pdf-grammar.txt" state)
+     (abnf::parse-grammar-from-file "pdf-grammar.abnf" state)
      (value `(defconst *pdf-grammar-rules*
                (abnf::abstract-rulelist ',tree)))))
 
