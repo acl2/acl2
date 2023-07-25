@@ -62,6 +62,9 @@ number theory.  It includes the following ACL2 books:
       n consisting of odd integers is equal to the number of equivalence classes of 
       partitions of n consisting of distinct integers.
 
+  sum4squares
+      Every natural number is a sum of 4 squares.
+
   z2q
       A bijection from the integers to the rartionals
 
