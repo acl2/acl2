@@ -18,6 +18,7 @@
 
 (local (include-book "times-and-divide"))
 (local (include-book "times"))
+(local (include-book "minus"))
 (local (include-book "divide"))
 (local (include-book "plus"))
 (local (include-book "floor"))
@@ -312,15 +313,98 @@
 (theory-invariant (incompatible (:rewrite expt-of-*)
                                 (:rewrite *-of-expt-and-expt-same-exponent)))
 
+;gen?
+(local
+ (defthm <-of-expt-and-1-small-base
+  (implies (and (< r 1)
+                (<= 0 r)
+                (rationalp r)
+                (posp i))
+           (< (expt r i) 1))
+  :hints (("Goal" :in-theory (enable expt)))))
+
 (defthmd expt-monotone-strong
   (implies (and (< i j)
-                (< 1 r)
+                (< 1 r) ; this case
                 (rationalp r)
                 (integerp i)
                 (integerp j))
            (< (expt r i) (expt r j)))
   :hints (("Goal" :in-theory (enable expt-of-+ zip)
            :induct (EXPT-double-induct r i j))))
+
+(defthm expt-type-small-base-negative-exponent
+  (implies (and (< r 1) ; unusual
+                (< i 0) ; unusual
+                (< 0 r)
+                (integerp i)
+                (rationalp r))
+           (< 1 (expt r i)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm expt-type-small-base-non-positive-exponent
+  (implies (and (<= r 1) ; unusual
+                (<= i 0) ; unusual
+                (< 0 r)
+                (integerp i)
+                (rationalp r))
+           (<= 1 (expt r i)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable expt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthm <-of-expt-and-expt-small-base
+   (implies (and (< r 1) ; this case
+                 (< 0 r) ; this case
+                 (rationalp r)
+                 (integerp i1)
+                 (integerp i2))
+            (equal (< (expt r i1) (expt r i2))
+                   (< i2 i1)))
+   :hints (("Goal" :in-theory (enable expt-of-+ zip)
+            :induct (expt-double-induct r i2 i1)))))
+
+(local
+ (defthmd <-of-expt-and-expt-large-base-helper
+  (implies (and (< (expt r i) (expt r j))
+                (< 1 r)
+                (rationalp r)
+                (integerp i)
+                (integerp j))
+           (< i j))
+  :hints (("Goal" :in-theory (enable expt-of-+ zip)
+           :induct (expt-double-induct r i j)))))
+
+(local
+ (defthm <-of-expt-and-expt-large-base
+   (implies (and (< 1 r)
+                 (rationalp r)
+                 (integerp i)
+                 (integerp j))
+            (equal (< (expt r i) (expt r j))
+                   (< i j)))
+   :hints (("Goal" :use (:instance <-of-expt-and-expt-large-base-helper
+                                   (i 0)
+                                   (j (+ (- i) j)))
+            :in-theory (e/d (expt-monotone-strong expt-of-+)
+                            (<-of-1-and-expt-gen))))))
+
+;todo: rename vars
+(defthm <-of-expt-and-expt
+  (implies (and (< 0 r) ; todo: handle 0?
+                (rationalp r)
+                (integerp i)
+                (integerp j))
+           (equal (< (expt r i) (expt r j))
+                  (if (< r 1)
+                      (< j i)
+                    (if (equal r 1)
+                        nil
+                      ;; usual case:
+                      (< i j))))))
 
 (defthm <-of-expt-and-expt-linear
   (implies (and (< i1 i2)
@@ -337,31 +421,9 @@
                 (integerp i2))
            (< (expt r i1) (expt r i2)))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable expt-monotone-strong)))
-  )
+  :hints (("Goal" :in-theory (enable expt-monotone-strong))))
 
-(defthmd <-of-expt-and-expt-helper
-  (implies (and (< (expt r i) (expt r j))
-                (< 1 r)
-                (rationalp r)
-                (integerp i)
-                (integerp j))
-           (< i j))
-  :hints (("Goal" :in-theory (enable expt-of-+ zip)
-           :induct (expt-double-induct r i j))))
-
-(defthm <-of-expt-and-expt
-  (implies (and (< 1 r)
-                (rationalp r)
-                (integerp i)
-                (integerp j))
-           (equal (< (expt r i) (expt r j))
-                  (< i j)))
-  :hints (("Goal" :use (:instance <-of-expt-and-expt-helper
-                                  (i 0)
-                                  (j (+ (- I) J)))
-           :in-theory (e/d (expt-monotone-strong expt-of-+)
-                           (<-OF-1-AND-EXPT-GEN)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm expt-of-/
   (equal (expt (/ x y) i)
@@ -426,15 +488,7 @@
 
 ;; TODO: Make some of these non-local?
 
-;gen?
-(local
- (defthm <-of-expt-and-1
-  (implies (and (< r 1)
-                (<= 0 r)
-                (rationalp r)
-                (posp i))
-           (< (expt r i) 1))
-  :hints (("Goal" :in-theory (enable expt)))))
+
 
 (local
  (defthmd <-of-expt-and-1-linear
@@ -796,14 +850,63 @@
                  (:instance equal-of-expt-and-expt-same-exponent-helper (r1 (- r1)) (r2 r2))
                  (:instance equal-of-expt-and-expt-same-exponent-helper (r1 r1) (r2 (- r2)))))))
 
+
+(local
+ (defthm equal-of-expt-and-expt-same-base-small-base
+   (implies (and (rationalp r)
+                 (< 0 r) ; todo: allow 0 but consider 0^1
+                 (< r 1)
+                 (integerp i1)
+                 (integerp i2))
+            (equal (equal (expt r i1) (expt r i2))
+                   (or (equal r 0)
+                       (equal i1 i2))))
+   :hints (("Goal" :use ((:instance <-of-expt-and-expt-small-base)
+                         (:instance <-of-expt-and-expt-small-base (i1 i2) (i2 i1)))
+            :in-theory (e/d (zip) (<-of-expt-and-expt-small-base
+                                   <-of-expt-and-expt))))))
+
+(local
+ (defthm equal-of-expt-and-expt-same-base-large-base
+   (implies (and (rationalp r)
+                 (<= 1 r) ;this case
+                 (integerp i1)
+                 (integerp i2))
+            (equal (equal (expt r i1) (expt r i2))
+                   (or (equal r 1)
+                       (equal i1 i2))))
+   :hints (("Goal" :cases ((< i1 i2) (< i2 i1))))))
+
+(local
+ (defthm equal-of-expt-and-expt-same-base-helper
+   (implies (and (rationalp r)
+                 (<= 0 r) ; this case
+                 (integerp i1)
+                 (integerp i2))
+            (equal (equal (expt r i1) (expt r i2))
+                   (if (equal r 0)
+                       ;; either both exponents are 0, giving 0^0=1, or both are not 0, giving 0.
+                       (iff (equal i1 0) (equal i2 0))
+                     (or (equal r 1)
+                         (equal i1 i2)))))
+   :hints (("Goal" :cases ((< r 1))))))
+
 (defthm equal-of-expt-and-expt-same-base
   (implies (and (rationalp r)
-                (< 1 r) ;todo: gen?
                 (integerp i1)
                 (integerp i2))
            (equal (equal (expt r i1) (expt r i2))
-                  (equal i1 i2)))
-  :hints (("Goal" :cases ((< i1 i2) (< i2 i1)))))
+                  (if (equal r 0)
+                      ;; either both exponents are 0, giving 0^0=1, or both are not 0, giving 0.
+                      (iff (equal i1 0) (equal i2 0))
+                    (if (equal r 1)
+                        t
+                      (if (equal r -1)
+                          (iff (evenp i1) (evenp i2))
+                        (equal i1 i2))))))
+  :hints (("Goal" :use ((:instance equal-of-expt-and-expt-same-base-helper)
+                        (:instance equal-of-expt-and-expt-same-base-helper (r (- r))))
+           :in-theory (disable equal-of-expt-and-expt-same-base-helper))))
 
 ;; could loop with the definition of expt?
 (defthmd *-of-expt-of-one-less
