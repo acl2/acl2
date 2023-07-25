@@ -71,13 +71,12 @@ start-dict = %x3c.3c        ; <<<
 end-dict = %x3e.3e          ; >>
 
 ws = *(
-	
-		%x00 /				; null
+	%x00 /		    ; null
         %x09 /              ; Horizontal tab
         %x0A /              ; Line feed or New line
         %x0C /              ; Form feed 
         %x0D /  ; Carriage return
-        %x20               ; Space
+        %x20                ; Space
         )             
 
 digit1-9 = %x31-39         ; 1-9
