@@ -113,17 +113,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: make this lowercase?
-(defun print-to-string (item)
-  (declare (xargs :mode :program))
-  (mv-let (col string)
-    (fmt1-to-string "~X01" (acons #\0 item (acons #\1 nil nil)) 0
-                    :fmt-control-alist
-                    `((fmt-soft-right-margin . 10000)
-                      (fmt-hard-right-margin . 10000)))
-    (declare (ignore col))
-    string))
-
 (defun abbreviate-event (event)
   (declare (xargs :guard t
                   :mode :program))
@@ -442,7 +431,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (prog2$
-   (and print (cw " (For ~x0: " (first (rest event))))
+   (and print (cw " (For ~x0:" (first (rest event))))
    (let* ((defthm-variant (first event))
           (defthm-args (rest event))
           (name (first defthm-args))
@@ -492,7 +481,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (progn$
-   (and print (cw " (For ~x0: " (first (rest event))))
+   (and print (cw " (For ~x0:" (first (rest event))))
    ;; todo: try to improve hints, etc.
    ;; Must submit it before we lint it:
    (mv-let (erp state)
@@ -517,7 +506,7 @@
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (prog2$
-   (and print (cw " (For ~x0: " (first (rest event))))
+   (and print (cw " (For ~x0:" (first (rest event))))
    (mv-let (erp state)
      (speed-up-defrule event state)
      (declare (ignore erp)) ; todo: why?
@@ -531,7 +520,7 @@
                   :stobjs state)
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
-  (prog2$ (and print (cw " (For ~x0: )~%" event))
+  (prog2$ (and print (cw " (For ~x0:)~%" event))
           (mv nil state)))
 
 ;; ;; Test whether the given book is incldued in the wrld.  FILENAME should include the .lisp extension.
@@ -676,10 +665,38 @@
           ;; todo: do local incompat checking without include-books (or making them local) here?
           (improve-events-aux events initial-included-books print state)))
 
+;move
+(defund maybe-add-book-extension (book)
+  (declare (xargs :guard (stringp book)))
+  (if (string-ends-withp book ".lisp") ; tolerate existing .lisp extension
+      book
+    (concatenate 'string book ".lisp")))
+
+;; Returns (mv erp forms full-book-path state).
+;move
+(defund read-book-contents (bookname
+                            dir ; todo: allow keyword dirs
+                            state)
+  (declare (xargs :guard (and (stringp bookname)
+                              (or (eq :cbd dir)
+                                  (stringp dir)))
+                  :mode :program ; todo
+                  :stobjs state))
+  (let* ((file-name (maybe-add-book-extension bookname))
+         (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
+    (mv-let (existsp state)
+      (file-write-date$ full-book-path state)
+      (if (not existsp)
+          (prog2$ (er hard? 'read-book-contents "~s0 does not exist." full-book-path)
+                  (mv :file-does-not-exist nil full-book-path state))
+        (mv-let (erp events state)
+          (read-objects-from-book full-book-path state)
+          (mv erp events full-book-path state))))))
+
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
-(defun improve-book-fn-aux (bookname ; no extension
-                            dir
+(defun improve-book-fn-aux (bookname ; may include .lisp extension
+                            dir      ; todo: allow a keyword?
                             print
                             state)
   (declare (xargs :guard (and (stringp bookname)
@@ -688,40 +705,30 @@
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this calls submit-events
                   :stobjs state))
-  (let* ((file-name (if (string-ends-withp bookname ".lisp") ; tolerate existing .lisp extension
-                        bookname
-                      (concatenate 'string bookname ".lisp")))
-         (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
-    (mv-let (existsp state)
-      (file-write-date$ full-book-path state)
-      (if (not existsp)
-          (prog2$ (er hard? 'improve-book-fn-aux "~s0 does not exist." full-book-path)
-                  (mv :file-does-not-exist state))
-        (let ((state (widen-margins state)))
-          (prog2$
-           (and print (cw "~%~%(IMPROVING ~x0.~%" full-book-path)) ; matches the close paren below
-           (let* ((old-cbd (cbd-fn state))
-                  (full-book-dir (dir-of-path full-book-path))
-                  (initial-included-books (all-included-books (w state)))
-                  ;; We set the CBD so that the book is replayed in its own directory:
-                  (state (set-cbd-simple full-book-dir state))
-                  ;; Load the .port file, so that packages (especially) exist:
-                  (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state)))
-             (mv-let (erp events state)
-               (read-objects-from-book full-book-path state)
-               (if erp
-                   (let* ((state (unwiden-margins state))
-                          (state (set-cbd-simple old-cbd state)))
-                     (mv erp state))
-                 (progn$ (and (eq print :verbose) (cw "  Book contains ~x0 forms.~%~%" (len events)))
-                         (mv-let (erp state)
-                           (improve-events events initial-included-books print state)
-                           (let* ((state (unwiden-margins state))
-                                  (state (set-cbd-simple old-cbd state)))
-                             (prog2$ (cw ")")
-                                     (mv erp state))))))))))))))
+  (mv-let (erp events full-book-path state)
+    (read-book-contents bookname dir state)
+    (if erp
+        (mv erp state)
+      (let ((state (widen-margins state)))
+        (prog2$
+         (and print (cw "~%~%(IMPROVING ~x0.~%" full-book-path)) ; matches the close paren below
+         (let* ((old-cbd (cbd-fn state))
+                (full-book-dir (dir-of-path full-book-path))
+                ;; We set the CBD so that the book is replayed in its own directory:
+                (state (set-cbd-simple full-book-dir state))
+                ;; Load the .port file, so that packages (especially) exist:
+                (state (load-port-file-if-exists (strip-suffix-from-string ".lisp" full-book-path) state))
+                ;; We cannot try omitting these from the book:
+                (initial-included-books (all-included-books (w state))))
+           (progn$ (and (eq print :verbose) (cw "  Book contains ~x0 forms.~%~%" (len events)))
+                   (mv-let (erp state)
+                     (improve-events events initial-included-books print state)
+                     (let* ((state (unwiden-margins state))
+                            (state (set-cbd-simple old-cbd state)))
+                       (prog2$ (cw ")")
+                               (mv erp state)))))))))))
 
-;; Returns (mv erp nil state).
+;; Returns (mv erp nil state).  Does not change the world.
 (defun improve-book-fn (bookname ; no extension
                         dir
                         print
