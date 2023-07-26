@@ -152,7 +152,7 @@
     "Each of the @('constraints') arguments of this macro may be
      either (a term returning) a single constraint
      or (a term returning) a list of constraints.")
-   (xdoc::@def "pdef"))
+   (xdoc::@def "pfdef"))
 
   (define pfdef-join ((list constraint/constraintlist-listp))
     :returns (constrs constraint-listp)
