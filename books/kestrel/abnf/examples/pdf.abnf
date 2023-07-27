@@ -42,7 +42,7 @@ trailer-marker = %x74.72.61.69.6c.65.72 ;
 
 dictionary = start-dict *dict-entry end-dict ;
 
-dict-entry =  type-entry / reference-entry / reference-array-entry / rectange-entry / number-entry / name-entry / font-entry / default-entry 
+dict-entry =  type-entry / reference-entry / reference-array-entry / rectange-entry / number-entry / name-entry / font-entry / default-entry
 
 default-entry = dict-key ws dict-value ;
 
@@ -52,7 +52,7 @@ reference-entry = %s"/Parent" / %s"/Pages" / %s"/Contents" / %s"/Resources" refe
 
 reference-array-entry = %s"/Kids" reference-array
 
-rectange-entry = %s"/MediaBox" / %s"CropBox" rectangle 
+rectange-entry = %s"/MediaBox" / %s"CropBox" rectangle
 
 number-entry = (%s"/Count") / (%s"/Length") number
 
@@ -74,10 +74,10 @@ ws = *(
 	%x00 /		    ; null
         %x09 /              ; Horizontal tab
         %x0A /              ; Line feed or New line
-        %x0C /              ; Form feed 
+        %x0C /              ; Form feed
         %x0D /  ; Carriage return
         %x20                ; Space
-        )             
+        )
 
 digit1-9 = %x31-39         ; 1-9
 
@@ -89,7 +89,7 @@ array = left-bracket *char right-bracket
 
 reference-array = left-bracket *reference right-bracket
 
-reference = int %x20 zero %x52 
+reference = int %x20 zero %x52
 
 rectangle = left-bracket number number number number right-bracket
 
@@ -103,7 +103,7 @@ null = %s"null"
 
 name = slash name-char
 
-name-char =  %x20-7e 
+name-char =  %x20-7e
 
 real = int period int
 
