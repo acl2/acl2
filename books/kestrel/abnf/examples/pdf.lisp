@@ -7,12 +7,10 @@
 ; Authors: Letitia Li (letitia.li@baesystems.com)
 ;          Alessandro Coglio (coglio@kestrel.edu)
 
-
 (in-package "ACL2")
 
-(include-book "kestrel/abnf/parser" :dir :system)
-(include-book "kestrel/abnf/abstractor" :dir :system)
-(include-book "kestrel/abnf/parser-generators" :dir :system)
+(include-book "../grammar-parser/executable")
+(include-book "../notation/syntax-abstraction")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
