@@ -20,7 +20,7 @@
 ; and check that it is well-formed and closed.
 
 (defsection *pdf-grammar-rules*
-  :parents (pdf-example)
+  :parents (examples)
 
   (make-event
    (mv-let (tree state)
