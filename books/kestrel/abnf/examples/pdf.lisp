@@ -11,6 +11,8 @@
 
 (include-book "../grammar-parser/executable")
 (include-book "../notation/syntax-abstraction")
+(include-book "../operations/well-formedness")
+(include-book "../operations/closure")
 
 ; (depends-on "pdf.abnf")
 
