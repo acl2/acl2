@@ -12,6 +12,8 @@
 (include-book "../grammar-parser/executable")
 (include-book "../notation/syntax-abstraction")
 
+; (depends-on "pdf.abnf")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Parse the ABNF grammar of PDF into ACL2,
