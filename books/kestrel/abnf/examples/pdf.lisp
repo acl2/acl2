@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Letitia Li (letitia.li@baesystems.com), Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Letitia Li (letitia.li@baesystems.com)
+;          Alessandro Coglio (coglio@kestrel.edu)
 
 
 (in-package "ACL2")
