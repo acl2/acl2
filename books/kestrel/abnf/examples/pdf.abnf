@@ -42,7 +42,7 @@ trailer-marker = %x74.72.61.69.6c.65.72 ;
 
 dictionary = start-dict *dict-entry end-dict ;
 
-dict-entry =  type-entry / reference-entry / reference-array-entry / rectange-entry / number-entry / name-entry / font-entry / default-entry
+dict-entry =  type-entry / reference-entry / reference-array-entry / rectangle-entry / number-entry / name-entry / font-entry / default-entry
 
 default-entry = dict-key ws dict-value ;
 
@@ -52,7 +52,7 @@ reference-entry = %s"/Parent" / %s"/Pages" / %s"/Contents" / %s"/Resources" refe
 
 reference-array-entry = %s"/Kids" reference-array
 
-rectange-entry = %s"/MediaBox" / %s"CropBox" rectangle
+rectangle-entry = %s"/MediaBox" / %s"CropBox" rectangle
 
 number-entry = (%s"/Count") / (%s"/Length") number
 
@@ -64,7 +64,7 @@ font = start-dict name reference end-dict
 
 dict-key = backslash *char ;
 
-dict-value = boolean / number / name / array / dictionary / null / rectange / reference / string ;
+dict-value = boolean / number / name / array / dictionary / null / rectangle / reference / string ;
 
 start-dict = %x3c.3c        ; <<<
 
