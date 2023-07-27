@@ -58,7 +58,7 @@ number-entry = (%s"/Count") / (%s"/Length") number
 
 name-entry = (%s"/Subtype") / (%s"/BaseFont") / (%s"/Encoding") name
 
-font-entry %s"/Font" font
+font-entry = %s"/Font" font
 
 font = start-dict name reference end-dict
 
