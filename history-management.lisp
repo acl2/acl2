@@ -4479,6 +4479,27 @@
                                        form))
                               (t (value val)))))))))
 
+(defmacro acl2-unwind-protect-alt (expl body cleanup1 cleanup2)
+
+; This differs from acl2-unwind-protect only in the criteria for evaluating
+; cleanup1 as opposed to cleanup2.  For acl2-unwind-protect, cleanup1 is
+; evaluated in either of two circumstances: when body evaluates normally and
+; produces a non-nil error in the returned error-triple, and when body fails to
+; complete (typically due to an interrupt or a hard error, though control-c
+; during a proof typically does not cause an interrupt; see our-abort).  For
+; acl2-unwind-protect-alt, cleanup1 is evaluated only in the latter case.
+
+  `(mv-let (erp val state)
+     (acl2-unwind-protect
+      ,expl
+      (mv-let (aupa-erp aupa-val state) ; "aupa" for acl2-unwind-protect-alt
+        ,body
+        (value (cons aupa-erp aupa-val)))
+      ,cleanup1
+      ,cleanup2)
+     (assert$ (null erp)
+              (mv (car val) (cdr val) state))))
+
 (defmacro with-ctx-summarized (ctx body &key event-type event)
 
 ; A typical use of this macro by an event creating function is:
@@ -4519,40 +4540,62 @@
                   ,ctx))
          (saved-wrld (w state)))
      (pprogn (initialize-summary-accumulators state)
-             (mv-let
-              (erp val state)
-              (save-event-state-globals
-               (mv-let (erp val state)
-                 (acl2-unwind-protect
-                  "with-ctx-summarized"
-                  (er-progn
-                   (xtrans-eval-state-fn-attachment
-                    (initialize-event-user ',ctx ',body)
-                    ctx)
-                   ,body)
-                  (print-summary t ; erp
-                                 (equal saved-wrld (w state))
-                                 ,event-type ,event
-                                 ctx state)
-                  (print-summary nil ; erp
-                                 (equal saved-wrld (w state))
-                                 ,event-type ,event
-                                 ctx state))
-                 (pprogn
-                  (if erp
-                      (print-failure
-                       erp
-                       ,(if (eq event-type 'make-event-save-event-data)
-                            'make-event
-                          event-type)
-                       (f-get-global 'accumulated-ttree state)
-                       ctx state)
-                    state)
-                  (er-progn
-                   (xtrans-eval-state-fn-attachment
-                    (finalize-event-user ',ctx ',body)
-                    ctx)
-                   (mv erp val state)))))
+             (mv-let (erp val state)
+               (save-event-state-globals
+                (acl2-unwind-protect-alt
+
+; With this acl2-unwind-protect-alt, we call print-failure in two cases: when
+; evaluation completes normally (including the body and, when not inhibited,
+; the summary), and when there is a hard error or interrupt.  In the latter
+; case we will not have called print-failure yet; so, the only danger of
+; calling print-failure more than once is when it is interrupted, presumably
+; during the printing of checkpoints.  However, that printing is done by
+; function save-and-print-gag-state, which first sets the global gag-state to
+; nil -- so a second call of print-failure won't print any checkpoints.
+
+                 "with-ctx-summarized1"
+                 (mv-let (erp val state)
+                   (acl2-unwind-protect
+
+; With this acl2-unwind-protect, we ensure that the summary is printed exactly
+; once regardless of what happens when evaluating body.
+
+                    "with-ctx-summarized2"
+                    (er-progn
+                     (xtrans-eval-state-fn-attachment
+                      (initialize-event-user ',ctx ',body)
+                      ctx)
+                     ,body)
+                    (print-summary t ; erp
+                                   (equal saved-wrld (w state))
+                                   ,event-type ,event
+                                   ctx state)
+                    (print-summary nil ; erp
+                                   (equal saved-wrld (w state))
+                                   ,event-type ,event
+                                   ctx state))
+                   (pprogn
+                    (if erp
+                        (print-failure
+                         erp
+                         ,(if (eq event-type 'make-event-save-event-data)
+                              'make-event
+                            event-type)
+                         (f-get-global 'accumulated-ttree state)
+                         ctx state)
+                      state)
+                    (er-progn
+                     (xtrans-eval-state-fn-attachment
+                      (finalize-event-user ',ctx ',body)
+                      ctx)
+                     (mv erp val state))))
+                 (print-failure t
+                                ,(if (eq event-type 'make-event-save-event-data)
+                                     'make-event
+                                   event-type)
+                                (f-get-global 'accumulated-ttree state)
+                                ctx state)
+                 state))
 
 ; In the case of a compound event such as encapsulate, we avoid saving io?
 ; forms for proof replay that were generated after a failed proof attempt,
@@ -4562,8 +4605,8 @@
 ; pop-warning-frame); could the pushes be only from io? forms saved inside the
 ; defthm, even though pops are saved from the enclosing encapsulate?
 
-              (pprogn (f-put-global 'saved-output-p nil state)
-                      (mv erp val state))))))
+               (pprogn (f-put-global 'saved-output-p nil state)
+                       (mv erp val state))))))
 
 (defmacro revert-world-on-error (form)
 

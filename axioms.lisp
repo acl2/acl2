@@ -9485,6 +9485,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro acl2-unwind-protect (expl body cleanup1 cleanup2)
 
+; See the Essay on Unwind-Protect.  See also acl2-unwind-protect-alt.
+
 ; Warning: Keep in sync with acl2-unwind-protect-raw.
 
 ; Note: If the names used for the erp and val results are changed in the #+
