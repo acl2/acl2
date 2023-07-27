@@ -19,6 +19,7 @@
 
 (defsection *pdf-grammar-rules*
   :parents (examples)
+  :short "The ABNF grammar of the PDF (Portable Document Format) syntax."
 
   (make-event
    (mv-let (tree state)
