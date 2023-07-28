@@ -136,6 +136,13 @@
                   (+ (expt 2 n) (lognot (mod i (expt 2 n))))))
   :hints (("Goal" :in-theory (enable lognot mod-sum-cases))))
 
+(defthm mod-of-lognot-of-mod-of-expt-and-expt
+  (implies (and (integerp i)
+                (natp n))
+           (equal (mod (lognot (mod i (expt 2 n))) (expt 2 n))
+                  (mod (lognot i) (expt 2 n))))
+  :hints (("Goal" :in-theory (enable lognot mod-sum-cases))))
+
 (defthm floor-of-lognot-and-expt
   (implies (and (integerp i)
                 (natp n))
