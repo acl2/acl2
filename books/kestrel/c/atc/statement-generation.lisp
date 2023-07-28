@@ -201,23 +201,48 @@
    (xdoc::p
     "The @('loop-flag') component is
      the loop flag @('L') described in the user documentation."))
-  ((context atc-contextp)
-   (var-term-alist symbol-pseudoterm-alist)
-   (typed-formals atc-symbol-varinfo-alist)
-   (inscope atc-symbol-varinfo-alist-list)
-   (loop-flag booleanp)
-   (affect symbol-list)
-   (fn symbolp)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (fenv-var symbol)
-   (limit-var symbol)
-   (prec-fns atc-symbol-fninfo-alist)
-   (prec-tags atc-string-taginfo-alist)
-   (prec-objs atc-string-objinfo-alist)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+  ((context atc-contextp
+            "Described in @(see atc-implementation).
+             It is the context just before this statement,
+             i.e. the context in which this statement is generated.")
+   (var-term-alist symbol-pseudoterm-alist
+                   "Described in @(see atc-implementation).")
+   (typed-formals atc-symbol-varinfo-alist
+                  "Described in @(see atc-implementation).")
+   (inscope atc-symbol-varinfo-alist-list
+            "Described in @(see atc-implementation).
+             It contains the variables in scope just before this statement,
+             i.e. the ones in scope for this statement.")
+   (loop-flag booleanp
+              "The @('L') flag described in the user documentation.")
+   (affect symbol-list
+           "Described in @(see atc-implementation).")
+   (fn symbolp
+       "Described in @(see atc-implementation).
+        It is the target function for which the statement is generated.")
+   (fn-guard symbol
+             "Described in @(see atc-implementation).")
+   (compst-var symbol
+               "Described in @(see atc-implementation).")
+   (fenv-var symbol
+             "Described in @(see atc-implementation).")
+   (limit-var symbol
+              "Described in @(see atc-implementation).")
+   (prec-fns atc-symbol-fninfo-alist
+             "Described in @(see atc-implementation).")
+   (prec-tags atc-string-taginfo-alist
+              "Described in @(see atc-implementation).")
+   (prec-objs atc-string-objinfo-alist
+              "Described in @(see atc-implementation).")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation).")
+   (proofs bool
+           "A flag indicating whether modular proof generation
+            should continue or not.
+            This will be eliminated when modular proof generation
+            will cover all of the ATC-generated code."))
   :pred stmt-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -229,23 +254,40 @@
    (xdoc::p
     "We actually generate a list of block items.
      These can be regarded as forming a compound statement,
-     but lists of block items are compositional (via concatenation).")
-   (xdoc::p
-    "The type is the one returned by the block items.
-     It may be @('void').")
-   (xdoc::p
-    "The @('limit') component is a term that desscribes a value
-     that suffices for @(tsee exec-block-item-list)
-     to execute the block items completely."))
-  ((items block-item-list)
-   (type type)
-   (term pseudo-termp)
-   (context atc-context)
-   (limit pseudo-term)
-   (events pseudo-event-form-list)
-   (thm-name symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
+     but lists of block items are compositional (via concatenation)."))
+  ((items block-item-list
+          "We actually generate a list of block items.
+           These can be regarded as forming a compound statement,
+           but lists of block items are compositional (via concatenation).")
+   (type type
+         "The type returned by the block items.
+          It may be @('void').")
+   (term pseudo-termp
+         "The term from which the block items are generated.")
+   (context atc-context
+            "Described in @(see atc-implementation).
+             It is the context after the block items,
+             i.e. the context for subsequent block items (if any).")
+   (limit pseudo-term
+          "Symbolic limit value
+           that suffices for @(tsee exec-block-item-list)
+           to execute the block items completely.")
+   (events pseudo-event-form-list
+           "All the events generated for the block items.")
+   (thm-name symbol
+             "The name of the theorem about @(tsee exec-block-item-list)
+              applied to the block items.
+              This theorem is one of the events in @('events').
+              It is @('nil') if no theorem was generated,
+              because modular proof generation does is not yet available
+              for some constructs;
+              eventually this will be never @('nil'),
+              when modular proof generation covers
+              all the ATC-generated code.")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation)."))
   :pred stmt-goutp)
 
 ;;;;;;;;;;
