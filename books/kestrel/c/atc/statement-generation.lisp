@@ -1069,17 +1069,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-list-one ((term pseudo-termp)
-                                     (item block-itemp)
-                                     (item-limit pseudo-termp)
-                                     (item-events pseudo-event-form-listp)
-                                     (item-thm symbolp)
-                                     (result-term pseudo-termp)
-                                     (result-type typep)
-                                     (new-compst "An untranslated term.")
-                                     (new-context atc-contextp)
-                                     (gin stmt-ginp)
-                                     state)
+(define atc-gen-block-item-list-one
+  ((term pseudo-termp)
+   (item block-itemp)
+   (item-limit pseudo-termp)
+   (item-events pseudo-event-form-listp)
+   (item-thm symbolp)
+   (result-term pseudo-termp)
+   (result-type typep)
+   (new-compst "An untranslated term.")
+   (new-context atc-contextp)
+   (new-inscope atc-symbol-varinfo-alist-listp)
+   (gin stmt-ginp)
+   state)
   :returns (gout stmt-goutp)
   :short "Generate a list of C block items that consists of a given item."
   :long
@@ -1109,7 +1111,10 @@
      @('compustatep-of-if*-when-both-compustatep')
      serves to show that @(tsee compustatep) holds on the @(tsee if*),
      as needed during the proof,
-     without having to expand the @(tsee if*)."))
+     without having to expand the @(tsee if*).")
+   (xdoc::p
+    "The @('new-inscope') input is the variable table
+     just after the block item."))
   (b* (((stmt-gin gin) gin)
        (wrld (w state))
        (items (list item))
@@ -1184,7 +1189,7 @@
      :type result-type
      :term term
      :context new-context
-     :inscope nil ; TODO
+     :inscope new-inscope
      :limit items-limit
      :events (append item-events (list event))
      :thm-name name
@@ -1193,19 +1198,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-list-cons ((term pseudo-termp)
-                                      (item block-itemp)
-                                      (item-limit pseudo-termp)
-                                      (item-events pseudo-event-form-listp)
-                                      (item-thm symbolp)
-                                      (items block-item-listp)
-                                      (items-limit pseudo-termp)
-                                      (items-events pseudo-event-form-listp)
-                                      (items-thm symbolp)
-                                      (items-type typep)
-                                      (new-context atc-contextp)
-                                      (gin stmt-ginp)
-                                      state)
+(define atc-gen-block-item-list-cons
+  ((term pseudo-termp)
+   (item block-itemp)
+   (item-limit pseudo-termp)
+   (item-events pseudo-event-form-listp)
+   (item-thm symbolp)
+   (items block-item-listp)
+   (items-limit pseudo-termp)
+   (items-events pseudo-event-form-listp)
+   (items-thm symbolp)
+   (items-type typep)
+   (new-context atc-contextp)
+   (new-inscope atc-symbol-varinfo-alist-listp)
+   (gin stmt-ginp)
+   state)
   :returns (gout stmt-goutp)
   :short "Generate a list of block items by @(tsee cons)ing
           a block item to a list of block items."
@@ -1228,6 +1235,8 @@
      note that, at that spot in the generated theorem,
      the computation state variables already accumulates
      the contextual premises in @('gin').")
+   (xdoc::p
+    "The @('new-inscope') input is the variable table after all the items.")
    (xdoc::p
     "Currently this function is only called on a @('term')
      that returns a single value,
@@ -1312,7 +1321,7 @@
                     :type items-type
                     :term term
                     :context new-context
-                    :inscope nil ; TODO
+                    :inscope new-inscope
                     :limit all-items-limit
                     :events (append item-events
                                     items-events
@@ -1513,6 +1522,7 @@
                                         expr.type
                                         gin.compst-var
                                         gin.context
+                                        gin.inscope
                                         (change-stmt-gin
                                          gin
                                          :thm-index thm-index
@@ -1531,6 +1541,7 @@
                                  (then-events pseudo-event-form-listp)
                                  (then-thm symbolp)
                                  (new-context atc-contextp)
+                                 (new-inscope atc-symbol-varinfo-alist-listp)
                                  (gin stmt-ginp)
                                  state)
   :returns (mv erp (gout stmt-goutp))
@@ -1671,7 +1682,7 @@
                            :type then-type
                            :term term
                            :context new-context
-                           :inscope nil ; TODO
+                           :inscope new-inscope
                            :limit then-limit
                            :events (append then-events
                                            (list lemma-event
@@ -2100,6 +2111,7 @@
                                   type
                                   new-compst
                                   new-context
+                                  nil ; TODO
                                   (change-stmt-gin
                                    gin
                                    :thm-index thm-index
@@ -2329,6 +2341,7 @@
                                          then.events
                                          then.thm-name
                                          then.context
+                                         then.inscope
                                          gin
                                          state)))
              ((erp (pexpr-gout test))
@@ -2575,7 +2588,7 @@
                         :type type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil ; TODO
+                        :inscope nil
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -2673,7 +2686,7 @@
                         :type type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil ; TODO
+                        :inscope nil
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -2741,7 +2754,7 @@
                   :type type
                   :term term
                   :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil ; TODO
+                  :inscope nil
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -2835,7 +2848,7 @@
                         :type body.type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil ; TODO
+                        :inscope nil
                         :limit limit
                         :events (append ptr.events
                                         int.events
@@ -2950,7 +2963,7 @@
                         :type body.type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil ; TODO
+                        :inscope nil
                         :limit limit
                         :events (append arr.events
                                         sub.events
@@ -3056,7 +3069,7 @@
                         :type body.type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil ; TODO
+                        :inscope nil
                         :limit limit
                         :events (append struct.events
                                         member.events)
@@ -3184,7 +3197,7 @@
                         :type body.type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil ; TODO
+                        :inscope nil
                         :limit limit
                         :events (append struct.events
                                         index.events
@@ -3244,6 +3257,7 @@
                      body.thm-name
                      body.type
                      body.context
+                     body.inscope
                      (change-stmt-gin
                       gin
                       :thm-index body.thm-index
@@ -3298,6 +3312,7 @@
                      body.thm-name
                      body.type
                      body.context
+                     body.inscope
                      (change-stmt-gin
                       gin
                       :thm-index body.thm-index
@@ -3356,7 +3371,7 @@
                   :type type
                   :term term
                   :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil ; TODO
+                  :inscope nil
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -3390,7 +3405,7 @@
                                    :term term
                                    :context (make-atc-context :preamble nil
                                                               :premises nil)
-                                   :inscope nil ; TODO
+                                   :inscope nil
                                    :limit (pseudo-term-quote 1)
                                    :events nil
                                    :thm-name nil
@@ -3454,7 +3469,7 @@
                   :type (type-void)
                   :term term
                   :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil ; TODO
+                  :inscope nil
                   :limit limit
                   :events nil
                   :thm-name nil
@@ -3467,7 +3482,7 @@
                     :type (type-void)
                     :term term
                     :context (make-atc-context :preamble nil :premises nil)
-                    :inscope nil ; TODO
+                    :inscope nil
                     :limit (pseudo-term-quote 1)
                     :events nil
                     :thm-name nil
@@ -3531,7 +3546,7 @@
                   :type (type-void)
                   :term term
                   :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil ; TODO
+                  :inscope nil
                   :limit `(binary-+ '5 ,limit)
                   :events args.events
                   :thm-name nil
