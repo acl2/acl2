@@ -2100,7 +2100,15 @@
        (new-context (atc-context-extend gin.context
                                         (list (make-atc-premise-compustate
                                                :var gin.compst-var
-                                               :term new-compst)))))
+                                               :term new-compst))))
+       (new-context (if (and (consp gin.affect)
+                             (not (consp (cdr gin.affect))))
+                        (b* ((var (car gin.affect)))
+                          (atc-context-extend new-context
+                                              (list (make-atc-premise-cvalue
+                                                     :var var
+                                                     :term term))))
+                      new-context)))
     (retok
      (atc-gen-block-item-list-one term
                                   item
