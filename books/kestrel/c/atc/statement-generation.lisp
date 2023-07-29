@@ -263,7 +263,9 @@
          "The type returned by the block items.
           It may be @('void').")
    (term pseudo-termp
-         "The term from which the block items are generated.")
+         "The term from which the block items are generated.
+          The term is transformed by replacing @(tsee if) with @(tsee if*)
+          and a few other changes.")
    (context atc-context
             "Described in @(see atc-implementation).
              It is the context after the block items,
