@@ -419,7 +419,7 @@
         (tabulate-resuls-for-model model result-alist 0 0 0 0 0 nil 0))
        (successful-attempt-percentage (quotient-as-percent-string successful-attempt-count attempt-count))
        (unique-successful-attempt-percentage (quotient-as-percent-string unique-successful-attempt-count attempt-count))
-       (- (cw "Results for model ~x0 (~x1 theorem attempts, ~x2 total recs produced):~%" model attempt-count total-recs-produced))
+       (- (cw "Results for model ~x0 (~x1 theorem attempts, ~x2 total recs):~%" model attempt-count total-recs-produced))
        (- (cw "  Successes: ~s0% (~s1% unique)~%" successful-attempt-percentage unique-successful-attempt-percentage))
        ;; (- (cw "Nums of first successful recs: ~X01~%" successful-rec-nums nil))
        ;; (- (cw "Top-1 through top-10 counts: ~X01~%" (top-n-counts successful-rec-nums) nil))
