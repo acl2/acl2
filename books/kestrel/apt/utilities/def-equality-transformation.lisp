@@ -127,7 +127,7 @@
                                      (function-renamingp function-renaming)
                                      (member-eq rec '(nil :single :mutual))
                                      (t/nil/auto-p function-disabled)
-                                     ;; TODO: Guards for guard-hints, measure, and measure-hints
+                                     ;; TODO: Guards for measure, and measure-hints
                                      (fn-definedp fn (w state))
                                      (booleanp normalize))
                          :mode :program ; because we call rename-functions-in-untranslated-term
@@ -291,7 +291,7 @@
          (declare (xargs :stobjs state
                          ;; :verify-guards nil
                          :mode :program ;because of my-get-event and get-clique
-                         :guard t       ;; inputs are checked below
+                         :guard t ;; inputs are checked below
                          ))
          (b* ((- (and verbose (cw "Now in the expansion phase of ~x0 for ~x1.~%" ',name fn)))
               (description (msg "The target function"))
@@ -304,6 +304,10 @@
                                (eq :auto measure))
                           (ensure-function-known-measure fn description :bad-input fn ctx state)
                         (mv nil nil state)))
+              ((er &) (if (or (eq :auto guard-hints)
+                              (true-listp guard-hints))
+                          (mv nil nil state) ; no error
+                        (mv :bad-guard-hints nil state)))
               (wrld (w state))
               ;; Get the event that introduced fn:
               (fn-event (my-get-event fn wrld))
