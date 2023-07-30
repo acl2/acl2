@@ -3460,10 +3460,15 @@ t)))|#
                   (and-list 0 (rp-evlt-lst lst A))))
   :hints (("Goal"
            :do-not-induct t
+           :expand ((rp-trans (CONS 'LIST LST))
+                    (:free (hash x y)
+                           (and-list hash (cons x y))))
            :in-theory (e/d (create-and-list-instance
                             regular-rp-evl-of_logbit$inline_when_mult-formula-checks
-                            and-list)
-                           ()))))
+                            regular-rp-evl-of_and-list_when_mult-formula-checks)
+                           (and*
+                            and-list
+                            rp-trans)))))
 
 (local
  (defthm pp-e-list-to-term-p+-to-pp-e-list-to-term-pp-lst

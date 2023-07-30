@@ -279,6 +279,11 @@ c)
     (and (bitp (and-list hash y))
          (natp (and-list hash y)))))
 
+(define and-times-list (hash-code lst s/c)
+  (declare (ignorable hash-code))
+  (* (ifix s/c)
+     (and-list hash-code lst)))
+
 (define binary-or (bit1 bit2)
   (if (and (equal (bit-fix bit1) 0)
            (equal (bit-fix bit2) 0))
@@ -877,6 +882,15 @@ term
                (case-match term (('and-list & &) t)))
       :rule-classes :forward-chaining))
 
+  (define and-times-list-p (term)
+    :inline t
+    (case-match term (('and-times-list & & &) t))
+    ///
+    (defthm and-times-list-p-implies-fc
+      (implies (and-times-list-p term)
+               (case-match term (('and-times-list & & &) t)))
+      :rule-classes :forward-chaining))
+
   (define quote-p (term)
     :inline t
     (case-match term (('quote &) t))
@@ -1443,13 +1457,7 @@ term
        ;;sv::4vec-fix
        svl::bits
 
+       and-times-list
+
        ))))
 
-
-(defmacro and*-exec (&rest args)
-  `(mbe :exec (and ,@args)
-        :logic (and* ,@args)))
-
-(defmacro or*-exec (&rest args)
-  `(mbe :exec (or ,@args)
-        :logic (or ,@args)))

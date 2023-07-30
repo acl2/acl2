@@ -154,10 +154,12 @@
     (case-match e
       (('and-list ('quote hash) &)
        (ifix hash))
+      (('and-times-list ('quote hash) &)
+       (ifix hash))
       (('-- ('and-list ('quote hash) &))
        (ifix hash))
-      (''1
-       1)
+      (('-- ('and-times-list ('quote hash) &))
+       (ifix hash))
       (''1
        1)
       (&
@@ -561,6 +563,14 @@
           (mv (floor (+ s-max-val pp-max-val c-max-val) 2)
               (floor (+ s-min-val pp-min-val c-min-val) 2)
               t)))
+       ((and-times-list-p term)
+        (b* (((mv max-val min-val valid) (get-max-min-val (fourth term)))
+             ((when (and*-exec valid
+                               (natp min-val)
+                               (natp max-val)))
+              (mv max-val 0 t)))
+          (mv 0 0 nil)))
+          
        ((or* (single-s-p term)
              (binary-fnc-p term)
              (logbit-p term)
@@ -1466,14 +1476,31 @@ nil)))
              (mv nil nil)))
          (mv new-pp-lst t)))
       ((pp1 pp2)
-       (b* (((mv new-pp-lst success) (single-c-to-pp-lst pp1 pp2 ''0)))
-         (if (and success
-                  (or t
-                      (equal pp1 ''1)
-                      (and (and-subsetp pp2 pp1))
-                      (c-pattern2-reduce-aux-cond new-pp-lst)))
-             (mv new-pp-lst t)
-           (mv nil nil))))
+       (b* (((mv new-pp-lst success) (single-c-to-pp-lst pp1 pp2 ''0))
+            ((when (and success
+                        ;; (or t
+                        ;;     (equal pp1 ''1)
+                        ;;     (and (and-subsetp pp2 pp1))
+                        ;;     (c-pattern2-reduce-aux-cond new-pp-lst))
+                        ))
+             (mv new-pp-lst t))
+            ;; ((when t) (mv nil nil))
+            ;; ((mv e-lst1 success) (cond ((and-list-p pp1)
+            ;;                             (mv (list-to-lst (third pp1)) t))
+            ;;                            ((logbit-p pp1)
+            ;;                             (mv (list pp1) t))
+            ;;                            (t (mv nil nil))))
+            ;; ((unless success) (mv nil nil))
+            ;; ((mv e-lst2 s/c success) (cond ((and-times-list-p pp2)
+            ;;                                 (mv (list-to-lst (third pp2))
+            ;;                                     (fourth pp2)
+            ;;                                     (has-bitp-rp (fourth pp2))))
+            ;;                                (t (mv nil nil nil))))
+            ;; ((unless success) (mv nil nil))
+            ;; (e-lst (merge-sorted-and$-lists e-lst1 e-lst2))
+            ;; (res (create-and-times-list-instance e-lst s/c))
+            )
+         (mv nil nil)))
       (& (mv nil nil)))))
 
 (define pattern0-syntax-check ((s-lst rp-term-listp)
@@ -2102,6 +2129,547 @@ nil)))
         (list ''1)
         t)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; c-pattern4-compress
+
+
+
+(progn
+  (defthm rp-term-listp-intersection-equal
+    (implies (and (rp-term-listp x)
+                  (rp-term-listp y))
+             (rp-term-listp (intersection-equal x y))))
+
+  (defthm rp-term-listp-union-equal
+    (implies (and (rp-term-listp x)
+                  (rp-term-listp y))
+             (rp-term-listp (union-equal x y))))
+
+  (defthm rp-term-listp-set-difference-equal
+    (implies (and (rp-term-listp x)
+                  ;; (rp-term-listp y)
+                  )
+             (rp-term-listp (set-difference-equal x y)))))
+
+
+
+(define create-and-times-list-instance ((lst rp-term-listp)
+                                        (s/c rp-termp))
+  :returns (ins rp-termp
+                :hyp (and (rp-term-listp lst)
+                          (rp-termp s/c)))
+  :prepwork
+  ((define e-lsts-have-common? ((e-lst1 rp-term-listp)
+                                (e-lst2 rp-term-listp))
+     :measure (+ (len e-lst1) (len e-lst2))
+     (if (or (atom e-lst1)
+             (atom e-lst2))
+         nil
+       (b* ((e1 (car e-lst1))
+            (e2 (car e-lst2))
+            ((when (equal e1 e2)) t))
+         (if (lexorder2- e1 e2)
+             (e-lsts-have-common? (cdr e-lst1) e-lst2)
+           (e-lsts-have-common? e-lst1 (cdr e-lst2))))))
+
+   (define lists-have-common? ((lst1 true-listp)
+                               (lst2 true-listp))
+     (if (atom lst1)
+         nil
+       (or (member-equal (car lst1) lst2)
+           (lists-have-common? (cdr lst1) lst2))))
+   
+   (define simplify-pp-lst-from-e-lst ((pp-lst rp-term-listp)
+                                       (e-lst rp-term-listp))
+     :returns (mv (new-pp-lst rp-term-listp
+                              :hyp (rp-term-listp pp-lst))
+                  changed)
+     (if (atom pp-lst)
+         (mv nil nil)
+       (b* ((cur (car pp-lst))
+            ((mv e-lst2 s/c has-s/c valid)
+             (case-match* cur
+               (('and-list & ('list . x))
+                (mv x nil nil t))
+               (('and-times-list & ('list . x) s/c)
+                (mv x s/c t t))
+               (('logbit$inline & &)
+                (mv (list cur) nil nil t))
+               (& (mv nil nil nil nil))))
+            ((unless valid) (mv pp-lst nil))
+            ((mv rest-pp-lst rest-changed)
+             (simplify-pp-lst-from-e-lst (cdr pp-lst) e-lst))
+            (has-common (e-lsts-have-common? e-lst e-lst2))
+            ((unless has-common)
+             (if rest-changed
+                 (mv (cons cur rest-pp-lst) t)
+               (mv pp-lst nil)))
+            (e-lst2 (set-difference-equal e-lst2 e-lst))
+            (new-cur (cond ((not has-s/c)
+                            (create-and-list-instance e-lst2))
+                           (t `(and-times-list ',(and-list-hash (cons s/c e-lst2))
+                                               (list . ,e-lst2)
+                                               ,s/c)))))
+         (mv (cons new-cur rest-pp-lst) t))))
+
+   (define collect-e-lst-from-pp-lst ((pp-lst rp-term-listp))
+     :returns (collected rp-term-listp :hyp (rp-term-listp pp-lst))
+     :verify-guards :after-returns
+     (if (atom pp-lst)
+         nil
+       (b* ((rest (collect-e-lst-from-pp-lst (cdr pp-lst)))
+            (cur (car pp-lst))
+            (e-lst
+             (case-match* cur
+               (('and-list & ('list . x))
+                x)
+               (('and-times-list & ('list . x) &)
+                x)
+               (('logbit$inline & &)
+                (list cur))
+               (& nil))))
+         (union-equal e-lst rest)))
+     ///
+     (memoize 'collect-e-lst-from-pp-lst :recursive nil))
+
+   (defines collect-e-lst-from-s/c
+     (define collect-e-lst-from-s/c ((s/c rp-termp)
+                                     &key
+                                     ((limit natp) 'limit))
+       :verify-guards nil
+       :returns (e-lst) 
+       :measure (nfix limit)
+       :no-function t
+       (if (zp limit)
+           nil
+         (let ((limit (1- limit)))
+           (b* ((x (ex-from-rp/times s/c)))
+             (case-match*
+              x
+              (('c & ''nil pp c)
+               (b* ((pp-lst (list-to-lst pp))
+                    (c-lst (list-to-lst c))
+                    (rest (collect-e-lst-from-s/c-lst c-lst)))
+                 (union-equal rest
+                              (collect-e-lst-from-pp-lst pp-lst))))
+              (& nil))))))
+     (define collect-e-lst-from-s/c-lst ((s/c-lst rp-term-listp)
+                                         &key
+                                         ((limit natp) 'limit))
+       :measure (nfix limit)
+       :no-function t
+       :returns (e-lst)
+       (if (zp limit)
+           nil
+         (let ((limit (1- limit)))
+           (if (atom s/c-lst)
+               nil
+             (union-equal (collect-e-lst-from-s/c (car s/c-lst))
+                          (collect-e-lst-from-s/c-lst (cdr s/c-lst)))))))
+     ///
+     (defret-mutual return-type-of-<fn>
+       (defret return-type-of-<fn>
+         (rp-term-listp e-lst)
+         :hyp (rp-termp s/c)
+         :fn collect-e-lst-from-s/c)
+       (defret return-type-of-<fn>
+         (rp-term-listp e-lst)
+         :hyp (rp-term-listp s/c-lst)
+         :fn collect-e-lst-from-s/c-lst))
+     
+     (verify-guards collect-e-lst-from-s/c-fn
+       :guard-debug t)
+     
+     (memoize-partial ((collect-e-lst-from-s/c* collect-e-lst-from-s/c-fn)
+                       (collect-e-lst-from-s/c-lst*
+                        collect-e-lst-from-s/c-lst-fn :condition 'nil))))
+   
+
+   (defines simplify-s/c-from-e-lst
+     :flag-local nil
+     (define simplify-s/c-from-e-lst-main ((s/c rp-termp)
+                                           (e-lst rp-term-listp)
+                                           &key
+                                           ((limit natp) '*big-number*))
+       :measure (nfix limit)
+       :returns (mv (res rp-termp :hyp (rp-termp s/c))
+                    changed)
+       (b* (((when (zp limit)) (mv s/c nil))
+            (collected-e-lst (collect-e-lst-from-s/c* s/c))
+            ((unless (lists-have-common? e-lst collected-e-lst))
+             (mv s/c nil)))
+         (simplify-s/c-from-e-lst s/c e-lst :limit (1- limit))))
+            
+     (define simplify-s/c-from-e-lst ((s/c rp-termp)
+                                      (e-lst rp-term-listp)
+                                      &key
+                                      ((limit natp) '*big-number*))
+       :measure (nfix limit)
+       :returns (mv (res rp-termp :hyp (rp-termp s/c))
+                    changed)
+       :verify-guards nil
+       (b* (((when (zp limit)) (mv s/c nil))
+            (s/c-orig s/c)
+            (s/c (ex-from-rp$ s/c)))
+         (case-match s/c
+           (('c & ''nil pp c)
+            (b* ((pp-lst (list-to-lst pp))
+                 ((mv pp-lst changed1)
+                  (simplify-pp-lst-from-e-lst pp-lst e-lst))
+                 (c-lst (list-to-lst c))
+                 ((mv c-lst changed2)
+                  (simplify-s/c-list-from-e-lst c-lst e-lst :limit (1- limit)))
+                 ((unless (or changed1 changed2))
+                  (mv s/c-orig nil))
+                 (pp-lst (if (or (not changed1)
+                                 (pp-lst-orderedp pp-lst))
+                             pp-lst
+                           (pp-sum-sort-lst pp-lst)))
+                 (pp (create-list-instance pp-lst))
+                 (c (create-list-instance c-lst))
+                 (hash-code (calculate-c-hash ''nil pp c))
+                 ;; todo be careful when it clears to 0.
+                 (res-c `(c ',hash-code 'nil ,pp ,c)))
+              (mv res-c t)))
+           (& (mv s/c-orig nil)))))
+     (define simplify-s/c-list-from-e-lst ((s/c-lst rp-term-listp)
+                                           (e-lst rp-term-listp)
+                                           &key
+                                           ((limit natp) '*big-number*))
+       :measure (nfix limit)
+       :returns (mv (res-lst rp-term-listp
+                             :hyp (rp-term-listp s/c-lst))
+                    changed)
+       (if (atom s/c-lst)
+           (mv nil nil)
+         (b* (((when (zp limit)) (mv s/c-lst nil))
+              ((mv cur changed1)
+               (simplify-s/c-from-e-lst-main (car s/c-lst) e-lst :limit (1- limit)))
+              ((mv rest changed2)
+               (simplify-s/c-list-from-e-lst (cdr s/c-lst) e-lst :limit (1- limit))))
+           (if (or changed1 changed2)
+               (mv (cons cur rest) t)
+             (mv s/c-lst nil)))))
+     ///
+     (verify-guards simplify-s/c-from-e-lst-fn)))
+                         
+            
+  (cond 
+   ((and*-exec (atom lst)
+               (or*-exec (has-bitp-rp s/c)
+                         (single-s-p (ex-from-rp s/c))
+                         (single-c-p (ex-from-rp s/c))))
+    s/c)
+   ((equal s/c ''1)
+    (create-and-list-instance lst))
+   (t
+    (b* ((lst (sort-and$-list lst (len lst)))
+         ((mv new-s/c &)
+          (simplify-s/c-from-e-lst-main s/c lst))
+         ((when (equal new-s/c ''1))
+          (create-and-list-instance lst))
+         (hash-code (and-list-hash (cons new-s/c lst)))
+         ;; (- (and (equal hash-code '23254)
+         ;;         (raise "here ((e-lst ~p0)
+         ;;                     (s/c ~p1)
+         ;;                     (new-s/c ~p2))~%"
+         ;;                lst s/c new-s/c)))
+         )
+      `(and-times-list ',hash-code
+                       (list . ,lst)
+                       ,new-s/c)))))
+
+
+(define c-pattern4-compress ((s-lst rp-term-listp)
+                             (pp-lst rp-term-listp)
+                             (c-lst rp-term-listp))
+  :returns (mv (res-pp-lst rp-term-listp
+                           :hyp (rp-term-listp pp-lst)
+                           :hints (("Goal"
+                                    :in-theory (e/d (rp-term-listp) ()))))
+               valid)
+  :prepwork
+  ((progn
+     (encapsulate
+       (((c-pattern4-compress-enabled) => *))
+       (local
+        (defun c-pattern4-compress-enabled ()
+          nil)))
+
+     (defmacro enable-c-pattern4-compress (enable)
+       (if enable
+           `(defattach  c-pattern4-compress-enabled return-t)
+         `(defattach  c-pattern4-compress-enabled return-nil)))
+
+     (enable-c-pattern4-compress nil)) 
+   
+
+   (define collect-common-e-lst ((pp-lst rp-term-listp))
+     :returns (commons rp-term-listp
+                       :hyp (rp-term-listp pp-lst))
+     :verify-guards :after-returns
+     (b* (((when (atom pp-lst))
+           nil)
+          (cur (car pp-lst))
+          #|((when (equal cur ''1))
+           (collect-common-e-lst (cdr pp-lst)))|#
+          ((mv cur valid) (case-match cur
+                            (('and-list & ('list . x))
+                             (mv x t))
+                            (('and-times-list & ('list . x) &)
+                             (mv x t))
+                            (('logbit$inline & &)
+                             (mv (list cur) t))
+                            (& (mv nil nil))))
+          ((Unless valid) nil)
+          ((when (atom (cdr pp-lst))) cur))
+       (intersection-equal (collect-common-e-lst (cdr pp-lst))
+                           cur)))
+
+   (define remove-e-lst-from-e-lst ((e-lst rp-term-listp)
+                                    (to-remove-e-lst rp-term-listp))
+     :returns (mv (res-e-lst rp-term-listp :hyp (rp-term-listp e-lst))
+                  (valid)) 
+         
+     (b* (((when (atom e-lst)) (mv nil (atom to-remove-e-lst)))
+          ((when (atom to-remove-e-lst)) (mv e-lst t))
+          (f1 (car e-lst))
+          (f2 (car to-remove-e-lst))
+          ((when (equal f1 f2)) (remove-e-lst-from-e-lst (cdr e-lst)
+                                                         (cdr to-remove-e-lst)))
+          ((mv rest valid)
+           (remove-e-lst-from-e-lst (cdr e-lst)
+                                    to-remove-e-lst))
+          ((unless valid) (mv nil nil)))
+       (mv (cons f1 rest) t)))
+       
+   (define remove-e-lst-from-pp-lst ((pp-lst rp-term-listp)
+                                     (to-remove-e-lst rp-term-listp))
+     :returns (mv (s-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
+                                                 (rp-term-listp to-remove-e-lst)))
+                  (res-pp-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
+                                                  (rp-term-listp to-remove-e-lst)))
+                  (c-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
+                                                 (rp-term-listp to-remove-e-lst)))
+                  (valid))
+     (if (atom pp-lst)
+         (mv nil nil nil t)
+       (b* ((cur (car pp-lst))
+            ((mv cur s/c has-s/c valid)
+             (case-match cur
+               (('and-list & ('list . x))
+                (mv x nil nil t))
+               (('and-times-list & ('list . x) s/c)
+                (mv x s/c t t))
+               (('logbit$inline & &)
+                (mv (list cur) nil nil t))
+               (& (mv nil nil nil nil))))
+            ((unless valid) (mv nil nil nil nil))
+            ((mv rest-s-lst rest-pp-lst rest-c-lst valid)
+             (remove-e-lst-from-pp-lst (cdr pp-lst) to-remove-e-lst))
+            ((unless valid) (mv nil nil nil nil))
+            ((mv cur valid) (remove-e-lst-from-e-lst cur to-remove-e-lst)))
+         (cond ((not valid) (mv nil nil nil nil))
+               ((atom cur)
+                (if has-s/c
+                    (cond ((single-c-p (ex-from-rp/times s/c))
+                           (mv rest-s-lst rest-pp-lst
+                               (cons s/c rest-c-lst) t))
+                          ((single-s-p (ex-from-rp/times s/c))
+                           (mv (cons s/c rest-s-lst) rest-pp-lst
+                               rest-c-lst t))
+                          (t (mv rest-s-lst (cons s/c rest-pp-lst)
+                                 rest-c-lst t)))
+                  (mv rest-s-lst (cons ''1 rest-pp-lst) rest-c-lst t)))
+               (t (if has-s/c
+                      (mv rest-s-lst (cons (create-and-times-list-instance cur s/c)
+                                           rest-pp-lst)
+                          rest-c-lst
+                          t)
+                    (mv rest-s-lst (cons (create-and-list-instance cur)
+                                         rest-pp-lst)
+                        rest-c-lst
+                        t)))))))
+
+   (define break-down-two-arg-c ((c-in rp-termp))
+     :returns (mv (e-lst)
+                  (res-c))
+     :measure (cons-count c-in)
+     :hints (("Goal"
+              :in-theory (e/d (measure-lemmas) ())))
+     :prepwork ((local
+                 (in-theory (disable
+                             (:e tau-system)
+                             (:type-prescription acl2::binary-and*)
+                             ;;(:forward-chaining acl2::and*-forward)
+                             (:type-prescription rp-termp)
+                             (:rewrite default-cdr)
+                             (:rewrite acl2::and*-rem-second)
+                             (:rewrite is-if-rp-termp)
+                             (:rewrite acl2::and*-nil-second)
+                             (:rewrite default-car)))))
+     (b* ((x (ex-from-rp c-in))
+          ((unless (single-c-p x))
+           (mv nil c-in)))
+       (case-match* x
+         (('c & ''nil ('list a b) ''nil)
+          (b* (((mv a-e-lst a-has-s/c a-valid)
+                (case-match* a
+                  (('and-list & ('list . lst))
+                   (mv lst nil t))
+                  (('logbit$inline & &)
+                   (mv (list a) nil t))
+                  (''1
+                   (mv (list ''1) nil t))
+                  ;; extra cases adds up!!!
+                  
+                  ;; (('and-times-list & ('list . lst) s/c)
+                  ;;  (mv lst s/c (is-c-bitp-traverse s/c)))
+                  (& (mv nil nil nil)
+                     #|(if (has-bitp-rp a)
+                         (mv (list a) nil t)
+                       (mv nil nil nil))|#)))
+               ((unless a-valid)
+                (mv nil c-in))
+               ((mv b-e-lst b-has-s/c b-valid)
+                (case-match* b
+                  (('and-list & ('list . lst))
+                   (mv lst nil t))
+                  (('logbit$inline & &)
+                   (mv (list b) nil t))
+                  (('and-times-list & ('list . lst) s/c)
+                   (mv lst s/c (or*-exec
+                                (has-bitp-rp s/c)
+                                (is-c-bitp-traverse s/c))))
+                  (''1
+                   (mv (list ''1) nil t))
+                  (& (mv nil nil nil)
+                     #|(if (has-bitp-rp b)
+                         (mv (list b) nil t)
+                       (mv nil nil nil))|#)))
+               ((unless b-valid)
+                (mv nil c-in))
+               ((when (and*-exec b-has-s/c a-has-s/c))
+                (mv nil c-in))
+               (e-lst (merge-sorted-and$-lists a-e-lst b-e-lst))
+               (s/c (or*-exec a-has-s/c b-has-s/c ''1)))
+            (mv e-lst s/c)))
+         (('c & ''nil ('list a) ('list b))
+          (b* (((unless (and*-exec (or*-exec (has-bitp-rp a)
+                                             (and-list-p a)
+                                             (logbit-p a)
+                                             (equal a ''1))
+                                   (or*-exec (has-bitp-rp b)
+                                             (is-c-bitp-traverse b))))
+                (mv nil c-in))
+               ((mv rest-e-lst rest-c)
+                (break-down-two-arg-c b)))
+            (mv (cons a rest-e-lst) rest-c)))
+         (& (mv nil c-in))))
+     ///
+     (defret rp-termp-o-<fn>
+       (and (rp-termp res-c)
+            (rp-term-listp e-lst))
+       :hyp (rp-termp c-in)))
+   )
+   
+   
+  (b* (((unless (and (not s-lst) (not c-lst))) (mv nil nil))
+       ((unless (c-pattern4-compress-enabled)) (mv nil nil))
+       ((unless (> (len pp-lst) 1)) (mv nil nil))
+       (pp-commons (collect-common-e-lst pp-lst))
+       ((unless pp-commons) (mv nil nil))
+       (pp-commons (sort-and$-list pp-commons (len pp-commons)))
+       ((mv s-lst pp-lst c-lst valid) (remove-e-lst-from-pp-lst pp-lst pp-commons))
+       ((unless valid) (mv nil nil)) 
+       ((when s-lst) (mv nil nil))
+       ((when (and*-exec (not* pp-lst) (not* c-lst)))
+        (mv (list ''0) t))
+       
+       #|((when (equal (+ (len pp-lst) (len c-lst)) 2))
+       (mv (list (create-and-list-instance ;
+       (merge-sorted-and$-lists ;
+       (merge-sorted-and$-lists pp-lst c-lst) ;
+       pp-commons))) ;
+       t))|#
+
+       (pp-lst (if (pp-lst-orderedp pp-lst)
+                   pp-lst
+                 (pp-sum-sort-lst pp-lst)))
+       
+       (pp (create-list-instance pp-lst))
+       (c (create-list-instance c-lst))
+       (hash-code (calculate-c-hash ''nil pp c))
+
+       (res-c `(c ',hash-code 'nil ,pp ,c))
+
+       #|(- (and (equal hash-code '(2 . 5315388))
+               (raise "here ((s-lst ~p0)
+                             (pp-lst ~p1)
+                             (c-lst ~p2))~%"
+                      s-lst pp-lst c-lst)))|#
+                      
+                      
+       
+       ((mv more-pp-commons res-c)
+        (break-down-two-arg-c res-c))
+       (more-pp-commons (sort-and$-list more-pp-commons (len more-pp-commons)))
+       (pp-commons (merge-sorted-and$-lists pp-commons more-pp-commons)))
+    (mv (list (create-and-times-list-instance pp-commons res-c)) t)))
+
+       
+
+       
+
+    ;;    ((mv pp-commons pp-lst c-lst)
+    ;;     (b* (((unless (and (atom c-lst)
+    ;;                        (equal (len pp-lst) 2)))
+    ;;           (mv pp-commons pp-lst c-lst)))
+    ;;       (mv (merge-sorted-and$-lists (sort-and$-list pp-lst 2)
+    ;;                                    pp-commons)
+    ;;           nil nil)))
+        
+       
+    ;;    (pp (create-list-instance pp-lst))
+    ;;    (c (create-list-instance c-lst))
+    ;;    (hash-code (calculate-c-hash ''nil pp c))
+
+       
+       
+    ;;    #|(- (and (equal (len c-lst) 1)
+    ;;            (equal (second (car c-lst)) ''(257 . 360468381))
+    ;;            (raise "here")))|#
+                      
+    ;;    (res-c `(rp 'bitp (rp 'natp (c ',hash-code 'nil ,pp ,c))))
+    ;;    (res (merge-sorted-and$-lists (list res-c) pp-commons))
+    ;;    (res (create-and-list-instance res))
+
+    ;;    ;;(- (cw "res: ~p0 ~%" res))
+    ;;    )
+    ;; (mv (list res) t))))
+
+
+#|(skip-proofs
+ (define c-instance-to-e-lst (x)
+  :returns (mv e-lst res-c)
+  (b* ((x-orig x)
+       (x (ex-from-rp x)))
+    (case-match x
+      (('c & ''nil ('list a) ('list b))
+       (b* (((mv rest-e-lst c)
+             (c-instance-to-e-lst b)))
+         (mv (merge-sorted-and$-lists (list a)
+                                      rest-e-lst)
+             c)))
+      (('c & ''nil ('list a b) ''nil)
+       (b* ()
+         (mv (sort-and$-list (list a b) 2)
+             ''1)))
+      (& (mv nil x-orig))))))|#
+      
+      
+
 (define create-c-instance ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
                            (c-lst rp-term-listp)
@@ -2127,6 +2695,11 @@ nil)))
         (mv nil nil nil))
        ((mv s-lst pp-lst c-lst)
         (c-pattern1-reduce s-lst pp-lst c-lst))
+       ((mv reduced-pp-lst reducedp)
+        (c-pattern4-compress s-lst pp-lst c-lst))
+       ((when reducedp)
+        (mv nil reduced-pp-lst nil))
+
        ((mv reduced-pp-lst reducedp)
         (c-pattern2-reduce s-lst pp-lst c-lst))
        ((when reducedp)
@@ -2165,6 +2738,11 @@ nil)))
                 (hash-code (calculate-c-hash s pp c))
 
                 (res `(c ',hash-code ,s ,pp ,c))
+
+                (- (and (equal hash-code '(2 . 6288828))
+                        (raise "s-lst: ~p0. pp-lst ~p1, c-lst ~p2 ~%" s-lst
+                        pp-lst c-lst)))
+                
                 ((mv max-val min-val valid)
                  (if (natp (maybe-bitp-precheck res)) ;; minimize the calls made to get-max-min-val
                      (get-max-min-val res)
@@ -3049,6 +3627,7 @@ c2-lst: ~p2 ~%"
 
     (b* (((when (zp limit)) (mv nil nil nil nil))
          ;;(limit (1- limit))
+         (single-s/c-orig single-s/c)
          ((mv coef single-s/c) (get-pp-and-coef single-s/c))
          (single-s/c (ex-from-rp$ single-s/c)))
       (cond ((single-s-p single-s/c)
@@ -3091,6 +3670,26 @@ c2-lst: ~p2 ~%"
                ;;        (append-with-times coef  res-c-lst nil)
                ;;        t)))
                (& (mv nil nil nil nil))))
+
+
+            
+            ((and*-exec (single-c-p single-s/c)
+                        (c-pattern4-compress-enabled))
+             (b* (((when (not e-lst)) (mv nil nil nil nil))
+
+                  ((mv more-pp-common res-c)
+                   (break-down-two-arg-c single-s/c-orig))
+                   
+                  (pp-commons (merge-sorted-and$-lists more-pp-common e-lst))
+                  (res (create-and-times-list-instance pp-commons res-c))
+
+                  #|(- (cw "res: ~p0, single-s/c-orig:~p1, e-lst:~p2 ~%" res
+                         single-s/c-orig e-lst))|#
+                  )
+               (mv nil (list res) nil t)))
+
+
+            
             ((single-c-p single-s/c)
              (case-match single-s/c
                (('c & ''nil pp c-list)
