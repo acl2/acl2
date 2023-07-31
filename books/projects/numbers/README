@@ -47,7 +47,7 @@ number theory.  It includes the following ACL2 books:
   mersenne
       An application to the Mersenne prime problem by way of a theorem of Euler:
       if p and 2*p+1 are both prime and mod(p,4) = 3, then 2^p-1 is divisible by
-      2*p+1")
+      2*p+1").
 
   pratt
       Vaughn Pratt's method of prime certification applied to the prime 2^255 - 19.
@@ -65,8 +65,13 @@ number theory.  It includes the following ACL2 books:
   sum4squares
       Every natural number is a sum of 4 squares.
 
+  divisors
+      The number of divisors of n and the sum of the divisors of n and multiplicative
+      functions of n.  These results, in combination with the Fundamental Theorem of 
+      Arithmetic, provide formulas for both functions.
+
   z2q
-      A bijection from the integers to the rartionals
+      A bijection from the integers to the rartionals.
 
   harmonic
-      Divergence of the harmonic series
+      Divergence of the harmonic series.
