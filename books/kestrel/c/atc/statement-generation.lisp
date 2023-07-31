@@ -273,7 +273,10 @@
    (inscope atc-symbol-varinfo-alist-list
             "Described in @(see atc-implementation).
              It contains the variables in scope just after these block items,
-             i.e. the ones in scope for subsequent block items (if any).")
+             i.e. the ones in scope for subsequent block items (if any).
+             This is @('nil') if there are no subsequent block items,
+             which happens exactly when
+             these block items return a non-@('void') type.")
    (limit pseudo-term
           "Symbolic limit value
            that suffices for @(tsee exec-block-item-list)
