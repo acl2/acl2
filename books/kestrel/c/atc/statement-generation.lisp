@@ -1525,7 +1525,7 @@
                                         expr.type
                                         gin.compst-var
                                         gin.context
-                                        gin.inscope
+                                        nil
                                         (change-stmt-gin
                                          gin
                                          :thm-index thm-index
@@ -2147,7 +2147,7 @@
                                   type
                                   new-compst
                                   new-context
-                                  new-inscope
+                                  (and (not voidp) new-inscope)
                                   (change-stmt-gin
                                    gin
                                    :thm-index thm-index
