@@ -17450,7 +17450,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   ((eq key :defun-mode)
    (member-eq val '(:logic :program)))
   ((eq key :verify-guards-eagerness)
-   (member val '(0 1 2)))
+   (member val '(0 1 2 3)))
   ((eq key :enforce-redundancy)
    (member-eq val '(t nil :warn)))
   ((eq key :compile-fns)

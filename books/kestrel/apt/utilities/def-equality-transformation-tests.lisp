@@ -201,6 +201,10 @@
                          (eq :auto measure))
                     (ensure-function-known-measure fn description :bad-input fn ctx state)
                   (mv nil nil state)))
+        ((er &) (if (or (eq :auto guard-hints)
+                        (true-listp guard-hints))
+                    (mv nil nil state) ; no error
+                  (mv :bad-guard-hints nil state)))
         (wrld (w state))
         ;; Get the event that introduced fn:
         (fn-event (my-get-event fn wrld))
