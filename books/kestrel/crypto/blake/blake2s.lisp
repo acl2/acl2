@@ -471,6 +471,10 @@
   (all-unsigned-byte-p 8 (words-to-bytes words))
   :hints (("Goal" :in-theory (enable words-to-bytes))))
 
+; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
+; generating guard conjectures.
+(local (in-theory (disable (:e expt))))
+
 ;; See the function BLAKE2 in RFC 7693 Sec 3.3.
 ;;TODO: Consider the case when ll is the max.  Then (+ ll *bb*) is > 2^64, contrary to the documentation of f.
 (defund blake2s-main (d ll kk nn)
@@ -486,7 +490,7 @@
                               (<= nn 32))
                   :guard-hints (("Goal" :expand ((wordp nn)
                                                  (unsigned-byte-p 64 (+ 64 ll)))
-                                 :in-theory (e/d (natp) ((:e expt)))))))
+                                 :in-theory (e/d (natp) ())))))
   (let* ((h (iv))
          (h (update-nth 0
                         (wordxor (nth 0 h)
