@@ -18253,8 +18253,8 @@
       (verify-guards ,@args)))
    (t
     `(make-event
-      (if (int= (default-verify-guards-eagerness (w state))
-                2)
+      (if (member (default-verify-guards-eagerness (w state))
+                  '(2 3))
           '(verify-guards ,@args)
         '(value-triple :skipped))
       :expansion? ; Don't store expansion if eagerness is 1 (the default).

@@ -11143,16 +11143,11 @@
 (defun monitorable-runes-from-mapping-pairs (sym wrld)
 
 ; Note: another function that deals in runic mapping pairs is
-; convert-theory-to-unordered-mapping-pairs1.  In both cases we are guided by
-; the discussion of runic designators in :doc theories.  However, here we do
-; not include :induction runes, and we do not accommodate theories because we
-; wonder what complexity that might introduce in providing useful errors and
-; warnings from :monitor, and we don't (yet?)  consider it likely that users
-; will want to monitor theories.
+; convert-theory-to-unordered-mapping-pairs1.
 
-; We accumulate runic mapping pairs of sym into ans, except in the case that
-; sym is a defined function, we only include the :definition rune and, if indp
-; is true, the induction rune.
+; Sym is runic designator, like a function or theorem name or a macro name
+; mapped to a function name by macro-aliases.  We collect the monitorable runes
+; associated with sym.
 
   (let ((temp (strip-cdrs
                (getpropc (deref-macro-name sym (macro-aliases wrld))
@@ -11219,17 +11214,6 @@
         ((assoc-equal (car lst) alist)
          (set-difference-assoc-equal (cdr lst) alist))
         (t (cons (car lst) (set-difference-assoc-equal (cdr lst) alist)))))
-
-(defun monitorable-runes-from-mapping-pairs (sym wrld)
-
-; Sym is runic designator, like a function or theorem name or a macro name
-; mapped to a function name by macro-aliases.  We collect the monitorable runes
-; associated with sym.
-
-  (let ((temp (strip-cdrs
-               (getpropc (deref-macro-name sym (macro-aliases wrld))
-                         'runic-mapping-pairs nil wrld))))
-    (monitorable-runes temp)))
 
 (defun merge-new-and-old-monitors (new-lst old-lst)
 
@@ -11339,7 +11323,7 @@
             (prog2$
              (and (not quietp)
 ; Note: we are not using (brr-evisc-tuple state) here.  This is
-; a deliberate but undebated choice! 
+; a deliberate but undebated choice!
                   (cw "~Y01~|" new-brr-monitored-runes nil))
              (change brr-status whs
                      :brr-monitored-runes new-brr-monitored-runes))))
@@ -11443,7 +11427,7 @@
                                                        brr-reminder-flg)))
                   (prog2$
 ; Note: we are not using (brr-evisc-tuple state) here.  This is
-; a deliberate but undebated choice! 
+; a deliberate but undebated choice!
                    (cw "~Y01~|" new-brr-monitored-runes nil)
                    (change brr-status whs
                            :brr-monitored-runes new-brr-monitored-runes))))
@@ -11461,7 +11445,7 @@
      '(lambda (whs)
         (prog2$
 ; Note: we are not using (brr-evisc-tuple state) here.  This is
-; a deliberate but undebated choice! 
+; a deliberate but undebated choice!
          (cw "~Y01~|" (access brr-status whs :brr-monitored-runes) nil)
          whs))
      nil)
