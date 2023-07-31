@@ -1712,6 +1712,8 @@
                                 (else-context-start atc-contextp)
                                 (then-context-end atc-contextp)
                                 (else-context-end atc-contextp)
+                                (then-inscope atc-symbol-varinfo-alist-listp)
+                                (else-inscope atc-symbol-varinfo-alist-listp)
                                 (test-events pseudo-event-form-listp)
                                 (then-events pseudo-event-form-listp)
                                 (else-events pseudo-event-form-listp)
@@ -2108,24 +2110,51 @@
                                               (list (make-atc-premise-cvalue
                                                      :var var
                                                      :term term))))
-                      new-context)))
+                      new-context))
+       ((mv new-inscope new-inscope-events thm-index names-to-avoid)
+        (if (and (consp gin.affect)
+                 (not (consp (cdr gin.affect))))
+            (atc-gen-if/ifelse-inscope gin.fn
+                                       gin.fn-guard
+                                       gin.inscope
+                                       then-inscope
+                                       else-inscope
+                                       gin.context
+                                       new-context
+                                       (untranslate$ test-term nil state)
+                                       (untranslate$ then-term nil state)
+                                       (untranslate$ else-term nil state)
+                                       gin.compst-var
+                                       new-compst
+                                       then-new-compst
+                                       else-new-compst
+                                       gin.prec-tags
+                                       thm-index
+                                       names-to-avoid
+                                       wrld)
+          (mv nil nil thm-index names-to-avoid))))
     (retok
      (atc-gen-block-item-list-one term
                                   item
                                   item-limit
-                                  item-events
+                                  (append item-events
+                                          new-inscope-events)
                                   item-thm-name
                                   (and (not voidp) term)
                                   type
                                   new-compst
                                   new-context
-                                  nil ; TODO
+                                  new-inscope
                                   (change-stmt-gin
                                    gin
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
                                    :proofs (and item-thm-name t))
-                                  state))))
+                                  state)))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2467,6 +2496,7 @@
                                   test.thm-name then.thm-name else.thm-name
                                   then-context-start else-context-start
                                   then-context-end else-context-end
+                                  then.inscope else.inscope
                                   test.events then.events else.events
                                   (change-stmt-gin
                                    gin
