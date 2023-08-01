@@ -2833,6 +2833,8 @@
                                      compustatep-of-add-var
                                      compustatep-of-enter-scope
                                      compustatep-of-update-var
+                                     compustatep-of-exit-scope
+                                     compustatep-of-if*-when-both-compustatep
                                      exec-expr-call-or-pure-when-pure
                                      (:e expr-kind)
                                      not-zp-of-limit-variable
