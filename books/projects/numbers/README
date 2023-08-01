@@ -66,12 +66,14 @@ number theory.  It includes the following ACL2 books:
       Every natural number is a sum of 4 squares.
 
   divisors
-      The number of divisors of n and the sum of the divisors of n and multiplicative
-      functions of n.  These results, in combination with the Fundamental Theorem of 
-      Arithmetic, provide formulas for both functions.
+      The number of positive divisors of a positive integer n and the sum of thse
+      divisors are both multiplicative functions of n.  These results, in combination 
+      with the Fundamental Theorem of Arithmetic, provide formulas for both of these 
+      quantities.  As an application, we derive the Euclid-Euler characterization of
+      even perfect numbers.
 
   z2q
-      A bijection from the integers to the rartionals.
+      A bijection from the integers to the rationals.
 
   harmonic
       Divergence of the harmonic series.
