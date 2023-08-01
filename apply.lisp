@@ -2338,6 +2338,8 @@
         ((eq doublet-or-t t)
          (pprogn
 
+; Keep this case in sync with the corresponding case in defbadge-fn1.
+
 ; Some functions are warranted in boot-strap-pass-2-b.lisp and without this
 ; check of the boot-strap-flg the build prints a bunch of misleading messages
 ; about how, for example, mempos is already warranted (but it wasn't until
@@ -2570,6 +2572,22 @@
        (cond
         (msg
          (er soft ctx "~@0" msg))
+        ((or (apply$-primp fn)
+             (assoc-eq fn *apply$-boot-fns-badge-alist*))
+
+; Keep this case in sync with the corresponding case in defwarrant-fn1.
+
+         (pprogn
+          (if (global-val 'boot-strap-flg wrld)
+              state
+            (observation
+             (cons 'defbadge fn)
+             "The function ~x0 is built-in and already has a badge when ~
+              ACL2 starts up.  This event thus has no effect.~|~%"
+             fn))
+          (value `(with-output
+                    :stack :pop
+                    (value-triple nil)))))
         (t
          (pprogn
           (cond

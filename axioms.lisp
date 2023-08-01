@@ -14364,6 +14364,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     brr-evisc-tuple-oracle-update
     iprint-oracle-updates
     #-acl2-devel iprint-ar-aref1
+    #-acl2-devel brr-near-missp
   ))
 
 (defconst *initial-macros-with-raw-code*

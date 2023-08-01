@@ -9253,10 +9253,7 @@ its attachment is ignored during proofs"))))
             nil)))
      (t nil))))
 
-(defun brr-near-missp (msgp lemma target rcnst criteria-alist)
-
-; This function should be replaced by a constrained function to which
-; built-in-brr-near-missp is attached.
+(defproxy brr-near-missp
 
 ; The rewriter has tried to match the pattern in lemma to target under the
 ; restrictions in rcnst.  The match failed.  We determine whether this
@@ -9274,13 +9271,10 @@ its attachment is ignored during proofs"))))
 
 ; (:condition t :depth 3 :abstraction (f 44 (cadr z)))!
 
-  (declare (xargs :guard (and (or (weak-rewrite-rule-p lemma)
-                                  (weak-linear-lemma-p lemma))
-                              (pseudo-termp target)
-                              (weak-rewrite-constant-p rcnst)
-                              (brr-criteria-alistp criteria-alist))))
+  (* * * * *) => *)
 
-  (built-in-brr-near-missp msgp lemma target rcnst criteria-alist))
+(defattach (brr-near-missp built-in-brr-near-missp)
+  :skip-checks t)
 
 (mutual-recursion
 

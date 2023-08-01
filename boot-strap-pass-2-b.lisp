@@ -348,6 +348,30 @@
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachment: brr-near-missp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; It may seem that section belongs with similar sections in
+; boot-strap-pass-2-a.lisp.  However, we need to wait till brr-criteria-alistp
+; and built-in-brr-near-missp are in :logic mode, which is after the calls of
+; system-verify-guards above.
+
+; We avoid the acl2-devel case because brr-criteria-alistp is in :program mode
+; in that case.
+#+(and acl2-loop-only (not acl2-devel))
+(encapsulate
+  (((brr-near-missp * * * * *) => *
+    :formals (msgp lemma target rcnst criteria-alist)
+    :guard (and (or (weak-rewrite-rule-p lemma)
+                    (weak-linear-lemma-p lemma))
+                (pseudo-termp target)
+                (weak-rewrite-constant-p rcnst)
+                (brr-criteria-alistp criteria-alist))))
+  (local (defun brr-near-missp (msgp lemma target rcnst criteria-alist)
+           (declare (ignore msgp lemma target rcnst criteria-alist))
+           nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Finishing up with apply$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
