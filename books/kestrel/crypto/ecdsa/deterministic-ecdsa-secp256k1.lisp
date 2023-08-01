@@ -361,6 +361,10 @@
 ;; (Also note: we test this function independently of the overall signing
 ;; function, i.e. in a separate test run.)
 
+; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
+; generating guard conjectures.
+(local (in-theory (disable (:e ecurve::secp256k1-field-prime))))
+
 (defund ecdsa-sign-given-k (mh privkey k)
   (declare (xargs :guard (and (true-listp mh)
                               (acl2::all-unsigned-byte-p 1 mh)
@@ -374,8 +378,7 @@
                                        (s k))
                                  :in-theory
                                  (e/d (pfield::fep ecurve::pointp)
-                                      (ecurve::pointp-of-secp256k1*
-                                       (:e ecurve::secp256k1-field-prime)))))))
+                                      (ecurve::pointp-of-secp256k1*))))))
 
 ;; "1. H(m) is transformed into an integer modulo q using the bits2int
 ;;     transform and an extra modular reduction:
