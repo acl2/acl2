@@ -31,7 +31,7 @@ The sha1sum and md5sum of jdk-7u80-linux-x64.tar.gz are as follows:
 - 21e5e18c3511def01590994e926a4350c0509f01  jdk-7u80-linux-x64.tar.gz
 - 6152f8a7561acf795ca4701daa10a965  jdk-7u80-linux-x64.tar.gz
 
-Then, after ensuring the .tgz file is in this examples/ directory, do:
+Then, after ensuring the .tar.gz file is in this examples/crypto/ directory, do:
 tar xfz jdk-7u80-linux-x64.tar.gz
 
 The sha1sum and md5sum of jdk1.7.0_80/jre/lib/rt.jar are as follows:
