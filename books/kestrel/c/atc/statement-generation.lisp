@@ -2135,25 +2135,26 @@
                                        thm-index
                                        names-to-avoid
                                        wrld)
-          (mv nil nil thm-index names-to-avoid))))
+          (mv nil nil thm-index names-to-avoid)))
+       ((stmt-gout gout)
+        (atc-gen-block-item-list-one term
+                                     item
+                                     item-limit
+                                     item-events
+                                     item-thm-name
+                                     (and (not voidp) term)
+                                     type
+                                     new-compst
+                                     new-context
+                                     (and (not voidp) new-inscope)
+                                     (change-stmt-gin
+                                      gin
+                                      :thm-index thm-index
+                                      :names-to-avoid names-to-avoid
+                                      :proofs (and item-thm-name t))
+                                     state)))
     (retok
-     (atc-gen-block-item-list-one term
-                                  item
-                                  item-limit
-                                  (append item-events
-                                          new-inscope-events)
-                                  item-thm-name
-                                  (and (not voidp) term)
-                                  type
-                                  new-compst
-                                  new-context
-                                  (and (not voidp) new-inscope)
-                                  (change-stmt-gin
-                                   gin
-                                   :thm-index thm-index
-                                   :names-to-avoid names-to-avoid
-                                   :proofs (and item-thm-name t))
-                                  state)))
+     (change-stmt-gout gout :events (append gout.events new-inscope-events))))
   :guard-hints
   (("Goal"
     :in-theory
