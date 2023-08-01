@@ -2,7 +2,7 @@
 
 (include-book "euclid")
 (include-book "projects/groups/lists" :dir :system)
-
+(include-book "projects/groups/cauchy" :dir :system)
 (local (include-book "support/divisors"))
 
 ;; A list of the divisors of n:
@@ -59,6 +59,10 @@
 ;;                      (sum-list (divisors n))))))
 
 ;; These results lead to convenient formulas for both quantities.
+
+;; As an application, we shall derive the Euclid-Euler characterization of even perfect numbers.
+
+;;----------------------------------------------------------------------------------------------
 
 ;; We begin by defining the Cartesian product of 2 lists:
 
@@ -142,8 +146,7 @@
 		(equal (prod-divisors (factor-divisor x m n))
 		       x))))
 
-;; It follows by functional instantiation of len-1-1-equal that the lists have the
-;; same length:
+;; By functional instantiation of len-1-1-equal that the lists have the same length:
 
 (defthmd len-divisors-multiplicative
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
@@ -152,31 +155,31 @@
 
 ;; The list of products of a list of pairs:
 
-(defun prods (l)
+(defun prods-divisors (l)
   (if (consp l)
       (cons (prod-divisors (car l))
-            (prods (cdr l)))
+            (prods-divisors (cdr l)))
     ()))
 
-;; (prods (pairs (divisors m) (divisors n))) is a dlist and a sublist of 
+;; (prods-divisors (pairs (divisors m) (divisors n))) is a dlist and a sublist of 
 ;; (divisors (* m n)) of the same length.  It is therefore a permutation of
 ;; (divisors (* m n)):
 
-(defthmd dlistp-prods-pairs
+(defthmd dlistp-prods-divisors-pairs
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-	   (dlistp (prods (pairs (divisors m) (divisors n))))))
+	   (dlistp (prods-divisors (pairs (divisors m) (divisors n))))))
 
-(defthmd sublistp-prods
+(defthmd sublistp-prods-divisors
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-	   (sublistp (prods (pairs (divisors m) (divisors n)))
+	   (sublistp (prods-divisors (pairs (divisors m) (divisors n)))
 	             (divisors (* m n)))))
 
-(defthm len-prods
-  (equal (len (prods l)) (len l)))
+(defthm len-prods-divisors
+  (equal (len (prods-divisors l)) (len l)))
 
 (defthmd permp-divisors
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-           (permutationp (prods (pairs (divisors m) (divisors n)))
+           (permutationp (prods-divisors (pairs (divisors m) (divisors n)))
 	                 (divisors (* m n)))))
 
 ;; We shall prove sum-divisors-multiplicative as a special case of a more general
@@ -215,28 +218,28 @@
            (equal (sum-mu (append l r))
                   (+ (sum-mu l) (sum-mu r)))))
 
-(defthm prods-append
-  (equal (prods (append l r))
-         (append (prods l) (prods r))))
+(defthm prods-divisors-append
+  (equal (prods-divisors (append l r))
+         (append (prods-divisors l) (prods-divisors r))))
 
-(defthmd sum-mu-prods-conses
+(defthmd sum-mu-prods-divisors-conses
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
                 (member-equal d (divisors m))
 		(sublistp l (divisors n)))
-	   (equal (sum-mu (prods (conses d l)))
+	   (equal (sum-mu (prods-divisors (conses d l)))
 	          (* (mu d) (sum-mu l)))))
 
-(defthmd sum-mu-prods-pairs
+(defthmd sum-mu-prods-divisors-pairs
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
                 (true-listp l) (sublistp l (divisors m)))
-	   (equal (sum-mu (prods (pairs l (divisors n)))) 
+	   (equal (sum-mu (prods-divisors (pairs l (divisors n)))) 
 	          (* (sum-mu l) (sum-mu (divisors n))))))
 
-;; Now instantiate sum-mu-prods-pairs:
+;; Now instantiate sum-mu-prods-divisors-pairs:
 
-(defthmd sum-mu-prods-divisors
+(defthmd sum-mu-prods-divisors-divisors
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-           (equal (sum-mu (prods (pairs (divisors m) (divisors n))))
+           (equal (sum-mu (prods-divisors (pairs (divisors m) (divisors n))))
 	          (* (sum-mu (divisors m))
 		     (sum-mu (divisors n))))))
 
@@ -271,6 +274,9 @@
            (equal (sum-list (divisors (* m n)))
 	          (* (sum-list (divisors m))
 		     (sum-list (divisors n))))))
+
+
+;;----------------------------------------------------------------------------------------------
 
 ;; len-divisors-multiplicative and sum-divisors-multiplicative lead to formulas
 ;; for the number of divisors of n and the sum of the divisors of n.
@@ -348,3 +354,65 @@
   (implies (posp n)
            (equal (sum-list (divisors n))
 	          (sum-divisors n))))
+
+
+;;----------------------------------------------------------------------------------------------
+
+;; A positive integer n is perfect if n is the sum of its proper divisors, i.e.,
+;; (sum-list (divisors n)) = 2 * n:
+
+(defund perfectp (n)
+  (and (posp n)
+       (equal (sum-list (divisors n))
+              (* 2 n))))
+
+;; Let n = (expt 2 k) * p, where p = (expt 2 (1+ k)) - 1 is prime.  Then
+
+;;   (sum-list (divisors n)) = (sum-list (divisors (expt 2 k))) * (sum-list (divisors p))
+;;                           = ((expt 2 (1+ k)) - 1) * (p + 1)
+;;                           = ((expt 2 (1+ k)) - 1) * (expt 2 (1+ k))
+;;                           = 2 * n,
+
+;; i.e., n is perfect:
+
+(defthmd perfectp-sufficiency
+  (implies (and (posp k) (primep (1- (expt 2 (1+ k)))))
+	   (perfectp (* (expt 2 k) (1- (expt 2 (1+ k)))))))
+
+;; Conversely, assume that n is even and perfect and let k = (log n 2).  Then
+;; n = (expt 2 k) * x, where x is odd, and
+
+;;  (sum-list (divisors n)) = (1- (expt 2 (1+ k))) * (sum-list (divisors x))
+;;                          = 2 * n
+;;                          = (expt 2 (1+ k)) * x.
+
+(defthmd sum-list-divisors-perfect
+  (implies (and (posp n) (evenp n) (perfectp n))
+           (let* ((k (log n 2)) (x (/ n (expt 2 k))))
+	     (and (posp x)
+	          (oddp x)
+	          (equal (* (1- (expt 2 (1+ k))) (sum-list (divisors x)))
+	                 (* (expt 2 (1+ k)) x))))))
+
+;; We shall show that x = (expt 2 (1+ k)) - 1 and x is prime.  Since
+;; (1- (expt 2 (1+ k))) is odd and divides (expt 2 (1+ k)) * x,
+;; (1- (expt 2 (1+ k))) divides x.  Let y = x/(1- (expt 2 (1+ k))).  Suppose y is
+;; not 1.  Then x, y, and 1 are distinct divisors of x.  On the other hand, if
+;; y = 1 and x is not prime, then x, y, and the least prime divisor of x are
+;; distinct divisors of x.  In either case, (sum-divisors x) > x + y and
+
+;;    (expt 2 (1+ k)) * x =  2 * n
+;;                        =  (sum-list (divisors n))
+;;                        =  (1- (expt 2 (1+ k))) * (sum-list (divisors x))
+;;                        >  (1- (expt 2 (1+ k))) * (y + x)
+;;                        =  x + (1- (expt 2 (1+ k))) * x
+;;                        =  (expt 2 (1+ k)) * x,
+
+;; a contradiction.  Thus, y = 1 and x = (1- (expt 2 (1+ k))) is prime.
+
+(defthmd perfectp-necessity
+  (implies (and (posp n) (evenp n) (perfectp n))
+           (let ((k (log n 2)))
+	     (and (primep (1- (expt 2 (1+ k))))
+	          (equal (* (expt 2 k) (1- (expt 2 (1+ k))))
+	                 n)))))
