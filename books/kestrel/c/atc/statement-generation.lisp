@@ -3394,18 +3394,20 @@
                      has the non-void type ~x2, ~
                      which is disallowed."
                     gin.fn val-term xform.type)))
-             (ifp (and (consp val-term)
-                       (eq (car val-term) 'if*)))
+             (pass-updated-context-and-inscope
+              (and (consp xform.term)
+                   (eq (car xform.term) 'if*)
+                   (not gin.loop-flag)))
              ((erp (stmt-gout body))
               (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
-                             :context (if ifp ; temporary
+                             :context (if pass-updated-context-and-inscope
                                           xform.context
-                                        gin.context)
-                             :inscope (if ifp ; temporary
+                                        gin.context) ; temporary
+                             :inscope (if pass-updated-context-and-inscope
                                           xform.inscope
-                                        gin.inscope)
+                                        gin.inscope) ; temporary
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
