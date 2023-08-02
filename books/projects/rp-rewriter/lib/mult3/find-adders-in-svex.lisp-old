@@ -10126,6 +10126,9 @@ endmodule
                            ,(equal ,sanity-check :rp-then-fgl))
                        `(progn (add-rp-rule svl::exported-design-svtv-autohyps)
                                (add-rp-rule svl::exported-design-svtv-autoins)
+                               ;; (disable-meta-rules s-c-spec-meta)
+                               ;; (disable-rules '(S-C-SPEC-OPENER-ERROR))
+                               ;; (disable-postprocessor unpack-booth-general-postprocessor)
                                (defthmrp-multiplier sanity-check
                                  ,@(and ,(equal ,sanity-check :rp-then-fgl) `(:then-fgl t))
                                  (implies (svl::exported-design-svtv-autohyps)

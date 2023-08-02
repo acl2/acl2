@@ -208,7 +208,7 @@
           (('s ('quote x) & &)
            (mv (+ rest (ifix x))
                (+ 6 rest-size)))
-          (('c ('quote x) & & &)
+          (('c ('quote (x . &))  & & &)
            (mv (+ rest (ifix x))
                (+ 8 rest-size)))
           (& (mv rest rest-size)))))
@@ -229,12 +229,15 @@
   (define create-and-list-instance (lst)
     :returns (and-list-instance rp-termp
                                 :hyp (rp-term-listp lst))
-    (cond ((and (consp lst)
-                (atom (cdr lst))
-                (or (logbit-p (ex-from-rp (car lst)))
-                    (has-bitp-rp (car lst))
-                    (equal (car lst) ''1)))
+    (cond ((and*-exec
+            (consp lst)
+            (atom (cdr lst))
+            (or*-exec (logbit-p (ex-from-rp (car lst)))
+                      (has-bitp-rp (car lst))
+                      (equal (car lst) ''1)))
            (car lst))
+          ((atom lst)
+           ''1)
           (t
            `(and-list ',(and-list-hash lst) (list . ,lst))))))
 
@@ -1069,6 +1072,44 @@
              (s-sum-ordered-listp lst))
          (or rep-ok (no-rep-p lst))
          (ordered-s/c-p-lst lst))))
+
+(defwarrant times-p)
+(defwarrant EX-FROM-RP/TIMES)
+(defwarrant list-to-lst)
+
+
+(defines s/c-has-times
+  (define s/c-has-times (term)
+    :mode :program
+    (b* ((term (ex-from-rp/times term)))
+      (case-match term
+        (('s & pp c)
+         (or (loop$ for x in (list-to-lst pp) thereis
+                    (times-p x))
+             (loop$ for x in (list-to-lst c) thereis
+                    (times-p x))
+             (s/c-has-times-lst (list-to-lst c))))
+        (('c & s pp c)
+         (or (loop$ for x in (list-to-lst c) thereis
+                    (times-p x))
+             (loop$ for x in (list-to-lst pp) thereis
+                    (times-p x))
+             (loop$ for x in (list-to-lst c) thereis
+                    (times-p x))
+             (s/c-has-times-lst (list-to-lst s))
+             (s/c-has-times-lst (list-to-lst c))))
+        (('s-c-res s & c)
+         (and (s/c-has-times-lst (list-to-lst s))
+              (s/c-has-times-lst (list-to-lst c))))
+        (& nil))))
+  (define s/c-has-times-lst (lst)
+    (if (atom lst)
+        nil
+      (or (s/c-has-times (car lst))
+          (s/c-has-times-lst (cdr lst)))))
+  ///
+  (memoize 's/c-has-times))
+  
 
 (defthm rp-term-listp-of-append-wog
   (implies (and (rp-term-listp lst1)

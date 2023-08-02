@@ -263,7 +263,8 @@
                 (if (acl2::or* (integerp term1)
                                (integerp term2))
                     (bitand/or/xor-simple-constant-simplify fn term1 term2 :1masked t)
-                  (bitand/or/xor-cancel-repeated fn term1 term2)))
+                  (bitand/or/xor-cancel-repeated fn term1 term2
+                                                 :nodes-to-skip-alist nil)))
 
                ((when (equal size 1))
                 cur-term))
@@ -749,7 +750,8 @@ but did not resolve the branch ~%" first))))
                ((when (acl2::or* (integerp term1)
                                  (integerp term2)))
                 (bitand/or/xor-simple-constant-simplify fn term1 term2)))
-            (bitand/or/xor-cancel-repeated fn term1 term2)))
+            (bitand/or/xor-cancel-repeated fn term1 term2
+                                           :nodes-to-skip-alist nil)))
 
          (t (acl2::impossible svex)))))
 
@@ -830,7 +832,8 @@ but did not resolve the branch ~%" first))))
                          ((when (acl2::or* (integerp term1)
                                            (integerp term2)))
                           (bitand/or/xor-simple-constant-simplify fn term1 term2)))
-                      (bitand/or/xor-cancel-repeated fn term1 term2)))
+                      (bitand/or/xor-cancel-repeated fn term1 term2
+                                                     :nodes-to-skip-alist nil)))
                    (t (b* ((args-evaluated (svex-reduce-w/-env-lst args)))
                         (svex-reduce-w/-env-apply fn args-evaluated)))))))))
 

@@ -370,6 +370,16 @@ large list of terms. This will likely slow down in some cases (e.g.,
 saturated multipliers) but won't affect much else. </p>
 <code> @('(rp::enable-cross-product-two-larges <t-or-nil>)') </code>
 
+
+<p> C-PATTERN4-COMPRESS <i>(disabled by default)</i></p>
+<p>Another newly-added experimental feature that is expected to speed up the
+proofs for Booth radix-16 multipliers. It compresses some c instances by
+pulling out common multipliers inside its terms. It is left disabled because it
+is not properly integrated into all parts of the tool and it may cause proof
+failures in some cases. </p>
+<code> @('(rp::enable-c-pattern4-compress <t-or-nil>)') </code>
+
+
 <p>PP-LISTS-LIMIT <i>(set to 16000 by default)</i></p>
 <p>We don't want terms to blow up when doing algebraic rewriting of logical
 gates. We call this function in this library pp-flatten, as we use it to
