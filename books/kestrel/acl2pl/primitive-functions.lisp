@@ -24,7 +24,7 @@
   (xdoc::topstring
    (xdoc::p
     "The " (xdoc::seetopic "acl2::primitive" "ACL2 primitive functions")
-    "have no definitions.
+    " have no definitions.
      Their evaluation semantics is described in the ACL2 documentation.")
    (xdoc::p
     "In order to formalize the evaluation semantics of ACL2,
