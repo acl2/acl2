@@ -1336,6 +1336,178 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-list-append
+  ((term pseudo-termp)
+   (items1 block-item-listp)
+   (items2 block-item-listp)
+   (items1-limit pseudo-termp)
+   (items2-limit pseudo-termp)
+   (items1-events pseudo-event-form-listp)
+   (items2-events pseudo-event-form-listp)
+   (items1-thm symbolp)
+   (items2-thm symbolp)
+   (type typep "Returned by @('items2').")
+   (new-context atc-contextp "After all items.")
+   (new-inscope atc-symbol-varinfo-alist-listp "After all items.")
+   (gin stmt-ginp)
+   state)
+  :returns (gout stmt-goutp)
+  :short "Generate a list of block items by @(tsee append)ing
+          two lists of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides concatenating the two lists, which is easy,
+     we also generate a theorem about @(tsee exec-block-item-list)
+     applied to the concatenation,
+     given theorems about @(tsee exec-block-item-list)
+     applied to each of the two lists.")
+   (xdoc::p
+    "The generated theorem applies @(tsee exec-block-item-list)
+     to a quoted list of block items that is the concatenation.
+     Thus, we cannot just use a rule
+     about @(tsee exec-block-item-list) applied to @(tsee append).
+     Instead, we need a rule that backchains to
+     two applications of @(tsee exec-block-item-list)
+     to sublists of the quoted list,
+     obtained via @(tsee take) and @(tsee nthcdr).
+     We generate this rule as a lemma before the theorem.")
+   (xdoc::p
+    "We need a limit that suffices for all items.
+     We take the sum of the limits of the two lists of items
+     (instead of the maximum), so the term remains linear.
+     That suffices to execute the items from the first list,
+     but we also need to add 1 to the limit
+     because it takes 1 step to go from the end of the first list
+     to starting the second list."))
+  (b* ((wrld (w state))
+       ((stmt-gin gin) gin)
+       (items (append items1 items2))
+       (items-limit `(binary-+ '1 (binary-+ ,items1-limit ,items2-limit)))
+       ((when (not gin.proofs))
+        (make-stmt-gout
+         :items items
+         :type type
+         :term term
+         :context (make-atc-context :preamble nil :premises nil)
+         :inscope nil
+         :limit items-limit
+         :events (append items1-events items2-events)
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid))
+       (lemma-name
+        (pack gin.fn '-exec-block-item-list-concatenation- gin.thm-index))
+       ((mv lemma-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                        lemma-name nil gin.names-to-avoid wrld))
+       (thm-index (1+ gin.thm-index))
+       (n (len items1))
+       (m (+ n (len items2)))
+       (lemma-formula
+        `(implies (and (syntaxp (and (quotep items)
+                                     (equal (len (cadr items)) ,m)))
+                       (equal (len items) ,m)
+                       (not (zp limit))
+                       (equal val?+compst1
+                              (exec-block-item-list (take ,n items)
+                                                    compst
+                                                    fenv
+                                                    limit))
+                       (equal val? (mv-nth 0 val?+compst1))
+                       (value-optionp val?)
+                       (equal compst1 (mv-nth 1 val?+compst1)))
+                  (equal (exec-block-item-list items compst fenv limit)
+                         (if (valuep val?)
+                             (mv val? compst1)
+                           (exec-block-item-list (nthcdr ,n items)
+                                                 compst1
+                                                 fenv
+                                                 (- limit ,n))))))
+       (lemma-hints
+        `(("Goal"
+           :in-theory '(append-of-take-and-nthcdr
+                        (:e nfix)
+                        value-optionp
+                        (:e errorp)
+                        len-of-take
+                        commutativity-of-+)
+           :use (:instance exec-block-item-list-of-append
+                           (items1 (take ,n items))
+                           (items2 (nthcdr ,n items))))))
+       ((mv lemma-event &)
+        (evmac-generate-defthm lemma-name
+                               :formula lemma-formula
+                               :hints lemma-hints
+                               :enable nil))
+       (thm-name (pack gin.fn '-correct- thm-index))
+       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
+                                      thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (new-compst (atc-contextualize-compustate gin.compst-var
+                                                 gin.context
+                                                 new-context))
+       (uterm (untranslate$ term nil state))
+       (formula1 `(equal (exec-block-item-list ',items
+                                               ,gin.compst-var
+                                               ,gin.fenv-var
+                                               ,gin.limit-var)
+                         (mv ,(if (type-case type :void)
+                                  nil
+                                uterm)
+                             ,new-compst)))
+       (formula1 (atc-contextualize formula1
+                                    gin.context
+                                    gin.fn
+                                    gin.fn-guard
+                                    gin.compst-var
+                                    gin.limit-var
+                                    items-limit
+                                    t
+                                    wrld))
+       (formula (if (type-case type :void)
+                    formula1
+                  (b* ((type-pred (atc-type-to-recognizer type gin.prec-tags))
+                       (formula2 `(,type-pred ,uterm))
+                       (formula2 (atc-contextualize formula2
+                                                    gin.context
+                                                    gin.fn
+                                                    gin.fn-guard
+                                                    nil
+                                                    nil
+                                                    nil
+                                                    nil
+                                                    wrld)))
+                    `(and ,formula1 ,formula2))))
+       (hints `(("Goal" :in-theory '(,lemma-name
+                                     (:e len)
+                                     (:e take)
+                                     (:e nthcdr)
+                                     not-zp-of-limit-variable
+                                     ,items1-thm
+                                     mv-nth-of-cons
+                                     (:e zp)
+                                     (:e value-optionp)
+                                     ,items2-thm
+                                     (:e valuep)))))
+       ((mv event &) (evmac-generate-defthm thm-name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (make-stmt-gout :items items
+                    :type type
+                    :term term
+                    :context new-context
+                    :inscope new-inscope
+                    :limit items-limit
+                    :events (append items1-events
+                                    items2-events
+                                    (list lemma-event event))
+                    :thm-name thm-name
+                    :thm-index thm-index
+                    :names-to-avoid names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-return-stmt ((term pseudo-termp)
                              (gin stmt-ginp)
                              (must-affect symbol-listp)
@@ -3413,22 +3585,28 @@
                              :names-to-avoid xform.names-to-avoid
                              :proofs (and xform.thm-name t))
                             state))
-             (items (append xform.items body.items))
-             (type body.type)
-             (limit (pseudo-term-fncall
-                     'binary-+
-                     (list xform.limit body.limit))))
-          (retok (make-stmt-gout
-                  :items items
-                  :type type
-                  :term term
-                  :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil
-                  :limit limit
-                  :events (append xform.events body.events)
-                  :thm-name nil
-                  :thm-index body.thm-index
-                  :names-to-avoid body.names-to-avoid))))
+             (term (acl2::close-lambdas
+                    `((lambda (,var) ,body.term) ,xform.term))))
+          (retok
+           (atc-gen-block-item-list-append
+            term
+            xform.items
+            body.items
+            xform.limit
+            body.limit
+            xform.events
+            body.events
+            xform.thm-name
+            body.thm-name
+            body.type
+            body.context
+            body.inscope
+            (change-stmt-gin
+             gin
+             :thm-index body.thm-index
+             :names-to-avoid body.names-to-avoid
+             :proofs (and body.thm-name t))
+            state))))
        ((when (and (pseudo-term-case term :var)
                    (equal gin.affect
                           (list (pseudo-term-var->name term)))))
