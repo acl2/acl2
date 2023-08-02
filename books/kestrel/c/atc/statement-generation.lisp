@@ -273,7 +273,10 @@
    (inscope atc-symbol-varinfo-alist-list
             "Described in @(see atc-implementation).
              It contains the variables in scope just after these block items,
-             i.e. the ones in scope for subsequent block items (if any).")
+             i.e. the ones in scope for subsequent block items (if any).
+             This is @('nil') if there are no subsequent block items,
+             which happens exactly when
+             these block items return a non-@('void') type.")
    (limit pseudo-term
           "Symbolic limit value
            that suffices for @(tsee exec-block-item-list)
@@ -1522,7 +1525,7 @@
                                         expr.type
                                         gin.compst-var
                                         gin.context
-                                        gin.inscope
+                                        nil
                                         (change-stmt-gin
                                          gin
                                          :thm-index thm-index
@@ -2132,25 +2135,26 @@
                                        thm-index
                                        names-to-avoid
                                        wrld)
-          (mv nil nil thm-index names-to-avoid))))
+          (mv nil nil thm-index names-to-avoid)))
+       ((stmt-gout gout)
+        (atc-gen-block-item-list-one term
+                                     item
+                                     item-limit
+                                     item-events
+                                     item-thm-name
+                                     (and (not voidp) term)
+                                     type
+                                     new-compst
+                                     new-context
+                                     (and voidp new-inscope)
+                                     (change-stmt-gin
+                                      gin
+                                      :thm-index thm-index
+                                      :names-to-avoid names-to-avoid
+                                      :proofs (and item-thm-name t))
+                                     state)))
     (retok
-     (atc-gen-block-item-list-one term
-                                  item
-                                  item-limit
-                                  (append item-events
-                                          new-inscope-events)
-                                  item-thm-name
-                                  (and (not voidp) term)
-                                  type
-                                  new-compst
-                                  new-context
-                                  new-inscope
-                                  (change-stmt-gin
-                                   gin
-                                   :thm-index thm-index
-                                   :names-to-avoid names-to-avoid
-                                   :proofs (and item-thm-name t))
-                                  state)))
+     (change-stmt-gout gout :events (append gout.events new-inscope-events))))
   :guard-hints
   (("Goal"
     :in-theory
@@ -3390,14 +3394,22 @@
                      has the non-void type ~x2, ~
                      which is disallowed."
                     gin.fn val-term xform.type)))
+             (ifp (and (consp val-term)
+                       (eq (car val-term) 'if*)))
              ((erp (stmt-gout body))
               (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
+                             :context (if ifp ; temporary
+                                          xform.context
+                                        gin.context)
+                             :inscope (if ifp ; temporary
+                                          xform.inscope
+                                        gin.inscope)
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
-                             :proofs nil)
+                             :proofs (and xform.thm-name t))
                             state))
              (items (append xform.items body.items))
              (type body.type)
