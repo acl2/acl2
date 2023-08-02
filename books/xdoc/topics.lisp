@@ -591,7 +591,7 @@ Some examples:</p>
 to escape it.  You can write @('@@') to generate a single @('@') sign.</p>
 
 <p>Besides @('@(') and @('@@'), the preprocessor leaves any other uses of
-@('@') in tact.  So, most uses of @('@'), such as in email addresses, do not
+@('@') intact.  So, most uses of @('@'), such as in email addresses, do not
 need to be escaped.</p>")
 
 (defxdoc terminal
