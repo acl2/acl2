@@ -91,7 +91,7 @@
      we need to generate a modular theorem for the concatenated chunks.")
    (xdoc::p
     "Thus, unsurprisingly, we need a theorem about
-     @(tsee exec-block-items-list) applied to an @(tsee append) of block items,
+     @(tsee exec-block-item-list) applied to an @(tsee append) of block items,
      which is proved using a custom induction scheme.")
    (xdoc::p
     "However, this theorem is not directly applicable in modular proofs.
