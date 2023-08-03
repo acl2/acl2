@@ -554,9 +554,9 @@
     "Here we cannot use @(tsee atc-gen-new-inscope),
      because we need to use more elaborate proof builder instructions
      than just a set of rules."))
-  (b* (((when (endp inscope)) (mv nil nil thm-index names-to-avoid))
+  (b* (((when (endp inscope)) (mv nil nil (1+ thm-index) names-to-avoid))
        (scope (car inscope))
-       ((mv new-scope events thm-index names-to-avoid)
+       ((mv new-scope events names-to-avoid)
         (atc-gen-if/ifelse-inscope-aux fn
                                        fn-guard
                                        scope
@@ -625,11 +625,10 @@
                                       :induct t
                                       :in-theory (enable acons))))
                   (events pseudo-event-form-listp)
-                  (thm-index posp :hyp (posp thm-index))
                   (names-to-avoid symbol-listp
                                   :hyp (symbol-listp names-to-avoid)))
      :parents nil
-     (b* (((when (endp scope)) (mv nil nil thm-index names-to-avoid))
+     (b* (((when (endp scope)) (mv nil nil names-to-avoid))
           ((cons var info) (car scope))
           (type (atc-var-info->type info))
           (externalp (atc-var-info->externalp info))
@@ -670,12 +669,12 @@
           (then-var-info (atc-get-var var then-inscope))
           ((unless then-var-info)
            (raise "Internal error: ~x0 not in scope after 'then'.")
-           (mv nil nil 1 nil))
+           (mv nil nil nil))
           (then-var-thm (atc-var-info->thm then-var-info))
           (else-var-info (atc-get-var var else-inscope))
           ((unless else-var-info)
            (raise "Internal error: ~x0 not in scope after 'else'.")
-           (mv nil nil 1 nil))
+           (mv nil nil nil))
           (else-var-thm (atc-var-info->thm else-var-info))
           (then-hints
            `(("Goal"
@@ -752,7 +751,7 @@
                                                :enable nil))
           (new-info (change-atc-var-info info :thm new-thm))
           (rest (cdr scope))
-          ((mv new-rest events thm-index names-to-avoid)
+          ((mv new-rest events names-to-avoid)
            (atc-gen-if/ifelse-inscope-aux fn
                                           fn-guard
                                           rest
@@ -773,7 +772,6 @@
                                           wrld)))
        (mv (acons var new-info new-rest)
            (cons event events)
-           thm-index
            names-to-avoid))
      :prepwork
      ((local
