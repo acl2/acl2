@@ -997,6 +997,121 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-array-asg ((var symbolp)
+                                      (val-term pseudo-termp)
+                                      (sub-term pseudo-termp)
+                                      (elem-term pseudo-termp)
+                                      (elem-type typep)
+                                      (wrapper? symbolp)
+                                      (gin stmt-ginp)
+                                      state)
+  :returns (mv erp
+               (item block-itemp)
+               (limit pseudo-termp)
+               (events pseudo-event-form-listp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
+  :short "Generate a C block item statement that consists of
+          an assignment to an array element."
+  (b* (((reterr) (irr-block-item) nil nil 1 nil)
+       ((stmt-gin gin) gin)
+       ((unless (eq wrapper? nil))
+        (reterr
+         (msg "The array write term ~x0 to which ~x1 is bound ~
+               has the ~x2 wrapper, which is disallowed."
+              val-term var wrapper?)))
+       ((unless (member-eq var gin.affect))
+        (reterr
+         (msg "The array ~x0 is being written to, ~
+               but it is not among the variables ~x1 ~
+               currently affected."
+              var gin.affect)))
+       ((erp (pexpr-gout arr))
+        (atc-gen-expr-pure var
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs gin.proofs)
+                           state))
+       ((erp (pexpr-gout sub))
+        (atc-gen-expr-pure sub-term
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index arr.thm-index
+                            :names-to-avoid arr.names-to-avoid
+                            :proofs (and arr.thm-name t))
+                           state))
+       ((erp (pexpr-gout elem))
+        (atc-gen-expr-pure elem-term
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index sub.thm-index
+                            :names-to-avoid sub.names-to-avoid
+                            :proofs (and sub.thm-name t))
+                           state))
+       ((unless (and (type-case arr.type :array)
+                     (equal (type-array->of arr.type)
+                            elem-type)))
+        (reterr
+         (msg "The array ~x0 of type ~x1 ~
+               does not have the expected array type of ~x2. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var arr.type elem-type)))
+       ((unless (type-integerp sub.type))
+        (reterr
+         (msg "The array ~x0 of type ~x1 ~
+               is being indexed with ~
+               a subscript ~x2 of non-integer type ~x3, ~
+               instead of integer type as expected.
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var arr.type sub-term sub.type)))
+       ((unless (equal elem.type elem-type))
+        (reterr
+         (msg "The array ~x0 of type ~x1 ~
+               is being written to with ~
+               an element ~x2 of type x3, ~
+               instead of type ~x4 as expected.
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var arr.type elem-term elem.type elem-type)))
+       (asg (make-expr-binary
+             :op (binop-asg)
+             :arg1 (make-expr-arrsub :arr arr.expr
+                                     :sub sub.expr)
+             :arg2 elem.expr))
+       (stmt (stmt-expr asg))
+       (item (block-item-stmt stmt))
+       (limit ''3)
+       (events (append arr.events sub.events elem.events)))
+    (retok item
+           limit
+           events
+           elem.thm-index
+           elem.names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-block-item-list-none ((term pseudo-termp)
                                       (gin stmt-ginp)
                                       state)
@@ -3073,105 +3188,25 @@
              ((erp okp sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
-              (b* (((unless (eq wrapper? nil))
-                    (reterr
-                     (msg "The array write term ~x0 to which ~x1 is bound ~
-                           has the ~x2 wrapper, which is disallowed."
-                          val-term var wrapper?)))
-                   ((unless (member-eq var gin.affect))
-                    (reterr
-                     (msg "The array ~x0 is being written to, ~
-                           but it is not among the variables ~x1 ~
-                           currently affected."
-                          var gin.affect)))
-                   ((erp (pexpr-gout arr))
-                    (atc-gen-expr-pure var
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
-                                       state))
-                   ((erp (pexpr-gout sub))
-                    (atc-gen-expr-pure sub-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index arr.thm-index
-                                        :names-to-avoid arr.names-to-avoid
-                                        :proofs (and arr.thm-name t))
-                                       state))
-                   ((erp (pexpr-gout elem))
-                    (atc-gen-expr-pure elem-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index sub.thm-index
-                                        :names-to-avoid sub.names-to-avoid
-                                        :proofs (and sub.thm-name t))
-                                       state))
-                   ((unless (and (type-case arr.type :array)
-                                 (equal (type-array->of arr.type)
-                                        elem-type)))
-                    (reterr
-                     (msg "The array ~x0 of type ~x1 ~
-                           does not have the expected array type of ~x2. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var arr.type elem-type)))
-                   ((unless (type-integerp sub.type))
-                    (reterr
-                     (msg "The array ~x0 of type ~x1 ~
-                           is being indexed with ~
-                           a subscript ~x2 of non-integer type ~x3, ~
-                           instead of integer type as expected.
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var arr.type sub sub.type)))
-                   ((unless (equal elem.type elem-type))
-                    (reterr
-                     (msg "The array ~x0 of type ~x1 ~
-                           is being written to with ~
-                           an element ~x2 of type x3, ~
-                           instead of type ~x4 as expected.
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var arr.type elem elem.type elem-type)))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (make-expr-arrsub :arr arr.expr
-                                                 :sub sub.expr)
-                         :arg2 elem.expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
+              (b* (((erp item limit events thm-index names-to-avoid)
+                    (atc-gen-block-item-array-asg var
+                                                  val-term
+                                                  sub-term
+                                                  elem-term
+                                                  elem-type
+                                                  wrapper?
+                                                  gin
+                                                  state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body
-                                   :thm-index elem.thm-index
-                                   :names-to-avoid elem.names-to-avoid
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
                                    :proofs nil)
                                   state))
-                   (limit (pseudo-term-fncall 'binary-+
-                                              (list (pseudo-term-quote 4)
-                                                    body.limit))))
+                   (limit `(binary-+ '1 (binary-+ ,limit ,body.limit))))
                 (retok (make-stmt-gout
                         :items (cons item body.items)
                         :type body.type
@@ -3179,10 +3214,7 @@
                         :context (make-atc-context :preamble nil :premises nil)
                         :inscope nil
                         :limit limit
-                        :events (append arr.events
-                                        sub.events
-                                        elem.events
-                                        body.events)
+                        :events (append events body.events)
                         :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid))))
