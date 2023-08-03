@@ -13,7 +13,7 @@
 ;(include-book "subst-flag")
 (include-book "flatten-literals") ; for flatten-disjuncts
 (include-book "simple-subsumption")
-(include-book "push-unary-functions")
+;(include-book "push-unary-functions")
 (include-book "simplify-assumptions")
 ;(include-book "kestrel/booleans/booland" :dir :system) ; why?
 ;(include-book "kestrel/booleans/boolor" :dir :system) ; why?
@@ -65,17 +65,6 @@
                         (con-and-dis-eval my-make-flag-eval)
                         (con-and-dis-eval-list my-make-flag-eval-list)))))
 
-;changes the evaluator
-(defthm my-make-flag-eval-of-disjoin-of-push-unary-functions-in-literals
-  (implies (and (symbol-listp unary-fns)
-                (alistp a)
-                (pseudo-term-listp clause))
-           (iff (my-make-flag-eval (disjoin (push-unary-functions-in-literals clause unary-fns)) a)
-                (my-make-flag-eval (disjoin clause) a)))
-  :hints (("Goal" :use (:functional-instance
-                        if-eval-of-disjoin-of-push-unary-functions-in-literals
-                        (if-eval my-make-flag-eval)
-                        (if-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
@@ -120,6 +109,6 @@
                                    simple-subsumption-clause-processor
                                    ;FLATTEN-LITERALS-CLAUSE-PROCESSOR
                                    ;SUBLIS-VAR-AND-SIMPLIFY-CLAUSE-PROCESSOR
-                                   PUSH-O-P-CLAUSE-PROCESSOR
+                                   ;PUSH-O-P-CLAUSE-PROCESSOR
                                    )
                                   (DISJOIN-LST)))))
