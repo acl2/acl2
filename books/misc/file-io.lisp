@@ -47,16 +47,16 @@
 
 (defun collect-objects (list channel state)
   (mv-let (eofp obj state)
-	  (read-object channel state)
-	  (if eofp
-	      (mv (reverse list) state)
-	    (collect-objects (cons obj list) channel state))))
+          (read-object channel state)
+          (if eofp
+              (mv (reverse list) state)
+            (collect-objects (cons obj list) channel state))))
 
 ; Return (value result) where result is the list of top-level forms in file
 ; fname:
 (defun read-list (fname ctx state)
   (mv-let (channel state)
-	  (open-input-channel fname :object state)
+          (open-input-channel fname :object state)
           (if channel
               (mv-let (result state)
                       (collect-objects () channel state)
