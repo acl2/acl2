@@ -126,3 +126,33 @@
   (implies (and (state-p state)
                 (stringp path-to-file))
            (state-p (mv-nth 2 (read-file-into-line-list path-to-file newlinesp state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv lines state).  This wrapper does not pass back errors, but it
+;; may throw one.
+(defund read-file-into-line-list-no-error (path-to-file newlinesp state)
+  (declare (xargs :guard (and (stringp path-to-file)
+                              (booleanp newlinesp))
+                  :stobjs state))
+  (mv-let (erp lines state)
+    (read-file-into-line-list path-to-file newlinesp state)
+    (if erp
+        (prog2$ (er hard? 'read-file-into-line-list-no-error "Error reading lines from ~x0." path-to-file)
+                (mv nil state))
+      (mv lines state))))
+
+(defthm string-listp-of-mv-nth-0-of-read-file-into-line-list-no-error
+  (string-listp (mv-nth 0 (read-file-into-line-list-no-error path-to-file newlinesp state)))
+  :hints (("Goal" :in-theory (enable read-file-into-line-list-no-error))))
+
+(defthm state-p1-of-mv-nth-1-of-read-file-into-line-list-no-error
+  (implies (and (state-p1 state)
+                (stringp path-to-file))
+           (state-p1 (mv-nth 1 (read-file-into-line-list-no-error path-to-file newlinesp state))))
+  :hints (("Goal" :in-theory (enable read-file-into-line-list-no-error))))
+
+(defthm state-p-of-mv-nth-1-of-read-file-into-line-list-no-error
+  (implies (and (state-p state)
+                (stringp path-to-file))
+           (state-p (mv-nth 1 (read-file-into-line-list-no-error path-to-file newlinesp state)))))
