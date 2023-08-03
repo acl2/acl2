@@ -53,6 +53,7 @@
 (unmemoize-lst (f-get-global 'memoized-prover-fns state))
 
 (include-book "mv-nth")
+(include-book "names-after")
 (include-book "nld")
 (include-book "open-trace-file-bang")
 (include-book "oracle-eval")
