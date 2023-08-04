@@ -1002,6 +1002,7 @@
                                       (sub-term pseudo-termp)
                                       (elem-term pseudo-termp)
                                       (elem-type typep)
+                                      (array-writer symbolp)
                                       (wrapper? symbolp)
                                       (gin stmt-ginp)
                                       state)
@@ -1015,6 +1016,7 @@
           an assignment to an array element."
   (b* (((reterr) (irr-block-item) nil nil 1 nil)
        ((stmt-gin gin) gin)
+       (wrld (w state))
        ((unless (eq wrapper? nil))
         (reterr
          (msg "The array write term ~x0 to which ~x1 is bound ~
@@ -1102,13 +1104,144 @@
              :arg2 elem.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (limit ''3)
-       (events (append arr.events sub.events elem.events)))
+       (asg-limit ''1)
+       (expr-limit `(binary-+ '1 ,asg-limit))
+       (stmt-limit `(binary-+ '1 ,expr-limit))
+       (item-limit `(binary-+ '1 ,stmt-limit))
+       (varinfo (atc-get-var var gin.inscope))
+       ((unless varinfo)
+        (reterr (raise "Internal error: no information for variable ~x0." var)))
+       ((when (eq array-writer 'quote))
+        (reterr (raise "Internal error: array writer is QUOTE.")))
+       ((when (or (not elem.thm-name)
+                  (atc-var-info->externalp varinfo))) ; <- temporary
+        (retok item
+               item-limit
+               (append arr.events sub.events elem.events)
+               elem.thm-index
+               elem.names-to-avoid))
+       (okp-lemma-name (pack gin.fn '-asg- elem.thm-index '-okp-lemma))
+       ((mv okp-lemma-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                           nil
+                                           elem.names-to-avoid
+                                           wrld))
+       (thm-index (1+ elem.thm-index))
+       (elem-fixtype (pack (type-kind elem-type)))
+       (index-okp (pack elem-fixtype '-array-index-okp))
+       (okp-lemma-formula `(,index-okp ,var ,sub-term))
+       (okp-lemma-formula (atc-contextualize okp-lemma-formula
+                                             gin.context
+                                             gin.fn
+                                             gin.fn-guard
+                                             nil
+                                             nil
+                                             nil
+                                             nil
+                                             wrld))
+       (okp-lemma-hints
+        `(("Goal"
+           :in-theory '(,gin.fn-guard if* test* declar assign)
+           :use (:guard-theorem ,gin.fn))))
+       ((mv okp-lemma-event &)
+        (evmac-generate-defthm okp-lemma-name
+                               :formula okp-lemma-formula
+                               :hints okp-lemma-hints
+                               :enable nil))
+       (new-compst `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                                   (,array-writer ,var ,sub-term ,elem-term)
+                                   ,gin.compst-var))
+       (new-compst (untranslate$ new-compst nil state))
+       (asg-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv asg-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix asg-thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (asg-formula `(equal (exec-expr-asg ',asg
+                                           ,gin.compst-var
+                                           ,gin.fenv-var
+                                           ,gin.limit-var)
+                            ,new-compst))
+       (asg-formula (atc-contextualize asg-formula
+                                       gin.context
+                                       gin.fn
+                                       gin.fn-guard
+                                       gin.compst-var
+                                       gin.limit-var
+                                       asg-limit
+                                       t
+                                       wrld))
+       (exec-expr-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
+        (pack 'exec-expr-asg-arrsub-when-
+              elem-fixtype
+              '-arrayp-for-modular-proofs))
+       (value-kind-when-sub-type-pred
+        (atc-type-to-value-kind-thm sub.type gin.prec-tags))
+       (value-kind-when-elem-type-pred
+        (atc-type-to-value-kind-thm elem-type gin.prec-tags))
+       (valuep-when-sub-type-pred
+        (atc-type-to-valuep-thm sub.type gin.prec-tags))
+       (valuep-when-elem-type-pred
+        (atc-type-to-valuep-thm elem-type gin.prec-tags))
+       (valuep-when-arr-type-pred
+        (atc-type-to-valuep-thm arr.type gin.prec-tags))
+       (sub-type-pred (atc-type-to-recognizer sub.type gin.prec-tags))
+       (cintegerp-when-sub-type-pred (pack 'cintegerp-when- sub-type-pred))
+       (elem-fixtype-arrayp-of-elem-fixtype-array-write
+        (pack elem-fixtype '-arrayp-of- elem-fixtype '-array-write))
+       (elem-fixtype-array-length-of-elem-fixtype-array-write
+        (pack elem-fixtype '-array-length-of- elem-fixtype '-array-write))
+       (type-of-value-when-elem-fixtype-arrayp
+        (atc-type-to-type-of-value-thm arr.type gin.prec-tags))
+       (value-array->length-when-elem-fixtype-arrayp
+        (pack 'value-array->length-when- elem-fixtype '-arrayp))
+       (asg-hints
+        `(("Goal"
+           :in-theory
+           '(,exec-expr-asg-arrsub-when-elem-fixtype-arrayp-for-modular-proofs
+             (:e expr-kind)
+             (:e expr-binary->op)
+             (:e expr-binary->arg1)
+             (:e expr-binary->arg2)
+             (:e expr-arrsub->arr)
+             (:e expr-arrsub->sub)
+             (:e expr-ident->get)
+             (:e binop-kind)
+             not-zp-of-limit-variable
+             ,arr.thm-name
+             expr-valuep-of-expr-value
+             apconvert-expr-value-when-not-value-array
+             expr-value->value-of-expr-value
+             value-fix-when-valuep
+             ,(atc-var-info->thm varinfo)
+             ,sub.thm-name
+             ,value-kind-when-sub-type-pred
+             ,valuep-when-sub-type-pred
+             ,cintegerp-when-sub-type-pred
+             ,okp-lemma-name
+             ,elem.thm-name
+             ,value-kind-when-elem-type-pred
+             ,valuep-when-elem-type-pred
+             write-object-to-update-object
+             write-object-okp-when-valuep-of-read-object-no-syntaxp
+             ,valuep-when-arr-type-pred
+             ,elem-fixtype-arrayp-of-elem-fixtype-array-write
+             ,type-of-value-when-elem-fixtype-arrayp
+             ,value-array->length-when-elem-fixtype-arrayp
+             ,elem-fixtype-array-length-of-elem-fixtype-array-write))))
+       ((mv asg-event &) (evmac-generate-defthm asg-thm-name
+                                                :formula asg-formula
+                                                :hints asg-hints
+                                                :enable nil)))
     (retok item
-           limit
-           events
-           elem.thm-index
-           elem.names-to-avoid)))
+           item-limit
+           (append arr.events
+                   sub.events
+                   elem.events
+                   (list okp-lemma-event
+                         asg-event))
+           thm-index
+           names-to-avoid))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3185,7 +3318,7 @@
                         :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid))))
-             ((erp okp sub-term elem-term elem-type)
+             ((erp okp fn sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
               (b* (((erp item limit events thm-index names-to-avoid)
@@ -3194,6 +3327,7 @@
                                                   sub-term
                                                   elem-term
                                                   elem-type
+                                                  fn
                                                   wrapper?
                                                   gin
                                                   state))
