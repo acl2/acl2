@@ -1170,7 +1170,7 @@
        (thm-index (1+ elem.thm-index))
        (elem-fixtype (pack (type-kind elem-type)))
        (index-okp (pack elem-fixtype '-array-index-okp))
-       (okp-lemma-formula `(,index-okp ,var ,sub-term))
+       (okp-lemma-formula `(,index-okp ,var ,sub.term))
        (okp-lemma-formula (atc-contextualize okp-lemma-formula
                                              gin.context
                                              gin.fn
@@ -1190,7 +1190,7 @@
                                :hints okp-lemma-hints
                                :enable nil))
        (new-compst `(update-object ,(add-suffix-to-fn var "-OBJDES")
-                                   (,array-write-fn ,var ,sub-term ,elem-term)
+                                   (,array-write-fn ,var ,sub.term ,elem.term)
                                    ,gin.compst-var))
        (new-compst (untranslate$ new-compst nil state))
        (asg-thm-name (pack gin.fn '-correct- thm-index))
