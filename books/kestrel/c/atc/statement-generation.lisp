@@ -1293,16 +1293,35 @@
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
-                                                 :enable nil)))
+                                                 :enable nil))
+       ((mv item
+            item-limit
+            item-events
+            & ; item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-stmt stmt
+                                 stmt-limit
+                                 (append arr.events
+                                         sub.events
+                                         elem.events
+                                         (list okp-lemma-event
+                                               asg-event
+                                               expr-event
+                                               stmt-event))
+                                 stmt-thm-name
+                                 nil
+                                 (type-void)
+                                 new-compst
+                                 (change-stmt-gin
+                                  gin
+                                  :thm-index thm-index
+                                  :names-to-avoid names-to-avoid
+                                  :proofs (and stmt-thm-name t))
+                                 state)))
     (retok item
            item-limit
-           (append arr.events
-                   sub.events
-                   elem.events
-                   (list okp-lemma-event
-                         asg-event
-                         expr-event
-                         stmt-event))
+           item-events
            thm-index
            names-to-avoid))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
