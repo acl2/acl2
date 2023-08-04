@@ -1474,8 +1474,8 @@
                                   (fn-fun-env-thm symbolp)
                                   (limit pseudo-termp)
                                   state)
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+  :returns (mv (events pseudo-event-form-listp)
+               (print-event pseudo-event-formp)
                (name symbolp :hyp (symbol-symbol-alistp fn-thms)))
   :short "Generate the correctness theorem for a C function."
   :long
@@ -1752,8 +1752,12 @@
         (evmac-generate-defthm name
                                :formula formula
                                :hints hints
-                               :enable nil)))
-    (mv (list local-event) (list exported-event) name))
+                               :enable nil))
+       (print-event `(cw-event "~%~x0~|" ',exported-event)))
+    (mv (list local-event
+              exported-event)
+        print-event
+        name))
   :guard-hints
   (("Goal"
     :in-theory
@@ -2716,8 +2720,8 @@
                                  (prec-tags atc-string-taginfo-alistp)
                                  (names-to-avoid symbol-listp)
                                  state)
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+  :returns (mv (events pseudo-event-form-listp)
+               (print-event pseudo-event-formp)
                (name symbolp :hyp (symbol-symbol-alistp fn-thms))
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the correctness theorem for a C function."
@@ -2822,9 +2826,12 @@
         (evmac-generate-defthm name
                                :formula formula
                                :hints hints
-                               :enable nil)))
-    (mv (list lemma-event local-event)
-        (list exported-event)
+                               :enable nil))
+       (print-event `(cw-event "~%~x0~|" ',exported-event)))
+    (mv (list lemma-event
+              local-event
+              exported-event)
+        print-event
         name
         names-to-avoid)))
 
@@ -2844,8 +2851,7 @@
   :guard (not (eq fn 'quote))
   :returns (mv erp
                (fundef fundefp)
-               (local-event pseudo-event-form-listp)
-               (exported-event pseudo-event-form-listp)
+               (events pseudo-event-form-listp)
                (updated-prec-fns atc-symbol-fninfo-alistp
                                  :hyp (atc-symbol-fninfo-alistp prec-fns)
                                  :hints (("Goal" :in-theory (enable acons))))
@@ -2871,7 +2877,7 @@
      another 1 from there to @(tsee exec-block-item-list)
      in the @(':compound') case,
      and then we use the limit for the block."))
-  (b* (((reterr) (irr-fundef) nil nil nil nil)
+  (b* (((reterr) (irr-fundef) nil nil nil)
        (wrld (w state))
        (name (symbol-name fn))
        ((unless (paident-stringp name))
@@ -3019,8 +3025,8 @@
                                prec-objs
                                names-to-avoid
                                state))
-       ((mv fn-correct-local-events
-            fn-correct-exported-events
+       ((mv fn-correct-events
+            fn-correct-print-event
             fn-correct-thm
             names-to-avoid)
         (if (and body.thm-name
@@ -3046,7 +3052,7 @@
                                      prec-tags
                                      names-to-avoid
                                      state)
-          (b* (((mv local-events exported-events name)
+          (b* (((mv events print-event name)
                 (atc-gen-cfun-correct-thm fn
                                           typed-formals
                                           body.type
@@ -3062,12 +3068,14 @@
                                           fn-fun-env-thm
                                           limit
                                           state)))
-            (mv local-events exported-events name names-to-avoid))))
+            (mv events print-event name names-to-avoid))))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
+       (print-result? (and (evmac-input-print->= print :result)
+                           (list fn-correct-print-event)))
        (local-events (append progress-start?
                              (list fn-fun-env-event)
                              (list fn-guard-event)
@@ -3081,9 +3089,9 @@
                              (and body.thm-name
                                   (list pop-frame-event))
                              fn-result-events
-                             fn-correct-local-events
-                             progress-end?))
-       (exported-events fn-correct-exported-events)
+                             fn-correct-events
+                             progress-end?
+                             print-result?))
        (info (make-atc-fn-info
               :out-type body.type
               :in-types (atc-var-info-list->type-list
@@ -3097,7 +3105,6 @@
               :limit limit)))
     (retok fundef
            (and proofs local-events)
-           (and proofs exported-events)
            (acons fn info prec-fns)
            names-to-avoid))
   :guard-hints

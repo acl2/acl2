@@ -286,8 +286,7 @@
                                  names-to-avoid))
                       (b* (((reterr) nil nil nil nil nil nil)
                            ((erp fundef
-                                 local-events
-                                 exported-events
+                                 events
                                  prec-fns
                                  names-to-avoid)
                             (atc-gen-fundef fn prec-fns prec-tags prec-objs
@@ -302,14 +301,14 @@
                                           (fundef-to-fun-declon fundef)))
                                    (list ext)
                                    prec-fns
-                                   local-events
-                                   exported-events
+                                   events
+                                   nil
                                    names-to-avoid)
                           (retok nil
                                  (list ext)
                                  prec-fns
-                                 local-events
-                                 exported-events
+                                 events
+                                 nil
                                  names-to-avoid))))))
                 (retok exts-h
                        exts-c
