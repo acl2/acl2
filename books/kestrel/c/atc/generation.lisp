@@ -270,8 +270,7 @@
                          names-to-avoid)
                     (if (irecursivep+ fn wrld)
                         (b* (((reterr) nil nil nil nil nil nil)
-                             ((erp local-events
-                                   exported-events
+                             ((erp events
                                    prec-fns
                                    names-to-avoid)
                               (atc-gen-loop fn prec-fns prec-tags prec-objs
@@ -282,8 +281,8 @@
                           (retok nil
                                  nil
                                  prec-fns
-                                 local-events
-                                 exported-events
+                                 events
+                                 nil
                                  names-to-avoid))
                       (b* (((reterr) nil nil nil nil nil nil)
                            ((erp fundef

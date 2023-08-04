@@ -3926,8 +3926,8 @@
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (irecursivep+ fn (w state))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+  :returns (mv (events pseudo-event-form-listp)
+               (print-event pseudo-event-formp)
                (fn-correct-thm symbolp :hyp (symbol-symbol-alistp fn-thms))
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
@@ -4218,11 +4218,11 @@
                                :formula formula-thm
                                :hints thm-hints
                                :enable nil))
-       (local-events (list correct-lemma-event
-                           correct-thm-local-event))
-       (exported-events (list correct-thm-exported-event)))
-    (mv local-events
-        exported-events
+       (print-event `(cw-event "~%~x0~|" ',correct-thm-exported-event)))
+    (mv (list correct-lemma-event
+              correct-thm-local-event
+              correct-thm-exported-event)
+        print-event
         correct-thm
         names-to-avoid)))
 
@@ -4245,8 +4245,7 @@
               (irecursivep+ fn (w state))
               (not (eq fn 'quote)))
   :returns (mv erp
-               (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+               (events pseudo-event-form-listp)
                (updated-prec-fns atc-symbol-fninfo-alistp
                                  :hyp (and (symbolp fn)
                                            (atc-symbol-fninfo-alistp prec-fns))
@@ -4271,7 +4270,7 @@
     "For now we do not generate a guard function for the guard of @('fn');
      also, we do not generate theorems for the formal parameters for now.
      We will change this soon."))
-  (b* (((reterr) nil nil nil nil)
+  (b* (((reterr) nil nil nil)
        (wrld (w state))
        ((mv measure-of-fn-event
             measure-of-fn
@@ -4309,14 +4308,13 @@
                                            :proofs nil)
                            state))
        (names-to-avoid loop.names-to-avoid)
-       ((erp local-events
-             exported-events
+       ((erp events
              natp-of-measure-of-fn-thm
              fn-result-thm
              fn-correct-thm
              names-to-avoid)
         (if proofs
-            (b* (((reterr) nil nil nil nil nil nil)
+            (b* (((reterr) nil nil nil nil nil)
                  ((mv fn-result-events
                       fn-result-thm
                       names-to-avoid)
@@ -4388,8 +4386,8 @@
                                                  loop.limit-body
                                                  names-to-avoid
                                                  state))
-                 ((mv correct-local-events
-                      correct-exported-events
+                 ((mv correct-events
+                      print-event
                       fn-correct-thm
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
@@ -4417,28 +4415,30 @@
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
                  (progress-end? (and (evmac-input-print->= print :info)
                                      `((cw-event " done.~%"))))
-                 (local-events (append (list fn-guard-event)
-                                       formals-events
-                                       loop.events
-                                       progress-start?
-                                       (and measure-of-fn
-                                            (list measure-of-fn-event))
-                                       fn-result-events
-                                       exec-stmt-while-events
-                                       (list natp-of-measure-of-fn-thm-event)
-                                       (list termination-of-fn-thm-event)
-                                       test-local-events
-                                       body-local-events
-                                       correct-local-events
-                                       progress-end?))
-                 (exported-events correct-exported-events))
-              (retok local-events
-                     exported-events
+                 (print-result?
+                  (and (evmac-input-print->= print :result)
+                       (list print-event)))
+                 (events (append progress-start?
+                                 (list fn-guard-event)
+                                 formals-events
+                                 loop.events
+                                 (and measure-of-fn
+                                      (list measure-of-fn-event))
+                                 fn-result-events
+                                 exec-stmt-while-events
+                                 (list natp-of-measure-of-fn-thm-event)
+                                 (list termination-of-fn-thm-event)
+                                 test-local-events
+                                 body-local-events
+                                 correct-events
+                                 progress-end?
+                                 print-result?)))
+              (retok events
                      natp-of-measure-of-fn-thm
                      fn-result-thm
                      fn-correct-thm
                      names-to-avoid))
-          (retok nil nil nil nil nil names-to-avoid)))
+          (retok nil nil nil nil names-to-avoid)))
        (info (make-atc-fn-info :out-type nil
                                :in-types (atc-var-info-list->type-list
                                           (strip-cdrs typed-formals))
@@ -4449,8 +4449,7 @@
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
                                :limit loop.limit-all)))
-    (retok local-events
-           exported-events
+    (retok events
            (acons fn info prec-fns)
            names-to-avoid))
   :prepwork
