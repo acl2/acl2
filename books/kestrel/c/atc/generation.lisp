@@ -427,8 +427,7 @@
 (define atc-gen-prog-const ((prog-const symbolp)
                             (fileset filesetp)
                             (print evmac-input-print-p))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
+  :returns (events pseudo-event-form-listp)
   :short "Generate the named constant for the abstract syntax tree
           of the generated C code (i.e. C file set)."
   :long
@@ -438,13 +437,16 @@
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the named constant..."))))
+       (defconst-event `(defconst ,prog-const ',fileset))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
-       (defconst-event `(defconst ,prog-const ',fileset))
-       (local-event `(progn ,@progress-start?
-                            (local ,defconst-event)
-                            ,@progress-end?)))
-    (mv local-event defconst-event)))
+       (print-result?
+        (and (evmac-input-print->= print :result)
+             `((cw-event "~%~x0~|" ',defconst-event)))))
+    (append progress-start?
+            (list defconst-event)
+            progress-end?
+            print-result?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -614,17 +616,14 @@
                                                             proofs
                                                             prog-const
                                                             fileset))
-       ((mv local-const-event exported-const-event)
-        (if proofs
-            (atc-gen-prog-const prog-const fileset print)
-          (mv nil nil)))
+       (const-events (and proofs
+                          (atc-gen-prog-const prog-const fileset print)))
        (local-events (append appcond-local-events
-                             (and proofs (list local-const-event))
+                             const-events
                              wf-thm-local-events
                              local-init-fun-env-events
                              fn-thm-local-events))
-       (exported-events (append (and proofs (list exported-const-event))
-                                wf-thm-exported-events
+       (exported-events (append wf-thm-exported-events
                                 fn-thm-exported-events)))
     (retok fileset
            local-events
