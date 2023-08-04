@@ -1043,7 +1043,7 @@
                                       (sub-term pseudo-termp)
                                       (elem-term pseudo-termp)
                                       (elem-type typep)
-                                      (array-writer symbolp)
+                                      (array-write-fn symbolp)
                                       (wrapper? symbolp)
                                       (gin stmt-ginp)
                                       state)
@@ -1152,7 +1152,7 @@
        (varinfo (atc-get-var var gin.inscope))
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
-       ((when (eq array-writer 'quote))
+       ((when (eq array-write-fn 'quote))
         (reterr (raise "Internal error: array writer is QUOTE.")))
        ((when (or (not elem.thm-name)
                   (atc-var-info->externalp varinfo))) ; <- temporary
@@ -1190,7 +1190,7 @@
                                :hints okp-lemma-hints
                                :enable nil))
        (new-compst `(update-object ,(add-suffix-to-fn var "-OBJDES")
-                                   (,array-writer ,var ,sub-term ,elem-term)
+                                   (,array-write-fn ,var ,sub-term ,elem-term)
                                    ,gin.compst-var))
        (new-compst (untranslate$ new-compst nil state))
        (asg-thm-name (pack gin.fn '-correct- thm-index))
