@@ -434,10 +434,10 @@
   (xdoc::topstring
    (xdoc::p
     "This constant is not generated if @(':proofs') is @('nil')."))
-  (b* ((progress-start?
+  (b* ((defconst-event `(defconst ,prog-const ',fileset))
+       (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the named constant..."))))
-       (defconst-event `(defconst ,prog-const ',fileset))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
        (print-result?
@@ -454,8 +454,7 @@
                         (prog-const symbolp)
                         (wf-thm symbolp)
                         (print evmac-input-print-p))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp))
+  :returns (events pseudo-event-form-listp)
   :short "Generate the theorem asserting
           the static well-formedness of the generated C code
           (referenced as the named constant)."
@@ -474,11 +473,8 @@
      we expect that it should be easily provable
      using just the executable counterparts
      of @(tsee check-fileset) and @(tsee filesetp),
-     which are executable functions.")
-   (xdoc::p
-    "We generate singleton lists of events if @(':proofs') is @('t'),
-     empty lists otherwise."))
-  (b* (((unless proofs) (mv nil nil))
+     which are executable functions."))
+  (b* (((unless proofs) nil)
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
@@ -492,11 +488,13 @@
              `((cw-event "~%Generating the well-formedness theorem..."))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
-       (local-event `(progn ,@progress-start?
-                            ,local-event
-                            ,@progress-end?)))
-    (mv (list local-event)
-        (list exported-event))))
+       (print-result?
+        (and (evmac-input-print->= print :result)
+             `((cw-event "~%~x0~|" ',exported-event)))))
+    (append progress-start?
+            (list local-event exported-event)
+            progress-end?
+            print-result?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -589,8 +587,7 @@
                                               print 'atc state)))
               (mv appcond-events fn-appconds appcond-thms names-to-avoid))
           (mv nil nil nil nil)))
-       ((mv wf-thm-local-events wf-thm-exported-events)
-        (atc-gen-wf-thm proofs prog-const wf-thm print))
+       (wf-thm-events (atc-gen-wf-thm proofs prog-const wf-thm print))
        (init-fun-env-thm (add-suffix-to-fn prog-const "-FUN-ENV"))
        ((mv init-fun-env-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix init-fun-env-thm
@@ -620,11 +617,10 @@
                           (atc-gen-prog-const prog-const fileset print)))
        (local-events (append appcond-local-events
                              const-events
-                             wf-thm-local-events
+                             wf-thm-events
                              local-init-fun-env-events
                              fn-thm-local-events))
-       (exported-events (append wf-thm-exported-events
-                                fn-thm-exported-events)))
+       (exported-events fn-thm-exported-events))
     (retok fileset
            local-events
            exported-events
