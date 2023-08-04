@@ -1231,14 +1231,46 @@
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
-                                                :enable nil)))
+                                                :enable nil))
+       (expr-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv expr-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         expr-thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (expr-formula `(equal (exec-expr-call-or-asg ',asg
+                                                    ,gin.compst-var
+                                                    ,gin.fenv-var
+                                                    ,gin.limit-var)
+                             ,new-compst))
+       (expr-formula (atc-contextualize expr-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        expr-limit
+                                        t
+                                        wrld))
+       (expr-hints
+        `(("Goal" :in-theory '(exec-expr-call-or-asg-when-asg
+                               (:e expr-kind)
+                               not-zp-of-limit-variable
+                               compustatep-of-add-var
+                               compustatep-of-enter-scope
+                               compustatep-of-update-var
+                               ,asg-thm-name))))
+       ((mv expr-event &) (evmac-generate-defthm expr-thm-name
+                                                 :formula expr-formula
+                                                 :hints expr-hints
+                                                 :enable nil)))
     (retok item
            item-limit
            (append arr.events
                    sub.events
                    elem.events
                    (list okp-lemma-event
-                         asg-event))
+                         asg-event
+                         expr-event))
            thm-index
            names-to-avoid))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
