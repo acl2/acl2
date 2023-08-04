@@ -1262,6 +1262,37 @@
        ((mv expr-event &) (evmac-generate-defthm expr-thm-name
                                                  :formula expr-formula
                                                  :hints expr-hints
+                                                 :enable nil))
+       (stmt-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv stmt-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         stmt-thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (stmt-formula `(equal (exec-stmt ',stmt
+                                        ,gin.compst-var
+                                        ,gin.fenv-var
+                                        ,gin.limit-var)
+                             (mv nil ,new-compst)))
+       (stmt-formula (atc-contextualize stmt-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        stmt-limit
+                                        t
+                                        wrld))
+       (stmt-hints
+        `(("Goal" :in-theory '(exec-stmt-when-expr
+                               (:e stmt-kind)
+                               not-zp-of-limit-variable
+                               (:e stmt-expr->get)
+                               ,expr-thm-name
+                               compustatep-of-update-var
+                               compustatep-of-update-object))))
+       ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
+                                                 :formula stmt-formula
+                                                 :hints stmt-hints
                                                  :enable nil)))
     (retok item
            item-limit
@@ -1270,7 +1301,8 @@
                    elem.events
                    (list okp-lemma-event
                          asg-event
-                         expr-event))
+                         expr-event
+                         stmt-event))
            thm-index
            names-to-avoid))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
