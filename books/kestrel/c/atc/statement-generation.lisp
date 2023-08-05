@@ -1049,13 +1049,17 @@
                                       state)
   :returns (mv erp
                (item block-itemp)
+               (val-term* pseudo-termp :hyp (symbolp array-write-fn))
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
+               (thm-name symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
                (thm-index posp)
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to an array element."
-  (b* (((reterr) (irr-block-item) nil nil 1 nil)
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((unless (eq wrapper? nil))
@@ -1154,11 +1158,16 @@
         (reterr (raise "Internal error: no information for variable ~x0." var)))
        ((when (eq array-write-fn 'quote))
         (reterr (raise "Internal error: array writer is QUOTE.")))
+       (array-write-term `(,array-write-fn ,var ,sub.term ,elem.term))
        ((when (or (not elem.thm-name)
                   (atc-var-info->externalp varinfo))) ; <- temporary
         (retok item
+               array-write-term
                item-limit
                (append arr.events sub.events elem.events)
+               nil
+               gin.inscope
+               gin.context
                elem.thm-index
                elem.names-to-avoid))
        (okp-lemma-name (pack gin.fn '-asg- elem.thm-index '-okp-lemma))
@@ -1190,7 +1199,7 @@
                                :hints okp-lemma-hints
                                :enable nil))
        (new-compst `(update-object ,(add-suffix-to-fn var "-OBJDES")
-                                   (,array-write-fn ,var ,sub.term ,elem.term)
+                                   ,array-write-term
                                    ,gin.compst-var))
        (new-compst (untranslate$ new-compst nil state))
        (asg-thm-name (pack gin.fn '-correct- thm-index))
@@ -1276,7 +1285,7 @@
        ((mv item
             item-limit
             item-events
-            & ; item-thm-name
+            item-thm-name
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
@@ -1293,13 +1302,56 @@
                                  :thm-index thm-index
                                  :names-to-avoid names-to-avoid
                                  :proofs (and asg-thm-name t))
-                                state)))
+                                state))
+       (new-context
+        (atc-context-extend gin.context
+                            (list
+                             (make-atc-premise-cvalue
+                              :var var
+                              :term array-write-term)
+                             (make-atc-premise-compustate
+                              :var gin.compst-var
+                              :term `(update-object
+                                      ,(add-suffix-to-fn var "-OBJDES")
+                                      ,var
+                                      ,gin.compst-var)))))
+       (new-inscope-rules `(objdesign-of-var-of-update-object
+                            read-object-auto/static-of-update-object-alloc
+                            objdesign-kind-of-objdesign-of-var
+                            compustate-frames-number-of-add-var-not-zero
+                            read-object-of-update-object-same
+                            value-fix-when-valuep
+                            ,valuep-when-arr-type-pred
+                            ,elem-fixtype-arrayp-of-elem-fixtype-array-write))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope gin.fn
+                             gin.fn-guard
+                             gin.inscope
+                             new-context
+                             gin.compst-var
+                             new-inscope-rules
+                             gin.prec-tags
+                             thm-index
+                             names-to-avoid
+                             wrld))
+       (thm-index (1+ thm-index))
+       (events (append item-events
+                       (and nil ; temporary
+                            new-inscope-events))))
     (retok item
+           array-write-term
            item-limit
-           item-events
+           events
+           item-thm-name
+           new-inscope
+           new-context
            thm-index
            names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+  :prepwork ((local (in-theory (enable pseudo-termp))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3379,7 +3431,15 @@
              ((erp okp fn sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
-              (b* (((erp item limit events thm-index names-to-avoid)
+              (b* (((erp item
+                         & ; val-term*
+                         limit
+                         events
+                         & ; thm-name
+                         & ; new-inscope
+                         & ; new-context
+                         thm-index
+                         names-to-avoid)
                     (atc-gen-block-item-array-asg var
                                                   val-term
                                                   sub-term
