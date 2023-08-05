@@ -238,7 +238,7 @@
     consists of a sign bit, some value bits, and optionally some padding bits
     [C:6.2.6.2/2].
     The signed representation may be
-    two's complement, one's complement, or sign and magnitude
+    two's complement, ones' complement, or sign and magnitude
     [C:6.2.6.2/2].
     All these choices are implementation-dependent,
     and determine the range of @('int') values,

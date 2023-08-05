@@ -463,6 +463,11 @@
      due to running on a slow machine, or with many threads when few are
      available).")
 
+   (xdoc::p
+    "Tools @(tsee functions-after) and @(tsee macros-after) return names of
+     functions and macros, respectively, that were introduced after a given
+     name.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
