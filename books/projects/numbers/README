@@ -72,6 +72,13 @@ number theory.  It includes the following ACL2 books:
       quantities.  As an application, we derive the Euclid-Euler characterization of
       even perfect numbers.
 
+  triples
+      Given integers m and n with m > n > 0, let a = m^2 - n^2, b = 2mn, and 
+      c = m^2 + n^2.  Then a, b, and c form a Pythagorean triple, i.e., a^2 + b^2 = 
+      c^2.  In fact, for every Pythagorean triple a, b, c, there exist m and n that 
+      satisfy these relations, possibly with a and b interchanged.
+
+
   ballot
       Bertrand's ballot theorem:  In an election, Candidates A and B receive a and b 
       votes, respectively.  The votes are counted sequentially.  If a > b, then the
