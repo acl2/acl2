@@ -2058,6 +2058,15 @@
      note that it cannot conflict with other variables,
      for the same reason as @('x-ptr').")
    (xdoc::p
+    "In addition, for each formal @('x') not representing an external object
+     and whose C type is a pointer or array,
+     we generate a portion of the preamble saying that
+     the designated object is disjoint from
+     the objects designated by other formal parameters.
+     We collect these disjointness hypotheses separately,
+     so that we can put them all at the end of the final list of preamble terms,
+     instead of interspersed with other preamble terms, for readability.")
+   (xdoc::p
     "For each formal @('x') not representing an external object
      and whose C type is not pointer or array (i.e. is integer of structure),
      we generate no preamble terms.
@@ -2068,32 +2077,79 @@
      @('x') equals @(tsee read-object) applied to
      the object designator for the variable in static storage.
      This is adequate whether the external object is an integer or an array."))
-  (b* (((when (endp typed-formals)) nil)
-       ((cons var info) (car typed-formals))
-       (type (atc-var-info->type info))
-       (externalp (atc-var-info->externalp info))
-       (terms
-        (if externalp
-            `((equal ,var
-                     (read-object (objdesign-static (ident ,(symbol-name var)))
-                                  ,compst-var)))
-          (if (member-eq (type-kind type) '(:pointer :array))
-              (b* ((var-ptr (add-suffix-to-fn var "-PTR"))
-                   (var-objdes (add-suffix-to-fn var "-OBJDES"))
-                   (reftype (if (type-case type :pointer)
-                                (type-pointer->to type)
-                              (type-array->of type))))
-                `((valuep ,var-ptr)
-                  (equal (value-kind ,var-ptr) :pointer)
-                  (value-pointer-validp ,var-ptr)
-                  (equal ,var-objdes (value-pointer->designator ,var-ptr))
-                  (equal (objdesign-kind ,var-objdes) :alloc)
-                  (equal (value-pointer->reftype ,var-ptr)
-                         ,(type-to-maker reftype))
-                  (equal ,var (read-object ,var-objdes ,compst-var))))
-            nil)))
-       (more-terms (atc-gen-context-preamble (cdr typed-formals) compst-var)))
-    (append terms more-terms)))
+  (b* (((mv terms-about-single-formals
+            terms-about-formal-pairs)
+        (atc-gen-context-preamble-aux typed-formals compst-var)))
+    (append terms-about-single-formals
+            terms-about-formal-pairs))
+
+  :prepwork
+  ((define atc-gen-context-preamble-aux
+     ((typed-formals atc-symbol-varinfo-alistp)
+      (compst-var symbolp))
+     :returns (mv (terms-about-single-formals true-listp)
+                  (terms-about-formal-pairs true-listp))
+     :parents nil
+     (b* (((when (endp typed-formals)) (mv nil nil))
+          ((cons var info) (car typed-formals))
+          (type (atc-var-info->type info))
+          (externalp (atc-var-info->externalp info))
+          ((mv terms-about-this-formal
+               terms-about-this-and-other-formals)
+           (if externalp
+               (mv `((equal ,var
+                            (read-object (objdesign-static (ident
+                                                            ,(symbol-name var)))
+                                         ,compst-var)))
+                   nil)
+             (if (member-eq (type-kind type) '(:pointer :array))
+                 (b* ((var-ptr (add-suffix-to-fn var "-PTR"))
+                      (var-objdes (add-suffix-to-fn var "-OBJDES"))
+                      (reftype (if (type-case type :pointer)
+                                   (type-pointer->to type)
+                                 (type-array->of type)))
+                      (terms-about-this-formal
+                       `((valuep ,var-ptr)
+                         (equal (value-kind ,var-ptr) :pointer)
+                         (value-pointer-validp ,var-ptr)
+                         (equal ,var-objdes
+                                (value-pointer->designator ,var-ptr))
+                         (equal (objdesign-kind ,var-objdes) :alloc)
+                         (equal (value-pointer->reftype ,var-ptr)
+                                ,(type-to-maker reftype))
+                         (equal ,var (read-object ,var-objdes ,compst-var))))
+                      (terms-about-this-and-other-formals
+                       (atc-gen-context-preamble-aux-aux var-ptr
+                                                         (cdr typed-formals))))
+                   (mv terms-about-this-formal
+                       terms-about-this-and-other-formals))
+               (mv nil nil))))
+          ((mv more-terms-about-single-formals
+               more-terms-about-formal-pairs)
+           (atc-gen-context-preamble-aux (cdr typed-formals) compst-var)))
+       (mv (append terms-about-this-formal
+                   more-terms-about-single-formals)
+           (append terms-about-this-and-other-formals
+                   more-terms-about-formal-pairs)))
+
+     :prepwork
+     ((define atc-gen-context-preamble-aux-aux
+        ((this-var-ptr symbolp)
+         (typed-formals-rest atc-symbol-varinfo-alistp))
+        :returns (terms true-listp)
+        (b* (((when (endp typed-formals-rest)) nil)
+             ((cons other-var other-info) (car typed-formals-rest)))
+          (if (and (member-equal (type-kind (atc-var-info->type other-info))
+                                 '(:pointer :array))
+                   (not (atc-var-info->externalp other-info)))
+              (cons `(object-disjointp
+                      (value-pointer->designator ,this-var-ptr)
+                      (value-pointer->designator ,(add-suffix-to-fn other-var
+                                                                    "-PTR")))
+                    (atc-gen-context-preamble-aux-aux this-var-ptr
+                                                      (cdr typed-formals-rest)))
+            (atc-gen-context-preamble-aux-aux this-var-ptr
+                                              (cdr typed-formals-rest)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
