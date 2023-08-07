@@ -208,7 +208,7 @@
           (('s ('quote x) & &)
            (mv (+ rest (ifix x))
                (+ 6 rest-size)))
-          (('c ('quote x) & & &)
+          (('c ('quote (x . &))  & & &)
            (mv (+ rest (ifix x))
                (+ 8 rest-size)))
           (& (mv rest rest-size)))))
@@ -229,12 +229,15 @@
   (define create-and-list-instance (lst)
     :returns (and-list-instance rp-termp
                                 :hyp (rp-term-listp lst))
-    (cond ((and (consp lst)
-                (atom (cdr lst))
-                (or (logbit-p (ex-from-rp (car lst)))
-                    (has-bitp-rp (car lst))
-                    (equal (car lst) ''1)))
+    (cond ((and*-exec
+            (consp lst)
+            (atom (cdr lst))
+            (or*-exec (logbit-p (ex-from-rp (car lst)))
+                      (has-bitp-rp (car lst))
+                      (equal (car lst) ''1)))
            (car lst))
+          ((atom lst)
+           ''1)
           (t
            `(and-list ',(and-list-hash lst) (list . ,lst))))))
 
