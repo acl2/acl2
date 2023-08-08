@@ -747,6 +747,7 @@
                                compustatep-of-add-var
                                compustatep-of-enter-scope
                                compustatep-of-update-var
+                               compustatep-of-update-object
                                ,asg-thm-name))))
        ((mv expr-event &) (evmac-generate-defthm expr-thm-name
                                                  :formula expr-formula
@@ -1321,16 +1322,45 @@
                                       ,gin.compst-var)))))
        (new-inscope-rules `(objdesign-of-var-of-update-object
                             objdesign-of-var-of-enter-scope-iff
+                            objdesign-of-var-of-add-var-iff
                             read-object-auto/static-of-update-object-alloc
+                            read-object-of-update-object-same
+                            read-object-of-update-object-disjoint
+                            read-object-of-objdesign-of-var-of-add-var
+                            read-object-of-objdesign-of-var-of-enter-scope
                             objdesign-kind-of-objdesign-of-var
                             compustate-frames-number-of-add-var-not-zero
                             compustate-frames-number-of-enter-scope-not-zero
-                            read-object-of-update-object-same
-                            read-object-of-update-object-disjoint
                             object-disjointp-commutative
                             value-fix-when-valuep
+                            remove-flexible-array-member-when-absent
+                            not-flexible-array-member-p-when-ucharp
+                            not-flexible-array-member-p-when-scharp
+                            not-flexible-array-member-p-when-ushortp
+                            not-flexible-array-member-p-when-sshortp
+                            not-flexible-array-member-p-when-uintp
+                            not-flexible-array-member-p-when-sintp
+                            not-flexible-array-member-p-when-ulongp
+                            not-flexible-array-member-p-when-slongp
+                            not-flexible-array-member-p-when-ullongp
+                            not-flexible-array-member-p-when-sllongp
+                            not-flexible-array-member-p-when-value-pointer
+                            valuep-when-ucharp
+                            valuep-when-scharp
+                            valuep-when-ushortp
+                            valuep-when-sshortp
+                            valuep-when-uintp
+                            valuep-when-sintp
+                            valuep-when-ulongp
+                            valuep-when-slongp
+                            valuep-when-ullongp
+                            valuep-when-sllongp
                             ,valuep-when-arr-type-pred
-                            ,elem-fixtype-arrayp-of-elem-fixtype-array-write))
+                            ,elem-fixtype-arrayp-of-elem-fixtype-array-write
+                            ident-fix-when-identp
+                            identp-of-ident
+                            equal-of-ident-and-ident
+                            (:e str-fix)))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -1418,7 +1448,8 @@
                                      compustatep-of-add-frame
                                      compustatep-of-enter-scope
                                      compustatep-of-add-var
-                                     compustatep-of-update-var))))
+                                     compustatep-of-update-var
+                                     compustatep-of-update-object))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -3442,9 +3473,9 @@
                          & ; asg-term
                          asg-limit
                          asg-events
-                         & ; asg-thm
-                         & ; new-inscope
-                         & ; new-context
+                         asg-thm
+                         new-inscope
+                         new-context
                          thm-index
                          names-to-avoid)
                     (atc-gen-block-item-array-asg var
@@ -3460,10 +3491,12 @@
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
+                                   :context new-context
                                    :var-term-alist var-term-alist-body
+                                   :inscope new-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs nil)
+                                   :proofs (and asg-thm t))
                                   state))
                    (limit `(binary-+ '1 (binary-+ ,asg-limit ,body.limit))))
                 (retok (make-stmt-gout
