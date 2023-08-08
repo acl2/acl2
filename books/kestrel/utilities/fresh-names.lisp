@@ -126,11 +126,10 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable fresh-symbol))))
 
-;; ;type-prescription already knows this?
-;; (defthm symbolp-of-fresh-symbol
-;;   (implies (symbolp desired-sym)
-;;            (symbolp (fresh-symbol desired-sym syms-to-avoid)))
-;;   :rule-classes :type-prescription)
+;;type-prescription already knows something similar
+(defthm symbolp-of-fresh-symbol
+  (implies (symbolp desired-sym)
+           (symbolp (fresh-symbol desired-sym syms-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
