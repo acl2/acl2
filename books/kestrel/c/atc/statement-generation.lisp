@@ -1316,10 +1316,14 @@
                                       ,var
                                       ,gin.compst-var)))))
        (new-inscope-rules `(objdesign-of-var-of-update-object
+                            objdesign-of-var-of-enter-scope-iff
                             read-object-auto/static-of-update-object-alloc
                             objdesign-kind-of-objdesign-of-var
                             compustate-frames-number-of-add-var-not-zero
+                            compustate-frames-number-of-enter-scope-not-zero
                             read-object-of-update-object-same
+                            read-object-of-update-object-disjoint
+                            object-disjointp-commutative
                             value-fix-when-valuep
                             ,valuep-when-arr-type-pred
                             ,elem-fixtype-arrayp-of-elem-fixtype-array-write))
@@ -1336,8 +1340,7 @@
                              wrld))
        (thm-index (1+ thm-index))
        (events (append item-events
-                       (and nil ; temporary
-                            new-inscope-events))))
+                       new-inscope-events)))
     (retok item
            array-write-term
            item-limit
