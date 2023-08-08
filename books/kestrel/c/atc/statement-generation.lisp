@@ -1059,6 +1059,10 @@
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to an array element."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is somewhat analogous to @(tsee atc-gen-block-item-var-asg)."))
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -3434,11 +3438,11 @@
              ((erp okp fn sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
-              (b* (((erp item
-                         & ; val-term*
-                         limit
-                         events
-                         & ; thm-name
+              (b* (((erp asg-item
+                         & ; asg-term
+                         asg-limit
+                         asg-events
+                         & ; asg-thm
                          & ; new-inscope
                          & ; new-context
                          thm-index
@@ -3461,15 +3465,15 @@
                                    :names-to-avoid names-to-avoid
                                    :proofs nil)
                                   state))
-                   (limit `(binary-+ '1 (binary-+ ,limit ,body.limit))))
+                   (limit `(binary-+ '1 (binary-+ ,asg-limit ,body.limit))))
                 (retok (make-stmt-gout
-                        :items (cons item body.items)
+                        :items (cons asg-item body.items)
                         :type body.type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
                         :inscope nil
                         :limit limit
-                        :events (append events body.events)
+                        :events (append asg-events body.events)
                         :thm-name nil
                         :thm-index body.thm-index
                         :names-to-avoid body.names-to-avoid))))
