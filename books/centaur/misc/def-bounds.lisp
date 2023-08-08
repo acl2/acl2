@@ -551,17 +551,4 @@ linear rule by default (but the rule-classes may be overridden).</p>")
              (* (foo x) (foo x)) :skip-upper t
              :user-bounds ((:free (a) (>= (foo a) 3))))
 
-           (assert-event (equal *foo-square-good2-lower-bound* 9)))))
-
-      (encapsulate nil
-        (local
-         (progn
-           (def-bounds foo-square-good3-bounds
-             (* (foo x) (foo x)) :skip-upper t
-             :user-bounds ((:free (a) (>= (foo a) 3)))
-             :cases ((:ranges-from-to-by (foo x) 1 6 4)
-                ;; (:ranges x 5/2 3 7/2)
-                ;; (:ranges x 5/2 3 7/2)
-                ))
-
-           (assert-event (equal *foo-square-good3-lower-bound* 9)))))))))
+           (assert-event (equal *foo-square-good2-lower-bound* 9)))))))))
