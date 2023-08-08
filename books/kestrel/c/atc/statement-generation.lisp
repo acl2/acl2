@@ -3470,7 +3470,7 @@
               (atc-check-array-write var val-term))
              ((when okp)
               (b* (((erp asg-item
-                         & ; asg-term
+                         asg-term
                          asg-limit
                          asg-events
                          asg-thm
@@ -3498,18 +3498,29 @@
                                    :names-to-avoid names-to-avoid
                                    :proofs (and asg-thm t))
                                   state))
-                   (limit `(binary-+ '1 (binary-+ ,asg-limit ,body.limit))))
-                (retok (make-stmt-gout
-                        :items (cons asg-item body.items)
-                        :type body.type
-                        :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
-                        :limit limit
-                        :events (append asg-events body.events)
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid))))
+                   (term (acl2::close-lambdas
+                          `((lambda (,var) ,body.term) ,asg-term)))
+                   (items-gout
+                    (atc-gen-block-item-list-cons
+                     term
+                     asg-item
+                     asg-limit
+                     asg-events
+                     asg-thm
+                     body.items
+                     body.limit
+                     body.events
+                     body.thm-name
+                     body.type
+                     body.context
+                     body.inscope
+                     (change-stmt-gin
+                      gin
+                      :thm-index body.thm-index
+                      :names-to-avoid body.names-to-avoid
+                      :proofs nil) ; TODO: (and body.thm-name t) instead of nil
+                     state)))
+                (retok items-gout)))
              ((erp okp member-term tag member-name member-type)
               (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
