@@ -52,9 +52,10 @@
                             (equal (uaconvert-values x y)
                                    (mv ,lterm ,rterm)))
                    :enable (uaconvert-values
-                            uaconvert-types
-                            promote-type
-                            convert-integer-value-to-type-of-value
+                            type-of-value-when-ucharp
+                            type-of-value-when-scharp
+                            type-of-value-when-ushortp
+                            type-of-value-when-sshortp
                             type-of-value-when-sintp
                             type-of-value-when-uintp
                             type-of-value-when-slongp
@@ -67,9 +68,6 @@
                             valuep-when-slongp
                             valuep-when-ullongp
                             valuep-when-sllongp
-                            value-integerp
-                            value-unsigned-integerp-alt-def
-                            value-signed-integerp-alt-def
                             bit-width-value-choices
                             ,@*atc-convert-integer-value-rules*))))
       (mv name event))
