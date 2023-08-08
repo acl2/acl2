@@ -24,8 +24,7 @@
           :exec 48)))
 
 (defthm natp-of-decimal-digit-char-value
-  (implies (and (characterp char)
-                (digit-char-p char))
+  (implies (digit-char-p char)
            (natp (decimal-digit-char-value char)))
   :hints (("Goal" :in-theory (enable decimal-digit-char-value))))
 
@@ -96,17 +95,14 @@
       (mv acc chars))))
 
 (defthm natp-of-mv-nth-0-of-parse-decimal-digits-from-chars
-  (implies (and (mv-nth 0 (parse-decimal-digits-from-chars chars acc))
-                (natp acc))
+  (implies (natp acc)
            (natp (mv-nth 0 (parse-decimal-digits-from-chars chars acc))))
   :hints (("Goal" :in-theory (enable parse-decimal-digits-from-chars))))
 
 (defthm natp-of-mv-nth-0-of-parse-decimal-digits-from-chars-type
   (implies (natp acc)
-           (or (null (mv-nth 0 (parse-decimal-digits-from-chars chars acc)))
-               (natp (mv-nth 0 (parse-decimal-digits-from-chars chars acc)))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable parse-decimal-digits-from-chars))))
+           (natp (mv-nth 0 (parse-decimal-digits-from-chars chars acc))))
+  :rule-classes :type-prescription)
 
 (defthm len-of-mv-nth-1-of-parse-decimal-digits-from-chars-weak-linear
   (<= (len (mv-nth 1 (parse-decimal-digits-from-chars chars acc)))
@@ -166,8 +162,7 @@
 
 (defthm natp-of-mv-nth-0-of-parse-decimal-number-from-chars
   (implies (mv-nth 0 (parse-decimal-number-from-chars chars))
-           (natp (mv-nth 0 (parse-decimal-number-from-chars chars))))
-  :hints (("Goal" :in-theory (enable parse-decimal-number-from-chars))))
+           (natp (mv-nth 0 (parse-decimal-number-from-chars chars)))))
 
 ;; (parse-decimal-number-from-chars '(#\1 #\2 #\3 #\4 #\5 #\6 #\Z))
 ;; (parse-decimal-number-from-chars '(#\1 #\2 #\3 #\4 #\5 #\6))

@@ -59,7 +59,9 @@
   (subsetp-equal x
                  (append (intersection-equal y x)
                          (set-difference-equal x y)))
-  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal set-difference-equal))))
+  :hints (("Goal" :in-theory (e/d (subsetp-equal intersection-equal set-difference-equal)
+                                  (;; for speed:
+                                   remove-equal)))))
 
 (defthm subsetp-equal-of-append-of-set-difference-equal-same-when-subsetp-equal
   (implies (subsetp-equal z x)

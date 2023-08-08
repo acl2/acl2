@@ -68,7 +68,8 @@
 ;; matches better
 (defthm typed-io-listp-of-cdr-gen
   (implies (and (open-channel1 l)
-                (equal typ (cadr (car l))))
+                (equal typ (cadr (car l))) ; the file-type from-the header
+                )
            (typed-io-listp (cdr l) typ)))
 
 ;; Avoid name clash with std

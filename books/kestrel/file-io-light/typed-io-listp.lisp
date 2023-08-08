@@ -34,3 +34,8 @@
   (implies (typed-io-listp l :byte)
            (unsigned-byte-listp 8 l))
   :hints (("Goal" :in-theory (enable typed-io-listp unsigned-byte-listp))))
+
+(defthm typed-io-listp-of-cdr
+  (implies (typed-io-listp l typ)
+           (typed-io-listp (cdr l) typ))
+  :hints (("Goal" :in-theory (enable typed-io-listp revappend true-list-fix))))

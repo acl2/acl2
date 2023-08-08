@@ -2213,7 +2213,7 @@
     (if (weak-dagp item)
         (let ((dag-fns (dag-fns item)))
           (if (not (function-symbolsp dag-fns (w state)))
-              (er hard? 'dag-or-term-to-term "Some unknown functions among those in DAG: ~X01." dag-fns)
+              (er hard? 'dag-or-term-to-term "Some unknown functions among those in DAG: ~X01." dag-fns nil)
             ;; we embed a DAG in a call to dag-val-with-axe-evaluator, to avoid
             ;; explosion in the term size:
             `(dag-val-with-axe-evaluator ',item

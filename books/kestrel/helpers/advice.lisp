@@ -12,8 +12,13 @@
 
 ;; SETUP:
 ;;
-;; 1. Set the ACL2_ADVICE_SERVER environment variable to the server URL (often
-;; ends in '/machine_interface')
+;; 1. Execute table events to register the models, each supplying a nickname for
+;; the model (a keyword), the URL of the model (a string), and the name the
+;; server uses for the model (a string).  Example:
+;;
+;; (table advice-server :my-model '("https://example.com/machine_interface" "model1"))
+;;
+;; Consider putting these table events in your ~/acl2-customization.lsp.
 ;;
 ;; 2. When using this tool, consider doing (adjust-ld-history t state) so
 ;; that the advice tool can give advice even when the failing theorem is not
@@ -114,6 +119,15 @@
 
 (defconst *step-limit* 100000)
 (defconst *time-limit* 5)
+
+;;move
+;; does this already exist somewhere?
+(defund acons-all-to-val (keys val alist)
+  (declare (xargs :guard (and (true-listp keys)
+                              (alistp alist))))
+  (if (endp keys)
+      alist
+    (acons (first keys) val (acons-all-to-val (rest keys) val alist))))
 
 ;; See :doc lemma-instance
 (defund symbol-that-can-be-usedp (sym wrld)
@@ -277,53 +291,18 @@
   :hints (("Goal" :in-theory (enable rec-types-to-strings))))
 
 ;; TODO: Make this extensible:
-(defconst *non-ml-models-and-strings*
-  '((:enable . "enable")
-    (:history . "history")))
+(defconst *function-models*
+  '(:enable :history))
 
-(defconst *non-ml-models*
-  (strip-cars *non-ml-models-and-strings*))
 
-(defconst *ml-models-and-strings*
-  '(;; Calpoly models:
-    (:calpoly . "kestrel-calpoly")
-    (:calpoly-run10.0 . "calpoly-run10.0")
-    (:calpoly-run10.1 . "calpoly-run10.1")
-    ;; Leidos models:
-    (:leidos-gpt . "leidos-gpt")
-    ;; note the capital L:
-    (:leidos . "Leidos")
-    ;; note the capital L and underscores:
-    (:leidos-run10.0 . "Leidos_run10_0")
-    (:leidos-run10.1 . "Leidos_run10_1")
-    (:plur . "plur")
-    ))
 
-(defconst *ml-models*
-  (strip-cars *ml-models-and-strings*))
+;; (defconst *known-models* (strip-cars *known-models-and-strings*))
 
-;; Ensures we don't have a model called :all
-(thm (not (member-equal :all *ml-models*)))
-
-(defconst *known-models-and-strings*
-  (append *ml-models-and-strings*
-          *non-ml-models-and-strings*))
-
-(defconst *known-models* (strip-cars *known-models-and-strings*))
-
-;;TODO: Ask the server for the list?
-(defconst *ready-models*
-  *known-models* ; (remove-eq :leidos-run10.0 *known-models*)
-  )
-
-;; Indicates one of the machine learning recommendation models.  Either one of
-;; the known models, or a string representing some unknown model (gets passed
-;; through to the HTTP request).
+;; Indicates one of the recommendation models.
 (defund model-namep (x)
   (declare (xargs :guard t))
-  (or (stringp x) ; raw string to pass in the HTTP POST data
-      (member-eq x *known-models*) ; known models
-      ))
+  (and (keywordp x)
+       (not (eq :all x))))
 
 ;; Recognizes a (duplicate-free) list of recommendation models.
 (defund model-namesp (models)
@@ -334,23 +313,20 @@
          ;; (not (member-equal (first models) (rest models))) ;; todo: add back?
          (model-namesp (rest models)))))
 
-(defun model-to-string (model)
-  (declare (xargs :guard (model-namep model)))
-  (if (stringp model)
-      model
-    ;; must be a keyword indicating a known model:
-    (let ((res (assoc-eq model *known-models-and-strings*)))
-      (if res
-          (cdr res)
-        (er hard? 'model-to-string "Unknown :model: ~x0." model)))))
+;; (defun model-to-string (model)
+;;   (declare (xargs :guard (model-namep model)))
+;;   (if (stringp model)
+;;       model
+;;     ;; must be a keyword indicating a known model:
+;;     (let ((res (assoc-eq model *known-models-and-strings*)))
+;;       (if res
+;;           (cdr res)
+;;         (er hard? 'model-to-string "Unknown :model: ~x0." model)))))
 
 (defun model-to-nice-string (model)
   (declare (xargs :guard (model-namep model)
                   :guard-hints (("Goal" :in-theory (enable model-namep member-equal)))))
-  (if (stringp model)
-      model
-    ;; must be a keyword indicating a known model:
-    (acl2::string-downcase-gen (symbol-name model))))
+  (acl2::string-downcase-gen (symbol-name model)))
 
 ;; ;; The source of a recommendation: Either one of the ML models or the advice tool itself.
 ;; (defund rec-sourcep (x)
@@ -1212,7 +1188,7 @@
          (b* (        ; Try to include the recommended book:
               ((mv erp state) (acl2::submit-event include-book-form nil nil state))
               ((when erp) ; can happen if there is a name clash
-               (cw "NOTE: Event failed (possible name clash): ~x0.~%" include-book-form)
+               (cw "NOTE: Event failed (name clash? uncertified book?): ~x0.~%" include-book-form)
                (mv nil nil state))
               ;; Check that we didn't bring in the current-book:
               ((when (and avoid-current-bookp
@@ -3018,43 +2994,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;move
-(defun acons-all-to-val (keys val alist)
-  (declare (xargs :guard (and (true-listp keys)
-                              (alistp alist))))
-  (if (endp keys)
-      alist
-    (acons (first keys) val (acons-all-to-val (rest keys) val alist))))
+;; The information about a model, either :function, meaning it's an ACL2
+;; function, or a list containing a server URL and the name by which the server
+;; knows the model.  Also allowed is nil, meaning the model is disabled.
+(defund model-infop (info)
+  (declare (xargs :guard t))
+  (or (and (true-listp info)
+           (= 2 (len info))
+           (stringp (first info))  ; server URL
+           (stringp (second info)) ; name of the model, on that server
+           )
+      (eq info :function) ; model is just function, no server needed
+      (null info)         ; model is disabled
+      ))
+
+;; Recgonizes an alist that binds each model-name to one of:
+;; 1. a doublet containing a server URL and the name the server uses for the model, both strings
+;; 2. the symbol :function, meaning the model is just an ACL2 function to call
+;; 3. nil, meaning the model is disabled.
+(defun model-info-alistp (alist)
+  (declare (xargs :guard t))
+  (if (atom alist)
+      (null alist)
+    (let ((entry (first alist)))
+      (and (consp entry)
+           (model-namep (car entry))
+           (model-infop (cdr entry))
+           (model-info-alistp (rest alist))))))
 
 ;; Returns (mv erp recs state).
-(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses broken-theorem server-url timeout debug print state)
+(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; broken-theorem is a thm or defthm form
-                              (or (null server-url) ; nil means get url from environment variable
-                                  (stringp server-url))
+                              (model-infop model-info)
                               (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
                   :mode :program ; because of make-numbered-checkpoint-entries
                   :stobjs state))
-  (b* ((model-string (model-to-string model))
-       ;; Get server info:
-       ((mv erp server-url state)
-        (if server-url
-            ;; Use the server-url if supplied (rare):
-            (mv nil server-url state)
-          ;; Use model-specific environment var, if set.  Otherwise, use the general environment var:
-          (b* (((mv erp server-url state)
-                (getenv$ (concatenate 'string "ACL2_ADVICE_SERVER_" (symbol-name model)) state)))
-            (if (or erp server-url)
-                (mv erp server-url state)
-              (getenv$ "ACL2_ADVICE_SERVER" state)))))
-       ((when erp) (cw "ERROR getting ACL2_ADVICE_SERVER environment variable.") (mv erp nil state))
+  (b* (((when (not model-info))
+        (er hard? 'get-recs-from-ml-model "No info for model ~x0." model)
+        (mv :missing-model-info nil state))
+       ((when (eq :function model-info))
+        (er hard? 'get-recs-from-ml-model "Unexpected model info for ~x0." model)
+        (mv :unexpected-model-info nil state))
+       (server-url (first model-info))
+       (model-string (second model-info))
        ((when (not (stringp server-url)))
-        (er hard? 'advice-fn "Please set the ACL2_ADVICE_SERVER environment variable to the server URL (often ends in '/machine_interface').")
+        (er hard? 'advice-fn "Server URL is not a string: ~x0." server-url)
+        (mv :no-server nil state))
+       ((when (not (stringp model-string)))
+        (er hard? 'advice-fn "Model name for server is not a string: ~x0." model-string)
         (mv :no-server nil state))
        (- (and print (cw "Server for ~x0 is ~s1.~%" model server-url)))
        ;; Send query to server:
@@ -3114,23 +3107,23 @@
 
 ;; Goes through the MODELS, getting recs from each.  Returns an alist from model-names to rec-lists.
 ;; Returns (mv erp rec-alist state).
-(defun get-recs-from-models-aux (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print acc state)
-  (declare (xargs :guard (and (model-namesp models)
-                              (natp num-recs-per-model)
+(defun get-recs-from-models-aux (num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem model-info-alist timeout debug print acc state)
+  (declare (xargs :guard (and (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; theorem-body is an untranslated-term
                               ;; broken-theorem is a thm or defthm form
-                              (or (null server-url) ; nil means get url from environment variable
-                                  (stringp server-url))
+                              (model-info-alistp model-info-alist)
                               (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
                   :mode :program
                   :stobjs state))
-  (if (endp models)
+  (if (endp model-info-alist)
       (mv nil acc state) ; no error
-    (b* ((model (first models))
+    (b* ((entry (first model-info-alist))
+         (model (car entry))
+         (model-info (cdr entry))
          ((mv erp recs state)
           (if (eq :enable model)
               ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
@@ -3144,11 +3137,13 @@
                     (mv nil nil state) ; don't bother creating recs as they will be disallowed below
                   (make-recs-from-history num-recs-per-model print state))
               ;; It's a normal ML model:
-              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem server-url timeout debug print state))))
+              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state))))
          ((when erp) (mv erp nil state))
          ;; Remove any recs that are disallowed (todo: drop this now?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
-      (get-recs-from-models-aux (rest models) num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print
+      (get-recs-from-models-aux num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem
+                                (rest model-info-alist)
+                                timeout debug print
                                 ;; Associate this model with its recs in the result:
                                 (acons model recs acc)
                                 state))))
@@ -3156,22 +3151,20 @@
 ;; Returns an alist from model names to rec-lists.
 ;; Returns (mv erp rec-alist state).
 ;; TODO: Get rid of this wrapper.
-(defun get-recs-from-models (models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print acc state)
-  (declare (xargs :guard (and (model-namesp models)
-                              (natp num-recs-per-model)
+(defun get-recs-from-models (num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem model-info-alist timeout debug print acc state)
+  (declare (xargs :guard (and (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; theorem-body is an untranslated term (todo: translate outside this function?)
                               ;;  broken-theorem is a thm or defthm form
-                              (or (null server-url) ; nil means get url from environment variable
-                                  (stringp server-url))
+                              (model-info-alistp model-info-alist)
                               (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
                   :mode :program
                   :stobjs state))
   (b* ()
-    (get-recs-from-models-aux models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print acc state)))
+    (get-recs-from-models-aux num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem model-info-alist timeout debug print acc state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3273,13 +3266,12 @@
                                  avoid-current-bookp
                                  improve-recsp
                                  print
-                                 server-url
+                                 model-info-alist
                                  timeout
                                  debug
                                  step-limit time-limit
                                  disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
                                  max-wins
-                                 models
                                  state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (or (null current-book-absolute-path)
@@ -3293,8 +3285,7 @@
                               (natp num-recs-per-model)
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
-                              (or (null server-url) ; get url from environment variable
-                                  (stringp server-url))
+                              (model-info-alistp model-info-alist)
                               (natp timeout)
                               (booleanp debug)
                               (or (null step-limit)
@@ -3304,13 +3295,12 @@
                               (or ;; (eq :auto max-wins)
                                (null max-wins)
                                (natp max-wins))
-                              (rec-type-listp disallowed-rec-types)
-                              (model-namesp models))
+                              (rec-type-listp disallowed-rec-types))
                   :stobjs state
                   :mode :program))
   (b* ((state (acl2::widen-margins state))
        ((mv erp recommendation-alist state)
-        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem server-url timeout debug print nil state))
+        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem model-info-alist timeout debug print nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs recommendation-alist))
@@ -3373,13 +3363,12 @@
                              avoid-current-bookp
                              improve-recsp
                              print
-                             server-url
+                             model-info-alist
                              timeout
                              debug
                              step-limit time-limit
                              disallowed-rec-types
                              max-wins
-                             models
                              suppress-trivial-warningp
                              state)
   (declare (xargs :guard (and (symbolp theorem-name)
@@ -3394,8 +3383,7 @@
                               (booleanp avoid-current-bookp)
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
-                              (or (null server-url) ; get url from environment variable
-                                  (stringp server-url))
+                              (model-info-alistp model-info-alist)
                               (natp timeout)
                               (booleanp debug)
                               (or (null step-limit)
@@ -3406,7 +3394,6 @@
                               (or ;; (eq :auto max-wins)
                                (null max-wins)
                                (natp max-wins))
-                              (model-namesp models)
                               (booleanp suppress-trivial-warningp))
                   :stobjs state
                   :mode :program))
@@ -3437,14 +3424,62 @@
                                 avoid-current-bookp
                                 improve-recsp
                                 print
-                                server-url
+                                model-info-alist
                                 timeout
                                 debug
                                 step-limit time-limit
                                 disallowed-rec-types
                                 max-wins
-                                models
                                 state))))
+
+;; Keeps the entries in ALIST that correspond to the MODELS.  Also does some
+;; checking and skips models whose info is nil.
+(defund filter-advice-server-alist (alist models)
+  (declare (xargs :guard (and (model-info-alistp alist)
+                              (acl2::keyword-listp models))))
+  (if (endp alist)
+      nil
+    (let* ((entry (first alist))
+           (name (car entry))
+           (info (cdr entry)))
+      (if (not (member-eq name models))
+          (filter-advice-server-alist (rest alist) models)
+        (if (null info)
+            (prog2$ (cw "NOTE: Skipping model ~x0 (disabled).~%" name) ; perhaps the user called TABLE with a value of nil to suppress the model
+                    (filter-advice-server-alist (rest alist) models))
+          (if (not (model-infop info))
+              (er hard? 'filter-advice-server-alist "Bad model info: ~x0." entry)
+            (cons entry (filter-advice-server-alist (rest alist) models))))))))
+
+;; Returns a model-info-alist representing the selected MODELS, using the acl2::advice-server table.
+(defund make-model-info-alist (models wrld)
+  (declare (xargs :guard (and (or (eq :all models)
+                                  (model-namep models) ; represents a singleton set
+                                  (model-namesp models))
+                              (plist-worldp wrld))
+                  :verify-guards nil ; todo: and use tools!
+                  ))
+  (let* ( ;; single model stands for singleton list of that model:
+         (models (if (model-namep models) ; excludes :all
+                     (list models)
+                   models))
+         ;; reverse, just to match the order in which the user probably set the keys:
+         (advice-server-alist (reverse (table-alist 'acl2::advice-server wrld))))
+    (if (not (and (model-info-alistp advice-server-alist)
+                  (no-duplicatesp (strip-cars advice-server-alist))))
+        (er hard? 'make-model-info-alist "Bad advice-server-alist: ~x0." advice-server-alist)
+      (let* ( ;; Models that are simply ACL2 functions:
+             (all-function-models *function-models*)
+             (function-models (if (eq :all models)
+                                  all-function-models
+                                (intersection-eq all-function-models models)))
+             ;; Server models:
+             (all-server-models (strip-cars advice-server-alist))
+             (server-models (if (eq :all models)
+                                all-server-models
+                              (intersection-eq all-server-models models))))
+        (append (acons-all-to-val function-models :function nil)
+                (filter-advice-server-alist advice-server-alist server-models))))))
 
 ;; Returns (mv erp event state).
 (defun defthm-advice-fn (theorem-name
@@ -3455,7 +3490,6 @@
                          num-recs-per-model
                          improve-recsp
                          print
-                         server-url
                          timeout
                          debug
                          step-limit time-limit
@@ -3471,8 +3505,6 @@
                               (natp num-recs-per-model)
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
-                              (or (null server-url) ; get url from environment variable
-                                  (stringp server-url))
                               (natp timeout)
                               (booleanp debug)
                               (or (eq :auto step-limit) ; means use *step-limit*
@@ -3492,11 +3524,7 @@
                   :mode :program))
   (b* ((wrld (w state))
        ;; Elaborate options:
-       (models (if (eq models :all)
-                   *ready-models* ; *known-models*
-                 (if (model-namep models)
-                     (list models) ; single model stands for singleton list of that model
-                   models)))
+       (model-info-alist (make-model-info-alist models wrld))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
        (time-limit (if (eq :auto time-limit) *time-limit* time-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
@@ -3516,13 +3544,12 @@
                               t
                               improve-recsp
                               print
-                              server-url
+                              model-info-alist
                               timeout
                               debug
                               step-limit time-limit
                               disallowed-rec-types
                               max-wins
-                              models
                               nil
                               state))
        ((when erp) (mv erp nil state)))
@@ -3545,8 +3572,7 @@
                          (n '10) ; num-recs-per-model
                          (improve-recsp 't)
                          (print 't)
-                         (server-url 'nil)
-                         (timeout '40) ; for both connection timeout and read timeout
+                         (timeout '60) ; for both connection timeout and read timeout
                          (debug 'nil)
                          (step-limit ':auto)
                          (time-limit ':auto)
@@ -3556,7 +3582,7 @@
                          (rule-classes '(:rewrite))
                          )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,server-url ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
@@ -3570,7 +3596,6 @@
                       num-recs-per-model
                       improve-recsp
                       print
-                      server-url
                       timeout
                       debug
                       step-limit time-limit
@@ -3584,8 +3609,6 @@
                           (natp num-recs-per-model)
                           (booleanp improve-recsp)
                           (acl2::print-levelp print)
-                          (or (null server-url) ; get url from environment variable
-                              (stringp server-url))
                           (natp timeout)
                           (booleanp debug)
                           (or (eq :auto step-limit)   ; means use *step-limit*
@@ -3605,11 +3628,7 @@
                   :mode :program))
   (b* ((wrld (w state))
        ;; Elaborate options:
-       (models (if (eq models :all)
-                   *ready-models* ; *known-models*
-                 (if (model-namep models)
-                     (list models) ; single model stands for singleton list of that model
-                   models)))
+       (model-info-alist (make-model-info-alist models wrld))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
        (time-limit (if (eq :auto time-limit) *time-limit* time-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
@@ -3629,13 +3648,12 @@
                               t
                               improve-recsp
                               print
-                              server-url
+                              model-info-alist
                               timeout
                               debug
                               step-limit time-limit
                               disallowed-rec-types
                               max-wins
-                              models
                               nil
                               state))
        ((when erp) (mv erp nil state)))
@@ -3653,8 +3671,7 @@
                       ;; options for the advice:
                       (n '10) ; num-recs-per-model
                       (print 't)
-                      (server-url 'nil)
-                      (timeout '40) ; for both connection timeout and read timeout
+                      (timeout '60) ; for both connection timeout and read timeout
                       (debug 'nil)
                       (step-limit ':auto)
                       (time-limit ':auto)
@@ -3665,7 +3682,7 @@
                       ;; no rule-classes
                       )
   `(acl2::make-event-quiet
-    (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,server-url ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
@@ -3679,7 +3696,6 @@
 (defun advice-fn (n ; number of recommendations from ML requested
                   improve-recsp
                   print
-                  server-url
                   timeout
                   debug
                   step-limit time-limit
@@ -3690,8 +3706,6 @@
   (declare (xargs :guard (and (natp n)
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
-                              (or (null server-url)
-                                  (stringp server-url))
                               (natp timeout)
                               (acl2::checkpoint-list-guard t ;top-p
                                                      state)
@@ -3714,11 +3728,7 @@
                   ))
   (b* ((wrld (w state))
        ;; Elaborate options:
-       (models (if (eq models :all)
-                   *ready-models* ; *known-models*
-                 (if (model-namep models)
-                     (list models) ; single model stands for singleton list of that model
-                   models)))
+       (model-info-alist (make-model-info-alist models wrld))
        (step-limit (if (eq :auto step-limit) *step-limit* step-limit))
        (time-limit (if (eq :auto time-limit) *time-limit* time-limit))
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
@@ -3769,13 +3779,12 @@
                                   t ; avoid the current-book (but there isn't one, currently)
                                   improve-recsp
                                   print
-                                  server-url
+                                  model-info-alist
                                   timeout
                                   debug
                                   step-limit time-limit
                                   disallowed-rec-types
                                   max-wins
-                                  models
                                   state))
        ((when erp) (mv erp nil state))
        ;; Ensure there are no checkpoints left over from an attempt to use advice, in case the user calls the tool again.
@@ -3814,15 +3823,14 @@
 (defmacro advice (&key (n '10) ; num-recs-per-model
                        (improve-recsp 't)
                        (print 't)
-                       (server-url 'nil)
-                       (timeout '40) ; for both connection timeout and read timeout
+                       (timeout '60) ; for both connection timeout and read timeout
                        (debug 'nil)
                        (step-limit ':auto)
                        (time-limit ':auto)
                        (disallowed-rec-types 'nil)
                        (max-wins ':auto)
                        (models ':all))
-  `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,server-url ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
+  `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::advice (&rest rest) `(advice ,@rest))
@@ -3849,13 +3857,12 @@
                                                current-book-absolute-path
                                                improve-recsp ; whether to try to improve successful recommendations
                                                print
-                                               server-url
+                                               model-info-alist
                                                ;; timeout: TODO add
                                                debug
                                                step-limit
                                                time-limit
                                                disallowed-rec-types
-                                               models
                                                state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
                               ;; theorem-body is an untranslated term
@@ -3866,27 +3873,25 @@
                                   (stringp current-book-absolute-path))
                               (booleanp improve-recsp)
                               (acl2::print-levelp print)
-                              (or (null server-url) ; get url from environment variable
-                                  (stringp server-url))
+                              (model-info-alistp model-info-alist)
                               ;; (natp timeout) ; todo
                               (booleanp debug)
                               (or (null step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
                                   (rationalp time-limit))
-                              (rec-type-listp disallowed-rec-types)
-                              (model-namesp models))
+                              (rec-type-listp disallowed-rec-types))
                   :stobjs state
                   :mode :program))
   (b* ( ;; Get all the recs to try:
        ((mv erp recommendation-alist state)
-        (get-recs-from-models models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body
+        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body
                               ;; the presumed broken-theorem:
                               `(defthm fake-theorem-name ; todo: use the real name?
                                  ,theorem-body
                                  ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
                                  ,@(and theorem-hints `(:hints ,theorem-hints)))
-                              server-url
+                              model-info-alist
                               40 ; todo: timeout
                               debug print nil state))
        ((when erp) (mv erp nil state))
@@ -3941,7 +3946,6 @@
 ;;                                      "/home/ewsmith/acl2/books/kestrel/arithmetic-light/mod.lisp" ; current-book-absolute-path
 ;;                                      t ; whether to try to improve successful recommendations
 ;;                                      nil ; print
-;;                                      nil ; server-url (get from environment var)
 ;;                                      nil ; debug
 ;;                                      nil ; step-limit
 ;;                                      nil ; time-limit

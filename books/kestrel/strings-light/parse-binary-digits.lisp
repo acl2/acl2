@@ -19,15 +19,9 @@
 (defund binary-digit-char-value (char)
   (declare (xargs :guard (and (characterp char)
                               (digit-char-p char 2))))
-  (if (equal char #\1)
+  (if (eql char #\1)
       1
     0))
-
-(defthm natp-of-binary-digit-char-value
-  (implies (and (characterp char)
-                (digit-char-p char s))
-           (natp (binary-digit-char-value char)))
-  :hints (("Goal" :in-theory (enable binary-digit-char-value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,8 +60,7 @@
 (defthm natp-of-mv-nth-0-of-parse-binary-digit-from-chars-type
   (or (null (mv-nth 0 (parse-binary-digit-from-chars chars)))
       (natp (mv-nth 0 (parse-binary-digit-from-chars chars))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable parse-binary-digit-from-chars))))
+  :rule-classes :type-prescription)
 
 (defthm character-listp-of-mv-nth-1-of-parse-binary-digit-from-chars
   (implies (character-listp chars)
@@ -96,15 +89,13 @@
       (mv acc chars))))
 
 (defthm natp-of-mv-nth-0-of-parse-binary-digits-from-chars
-  (implies (and (mv-nth 0 (parse-binary-digits-from-chars chars acc))
-                (natp acc))
+  (implies (natp acc)
            (natp (mv-nth 0 (parse-binary-digits-from-chars chars acc))))
   :hints (("Goal" :in-theory (enable parse-binary-digits-from-chars))))
 
 (defthm natp-of-mv-nth-0-of-parse-binary-digits-from-chars-type
   (implies (natp acc)
-           (or (null (mv-nth 0 (parse-binary-digits-from-chars chars acc)))
-               (natp (mv-nth 0 (parse-binary-digits-from-chars chars acc)))))
+           (natp (mv-nth 0 (parse-binary-digits-from-chars chars acc))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable parse-binary-digits-from-chars))))
 

@@ -631,7 +631,7 @@
 
 (define in* ((keys set::setp) (map mapp))
   :returns (yes/no booleanp)
-  :short "Check if every key in a non-empty set is in an omap."
+  :short "Check if every key in a set is in an omap."
   :long
   (xdoc::topstring-p
    "This lifts @(tsee in) to sets of keys.

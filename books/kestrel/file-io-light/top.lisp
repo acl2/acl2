@@ -68,6 +68,7 @@
 ;; Reading/writing characters:
 (include-book "read-file-into-character-list")
 (include-book "read-file-into-character-array-stobj")
+(include-book "read-file-into-line-list")
 (include-book "write-strings-to-file")
 (include-book "write-strings-to-file-bang")
 

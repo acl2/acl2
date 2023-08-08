@@ -188,46 +188,6 @@ This book contains proofs of two theorems of Euclid:
 
 (in-theory (disable primep))
 
-;; Every positive integer is a product of powers of distinct primes.
-;; This is the existence part of the Fundamental Theorem of Arithmetic:
-
-(defun prime-pow-list-p (l)
-  (if (consp l)
-      (and (primep (caar l))
-	   (posp (cdar l))
-	   (prime-pow-list-p (cdr l))
-	   (or (null (cdr l)) (< (caar l) (caadr l))))
-    (null l)))
-
-(defun pow-prod (l)
-  (if (consp l)
-      (* (expt (caar l) (cdar l))
-	 (pow-prod (cdr l)))
-    1))
-(defun prime-fact (n)
-  (if (and (natp n) (> n 1))
-      (let* ((p (least-prime-divisor n))
-   	     (l (prime-fact (/ n p))))
-	(if (and (consp l) (equal (caar l) p))
-	    (cons (cons p (1+ (cdar l))) (cdr l))
-	  (cons (cons p 1) l)))
-    ()))
-
-(defthmd caar-prime-fact
-  (implies (and (natp n) (> n 1))
-	   (equal (caar (prime-fact n))
-		  (least-prime-divisor n))))
-
-(defthmd caar-prime-pow-list
-  (implies (and (prime-pow-list-p l) (consp l))
-           (equal (caar l) (least-prime-divisor (pow-prod l)))))
-
-(defthmd prime-fact-existence
-  (implies (posp n)
-	   (let ((l (prime-fact n)))
-	     (and (prime-pow-list-p l)
-		  (equal (pow-prod l) n)))))
-
 "Our formulation of the infinitude of the set of primes is based on a function that
  returns a prime that is greater than its argument:
  @(def fact)
@@ -473,6 +433,15 @@ This book contains proofs of two theorems of Euclid:
 		(= (gcd x y) 1))
 	   (equal (gcd x d) 1)))
 
+(defthmd gcd-divisor-2
+  (implies (and (integerp x) (integerp y)                
+                (integerp c) (not (= c 0))
+                (integerp d) (not (= d 0))
+		(divides c x)
+		(divides d y)
+		(= (gcd x y) 1))
+	   (equal (gcd c d) 1)))
+
 ;; If x and y are not relatively prime, then they have a common prime divisor:
 
 (defund cpd (x y)
@@ -578,6 +547,52 @@ This book contains proofs of two theorems of Euclid:
            (iff (and (divides x m)
 		     (divides y m))
 	        (divides (lcm x y) m))))
+
+;; Every positive integer is a product of powers of distinct primes.
+;; This is the existence part of the Fundamental Theorem of Arithmetic:
+
+(defun prime-pow-list-p (l)
+  (if (consp l)
+      (and (primep (caar l))
+	   (posp (cdar l))
+	   (prime-pow-list-p (cdr l))
+	   (or (null (cdr l)) (< (caar l) (caadr l))))
+    (null l)))
+
+(defun pow-prod (l)
+  (if (consp l)
+      (* (expt (caar l) (cdar l))
+	 (pow-prod (cdr l)))
+    1))
+(defun prime-fact (n)
+  (if (and (natp n) (> n 1))
+      (let* ((p (least-prime-divisor n))
+   	     (l (prime-fact (/ n p))))
+	(if (and (consp l) (equal (caar l) p))
+	    (cons (cons p (1+ (cdar l))) (cdr l))
+	  (cons (cons p 1) l)))
+    ()))
+
+(defthmd caar-prime-fact
+  (implies (and (natp n) (> n 1))
+	   (equal (caar (prime-fact n))
+		  (least-prime-divisor n))))
+
+(defthmd caar-prime-pow-list
+  (implies (and (prime-pow-list-p l) (consp l))
+           (equal (caar l) (least-prime-divisor (pow-prod l)))))
+
+(defthmd rel-prime-pow-list
+  (implies (and (prime-pow-list-p l) (>= (len l) 2))
+	   (equal (gcd (expt (caar l) (cdar l))
+		       (pow-prod (cdr l)))
+		  1)))
+
+(defthmd prime-fact-existence
+  (implies (posp n)
+	   (let ((l (prime-fact n)))
+	     (and (prime-pow-list-p l)
+		  (equal (pow-prod l) n)))))
 
 ;; Uniqueness part of the Fundamental Theorem of Arithmetic:
 

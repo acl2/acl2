@@ -8740,17 +8740,22 @@
                (*package* (find-package (current-package state)))
                (continue-p
 
-; If *acl2-time-limit-boundp* is true, then we can safely use our approach of
-; continuing from the break (if possible) and letting the prover notice that
-; *acl2-time-limit* is 0.  That allows the prover to quit in a clean way that
-; supports :redo-flat.  The reason that *acl2-time-limit-boundp* needs to be
-; true is that ultimately, we want *acl2-time-limit* to revert to its default
-; value of nil.
+; This variable determines whether we continue from the abort and let the
+; prover exit cleanly, or rip out with a throw to the local-top-level.  If we
+; are in a wormhole, continuing is not an option -- we can end up in a state
+; the user can't easily predict.  If *acl2-time-limit-boundp* is true, then we
+; can safely use our approach of continuing from the break (if possible) and
+; letting the prover notice that *acl2-time-limit* is 0.  That allows the
+; prover to quit in a clean way that supports :redo-flat.  The reason that
+; *acl2-time-limit-boundp* needs to be true is that ultimately, we want
+; *acl2-time-limit* to revert to its default value of nil.
 
-                (and (f-get-global 'abort-soft state)
-                     (find-restart 'continue)
-                     *acl2-time-limit-boundp*
-                     (not (eql *acl2-time-limit* 0)))))
+                (if (f-get-global 'wormhole-name state)
+                    nil
+                    (and (f-get-global 'abort-soft state)
+                         (find-restart 'continue)
+                         *acl2-time-limit-boundp*
+                         (not (eql *acl2-time-limit* 0))))))
            #+ccl ; for CCL revisions before 12090
            (declare (ignorable ccl::*break-hook*))
            (terpri t)
@@ -8816,8 +8821,8 @@
                   (chan (if (and (consp x)
                                  (symbolp (cdr (last x))))
                             (cdr (last x))
-                          (and (symbolp x)
-                               x))))
+                            (and (symbolp x)
+                                 x))))
              (when (and chan
                         (open-input-channel-p chan :object state))
                (clear-input (get-input-stream-from-channel chan))))
@@ -8842,7 +8847,10 @@
 ; ACL2(p) checkpoints.
 
                   (our-ignore-errors ; might not be in scope of catch
-                    (throw 'local-top-level :our-abort))))))))
+                   (throw 'local-top-level
+                          (if (f-get-global 'wormhole-name state)
+                              :abort
+                              :our-abort)))))))))
 
 ; We formerly set *debugger-hook* here, but now we set it in lp; see the
 ; comment there.

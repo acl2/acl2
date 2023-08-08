@@ -37,7 +37,7 @@
      it rewrites occurrences of @('<term>') with @('nil'):
      this is generally good for interactive proofs,
      but not if that prevents a previously proved theorem from applying,
-     about a subterm that is supposed not to be simplified"))
+     about a subterm that is supposed not to be simplified."))
   x
 
   ///

@@ -13,6 +13,7 @@
 ;; (include-book "kestrel/utilities/channel-contents" :dir :system)
 (local (include-book "file-length-dollar"))
 (local (include-book "open-input-channel"))
+(local (include-book "close-input-channel"))
 (local (include-book "channels"))
 (local (include-book "read-char-dollar"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
@@ -77,6 +78,12 @@
                                      open-input-channel-p
                                      open-input-channel-p1))))
 
+(defthm state-p-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
+  (implies (and ;; (open-input-channel-p channel :character state)
+                (state-p state))
+           (state-p (mv-nth 1 (read-file-into-character-array-stobj-aux channel next-index character-array-stobj state))))
+  :hints (("Goal" :in-theory (enable state-p))))
+
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
   (implies (and (open-input-channel-p1 channel typ state)
                 (state-p1 state)
@@ -116,3 +123,15 @@
                 (mv nil ; no error
                     character-array-stobj
                     state)))))))))
+
+(defthm state-p1-of-mv-nth-2-of-read-file-into-character-array-stobj
+  (implies (and (stringp filename)
+                (state-p1 state))
+           (state-p1 (mv-nth 2 (read-file-into-character-array-stobj filename character-array-stobj state))))
+  :hints (("Goal" :in-theory (enable read-file-into-character-array-stobj))))
+
+(defthm state-p-of-mv-nth-2-of-read-file-into-character-array-stobj
+  (implies (and (stringp filename)
+                (state-p state))
+           (state-p (mv-nth 2 (read-file-into-character-array-stobj filename character-array-stobj state))))
+  :hints (("Goal" :in-theory (enable state-p))))

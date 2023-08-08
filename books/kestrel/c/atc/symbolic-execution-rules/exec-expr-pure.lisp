@@ -200,6 +200,12 @@
                     (exec-ident (expr-ident->get e) compst)))
     :enable exec-expr-pure)
 
+  (defruled exec-expr-pure-when-ident-no-syntaxp
+    (implies (equal (expr-kind e) :ident)
+             (equal (exec-expr-pure e compst)
+                    (exec-ident (expr-ident->get e) compst)))
+    :enable exec-expr-pure)
+
   (defruled exec-expr-pure-when-const
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :const))
@@ -230,9 +236,25 @@
                     (exec-member eval (expr-member->name e))))
     :enable exec-expr-pure)
 
+  (defruled exec-expr-pure-when-member-no-syntaxp
+    (implies (and (equal (expr-kind e) :member)
+                  (equal eval (exec-expr-pure (expr-member->target e) compst))
+                  (expr-valuep eval))
+             (equal (exec-expr-pure e compst)
+                    (exec-member eval (expr-member->name e))))
+    :enable exec-expr-pure)
+
   (defruled exec-expr-pure-when-memberp
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :memberp)
+                  (equal eval (exec-expr-pure (expr-memberp->target e) compst))
+                  (expr-valuep eval))
+             (equal (exec-expr-pure e compst)
+                    (exec-memberp eval (expr-memberp->name e) compst)))
+    :enable exec-expr-pure)
+
+  (defruled exec-expr-pure-when-memberp-no-syntaxp
+    (implies (and (equal (expr-kind e) :memberp)
                   (equal eval (exec-expr-pure (expr-memberp->target e) compst))
                   (expr-valuep eval))
              (equal (exec-expr-pure e compst)
@@ -263,9 +285,56 @@
              apconvert-expr-value
              not-errorp-when-expr-valuep))
 
+  (defruled exec-expr-pure-when-arrsub-of-member-no-syntaxp
+    (implies (and (equal (expr-kind e) :arrsub)
+                  (equal arr (expr-arrsub->arr e))
+                  (expr-case arr :member)
+                  (equal evalstr
+                         (exec-expr-pure (expr-member->target arr) compst))
+                  (expr-valuep evalstr)
+                  (equal evalsub
+                         (exec-expr-pure (expr-arrsub->sub e) compst))
+                  (expr-valuep evalsub))
+             (equal (exec-expr-pure e compst)
+                    (exec-arrsub-of-member evalstr
+                                           (expr-member->name arr)
+                                           evalsub
+                                           compst)))
+    :expand ((exec-expr-pure e compst)
+             (exec-expr-pure (expr-arrsub->arr e) compst))
+    :enable (exec-member
+             exec-arrsub
+             exec-arrsub-of-member
+             apconvert-expr-value
+             not-errorp-when-expr-valuep))
+
   (defruled exec-expr-pure-when-arrsub-of-memberp
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :arrsub)
+                  (equal arr (expr-arrsub->arr e))
+                  (expr-case arr :memberp)
+                  (equal evalstr
+                         (exec-expr-pure (expr-memberp->target arr) compst))
+                  (expr-valuep evalstr)
+                  (equal evalsub
+                         (exec-expr-pure (expr-arrsub->sub e) compst))
+                  (expr-valuep evalsub))
+             (equal (exec-expr-pure e compst)
+                    (exec-arrsub-of-memberp evalstr
+                                            (expr-memberp->name arr)
+                                            evalsub
+                                            compst)))
+    :expand ((exec-expr-pure e compst)
+             (exec-expr-pure (expr-arrsub->arr e) compst))
+    :enable (exec-memberp
+             exec-arrsub
+             exec-arrsub-of-memberp
+             apconvert-expr-value
+             not-errorp-when-expr-valuep)
+    :disable equal-of-type-struct) ; <-- to reduce splits
+
+  (defruled exec-expr-pure-when-arrsub-of-memberp-no-syntaxp
+    (implies (and (equal (expr-kind e) :arrsub)
                   (equal arr (expr-arrsub->arr e))
                   (expr-case arr :memberp)
                   (equal evalstr

@@ -60,7 +60,7 @@
        ;; (cw "(Output from ~s0: ~X12)~%" script-name output nil) ; todo; add debug option and check it here?
        (if (not (= 0 status))
            (if (not (natp status))
-               (prog2$ (er hard? 'call-axe-script "Unexpected (non-natp) exit status, ~x0, from script ~x0." status script-name)
+               (prog2$ (er hard? 'call-axe-script "Unexpected (non-natp) exit status, ~x0, from script ~x1." status script-name)
                        (mv 1 state))
              (progn$ (cw "WARNING: Non-zero exit status, ~x0, from script ~x1." status script-name)
                      (mv status state)))

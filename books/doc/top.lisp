@@ -176,32 +176,11 @@
 
 (include-book "ordinals/e0-ordinal" :dir :system)
 
-(include-book "tools/do-not" :dir :system)
-(include-book "tools/plev" :dir :system)
-(include-book "tools/plev-ccl" :dir :system)
-(include-book "tools/with-supporters-doc" :dir :system)
-(include-book "tools/remove-hyps" :dir :system)
-(include-book "tools/removable-runes" :dir :system)
-(include-book "tools/oracle-time" :dir :system)
-(include-book "tools/oracle-timelimit" :dir :system)
-(include-book "tools/defthmg" :dir :system)
-(include-book "tools/trivial-ancestors-check" :dir :system)
-(include-book "tools/without-subsumption" :dir :system)
-(include-book "tools/rewrite-dollar" :dir :system)
-(include-book "tools/open-trace-file-bang" :dir :system)
-(include-book "tools/prove-dollar" :dir :system)
+;; todo: consider making a tools/doc and including it here instead:
+(include-book "tools/top" :dir :system)
+
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
-;; This book memoizes several functions including translate11, translate11-lst,
-;; translate11-call.  This hasn't been much of a problem in doc/top-fast (as
-;; opposed to doc/top), but we'll unmemoize these here anyway because having
-;; them memoized is a little unexpected.
-(include-book "tools/memoize-prover-fns" :dir :system)
-(unmemoize-lst (f-get-global 'memoized-prover-fns state))
-
-(include-book "tools/untranslate-for-exec" :dir :system)
-(include-book "tools/er-soft-logic" :dir :system)
-(include-book "tools/run-script" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
 (include-book "system/event-names" :dir :system)
 (include-book "system/acl2-system-exports" :dir :system)
@@ -237,7 +216,7 @@
 (include-book "misc/dump-events" :dir :system)
 (include-book "std/testing/eval" :dir :system)
 (include-book "misc/expander" :dir :system)
-(include-book "misc/file-io" :dir :system)
+(include-book "misc/file-io-doc" :dir :system)
 (include-book "misc/find-lemmas" :dir :system)
 (include-book "misc/hons-help" :dir :system)
 ; The definition of QCAR in misc/hons-tests.lisp conflicts with that
@@ -290,11 +269,9 @@
 
 ;; omitted from gl
 (include-book "centaur/misc/outer-local" :dir :system)
-(include-book "tools/pattern-match" :dir :system)
 
 ;; omitted from aignet
 (include-book "std/stobjs/nested-stobjs" :dir :system)
-(include-book "tools/symlet" :dir :system)
 (include-book "std/stobjs/updater-independence" :dir :system)
 (include-book "centaur/misc/iter" :dir :system)
 (include-book "centaur/misc/nth-equiv" :dir :system)

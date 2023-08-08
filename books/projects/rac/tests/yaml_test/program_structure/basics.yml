@@ -61,9 +61,6 @@
   args: ['unterminated-comment.cpp']
   has_failed: true
   exit_code: 1
-  disabled-checks:
-    - stderr
-    - generated_code
 
 # Those tests are directly taken the RAC specification as decribed in the
 # Chapter 15 of Formal verification of floating-point hardware design
@@ -72,10 +69,7 @@
 - name: guards-2
 
 - name: rac-in-comment-but-not-a-guard
-  bug: true
-  description: A token `RAC` is emitted and generate a syntax error for no reason.
-  has_failed: true
-  exit_code: 1
+  exit_code: 0
 
 - name: missing-guards-begin
   has_failed: true
@@ -110,15 +104,6 @@
 - name: tie
 - name: tie-array
 - name: tie-big-array
-  bug: true
-  description: >
-               The implementation dont't support more that 4 temporary variable
-               (see output.c l194). This test may fails with a segfault
-               (exit_code -11), invalid identifier (empty names) or even random
-               symbol find on the stack (on my computer it is often `bool`).
-  disabled-checks:
-    - stderr
-    - generated_code
 
 - name: tie-immediate
   bug: true
@@ -174,3 +159,4 @@
   has_failed: true
   exit_code: 1
 
+- name: builtin

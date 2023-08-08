@@ -121,6 +121,9 @@
      HONS-WASH!                             ; bad -- requires trust tag
      UNTOUCHABLE-MARKER                     ; bad -- untouchable
      ASET1-TRUSTED                          ; bad -- untouchable (added 7/2021)
+     INIT-IPRINT-FAL                        ; bad -- untouchable (added 7/2023)
+     UPDATE-IPRINT-FAL-REC                  ; bad -- untouchable (added 7/2023)
+     UPDATE-IPRINT-FAL                      ; bad -- untouchable (added 7/2023)
 ;    BREAK$
 ;    PRINT-CALL-HISTORY
 ;    NEVER-MEMOIZE-FN

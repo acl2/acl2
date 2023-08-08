@@ -888,5 +888,3 @@
 (verify-termination get-brr-one-way-unify-info)
 
 (verify-termination built-in-brr-near-missp)
-
-(verify-termination brr-near-missp)
