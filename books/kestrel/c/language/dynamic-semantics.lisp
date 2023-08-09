@@ -298,7 +298,7 @@
   :short "Evaluate a unary operation that does not involve pointers,
           on a value, returning a value."
   (case (unop-kind op)
-    (::plus (plus-value arg))
+    (:plus (plus-value arg))
     (:minus (minus-value arg))
     (:bitnot (bitnot-value arg))
     (:lognot (lognot-value arg))

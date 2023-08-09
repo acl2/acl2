@@ -29,7 +29,7 @@
 
 (defthm state-p-of-prin1$
   (implies (and (open-output-channel-p channel :character state)
-                (state-p1 state))
+                (state-p state))
            (state-p (prin1$ x channel state)))
   :hints (("Goal" :in-theory (enable state-p))))
 

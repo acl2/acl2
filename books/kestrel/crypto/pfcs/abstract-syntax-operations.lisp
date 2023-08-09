@@ -1,6 +1,7 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2023 Aleo Systems Inc. (https://www.aleo.org)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -25,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
-  :parents (abstract-syntax prime-field-constraint-systems)
+  :parents (abstract-syntax pfcs)
   :short "Operations on the abstract syntax of PFCSes."
   :order-subtopics t
   :default-parent t)

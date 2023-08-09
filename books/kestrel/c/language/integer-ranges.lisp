@@ -19,7 +19,7 @@
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 ;; to have FTY::DEFLIST generate theorems about NTH:
 (local (include-book "std/lists/nth" :dir :system))

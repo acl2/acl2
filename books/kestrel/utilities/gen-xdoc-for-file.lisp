@@ -1,6 +1,6 @@
 ; A utility for building xdoc by extracting text from .lisp files
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,7 +45,7 @@
 
 ;; TODO: Allow some ITEMS to be combined in the same topic.
 
-(include-book "std/io/read-file-lines-no-newlines" :dir :system)
+(include-book "kestrel/file-io-light/read-file-into-line-list" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "strings")
 
@@ -178,7 +178,7 @@
   (b* ((cbd (cbd-fn state)) ;should end in slash
        (full-filename (concatenate 'string cbd filename))
        ((mv lines state)
-        (read-file-lines-no-newlines full-filename state))
+        (read-file-into-line-list-no-error full-filename nil state))
        ((when (stringp lines)) ;indicates an error
         (mv t                  ;erp
             (er hard? 'gen-xdoc-for-file "Error reading file ~x0." full-filename)

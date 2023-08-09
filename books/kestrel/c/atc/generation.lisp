@@ -30,10 +30,10 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/basic/member-symbol-name" :dir :system))
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 (local (include-book "projects/apply/loop" :dir :system))
@@ -213,14 +213,12 @@
                                   (appcond-thms keyword-symbol-alistp)
                                   (header booleanp)
                                   (print evmac-input-print-p)
-                                  (deprecated keyword-listp)
                                   (names-to-avoid symbol-listp)
                                   state)
   :returns (mv erp
                (exts-h ext-declon-listp)
                (exts-c ext-declon-listp)
-               (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+               (events pseudo-event-form-listp)
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
   :short "Generate two lists of C external declarations from the targets,
@@ -242,19 +240,18 @@
      together with the external objects that have initializers.
      If the header is not generated,
      everything goes into the source file."))
-  (b* (((reterr) nil nil nil nil nil)
+  (b* (((reterr) nil nil nil nil)
        (wrld (w state))
-       ((when (endp targets)) (retok nil nil nil nil names-to-avoid))
+       ((when (endp targets)) (retok nil nil nil names-to-avoid))
        (target (car targets))
        ((erp exts-h
              exts-c
              prec-fns
              prec-tags
              prec-objs
-             local-events
-             exported-events
+             events
              names-to-avoid)
-        (b* (((reterr) nil nil nil nil nil nil nil nil)
+        (b* (((reterr) nil nil nil nil nil nil nil)
              ((when (function-symbolp target wrld))
               (b* ((fn target)
                    ((when (eq fn 'quote))
@@ -266,37 +263,33 @@
                    ((erp exts-h
                          exts-c
                          prec-fns
-                         local-events
-                         exported-events
+                         events
                          names-to-avoid)
                     (if (irecursivep+ fn wrld)
-                        (b* (((reterr) nil nil nil nil nil nil)
-                             ((erp local-events
-                                   exported-events
+                        (b* (((reterr) nil nil nil nil nil)
+                             ((erp events
                                    prec-fns
                                    names-to-avoid)
                               (atc-gen-loop fn prec-fns prec-tags prec-objs
                                             proofs prog-const
                                             fn-thms fn-appconds appcond-thms
-                                            print deprecated
+                                            print
                                             names-to-avoid state)))
                           (retok nil
                                  nil
                                  prec-fns
-                                 local-events
-                                 exported-events
+                                 events
                                  names-to-avoid))
-                      (b* (((reterr) nil nil nil nil nil nil)
+                      (b* (((reterr) nil nil nil nil nil)
                            ((erp fundef
-                                 local-events
-                                 exported-events
+                                 events
                                  prec-fns
                                  names-to-avoid)
                             (atc-gen-fundef fn prec-fns prec-tags prec-objs
                                             proofs
                                             prog-const
                                             init-fun-env-thm fn-thms
-                                            print deprecated
+                                            print
                                             names-to-avoid state))
                            (ext (ext-declon-fundef fundef)))
                         (if header
@@ -304,22 +297,19 @@
                                           (fundef-to-fun-declon fundef)))
                                    (list ext)
                                    prec-fns
-                                   local-events
-                                   exported-events
+                                   events
                                    names-to-avoid)
                           (retok nil
                                  (list ext)
                                  prec-fns
-                                 local-events
-                                 exported-events
+                                 events
                                  names-to-avoid))))))
                 (retok exts-h
                        exts-c
                        prec-fns
                        prec-tags
                        prec-objs
-                       local-events
-                       exported-events
+                       events
                        names-to-avoid)))
              (name (symbol-name target))
              (info (defstruct-table-lookup name wrld))
@@ -335,7 +325,6 @@
                            prec-tags
                            prec-objs
                            tag-thms
-                           nil
                            names-to-avoid)
                   (retok nil
                          (list ext)
@@ -343,7 +332,6 @@
                          prec-tags
                          prec-objs
                          tag-thms
-                         nil
                          names-to-avoid))))
              (info (defobject-table-lookup name (w state)))
              ((when info)
@@ -356,14 +344,12 @@
                            prec-tags
                            prec-objs
                            nil
-                           nil
                            names-to-avoid)
                   (retok nil
                          (list (ext-declon-obj-declon obj-declon-c))
                          prec-fns
                          prec-tags
                          prec-objs
-                         nil
                          nil
                          names-to-avoid)))))
           (reterr (raise "Internal error: ~
@@ -372,20 +358,18 @@
                          target))))
        ((erp more-exts-h
              more-exts-c
-             more-local-events
-             more-exported-events
+             more-events
              names-to-avoid)
         (atc-gen-ext-declon-lists (cdr targets) prec-fns prec-tags prec-objs
                                   proofs prog-const
                                   init-fun-env-thm fn-thms
                                   fn-appconds appcond-thms
                                   header
-                                  print deprecated
+                                  print
                                   names-to-avoid state)))
     (retok (append exts-h more-exts-h)
            (append exts-c more-exts-c)
-           (append local-events more-local-events)
-           (append exported-events more-exported-events)
+           (append events more-events)
            names-to-avoid))
 
   :prepwork
@@ -428,24 +412,26 @@
 (define atc-gen-prog-const ((prog-const symbolp)
                             (fileset filesetp)
                             (print evmac-input-print-p))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
+  :returns (events pseudo-event-form-listp)
   :short "Generate the named constant for the abstract syntax tree
           of the generated C code (i.e. C file set)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This constant is not generated if @(':proofs') is @('nil')."))
-  (b* ((progress-start?
+  (b* ((defconst-event `(defconst ,prog-const ',fileset))
+       (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the named constant..."))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
-       (defconst-event `(defconst ,prog-const ',fileset))
-       (local-event `(progn ,@progress-start?
-                            (local ,defconst-event)
-                            ,@progress-end?)))
-    (mv local-event defconst-event)))
+       (print-result?
+        (and (evmac-input-print->= print :result)
+             `((cw-event "~%~x0~|" ',defconst-event)))))
+    (append progress-start?
+            (list defconst-event)
+            progress-end?
+            print-result?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -453,8 +439,7 @@
                         (prog-const symbolp)
                         (wf-thm symbolp)
                         (print evmac-input-print-p))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp))
+  :returns (events pseudo-event-form-listp)
   :short "Generate the theorem asserting
           the static well-formedness of the generated C code
           (referenced as the named constant)."
@@ -473,11 +458,8 @@
      we expect that it should be easily provable
      using just the executable counterparts
      of @(tsee check-fileset) and @(tsee filesetp),
-     which are executable functions.")
-   (xdoc::p
-    "We generate singleton lists of events if @(':proofs') is @('t'),
-     empty lists otherwise."))
-  (b* (((unless proofs) (mv nil nil))
+     which are executable functions."))
+  (b* (((unless proofs) nil)
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
@@ -491,11 +473,13 @@
              `((cw-event "~%Generating the well-formedness theorem..."))))
        (progress-end? (and (evmac-input-print->= print :info)
                            `((cw-event " done.~%"))))
-       (local-event `(progn ,@progress-start?
-                            ,local-event
-                            ,@progress-end?)))
-    (mv (list local-event)
-        (list exported-event))))
+       (print-result?
+        (and (evmac-input-print->= print :result)
+             `((cw-event "~%~x0~|" ',exported-event)))))
+    (append progress-start?
+            (list local-event exported-event)
+            progress-end?
+            print-result?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -544,13 +528,11 @@
                          (fn-thms symbol-symbol-alistp)
                          (header booleanp)
                          (print evmac-input-print-p)
-                         (deprecated keyword-listp)
                          (names-to-avoid symbol-listp)
                          state)
   :returns (mv erp
                (fileset filesetp)
-               (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+               (events pseudo-event-form-listp)
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
   :short "Generate a file set from the ATC targets, and accompanying events."
@@ -578,9 +560,9 @@
      and then we generate the theorem;
      however, in the generated events,
      we put that theorem before the ones for the functions."))
-  (b* (((reterr) (irr-fileset) nil nil nil)
+  (b* (((reterr) (irr-fileset) nil nil)
        (wrld (w state))
-       ((mv appcond-local-events fn-appconds appcond-thms names-to-avoid)
+       ((mv appcond-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
             (b* (((mv appconds fn-appconds)
                   (atc-gen-appconds targets (w state)))
@@ -589,8 +571,7 @@
                                               print 'atc state)))
               (mv appcond-events fn-appconds appcond-thms names-to-avoid))
           (mv nil nil nil nil)))
-       ((mv wf-thm-local-events wf-thm-exported-events)
-        (atc-gen-wf-thm proofs prog-const wf-thm print))
+       (wf-thm-events (atc-gen-wf-thm proofs prog-const wf-thm print))
        (init-fun-env-thm (add-suffix-to-fn prog-const "-FUN-ENV"))
        ((mv init-fun-env-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix init-fun-env-thm
@@ -599,38 +580,31 @@
                                            wrld))
        ((erp exts-h
              exts-c
-             fn-thm-local-events
-             fn-thm-exported-events
+             fn-thm-events
              names-to-avoid)
         (atc-gen-ext-declon-lists targets nil nil nil proofs
                                   prog-const init-fun-env-thm
                                   fn-thms fn-appconds appcond-thms
-                                  header print deprecated
+                                  header print
                                   names-to-avoid state))
        (file-h (and header (make-file :declons exts-h)))
        (file-c (make-file :declons exts-c))
        (fileset (make-fileset :path-wo-ext path-wo-ext
                               :dot-h file-h
                               :dot-c file-c))
-       (local-init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
-                                                            proofs
-                                                            prog-const
-                                                            fileset))
-       ((mv local-const-event exported-const-event)
-        (if proofs
-            (atc-gen-prog-const prog-const fileset print)
-          (mv nil nil)))
-       (local-events (append appcond-local-events
-                             (and proofs (list local-const-event))
-                             wf-thm-local-events
-                             local-init-fun-env-events
-                             fn-thm-local-events))
-       (exported-events (append (and proofs (list exported-const-event))
-                                wf-thm-exported-events
-                                fn-thm-exported-events)))
+       (init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
+                                                      proofs
+                                                      prog-const
+                                                      fileset))
+       (const-events (and proofs
+                          (atc-gen-prog-const prog-const fileset print)))
+       (events (append appcond-events
+                       const-events
+                       wf-thm-events
+                       init-fun-env-events
+                       fn-thm-events)))
     (retok fileset
-           local-events
-           exported-events
+           events
            names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -688,41 +662,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-print-result ((events pseudo-event-form-listp)
-                              (fileset filesetp))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate the events to print the results of ATC."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used only if @(':print') is at least @(':result').")
-   (xdoc::p
-    "If the path starts with @('./'), we omit that part,
-     since a file without a preceding directory is normally understood
-     as residing in the current directory."))
-  (append (atc-gen-print-result-aux events)
-          (b* ((path-wo-ext (fileset->path-wo-ext fileset))
-               (path-wo-ext (if (str::strprefixp "./" path-wo-ext)
-                                (subseq path-wo-ext 2 (length path-wo-ext))
-                              path-wo-ext))
-               (path.h (str::cat path-wo-ext ".h"))
-               (path.c (str::cat path-wo-ext ".c"))
-               (event (if (fileset->dot-h fileset)
-                          `(cw-event "~%Files ~s0 and ~s1 generated.~%"
-                                     ,path.h ,path.c)
-                        `(cw-event "~%File ~s0 generated.~%"
-                                   ,path.c))))
-            (list event)))
-  :guard-hints (("Goal" :in-theory (enable length len)))
-  :prepwork
-  ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
-     :returns (events pseudo-event-form-listp)
-     (cond ((endp events) nil)
-           (t (cons `(cw-event "~%~x0~|" ',(car events))
-                    (atc-gen-print-result-aux (cdr events))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-thm-assert-events ((wf-thm symbolp)
                                    (fn-thms symbol-symbol-alistp)
                                    (proofs booleanp))
@@ -761,7 +700,6 @@
                             (wf-thm symbolp)
                             (fn-thms symbol-symbol-alistp)
                             (print evmac-input-print-p)
-                            (deprecated keyword-listp)
                             (call pseudo-event-formp)
                             state)
   :returns (mv erp
@@ -773,7 +711,7 @@
     "We locally install the ``trivial ancestor check'' from the library.
      We found at least a case in which ACL2's default heuristic ancestor check
      prevented a valid functional correctness theorem from being proved.
-     Since by construction the symbolic execution shoud always terminate,
+     Since by construction the symbolic execution should always terminate,
      it does not seem like ACL2's heuristic ancestor check
      would ever be helpful (if this turns out to be wrong, we will re-evaluate).
      Thus, we locally install the simpler ancestor check.")
@@ -787,24 +725,21 @@
      the formals that are not affected then become ignored."))
   (b* (((reterr) '(_))
        (names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
-       ((erp fileset local-events exported-events &)
+       ((erp fileset events &)
         (atc-gen-fileset targets path-wo-ext proofs
                          prog-const wf-thm fn-thms
-                         header print deprecated names-to-avoid state))
+                         header print names-to-avoid state))
        (fileset-gen-event (atc-gen-fileset-event fileset
                                                  file-name
                                                  pretty-printing
                                                  print))
-       (print-events (and (evmac-input-print->= print :result)
-                          (atc-gen-print-result exported-events fileset)))
        (assert-events (atc-gen-thm-assert-events wf-thm fn-thms proofs))
        (encapsulate
            `(encapsulate ()
               (evmac-prepare-proofs)
               (local (acl2::use-trivial-ancestors-check))
               (set-ignore-ok t)
-              ,@local-events
-              ,@exported-events
+              ,@events
               ,@assert-events
               ,fileset-gen-event))
        (encapsulate+ (restore-output? (eq print :all) encapsulate))
@@ -812,7 +747,6 @@
        (table-event (atc-table-record-event call info)))
     (retok `(progn ,encapsulate+
                    ,table-event
-                   ,@print-events
                    (value-triple :invisible))))
   :guard-hints
   (("Goal"

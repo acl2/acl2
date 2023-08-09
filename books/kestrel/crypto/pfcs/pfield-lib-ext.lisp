@@ -1,6 +1,7 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2023 Aleo Systems Inc. (https://www.aleo.org)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +15,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "std/lists/list-fix" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -22,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ prime-field-library-extensions
-  :parents (prime-field-constraint-systems)
+  :parents (pfcs)
   :short "Extensions of the prime fields library."
   :long
   (xdoc::topstring
@@ -45,3 +48,12 @@
   :rule-classes :forward-chaining
   :induct t
   :enable nat-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield::fe-listp-of-append
+  (equal (pfield::fe-listp (append x y) p)
+         (and (pfield::fe-listp (true-list-fix x) p)
+              (pfield::fe-listp y p)))
+  :induct t
+  :enable append)

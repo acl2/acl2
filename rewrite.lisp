@@ -8831,9 +8831,11 @@ its attachment is ignored during proofs"))))
 ; This function (sort of) initializes the persistent-whs for the brr wormhole.
 ; More precisely, if the brr wormhole has not been set up yet, this function
 ; initializes it so that all fields are nil.  If it has been set up and we're
-; not in the brr wormhole, it preserves the BRR-MONITORED-RUNES and nils out
-; the others.  If we are in the brr wormhole then the status has already been
-; set up and brr processing in flight is depending on it, so we do nothing.
+; not in the brr wormhole, it preserves the BRR-MONITORED-RUNES of the
+; top-level brr-status and nils out the others.  If we are in the brr wormhole
+; then the status has already been set up and brr processing in flight is
+; depending on it, so we do nothing.  (If we're in the processing of aborting
+; and we're in the brr wormhole, the wormhole1 cleanup form will handle this.)
 
 ; Before this function is first called, there is no entry for BRR on the
 ; *wormhole-status-alist*.  That means the persistent-whs for brr is NIL.  That
@@ -8854,7 +8856,9 @@ its attachment is ignored during proofs"))))
        'brr
        '(lambda (whs)
           (change brr-status whs
-;                 :brr-monitored-runes is left unchanged!
+                  :brr-monitored-runes (access brr-status
+                                               (top-level-brr-status whs)
+                                               :brr-monitored-runes)
                   :brr-gstack nil
                   :brr-local-alist nil
                   :brr-previous-status nil))
@@ -9249,10 +9253,7 @@ its attachment is ignored during proofs"))))
             nil)))
      (t nil))))
 
-(defun brr-near-missp (msgp lemma target rcnst criteria-alist)
-
-; This function should be replaced by a constrained function to which
-; built-in-brr-near-missp is attached.
+(defproxy brr-near-missp
 
 ; The rewriter has tried to match the pattern in lemma to target under the
 ; restrictions in rcnst.  The match failed.  We determine whether this
@@ -9270,13 +9271,10 @@ its attachment is ignored during proofs"))))
 
 ; (:condition t :depth 3 :abstraction (f 44 (cadr z)))!
 
-  (declare (xargs :guard (and (or (weak-rewrite-rule-p lemma)
-                                  (weak-linear-lemma-p lemma))
-                              (pseudo-termp target)
-                              (weak-rewrite-constant-p rcnst)
-                              (brr-criteria-alistp criteria-alist))))
+  (* * * * *) => *)
 
-  (built-in-brr-near-missp msgp lemma target rcnst criteria-alist))
+(defattach (brr-near-missp built-in-brr-near-missp)
+  :skip-checks t)
 
 (mutual-recursion
 

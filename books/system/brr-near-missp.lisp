@@ -39,4 +39,3 @@
 (verify-termination make-built-in-brr-near-miss-msg)
 (verify-termination get-brr-one-way-unify-info)
 (verify-termination built-in-brr-near-missp)
-(verify-termination brr-near-missp)

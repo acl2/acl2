@@ -22,9 +22,9 @@
 (local (include-book "append"))
 (local (include-book "repeat"))
 (local (include-book "true-list-fix"))
-(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 (defthm true-listp-of-subrange-type-prescription
   (true-listp (subrange start end lst))

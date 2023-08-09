@@ -7,25 +7,27 @@
 
 # (1) Run fresh "everything" regression with ACL2_USELESS_RUNES=write
 #     to regenerate @useless-runes.lsp files.
-#  -- NOTE: to save time,
-#     consider temporarily creating file
-#     books/projects/filesystems/oracle.acl2
-#     with the following line
-#     ; cert-flags: ? t :useless-runes nil
-#     to avoid updating the useless-rules file,
-#     books/projects/filesystems/.sys/oracle@useless-runes.lsp
-#     -- otherwise you may be adding 4 hours or more to your
-#     regression time, even with many threads.  If you do this, be
-#     sure to remove oracle.acl2 file after completing this step.
+#  -- NOTE: file books/projects/filesystems/oracle.lisp has take a
+#     very long time to certify this way, perhaps adding as much as 4
+#     hours to regression time.  So consider using a command like the
+#     following.  Consider adding projects/filesystems/abs-syscalls
+#     to EXCLUDED_PREFIXES as well.
+
+#     (time make -j 70 -l 70 regression-everything-fresh ACL2_USELESS_RUNES=write TB_LISP=ccl EXCLUDED_PREFIXES="projects/filesystems/oracle") >& logs/make-regression-everything-ccl-j-70-useless-runes-write-aug1.log&
 
 # (2) Run ordinary "everything" regression, perhaps updating with git
 #     first.
 
 # (3) Check for failures, avoiding bad @useless-runes.lsp files by
-#     editing .acl2 files and removing them (using git rm, which
-#     of course assumes the directory is under git control).
+#     editing or creating .acl2 files and removing those bad
+#     @useless-runes.lsp files (using git rm for files that are under
+#     git control).  For example:
+#     ; cert-flags: ? t :useless-runes nil
 
-# (4) Run, in that same (top-level ACL2) directory (editing <your_acl2>):
+# (4) Run the following in that same (top-level ACL2) directory,
+#     using a full (absolute) pathname or directory-independent
+#     pathname (e.g., "acl2" if that is really ~/bin/acl2) for
+#     <your_acl2>), e.g., perhaps ./saved_acl2 rather than saved_acl2:
 
 #     ./bin/new-useless-runes-files.sh <your_acl2> tmp
 
@@ -144,3 +146,4 @@ echo "(quit)" >> $outfile
 $ACL2 < $outfile
 
 # rm $outfile
+

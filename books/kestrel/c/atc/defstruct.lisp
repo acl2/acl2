@@ -25,8 +25,8 @@
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -2319,7 +2319,7 @@
                    read-member)
         (packn-pos (list fixtypep '-of- read-member-element)
                    read-member-element)
-        (packn-pos (list fixtype-arrayp '-of- write-member)
+        (packn-pos (list struct-tag-p '-of- write-member)
                    write-member)
         (packn-pos (list struct-tag-p '-of- write-member-element)
                    write-member-element)))

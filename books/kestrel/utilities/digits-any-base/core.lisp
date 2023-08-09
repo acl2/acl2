@@ -20,6 +20,7 @@
 (local (include-book "kestrel/utilities/lists/rev-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/top" :dir :system))
 
 (set-induction-depth-limit 0)
@@ -382,7 +383,13 @@
     :hints ('(:cases (natp n)))
     :enable (repeat
              dab-basep
-             dab-digitp)))
+             dab-digitp))
+
+  (defruled lendian=>nat-when-most-significant-is-0
+    (implies (equal (car (last digits)) 0)
+             (equal (acl2::lendian=>nat base digits)
+                    (acl2::lendian=>nat base (butlast digits 1))))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -688,6 +695,13 @@
                     (1- (expt (dab-base-fix base) (nfix n)))))
     :cases (natp n)
     :enable lendian=>nat-of-all-base-minus-1)
+
+  (defruled bendian=>nat-when-most-significant-is-0
+    (implies (equal (car digits) 0)
+             (equal (bendian=>nat base digits)
+                    (bendian=>nat base (cdr digits))))
+    :enable bendian=>nat-of-cons
+    :disable bendian=>nat)
 
   (defruled lendian=>nat-as-bendian=>nat
     (equal (lendian=>nat base digits)

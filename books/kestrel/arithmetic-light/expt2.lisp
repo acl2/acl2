@@ -257,3 +257,15 @@
            (< i (expt 2 i)))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable expt))))
+
+(defthm +-of-expt2-of-one-less-and-expt2-of-one-less
+  (implies (integerp i)
+           (equal (+ (expt 2 (+ -1 i)) (expt 2 (+ -1 i)))
+                  (expt 2 i)))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
+(defthm <-of-+-of-expt-of-one-less-and-expt
+  (implies (integerp i)
+           (equal (< (+ (expt 2 (+ -1 i)) x) (expt 2 i))
+                  (< x (expt 2 (+ -1 i)))))
+  :hints (("Goal" :cases ((< x (expt 2 (+ -1 i)))))))

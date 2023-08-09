@@ -1,7 +1,7 @@
 ; Classes in the JV, including the class-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,8 +17,6 @@
 ;; See also class-tables.lisp.
 
 (include-book "methods")
-(include-book "kestrel/utilities/string-contains-charp" :dir :system)
-(include-book "kestrel/utilities/string-utilities" :dir :system) ; for substring-before-last-occurrence
 (include-book "kestrel/sequences/defforall" :dir :system) ; reduce?
 
 ;move
@@ -175,6 +173,24 @@
               (method-infop method-info)))
   :hints (("Goal" :in-theory (e/d (method-info-alistp)
                                   (METHOD-IDP)))))
+
+;; Makes a list of every method in the METHOD-INFO-ALIST whose name is METHOD-NAME (descriptors may differ).
+;; Returns a list of method-descriptor-strings.
+(defun methods-matching-name (class-name method-name method-info-alist)
+  (declare (xargs :guard (and (method-namep method-name)
+                              (class-namep class-name)
+                              (method-info-alistp method-info-alist))
+                  :guard-hints (("Goal" :in-theory (enable METHOD-INFO-ALISTP))) ;todo
+                  ))
+  (if (endp method-info-alist)
+      nil
+    (let* ((entry (first method-info-alist))
+           (this-method-id (car entry))
+           (this-method-name (method-id-name this-method-id)))
+      (if (equal method-name this-method-name)
+          (cons (concatenate 'string class-name "." this-method-name (method-id-descriptor this-method-id))
+                (methods-matching-name class-name method-name (rest method-info-alist)))
+        (methods-matching-name class-name method-name (rest method-info-alist))))))
 
 ;; The class-info structure:
 
@@ -443,13 +459,7 @@
     (and (class-infop0 (first infos))
          (class-info0-listp (rest infos)))))
 
-;move?
-;; Returns a string or :unnamed-package
-(defun extract-package-name-from-class-name (class-name)
-  (declare (xargs :guard (class-namep class-name)))
-  (if (acl2::string-contains-charp class-name #\.)
-      (acl2::substring-before-last-occurrence class-name #\.)
-    :unnamed-package))
+
 
 (defthm method-infop-of-lookup-equal-helper
   (implies (and (all-keys-bound-to-method-infosp method-info-alist)

@@ -348,6 +348,30 @@
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachment: brr-near-missp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; It may seem that section belongs with similar sections in
+; boot-strap-pass-2-a.lisp.  However, we need to wait till brr-criteria-alistp
+; and built-in-brr-near-missp are in :logic mode, which is after the calls of
+; system-verify-guards above.
+
+; We avoid the acl2-devel case because brr-criteria-alistp is in :program mode
+; in that case.
+#+(and acl2-loop-only (not acl2-devel))
+(encapsulate
+  (((brr-near-missp * * * * *) => *
+    :formals (msgp lemma target rcnst criteria-alist)
+    :guard (and (or (weak-rewrite-rule-p lemma)
+                    (weak-linear-lemma-p lemma))
+                (pseudo-termp target)
+                (weak-rewrite-constant-p rcnst)
+                (brr-criteria-alistp criteria-alist))))
+  (local (defun brr-near-missp (msgp lemma target rcnst criteria-alist)
+           (declare (ignore msgp lemma target rcnst criteria-alist))
+           nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Finishing up with apply$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -704,9 +728,20 @@
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(in-theory
+; See the coment about this in the defun of all-boundp-initial-global-table.
+ (disable all-boundp-initial-global-table))
+
 ; To see our reason for putting this here, see the comment containing this form
 ; in boot-strap-pass-2-a.lisp.
 (verify-termination-boot-strap clear-brr-data-lst) ; and guards
+
+; With the conversion of eviscerate-top to guard-verified logic mode,
+; iprint-oracle-updates became much more complicated.  This increased the time
+; to certify lemma true-listp-mv-nth-1-parse-cube-file2 in
+; books/projects/sat/lrat/cube/cube.lisp from 7.76 seconds to more than 11,600
+; seconds before aborting.  After this disable the proof took 0.03 seconds.
+(in-theory (disable iprint-oracle-updates))
 
 (deftheory ground-zero
 

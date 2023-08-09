@@ -435,6 +435,21 @@
               read-static-var
               objdesign-of-var-aux-iff-read-auto-var-aux))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled read-var-to-read-object-of-objdesign-of-var
+  :parents (read-object-of-objdesign-of-var-to-read-var)
+  :short "Converse of @(tsee read-object-of-objdesign-of-var-to-read-var)."
+  (b* ((objdes (objdesign-of-var var compst)))
+    (implies objdes
+             (equal (read-var var compst)
+                    (read-object objdes compst))))
+  :enable read-object-of-objdesign-of-var-to-read-var)
+
+(theory-invariant
+ (incompatible (:rewrite read-object-of-objdesign-of-var-to-read-var)
+               (:rewrite read-var-to-read-object-of-objdesign-of-var)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled write-object-of-objdesign-of-var-to-write-var

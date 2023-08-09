@@ -198,13 +198,6 @@
                   (not (equal 1 n))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-
-
-(defthm <-of-+-cancel-first-and-first
-  (equal (< (+ x y) (+ x z))
-         (< y z)))
-
-
 ;; (defthm cdr-of-firstn
 ;;   (implies (and (natp n)
 ;;                 (< n (len lst)) ;move to conc?
@@ -225,15 +218,6 @@
                   (subrange start (+ start i -1) lst))))
 
 ;; (LIST::EQUIV Y (CDR Y))
-
-(defthm <-of-times-of-floor-and-same
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
-           (equal (< (* j (floor i j)) i)
-                  (not (integerp (/ i j)))))
-  :hints (("Goal" :use (:instance my-floor-upper-bound (x i) (y j))
-           :in-theory (disable my-floor-upper-bound))))
 
 (defthm <-of-times-of-floor-and-same-hack
   (implies (and (integerp i)

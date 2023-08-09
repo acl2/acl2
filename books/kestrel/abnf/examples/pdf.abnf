@@ -1,0 +1,126 @@
+pdf = header objects xref trailer
+
+header = pdf-marker int period int ws
+
+pdf-marker = %x25.50.44.46.45 ; %PDF-
+
+objects =*object
+
+object = int ws zero obj-marker ws dictionary ws [ stream ] endobj-marker
+
+obj-marker = %x6f.62.6a ; obj
+
+endobj-marker = %x65.6e.64.6f.62.6a ; endobj
+
+stream = stream-marker *char endstream-marker
+
+stream-marker = %x73.74.72.65.61.6d ; stream
+
+endstream-marker = %x65.6e.64.73.74.72.65.61.6d ; endstream
+
+xref = xref-marker ws zero ws int ws *xref-entry ;
+
+xref-entry = xref-int ws xref-int ws use-marker ;
+
+use-marker = %x6e / %x66 ; n or f
+
+xref-marker = %x78.72.65.66 ; xref
+
+xref-int = *digit
+
+trailer = trailer-marker ws dictionary ws startxref-marker ws int eof-marker;
+
+startxref-marker = %x73.74.61.72.74.78.72.65.66 ; startxref
+
+eof-marker = %x25.25.45.4f.46 ; %%EOF
+
+trailer-dictionary = start-dict *trailer-key-and-value end-dict
+
+trailer-key-and-value = (%s"/Size" int) / (%s"/Root" reference) / (%s"/Info" reference) / (%s"/ID" left-bracket string string right-bracket)
+
+trailer-marker = %x74.72.61.69.6c.65.72 ;
+
+dictionary = start-dict *dict-entry end-dict ;
+
+dict-entry =  type-entry / reference-entry / reference-array-entry / rectangle-entry / number-entry / name-entry / font-entry / default-entry
+
+default-entry = dict-key ws dict-value ;
+
+type-entry = %s"/Type" name
+
+reference-entry = %s"/Parent" / %s"/Pages" / %s"/Contents" / %s"/Resources" reference
+
+reference-array-entry = %s"/Kids" reference-array
+
+rectangle-entry = %s"/MediaBox" / %s"CropBox" rectangle
+
+number-entry = (%s"/Count") / (%s"/Length") number
+
+name-entry = (%s"/Subtype") / (%s"/BaseFont") / (%s"/Encoding") name
+
+font-entry = %s"/Font" font
+
+font = start-dict name reference end-dict
+
+dict-key = backslash *char ;
+
+dict-value = boolean / number / name / array / dictionary / null / rectangle / reference / string ;
+
+start-dict = %x3c.3c        ; <<<
+
+end-dict = %x3e.3e          ; >>
+
+ws = *(
+	%x00 /		    ; null
+        %x09 /              ; Horizontal tab
+        %x0A /              ; Line feed or New line
+        %x0C /              ; Form feed
+        %x0D /  ; Carriage return
+        %x20                ; Space
+        )
+
+digit1-9 = %x31-39         ; 1-9
+
+digit = %x30-39            ; 0-9
+
+boolean = %s"true" / %s"false"
+
+array = left-bracket *char right-bracket
+
+reference-array = left-bracket *reference right-bracket
+
+reference = int %x20 zero %x52
+
+rectangle = left-bracket number number number number right-bracket
+
+left-bracket = %x5b
+
+right-bracket = %x5d
+
+number = [plus / minus]  real / int
+
+null = %s"null"
+
+name = slash name-char
+
+name-char =  %x20-7e
+
+real = int period int
+
+int = zero / ( digit1-9 *digit )
+
+plus = %x2b
+
+minus = %x2d
+
+slash = %x2f ;
+
+backslash = %x5c ;
+
+zero = %x30                ; 0
+
+string = *char
+
+period = %x2e ; .
+
+char = %x20-21 / %x23-5B / %x5D-10FFFF ;

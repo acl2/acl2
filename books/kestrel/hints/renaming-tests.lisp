@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/hints/renaming" :dir :system)
+(include-book "renaming")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;; Test :use

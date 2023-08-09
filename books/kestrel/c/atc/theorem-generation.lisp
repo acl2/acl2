@@ -21,8 +21,8 @@
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/untranslate-dollar" :dir :system)
 
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -387,9 +387,7 @@
      to just @(tsee read-object) of @(tsee enter-scope)."))
   (b* ((premise (make-atc-premise-compustate :var compst-var
                                              :term `(enter-scope ,compst-var)))
-       (premises (atc-context->premises context))
-       (new-premises (append premises (list premise)))
-       (new-context (change-atc-context context :premises new-premises))
+       (new-context (atc-context-extend context (list premise)))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 read-object-of-objdesign-of-var-of-enter-scope
                 compustate-frames-number-of-add-frame-not-zero
@@ -440,9 +438,7 @@
        (cs-premise-term `(add-var (ident ,(symbol-name var)) ,var ,compst-var))
        (cs-premise (make-atc-premise-compustate :var compst-var
                                                 :term cs-premise-term))
-       (premises (atc-context->premises context))
-       (new-premises (append premises (list var-premise cs-premise)))
-       (new-context (change-atc-context context :premises new-premises))
+       (new-context (atc-context-extend context (list var-premise cs-premise)))
        (rules '(objdesign-of-var-of-enter-scope-iff
                 objdesign-of-var-of-add-var-iff
                 read-object-of-objdesign-of-var-of-add-var
@@ -506,3 +502,278 @@
         (append new-inscope-events (list var-in-scope-event))
         thm-index
         names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-if/ifelse-inscope ((fn symbolp)
+                                   (fn-guard symbolp)
+                                   (inscope atc-symbol-varinfo-alist-listp)
+                                   (then-inscope atc-symbol-varinfo-alist-listp)
+                                   (else-inscope atc-symbol-varinfo-alist-listp)
+                                   (context atc-contextp)
+                                   (new-context atc-contextp)
+                                   (test-term "An untranslated term.")
+                                   (then-term "An untranslated term.")
+                                   (else-term "An untranslated term.")
+                                   (compst-var symbolp)
+                                   (new-compst "An untranslated term.")
+                                   (then-new-compst "An untranslated term.")
+                                   (else-new-compst "An untranslated term.")
+                                   (prec-tags atc-string-taginfo-alistp)
+                                   (thm-index posp)
+                                   (names-to-avoid symbol-listp)
+                                   (wrld plist-worldp))
+  :returns (mv (new-inscope atc-symbol-varinfo-alist-listp
+                            :hyp (atc-symbol-varinfo-alist-listp inscope))
+               (events pseudo-event-form-listp)
+               (thm-index posp :hyp (posp thm-index))
+               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+  :short "Generate an updated symbol table according to
+          executing a conditional statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also return an updated context,
+     according to the conditional statement.")
+   (xdoc::p
+    "The @('inscope') and @('context') inputs are
+     the ones just before the conditional statement.
+     The @('new-context') input is the context
+     at the end of the conditional,
+     while @('then-new-compst') and @('else-new-compst') are the contexts
+     at the end of the branches.
+     We also need the variable tables
+     at the end of the `then' and `else' block items,
+     which are in the inputs @('then-inscope') and  @('else-inscope'):
+     we take the theorems for each variable from there.")
+   (xdoc::p
+    "We generate proof builder instructions,
+     in order to deal with the case split of the @(tsee if)
+     in a controlled way.")
+   (xdoc::p
+    "Here we cannot use @(tsee atc-gen-new-inscope),
+     because we need to use more elaborate proof builder instructions
+     than just a set of rules."))
+  (b* (((when (endp inscope)) (mv nil nil (1+ thm-index) names-to-avoid))
+       (scope (car inscope))
+       ((mv new-scope events names-to-avoid)
+        (atc-gen-if/ifelse-inscope-aux fn
+                                       fn-guard
+                                       scope
+                                       then-inscope
+                                       else-inscope
+                                       context
+                                       new-context
+                                       test-term
+                                       then-term
+                                       else-term
+                                       compst-var
+                                       new-compst
+                                       then-new-compst
+                                       else-new-compst
+                                       prec-tags
+                                       thm-index
+                                       names-to-avoid
+                                       wrld))
+       ((mv new-inscope more-events thm-index names-to-avoid)
+        (atc-gen-if/ifelse-inscope fn
+                                   fn-guard
+                                   (cdr inscope)
+                                   then-inscope
+                                   else-inscope
+                                   context
+                                   new-context
+                                   test-term
+                                   then-term
+                                   else-term
+                                   compst-var
+                                   new-compst
+                                   then-new-compst
+                                   else-new-compst
+                                   prec-tags
+                                   thm-index
+                                   names-to-avoid
+                                   wrld)))
+    (mv (cons new-scope new-inscope)
+        (append events more-events)
+        thm-index
+        names-to-avoid))
+
+  :prepwork
+  ((define atc-gen-if/ifelse-inscope-aux
+     ((fn symbolp)
+      (fn-guard symbolp)
+      (scope atc-symbol-varinfo-alistp)
+      (then-inscope atc-symbol-varinfo-alist-listp)
+      (else-inscope atc-symbol-varinfo-alist-listp)
+      (context atc-contextp)
+      (new-context atc-contextp)
+      (test-term "An untranslated term.")
+      (then-term "An untranslated term.")
+      (else-term "An untranslated term.")
+      (compst-var symbolp)
+      (new-compst "An untranslated term.")
+      (then-new-compst "An untranslated term.")
+      (else-new-compst "An untranslated term.")
+      (prec-tags atc-string-taginfo-alistp)
+      (thm-index posp)
+      (names-to-avoid symbol-listp)
+      (wrld plist-worldp))
+     :returns (mv (new-scope atc-symbol-varinfo-alistp
+                             :hyp (atc-symbol-varinfo-alistp scope)
+                             :hints (("Goal"
+                                      :induct t
+                                      :in-theory (enable acons))))
+                  (events pseudo-event-form-listp)
+                  (names-to-avoid symbol-listp
+                                  :hyp (symbol-listp names-to-avoid)))
+     :parents nil
+     (b* (((when (endp scope)) (mv nil nil names-to-avoid))
+          ((cons var info) (car scope))
+          (type (atc-var-info->type info))
+          (externalp (atc-var-info->externalp info))
+          (type-pred (atc-type-to-recognizer type prec-tags))
+          (new-thm (pack fn '- var '-in-scope- thm-index))
+          ((mv new-thm names-to-avoid)
+           (fresh-logical-name-with-$s-suffix
+            new-thm nil names-to-avoid wrld))
+          (var/varptr (if (and (or (type-case type :pointer)
+                                   (type-case type :array))
+                               (not externalp))
+                          (add-suffix-to-fn var "-PTR")
+                        var))
+          (formula1
+           `(and (objdesign-of-var (ident ,(symbol-name var))
+                                   ,compst-var)
+                 (equal (read-object
+                         (objdesign-of-var (ident ,(symbol-name var))
+                                           ,compst-var)
+                         ,compst-var)
+                        ,var/varptr)
+                 ,@(and (or (type-case type :pointer)
+                            (type-case type :array))
+                        (not externalp)
+                        `((equal (read-object
+                                  ,(add-suffix-to-fn var "-OBJDES")
+                                  ,compst-var)
+                                 ,var)))))
+          (formula1 (atc-contextualize formula1 new-context fn fn-guard
+                                       compst-var nil nil t wrld))
+          (formula2 `(,type-pred ,var))
+          (formula2 (atc-contextualize formula2 new-context fn fn-guard
+                                       nil nil nil nil wrld))
+          (formula `(and ,formula1 ,formula2))
+          (valuep-when-type-pred (atc-type-to-valuep-thm type prec-tags))
+          (not-flexiblep-thms
+           (atc-type-to-notflexarrmem-thms type prec-tags))
+          (then-var-info (atc-get-var var then-inscope))
+          ((unless then-var-info)
+           (raise "Internal error: ~x0 not in scope after 'then'.")
+           (mv nil nil nil))
+          (then-var-thm (atc-var-info->thm then-var-info))
+          (else-var-info (atc-get-var var else-inscope))
+          ((unless else-var-info)
+           (raise "Internal error: ~x0 not in scope after 'else'.")
+           (mv nil nil nil))
+          (else-var-thm (atc-var-info->thm else-var-info))
+          (then-hints
+           `(("Goal"
+              :in-theory '(,then-var-thm
+                           update-var-of-enter-scope
+                           update-var-of-add-var
+                           equal-of-ident-and-ident
+                           (:e str-fix)
+                           exit-scope-of-enter-scope
+                           compustatep-of-add-var
+                           compustate-frames-number-of-add-var-not-zero
+                           objdesign-of-var-of-add-var-iff
+                           ident-fix-when-identp
+                           identp-of-ident
+                           read-object-of-objdesign-of-var-of-add-var
+                           remove-flexible-array-member-when-absent
+                           ,@not-flexiblep-thms
+                           value-fix-when-valuep
+                           ,valuep-when-type-pred))))
+          (else-hints
+           `(("Goal"
+              :in-theory '(,else-var-thm
+                           update-var-of-enter-scope
+                           update-var-of-add-var
+                           equal-of-ident-and-ident
+                           (:e str-fix)
+                           exit-scope-of-enter-scope
+                           compustatep-of-add-var
+                           compustate-frames-number-of-add-var-not-zero
+                           objdesign-of-var-of-add-var-iff
+                           ident-fix-when-identp
+                           identp-of-ident
+                           read-object-of-objdesign-of-var-of-add-var
+                           remove-flexible-array-member-when-absent
+                           ,@not-flexiblep-thms
+                           value-fix-when-valuep
+                           ,valuep-when-type-pred))))
+          (instructions
+           `((casesplit ,(atc-contextualize
+                          test-term
+                          context nil nil nil nil nil nil wrld))
+             (claim ,(atc-contextualize `(test* ,test-term)
+                                        context nil nil nil nil nil nil wrld)
+                    :hints (("Goal" :in-theory '(test*))))
+             (drop 1)
+             (claim ,(atc-contextualize
+                      `(equal (if* ,test-term ,then-term ,else-term)
+                              ,then-term)
+                      context nil nil nil nil nil nil wrld)
+                    :hints (("Goal"
+                             :in-theory '(acl2::if*-when-true test*))))
+             (claim ,(atc-contextualize
+                      `(equal ,new-compst ,then-new-compst)
+                      context nil nil compst-var nil nil nil wrld)
+                    :hints (("Goal" :in-theory '(acl2::if*-when-true test*))))
+             (prove :hints ,then-hints)
+             (claim ,(atc-contextualize `(test* (not ,test-term))
+                                        context nil nil nil nil nil nil wrld)
+                    :hints (("Goal" :in-theory '(test*))))
+             (drop 1)
+             (claim ,(atc-contextualize
+                      `(equal (if* ,test-term ,then-term ,else-term)
+                              ,else-term)
+                      context nil nil nil nil nil nil wrld)
+                    :hints (("Goal" :in-theory '(acl2::if*-when-false test*))))
+             (claim ,(atc-contextualize
+                      `(equal ,new-compst ,else-new-compst)
+                      context nil nil compst-var nil nil nil wrld)
+                    :hints (("Goal" :in-theory '(acl2::if*-when-false test*))))
+             (prove :hints ,else-hints)))
+          ((mv event &) (evmac-generate-defthm new-thm
+                                               :formula formula
+                                               :instructions instructions
+                                               :enable nil))
+          (new-info (change-atc-var-info info :thm new-thm))
+          (rest (cdr scope))
+          ((mv new-rest events names-to-avoid)
+           (atc-gen-if/ifelse-inscope-aux fn
+                                          fn-guard
+                                          rest
+                                          then-inscope
+                                          else-inscope
+                                          context
+                                          new-context
+                                          test-term
+                                          then-term
+                                          else-term
+                                          compst-var
+                                          new-compst
+                                          then-new-compst
+                                          else-new-compst
+                                          prec-tags
+                                          thm-index
+                                          names-to-avoid
+                                          wrld)))
+       (mv (acons var new-info new-rest)
+           (cons event events)
+           names-to-avoid))
+     :prepwork
+     ((local
+       (in-theory (enable alistp-when-atc-symbol-varinfo-alistp-rewrite))))
+     :verify-guards :after-returns)))

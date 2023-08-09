@@ -39,6 +39,12 @@
                 maybe-object
                 state)))))))
 
+(defthm state-p1-of-mv-nth-2-of-read-object-from-file
+  (implies (and (stringp filename)
+                (state-p1 state))
+           (state-p1 (mv-nth 2 (read-object-from-file filename state))))
+  :hints (("Goal" :in-theory (enable read-object-from-file))))
+
 (defthm state-p-of-mv-nth-2-of-read-object-from-file
   (implies (and (stringp filename)
                 (state-p state))

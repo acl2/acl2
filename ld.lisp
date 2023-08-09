@@ -56,8 +56,7 @@
 ; Warning:  If you change the default prompt format, be sure to change it
 ; in eval-event-lst, where we print it by hand.
 
-  (let ((prompt-memo (and (f-boundp-global 'prompt-memo state)
-                          (f-get-global 'prompt-memo state))))
+  (let ((prompt-memo (f-get-global 'prompt-memo state)))
     (cond
      ((and prompt-memo
            (equal (access ld-prompt-memo prompt-memo :current-package)
@@ -551,19 +550,14 @@
                  (initial-useless-runes standard-oi0
                                         useless-runes-r/w useless-runes-r/w-p
                                         t 'ld state))))
-      (let* ((new-alist
+      (let ((new-alist
 
 ; We always put a useless-runes pair into the result, even if useless-runes is
 ; nil, since we do not want to inherit useless-runes (via the state global's
 ; value) from a superior call of certify-book (which for example can call
 ; wormhole, and hence ld, during a proof) or ld.
 
-              (put-assoc-eq 'useless-runes useless-runes new-alist))
-             (new-alist (cond ((eq ld-missing-input-ok :missing)
-                               (put-assoc-eq 'ld-verbose nil
-                                             (put-assoc-eq 'ld-prompt nil
-                                                           new-alist)))
-                              (t new-alist))))
+             (put-assoc-eq 'useless-runes useless-runes new-alist)))
         (value (cons new-alist channel-closing-alist)))))
    (t (mv-let
        (erp pair state)
@@ -573,46 +567,45 @@
         (erp (pprogn
               (close-channels channel-closing-alist state)
               (mv t nil state)))
+        ((null pair)
+         (assert$ (eq  (caar alist) 'standard-oi)
+                  (pprogn
+                   (close-channels channel-closing-alist state)
+                   (mv nil nil state))))
         (t
-         (mv-let
-          (pair ld-missing-input-ok)
-          (cond ((null pair)
-                 (assert$ (eq  (caar alist) 'standard-oi)
-                          (mv (cons 'standard-oi nil) :missing)))
-                (t (mv pair ld-missing-input-ok)))
-          (chk-acceptable-ld-fn1
-           (cdr alist) ld-missing-input-ok ctx state
-           (cond ((and (null co-string)
-                       (or (eq (car pair) 'standard-co)
-                           (eq (car pair) 'proofs-co))
-                       (stringp (cdr (car alist))))
-                  (extend-pathname
-                   (f-get-global 'connected-book-directory state)
-                   (cdr (car alist))
-                   state))
-                 (t co-string))
-           (cond ((and (null co-channel)
-                       (or (eq (car pair) 'standard-co)
-                           (eq (car pair) 'proofs-co))
-                       (stringp (cdr (car alist))))
-                  (cdr pair))
-                 (t co-channel))
-           (cons pair new-alist)
-           (cond
-            ((eq (car pair) 'standard-oi)
-             (cond ((stringp (cdr (car alist)))
-                    (cons (cons (cdr pair) 'oi) channel-closing-alist))
-                   ((and (consp (cdr (car alist)))
-                         (stringp (cdr (last (cdr (car alist))))))
-                    (cons (cons (cdr (last (cdr pair))) 'oi)
-                          channel-closing-alist))
-                   (t channel-closing-alist)))
-            ((and (or (eq (car pair) 'standard-co)
-                      (eq (car pair) 'proofs-co))
-                  (stringp (cdr (car alist))))
-             (cons (cons (cdr pair) 'co) channel-closing-alist))
-            (t channel-closing-alist))
-           standard-oi0))))))))
+         (chk-acceptable-ld-fn1
+          (cdr alist) ld-missing-input-ok ctx state
+          (cond ((and (null co-string)
+                      (or (eq (car pair) 'standard-co)
+                          (eq (car pair) 'proofs-co))
+                      (stringp (cdr (car alist))))
+                 (extend-pathname
+                  (f-get-global 'connected-book-directory state)
+                  (cdr (car alist))
+                  state))
+                (t co-string))
+          (cond ((and (null co-channel)
+                      (or (eq (car pair) 'standard-co)
+                          (eq (car pair) 'proofs-co))
+                      (stringp (cdr (car alist))))
+                 (cdr pair))
+                (t co-channel))
+          (cons pair new-alist)
+          (cond
+           ((eq (car pair) 'standard-oi)
+            (cond ((stringp (cdr (car alist)))
+                   (cons (cons (cdr pair) 'oi) channel-closing-alist))
+                  ((and (consp (cdr (car alist)))
+                        (stringp (cdr (last (cdr (car alist))))))
+                   (cons (cons (cdr (last (cdr pair))) 'oi)
+                         channel-closing-alist))
+                  (t channel-closing-alist)))
+           ((and (or (eq (car pair) 'standard-co)
+                     (eq (car pair) 'proofs-co))
+                 (stringp (cdr (car alist))))
+            (cons (cons (cdr pair) 'co) channel-closing-alist))
+           (t channel-closing-alist))
+          standard-oi0)))))))
 
 (defun chk-acceptable-ld-fn (alist standard-oi0 state)
 
@@ -936,28 +929,30 @@
 ; books/demos/brr-test-book.
 
    (brr-evisc-tuple-oracle-update state)
-   (mv-let (eofp val state)
-     (read-standard-oi state)
-     (pprogn
-      (cond ((int= (f-get-global 'ld-level state) 1)
-             (let ((last-index (iprint-last-index state)))
-               (cond ((> last-index (iprint-soft-bound state))
-                      (rollover-iprint-ar nil last-index state))
-                     (t state))))
-            (t state))
-      (cond (eofp (mv t nil nil nil state))
-            ((keywordp val)
-             (mv-let (erp keyp form state)
-               (ld-read-keyword-command val state)
-               (mv nil erp keyp form state)))
-            ((stringp val)
-             (let ((upval (string-upcase val)))
-               (cond ((find-non-hidden-package-entry
-                       upval
-                       (global-val 'known-package-alist (w state)))
-                      (mv nil nil nil `(in-package ,upval) state))
-                     (t (mv nil nil nil val state)))))
-            (t (mv nil nil nil (ld-fix-command val) state)))))))
+   (prog2$ (and (int= (f-get-global 'ld-level state) 1)
+                (semi-initialize-brr-wormhole state))
+           (mv-let (eofp val state)
+             (read-standard-oi state)
+             (pprogn
+              (cond ((int= (f-get-global 'ld-level state) 1)
+                     (let ((last-index (iprint-last-index state)))
+                       (cond ((> last-index (iprint-soft-bound state))
+                              (rollover-iprint-ar nil last-index state))
+                             (t state))))
+                    (t state))
+              (cond (eofp (mv t nil nil nil state))
+                    ((keywordp val)
+                     (mv-let (erp keyp form state)
+                       (ld-read-keyword-command val state)
+                       (mv nil erp keyp form state)))
+                    ((stringp val)
+                     (let ((upval (string-upcase val)))
+                       (cond ((find-non-hidden-package-entry
+                               upval
+                               (global-val 'known-package-alist (w state)))
+                              (mv nil nil nil `(in-package ,upval) state))
+                             (t (mv nil nil nil val state)))))
+                    (t (mv nil nil nil (ld-fix-command val) state))))))))
 
 (defun ld-print-command (keyp form col state)
   (with-base-10
@@ -1228,11 +1223,9 @@
   nil)
 
 (defun adjust-ld-history (x state)
-  (declare (xargs :stobjs state
-                  :guard (and (or (and (integerp x)
+  (declare (xargs :guard (and (or (and (integerp x)
                                        (not (zerop x)))
                                   (booleanp x))
-                              (f-boundp-global 'ld-history state)
                               (consp (f-get-global 'ld-history state)))))
   (let* ((ld-history (f-get-global 'ld-history state))
          (len (len ld-history))
@@ -1300,8 +1293,7 @@
 
 (defun extend-ld-history (input error-flg trans-ans state)
   (declare (xargs :stobjs state
-                  :guard (and (f-boundp-global 'ld-history state)
-                              (consp (f-get-global 'ld-history state)))))
+                  :guard (consp (f-get-global 'ld-history state))))
   (let* ((ld-history (f-get-global 'ld-history state))
          (new-entry (make ld-history-entry
                           :input input
@@ -1705,33 +1697,36 @@
   (let* ((old-ld-level (f-get-global 'ld-level state))
          (new-ld-level (1+ old-ld-level))
          (old-cbd (f-get-global 'connected-book-directory state)))
-    (er-let*
-     ((pair (chk-acceptable-ld-fn alist standard-oi0 state)))
-     (let ((old-ld-specials-alist (f-get-ld-specials state))
-           (new-ld-specials-alist (car pair))
-           (channel-closing-alist (cdr pair)))
-       (if bind-flg
-           (acl2-unwind-protect
-            "ld-fn"
-            (pprogn
-             (f-put-global 'ld-level new-ld-level state)
-             (ld-fn-body standard-oi0 new-ld-specials-alist state))
-            (pprogn
+    (er-let* ((pair (chk-acceptable-ld-fn alist standard-oi0 state)))
+      (cond
+       ((null pair) ; missing input
+        (value :missing-input))
+       (t
+        (let ((old-ld-specials-alist (f-get-ld-specials state))
+              (new-ld-specials-alist (car pair))
+              (channel-closing-alist (cdr pair)))
+          (if bind-flg
+              (acl2-unwind-protect
+               "ld-fn"
+               (pprogn
+                (f-put-global 'ld-level new-ld-level state)
+                (ld-fn-body standard-oi0 new-ld-specials-alist state))
+               (pprogn
+                (f-put-global 'ld-level old-ld-level state)
+                (set-cbd-state old-cbd state)
+                (f-put-ld-specials old-ld-specials-alist t state)
+                (close-channels channel-closing-alist state))
+               (pprogn
+                (f-put-global 'ld-level old-ld-level state)
+                (set-cbd-state old-cbd state)
+                (f-put-ld-specials old-ld-specials-alist t state)
+                (close-channels channel-closing-alist state)))
+            (acl2-unwind-protect
+             "ld-fn"
+             (pprogn (f-put-global 'ld-level new-ld-level state)
+                     (ld-fn-body standard-oi0 new-ld-specials-alist state))
              (f-put-global 'ld-level old-ld-level state)
-             (set-cbd-state old-cbd state)
-             (f-put-ld-specials old-ld-specials-alist t state)
-             (close-channels channel-closing-alist state))
-            (pprogn
-             (f-put-global 'ld-level old-ld-level state)
-             (set-cbd-state old-cbd state)
-             (f-put-ld-specials old-ld-specials-alist t state)
-             (close-channels channel-closing-alist state)))
-         (acl2-unwind-protect
-          "ld-fn"
-          (pprogn (f-put-global 'ld-level new-ld-level state)
-                  (ld-fn-body standard-oi0 new-ld-specials-alist state))
-          (f-put-global 'ld-level old-ld-level state)
-          (f-put-global 'ld-level old-ld-level state)))))))
+             (f-put-global 'ld-level old-ld-level state)))))))))
 
 (defun ld-fn-alist (alist bind-flg state)
   (let* ((standard-oi (cdr (assoc 'standard-oi alist)))
@@ -1831,13 +1826,15 @@
                 (chk-acceptable-ld-fn alist standard-oi0 state)
                 (COND
                  (ERP (ACL2-UNWIND (1- *LD-LEVEL*) NIL) (MV ERP PAIR STATE))
-                 (T
+                 ((null pair) ; missing input
+                  (value :missing-input))
+                 (t
                   (let ((old-ld-specials-alist (f-get-ld-specials state))
                         (new-ld-specials-alist (car pair))
                         (channel-closing-alist (cdr pair)))
                     (PUSH-CAR
                      (CONS "ld-fn"
-                           (IF bind-flg
+                           (if bind-flg
                                (FUNCTION
                                 (LAMBDA
                                  NIL

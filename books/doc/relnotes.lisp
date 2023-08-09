@@ -304,7 +304,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+   (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p
@@ -316,6 +316,15 @@
      by using strings instead of symbols
      for names of relations and variables.
      This is more consistent with the concrete syntax.")
+
+   (xdoc::p
+    "Convenience constructors for the abstract syntax have been added.")
+
+   (xdoc::p
+    "Utilities have been added to build indexed names,
+     useful for defining families of PFCS gadgets.
+     The utilities are accompanied by theorems,
+     useful to prove certain properties about the gadget families.")
 
    (xdoc::p
     "The formal notion of system (in the PFCS sense) has been improved,
@@ -453,6 +462,11 @@
      run-script) tool, to avoid output that differs from what is expected (say,
      due to running on a slow machine, or with many threads when few are
      available).")
+
+   (xdoc::p
+    "Tools @(tsee functions-after) and @(tsee macros-after) return names of
+     functions and macros, respectively, that were introduced after a given
+     name.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1114,7 +1128,7 @@ to be a keeper command.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+   (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p
@@ -1707,7 +1721,7 @@ specialization of @(tsee r1cs::verify-r1cs).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+   (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p

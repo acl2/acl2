@@ -46,11 +46,14 @@
 (include-book "lint")
 (include-book "match-tree")
 
-;; This book memoizes some functions, so we undo that with unmemoize-lst:
+;; This book memoizes some functions, so we undo that with unmemoize-lst. That
+;; avoids the increased memory use and garbage collection time associated with
+;; memoization:
 (include-book "memoize-prover-fns")
 (unmemoize-lst (f-get-global 'memoized-prover-fns state))
 
 (include-book "mv-nth")
+(include-book "names-after")
 (include-book "nld")
 (include-book "open-trace-file-bang")
 (include-book "oracle-eval")

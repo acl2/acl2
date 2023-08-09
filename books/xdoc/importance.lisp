@@ -666,7 +666,7 @@
                         (er hard? 'make-sitemap-aux "No score for ~x0?~%" key)))
        (- (or (and (<= 0 rank)
                    (<= rank 200))
-              (er hard? 'make-sitemap-aux "Expected rank for ~x0 to be in [0, 200].~%")))
+              (er hard? 'make-sitemap-aux "Expected rank for ~x0 to be in [0, 200].~%" key)))
        (priority-str (priority-float (/ rank 200)))
 
        (acc (str::printtree-rconcat " <url>" acc))

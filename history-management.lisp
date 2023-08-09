@@ -2955,20 +2955,55 @@
               ,form)))
 
 (defun event-data-name (event-data event-type)
-  (cond ((eq event-type 'verify-guards)
-; In this special case we don't want to use the namex, because it's 0.
-         (let ((name (cadr (get-event-data-1 'event event-data))))
-           (and (symbolp name) ; not a lambda
-                name)))
-        (t (let ((namex ; as with get-event-data, but without state
-                  (get-event-data-1 'namex event-data)))
-             (cond ((symbolp namex) namex)
-                   ((and (consp namex) (symbolp (car namex)))
-                    (car namex))
-                   (t nil))))))
+
+; Event-data has event-type defthm, defun, verify-guards, or thm.
+
+  (let ((event (and (not (eq event-type 'thm))
+                    (get-event-data-1 'event event-data))))
+    (cond
+     ((null event) ; probably only for thm
+      nil)
+     ((eq event-type 'defun)
+      (cond
+       ((member-eq (car event) '(defuns mutual-recursion
+                                  #+:non-standard-analysis
+                                  defuns-std))
+        (let ((def ; first definition, without leading defun
+               (if (eq (car event) 'mutual-recursion)
+                   (cdr (cadr event))
+                 (cadr event))))
+          (assert$ (and (consp def)
+                        (symbolp (car def)))
+                   (car def))))
+       ((or (eq (car event) 'defun)
+            #+:non-standard-analysis
+            (eq (car event) 'defun-std))
+        (cadr event))
+       (t (er hard 'event-data-name
+              "Unexpected call: ~x0"
+              `(event-data-name ',event-data ',event-type)))))
+     (t ; verify-guards or defthm
+      (cadr event)))))
 
 (defun clear-event-data (state)
   (f-put-global 'last-event-data nil state))
+
+(defun print-event-data (name event-data channel ctx state)
+  (mv-let (erp val state)
+      (state-global-let*
+       ((current-package "ACL2" set-current-package-state)
+        (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
+        (fmt-soft-right-margin 10000 set-fmt-soft-right-margin))
+       (pprogn (print-object$ (cons name event-data)
+                              channel
+                              state)
+               (value nil)))
+    (declare (ignore val))
+    (prog2$ (and erp
+                 (er hard ctx
+                     "Implementation error in print-event-data.  Please ~
+                      contact the ACL2 implementors."))
+            state)))
 
 (defun print-summary (erp noop-flg event-type event ctx state)
 
@@ -3187,21 +3222,20 @@
                     (edf (f-get-global 'event-data-fal state)))
                (cond ((or channel edf)
                       (let ((name (event-data-name event-data event-type)))
-                        (pprogn (if channel
-                                    (print-object$ (cons name event-data)
-                                                   channel
-                                                   state)
-                                  state)
-                                (if edf
-                                    (f-put-global
-                                     'event-data-fal
-                                     (hons-acons
-                                      name
-                                      (cons event-data
-                                            (cdr (hons-get name edf)))
-                                      edf)
-                                     state)
-                                  state))))
+                        (pprogn
+                         (if channel
+                             (print-event-data name event-data channel ctx
+                                               state)
+                           state)
+                         (if edf
+                             (f-put-global
+                              'event-data-fal
+                              (hons-acons name
+                                          (cons event-data
+                                                (cdr (hons-get name edf)))
+                                          edf)
+                              state)
+                           state))))
                      (t state)))
            state)))))))
 
@@ -4445,6 +4479,27 @@
                                        form))
                               (t (value val)))))))))
 
+(defmacro acl2-unwind-protect-alt (expl body cleanup1 cleanup2)
+
+; This differs from acl2-unwind-protect only in the criteria for evaluating
+; cleanup1 as opposed to cleanup2.  For acl2-unwind-protect, cleanup1 is
+; evaluated in either of two circumstances: when body evaluates normally and
+; produces a non-nil error in the returned error-triple, and when body fails to
+; complete (typically due to an interrupt or a hard error, though control-c
+; during a proof typically does not cause an interrupt; see our-abort).  For
+; acl2-unwind-protect-alt, cleanup1 is evaluated only in the latter case.
+
+  `(mv-let (erp val state)
+     (acl2-unwind-protect
+      ,expl
+      (mv-let (aupa-erp aupa-val state) ; "aupa" for acl2-unwind-protect-alt
+        ,body
+        (value (cons aupa-erp aupa-val)))
+      ,cleanup1
+      ,cleanup2)
+     (assert$ (null erp)
+              (mv (car val) (cdr val) state))))
+
 (defmacro with-ctx-summarized (ctx body &key event-type event)
 
 ; A typical use of this macro by an event creating function is:
@@ -4485,40 +4540,62 @@
                   ,ctx))
          (saved-wrld (w state)))
      (pprogn (initialize-summary-accumulators state)
-             (mv-let
-              (erp val state)
-              (save-event-state-globals
-               (mv-let (erp val state)
-                 (acl2-unwind-protect
-                  "with-ctx-summarized"
-                  (er-progn
-                   (xtrans-eval-state-fn-attachment
-                    (initialize-event-user ',ctx ',body)
-                    ctx)
-                   ,body)
-                  (print-summary t ; erp
-                                 (equal saved-wrld (w state))
-                                 ,event-type ,event
-                                 ctx state)
-                  (print-summary nil ; erp
-                                 (equal saved-wrld (w state))
-                                 ,event-type ,event
-                                 ctx state))
-                 (pprogn
-                  (if erp
-                      (print-failure
-                       erp
-                       ,(if (eq event-type 'make-event-save-event-data)
-                            'make-event
-                          event-type)
-                       (f-get-global 'accumulated-ttree state)
-                       ctx state)
-                    state)
-                  (er-progn
-                   (xtrans-eval-state-fn-attachment
-                    (finalize-event-user ',ctx ',body)
-                    ctx)
-                   (mv erp val state)))))
+             (mv-let (erp val state)
+               (save-event-state-globals
+                (acl2-unwind-protect-alt
+
+; With this acl2-unwind-protect-alt, we call print-failure in two cases: when
+; evaluation completes normally (including the body and, when not inhibited,
+; the summary), and when there is a hard error or interrupt.  In the latter
+; case we will not have called print-failure yet; so, the only danger of
+; calling print-failure more than once is when it is interrupted, presumably
+; during the printing of checkpoints.  However, that printing is done by
+; function save-and-print-gag-state, which first sets the global gag-state to
+; nil -- so a second call of print-failure won't print any checkpoints.
+
+                 "with-ctx-summarized1"
+                 (mv-let (erp val state)
+                   (acl2-unwind-protect
+
+; With this acl2-unwind-protect, we ensure that the summary is printed exactly
+; once regardless of what happens when evaluating body.
+
+                    "with-ctx-summarized2"
+                    (er-progn
+                     (xtrans-eval-state-fn-attachment
+                      (initialize-event-user ',ctx ',body)
+                      ctx)
+                     ,body)
+                    (print-summary t ; erp
+                                   (equal saved-wrld (w state))
+                                   ,event-type ,event
+                                   ctx state)
+                    (print-summary nil ; erp
+                                   (equal saved-wrld (w state))
+                                   ,event-type ,event
+                                   ctx state))
+                   (pprogn
+                    (if erp
+                        (print-failure
+                         erp
+                         ,(if (eq event-type 'make-event-save-event-data)
+                              'make-event
+                            event-type)
+                         (f-get-global 'accumulated-ttree state)
+                         ctx state)
+                      state)
+                    (er-progn
+                     (xtrans-eval-state-fn-attachment
+                      (finalize-event-user ',ctx ',body)
+                      ctx)
+                     (mv erp val state))))
+                 (print-failure t
+                                ,(if (eq event-type 'make-event-save-event-data)
+                                     'make-event
+                                   event-type)
+                                (f-get-global 'accumulated-ttree state)
+                                ctx state)
+                 state))
 
 ; In the case of a compound event such as encapsulate, we avoid saving io?
 ; forms for proof replay that were generated after a failed proof attempt,
@@ -4528,8 +4605,8 @@
 ; pop-warning-frame); could the pushes be only from io? forms saved inside the
 ; defthm, even though pops are saved from the enclosing encapsulate?
 
-              (pprogn (f-put-global 'saved-output-p nil state)
-                      (mv erp val state))))))
+               (pprogn (f-put-global 'saved-output-p nil state)
+                       (mv erp val state))))))
 
 (defmacro revert-world-on-error (form)
 

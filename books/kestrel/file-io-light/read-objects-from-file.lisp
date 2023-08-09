@@ -40,14 +40,14 @@
           (mv (reverse acc) state)
         (read-objects-from-channel-aux channel (cons maybe-object acc) state)))))
 
-(defthm state-p-of-mv-nth-1-of-read-objects-from-channel-aux
-  (implies (state-p state)
-           (state-p (mv-nth 1 (read-objects-from-channel-aux channel acc state))))
-  :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
-
 (defthm state-p1-of-mv-nth-1-of-read-objects-from-channel-aux
   (implies (state-p1 state)
            (state-p1 (mv-nth 1 (read-objects-from-channel-aux channel acc state))))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
+
+(defthm state-p-of-mv-nth-1-of-read-objects-from-channel-aux
+  (implies (state-p state)
+           (state-p (mv-nth 1 (read-objects-from-channel-aux channel acc state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-objects-from-channel-aux
@@ -66,14 +66,14 @@
                   :stobjs state))
   (read-objects-from-channel-aux channel nil state))
 
-(defthm state-p-of-mv-nth-1-of-read-objects-from-channel
-  (implies (state-p state)
-           (state-p (mv-nth 1 (read-objects-from-channel channel state))))
-  :hints (("Goal" :in-theory (enable read-objects-from-channel))))
-
 (defthm state-p1-of-mv-nth-1-of-read-objects-from-channel
   (implies (state-p1 state)
            (state-p1 (mv-nth 1 (read-objects-from-channel channel state))))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel))))
+
+(defthm state-p-of-mv-nth-1-of-read-objects-from-channel
+  (implies (state-p state)
+           (state-p (mv-nth 1 (read-objects-from-channel channel state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-objects-from-channel
@@ -94,14 +94,14 @@
     (read-objects-from-channel channel state)
     (mv nil objects state)))
 
-(defthm state-p-of-mv-nth-2-of-read-objects-from-channel-error-triple
-  (implies (state-p state)
-           (state-p (mv-nth 2 (read-objects-from-channel-error-triple channel state))))
-  :hints (("Goal" :in-theory (enable read-objects-from-channel-error-triple))))
-
 (defthm state-p1-of-mv-nth-2-of-read-objects-from-channel-error-triple
   (implies (state-p1 state)
            (state-p1 (mv-nth 2 (read-objects-from-channel-error-triple channel state))))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel-error-triple))))
+
+(defthm state-p-of-mv-nth-2-of-read-objects-from-channel-error-triple
+  (implies (state-p state)
+           (state-p (mv-nth 2 (read-objects-from-channel-error-triple channel state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel-error-triple))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-2-of-read-objects-from-channel-error-triple
