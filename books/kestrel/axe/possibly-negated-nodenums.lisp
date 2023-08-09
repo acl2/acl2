@@ -246,8 +246,15 @@
            (< (cadr item) bound))
   :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump))))
 
+;; Disabled since it introduces bounded-possibly-negated-nodenump out of nowhere.
 (defthmd <-when-bounded-possibly-negated-nodenump
   (implies (bounded-possibly-negated-nodenump item bound)
+           (< item bound))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump))))
+
+(defthm <-when-bounded-possibly-negated-nodenump-2
+  (implies (and (bounded-possibly-negated-nodenump item bound2) ; free var
+                (<= bound2 bound))
            (< item bound))
   :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump))))
 

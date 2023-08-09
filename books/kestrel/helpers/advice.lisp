@@ -3138,7 +3138,7 @@
                   (make-recs-from-history num-recs-per-model print state))
               ;; It's a normal ML model:
               (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state))))
-         ((when erp) (mv erp nil state))
+         (- (and erp (cw "Note: Skipping ~x0 due to errors.~%" model)))
          ;; Remove any recs that are disallowed (todo: drop this now?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
       (get-recs-from-models-aux num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem
