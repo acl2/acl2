@@ -11,8 +11,12 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/typed-lists-light/all-digit-charsp" :dir :system)
 (local (include-book "coerce"))
+(local (include-book "our-digit-char-p"))
 (local (include-book "explode-nonnegative-integer"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Convert the natural N into a base-10 string representation.
 (defund nat-to-string (n)
@@ -26,4 +30,12 @@
   (equal (equal (nat-to-string n1)
                 (nat-to-string n2))
          (equal (nfix n1) (nfix n2)))
+  :hints (("Goal" :in-theory (enable nat-to-string))))
+
+(defthm all-digit-charsp-of-coerce-of-nat-to-string-and-10
+  (all-digit-charsp (coerce (nat-to-string n) 'list) 10)
+  :hints (("Goal" :in-theory (enable nat-to-string))))
+
+(defthm not-equal-of-nat-to-string-and-empty-string
+  (not (equal (nat-to-string n) ""))
   :hints (("Goal" :in-theory (enable nat-to-string))))
