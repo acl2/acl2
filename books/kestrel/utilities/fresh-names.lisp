@@ -110,7 +110,8 @@
 (defund fresh-symbol (desired-sym syms-to-avoid)
   (declare (xargs :guard (and (symbolp desired-sym)
                               (symbol-listp syms-to-avoid))))
-  (if (not (member-eq desired-sym syms-to-avoid))
+  (if (and (not (member-eq desired-sym syms-to-avoid))
+           (mbt (symbolp desired-sym)))
       desired-sym
     (fresh-symbol-aux desired-sym 1 syms-to-avoid)))
 
@@ -125,11 +126,6 @@
            (fresh-symbol base-sym syms-to-avoid))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable fresh-symbol))))
-
-;;type-prescription already knows something similar
-(defthm symbolp-of-fresh-symbol
-  (implies (symbolp desired-sym)
-           (symbolp (fresh-symbol desired-sym syms-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
