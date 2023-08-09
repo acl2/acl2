@@ -23,6 +23,7 @@
                        rtl::fl
                        rtl::cg
                        rtl::congruent
+                       a b c m n p q ; for vars in various theorems
                        x ; for formals, e.g., of rtl::fl
                        )
                      *acl2-exports*))
