@@ -859,6 +859,12 @@
                  (b* ((less (and (intcar x) (not (intcar y)))))
                    (mv less
                        (and (not less) (or (intcar! x) (not (intcar y)))))))
+                ((unless (syntax-bind integers
+                                      (and (or (fgl-object-case x :g-integer)
+                                               (fgl-object-case x :g-concrete))
+                                           (or (fgl-object-case y :g-integer)
+                                               (fgl-object-case y :g-concrete)))))
+                 (abort-rewrite (</= x y)))
                 ((mv rest< rest=) (</= (intcdr x) (intcdr y)))
                 ;; ((when (and (syntax-bind rest<-true (eq rest< t))
                 ;;             rest<))
@@ -891,7 +897,9 @@
                              (equal y 0))
                         (if (check-int-endp! x-endp x)
                             (intcar! x)
-                          (< (intcdr x) 0))
+                          (if (syntax-bind x-integerp (fgl-object-case x :g-integer))
+                              (< (intcdr x) 0)
+                            (abort-rewrite (< x 0))))
                       (mv-nth 0 (</= x y)))))
     :hints(("Goal" :in-theory (enable int-endp)))))
 

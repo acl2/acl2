@@ -226,7 +226,8 @@
        ((when (atom bounds2)) bounds1)
        ((cons lower1 upper1) bounds1)
        ((cons lower2 upper2) bounds2))
-    (cons (min lower1 lower2) (max upper1 upper2))))
+    (cons (and lower1 lower2 (min lower1 lower2))
+          (and upper1 upper2 (max upper1 upper2)))))
 
 (defines simplify-and-bound-cases
   (define simplify-and-bound-casesplit (cases1 full-cases1 rest-cases case-conjunct hyp term simp-hints user-bounds skip-lower skip-upper state)
@@ -417,7 +418,6 @@
     ;; Assumption (default t)
     :hyp (foo-input-p x)
 
-
     ;; Simplification steps, each a hint keyword-value list
     :simp-hints
      ((:in-theory (enable foo-cancel))
@@ -459,52 +459,59 @@ rewrite-bounds) to find an upper and lower bound for the resulting expression.
 Then it replicates these steps in a @('defthm') to prove the bounds, creating a
 linear rule by default (but the rule-classes may be overridden).</p>")
 
-(def-bounds case-split-bounds
-  (- (* x x) (* 3 x))
-  :hyp (and (rationalp x)
-            (<= 2 x)
-            (<= x 4)))
-
-(def-bounds case-split-2-bounds
-  (- (* x x) (* 3 x))
-  :hyp (and (rationalp x)
-            (<= 2 x)
-            (<= x 4))
-  :cases ((:ranges x 3)))
 
 
-(def-bounds case-split-4-bounds
-  (- (* x x) (* 3 x))
-  :hyp (and (rationalp x)
-            (<= 2 x)
-            (<= x 4))
-  :cases ((:ranges-from-to-by x 2 4 1/2)
-          ;; (:ranges x 5/2 3 7/2)
-          ;; (:ranges x 5/2 3 7/2)
-          )
-  :integerp nil)
+;; Move to a tests book
+(local
+ (encapsulate nil
+   (local
+    (progn
+      (def-bounds case-split-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4)))
 
-(def-bounds case-split-64-bounds
-  (- (* x x) (* 3 x))
-  :hyp (and (rationalp x)
-            (<= 2 x)
-            (<= x 4))
-  :cases ((:ranges-from-to-by x 2 4 1/32)
-          ;; (:ranges x 5/2 3 7/2)
-          ;; (:ranges x 5/2 3 7/2)
-          )
-  :integerp nil)
+      (def-bounds case-split-2-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4))
+        :cases ((:ranges x 3)))
 
-(def-bounds case-split-128-bounds
-  (- (* x x) (* 3 x))
-  :hyp (and (rationalp x)
-            (<= 2 x)
-            (<= x 4))
-  :cases ((:ranges-from-to-by x 2 4 1/64)
-          ;; (:ranges x 5/2 3 7/2)
-          ;; (:ranges x 5/2 3 7/2)
-          )
-  :integerp nil)
+
+      (def-bounds case-split-4-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4))
+        :cases ((:ranges-from-to-by x 2 4 1/2)
+                ;; (:ranges x 5/2 3 7/2)
+                ;; (:ranges x 5/2 3 7/2)
+                )
+        :integerp nil)
+
+      (def-bounds case-split-64-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4))
+        :cases ((:ranges-from-to-by x 2 4 1/32)
+                ;; (:ranges x 5/2 3 7/2)
+                ;; (:ranges x 5/2 3 7/2)
+                )
+        :integerp nil)
+
+      (def-bounds case-split-128-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4))
+        :cases ((:ranges-from-to-by x 2 4 1/64)
+                ;; (:ranges x 5/2 3 7/2)
+                ;; (:ranges x 5/2 3 7/2)
+                )
+        :integerp nil)))))
 
 
 ;; test the user-bounds feature

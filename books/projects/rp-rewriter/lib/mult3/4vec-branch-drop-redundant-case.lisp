@@ -216,6 +216,7 @@
        bit-concat
        ;;sv::4vec-fix
        svl::Bits
+       and-times-list
        ))))
 
 

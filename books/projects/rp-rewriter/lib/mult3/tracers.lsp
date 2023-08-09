@@ -214,17 +214,30 @@
   :exit  (:fmt!
           (b* (((list res-term ?dont-rw)
                 acl2::values))
-            (if (or (and (equal (caar acl2::arglist) 's-c-spec)
-                         (ordered-s/c-p (cadr res-term))
-                         (ordered-s/c-p (cadr (caddr res-term))))
-                    (and (equal (caar acl2::arglist) 's-spec)
-                         (ordered-s/c-p res-term))
-                    (and (equal (caar acl2::arglist) 'c-spec)
-                         (ordered-s/c-p res-term)))
-                (msg "")
-              (msg "---Not ordered from s-c-spec-meta Input:
+            (cond ((and 
+                        (not (or (and (equal (caar acl2::arglist) 's-c-spec)
+                                      (ordered-s/c-p (cadr res-term))
+                                      (ordered-s/c-p (cadr (caddr res-term))))
+                                 (and (equal (caar acl2::arglist) 's-spec)
+                                      (ordered-s/c-p res-term))
+                                 (and (equal (caar acl2::arglist) 'c-spec)
+                                      (ordered-s/c-p res-term)))))
+                   (msg "---Not ordered from s-c-spec-meta Input:
   ~x0. res-term: ~x1. ~%"
-                   acl2::arglist res-term))))))
+                        acl2::arglist res-term))
+                  ((or (and (equal (caar acl2::arglist) 's-c-spec)
+                            (or (s/c-has-times (cadr res-term))
+                                (s/c-has-times (cadr (caddr res-term)))))
+                       (and (equal (caar acl2::arglist) 's-spec)
+                            (s/c-has-times res-term))
+                       (and (equal (caar acl2::arglist) 'c-spec)
+                            (s/c-has-times res-term)))
+                   (msg "---bad times from s-c-spec-meta Input:
+  ~x0. res-term: ~x1. ~%"
+                        acl2::arglist res-term))
+                  (t 
+                   (msg ""))))
+              )))
 
 
 (trace$
@@ -480,6 +493,181 @@ Valid:~x8~%~%"
                    pp-res-lst (pp-lst-orderedp pp-res-lst)
                    c-res-lst (list (s-sum-ordered-listp c-res-lst) (ordered-s/c-p-lst c-res-lst))
                    valid))))))
+
+
+(trace$
+ (create-c-instance
+  :cond (equal acl2::traced-fn 'create-c-instance) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list s-res-lst pp-res-lst c-res-lst)
+                acl2::values)
+
+               ((list s-lst pp-lst c-lst)
+                acl2::arglist)
+               )
+            (cond ((and 
+                        (not (and (ordered-s/c-p-lst s-res-lst)
+                             (list-of-only-s/c-p s-res-lst 's)
+                             (ordered-s/c-p-lst c-res-lst)
+                             (list-of-only-s/c-p c-res-lst 'c)
+                             (pp-lst-orderedp pp-res-lst))))
+                   (msg "--- not ordered from create-c-instance ~%Inputs: ~%s-lst:~%~x0 ~%pp-lst:~%~x1 ~%c-lst:~%~x2 
+Outputs: ~$s-res-lst:~%~x3 ~%pp-res-lst:~%~x4 ~%c-res-lst:~%~x5 ~%~%"
+                        (let* ((o1 (s-sum-ordered-listp s-lst))
+                               (o2 (ordered-s/c-p-lst s-lst)))
+                          (if (and o1 o2) :ordered (list s-lst :self o1 :children o2)))
+
+                        (let* ((o1 (pp-lst-orderedp pp-res-lst)))
+                          (if o1 :ordered (list pp-lst :not-ordered)))
+
+                        (let* ((o1 (s-sum-ordered-listp c-lst))
+                               (o2 (ordered-s/c-p-lst c-lst)))
+                          (if (and o1 o2) :ordered (list c-lst :self o1 :children o2)))
+                   
+                        (let* ((o1 (s-sum-ordered-listp s-res-lst))
+                               (o2 (ordered-s/c-p-lst s-res-lst)))
+                          (if (and o1 o2) :ordered (list s-res-lst :self o1 :children o2)))
+
+                        (let* ((o1 (pp-lst-orderedp pp-res-lst)))
+                          (if o1 :ordered (list pp-res-lst :not-ordered)))
+
+                        (let* ((o1 (s-sum-ordered-listp c-res-lst))
+                               (o2 (ordered-s/c-p-lst c-res-lst)))
+                          (if (and o1 o2) :ordered (list c-res-lst :self o1 :children o2)))))
+                  ((or ;; (loop$ for x in s-res-lst thereis (times-p x))
+                    ;; (loop$ for x in pp-res-lst thereis (times-p x))
+                    ;; (loop$ for x in c-res-lst thereis (times-p x))
+
+                    (and (or (s/c-has-times-lst c-res-lst)
+                             (s/c-has-times-lst s-res-lst))
+                         ;;(not (s/c-has-times `(c '0 (list . ,s-lst) (list . ,pp-lst) (list . ,c-lst))))
+                         ))
+                   (msg "---Times instance from create-c-instance ~%
+Inputs:
+s-lst:~% ~x0
+pp-lst:~% ~x1
+c-lst:~% ~x2 
+Outputs:
+s-res-lst:~%~x3 ~%pp-res-lst:~%~x4 ~%c-res-lst:~%~x5 ~%~%~$"
+                        s-lst pp-lst c-lst s-res-lst pp-res-lst c-res-lst
+                        ;; (let* ((o1 (loop$ for x in s-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list s-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in pp-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list pp-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in c-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list c-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in s-res-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list s-res-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in pp-res-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list pp-res-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in c-res-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list c-res-lst :has-times)))
+                        ))
+                  (t 
+                   (msg "")))))
+  ))
+
+(trace$
+ (create-s-instance
+  :cond (equal acl2::traced-fn 'create-s-instance) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list s-res-lst pp-res-lst c-res-lst)
+                acl2::values)
+
+               ((list pp c)
+                acl2::arglist)
+               (c-lst (list-to-lst c))
+               (pp-lst (list-to-lst pp))
+               )
+            (cond ((and 
+                        (not (and (ordered-s/c-p-lst s-res-lst)
+                             (list-of-only-s/c-p s-res-lst 's)
+                             (ordered-s/c-p-lst c-res-lst)
+                             (list-of-only-s/c-p c-res-lst 'c)
+                             (pp-lst-orderedp pp-res-lst))))
+                   (msg "--- not ordered from create-s-instance ~%Inputs: ~%pp-lst:~%~x0 ~%c-lst:~%~x1
+Outputs: ~$s-res-lst:~%~x2 ~%pp-res-lst:~%~x3 ~%c-res-lst:~%~x4 ~%~%"
+
+                        (let* ((o1 (pp-lst-orderedp pp-res-lst)))
+                          (if o1 :ordered (list pp-lst :not-ordered)))
+
+                        (let* ((o1 (s-sum-ordered-listp c-lst))
+                               (o2 (ordered-s/c-p-lst c-lst)))
+                          (if (and o1 o2) :ordered (list c-lst :self o1 :children o2)))
+                   
+                        (let* ((o1 (s-sum-ordered-listp s-res-lst))
+                               (o2 (ordered-s/c-p-lst s-res-lst)))
+                          (if (and o1 o2) :ordered (list s-res-lst :self o1 :children o2)))
+
+                        (let* ((o1 (pp-lst-orderedp pp-res-lst)))
+                          (if o1 :ordered (list pp-res-lst :not-ordered)))
+
+                        (let* ((o1 (s-sum-ordered-listp c-res-lst))
+                               (o2 (ordered-s/c-p-lst c-res-lst)))
+                          (if (and o1 o2) :ordered (list c-res-lst :self o1 :children o2)))))
+                  ((or ;; (loop$ for x in s-res-lst thereis (times-p x))
+                    ;; (loop$ for x in pp-res-lst thereis (times-p x))
+                    ;; (loop$ for x in c-res-lst thereis (times-p x))
+
+                    (and (or (s/c-has-times-lst c-res-lst)
+                             (s/c-has-times-lst s-res-lst))
+                         ;;(not (s/c-has-times `(c '0 (list . ,s-lst) (list . ,pp-lst) (list . ,c-lst))))
+                         ))
+                   (msg "---Times instance from create-s-instance ~% Inputs had it? :~x0
+Inputs:
+pp-lst:~% ~x1
+c-lst:~% ~x2
+Outputs:
+s-res-lst:~%~x3 ~%pp-res-lst:~%~x4 ~%c-res-lst:~%~x5 ~%~%
+~$" ;; throw an error.
+                        (s/c-has-times `(s '0 (list . ,pp-lst) (list . ,c-lst)))
+                         pp-lst c-lst s-res-lst pp-res-lst c-res-lst
+                        ))
+                  (t 
+                   (msg "")))))
+  ))
+
+(trace$
+ (c-pattern1-reduce
+  :cond (equal acl2::traced-fn 'c-pattern1-reduce) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list s-res-lst pp-res-lst c-res-lst)
+                acl2::values)
+
+               ((list s-lst pp-lst c-lst)
+                acl2::arglist)
+               )
+            (cond ((and (or (s/c-has-times-lst c-res-lst)
+                            (s/c-has-times-lst s-res-lst))
+                        (not (s/c-has-times `(c '0 (list . ,s-lst) (list . ,pp-lst) (list . ,c-lst))))
+                        )
+                   (msg "---Times instance from c-pattern1-reduce ~%
+Inputs:
+s-lst:~% ~x0
+pp-lst:~% ~x1
+c-lst:~% ~x2 
+Outputs:
+s-res-lst:~%~x3 ~%pp-res-lst:~%~x4 ~%c-res-lst:~%~x5 ~%~%"
+                        s-lst pp-lst c-lst s-res-lst pp-res-lst c-res-lst
+                        ;; (let* ((o1 (loop$ for x in s-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list s-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in pp-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list pp-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in c-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list c-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in s-res-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list s-res-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in pp-res-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list pp-res-lst :has-times)))
+                        ;; (let* ((o1 (loop$ for x in c-res-lst thereis (times-p x))))
+                        ;;   (if (and o1) :good (list c-res-lst :has-times)))
+                        ))
+                  (t 
+                   (msg "")))))
+            ))
 
 
 (clear-memoize-statistics) (clear-memoize-tables)

@@ -200,7 +200,7 @@
     (and (pseudo-termp x)
          (subsetp-equal
           (acl2::all-fnnames x)
-          '(if equal safe-max safe-min nth > < not))
+          '(if bitp equal safe-max safe-min nth > < not))
          (subsetp-equal
           (acl2::all-vars x)
           '(widths args)))
@@ -296,6 +296,9 @@
                 (and (rationalp x) (rationalp y) (> x y))))
                (('not x)
                 (not (width-of-svex-extn-formula-eval x args widths)))
+               (('bitp a)
+                (b* ((a (width-of-svex-extn-formula-eval a args widths)))
+                  (bitp a)))
                (&
                 (acl2::raise
                  "Formula is in unsupported format: ~p0" formula))

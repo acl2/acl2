@@ -2467,8 +2467,8 @@
 
 (defines constbounds-rec
   (define constbounds-rec ((x pseudo-termp)
-                            (bound-alist boundrw-substlist-p)
-                            (negative-bound-alist boundrw-substlist-p)
+                            (upper-bound-substs boundrw-substlist-p)
+                            (lower-bound-substs boundrw-substlist-p)
                             &key (mfc 'mfc) (state 'state))
     :irrelevant-formals-ok t
     :verify-guards nil
@@ -2476,33 +2476,33 @@
     :returns (mv (upper maybe-rationalp :rule-classes :type-prescription)
                  (lower maybe-rationalp :rule-classes :type-prescription))
     :ruler-extenders :all ;; (:lambdas)
-    (b* (((mv changed-u explicitp-u upper1) (boundrw-find-bound x t bound-alist mfc state))
-         ((mv changed-l explicitp-l lower1) (boundrw-find-bound x nil negative-bound-alist mfc state))
+    (b* (((mv changed-u ?explicitp-u upper1) (boundrw-find-bound x t upper-bound-substs mfc state))
+         ((mv changed-l ?explicitp-l lower1) (boundrw-find-bound x nil lower-bound-substs mfc state))
          (upper1 (and changed-u (consp upper1) (quotep upper1) (rationalp (unquote upper1))
                       (unquote upper1)))
          (lower1 (and changed-l (consp lower1) (quotep lower1) (rationalp (unquote lower1))
                       (unquote lower1)))
-         ((when (and upper1 lower1 explicitp-u explicitp-l
-                     (ts-check-rational x mfc state)))
-          (mv upper1 lower1))
-         ((mv upper2 lower2) (constbounds-rec-operator x bound-alist negative-bound-alist))
+         ;; ((when (and upper1 lower1 explicitp-u explicitp-l
+         ;;             (ts-check-rational x mfc state)))
+         ;;  (mv upper1 lower1))
+         ((mv upper2 lower2) (constbounds-rec-operator x upper-bound-substs lower-bound-substs))
          (rat-check (and (or upper1 lower1)
                          (ts-check-rational x mfc state)))
          (upper (if (and upper1 rat-check)
-                    (if (and upper2 (not explicitp-u))
+                    (if upper2 ;; (and upper2 (not explicitp-u))
                         (boundrwc-choose-best-bound upper1 upper2 t)
                       upper1)
                   upper2))
          (lower (if (and lower1 rat-check)
-                    (if (and lower2 (not explicitp-l))
+                    (if lower2 ;; (and lower2 (not explicitp-l))
                         (boundrwc-choose-best-bound lower1 lower2 nil)
                       lower1)
                   lower2)))
       (mv upper lower)))
 
   (define constbounds-rec-operator ((x pseudo-termp)
-                                     (bound-alist boundrw-substlist-p)
-                                     (negative-bound-alist boundrw-substlist-p)
+                                     (upper-bound-substs boundrw-substlist-p)
+                                     (lower-bound-substs boundrw-substlist-p)
                                      &key (mfc 'mfc) (state 'state))
     :irrelevant-formals-ok t
     :verify-guards nil
@@ -2517,27 +2517,27 @@
            (treematch
             x
             ((binary-+ (:? a) (:? b))
-             (b* (((mv a-upper a-lower) (constbounds-rec a bound-alist negative-bound-alist))
-                  ((mv b-upper b-lower) (constbounds-rec b bound-alist negative-bound-alist)))
+             (b* (((mv a-upper a-lower) (constbounds-rec a upper-bound-substs lower-bound-substs))
+                  ((mv b-upper b-lower) (constbounds-rec b upper-bound-substs lower-bound-substs)))
                (mv (and a-upper b-upper (+ a-upper b-upper))
                    (and a-lower b-lower (+ a-lower b-lower)))))
             ((unary-- (:? a))
-             (b* (((mv a-upper a-lower) (constbounds-rec a bound-alist negative-bound-alist)))
+             (b* (((mv a-upper a-lower) (constbounds-rec a upper-bound-substs lower-bound-substs)))
                (mv (and a-lower (- a-lower))
                    (and a-upper (- a-upper)))))
             ((unary-/ (:? a))
              (b* (;; (a-sign (ts-check-sign-strict a mfc state))
                   ;; ((unless a-sign) x)
-                  ((mv a-upper a-lower) (constbounds-rec a bound-alist negative-bound-alist)))
+                  ((mv a-upper a-lower) (constbounds-rec a upper-bound-substs lower-bound-substs)))
                (boundrwc-recip-bound a-upper a-lower a)))
             ((binary-* (:? a) (:? a))
              ;; Special case for square.
-             (b* (((mv a-upper a-lower) (constbounds-rec a bound-alist negative-bound-alist)))
+             (b* (((mv a-upper a-lower) (constbounds-rec a upper-bound-substs lower-bound-substs)))
                (boundrwc-square-bound a-upper a-lower a)))
             ((binary-* (:? a) (binary-* (:? a) (:? b)))
              (constbounds-rec ;; (pseudo-term-call 'binary-* (list (pseudo-term-call 'binary-* (list a a)) b))
               `(binary-* (binary-* ,a ,a) ,b)
-              bound-alist negative-bound-alist))
+              upper-bound-substs lower-bound-substs))
 
             ((binary-* (:? a) (:? b))
              ;; The generic answer here is
@@ -2551,8 +2551,8 @@
              ;; b-lower) is guaranteed to be greater than (* a-upper b-upper).
              ;; We can further do without a-lower if b-lower is nonnegative.
              
-             (b* (((mv a-upper a-lower) (constbounds-rec a bound-alist negative-bound-alist))
-                  ((mv b-upper b-lower) (constbounds-rec b bound-alist negative-bound-alist)))
+             (b* (((mv a-upper a-lower) (constbounds-rec a upper-bound-substs lower-bound-substs))
+                  ((mv b-upper b-lower) (constbounds-rec b upper-bound-substs lower-bound-substs)))
                (boundrwc-multiply-bounds-extrat a-upper a-lower b-upper b-lower)))
             (& (mv nil nil))))))
 
@@ -3037,8 +3037,8 @@
     (defret <fn>-correct
       (b* ((old (boundrw-ev x a)))
         (implies (and (pseudo-termp x)
-                      (boundrw-substlist-p bound-alist)
-                      (boundrw-substlist-p negative-bound-alist)
+                      (boundrw-substlist-p upper-bound-substs)
+                      (boundrw-substlist-p lower-bound-substs)
                       (boundrw-ev-meta-extract-contextual-facts a)
                       (boundrw-ev-meta-extract-global-facts))
                  (and (maybe-boundp t old upper)
@@ -3052,8 +3052,8 @@
     (defret <fn>-correct
       (b* ((old (boundrw-ev x a)))
         (implies (and (pseudo-termp x)
-                      (boundrw-substlist-p bound-alist)
-                      (boundrw-substlist-p negative-bound-alist)
+                      (boundrw-substlist-p upper-bound-substs)
+                      (boundrw-substlist-p lower-bound-substs)
                       (boundrw-ev-meta-extract-contextual-facts a)
                       (boundrw-ev-meta-extract-global-facts))
                  (and (maybe-boundp t old upper)
@@ -3075,8 +3075,8 @@
     (b* ((old (boundrw-ev x a)))
       (implies (and upper
                     (pseudo-termp x)
-                    (boundrw-substlist-p bound-alist)
-                    (boundrw-substlist-p negative-bound-alist)
+                    (boundrw-substlist-p upper-bound-substs)
+                    (boundrw-substlist-p lower-bound-substs)
                     (boundrw-ev-meta-extract-contextual-facts a)
                     (boundrw-ev-meta-extract-global-facts))
                (<= old upper)))
@@ -3089,8 +3089,8 @@
     (b* ((old (boundrw-ev x a)))
       (implies (and lower
                     (pseudo-termp x)
-                    (boundrw-substlist-p bound-alist)
-                    (boundrw-substlist-p negative-bound-alist)
+                    (boundrw-substlist-p upper-bound-substs)
+                    (boundrw-substlist-p lower-bound-substs)
                     (boundrw-ev-meta-extract-contextual-facts a)
                     (boundrw-ev-meta-extract-global-facts))
                (<= lower old)))
@@ -4335,46 +4335,71 @@
 (defxdoc rewrite-bounds
   :short "Substitute upper bounds and lower bounds for subterms in comparisons."
   :parents (proof-automation)
-  :long " <p>Replace expressions by upper and lower bounds for them inside
-inequalities.  Usage, as a computed hint:</p>
+  :long " <p>Try to solve inequalities by replacing their subexpressions with
+upper and lower bounds.  Usage, as a computed hint:</p>
 
 @({
- (rewrite-bounds ((<= a 10)
-                  ;; replace the variable a by 10 in upper-boundable contexts
+ (rewrite-bounds
+   ;; optional list of user-suggested bounds, of the forms
+   ;; (rel bounded-term bound) or (:free (vars) (rel bounded-term bound))
+   ((<= a 10)
+    ;; use 10 as the upper bound for variable A if we can prove it by backchaining
 
-                  (:free (b) (> (foo b c) (bar b)))
-                  ;; replace (foo b c), for any b, by (bar b) in
-                  ;; lower-boundable contexts (note: C is not a free variable)
+    (:free (b) (> (foo b c) (bar b)))
+    ;; use (bar b) as the lower bound for (foo b c), for any b,
+    ;; as long as (bar b) is a ground term that evaluates to a rational
+    ;; and we can prove it by backchaining.
 
-                  ...)
+    ...)
 
-                  ;; optional keywords:
+   ;; optional keywords:
 
-                  ;; theory to use in addition to the bound-rewrite meta rule
-                  ;; -- default is (enable), i.e., the ambient theory for the
-                  ;; event
-                  :in-theory (enable foo bar)
+   ;; theory to use in addition to the bound-rewrite meta rule
+   ;; -- default is (enable bound-rewrite), i.e., the ambient theory for the
+   ;; event plus the bound-rewrite rule.  Must result in bound-rewrite enabled
+   ;; or this won't work.
+   :in-theory-override (enable foo bar bound-rewrite)
 
-                  ;; wait until stable under simplification (default t)
-                  :wait-til-stablep nil
+   ;; wait until stable under simplification (default t)
+   :wait-til-stablep nil
 
-                  ;; look for constant bounds assumed in the clause
-                  :clause-auto-bounds nil
-                  ;; look for constant bounds from linear rules
-                  :linear-auto-bounds nil
-                  ;; use both of these kinds of automatic bounds
-                  :auto-bounds nil)
+   ;; look for constant bounds assumed in the clause (recommended)
+   :clause-auto-bounds nil
+   ;; look for constant bounds from linear rules (not recommended)
+   :linear-auto-bounds nil
+   ;; use both of these kinds of automatic bounds (not recommended)
+   :auto-bounds nil
+
+   ;; do not let auto-bounds add bounds for these terms
+   :auto-bounds-omit ((+ a b) (foo c)))
   })
 
-<p>Here, lower-boundable contexts are locations where decreasing the
-subexpression makes the goal stronger, and upper boundable contexts are
-locations where increasing the value of the subexpression makes the goal
-stronger (the new goal implies the original goal).  More on this below.</p>
+<p>This form enables a meta rule that tries to rewrite literals of the goal
+clause that are inequalities so as to prove the clause.  Specifically, it tries
+to replace the two sides of each inequality with constant upper or lower
+bounds.  The replacement depends on the sense of the literal.  For a
+non-negated literal @('(< a b)') -- that is, a conclusion @('(< a b)') or
+hypothesis @('(<= b a)') -- we replace @('a') by an upper bound and @('b') by a
+lower bound; for a negated such literal we do the opposite.  The resulting new
+clause then implies the old one.  Actually, this isn't quite true -- we do the
+replacement via a meta rule, which replaces a non-negated literal @('(< a b)')
+by @('(or (hide (< a b)) (< a-upper b-lower))'), or a negated literal @('(< a
+b)') by @('(and (hide (< a b)) (< a-lower b-upper))').  These replacements are
+equivalent to the input literals because @('(< a-upper b-lower)') implies @('(<
+a b)') and @('(< a b)') implies @('(< a-lower b-upper)').</p>
 
-<p>Note that performing such replacements may change a theorem to a
-non-theorem.  Actually, this procedure leaves the original literals behind
-inside @('hide') forms, but it still is best to be careful to apply this
-strategy in the right places.</p>
+
+<p>Note that performing such replacements (if we remove the @('hide') terms
+from consideration) may change a theorem to a non-theorem.  It therefore is
+best to be careful to apply this strategy only in the right places.</p>
+
+<p> The bounds for each such literal are determined by an abstract
+interpretation of the term, which recursively finds upper and lower bounds. For
+a term that is an application of a supported arithmetic operator, we first find
+upper and lower bounds for each argument and then use those bounds to determine
+the bounds for that operator application.  For other terms, bounds may be found
+by user suggestions (verified using backchaining), linear rules, and type
+reasoning.</p>
 
 <h3>Details</h3>
 
@@ -4437,38 +4462,6 @@ would be bad because it would destroy the information that @('a') is
 nonnegative.  In particular, replacing @('a') by its bound here would result in
 a trivially true hypothesis.  The meta rule avoids making such replacements
 when it can determine that they are trivial.</p>
-
-<h3>Boundable Contexts</h3>
-
-<p>The rules used for determining which contexts are upper or lower boundable
-are as follows.</p>
-
-<table>
-<tr><th>Preconditions</th>
-    <th>Results</th>
-</tr>
-<tr><td>@('(< a b)') or @('(<= a b)') in hypothesis/negated literal</td>
-    <td>@('a') lower boundable, @('b') upper boundable</td>
-</tr>
-<tr><td>@('(< a b)') or @('(<= a b)') in conclusion/non-negated literal</td>
-    <td>@('a') upper boundable, @('b') lower boundable</td>
-</tr>
-<tr><td>@('(+ a b)') in upper/lower boundable context</td>
-    <td>@('a'), @('b') upper/lower boundable</td>
-</tr>
-<tr><td>@('(- a)') in upper/lower boundable context</td>
-    <td>@('a') lower/upper boundable</td>
-</tr>
-<tr><td>@('(* a b)') in upper/lower boundable context, @('b') nonnegative</td>
-    <td>@('a') upper/lower boundable</td>
-</tr>
-<tr><td>@('(* a b)') in upper/lower boundable context, @('b') nonpositive</td>
-    <td>@('a') lower/upper boundable</td>
-</tr>
-<tr><td>@('(/ a)') in upper/lower boundable context, @('a') positive/negative</td>
-    <td>@('a') lower/upper boundable if bound is also positive/negative</td>
-</tr>
-</table>
 
 <h3>Future work</h3>
 
