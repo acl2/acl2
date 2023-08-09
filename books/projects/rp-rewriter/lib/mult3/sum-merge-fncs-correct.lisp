@@ -158,7 +158,8 @@
   (create-regular-eval-lemma times 2 mult-formula-checks)
   (create-regular-eval-lemma binary-append 2 mult-formula-checks)
   (create-regular-eval-lemma binary-and 2 mult-formula-checks)
-  (create-regular-eval-lemma and-list 2 mult-formula-checks))
+  (create-regular-eval-lemma and-list 2 mult-formula-checks)
+  (create-regular-eval-lemma and-times-list 3 mult-formula-checks))
 
 (defun sum-list-eval (lst a)
   (if (atom lst)
@@ -364,8 +365,10 @@ ex-from-rp
 (local
  (defthm pp-list-order-aux-equalsp-redef
    (equal (mv-nth 1 (pp-list-order-aux x y))
-          (equal x y))
+          (rp-equal-subterms x y))
    :hints (("goal"
+            :expand ((pp-list-order-aux x x)
+                     (pp-list-order-aux x y))
             :in-theory (e/d (pp-list-order-aux
                              rp-equal-subterms)
                             ())))))
@@ -444,8 +447,9 @@ ex-from-rp
 
 (local
  (defthm pp-list-order-equalsp-redef
-   (equal (mv-nth 1 (pp-list-order x y skip-hash))
-          (equal x y))
+   (implies (and (booleanp x1) (booleanp y1))
+            (equal (mv-nth 1 (pp-list-order x y x1 y1))
+                   (rp-equal-subterms x y)))
    :hints (("goal"
             :in-theory (e/d (pp-list-order
                              rp-equal-subterms)
@@ -511,9 +515,14 @@ ex-from-rp
                     (:free (x) (nth 0 x))
                     (:free (x) (nth 2 x))
                     (:free (x) (nth 3 x)))
+           :use ((:instance rp-evlt-of-rp-equal
+                            (term1 x)
+                            (term2 y)))
            :in-theory (e/d* (pp-order
                              (:REWRITE
                               REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_AND-times-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              rp-evlt-of-ex-from-rp-reverse
                              and$-is-and-list)
                             (rp-termp
