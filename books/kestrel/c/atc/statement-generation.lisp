@@ -3518,7 +3518,7 @@
                       gin
                       :thm-index body.thm-index
                       :names-to-avoid body.names-to-avoid
-                      :proofs nil) ; TODO: (and body.thm-name t) instead of nil
+                      :proofs (and body.thm-name t))
                      state)))
                 (retok items-gout)))
              ((erp okp member-term tag member-name member-type)
