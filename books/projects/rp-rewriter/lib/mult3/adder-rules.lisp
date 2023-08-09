@@ -1148,6 +1148,20 @@
   :hints (("Goal"
            :in-theory (e/d (f2 m2 -- adder-sum) ()))))
 
+
+
+(def-rp-rule bitp-of-f2-of-adder-sum
+  (and (implies (and (bitp x)
+                     (bitp y))
+                (bitp (f2 (adder-sum x y))))
+       (implies (and (bitp x)
+                     (bitp y)
+                     (bitp z))
+                (bitp (f2 (adder-sum x y z)))))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+       
+
 (progn
   (defconst *adder-rules*
     '(bits-is-logbit

@@ -1,7 +1,7 @@
 ; Functions to update a node-replacement-array (new version)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,8 +22,9 @@
 
 (local (in-theory (e/d (natp-of-cadr-when-possibly-negated-nodenump
                         <-of-cadr-when-bounded-possibly-negated-nodenump
-                        <-when-bounded-possibly-negated-nodenump)
-                       (symbol-listp alistp member-equal natp))))
+                        ;<-when-bounded-possibly-negated-nodenump
+                        )
+                       (symbol-listp alistp member-equal natp nth))))
 
 ;; pairs representing updates to be made to the node-replacement-array, to undo changes made to it for true and else branches
 (defund bounded-undo-pairsp (pairs dag-len)
@@ -49,6 +50,15 @@
            (alistp pairs))
   :hints (("Goal" :in-theory (enable bounded-undo-pairsp)))
   :rule-classes :forward-chaining)
+
+(defthm bounded-undo-pairsp-of-acons
+  (equal (bounded-undo-pairsp (acons index val pairs) dag-len)
+         (and (natp index)
+              ;; No bound needed on the index because we'll only apply undo-pairs whose indices are < node-replacement-count
+              ;; (< index node-replacement-count)
+              (bounded-node-replacement-valp val dag-len)
+              (bounded-undo-pairsp pairs dag-len)))
+  :hints (("Goal" :in-theory (enable bounded-undo-pairsp))))
 
 (defthm bounded-node-replacement-valp-of-cdr-of-car-when-bounded-undo-pairsp
   (implies (bounded-undo-pairsp undo-pairs dag-len)
@@ -112,7 +122,9 @@
                                                     possibly-negated-nodenump
                                                     bounded-possibly-negated-nodenumsp
                                                     bounded-possibly-negated-nodenump
-                                                    CONSP-OF-CDR)))))
+                                                    CONSP-OF-CDR
+                                                    nth ;why?
+                                                    )))))
   (if (endp possibly-negated-nodenums)
       (mv node-replacement-array node-replacement-count undo-pairs-acc)
     (let ((pnn (first possibly-negated-nodenums)))
@@ -219,14 +231,17 @@
                            ;;(STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS POSSIBLY-NEGATED-NODENUMS)
                            )
            :induct t
-           :in-theory (enable UPDATE-NODE-REPLACEMENT-ARRAY-FOR-ASSUMING-POSSIBLY-NEGATED-NODENUMS
-                              bounded-undo-pairsp
-                              ;(:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
-                              ;STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
-                              ;POSSIBLY-NEGATED-NODENUMP
-                              ;bounded-POSSIBLY-NEGATED-NODENUMSP
-                              ;bounded-POSSIBLY-NEGATED-NODENUMP
-                              ))))
+           :in-theory (e/d (UPDATE-NODE-REPLACEMENT-ARRAY-FOR-ASSUMING-POSSIBLY-NEGATED-NODENUMS
+                            <-when-bounded-possibly-negated-nodenump
+                            ;bounded-undo-pairsp
+                            ;;(:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
+                            ;;STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
+                            ;;POSSIBLY-NEGATED-NODENUMP
+                            ;;bounded-POSSIBLY-NEGATED-NODENUMSP
+                            ;;bounded-POSSIBLY-NEGATED-NODENUMP
+                            )
+                           (BOUNDED-POSSIBLY-NEGATED-NODENUMP-WHEN-NOT-CONSP ; for speed
+                             )))))
 
 (defthm update-node-replacement-array-for-assuming-possibly-negated-nodenums-return-type-alen1
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -236,7 +251,8 @@
                 (natp node-replacement-count)
                 (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
 ;(symbol-listp known-booleans)
-                (bounded-undo-pairsp undo-pairs-acc dag-len))
+                ;(bounded-undo-pairsp undo-pairs-acc dag-len)
+                )
            (<= (alen1 'node-replacement-array node-replacement-array)
                (alen1 'node-replacement-array (mv-nth 0
                                                       (update-node-replacement-array-for-assuming-possibly-negated-nodenums possibly-negated-nodenums
@@ -251,6 +267,7 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable UPDATE-NODE-REPLACEMENT-ARRAY-FOR-ASSUMING-POSSIBLY-NEGATED-NODENUMS
                               bounded-undo-pairsp
+                              <-when-bounded-possibly-negated-nodenump
                               ;(:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
                               ;STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
                               ;;POSSIBLY-NEGATED-NODENUMP

@@ -3320,6 +3320,14 @@ a cons of two vttrees.</p>"
              ;;          :rule-classes :forward-chaining))
              ;; (local (defcong iff iff (and* x y) 1 :hints(("Goal" :in-theory (enable and*)))))
              ;; (local (defcong iff iff (and* x y) 2 :hints(("Goal" :in-theory (enable and*)))))
+
+             (local (defthm assignpat-count-from-concat-parts
+                      (implies (vl-expr-case x :vl-concat)
+                               (< (vl-assignpat-count (vl-assignpat-positional (vl-concat->parts x)))
+                                  (vl-expr-count x)))
+                      :hints (("goal" :expand ((vl-expr-count x)
+                                               (vl-assignpat-count (vl-assignpat-positional (vl-concat->parts x))))))))
+
              )
 
   #||
@@ -4537,6 +4545,17 @@ functions can assume all bits of it are good.</p>"
              (type-err (vl-datatype-compatibility-type-error type pattype compattype)))
           (mv vttree type-err svex))
 
+        :vl-concat
+        ;; Special case: pretend it's a positional assign pattern rather than a concat :(
+        (b* ((pattern (make-vl-assignpat-positional :vals x.parts))
+             ((vmv vttree type-err svex)
+              (vl-assignpat-to-svex pattern type ss scopes x)))
+          (mv (vwarn :type :vl-concat-treated-as-assignpat
+                     :msg "Treated concatenation ~a0 as positional assignment pattern ~a1 in non-packed type context ~a2"
+                     :args (list x (make-vl-pattern :pat pattern) type))
+              type-err svex))
+             
+        
         :vl-special
         (mv (vfatal :type :vl-expr-to-svex-fail
                     :msg "Don't yet support ~a0."
