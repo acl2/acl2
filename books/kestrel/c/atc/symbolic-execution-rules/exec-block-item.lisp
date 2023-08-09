@@ -82,11 +82,25 @@
    (xdoc::p
     "The first two rules should be obvious in purpose.")
    (xdoc::p
-    "The third rule is used in modular proofs.
-     Instead of decomposing a non-empty list of block items
-     into the first one and the list of remaining ones,
-     it decomposes them into the singleton list of the first one
-     and the list of remaining ones."))
+    "The remaining rules are for the modular proofs.
+     In the modular proofs, there is a need to compose
+     the execution of some block items
+     with the execution of some subsequent block items.
+     That is, given a modular theorem for the first chunk of blocks,
+     and a modular theorem for the second chunk of blocks,
+     we need to generate a modular theorem for the concatenated chunks.")
+   (xdoc::p
+    "Thus, unsurprisingly, we need a theorem about
+     @(tsee exec-block-item-list) applied to an @(tsee append) of block items,
+     which is proved using a custom induction scheme.")
+   (xdoc::p
+    "However, this theorem is not directly applicable in modular proofs.
+     This is because the concatenate block items come as a quoted constant,
+     not as an @(tsee append) of the two chunks.
+     Thus, in the modular proofs, we generate rules of a different form,
+     as needed for each case (we always know the sizes of the two chunks).
+     To support the generation of proofs for these custom rules,
+     here we put two rules about lists that we need in those proofs."))
 
   (defruled exec-block-item-list-of-nil
     (implies (and (not (zp limit))
@@ -113,27 +127,35 @@
                                             (1- limit)))))
     :enable exec-block-item-list)
 
-  (defruled exec-block-item-list-of-append-one
-    (implies (and (syntaxp (quotep items))
-                  (consp items)
-                  (not (zp limit))
-                  (equal val?+compst1
-                         (exec-block-item-list (list (car items))
-                                               compst
-                                               fenv
-                                               limit))
-                  (equal val? (mv-nth 0 val?+compst1))
-                  (value-optionp val?)
-                  (equal compst1 (mv-nth 1 val?+compst1)))
-             (equal (exec-block-item-list items compst fenv limit)
-                    (if (valuep val?)
-                        (mv val? compst1)
-                      (exec-block-item-list (cdr items)
-                                            compst1
-                                            fenv
-                                            (1- limit)))))
-    :expand (exec-block-item-list (list (car items)) compst fenv limit)
-    :enable exec-block-item-list)
+  (defruled exec-block-item-list-of-append
+    (equal (exec-block-item-list (append items1 items2) compst fenv limit)
+           (b* (((mv val? compst)
+                 (exec-block-item-list items1 compst fenv limit))
+                ((when (errorp val?)) (mv val? compst))
+                ((when (valuep val?)) (mv val? compst)))
+             (exec-block-item-list items2 compst fenv (- limit (len items1)))))
+    :induct (ind items1 compst fenv limit)
+    :enable (exec-block-item-list len fix)
+    :prep-lemmas
+    ((defun ind (items compst fenv limit)
+       (b* (((when (zp limit)) nil)
+            ((when (endp items)) nil)
+            ((mv val? compst)
+             (exec-block-item (car items) compst fenv (1- limit)))
+            ((when (errorp val?)) nil)
+            ((when (valuep val?)) nil))
+         (ind (cdr items) compst fenv (1- limit))))))
+
+  (defruled append-of-take-and-nthcdr
+    (implies (<= (nfix n) (len x))
+             (equal (append (take n x) (nthcdr n x))
+                    x))
+    :induct t
+    :enable (take nthcdr nfix len))
+
+  (defruled len-of-take
+    (equal (len (take n x))
+           (nfix n)))
 
   (defval *atc-exec-block-item-list-rules*
     '(exec-block-item-list-of-nil

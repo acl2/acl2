@@ -1595,6 +1595,15 @@
     :enable (write-object-okp
              read-object))
 
+  (defruled write-object-okp-when-valuep-of-read-object-no-syntaxp
+    (implies (and (equal (objdesign-kind objdes) :alloc)
+                  (equal old-val (read-object objdes compst))
+                  (valuep old-val))
+             (equal (write-object-okp objdes val compst)
+                    (equal (type-of-value val)
+                           (type-of-value old-val))))
+    :enable (write-object-okp-when-valuep-of-read-object))
+
   (defruled write-object-to-update-object
     (implies (write-object-okp objdes val compst)
              (equal (write-object objdes val compst)

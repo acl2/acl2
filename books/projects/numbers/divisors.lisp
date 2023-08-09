@@ -66,29 +66,29 @@
 
 ;; We begin by defining the Cartesian product of 2 lists:
 
-(defun pairs (l r)
+(defun cart-prod (l r)
   (if (consp l)
       (append (conses (car l) r)
-	      (pairs (cdr l) r))
+	      (cart-prod (cdr l) r))
     ()))
 
-(defthm len-pairs
-  (equal (len (pairs l r))
+(defthm len-cart-prod
+  (equal (len (cart-prod l r))
 	 (* (len l) (len r))))
 
-(defthmd member-pairs
-  (iff (member-equal x (pairs l r))
+(defthmd member-cart-prod
+  (iff (member-equal x (cart-prod l r))
        (and (consp x)
 	    (member-equal (car x) l)
 	    (member-equal (cdr x) r))))
 
-(defthm dlistp-pairs
+(defthm dlistp-cart-prod
   (implies (and (dlistp l) (dlistp r))
-	   (dlistp (pairs l r))))
+	   (dlistp (cart-prod l r))))
 
 ;; Let m and n be positive relatively prime integers.  If a and b are divisors of
 ;; m and n, respectively, then a * b is a divisor of m * n.  In fact, this induces
-;; a bijection from (pairs (divisors m) (divisors n)) to (divisors (* m n)):
+;; a bijection from (cart-prod (divisors m) (divisors n)) to (divisors (* m n)):
 
 (defun prod-divisors (x)
   (* (car x) (cdr x)))
@@ -114,11 +114,11 @@
 
 ;; Similarly, Similarly, (gcd a*b n) = b.  It follows that the composition of
 ;; factor-divisor and prod-divisors is the identity on
-;; (pairs (divisors m) (divisors n)) :
+;; (cart-prod (divisors m) (divisors n)) :
 
 (defthmd factor-prod
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
-		(member-equal x (pairs (divisors m) (divisors n))))
+		(member-equal x (cart-prod (divisors m) (divisors n))))
 	   (and (member-equal (* (car x) (cdr x)) (divisors (* m n)))
 		(equal (factor-divisor (prod-divisors x) m n)
 		       x))))
@@ -142,7 +142,7 @@
 (defthmd prod-factor
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
 		(member-equal x (divisors (* m n))))
-	   (and (member-equal (factor-divisor x m n) (pairs (divisors m) (divisors n)))
+	   (and (member-equal (factor-divisor x m n) (cart-prod (divisors m) (divisors n)))
 		(equal (prod-divisors (factor-divisor x m n))
 		       x))))
 
@@ -161,17 +161,17 @@
             (prods-divisors (cdr l)))
     ()))
 
-;; (prods-divisors (pairs (divisors m) (divisors n))) is a dlist and a sublist of 
+;; (prods-divisors (cart-prod (divisors m) (divisors n))) is a dlist and a sublist of 
 ;; (divisors (* m n)) of the same length.  It is therefore a permutation of
 ;; (divisors (* m n)):
 
-(defthmd dlistp-prods-divisors-pairs
+(defthmd dlistp-prods-divisors-cart-prod
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-	   (dlistp (prods-divisors (pairs (divisors m) (divisors n))))))
+	   (dlistp (prods-divisors (cart-prod (divisors m) (divisors n))))))
 
 (defthmd sublistp-prods-divisors
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-	   (sublistp (prods-divisors (pairs (divisors m) (divisors n)))
+	   (sublistp (prods-divisors (cart-prod (divisors m) (divisors n)))
 	             (divisors (* m n)))))
 
 (defthm len-prods-divisors
@@ -179,44 +179,44 @@
 
 (defthmd permp-divisors
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-           (permutationp (prods-divisors (pairs (divisors m) (divisors n)))
+           (permutationp (prods-divisors (cart-prod (divisors m) (divisors n)))
 	                 (divisors (* m n)))))
 
 ;; We shall prove sum-divisors-multiplicative as a special case of a more general
-;; theorem.  Let mu be an arbitrary multiplicative function:
+;; theorem.  Let mf be an arbitrary multiplicative function:
 
-(encapsulate (((mu *) => *))
-  (local (defun mu (x) x))
+(encapsulate (((mf *) => *))
+  (local (defun mf (x) x))
   (defthm rationalp-mu
-    (implies (posp n) (rationalp (mu n)))
+    (implies (posp n) (rationalp (mf n)))
     :rule-classes (:type-prescription :rewrite))
   (defthmd mu-mult
     (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-             (equal (mu (* m n)) (* (mu m) (mu n))))))
+             (equal (mf (* m n)) (* (mf m) (mf n))))))
 
-;; The following function applies mu to each member of a list and sums the values:
+;; The following function applies mf to each member of a list and sums the values:
 
-(defun sum-mu (l)
+(defun sum-mf (l)
   (if (consp l)
-      (+ (mu (car l)) (sum-mu (cdr l)))
+      (+ (mf (car l)) (sum-mf (cdr l)))
     0))
 
-;; Note that (sum-mu l) is invariant under permutation of l:
+;; Note that (sum-mf l) is invariant under permutation of l:
 
 (defthmd sum-mu-perm
   (implies (and (pos-listp l) (permutationp r l))
-           (equal (sum-mu l) (sum-mu r))))
+           (equal (sum-mf l) (sum-mf r))))
 
 ;; Our objective is to prove that
 
-;;   (sum-mu (divisors (* m n)) = (sum-mu (divisors m)) * (sum-mu (divisors n)).
+;;   (sum-mf (divisors (* m n)) = (sum-mf (divisors m)) * (sum-mf (divisors n)).
 
 ;; This requires 4 induction steps:
 
 (defthm sum-mu-append
   (implies (and (pos-listp l) (pos-listp r))
-           (equal (sum-mu (append l r))
-                  (+ (sum-mu l) (sum-mu r)))))
+           (equal (sum-mf (append l r))
+                  (+ (sum-mf l) (sum-mf r)))))
 
 (defthm prods-divisors-append
   (equal (prods-divisors (append l r))
@@ -226,33 +226,33 @@
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
                 (member-equal d (divisors m))
 		(sublistp l (divisors n)))
-	   (equal (sum-mu (prods-divisors (conses d l)))
-	          (* (mu d) (sum-mu l)))))
+	   (equal (sum-mf (prods-divisors (conses d l)))
+	          (* (mf d) (sum-mf l)))))
 
-(defthmd sum-mu-prods-divisors-pairs
+(defthmd sum-mu-prods-divisors-cart-prod
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
                 (true-listp l) (sublistp l (divisors m)))
-	   (equal (sum-mu (prods-divisors (pairs l (divisors n)))) 
-	          (* (sum-mu l) (sum-mu (divisors n))))))
+	   (equal (sum-mf (prods-divisors (cart-prod l (divisors n)))) 
+	          (* (sum-mf l) (sum-mf (divisors n))))))
 
-;; Now instantiate sum-mu-prods-divisors-pairs:
+;; Now instantiate sum-mu-prods-divisors-cart-prod:
 
 (defthmd sum-mu-prods-divisors-divisors
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-           (equal (sum-mu (prods-divisors (pairs (divisors m) (divisors n))))
-	          (* (sum-mu (divisors m))
-		     (sum-mu (divisors n))))))
+           (equal (sum-mf (prods-divisors (cart-prod (divisors m) (divisors n))))
+	          (* (sum-mf (divisors m))
+		     (sum-mf (divisors n))))))
 
 ;; The desired result follows from permp-divisors and sum-mu-perm:
 
 (defthmd sum-mu-divisors-multiplicative
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-           (equal (sum-mu (divisors (* m n)))
-	          (* (sum-mu (divisors m))
-		     (sum-mu (divisors n))))))
+           (equal (sum-mf (divisors (* m n)))
+	          (* (sum-mf (divisors m))
+		     (sum-mf (divisors n))))))
 
 ;; For any integer k, (expt x k) is a multiplicative function of x.  We functionally
-;; instantiate the last result, substituting (lambda (x) (expt x k)) for mu and
+;; instantiate the last result, substituting (lambda (x) (expt x k)) for mf and
 ;; the following for sum-mu:
 
 (defun sum-powers (l k)
@@ -283,15 +283,15 @@
 
 ;; The divisors of a prime power:
 
-(defun power-list (p k)
+(defun prime-powers (p k)
   (if (posp k)
-      (cons (expt p k) (power-list p (1- k)))
+      (cons (expt p k) (prime-powers p (1- k)))
     (list 1)))
 
 (defthmd prime-power-divisors
   (implies (and (primep p) (natp k))
            (equal (divisors (expt p k))
-	          (power-list p k))))
+	          (prime-powers p k))))
 
 ;; len-divisors-multiplicative and prime-fact-existence yield a formula for the
 ;; number of divisors of n:
@@ -323,9 +323,9 @@
 ;; sum-divisors-multiplicative and prime-fact-existence yield a formula for the
 ;; sum of the divisors of n:
 
-(defthmd sum-list-power-list
+(defthmd sum-list-prime-powers
   (implies (and (primep p) (natp k))
-           (equal (sum-list (power-list p k))
+           (equal (sum-list (prime-powers p k))
 	          (/ (1- (expt p (1+ k)))
 		     (1- p)))))
 

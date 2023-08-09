@@ -40,7 +40,7 @@
    (xdoc::p
     "[C:6.2.6.2/2] allows padding bits, which we disallow for now.
      [C:6.2.6.2/2] allows signed integers to be
-     two's complement, one's complement, or sign and magnitude;
+     two's complement, ones' complement, or sign and magnitude;
      for now we assume two's complement.")
    (xdoc::p
     "The exact number of bits in a byte is also implementation-dependent

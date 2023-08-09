@@ -1,6 +1,6 @@
 ; A variant of make-flag that may be more robust
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2023, Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,9 +14,22 @@
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
 (include-book "kestrel/clause-processors/subst-flag" :dir :system)
+(include-book "kestrel/clause-processors/push-unary-functions" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
 
 (local (in-theory (disable disjoin)))
+
+;; changes the evaluator
+(defthm my-make-flag-eval-of-disjoin-of-push-unary-functions-in-literals
+  (implies (and (symbol-listp unary-fns)
+                (alistp a)
+                (pseudo-term-listp clause))
+           (iff (my-make-flag-eval (disjoin (push-unary-functions-in-literals clause unary-fns)) a)
+                (my-make-flag-eval (disjoin clause) a)))
+  :hints (("Goal" :use (:functional-instance
+                        if-eval-of-disjoin-of-push-unary-functions-in-literals
+                        (if-eval my-make-flag-eval)
+                        (if-eval-list my-make-flag-eval-list)))))
 
 ;; changes the evaluator
 (defthm my-make-flag-eval-of-disjoin-of-sublis-var-and-simplify-lst

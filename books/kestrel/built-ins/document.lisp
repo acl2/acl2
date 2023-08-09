@@ -306,3 +306,15 @@
   :short "Built-in axioms and theorems about @(tsee apply$)."
   :long (builtin-names-to-xdoc-defs
          *builtin-defaxiom/defthm-apply$*))
+
+(defxdoc builtin-defaxioms
+  :parents (builtin-defaxioms/defthms)
+  :short "All built-in axioms."
+  :long (builtin-names-to-xdoc-defs
+         *builtin-defaxiom-names*))
+
+(defxdoc builtin-defthms
+  :parents (builtin-defaxioms/defthms)
+  :short "All built-in theorems."
+  :long (builtin-names-to-xdoc-defs
+         *builtin-defthm-names*))

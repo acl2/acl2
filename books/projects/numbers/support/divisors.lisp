@@ -69,10 +69,10 @@
 
 ;; We begin by defining the Cartesian product of 2 lists:
 
-(defun pairs (l r)
+(defun cart-prod (l r)
   (if (consp l)
       (append (conses (car l) r)
-	      (pairs (cdr l) r))
+	      (cart-prod (cdr l) r))
     ()))
 
 (local-defthm len-append
@@ -82,8 +82,8 @@
   (equal (len (conses x l))
          (len l)))
 
-(defthm len-pairs
-  (equal (len (pairs l r))
+(defthm len-cart-prod
+  (equal (len (cart-prod l r))
 	 (* (len l) (len r))))
 
 (local-defthmd member-append
@@ -95,8 +95,8 @@
   (implies (member-equal y (conses x l))
            (consp y)))
 
-(defthmd member-pairs
-  (iff (member-equal x (pairs l r))
+(defthmd member-cart-prod
+  (iff (member-equal x (cart-prod l r))
        (and (consp x)
 	    (member-equal (car x) l)
 	    (member-equal (cdr x) r)))
@@ -114,18 +114,18 @@
   (implies (member z (conses x l))
            (equal (car z) x)))
 
-(defthm dlistp-pairs
+(defthm dlistp-cart-prod
   (implies (and (dlistp l) (dlistp r))
-	   (dlistp (pairs l r)))
+	   (dlistp (cart-prod l r)))
   :hints (("Subgoal *1/2" :in-theory (e/d (car-member-conses) (common-member-shared))
-                          :use ((:instance dlistp-append (l (conses (car l) r)) (m (pairs (cdr l) r)))  
-				(:instance common-member-shared (l (conses (car l) r)) (m (pairs (cdr l) r)))
-				(:instance member-pairs (x (common-member (conses (car l) r) (pairs (cdr l) r)))
+                          :use ((:instance dlistp-append (l (conses (car l) r)) (m (cart-prod (cdr l) r)))  
+				(:instance common-member-shared (l (conses (car l) r)) (m (cart-prod (cdr l) r)))
+				(:instance member-cart-prod (x (common-member (conses (car l) r) (cart-prod (cdr l) r)))
 				                        (l (cdr l)))))))
 
 ;; Let m and n be positive relatively prime integers.  If a and b are divisors of
 ;; m and n, respectively, then a * b is a divisor of m * n.  In fact, this induces
-;; a bijection from (pairs (divisors m) (divisors n)) to (divisors (* m n)):
+;; a bijection from (cart-prod (divisors m) (divisors n)) to (divisors (* m n)):
 
 (defun prod-divisors (x)
   (* (car x) (cdr x)))
@@ -197,7 +197,7 @@
 
 (defthmd factor-prod
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
-		(member-equal x (pairs (divisors m) (divisors n))))
+		(member-equal x (cart-prod (divisors m) (divisors n))))
 	   (and (member-equal (* (car x) (cdr x)) (divisors (* m n)))
 		(equal (factor-divisor (prod-divisors x) m n)
 		       x)))
@@ -205,7 +205,7 @@
                   :use ((:instance gcd-ab-m (a (car x)) (b (cdr x)))
 		        (:instance gcd-ab-m (a (cdr x)) (b (car x)) (m n) (n m))
 			(:instance gcd-commutative (x m) (y n))
-			(:instance member-pairs (l (divisors m)) (r (divisors n)))
+			(:instance member-cart-prod (l (divisors m)) (r (divisors n)))
 			(:instance member-divisors (k (car x)) (n m))
 			(:instance member-divisors (k (cdr x)))
 			(:instance member-divisors (k (* (car x) (cdr x))) (n (* m n)))))))
@@ -291,12 +291,12 @@
 (defthmd prod-factor
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
 		(member-equal x (divisors (* m n))))
-	   (and (member-equal (factor-divisor x m n) (pairs (divisors m) (divisors n)))
+	   (and (member-equal (factor-divisor x m n) (cart-prod (divisors m) (divisors n)))
 		(equal (prod-divisors (factor-divisor x m n))
 		       x)))
   :hints (("Goal" :in-theory (enable factor-divisor prod-divisors)
                   :use (prod-gcds
-			(:instance member-pairs (x (cons (gcd x m) (gcd x n))) (l (divisors m)) (r (divisors n)))
+			(:instance member-cart-prod (x (cons (gcd x m) (gcd x n))) (l (divisors m)) (r (divisors n)))
 			(:instance member-divisors (k (gcd x m)) (n m))
 			(:instance member-divisors (k (gcd x n)))
 			(:instance gcd-divides (y m))
@@ -314,7 +314,7 @@
 		  (* (len (divisors m)) (len (divisors n)))))
   :hints (("Goal" :use ((:functional-instance len-1-1-equal
                          (x (lambda () (if (and (posp m) (posp n) (equal (gcd m n) 1)) (divisors (* m n)) (x))))
-                         (y (lambda () (if (and (posp m) (posp n) (equal (gcd m n) 1)) (pairs (divisors m) (divisors n)) (y))))
+                         (y (lambda () (if (and (posp m) (posp n) (equal (gcd m n) 1)) (cart-prod (divisors m) (divisors n)) (y))))
 		         (xy (lambda (x) (if (and (posp m) (posp n) (equal (gcd m n) 1)) (factor-divisor x m n) (xy x))))
 		         (yx (lambda (y) (if (and (posp m) (posp n) (equal (gcd m n) 1)) (prod-divisors y) (yx y)))))))
 	  ("Subgoal 2" :use ((:instance prod-factor (x a))
@@ -330,81 +330,81 @@
             (prods-divisors (cdr l)))
     ()))
 
-;; (prods-divisors (pairs (divisors m) (divisors n))) is a dlist and a sublist of 
+;; (prods-divisors (cart-prod (divisors m) (divisors n))) is a dlist and a sublist of 
 ;; (divisors (* m n)) of the same length.  It is therefore a permutation of
 ;; (divisors (* m n)):
 
 (defthm prod-divisors-1-1
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
-                (member-equal x (pairs (divisors m) (divisors n)))
-		(member-equal y (pairs (divisors m) (divisors n)))
+                (member-equal x (cart-prod (divisors m) (divisors n)))
+		(member-equal y (cart-prod (divisors m) (divisors n)))
 		(equal (prod-divisors x) (prod-divisors y)))
            (equal x y))
   :rule-classes ()
   :hints (("Goal" :use (factor-prod (:instance factor-prod (x y))))))
 
-(defthm dlistp-prods-divisors-pairs-1
+(defthm dlistp-prods-divisors-cart-prod-1
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
-                (sublistp l (pairs (divisors m) (divisors n)))
-                (member-equal x (pairs (divisors m) (divisors n)))
+                (sublistp l (cart-prod (divisors m) (divisors n)))
+                (member-equal x (cart-prod (divisors m) (divisors n)))
                 (member-equal (prod-divisors x) (prods-divisors l)))
 	   (member x l))
   :hints (("Subgoal *1/3" :use ((:instance prod-divisors-1-1 (y (car l)))))))
 
-(defthm dlistp-prods-divisors-pairs-2
+(defthm dlistp-prods-divisors-cart-prod-2
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
                 (dlistp l)
-                (sublistp l (pairs (divisors m) (divisors n))))
+                (sublistp l (cart-prod (divisors m) (divisors n))))
            (dlistp (prods-divisors l)))
-  :hints (("Subgoal *1/2" :use ((:instance dlistp-prods-divisors-pairs-1 (x (car l)) (l (cdr l)))))))
+  :hints (("Subgoal *1/2" :use ((:instance dlistp-prods-divisors-cart-prod-1 (x (car l)) (l (cdr l)))))))
 
-(defthmd dlistp-prods-divisors-pairs
+(defthmd dlistp-prods-divisors-cart-prod
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-	   (dlistp (prods-divisors (pairs (divisors m) (divisors n)))))
-  :hints (("Goal" :use ((:instance dlistp-prods-divisors-pairs-2 (l (pairs (divisors m) (divisors n))))))))
+	   (dlistp (prods-divisors (cart-prod (divisors m) (divisors n)))))
+  :hints (("Goal" :use ((:instance dlistp-prods-divisors-cart-prod-2 (l (cart-prod (divisors m) (divisors n))))))))
 
 (defthmd sublistp-prods-divisors-1
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
-                (sublistp l (pairs (divisors m) (divisors n))))
+                (sublistp l (cart-prod (divisors m) (divisors n))))
 	   (sublistp (prods-divisors l) (divisors (* m n))))
   :hints (("Subgoal *1/2" :use ((:instance factor-prod (x (car l)))))))
 
 (defthmd sublistp-prods-divisors
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-	   (sublistp (prods-divisors (pairs (divisors m) (divisors n)))
+	   (sublistp (prods-divisors (cart-prod (divisors m) (divisors n)))
 	             (divisors (* m n))))
-  :hints (("Goal" :use ((:instance sublistp-prods-divisors-1 (l (pairs (divisors m) (divisors n))))))))
+  :hints (("Goal" :use ((:instance sublistp-prods-divisors-1 (l (cart-prod (divisors m) (divisors n))))))))
 
 (defthm len-prods-divisors
   (equal (len (prods-divisors l)) (len l)))
 
 (defthmd permp-divisors
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-           (permutationp (prods-divisors (pairs (divisors m) (divisors n)))
+           (permutationp (prods-divisors (cart-prod (divisors m) (divisors n)))
 	                 (divisors (* m n))))
-  :hints (("Goal" :use (sublistp-prods-divisors dlistp-prods-divisors-pairs len-divisors-multiplicative
-                        (:instance permp-eq-len (l (prods-divisors (pairs (divisors m) (divisors n))))
+  :hints (("Goal" :use (sublistp-prods-divisors dlistp-prods-divisors-cart-prod len-divisors-multiplicative
+                        (:instance permp-eq-len (l (prods-divisors (cart-prod (divisors m) (divisors n))))
                                                 (m (divisors (* m n))))
-			(:instance permp-permutationp (l (prods-divisors (pairs (divisors m) (divisors n))))
+			(:instance permp-permutationp (l (prods-divisors (cart-prod (divisors m) (divisors n))))
                                                       (m (divisors (* m n))))))))
 
 ;; We shall prove sum-divisors-multiplicative as a special case of a more general
-;; theorem.  Let mu be an arbitrary multiplicative function:
+;; theorem.  Let mf be an arbitrary multiplicative function:
 
-(encapsulate (((mu *) => *))
-  (local (defun mu (x) x))
+(encapsulate (((mf *) => *))
+  (local (defun mf (x) x))
   (defthm rationalp-mu
-    (implies (posp n) (rationalp (mu n)))
+    (implies (posp n) (rationalp (mf n)))
     :rule-classes (:type-prescription :rewrite))
   (defthmd mu-mult
     (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-             (equal (mu (* m n)) (* (mu m) (mu n))))))
+             (equal (mf (* m n)) (* (mf m) (mf n))))))
 
-;; The following function applies mu to each member of a list and sums the values:
+;; The following function applies mf to each member of a list and sums the values:
 
-(defun sum-mu (l)
+(defun sum-mf (l)
   (if (consp l)
-      (+ (mu (car l)) (sum-mu (cdr l)))
+      (+ (mf (car l)) (sum-mf (cdr l)))
     0))
 
 (defun pos-listp (l)
@@ -426,36 +426,36 @@
   (implies (and (posp x) (pos-listp l))
            (pos-listp (prods-divisors (conses x l)))))
 
-(defthm pos-listp-prods-divisors-pairs
+(defthm pos-listp-prods-divisors-cart-prod
   (implies (and (pos-listp l) (pos-listp r))
-           (pos-listp (prods-divisors (pairs l r)))))
+           (pos-listp (prods-divisors (cart-prod l r)))))
 
 (defthm rationalp-sum-mu
   (implies (pos-listp l)
-           (rationalp (sum-mu l))))
+           (rationalp (sum-mf l))))
 
-;; Note that (sum-mu l) is invariant under permutation of l:
+;; Note that (sum-mf l) is invariant under permutation of l:
 
 (defthm sum-mu-remove1
   (implies (and (pos-listp l) (member-equal x l))
            (and (pos-listp (remove1-equal x l))
-	        (equal (sum-mu (remove1-equal x l))
-	               (- (sum-mu l) (mu x))))))
+	        (equal (sum-mf (remove1-equal x l))
+	               (- (sum-mf l) (mf x))))))
 
 (defthmd sum-mu-perm
   (implies (and (pos-listp l) (permutationp r l))
-           (equal (sum-mu l) (sum-mu r))))
+           (equal (sum-mf l) (sum-mf r))))
 
 ;; Our objective is to prove that
 
-;;   (sum-mu (divisors (* m n)) = (sum-mu (divisors m)) * (sum-mu (divisors n)).
+;;   (sum-mf (divisors (* m n)) = (sum-mf (divisors m)) * (sum-mf (divisors n)).
 
 ;; This requires 4 induction steps:
 
 (defthm sum-mu-append
   (implies (and (pos-listp l) (pos-listp r))
-           (equal (sum-mu (append l r))
-                  (+ (sum-mu l) (sum-mu r)))))
+           (equal (sum-mf (append l r))
+                  (+ (sum-mf l) (sum-mf r)))))
 
 (defthm prods-divisors-append
   (equal (prods-divisors (append l r))
@@ -465,44 +465,44 @@
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
                 (member-equal d (divisors m))
 		(sublistp l (divisors n)))
-	   (equal (sum-mu (prods-divisors (conses d l)))
-	          (* (mu d) (sum-mu l))))
+	   (equal (sum-mf (prods-divisors (conses d l)))
+	          (* (mf d) (sum-mf l))))
   :hints (("Subgoal *1/1" :in-theory (enable mu-mult)
                           :use ((:instance member-divisors (k (car l)))
 				(:instance member-divisors (k d) (n m))
 				(:instance gcd-divisor-2 (x m) (y n) (c d) (d (car l)))
 				(:instance gcd-commutative (x c) (y d))))))
 
-(defthmd sum-mu-prods-divisors-pairs
+(defthmd sum-mu-prods-divisors-cart-prod
   (implies (and (posp m) (posp n) (equal (gcd m n) 1)
                 (true-listp l) (sublistp l (divisors m)))
-	   (equal (sum-mu (prods-divisors (pairs l (divisors n)))) 
-	          (* (sum-mu l) (sum-mu (divisors n)))))
+	   (equal (sum-mf (prods-divisors (cart-prod l (divisors n)))) 
+	          (* (sum-mf l) (sum-mf (divisors n)))))
   :hints (("Subgoal *1/3" :in-theory (enable sum-mu-prods-divisors-conses)
                           :use ((:instance member-divisors (k (car l)) (n m))))))
 
-;; Now instantiate sum-mu-prods-divisors-pairs:
+;; Now instantiate sum-mu-prods-divisors-cart-prod:
 
 (defthmd sum-mu-prods-divisors-divisors
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-           (equal (sum-mu (prods-divisors (pairs (divisors m) (divisors n))))
-	          (* (sum-mu (divisors m))
-		     (sum-mu (divisors n)))))
-  :hints (("Goal" :use ((:instance sum-mu-prods-divisors-pairs (l (divisors m)))))))
+           (equal (sum-mf (prods-divisors (cart-prod (divisors m) (divisors n))))
+	          (* (sum-mf (divisors m))
+		     (sum-mf (divisors n)))))
+  :hints (("Goal" :use ((:instance sum-mu-prods-divisors-cart-prod (l (divisors m)))))))
 
 ;; The desired result follows from permp-divisors and sum-mu-perm:
 
 (defthmd sum-mu-divisors-multiplicative
   (implies (and (posp m) (posp n) (equal (gcd m n) 1))
-           (equal (sum-mu (divisors (* m n)))
-	          (* (sum-mu (divisors m))
-		     (sum-mu (divisors n)))))
+           (equal (sum-mf (divisors (* m n)))
+	          (* (sum-mf (divisors m))
+		     (sum-mf (divisors n)))))
   :hints (("Goal" :use (sum-mu-prods-divisors-divisors permp-divisors
                         (:instance pos-listp-divisors (n (* m n)) (l (divisors (* m n))))
-                        (:instance sum-mu-perm (l (divisors (* m n))) (r (prods-divisors (pairs (divisors m) (divisors n)))))))))
+                        (:instance sum-mu-perm (l (divisors (* m n))) (r (prods-divisors (cart-prod (divisors m) (divisors n)))))))))
 
 ;; For any integer k, (expt x k) is a multiplicative function of x.  We functionally
-;; instantiate the last result, substituting (lambda (x) (expt x k)) for mu and
+;; instantiate the last result, substituting (lambda (x) (expt x k)) for mf and
 ;; the following for sum-mu:
 
 (defun sum-powers (l k)
@@ -518,10 +518,10 @@
 		     (sum-powers (divisors n) k))))
   :hints (("Goal" :in-theory (enable mu-mult)
                   :use ((:functional-instance sum-mu-divisors-multiplicative
-                          (mu (lambda (x) (if (and (posp m) (posp n) (equal (gcd m n) 1) (integerp k))
-			                      (expt x k) (mu x))))
-			  (sum-mu (lambda (l) (if (and (posp m) (posp n) (equal (gcd m n) 1) (integerp k))
-			                          (sum-powers l k) (sum-mu l)))))))))
+                          (mf (lambda (x) (if (and (posp m) (posp n) (equal (gcd m n) 1) (integerp k))
+			                      (expt x k) (mf x))))
+			  (sum-mf (lambda (l) (if (and (posp m) (posp n) (equal (gcd m n) 1) (integerp k))
+			                          (sum-powers l k) (sum-mf l)))))))))
 
 ;; The case of interest is k = 1:
 
@@ -540,9 +540,9 @@
 
 ;; The divisors of a prime power:
 
-(defun power-list (p k)
+(defun prime-powers (p k)
   (if (posp k)
-      (cons (expt p k) (power-list p (1- k)))
+      (cons (expt p k) (prime-powers p (1- k)))
     (list 1)))
 
 (defthmd ppda-1
@@ -566,7 +566,7 @@
 (defthmd prime-power-divisors-aux
   (implies (and (primep p) (natp k) (natp j) (<= j k) (natp n) (>= n (expt p j)) (< n (expt p (1+ j))))
            (equal (divisors-aux n (expt p k))
-	          (power-list p j)))
+	          (prime-powers p j)))
   :hints (("Goal" :induct (ppda-induct n j))
           ("Subgoal *1/1" :cases ((= n (expt p j))) :nonlinearp t
 	                  :use (ppda-1 ppda-2))))
@@ -574,23 +574,23 @@
 (defthmd prime-power-divisors
   (implies (and (primep p) (natp k))
            (equal (divisors (expt p k))
-	          (power-list p k)))
+	          (prime-powers p k)))
   :hints (("Goal" :use ((:instance prime-power-divisors-aux (n (expt p k)) (j k)))
                   :in-theory (enable divisors))))
 
 ;; len-divisors-multiplicative and prime-fact-existence yield a formula for the
 ;; number of divisors of n:
 
-(defthmd len-power-list
+(defthmd len-prime-powers
   (implies (and (primep p) (natp k))
-           (equal (len (power-list p k))
+           (equal (len (prime-powers p k))
 	          (1+ k))))
 
 (defthmd len-prime-power-divisors
   (implies (and (primep p) (natp k))
            (equal (len (divisors (expt p k)))
 	          (1+ k)))
-  :hints (("Goal" :use (len-power-list prime-power-divisors))))
+  :hints (("Goal" :use (len-prime-powers prime-power-divisors))))
 
 (defun len-divisors-aux (l)
   (if (consp l)
@@ -623,7 +623,7 @@
 
 (defthmd slpl-1
   (implies (and (primep p) (natp k))
-           (equal (* (1- p) (sum-list (power-list p k)))
+           (equal (* (1- p) (sum-list (prime-powers p k)))
 	          (1- (expt p (1+ k)))))
   :hints (("Goal" :induct (fact k))))
 
@@ -633,23 +633,23 @@
 
 (defthmd slpl-3
   (implies (and (primep p) (natp k))
-           (posp (sum-list (power-list p k)))))
+           (posp (sum-list (prime-powers p k)))))
 
-(defthmd sum-list-power-list
+(defthmd sum-list-prime-powers
   (implies (and (primep p) (natp k))
-           (equal (sum-list (power-list p k))
+           (equal (sum-list (prime-powers p k))
 	          (/ (1- (expt p (1+ k)))
 		     (1- p))))
-  :hints (("Goal" :in-theory (disable power-list)
+  :hints (("Goal" :in-theory (disable prime-powers)
                   :use (slpl-1 slpl-3
-		        (:instance slpl-2 (n (1- p)) (a (sum-list (power-list p k))) (b (1- (expt p (1+ k)))))))))
+		        (:instance slpl-2 (n (1- p)) (a (sum-list (prime-powers p k))) (b (1- (expt p (1+ k)))))))))
 
 (defthmd sum-prime-power-divisors
   (implies (and (primep p) (natp k))
            (equal (sum-list (divisors (expt p k)))
 	          (/ (1- (expt p (1+ k)))
 		     (1- p))))
-  :hints (("Goal" :use (prime-power-divisors sum-list-power-list))))
+  :hints (("Goal" :use (prime-power-divisors sum-list-prime-powers))))
 
 (defun sum-divisors-aux (l)
   (if (consp l)
