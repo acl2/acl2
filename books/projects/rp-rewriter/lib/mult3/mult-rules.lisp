@@ -495,4 +495,3 @@
 (def-rp-rule nfix-opener
   (implies (natp x) (equal (nfix x) x)))
 
-

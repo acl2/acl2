@@ -151,33 +151,33 @@
 
 ;; We define a list of all pairs of members of a list l:
 
-(defun pairs-aux (l m)
+(defun cart-prod (l r)
   (if (consp l)
-      (append (conses (car l) m)
-              (pairs-aux (cdr l) m))
+      (append (conses (car l) r)
+	      (cart-prod (cdr l) r))
     ()))
 
-(defund pairs (l)
-  (pairs-aux l l))
+(defund cart-square (l)
+  (cart-prod l l))
 
-(local-defthmd member-pairs-aux
-  (implies (member-equal x (pairs-aux l m))
+(local-defthmd member-cart-prod
+  (implies (member-equal x (cart-prod l m))
            (and (consp x)
 	        (member-equal (car x) l)
 		(member-equal (cdr x) m))))
 
-(defthmd member-pairs
-  (implies (member-equal x (pairs l))
+(defthmd member-cart-square
+  (implies (member-equal x (cart-square l))
            (and (consp x)
 	        (member-equal (car x) l)
 		(member-equal (cdr x) l)))
-  :hints (("Goal" :in-theory (enable pairs)
-                  :use ((:instance member-pairs-aux (m l))))))
+  :hints (("Goal" :in-theory (enable cart-square)
+                  :use ((:instance member-cart-prod (m l))))))
 
-;; If l is a dlist, then so is (pairs l):
+;; If l is a dlist, then so is (cart-square l):
 
-(local-defthmd member-car-pairs-aux
-  (implies (member-equal x (pairs-aux l m))
+(local-defthmd member-car-cart-prod
+  (implies (member-equal x (cart-prod l m))
            (member-equal (car x) l)))
 
 (local-defthmd member-conses
@@ -190,24 +190,24 @@
        (or (member-equal x l) (member-equal x m))))
 
 (local-defthmd dlistp-append-conses
-  (implies (and (dlistp (pairs-aux l m))
+  (implies (and (dlistp (cart-prod l m))
                 (dlistp n)
 		(not (member-equal x l)))
-	   (dlistp (append (conses x n) (pairs-aux l m))))
+	   (dlistp (append (conses x n) (cart-prod l m))))
   :hints (("Goal" :induct (dlistp n))
           ("Subgoal *1/1" :in-theory (enable member-append)
 	                  :use ((:instance member-conses (z (cons x (car n))) (l (cdr n)))
-	                        (:instance member-car-pairs-aux (x (cons x (car n))))))))
+	                        (:instance member-car-cart-prod (x (cons x (car n))))))))
 
-(local-defthmd dlistp-pairs-aux
+(local-defthmd dlistp-cart-prod
   (implies (and (dlistp l) (dlistp m))
-           (dlistp (pairs-aux l m)))
+           (dlistp (cart-prod l m)))
   :hints (("Subgoal *1/2" :use ((:instance dlistp-append-conses (x (car l)) (n m) (l (cdr l)))))))
 
-(defthm dlistp-pairs
+(defthm dlistp-cart-square
   (implies (dlistp l)
-           (dlistp (pairs l)))
-  :hints (("Goal" :in-theory (enable dlistp-pairs-aux pairs))))
+           (dlistp (cart-square l)))
+  :hints (("Goal" :in-theory (enable dlistp-cart-prod cart-square))))
 
 ;; The length of the list of pairs of members of (sqrt-list p) is greater than p:
 
@@ -219,18 +219,18 @@
   (equal (len (append l m))
          (+ (len l) (len m))))
 
-(local-defthm len-pairs-aux
-  (equal (len (pairs-aux l m))
+(local-defthm len-cart-prod
+  (equal (len (cart-prod l m))
          (* (len l) (len m))))
 
-(local-defthm len-pairs
-  (equal (len (pairs l))
+(local-defthm len-cart-square
+  (equal (len (cart-square l))
          (* (len l) (len l)))
-  :hints (("Goal" :in-theory (enable pairs))))
+  :hints (("Goal" :in-theory (enable cart-square))))
 
-(defthmd len-pairs-sqrt-list
+(defthmd len-cart-square-sqrt-list
   (implies (posp p)
-           (> (len (pairs (sqrt-list p)))
+           (> (len (cart-square (sqrt-list p)))
 	      p))
   :hints (("Goal" :use (len-sqrt-list))))
 
@@ -258,18 +258,18 @@
 ;; We are interested in the following instance of mod-list:
 
 (defund diff-list (p)
-  (mod-list (pairs (sqrt-list p))
+  (mod-list (cart-square (sqrt-list p))
             (root1 -1 p)
 	    p))
 
-;; Note that the length of this list is that of (pairs (sqrt-list p)):
+;; Note that the length of this list is that of (cart-square (sqrt-list p)):
 
 (defthmd len-diff-list
   (implies (posp p)
-           (and (equal (len (diff-list p)) (len (pairs (sqrt-list p))))
+           (and (equal (len (diff-list p)) (len (cart-square (sqrt-list p))))
                 (> (len (diff-list p)) p)))
   :hints (("Goal" :in-theory (enable diff-list)
-                  :use (len-pairs-sqrt-list))))
+                  :use (len-cart-square-sqrt-list))))
 
 (local-defthm true-listp-diff-list
   (true-listp (diff-list p))
@@ -278,13 +278,13 @@
 ;;  We have the following formula for the kth member of (diff-list p):
 
 (defthmd nth-diff-list
-  (implies (and (posp p) (natp k) (< k (len (pairs (sqrt-list p)))))
+  (implies (and (posp p) (natp k) (< k (len (cart-square (sqrt-list p)))))
            (equal (nth k (diff-list p))
-	          (mod (- (car (nth k (pairs (sqrt-list p))))
-		          (* (root1 -1 p) (cdr (nth k (pairs (sqrt-list p)))))) p)))
+	          (mod (- (car (nth k (cart-square (sqrt-list p))))
+		          (* (root1 -1 p) (cdr (nth k (cart-square (sqrt-list p)))))) p)))
   :hints (("Goal" :in-theory '(diff-list)
                   :use (len-diff-list
-		        (:instance nth-mod-list (l (pairs (sqrt-list p))) (j (root1 -1 p)))))))
+		        (:instance nth-mod-list (l (cart-square (sqrt-list p))) (j (root1 -1 p)))))))
 
 ;; (diff-list p) is a sublist of the list (nats p) of the first p natural nunbers:
 
@@ -311,23 +311,23 @@
 	   (int-pair-list-p (cdr l)))
     t))
 
-(local-defthmd member-pairs-sqrt-list
+(local-defthmd member-cart-square-sqrt-list
   (implies (and (posp p)
-                (member-equal x (pairs (sqrt-list p))))
+                (member-equal x (cart-square (sqrt-list p))))
 	   (and (consp x)
 	        (natp (car x)) (<= (* (car x) (car x)) p)
 		(natp (cdr x)) (<= (* (cdr x) (cdr x)) p)))
-  :hints (("Goal" :use ((:instance member-pairs (l (sqrt-list p)))
+  :hints (("Goal" :use ((:instance member-cart-square (l (sqrt-list p)))
                         (:instance member-sqrt-list (n (car x)))
                         (:instance member-sqrt-list (n (cdr x)))))))
 
-(local-defthm int-pairs-sqrt-list
+(local-defthm int-cart-square-sqrt-list
   (implies (and (posp p)
-                (sublistp l (pairs (sqrt-list p))))
+                (sublistp l (cart-square (sqrt-list p))))
            (int-pair-list-p l))
-  :hints (("Subgoal *1/5" :use ((:instance member-pairs-sqrt-list (x (car l)))))
-          ("Subgoal *1/4" :use ((:instance member-pairs-sqrt-list (x (car l)))))
-          ("Subgoal *1/3" :use ((:instance member-pairs-sqrt-list (x (car l)))))))
+  :hints (("Subgoal *1/5" :use ((:instance member-cart-square-sqrt-list (x (car l)))))
+          ("Subgoal *1/4" :use ((:instance member-cart-square-sqrt-list (x (car l)))))
+          ("Subgoal *1/3" :use ((:instance member-cart-square-sqrt-list (x (car l)))))))
 
 (local-defthmd sublistp-mod-list-nats
   (implies (and (int-pair-list-p l)
@@ -342,8 +342,8 @@
 	             (nats p)))
   :hints (("Goal" :in-theory (enable diff-list)
                   :use (root1-minus-1
-		        (:instance int-pairs-sqrt-list (l (pairs (sqrt-list p))))
-		        (:instance sublistp-mod-list-nats (l (pairs (sqrt-list p))) (j (root1 -1 p)))))))
+		        (:instance int-cart-square-sqrt-list (l (cart-square (sqrt-list p))))
+		        (:instance sublistp-mod-list-nats (l (cart-square (sqrt-list p))) (j (root1 -1 p)))))))
 
 ;; By sublistp-<=-len, since (len (diff-list p)) > p = (len (nats p)), the members
 ;; od (diff-list p) are not distinct:
@@ -358,7 +358,7 @@
 ;; By dcex-lemma, there exist distinct indices m = (dcex1 (diff-list p)) and
 ;; n = (dcex2 (diff-list p)) such that 0 <= m < n < (len (diff-list p)) and
 ;; (nth m (diff-list p)) = (nth n (diff-list p)).  We extract the corresponding
-;; members of (pairs (sqrt-list p))::
+;; members of (cart-square (sqrt-list p))::
 
 (defthmd diff-list-diff
   (implies (and (primep p)
@@ -371,11 +371,11 @@
 
 (defund pair1 (p)
   (nth (dcex1 (diff-list p))
-       (pairs (sqrt-list p))))
+       (cart-square (sqrt-list p))))
 
 (defund pair2 (p)
   (nth (dcex2 (diff-list p))
-       (pairs (sqrt-list p))))
+       (cart-square (sqrt-list p))))
 
 ;; Note that these two pairs are distinct.
 ;; Let (pair1 p) = (a1 . b1) and (pair2 p) = (a2 . b2).  Let j = (root1 -1 p).
@@ -385,19 +385,19 @@
 ;; and (+ (* a a) (* b b)) is divisible by p.  But this sum is positive and less than
 ;; (* 2 p), and therefore equal to p.
 
-(local-defthmd diff-pairs
+(local-defthmd diff-cart-square
   (implies (and (primep p)
                 (equal (mod p 4) 1))
-	   (and (member-equal (pair1 p) (pairs (sqrt-list p)))
-	        (member-equal (pair2 p) (pairs (sqrt-list p)))
+	   (and (member-equal (pair1 p) (cart-square (sqrt-list p)))
+	        (member-equal (pair2 p) (cart-square (sqrt-list p)))
 		(not (equal (pair1 p) (pair2 p)))))
   :hints (("Goal" :in-theory (enable pair1 pair2)
                   :use (len-diff-list diff-list-diff
-                        (:instance nth-dlist-distinct (l (pairs (sqrt-list p)))
+                        (:instance nth-dlist-distinct (l (cart-square (sqrt-list p)))
 			                              (i (dcex1 (diff-list p)))
 						      (j (dcex2 (diff-list p))))))))
 
-(local-defthmd equal-pairs
+(local-defthmd equal-cart-square
   (implies (and (primep p)
                 (equal (mod p 4) 1))
 	   (equal (mod (- (car (pair1 p)) (* (root1 -1 p) (cdr (pair1 p)))) p)
@@ -421,9 +421,9 @@
 	        (natp (b2 p)) (<= (* (b2 p) (b2 p)) p)
 		(not (and (equal (a1 p) (a2 p)) (equal (b1 p) (b2 p))))))
   :hints (("Goal" :in-theory '(a1 a2 b1 b2 posp)
-                  :use (diff-pairs primep-gt-1
-		        (:instance member-pairs-sqrt-list (x (pair1 p)))
-		        (:instance member-pairs-sqrt-list (x (pair2 p)))))))
+                  :use (diff-cart-square primep-gt-1
+		        (:instance member-cart-square-sqrt-list (x (pair1 p)))
+		        (:instance member-cart-square-sqrt-list (x (pair2 p)))))))
 
 (local-defthmd mod-a-b-1
   (implies (and (primep p)
@@ -431,9 +431,9 @@
            (equal (mod (- (a1 p) (* (root1 -1 p) (b1 p))) p)
 	          (mod (- (a2 p) (* (root1 -1 p) (b2 p))) p)))
   :hints (("Goal" :in-theory '(a1 a2 b1 b2 posp)
-                  :use (diff-pairs equal-pairs primep-gt-1
-		        (:instance member-pairs-sqrt-list (x (pair1 p)))
-		        (:instance member-pairs-sqrt-list (x (pair2 p)))))))
+                  :use (diff-cart-square equal-cart-square primep-gt-1
+		        (:instance member-cart-square-sqrt-list (x (pair1 p)))
+		        (:instance member-cart-square-sqrt-list (x (pair2 p)))))))
 
 (local-defthmd mod-a-b-2
   (implies (and (primep p)
