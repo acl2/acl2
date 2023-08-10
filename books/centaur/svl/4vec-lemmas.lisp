@@ -67,7 +67,6 @@
   :disabled t))
 
 
-
 (encapsulate
   nil
   (local
@@ -7554,7 +7553,6 @@ lognot)
            :in-theory (e/d (3vec-fix-of-4vec-concat)
                            ()))))
 
-
 (defthm 3vec-p-of-4vec-fix
   (IMPLIES (AND (SV::3VEC-P Y))
            (SV::3VEC-P (4VEC-FIX Y)))
@@ -8498,6 +8496,7 @@ lognot)
   :returns (res 4vec-p)
   (4vec-part-select 0 size (4vec-plus val1 val2)))
 
+
 (defthmd 4vec-part-select-of-4vec-plus-propagate
   (implies (and (natp start)
                 (natp size)
@@ -8922,7 +8921,6 @@ lognot)
                             4vec-concat)
                            ()))))
 
-
 (encapsulate
   nil
   (local
@@ -8939,3 +8937,15 @@ lognot)
              :in-theory (e/d* (bitops::ihsext-inductions
                                bitops::ihsext-recursive-redefs)
                               ())))))
+(progn
+  (rp::def-rp-rule 4vec-bitand-of-4vec-?-with-shared-var
+    (implies (integerp x)
+             (equal (sv::4vec-bitand x (sv::4vec-? x y z))
+                    (sv::4vec-bitand x y)))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-?
+                              3VEC-BITAND
+                              SV::3VEC-?
+                              4VEC-BITAND)
+                             ()))))
+  (svl::add-svex-simplify-rule 4vec-bitand-of-4vec-?-with-shared-var))

@@ -68,6 +68,8 @@
 (include-book "relnotes")
 (include-book "practices")
 
+(include-book "100-theorems")
+
 (include-book "xdoc/save" :dir :system)
 (include-book "xdoc/archive" :dir :system)
 
