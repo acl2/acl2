@@ -679,6 +679,19 @@
           (then-hints
            `(("Goal"
               :in-theory '(,then-var-thm
+                           read-object-of-enter-scope
+                           read-object-of-update-object-same
+                           objdesign-of-var-of-update-object-iff
+                           objdesign-of-var-of-enter-scope-iff
+                           update-object-of-update-object-same
+                           update-object-of-enter-scope
+                           compustate-frames-number-of-enter-scope-not-zero
+                           compustatep-of-enter-scope
+                           compustate-frames-number-of-update-object
+                           read-object-of-objdesign-of-var-of-enter-scope
+                           read-object-of-objdesign-of-var-to-read-var
+                           read-var-of-update-object
+                           read-var-of-add-var
                            update-var-of-enter-scope
                            update-var-of-add-var
                            equal-of-ident-and-ident
@@ -693,10 +706,40 @@
                            remove-flexible-array-member-when-absent
                            ,@not-flexiblep-thms
                            value-fix-when-valuep
-                           ,valuep-when-type-pred))))
+                           ,valuep-when-type-pred
+                           exit-scope-of-if*
+                           objdesign-of-var-of-if*-when-both-objdesign-of-var
+                           read-var-of-if*
+                           read-var-of-enter-scope
+                           acl2::if*-when-same
+                           read-object-of-value-pointer->designator-of-if*
+                           uchar-arrayp-of-uchar-array-write
+                           schar-arrayp-of-schar-array-write
+                           ushort-arrayp-of-ushort-array-write
+                           sshort-arrayp-of-sshort-array-write
+                           uint-arrayp-of-uint-array-write
+                           sint-arrayp-of-sint-array-write
+                           ulong-arrayp-of-ulong-array-write
+                           slong-arrayp-of-slong-array-write
+                           ullong-arrayp-of-ullong-array-write
+                           sllong-arrayp-of-sllong-array-write
+                           compustatep-of-update-object))))
           (else-hints
            `(("Goal"
               :in-theory '(,else-var-thm
+                           read-object-of-enter-scope
+                           read-object-of-update-object-same
+                           objdesign-of-var-of-update-object-iff
+                           objdesign-of-var-of-enter-scope-iff
+                           update-object-of-update-object-same
+                           update-object-of-enter-scope
+                           compustate-frames-number-of-enter-scope-not-zero
+                           compustatep-of-enter-scope
+                           compustate-frames-number-of-update-object
+                           read-object-of-objdesign-of-var-of-enter-scope
+                           read-object-of-objdesign-of-var-to-read-var
+                           read-var-of-update-object
+                           read-var-of-add-var
                            update-var-of-enter-scope
                            update-var-of-add-var
                            equal-of-ident-and-ident
@@ -711,7 +754,24 @@
                            remove-flexible-array-member-when-absent
                            ,@not-flexiblep-thms
                            value-fix-when-valuep
-                           ,valuep-when-type-pred))))
+                           ,valuep-when-type-pred
+                           exit-scope-of-if*
+                           objdesign-of-var-of-if*-when-both-objdesign-of-var
+                           read-var-of-if*
+                           read-var-of-enter-scope
+                           acl2::if*-when-same
+                           read-object-of-value-pointer->designator-of-if*
+                           uchar-arrayp-of-uchar-array-write
+                           schar-arrayp-of-schar-array-write
+                           ushort-arrayp-of-ushort-array-write
+                           sshort-arrayp-of-sshort-array-write
+                           uint-arrayp-of-uint-array-write
+                           sint-arrayp-of-sint-array-write
+                           ulong-arrayp-of-ulong-array-write
+                           slong-arrayp-of-slong-array-write
+                           ullong-arrayp-of-ullong-array-write
+                           sllong-arrayp-of-sllong-array-write
+                           compustatep-of-update-object))))
           (instructions
            `((casesplit ,(atc-contextualize
                           test-term

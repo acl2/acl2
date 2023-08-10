@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "read-write-variables")
+(include-book "../language/pointer-operations")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -635,6 +636,11 @@
            (exit-scope compst))
     :enable (exit-scope add-var))
 
+  (defruled exit-scope-of-if*
+    (equal (exit-scope (if* a b c))
+           (if* a (exit-scope b) (exit-scope c)))
+    :enable if*)
+
   (defval *atc-exit-scope-rules*
     '(exit-scope-of-enter-scope
       exit-scope-of-add-var)))
@@ -1093,6 +1099,11 @@
              read-var
              read-auto-var
              var-in-scopes-p-when-read-auto-var-aux))
+
+  (defruled read-var-of-if*
+    (equal (read-var var (if* a b c))
+           (if* a (read-var var b) (read-var var c)))
+    :enable if*)
 
   (defval *atc-read-var-rules*
     '(read-var-of-add-frame
@@ -1733,6 +1744,13 @@
            (read-static-var var compst))
     :enable (read-object
              read-static-var))
+
+  (defruled read-object-of-value-pointer->designator-of-if*
+    (equal (read-object (value-pointer->designator ptr) (if* a b c))
+           (if* a
+                (read-object (value-pointer->designator ptr) b)
+                (read-object (value-pointer->designator ptr) c)))
+    :enable if*)
 
   (defval *atc-read-object-rules*
     '(read-object-of-add-frame

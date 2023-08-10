@@ -3143,6 +3143,7 @@
                              init-inscope-events
                              body.events
                              (and body.thm-name
+                                  (not affect)
                                   (list pop-frame-event))
                              fn-result-events
                              fn-correct-events

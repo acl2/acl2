@@ -59,6 +59,8 @@
 
 (include-book "meta/top")
 
+(include-book "svex-to-verilog")
+
 
 
 (xdoc::defxdoc
