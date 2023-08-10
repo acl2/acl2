@@ -2730,7 +2730,7 @@
                                    compst-var
                                    nil
                                    nil
-                                   nil
+                                   t
                                    wrld))
        (formula `(let ((,compst0-var ,compst-var)) ,formula))
        (hints
