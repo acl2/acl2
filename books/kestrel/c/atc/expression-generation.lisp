@@ -1767,6 +1767,9 @@
                                  (:e ident->name)
                                  read-object-of-add-var
                                  read-object-of-add-frame
+                                 read-object-of-update-object-same
+                                 read-object-of-update-object-disjoint
+                                 object-disjointp-commutative
                                  ,mem-typep-of-fn))))
                 (objdes `(objdesign-member
                           ,(add-suffix-to-fn arg-term "-OBJDES")
