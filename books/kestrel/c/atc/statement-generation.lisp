@@ -1443,13 +1443,16 @@
                                    limit
                                    t
                                    wrld))
-       (hints '(("Goal" :in-theory '(exec-block-item-list-of-nil
-                                     not-zp-of-limit-variable
-                                     compustatep-of-add-frame
-                                     compustatep-of-enter-scope
-                                     compustatep-of-add-var
-                                     compustatep-of-update-var
-                                     compustatep-of-update-object))))
+       (hints
+        '(("Goal" :in-theory '(exec-block-item-list-of-nil
+                               not-zp-of-limit-variable
+                               compustatep-of-add-frame
+                               compustatep-of-enter-scope
+                               compustatep-of-exit-scope
+                               compustatep-of-add-var
+                               compustatep-of-update-var
+                               compustatep-of-update-object
+                               compustatep-of-if*-when-both-compustatep))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -3922,26 +3925,29 @@
                             state))
              (term (acl2::close-lambdas
                     `((lambda (,var) ,body.term) ,xform.term))))
-          (retok
-           (atc-gen-block-item-list-append
-            term
-            xform.items
-            body.items
-            xform.limit
-            body.limit
-            xform.events
-            body.events
-            xform.thm-name
-            body.thm-name
-            body.type
-            body.context
-            body.inscope
-            (change-stmt-gin
-             gin
-             :thm-index body.thm-index
-             :names-to-avoid body.names-to-avoid
-             :proofs (and body.thm-name t))
-            state))))
+          (if (consp body.items)
+              (retok
+               (atc-gen-block-item-list-append
+                term
+                xform.items
+                body.items
+                xform.limit
+                body.limit
+                xform.events
+                body.events
+                xform.thm-name
+                body.thm-name
+                body.type
+                body.context
+                body.inscope
+                (change-stmt-gin
+                 gin
+                 :thm-index body.thm-index
+                 :names-to-avoid body.names-to-avoid
+                 :proofs (and body.thm-name t))
+                state))
+            (retok
+             (change-stmt-gout xform :term term)))))
        ((when (and (pseudo-term-case term :var)
                    (equal gin.affect
                           (list (pseudo-term-var->name term)))))
