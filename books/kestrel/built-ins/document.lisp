@@ -307,6 +307,8 @@
   :long (builtin-names-to-xdoc-defs
          *builtin-defaxiom/defthm-apply$*))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc builtin-defaxioms
   :parents (builtin-defaxioms/defthms)
   :short "All built-in axioms."
