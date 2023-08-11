@@ -158,3 +158,7 @@
 (with-supporters
  (local (include-book "with-supporters-test-sub"))
  :names (g16))
+
+(with-supporters
+ (local (include-book "with-supporters-test-sub"))
+ :names (g18)) ; even just *c* would test for defconst
