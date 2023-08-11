@@ -21,6 +21,7 @@
 (include-book "projects/numbers/ballot" :dir :system)
 (include-book "projects/numbers/birthday" :dir :system)
 (include-book "projects/numbers/divisors" :dir :system)
+(include-book "projects/numbers/div3" :dir :system)
 (include-book "projects/numbers/eisenstein" :dir :system)
 (include-book "projects/numbers/euclid" :dir :system)
 (include-book "projects/numbers/euler" :dir :system)
@@ -455,7 +456,17 @@
      ;; "<h3 id=\"82\">82. Dissection of Cubes (J.E. Littlewood's "elegant" proof)</h3>"
      ;; "<h3 id=\"83\">83. The Friendship Theorem</h3>"
      ;; "<h3 id=\"84\">84. Morley's Theorem</h3>"
-     ;; "<h3 id=\"85\">85. Divisibility by 3 Rule</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"85\">85. Divisibility by 3 Rule</h3>"
+
+     "@(def dm::divides-3-sum-list-digits)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/div3.lisp\">books/projects/numbers/div3.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"86\">86. Lebesgue Measure and Integration</h3>"
      ;; "<h3 id=\"87\">87. Desargues's Theorem</h3>"
      ;; "<h3 id=\"88\">88. Derangements Formula</h3>"
