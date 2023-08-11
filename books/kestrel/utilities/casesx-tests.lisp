@@ -13,7 +13,7 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "casesx")
 
-;; Constrain foo to be true for various argument values
+;; Constrain foo to be true for all combinations of 0 and 1:
 (encapsulate ((foo (x y z) t))
   (local (defun foo (x y z) (declare (ignore x y z)) t))
   (defthm foo000 (foo 0 0 0))
@@ -39,8 +39,8 @@
                   (integerp c))
              (foo a b c))))
 
-;; Fails with a simple :cases hint (doesn't make sense here since it doesn't
-;; make all combinations of cases).
+;; Fails with a simple :cases hint (which doesn't even make sense here, since it
+;; doesn't make all combinations of cases).
 (must-fail
   (thm
     (implies (and (<= 0 a)
@@ -55,7 +55,7 @@
              (foo a b c))
     :hints (("Goal" :cases ((equal 0 a) (equal 0 b) (equal 0 c))))))
 
-;; Works with the :casesx hint
+;; Works with the :casesx hint, which creates 8 cases
 (defthm test1
   (implies (and (<= 0 a)
                 (<= a 1)
