@@ -19,6 +19,7 @@
 (include-book "projects/groups/quotients" :dir :system)
 ;(include-book "projects/groups/sylow" :dir :system) ; todo: name clash
 (include-book "projects/numbers/ballot" :dir :system)
+(include-book "projects/numbers/birthday" :dir :system)
 (include-book "projects/numbers/divisors" :dir :system)
 (include-book "projects/numbers/eisenstein" :dir :system)
 (include-book "projects/numbers/euclid" :dir :system)
@@ -462,7 +463,19 @@
      ;; "<h3 id=\"90\">90. Stirling's Formula</h3>"
      ;; "<h3 id=\"91\">91. The Triangle Inequality</h3>"
      ;; "<h3 id=\"92\">92. Pick's Theorem</h3>"
-     ;; "<h3 id=\"93\">93. The Birthday Problem</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"93\">93. The Birthday Problem</h3>"
+
+     "@(def dm::probability-of-repetition-value)"
+     "@(def dm::probability-of-repetition-22)"
+     "@(def dm::probability-of-repetition-23)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/birthday.lisp\">books/projects/numbers/birthday.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"94\">94. The Law of Cosines</h3>"
      ;; "<h3 id=\"95\">95. Ptolemy's Theorem</h3>"
      ;; "<h3 id=\"96\">96. Principle of Inclusion/Exclusion</h3>"
