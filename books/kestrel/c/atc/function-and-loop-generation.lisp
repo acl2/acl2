@@ -2777,8 +2777,7 @@
                                                   compst-var
                                                   prec-objs
                                                   pop-frame-p))
-      `(write-object (value-pointer->designator
-                      ,(add-suffix-to-fn formal "-OBJDES"))
+      `(write-object ,(add-suffix-to-fn formal "-OBJDES")
                      ,var
                      ,(atc-gen-fun-endstate (cdr affect)
                                             typed-formals
@@ -2842,20 +2841,90 @@
                                    t
                                    wrld))
        (formula `(let ((,compst0-var ,compst-var)) ,formula))
+       (formal-thm? (b* (((unless (consp affect)) nil)
+                         (formal (car affect))
+                         (info (cdr (assoc-eq formal typed-formals)))
+                         ((unless info) nil))
+                      (list (atc-var-info->thm info))))
        (hints
-        `(("Goal" :in-theory '(pop-frame-of-if*
-                               update-var-of-enter-scope
-                               update-var-of-add-var
-                               exit-scope-of-enter-scope
-                               exit-scope-of-add-var
-                               compustate-frames-number-of-add-var-not-zero
-                               compustate-frames-number-of-enter-scope-not-zero
-                               compustate-frames-number-of-add-frame-not-zero
-                               compustatep-of-add-var
-                               compustatep-of-enter-scope
-                               pop-frame-of-add-var
-                               pop-frame-of-add-frame
-                               acl2::if*-when-same))))
+        `(("Goal"
+           :in-theory '(pop-frame-of-if*
+                        update-var-of-enter-scope
+                        update-var-of-add-var
+                        exit-scope-of-enter-scope
+                        exit-scope-of-add-var
+                        compustate-frames-number-of-add-var-not-zero
+                        compustate-frames-number-of-enter-scope-not-zero
+                        compustate-frames-number-of-add-frame-not-zero
+                        compustatep-of-add-var
+                        compustatep-of-enter-scope
+                        pop-frame-of-add-var
+                        pop-frame-of-add-frame
+                        acl2::if*-when-same
+                        update-object-of-enter-scope
+                        compustatep-of-update-object
+                        compustate-frames-number-of-update-object
+                        update-object-of-add-var
+                        update-object-of-add-frame
+                        write-object-to-update-object
+                        write-object-okp-when-valuep-of-read-object-no-syntaxp
+                        write-object-okp-of-if*-val
+                        type-of-value-of-if*
+                        ,@formal-thm?
+                        valuep-when-uchar-arrayp
+                        valuep-when-schar-arrayp
+                        valuep-when-ushort-arrayp
+                        valuep-when-sshort-arrayp
+                        valuep-when-uint-arrayp
+                        valuep-when-sint-arrayp
+                        valuep-when-ulong-arrayp
+                        valuep-when-slong-arrayp
+                        valuep-when-ullong-arrayp
+                        valuep-when-sllong-arrayp
+                        type-of-value-when-uchar-arrayp
+                        type-of-value-when-schar-arrayp
+                        type-of-value-when-ushort-arrayp
+                        type-of-value-when-sshort-arrayp
+                        type-of-value-when-uint-arrayp
+                        type-of-value-when-sint-arrayp
+                        type-of-value-when-ulong-arrayp
+                        type-of-value-when-slong-arrayp
+                        type-of-value-when-ullong-arrayp
+                        type-of-value-when-sllong-arrayp
+                        uchar-arrayp-of-uchar-array-write
+                        schar-arrayp-of-schar-array-write
+                        ushort-arrayp-of-ushort-array-write
+                        sshort-arrayp-of-sshort-array-write
+                        uint-arrayp-of-uint-array-write
+                        sint-arrayp-of-sint-array-write
+                        ulong-arrayp-of-ulong-array-write
+                        slong-arrayp-of-slong-array-write
+                        ullong-arrayp-of-ullong-array-write
+                        sllong-arrayp-of-sllong-array-write
+                        value-array->length-when-uchar-arrayp
+                        value-array->length-when-schar-arrayp
+                        value-array->length-when-ushort-arrayp
+                        value-array->length-when-sshort-arrayp
+                        value-array->length-when-uint-arrayp
+                        value-array->length-when-sint-arrayp
+                        value-array->length-when-ulong-arrayp
+                        value-array->length-when-slong-arrayp
+                        value-array->length-when-ullong-arrayp
+                        value-array->length-when-sllong-arrayp
+                        uchar-array-length-of-uchar-array-write
+                        schar-array-length-of-schar-array-write
+                        ushort-array-length-of-ushort-array-write
+                        sshort-array-length-of-sshort-array-write
+                        uint-array-length-of-uint-array-write
+                        sint-array-length-of-sint-array-write
+                        ulong-array-length-of-ulong-array-write
+                        slong-array-length-of-slong-array-write
+                        ullong-array-length-of-ullong-array-write
+                        sllong-array-length-of-sllong-array-write
+                        update-object-of-if*-val
+                        update-object-of-read-object-same
+                        update-object-of-update-object-same
+                        exit-scope-of-if*))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -3255,7 +3324,18 @@
                              init-inscope-events
                              body.events
                              (and body.thm-name
-                                  (not affect)
+                                  (or (not affect)
+                                      (and (consp affect)
+                                           (not (cdr affect))
+                                           (b* ((formal (car affect))
+                                                (info
+                                                 (cdr
+                                                  (assoc-eq formal
+                                                            typed-formals))))
+                                             (and info
+                                                  (type-case
+                                                   (atc-var-info->type info)
+                                                   :array)))))
                                   (list pop-frame-event))
                              fn-result-events
                              fn-correct-events
