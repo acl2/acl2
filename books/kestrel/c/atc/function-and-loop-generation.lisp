@@ -101,6 +101,10 @@
   :induct t
   :enable keyword-listp)
 
+(defruledl alistp-when-symbol-symbol-alistp
+  (implies (symbol-symbol-alistp x)
+           (alistp x)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-function-and-loop-generation
@@ -1452,10 +1456,7 @@
                                                      subst
                                                      compst-var
                                                      prec-objs))))
-  :prepwork
-  ((defrulel lemma
-     (implies (symbol-symbol-alistp x)
-              (alistp x)))))
+  :prepwork ((local (in-theory (enable alistp-when-symbol-symbol-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
