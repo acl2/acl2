@@ -17,9 +17,11 @@
 (include-book "nonstd/nsa/sqrt-2" :dir :system)
 (include-book "projects/groups/abelian" :dir :system)
 (include-book "projects/groups/quotients" :dir :system)
-;(include-book "projects/groups/sylow" :dir :system) ; todo: name clash
+(include-book "projects/groups/sylow" :dir :system)
 (include-book "projects/numbers/ballot" :dir :system)
+(include-book "projects/numbers/birthday" :dir :system)
 (include-book "projects/numbers/divisors" :dir :system)
+(include-book "projects/numbers/div3" :dir :system)
 (include-book "projects/numbers/eisenstein" :dir :system)
 (include-book "projects/numbers/euclid" :dir :system)
 (include-book "projects/numbers/euler" :dir :system)
@@ -379,10 +381,10 @@
 
      "<h3 id=\"72\">72. Sylow's Theorem</h3>"
 
-     ;; "(def sylow-1)" ;todo: uncomment
-     ;; "(def sylow-2)"
-     ;; "(def sylow-3)"
-     ;; "(def sylow-4)"
+     "(def sylow-1)"
+     "(def sylow-2)"
+     "(def sylow-3)"
+     "(def sylow-4)"
 
      "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/groups/sylow.lisp\">books/projects/groups/sylow.lisp</a>.</p>"
 
@@ -454,7 +456,17 @@
      ;; "<h3 id=\"82\">82. Dissection of Cubes (J.E. Littlewood's "elegant" proof)</h3>"
      ;; "<h3 id=\"83\">83. The Friendship Theorem</h3>"
      ;; "<h3 id=\"84\">84. Morley's Theorem</h3>"
-     ;; "<h3 id=\"85\">85. Divisibility by 3 Rule</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"85\">85. Divisibility by 3 Rule</h3>"
+
+     "@(def dm::divides-3-sum-list-digits)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/div3.lisp\">books/projects/numbers/div3.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"86\">86. Lebesgue Measure and Integration</h3>"
      ;; "<h3 id=\"87\">87. Desargues's Theorem</h3>"
      ;; "<h3 id=\"88\">88. Derangements Formula</h3>"
@@ -462,7 +474,19 @@
      ;; "<h3 id=\"90\">90. Stirling's Formula</h3>"
      ;; "<h3 id=\"91\">91. The Triangle Inequality</h3>"
      ;; "<h3 id=\"92\">92. Pick's Theorem</h3>"
-     ;; "<h3 id=\"93\">93. The Birthday Problem</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"93\">93. The Birthday Problem</h3>"
+
+     "@(def dm::probability-of-repetition-value)"
+     "@(def dm::probability-of-repetition-22)"
+     "@(def dm::probability-of-repetition-23)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/birthday.lisp\">books/projects/numbers/birthday.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"94\">94. The Law of Cosines</h3>"
      ;; "<h3 id=\"95\">95. Ptolemy's Theorem</h3>"
      ;; "<h3 id=\"96\">96. Principle of Inclusion/Exclusion</h3>"
