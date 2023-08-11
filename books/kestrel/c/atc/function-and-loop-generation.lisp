@@ -2937,6 +2937,8 @@
                                  (fn-guard symbolp)
                                  (fn-def* symbolp)
                                  (init-formals symbol-listp)
+                                 (affect symbol-listp)
+                                 (typed-formals atc-symbol-varinfo-alistp)
                                  (context-preamble true-listp)
                                  (prog-const symbolp)
                                  (compst-var symbolp)
@@ -2952,6 +2954,7 @@
                                  (body-type typep)
                                  (body-limit pseudo-termp)
                                  (prec-tags atc-string-taginfo-alistp)
+                                 (prec-objs atc-string-objinfo-alistp)
                                  (names-to-avoid symbol-listp)
                                  state)
   :returns (mv (events pseudo-event-form-listp)
@@ -2988,6 +2991,11 @@
        (result-var (genvar$ 'atc "RESULT" nil formals state))
        (limit `(binary-+ '1 ,body-limit))
        (type-pred (atc-type-to-recognizer body-type prec-tags))
+       (new-compst (atc-gen-fun-endstate affect
+                                         typed-formals
+                                         compst-var
+                                         prec-objs
+                                         nil))
        (lemma-formula
         `(implies (and (compustatep ,compst-var)
                        (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
@@ -3001,7 +3009,7 @@
                                           ,compst-var
                                           ,fenv-var
                                           ,limit-var)
-                                (mv ,result-var ,compst-var))
+                                (mv ,result-var ,new-compst))
                          (,type-pred ,result-var)))))
        (valuep-when-type-pred (atc-type-to-valuep-thm body-type prec-tags))
        (type-of-value-when-type-pred
@@ -3272,6 +3280,8 @@
                                      fn-guard
                                      fn-def*
                                      init-formals
+                                     affect
+                                     typed-formals
                                      context-preamble
                                      prog-const
                                      compst-var
@@ -3287,6 +3297,7 @@
                                      body.type
                                      body.limit
                                      prec-tags
+                                     prec-objs
                                      names-to-avoid
                                      state)
           (b* (((mv events print-event name)
