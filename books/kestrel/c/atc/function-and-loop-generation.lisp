@@ -4522,8 +4522,5 @@
      (enable
       acl2::true-listp-when-pseudo-event-form-listp-rewrite
       alistp-when-atc-symbol-varinfo-alistp-rewrite
-      atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp)))
-   (defrulel consp-iff
-     (implies (true-listp x)
-              (iff (consp x)
-                   x)))))
+      atc-var-info-listp-of-strip-cdrs-when-atc-symbol-varinfo-alistp
+      iff-consp-when-true-listp)))))
