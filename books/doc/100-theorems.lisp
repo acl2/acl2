@@ -17,7 +17,7 @@
 (include-book "nonstd/nsa/sqrt-2" :dir :system)
 (include-book "projects/groups/abelian" :dir :system)
 (include-book "projects/groups/quotients" :dir :system)
-;(include-book "projects/groups/sylow" :dir :system) ; todo: name clash
+(include-book "projects/groups/sylow" :dir :system)
 (include-book "projects/numbers/ballot" :dir :system)
 (include-book "projects/numbers/birthday" :dir :system)
 (include-book "projects/numbers/divisors" :dir :system)
@@ -381,10 +381,10 @@
 
      "<h3 id=\"72\">72. Sylow's Theorem</h3>"
 
-     ;; "(def sylow-1)" ;todo: uncomment
-     ;; "(def sylow-2)"
-     ;; "(def sylow-3)"
-     ;; "(def sylow-4)"
+     "(def sylow-1)"
+     "(def sylow-2)"
+     "(def sylow-3)"
+     "(def sylow-4)"
 
      "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/groups/sylow.lisp\">books/projects/groups/sylow.lisp</a>.</p>"
 
