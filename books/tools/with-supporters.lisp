@@ -30,6 +30,9 @@
 ; - Perhaps improve defattach-event-lst, as indicated in its comment about the
 ;   "seen" argument.
 
+; - Consider collecting function symbols from bodies of defconst forms rather
+;   than generating (defconst *sym* (quote ...)).
+
 (in-package "ACL2")
 
 (program)
@@ -52,18 +55,19 @@
                 (cons (car names) acc))
                (t acc)))))))
 
-(defun instantiable-ancestors-with-guards/measures (fns wrld ans)
+(defun instantiable-ancestors-with-guards/measures (fns wrld ans seen)
 
 ; See ACL2 source function instantiable-ancestors, from which this is derived.
 ; However, in this case we also include function symbols from guards in the
 ; result.
 
   (cond
-   ((null fns) ans)
-   ((member-eq (car fns) ans)
-    (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans))
+   ((null fns) (mv ans seen))
+   ((hons-get (car fns) seen)
+    (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans seen))
    (t
     (let* ((ans1 (cons (car fns) ans))
+           (seen (hons-acons (car fns) t seen))
            (imm (immediate-instantiable-ancestors (car fns) wrld ans1))
            (guard (getpropc (car fns) 'guard nil wrld))
            (just (getpropc (car fns) 'justification nil wrld))
@@ -71,11 +75,14 @@
            (imm1 (if guard
                      (all-fnnames1 nil guard imm)
                    imm))
-           (imm2 (if measure
+           (imm2 (if (and (consp measure)
+                          (not (eq (car measure) :?)))
                      (all-fnnames1 nil measure imm1)
-                   imm1))
-           (ans2 (instantiable-ancestors-with-guards/measures imm2 wrld ans1)))
-      (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans2)))))
+                   imm1)))
+      (mv-let (ans2 seen)
+        (instantiable-ancestors-with-guards/measures imm2 wrld ans1 seen)
+        (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans2
+                                                     seen))))))
 
 (defun macro-names-from-aliases (names macro-aliases acc)
   (cond ((endp names) acc)
@@ -86,17 +93,87 @@
               (cond (pair (cons (car pair) acc))
                     (t acc)))))))
 
-(defun get-event+ (name wrld)
+(defun get-event+ (name fal wrld)
 
-; This variant of get-event (defined in the ACL2 sources) returns (mv n ev)
-; where ev is the event and n is its absolute-event-number, and returns (mv nil
-; nil) if the event is not found.
+; This variant of get-event (defined in the ACL2 sources) can return (mv n ev)
+; where ev is the event and n is its absolute-event-number.  However, if n is
+; already a key of fal then it returns (mv nil nil); and if the
+; absolute-event-number does not exist, that is an error indicated by returning
+; (mv :failed nil).
 
   (let ((index (getpropc name 'absolute-event-number nil wrld)))
-    (cond (index (mv index
-                     (access-event-tuple-form
-                      (cddr (car (lookup-world-index 'event index wrld))))))
-          (t (mv nil nil)))))
+    (cond ((null index)
+           (mv :failed nil))
+          ((hons-get index fal)
+           (mv nil nil))
+          (t (let ((ev (access-event-tuple-form
+                        (cddr (car (lookup-world-index 'event index wrld))))))
+               (mv index
+                   (if (eq (car ev) 'defconst)
+                       (assert$ (eq (cadr ev) name)
+                                `(defconst ,name
+                                   ,(getpropc name 'const nil wrld)))
+                     ev)))))))
+
+(defun constant-name-p (form)
+
+; This is related to defined-constant and legal-variable-or-constant-namep, but
+; it's a purely syntactic test on an untranslated form.
+
+  (and (symbolp form)
+       (let ((s (symbol-name form)))
+         (and (not (= (length s) 0))
+              (eql (char s 0) #\*)))))
+
+(defun supporters-macro-forms (form)
+
+; The point of this function is to avoid calling macroexpand1-cmp in
+; collect-constants-and-macros-1, which can be expensive because it generates
+; calls of the ACL2 evaluator, ev-w.
+
+; When this function returns (mv t lst), then form is a macro call, and lst is
+; a list of forms that contains the same non-built-in function symbols, macros,
+; and constant symbols as the single-step macroexpansion of form.  Otherwise
+; (mv nil nil) is returned.
+
+  (declare (xargs :guard (true-listp form)))
+  (cond ((eq (car form) 'mbe)
+         (mv t (list (cadr (assoc-keyword :logic (cdr form)))
+                     (cadr (assoc-keyword :exec (cdr form))))))
+        ((member-eq (car form)
+                    '(value
+                      or and
+                      first rest second third fourth
+                      caar cdar cadr cddr caddr cdddr
+                      ffn-symb fargs fargn
+                      assoc assoc-eq
+                      prog2$ progn$ pprogn er-progn
+                      list list* append
+                      <= > >= + * / -
+                      logior logand lognot logxor
+                      acl2-unwind-protect cw
+                      member-eq union-eq set-difference-eq
+                      union$ set-difference$
+                      fms-to-string fms!-to-string
+                      fmt-to-string fmt!-to-string
+                      fmt1-to-string fmt1!-to-string
+                      getprop getpropc
+                      set-inhibit-output-lst
+                      f-get-global f-boundp-global
+                      revert-world))
+         (mv t (cdr form)))
+        ((member-eq (car form)
+                    '(check-vars-not-free concatenate f-put-global mv-let
+                                          warn-about-parallelism-hazard))
+         (mv t (cddr form)))
+        ((eq (car form) '@)
+         (mv t nil))
+        ((eq (car form) 'cond)
+         (mv t (append-lst (cdr form))))
+        ((eq (car form) 'case)
+         (mv t (cons (cadr form)
+                     (strip-cadrs (cddr form)))))
+        (t (mv nil nil))))
 
 (mutual-recursion
 
@@ -107,10 +184,10 @@
 
   (cond
    ((booleanp form) acc)
-   ((defined-constant form wrld) (cons form acc))
+   ((constant-name-p form) (cons form acc))
    ((not (true-listp form)) acc)
    ((member-eq (car form) '(quote lambda$)) acc)
-   ((eq (car form) 'let)
+   ((member-eq (car form) '(let let* er-let*))
     (let ((bindings (cadr form)))
       (collect-constants-and-macros-lst
        (and (doublet-listp bindings) ; could fail if under macro call
@@ -126,14 +203,20 @@
      (car (last (car form))) ; lambda-body
      (collect-constants-and-macros-lst (cdr form) acc wrld state-vars)
      wrld state-vars))
-   ((getpropc (car form) 'macro-body nil wrld)
-    (mv-let (erp expansion)
-      (macroexpand1-cmp form 'some-ctx wrld state-vars)
+   (t
+    (mv-let (flg lst)
+      (supporters-macro-forms form)
       (cond
-       (erp acc) ; impossible?
-       (t (collect-constants-and-macros-1 expansion (cons (car form) acc)
-                                          wrld state-vars)))))
-   (t (collect-constants-and-macros-lst (cdr form) acc wrld state-vars))))
+       (flg (collect-constants-and-macros-lst lst acc wrld state-vars))
+       ((getpropc (car form) 'macro-body nil wrld)
+        (mv-let (erp expansion)
+          (macroexpand1-cmp form 'some-ctx wrld state-vars)
+          (cond
+           (erp acc) ; impossible?
+           (t (collect-constants-and-macros-1 expansion (cons (car form) acc)
+                                              wrld state-vars)))))
+       (t (collect-constants-and-macros-lst (cdr form) acc wrld
+                                            state-vars)))))))
 
 (defun collect-constants-and-macros-lst (lst acc wrld state-vars)
   (cond ((endp lst) acc)
@@ -199,24 +282,41 @@
        wrld state-vars))))
 )
 
+(defun supporters-extend-seen (fns seen)
+  (cond ((endp fns) seen)
+        (t (supporters-extend-seen (cdr fns)
+                                   (hons-acons (car fns) t seen)))))
+
+(defun filter-out-seen (lst seen)
+  (cond ((endp lst) nil)
+        ((hons-get (car lst) seen)
+         (filter-out-seen (cdr lst) seen))
+        (t
+         (cons (car lst)
+               (filter-out-seen (cdr lst) seen)))))
+
 (mutual-recursion
 
-(defun supporters-of-1-lst (defs min max macro-aliases wrld state-vars)
-  (cond ((endp defs) nil)
-        (t (append (supporters-of-1 (car defs) min max macro-aliases wrld
-                                    state-vars)
-                   (supporters-of-1-lst (cdr defs) min max macro-aliases wrld
-                                        state-vars)))))
+(defun supporters-of-1-lst (defs min max macro-aliases wrld state-vars seen)
+  (cond
+   ((endp defs) (mv nil seen))
+   (t (mv-let (lst1 seen)
+        (supporters-of-1 (car defs) min max macro-aliases wrld state-vars seen)
+        (mv-let (lst2 seen)
+          (supporters-of-1-lst (cdr defs) min max macro-aliases wrld state-vars
+                               seen)
+          (mv (append lst1 lst2) seen))))))
 
-(defun supporters-of-1 (ev min max macro-aliases wrld state-vars)
+(defun supporters-of-1 (ev min max macro-aliases wrld state-vars seen)
 
- ; Make a reasonable attempt to return all function, macro, and constant
- ; symbols that support ev.
+; See supporters-of-rec, in particular for discussion of seeen.  Here we
+; make a reasonable attempt to return all function, macro, and constant
+; symbols that support ev, also returning a suitable extension of seen.
 
   (cond
    ((and (consp ev) ; always true?
          (eq (car ev) 'mutual-recursion))
-    (supporters-of-1-lst (cdr ev) min max macro-aliases wrld state-vars))
+    (supporters-of-1-lst (cdr ev) min max macro-aliases wrld state-vars seen))
    (t
     (let* ((non-trivial-encapsulate-p
 
@@ -231,66 +331,75 @@
                        (if (symbolp (car sig)) ; old-style signature
                            (car sig)
                          (caar sig)))
-                   (and (consp ev)          ; always true?
-                        (consp (cdr ev))    ; always true?
+                   (and (consp ev)       ; always true?
+                        (consp (cdr ev)) ; always true?
                         (symbolp (cadr ev))
                         (cadr ev)))))
-      (and name
-           (let* ((formula
-                   (if non-trivial-encapsulate-p
-                       (mv-let (name2 x)
-                         (constraint-info name wrld)
-                         (cond
-                          ((unknown-constraints-p x) *t*) ; incomplete!
-                          (name2 (conjoin x))
-                          (t x)))
-                     (or (getpropc name 'macro-body nil wrld)
-                         (formula name nil wrld))))
-                  (guard ; incomplete for encapsulate if more than 1 signature
-                   (getpropc name 'guard nil wrld))
-                  (attachment-prop (attachment-alist name wrld))
-                  (attachment-alist (and (not (eq (car attachment-prop)
-                                                  :attachment-disallowed))
-                                         attachment-prop))
-                  (new-fns
-                   (and (or formula ; non-nil if guard is non-nil
-                            attachment-alist)
-                        (fns-with-abs-ev-between
-                         (instantiable-ancestors-with-guards/measures
-                          (fns-with-abs-ev-between
+      (cond
+       ((null name) (mv nil seen))
+       (t
+        (let* ((formula
+                (if non-trivial-encapsulate-p
+                    (mv-let (name2 x)
+                      (constraint-info name wrld)
+                      (cond
+                       ((unknown-constraints-p x) *t*) ; incomplete!
+                       (name2 (conjoin x))
+                       (t x)))
+                  (or (getpropc name 'macro-body nil wrld)
+                      (formula name nil wrld))))
+               (guard ; incomplete for encapsulate if more than 1 signature
+                (getpropc name 'guard nil wrld))
+               (attachment-prop (attachment-alist name wrld))
+               (attachment-alist (and (not (eq (car attachment-prop)
+                                               :attachment-disallowed))
+                                      attachment-prop))
+               (new-fns
+                (and (or formula ; non-nil if guard is non-nil
+                         attachment-alist)
+                     (all-fnnames1
+                      nil
+                      formula ; OK even if formula=nil (treated as var)
+                      (and (or guard attachment-alist)
                            (all-fnnames1
                             nil
-                            formula ; OK even if formula=nil (treated as var)
-                            (and (or guard attachment-alist)
-                                 (all-fnnames1
-                                  nil
-                                  guard
-                                  (append (strip-cars attachment-alist)
-                                          (strip-cdrs attachment-alist)))))
-                           min max wrld nil)
-                          wrld
-                          nil)
-                         min max wrld nil)))
-                  (new-names
-                   (if non-trivial-encapsulate-p
-                       (collect-constants-and-macros-1 formula new-fns wrld
-                                                       state-vars)
-                     (collect-constants-and-macros-ev
-                      ev new-fns wrld state-vars))))
-             (macro-names-from-aliases new-fns macro-aliases new-names)))))))
+                            guard
+                            (append (strip-cars attachment-alist)
+                                    (strip-cdrs attachment-alist)))))))
+               (new-fns (filter-out-seen new-fns seen)))
+          (mv-let (new-fns seen)
+            (instantiable-ancestors-with-guards/measures
+             (fns-with-abs-ev-between new-fns min max wrld nil)
+             wrld nil seen)
+            (let* ((new-fns
+                    (fns-with-abs-ev-between new-fns min max wrld nil))
+                   (new-names
+                    (if non-trivial-encapsulate-p
+                        (collect-constants-and-macros-1 formula new-fns wrld
+                                                        state-vars)
+                      (collect-constants-and-macros-ev ev new-fns wrld
+                                                       state-vars))))
+              (mv (macro-names-from-aliases new-fns macro-aliases new-names)
+                  seen))))))))))
 )
 
-(defun supporters-of-rec (lst fal min max macro-aliases ctx wrld state-vars)
+(defun supporters-of-rec (lst fal min max macro-aliases ctx wrld state-vars
+                              seen)
 
 ; Each element of lst is either a symbol or a pair (n . ev) where ev is an
-; event and n is its absolute-event-number.  Fal is a fast-alist that is nil at
-; the top level.  We extend fal with triples (n ev . fns) where ev is an event
-; with absolute event number n and fns is a list of function symbols introduced
-; by ev.  We do this for each event ev that supports events based on lst
-; (either events in lst or definitions of names in lst).
+; event and n is its absolute-event-number.  The accumulator fal is a
+; fast-alist that is nil at the top level.  We extend fal with triples (n . ev)
+; where ev is an event with absolute event number n.  We make that extension
+; for each event ev that supports events based on lst (either events in lst or
+; definitions of names in lst).  Seen is a fast alist whose keys are defined
+; symbols, each of which has the following property: every macro or constant
+; name occurring during translation for admitting its event is represented
+; either in lst or in fal (by being defined by the event represented there).
+; We use seen to avoid collecting such macro and constant names more than once
+; for a given function symbol.
 
   (cond
-   ((endp lst) fal)
+   ((endp lst) (mv fal seen))
    (t
     (let ((constraint-lst
            (and (symbolp (car lst))
@@ -306,29 +415,32 @@
 ; that have a later absolute-event-number.  So, we simply replace the current
 ; function symbol with the one it references.
 
-        (supporters-of-rec (cons constraint-lst (cdr lst))
-                           fal min max macro-aliases ctx wrld
-                           state-vars))
+        (supporters-of-rec (cons constraint-lst (cdr lst)) fal min max
+                           macro-aliases ctx wrld state-vars seen))
        (t
         (mv-let (n ev)
-          (if (symbolp (car lst))
-              (get-event+ (car lst) wrld)
-            (mv (caar lst) (cdar lst)))
+          (cond ((symbolp (car lst))
+                 (get-event+ (car lst) fal wrld))
+                ((hons-get (caar lst) fal)
+                 (mv nil nil))
+                (t
+                 (mv (caar lst) (cdar lst))))
           (cond
-           ((null n) ; hence (symbolp (car lst))
-            (er hard ctx
-                "The name ~x0 is not defined, yet it was expected to be."
-                (car lst)))
-           ((hons-get n fal)
-            (supporters-of-rec (cdr lst)
-                               fal min max macro-aliases ctx wrld state-vars))
+           ((null n) ; already processed
+            (supporters-of-rec (cdr lst) fal min max macro-aliases ctx wrld
+                               state-vars seen))
+           ((eq n :failed) ; hence (symbolp (car lst))
+            (mv (er hard ctx
+                    "The name ~x0 is not defined, yet it was expected to be."
+                    (car lst))
+                nil))
            (t
-            (let ((fns (supporters-of-1 ev min max macro-aliases wrld
-                                        state-vars)))
+            (mv-let (fns seen)
+              (supporters-of-1 ev min max macro-aliases wrld state-vars seen)
               (supporters-of-rec (append fns (cdr lst))
-                                 (hons-acons n (cons ev fns) fal)
-                                 min max macro-aliases ctx wrld
-                                 state-vars)))))))))))
+                                 (hons-acons n ev fal) 
+                                 min max macro-aliases ctx wrld state-vars
+                                 seen)))))))))))
 
 (defun adjust-defun-for-symbol-class (ev wrld)
 
@@ -418,9 +530,9 @@
 
 (defun events-from-supporters-fal (pairs min max wrld acc)
 
-; Each element of pairs is of the form (n ev . &) where ev is an event, and
-; pairs is sorted by car in increasing order.  We collect suitably-adjusted
-; cadrs from pairs until a car exceeds max.
+; Each element of pairs is of the form (n . ev) where ev is an event, and pairs
+; is sorted by car in increasing order.  We collect suitably-adjusted cadrs
+; from pairs until a car exceeds max.
 
   (cond
    ((or (endp pairs)
@@ -431,7 +543,7 @@
    (t
     (events-from-supporters-fal
      (cdr pairs) min max wrld
-     (cons (adjust-ev-for-symbol-class (cadr (car pairs)) wrld)
+     (cons (adjust-ev-for-symbol-class (cdr (car pairs)) wrld)
            acc)))))
 
 (defun get-defattach-event-fn (ev)
@@ -480,22 +592,41 @@
            (t (defattach-event-lst (cdr wrld) fns min max acc seen)))))))
      (t (defattach-event-lst (cdr wrld) fns min max acc seen)))))
 
+(defun supporter-fns-in-range (alist min max wrld acc)
+
+; We restrict (strip-cars alist) to function symbols whose absolute event
+; number is in the interval (min,max].
+
+  (cond
+   ((endp alist) acc)
+   (t (supporter-fns-in-range
+       (cdr alist) min max wrld
+       (if (or (not (function-symbolp (caar alist) wrld))
+               (let ((n (getpropc (caar alist) 'absolute-event-number nil
+                                  wrld)))
+                 (or (<= n min)
+                     (< max n))))
+           acc
+         (cons (caar alist) acc))))))
+
 (defun supporters-of (lst min max ctx wrld state-vars)
 
 ; Each element of lst is either a symbol or a pair (n . ev) where ev is an
 ; event and n is its absolute-event-number.  We return a pair (evs . fns) where
 ; evs contains all such events except that some are suitably adjusted (see
-; adjust-ev-for-symbol-class), and fns lists of names supporting these events
-; including function symbols, constant symbols, and macro names.
+; adjust-ev-for-symbol-class), and fns is a list containing those names
+; that support these events including function symbols, constant symbols, and
+; macro names.
 
-  (let* ((fal (supporters-of-rec lst nil min max
-                                 (macro-aliases wrld)
-                                 ctx wrld state-vars))
-         (x (merge-sort-car-< (fast-alist-free fal)))
-         (fns (append-lst (strip-cddrs x))))
-    (cons (append? (events-from-supporters-fal x min max wrld nil)
-                   (defattach-event-lst wrld fns min max nil nil))
-          fns)))
+  (mv-let (fal seen)
+    (supporters-of-rec lst nil min max (macro-aliases wrld) ctx wrld state-vars
+                       nil)
+    (let* ((x (merge-sort-car-< (fast-alist-free fal)))
+           (fns (supporter-fns-in-range (fast-alist-free seen)
+                                        min max wrld nil)))
+      (cons (append? (events-from-supporters-fal x min max wrld nil)
+                     (defattach-event-lst wrld fns min max nil nil))
+            fns))))
 
 (defun table-info-after-k (names wrld k evs table-guard-fns)
 
@@ -704,9 +835,7 @@
 
                                (event-pairs-after max wrld nil))
                               (extras/fns
-                               (supporters-of (append fns1
-                                                      ',names
-                                                      event-pairs)
+                               (supporters-of (append fns1 ',names event-pairs)
                                               min max ctx wrld
                                               (default-state-vars t)))
                               (extras (car extras/fns))
@@ -720,11 +849,11 @@
                                 ()
                                 ',local-event
                                 '(set-enforce-redundancy t)
-                                '(SET-BOGUS-DEFUN-HINTS-OK T)
-                                '(SET-BOGUS-MUTUAL-RECURSION-OK T)
-                                '(SET-IRRELEVANT-FORMALS-OK T)
-                                '(SET-IGNORE-OK T)
-                                '(SET-STATE-OK T)
+                                '(set-bogus-defun-hints-ok t)
+                                '(set-bogus-mutual-recursion-ok t)
+                                '(set-irrelevant-formals-ok t)
+                                '(set-ignore-ok t)
+                                '(set-state-ok t)
                                 (append extras
                                         table-evs
                                         (and in-theory-event
@@ -755,7 +884,7 @@
 (defmacro with-supporters (local-event &rest rest)
   (with-supporters-fn local-event rest))
 
-(defun with-supporters-after-fn (name events)
+ (defun with-supporters-after-fn (name events)
   `(make-event
     (let ((min (getprop ',name 'absolute-event-number nil
                         'current-acl2-world (w state)))
@@ -779,10 +908,10 @@
                     fns (ens state) (w state) nil)))
              (value (list* 'progn
                            '(set-enforce-redundancy t)
-                           '(SET-BOGUS-DEFUN-HINTS-OK T)
-                           '(SET-BOGUS-MUTUAL-RECURSION-OK T)
-                           '(SET-IRRELEVANT-FORMALS-OK T)
-                           '(SET-IGNORE-OK T)
+                           '(set-bogus-defun-hints-ok t)
+                           '(set-bogus-mutual-recursion-ok t)
+                           '(set-irrelevant-formals-ok t)
+                           '(set-ignore-ok t)
                            (append extras
                                    (and in-theory-event
                                         (list in-theory-event))
