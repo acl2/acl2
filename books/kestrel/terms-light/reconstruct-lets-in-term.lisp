@@ -1,6 +1,6 @@
 ; A tool to turn lambdas into lets
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 ;; TODO: Consider combining nested LETs into LET*s.
 ;; TODO: Consider having this also do some untranslation.
 
+(include-book "non-trivial-formals")
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)
 (include-book "tools/flag" :dir :system)
@@ -204,7 +205,8 @@
                  (mv-let (new-lambda-body lambda-body-vars)
                    (reconstruct-lets-in-term-aux (lambda-body fn))
                    (let* ((lambda-formals (lambda-formals fn))
-                          (ignored-vars (set-difference-eq lambda-formals lambda-body-vars)))
+                          ;; Only need to ignore non-trival formals, as trivial ones won't even show up in the LET:
+                          (ignored-vars (set-difference-eq (non-trivial-formals lambda-formals new-args) lambda-body-vars)))
                      (mv `(let ,(alist-to-doublets (strip-hides-from-vals-for-keys ignored-vars (non-trivial-bindings lambda-formals new-args))) ; HIDE is introduced when a let with ignored vars is translated
                             ;; maybe put in an ignore declare:
                             ,@(and ignored-vars `((declare (ignore ,@ignored-vars))))
