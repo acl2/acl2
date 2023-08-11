@@ -134,3 +134,12 @@
 
 (defun-sk g16 (x)
   (exists y (g15 x y)))
+
+; Test handling of constant symbols.
+
+(defun g17 (x) (cons x x))
+
+(defconst *c* (g17 3))
+
+(defun g18 (x)
+  (cons *c* x))
