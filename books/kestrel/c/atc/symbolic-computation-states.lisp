@@ -1606,6 +1606,12 @@
     :enable (write-object-okp
              read-object))
 
+  (defruled write-object-okp-of-if*-val
+    (implies (and (write-object-okp objdes b compst)
+                  (write-object-okp objdes c compst))
+             (write-object-okp objdes (if* a b c) compst))
+    :enable if*)
+
   (defruled write-object-okp-when-valuep-of-read-object-no-syntaxp
     (implies (and (equal (objdesign-kind objdes) :alloc)
                   (equal old-val (read-object objdes compst))
@@ -1898,6 +1904,13 @@
     :enable (read-object
              update-object
              objdesign->base-address))
+
+  (defruled update-object-of-if*-val
+    (equal (update-object objdes (if* a b c) compst)
+           (if* a
+                (update-object objdes b compst)
+                (update-object objdes c compst)))
+    :enable if*)
 
   (defval *atc-update-object-rules*
     '(update-object-of-add-frame
