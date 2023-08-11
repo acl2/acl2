@@ -21,16 +21,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc+ pdf-example
+  :parents (examples)
+  :short "An ABNF grammar of the PDF (Portable Document Format) syntax."
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Parse the ABNF grammar of PDF into ACL2,
 ; and check that it is well-formed and closed.
 
 (defsection *pdf-grammar-rules*
-  :parents (examples)
-  :short "The ABNF grammar of the PDF (Portable Document Format) syntax."
+  :short "The PDF rules from our grammar."
 
   (make-event
    (mv-let (tree state)
-     (abnf::parse-grammar-from-file "pdf.abnf" state)
+       (abnf::parse-grammar-from-file "pdf.abnf" state)
      (value `(defconst *pdf-grammar-rules*
                (abnf::abstract-rulelist ',tree)))))
 
