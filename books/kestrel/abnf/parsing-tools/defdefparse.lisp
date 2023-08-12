@@ -44,6 +44,12 @@
            (iff (consp (cdr x))
                 (cdr x))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruledl not-consp-when-symbolp
+  (implies (acl2::symbolp x)
+           (not (consp x))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-implementation
@@ -1067,7 +1073,8 @@
   (("Goal"
     :in-theory
     (enable
-     symbolp-of-cdr-of-assoc-equal-when-defdefparse-alt-symbol-alistp))))
+     symbolp-of-cdr-of-assoc-equal-when-defdefparse-alt-symbol-alistp
+     not-consp-when-symbolp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1126,7 +1133,8 @@
   (("Goal"
     :in-theory
     (enable
-     symbolp-of-cdr-of-assoc-equal-when-defdefparse-alt-symbol-alistp))))
+     symbolp-of-cdr-of-assoc-equal-when-defdefparse-alt-symbol-alistp
+     not-consp-when-symbolp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
