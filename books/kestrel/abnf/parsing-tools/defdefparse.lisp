@@ -31,6 +31,8 @@
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
 
+(set-induction-depth-limit 1)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrulel alistp-when-symbol-alistp
