@@ -30,16 +30,11 @@
 (include-book "std/util/defval" :dir :system)
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
+(local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 
 (set-induction-depth-limit 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel alistp-when-symbol-alistp
-  (implies (symbol-alistp x)
-           (alistp x)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrulel consp-of-cdr-iff-cdr-when-true-listp
   (implies (true-listp x)
@@ -262,6 +257,7 @@
        ((er prefix :iferr (irr))
         (defdefparse-process-prefix prefix ctx state)))
     (value (list name pkg-wit grammar prefix)))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
   ///
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
