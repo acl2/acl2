@@ -10,7 +10,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "ABNF")
 
 (include-book "../grammar-parser/executable")
 (include-book "../notation/syntax-abstraction")
@@ -37,14 +37,14 @@
 
   (make-event
    (mv-let (tree state)
-       (abnf::parse-grammar-from-file "pdf.abnf" state)
+       (parse-grammar-from-file "pdf.abnf" state)
      (value `(defconst *pdf-grammar-rules*
-               (abnf::abstract-rulelist ',tree)))))
+               (abstract-rulelist ',tree)))))
 
   (add-const-to-untranslate-preprocess *pdf-grammar-rules*)
 
   (defrule rulelist-wfp-of-*pdf-grammar-rules*
-    (abnf::rulelist-wfp *pdf-grammar-rules*))
+    (rulelist-wfp *pdf-grammar-rules*))
 
   (defrule rulelist-closedp-of-*all-pdf-grammar-rules*
-    (abnf::rulelist-closedp *pdf-grammar-rules*)))
+    (rulelist-closedp *pdf-grammar-rules*)))
