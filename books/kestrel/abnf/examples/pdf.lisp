@@ -13,6 +13,7 @@
 (in-package "ABNF")
 
 (include-book "../grammar-definer/defgrammar")
+(include-book "../grammar-definer/deftreeops")
 
 ; (depends-on "pdf.abnf")
 
@@ -43,3 +44,7 @@
   :untranslate t
   :well-formed t
   :closed t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftreeops *pdf-grammar-rules* :prefix pdf-cst)
