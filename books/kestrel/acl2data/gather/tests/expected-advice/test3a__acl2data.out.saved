@@ -1,0 +1,81 @@
+
+1 ;failure_count_hints
+1 ;total_count_hints
+0 ;failure_count_hypotheses
+0 ;total_count_hypotheses
+0 ;failure_count_book_runes
+0 ;total_count_book_runes
+0 ;failure_count_single_rune
+0 ;total_count_single_rune
+("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test3a.lisp"
+ (FOO2
+  (:GOAL (IMPLIES (IF (RATIONALP X)
+                      (IF (INTEGERP Y)
+                          (IF (RATIONALP Z)
+                              (NOT (EQUAL Z '0))
+                            'NIL)
+                        'NIL)
+                    'NIL)
+                  (EQUAL (MOD (BINARY-* Z Y) Z) '0)))
+  (:HASH 447984900)
+  (:EXPANSION-STACK NIL)
+  (:GOAL-CLAUSES (((NOT (RATIONALP X))
+                   (NOT (INTEGERP Y))
+                   (NOT (RATIONALP Z))
+                   (EQUAL Z '0)
+                   (EQUAL (MOD (BINARY-* Z Y) Z) '0))))
+  (:EVENT (DEFTHM FOO2
+            (IMPLIES (AND (RATIONALP X)
+                          (INTEGERP Y)
+                          (RATIONALP Z)
+                          (NOT (EQUAL Z 0)))
+                     (EQUAL (MOD (* Z Y) Z) 0))
+            :RULE-CLASSES NIL
+            :HINTS (("Goal" :BY FOO))))
+  (:RULE-CLASSES NIL)
+  (:USED-INDUCTION NIL)
+  (:HINT-SETTING-ALIST
+   (((:BY FOO)
+     (((NOT (RATIONALP X))
+       (NOT (INTEGERP Y))
+       (NOT (RATIONALP Z))
+       (EQUAL Z '0)
+       (NOT (EQUAL (DENOMINATOR (BINARY-* (UNARY-/ Z) (BINARY-* Y Z)))
+                   '1))
+       (EQUAL
+        (BINARY-+ (BINARY-* Y Z)
+                  (UNARY-- (BINARY-* Z
+                                     (NUMERATOR (BINARY-* (UNARY-/ Z)
+                                                          (BINARY-* Y Z))))))
+        '0)))
+     ((IMPLIES (AND (RATIONALP X)
+                    (INTEGERP Y)
+                    (RATIONALP Z)
+                    (NOT (EQUAL Z 0))
+                    (EQUAL (DENOMINATOR (* (/ Z) Y Z)) 1))
+               (EQUAL (+ (* Y Z)
+                         (- (* Z (NUMERATOR (* (/ Z) Y Z)))))
+                      0)))
+     NIL NIL
+     (DEFTHM FOO2
+       (IMPLIES (AND (RATIONALP X)
+                     (INTEGERP Y)
+                     (RATIONALP Z)
+                     (NOT (EQUAL Z 0)))
+                (EQUAL (MOD (* Z Y) Z) 0))
+       :RULE-CLASSES NIL)
+     ((:ADD-LIBRARY (INCLUDE-BOOK "arithmetic/equalities"
+                                  :DIR :SYSTEM)
+                    NIL)))))
+  (:SYMBOL-TABLE
+   ((RATIONALP . :BUILTIN)
+    (NOT . :BUILTIN)
+    (MOD . :BUILTIN)
+    (INTEGERP . :BUILTIN)
+    (IMPLIES . :BUILTIN)
+    (IF . :BUILTIN)
+    (FOO
+        .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test3a.lisp")
+    (EQUAL . :BUILTIN)
+    (BINARY-* . :BUILTIN)))))

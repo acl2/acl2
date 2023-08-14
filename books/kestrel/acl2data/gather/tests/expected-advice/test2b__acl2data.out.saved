@@ -1,0 +1,328 @@
+
+5 ;failure_count_hints
+17 ;total_count_hints
+0 ;failure_count_hypotheses
+0 ;total_count_hypotheses
+0 ;failure_count_book_runes
+0 ;total_count_book_runes
+0 ;failure_count_single_rune
+0 ;total_count_single_rune
+("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2b.lisp"
+ (APP-ASSOC-1
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD))
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-1
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (E/D (APPEND NTH)
+                                            (CAR-CONS)
+                                            (CAR-CONS))))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION T)
+  (:HINT-SETTING-ALIST
+      (((:ENABLE BINARY-APPEND)
+        :REMOVE
+        (DEFTHM APP-ASSOC-1
+          (EQUAL (APPEND (APPEND X Y) Z)
+                 (APPEND X Y Z))
+          :HINTS (("Goal" :IN-THEORY (E/D (NTH) (CAR-CONS) (CAR-CONS))))))
+       ((:ENABLE NTH)
+        :REMOVE
+        (DEFTHM APP-ASSOC-1
+          (EQUAL (APPEND (APPEND X Y) Z)
+                 (APPEND X Y Z))
+          :HINTS (("Goal" :IN-THEORY (E/D (APPEND) (CAR-CONS) (CAR-CONS))))))
+       ((:DISABLE CAR-CONS)
+        :REMOVE
+        (DEFTHM APP-ASSOC-1
+          (EQUAL (APPEND (APPEND X Y) Z)
+                 (APPEND X Y Z))
+          :HINTS (("Goal" :IN-THEORY (E/D (APPEND NTH) NIL (CAR-CONS))))))))
+  (:SYMBOL-TABLE ((NTH . :BUILTIN)
+                  (EQUAL . :BUILTIN)
+                  (CAR-CONS . :BUILTIN)
+                  (BINARY-APPEND . :BUILTIN)
+                  (APPEND . :BUILTIN))))
+ (APP-ASSOC-2
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD))
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-2
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (E/D* (APPEND NTH)
+                                             (CAR-CONS)
+                                             (CAR-CONS))))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION T)
+  (:HINT-SETTING-ALIST
+      (((:ENABLE BINARY-APPEND)
+        :REMOVE
+        (DEFTHM APP-ASSOC-2
+          (EQUAL (APPEND (APPEND X Y) Z)
+                 (APPEND X Y Z))
+          :HINTS (("Goal" :IN-THEORY (E/D* (NTH) (CAR-CONS) (CAR-CONS))))))
+       ((:ENABLE NTH)
+        :REMOVE
+        (DEFTHM APP-ASSOC-2
+          (EQUAL (APPEND (APPEND X Y) Z)
+                 (APPEND X Y Z))
+          :HINTS (("Goal" :IN-THEORY (E/D* (APPEND)
+                                           (CAR-CONS)
+                                           (CAR-CONS))))))
+       ((:DISABLE CAR-CONS)
+        :REMOVE
+        (DEFTHM APP-ASSOC-2
+          (EQUAL (APPEND (APPEND X Y) Z)
+                 (APPEND X Y Z))
+          :HINTS (("Goal" :IN-THEORY (E/D* (APPEND NTH) NIL (CAR-CONS))))))))
+  (:SYMBOL-TABLE ((NTH . :BUILTIN)
+                  (EQUAL . :BUILTIN)
+                  (CAR-CONS . :BUILTIN)
+                  (BINARY-APPEND . :BUILTIN)
+                  (APPEND . :BUILTIN))))
+ (APP-ASSOC-3
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD ENCAPSULATE))
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-3
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (ENABLE* R1 NTH)))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION T)
+  (:HINT-SETTING-ALIST
+   (((:ENABLE* R1)
+     (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+              (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+     ((EQUAL (APPEND (APPEND X Y) Z)
+             (APPEND X Y Z)))
+     NIL NIL
+     (DEFTHM APP-ASSOC-3
+       (EQUAL (APPEND (APPEND X Y) Z)
+              (APPEND X Y Z))
+       :HINTS (("Goal" :IN-THEORY (ENABLE* NTH))))
+     ((:ADD-LIBRARY (INCLUDE-BOOK "std/lists/append"
+                                  :DIR :SYSTEM)
+                    NIL)
+      (:ADD-LIBRARY (INCLUDE-BOOK "kestrel/lists-light/append"
+                                  :DIR :SYSTEM)
+                    NIL)
+      (:ADD-ENABLE-HINT
+       ADE::LEFT-ASSOCIATIVITY-OF-APPEND
+       ((ADE::LEFT-ASSOCIATIVITY-OF-APPEND :SYSTEM
+                                           . "projects/async/utils.lisp")))))
+    ((:ENABLE NTH)
+     :REMOVE
+     (DEFTHM APP-ASSOC-3
+       (EQUAL (APPEND (APPEND X Y) Z)
+              (APPEND X Y Z))
+       :HINTS (("Goal" :IN-THEORY (ENABLE* R1)))))))
+  (:SYMBOL-TABLE
+   ((R1 .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2b.lisp")
+    (NTH . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN))))
+ (APP-ASSOC-4
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD))
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-4
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (E/D* (NTH APP-ASSOC-3) (NTH R1))))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HINT-SETTING-ALIST
+   (((:ENABLE NTH)
+     :REMOVE
+     (DEFTHM APP-ASSOC-4
+       (EQUAL (APPEND (APPEND X Y) Z)
+              (APPEND X Y Z))
+       :HINTS (("Goal" :IN-THEORY (E/D* (APP-ASSOC-3) (NTH R1))))))
+    ((:ENABLE APP-ASSOC-3)
+     (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+              (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+     ((EQUAL (APPEND (APPEND X Y) Z)
+             (APPEND X Y Z)))
+     NIL NIL
+     (DEFTHM APP-ASSOC-4
+       (EQUAL (APPEND (APPEND X Y) Z)
+              (APPEND X Y Z))
+       :HINTS (("Goal" :IN-THEORY (E/D* (NTH) (NTH R1)))))
+     ((:ADD-LIBRARY (INCLUDE-BOOK "std/lists/append"
+                                  :DIR :SYSTEM)
+                    NIL)
+      (:ADD-LIBRARY (INCLUDE-BOOK "kestrel/lists-light/append"
+                                  :DIR :SYSTEM)
+                    NIL)
+      (:ADD-ENABLE-HINT
+       ADE::LEFT-ASSOCIATIVITY-OF-APPEND
+       ((ADE::LEFT-ASSOCIATIVITY-OF-APPEND :SYSTEM
+                                           . "projects/async/utils.lisp")))))
+    ((:DISABLE NTH)
+     :REMOVE
+     (DEFTHM APP-ASSOC-4
+       (EQUAL (APPEND (APPEND X Y) Z)
+              (APPEND X Y Z))
+       :HINTS (("Goal" :IN-THEORY (E/D* (NTH APP-ASSOC-3) (R1))))))
+    ((:DISABLE* R1)
+     :REMOVE
+     (DEFTHM APP-ASSOC-4
+       (EQUAL (APPEND (APPEND X Y) Z)
+              (APPEND X Y Z))
+       :HINTS (("Goal" :IN-THEORY (E/D* (NTH APP-ASSOC-3) (NTH))))))))
+  (:SYMBOL-TABLE
+   ((R1 .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2b.lisp")
+    (NTH . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN)
+    (APP-ASSOC-3
+     .
+     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2b.lisp"))))
+ (APP-ASSOC-5
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD))
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-5
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (E/D* (NTH APP-ASSOC-3) (T1))))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HINT-SETTING-ALIST
+   (((:ENABLE NTH)
+     :REMOVE
+     (DEFTHM APP-ASSOC-5
+       (EQUAL (APPEND (APPEND X Y) Z)
+              (APPEND X Y Z))
+       :HINTS (("Goal" :IN-THEORY (E/D* (APP-ASSOC-3) (T1))))))
+    ((:ENABLE APP-ASSOC-3)
+     (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+              (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+     ((EQUAL (APPEND (APPEND X Y) Z)
+             (APPEND X Y Z)))
+     NIL NIL
+     (DEFTHM APP-ASSOC-5
+       (EQUAL (APPEND (APPEND X Y) Z)
+              (APPEND X Y Z))
+       :HINTS (("Goal" :IN-THEORY (E/D* (NTH) (T1)))))
+     ((:ADD-LIBRARY (INCLUDE-BOOK "std/lists/append"
+                                  :DIR :SYSTEM)
+                    NIL)
+      (:ADD-LIBRARY (INCLUDE-BOOK "kestrel/lists-light/append"
+                                  :DIR :SYSTEM)
+                    NIL)
+      (:ADD-ENABLE-HINT
+       ADE::LEFT-ASSOCIATIVITY-OF-APPEND
+       ((ADE::LEFT-ASSOCIATIVITY-OF-APPEND :SYSTEM
+                                           . "projects/async/utils.lisp")))))
+    ((:DISABLE T1)
+     :REMOVE
+     (DEFTHM APP-ASSOC-5
+       (EQUAL (APPEND (APPEND X Y) Z)
+              (APPEND X Y Z))
+       :HINTS (("Goal" :IN-THEORY (E/D* (NTH APP-ASSOC-3) NIL)))))))
+  (:SYMBOL-TABLE
+   ((T1 .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2b.lisp")
+    (NTH . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN)
+    (APP-ASSOC-3
+     .
+     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2b.lisp"))))
+ (APP-ASSOC-6
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD))
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-6
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (ENABLE* T1)))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION T)
+  (:HINT-SETTING-ALIST
+       (((:ENABLE T1)
+         (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                  (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+         ((EQUAL (APPEND (APPEND X Y) Z)
+                 (APPEND X Y Z)))
+         NIL NIL
+         (DEFTHM APP-ASSOC-6
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z)))
+         ((:ADD-LIBRARY (INCLUDE-BOOK "std/lists/append"
+                                      :DIR :SYSTEM)
+                        NIL)
+          (:ADD-LIBRARY (INCLUDE-BOOK "kestrel/lists-light/append"
+                                      :DIR :SYSTEM)
+                        NIL)
+          (:ADD-ENABLE-HINT ADE::LEFT-ASSOCIATIVITY-OF-APPEND
+                            ((ADE::LEFT-ASSOCIATIVITY-OF-APPEND
+                                  :SYSTEM
+                                  . "projects/async/utils.lisp")))))))
+  (:SYMBOL-TABLE
+   ((T1 .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2b.lisp")
+    (EQUAL . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN))))
+ (APP-ASSOC-7
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD))
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-7
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (ENABLE T1)))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION T)
+  (:HINT-SETTING-ALIST
+       (((:ENABLE T1)
+         (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                  (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+         ((EQUAL (APPEND (APPEND X Y) Z)
+                 (APPEND X Y Z)))
+         NIL NIL
+         (DEFTHM APP-ASSOC-7
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z)))
+         ((:ADD-LIBRARY (INCLUDE-BOOK "std/lists/append"
+                                      :DIR :SYSTEM)
+                        NIL)
+          (:ADD-LIBRARY (INCLUDE-BOOK "kestrel/lists-light/append"
+                                      :DIR :SYSTEM)
+                        NIL)
+          (:ADD-ENABLE-HINT ADE::LEFT-ASSOCIATIVITY-OF-APPEND
+                            ((ADE::LEFT-ASSOCIATIVITY-OF-APPEND
+                                  :SYSTEM
+                                  . "projects/async/utils.lisp")))))))
+  (:SYMBOL-TABLE
+   ((T1 .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2b.lisp")
+    (EQUAL . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN)))))

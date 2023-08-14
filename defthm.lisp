@@ -12068,27 +12068,27 @@
 ; was not defined when it was first used in axioms.lisp.  This choice is
 ; a little unsettling because it means
 
-                   (hints (if (or (eq ld-skip-proofsp 'include-book)
-                                  (eq ld-skip-proofsp 'include-book-with-locals)
-                                  (eq ld-skip-proofsp 'initialize-acl2))
-                              (value nil)
-                            (translate-hints+ name
-                                              hints
+                   (thints (if (or (eq ld-skip-proofsp 'include-book)
+                                   (eq ld-skip-proofsp 'include-book-with-locals)
+                                   (eq ld-skip-proofsp 'initialize-acl2))
+                               (value nil)
+                             (translate-hints+ name
+                                               hints
 
 ; If there are :instructions, then default hints are to be ignored; otherwise
 ; the error just below will prevent :instructions in the presence of default
 ; hints.
 
-                                              (and (null instructions)
-                                                   (default-hints wrld1))
-                                              ctx wrld1 state)))
+                                               (and (null instructions)
+                                                    (default-hints wrld1))
+                                               ctx wrld1 state)))
                    (ttree2 (cond (instructions
                                   (er-progn
-                                   (cond (hints (er soft ctx
-                                                    "It is not permitted to ~
-                                                     supply both ~
-                                                     :INSTRUCTIONS and :HINTS ~
-                                                     to DEFTHM."))
+                                   (cond (thints (er soft ctx
+                                                     "It is not permitted to ~
+                                                      supply both ~
+                                                      :INSTRUCTIONS and ~
+                                                      :HINTS to DEFTHM."))
                                          (t (value nil)))
                                    #+:non-standard-analysis
                                    (if std-p
@@ -12108,7 +12108,7 @@
                                            (make-pspv ens wrld1 state
                                                       :displayed-goal term
                                                       :otf-flg otf-flg)
-                                           hints ens wrld1 ctx state))))
+                                           thints ens wrld1 ctx state))))
                    (ttree3 (cond (ld-skip-proofsp (value nil))
                                  (t (prove-corollaries name tterm0 classes
                                                        ens wrld1 ctx
