@@ -1,0 +1,327 @@
+
+3 ;failure_count_hints
+17 ;total_count_hints
+0 ;failure_count_hypotheses
+0 ;total_count_hypotheses
+0 ;failure_count_book_runes
+0 ;total_count_book_runes
+0 ;failure_count_single_rune
+0 ;total_count_single_rune
+("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test5.lisp"
+ (THM2 (:GOAL (IMPLIES (IF (INTEGERP N) (NOT (< N '0)) 'NIL)
+                       (EQUAL (EXPT X N) (N-EXPT X N))))
+       (:HASH 1929659321)
+       (:EXPANSION-STACK (DEFFACT))
+       (:GOAL-CLAUSES (((NOT (INTEGERP N))
+                        (< N '0)
+                        (EQUAL (EXPT X N) (N-EXPT X N)))))
+       (:EVENT (DEFTHM THM2
+                 (IMPLIES (AND (INTEGERP N) (<= 0 N))
+                          (EQUAL (EXPT X N) (N-EXPT X N)))
+                 :HINTS (("Goal" :BY N-EXPT-EXPT))
+                 :RULE-CLASSES NIL))
+       (:RULE-CLASSES NIL)
+       (:USED-INDUCTION NIL)
+       (:HINT-SETTING-ALIST (((:BY N-EXPT-EXPT)
+                              :REMOVE
+                              (DEFTHM THM2
+                                (IMPLIES (AND (INTEGERP N) (<= 0 N))
+                                         (EQUAL (EXPT X N) (N-EXPT X N)))
+                                :RULE-CLASSES NIL))))
+       (:SYMBOL-TABLE ((NOT . :BUILTIN)
+                       (N-EXPT-EXPT :SYSTEM . "arithmetic/binomial.lisp")
+                       (N-EXPT :SYSTEM . "arithmetic/binomial.lisp")
+                       (INTEGERP . :BUILTIN)
+                       (IMPLIES . :BUILTIN)
+                       (IF . :BUILTIN)
+                       (EXPT . :BUILTIN)
+                       (EQUAL . :BUILTIN)
+                       (< . :BUILTIN))))
+ (THM4
+  (:GOAL (IMPLIES (IF (NATP N) (NATP K) 'NIL)
+                  (IF (EQUAL (EXPT X N) (N-EXPT X N))
+                      (EQUAL (EXPT Y K) (N-EXPT Y K))
+                    'NIL)))
+  (:HASH 72149476)
+  (:EXPANSION-STACK (DEFFACT))
+  (:GOAL-CLAUSES (((NOT (NATP N))
+                   (NOT (NATP K))
+                   (EQUAL (EXPT X N) (N-EXPT X N)))
+                  ((NOT (NATP N))
+                   (NOT (NATP K))
+                   (EQUAL (EXPT Y K) (N-EXPT Y K)))))
+  (:EVENT
+     (DEFTHM THM4
+       (IMPLIES (AND (NATP N) (NATP K))
+                (AND (EQUAL (EXPT X N) (N-EXPT X N))
+                     (EQUAL (EXPT Y K) (N-EXPT Y K))))
+       :HINTS (("Goal" :USE (N-EXPT-EXPT (:INSTANCE N-EXPT-EXPT (X Y) (N K)))
+                       :IN-THEORY (E/D (APPEND) (N-EXPT-EXPT))))
+       :RULE-CLASSES NIL))
+  (:RULE-CLASSES NIL)
+  (:USED-INDUCTION NIL)
+  (:HINT-SETTING-ALIST
+   (((:USE-1 N-EXPT-EXPT)
+     (((NOT (EQUAL (EXPT Y K) (N-EXPT Y K)))
+       (NOT (NATP N))
+       (NOT (NATP K))
+       (EQUAL (EXPT X N) (N-EXPT X N))))
+     ((IMPLIES (AND (EQUAL (EXPT Y K) (N-EXPT Y K))
+                    (NATP N)
+                    (NATP K))
+               (EQUAL (EXPT X N) (N-EXPT X N))))
+     NIL NIL
+     (DEFTHM THM4
+       (IMPLIES (AND (NATP N) (NATP K))
+                (AND (EQUAL (EXPT X N) (N-EXPT X N))
+                     (EQUAL (EXPT Y K) (N-EXPT Y K))))
+       :HINTS (("Goal" :USE ((:INSTANCE N-EXPT-EXPT (X Y) (N K)))
+                       :IN-THEORY (E/D (APPEND) (N-EXPT-EXPT))))
+       :RULE-CLASSES NIL)
+     NIL)
+    ((:USE-1 (:INSTANCE N-EXPT-EXPT (X Y) (N K)))
+     (((NOT (EQUAL (EXPT X N) (N-EXPT X N)))
+       (NOT (NATP N))
+       (NOT (NATP K))
+       (EQUAL (EXPT Y K) (N-EXPT Y K))))
+     ((IMPLIES (AND (EQUAL (EXPT X N) (N-EXPT X N))
+                    (NATP N)
+                    (NATP K))
+               (EQUAL (EXPT Y K) (N-EXPT Y K))))
+     NIL NIL
+     (DEFTHM THM4
+       (IMPLIES (AND (NATP N) (NATP K))
+                (AND (EQUAL (EXPT X N) (N-EXPT X N))
+                     (EQUAL (EXPT Y K) (N-EXPT Y K))))
+       :HINTS (("Goal" :USE (N-EXPT-EXPT)
+                       :IN-THEORY (E/D (APPEND) (N-EXPT-EXPT))))
+       :RULE-CLASSES NIL)
+     NIL)
+    ((:ENABLE BINARY-APPEND)
+     :REMOVE
+     (DEFTHM THM4
+       (IMPLIES (AND (NATP N) (NATP K))
+                (AND (EQUAL (EXPT X N) (N-EXPT X N))
+                     (EQUAL (EXPT Y K) (N-EXPT Y K))))
+       :HINTS (("Goal" :USE (N-EXPT-EXPT (:INSTANCE N-EXPT-EXPT (X Y) (N K)))
+                       :IN-THEORY (E/D NIL (N-EXPT-EXPT))))
+       :RULE-CLASSES NIL))
+    ((:DISABLE N-EXPT-EXPT)
+     :REMOVE
+     (DEFTHM THM4
+       (IMPLIES (AND (NATP N) (NATP K))
+                (AND (EQUAL (EXPT X N) (N-EXPT X N))
+                     (EQUAL (EXPT Y K) (N-EXPT Y K))))
+       :HINTS (("Goal" :USE (N-EXPT-EXPT (:INSTANCE N-EXPT-EXPT (X Y) (N K)))
+                       :IN-THEORY (E/D (APPEND) NIL)))
+       :RULE-CLASSES NIL))))
+  (:SYMBOL-TABLE ((NATP . :BUILTIN)
+                  (N-EXPT-EXPT :SYSTEM . "arithmetic/binomial.lisp")
+                  (N-EXPT :SYSTEM . "arithmetic/binomial.lisp")
+                  (IMPLIES . :BUILTIN)
+                  (IF . :BUILTIN)
+                  (EXPT . :BUILTIN)
+                  (EQUAL . :BUILTIN)
+                  (APPEND . :BUILTIN))))
+ (THM5 (:GOAL (IMPLIES (NATP N)
+                       (EQUAL (EXPT X N) (N-EXPT X N))))
+       (:HASH 1043268899)
+       (:EXPANSION-STACK (DEFFACT))
+       (:GOAL-CLAUSES (((NOT (NATP N))
+                        (EQUAL (EXPT X N) (N-EXPT X N)))))
+       (:EVENT (DEFTHM THM5
+                 (IMPLIES (NATP N)
+                          (EQUAL (EXPT X N) (N-EXPT X N)))
+                 :HINTS (("Goal" :USE N-EXPT-EXPT
+                                 :IN-THEORY (DISABLE (:REWRITE N-EXPT-EXPT)
+                                                     APPEND)))
+                 :RULE-CLASSES NIL))
+       (:RULE-CLASSES NIL)
+       (:USED-INDUCTION NIL)
+       (:HINT-SETTING-ALIST
+            (((:USE N-EXPT-EXPT)
+              (((NOT (NATP N))
+                (EQUAL (EXPT X N) (N-EXPT X N))))
+              ((IMPLIES (NATP N)
+                        (EQUAL (EXPT X N) (N-EXPT X N))))
+              NIL NIL
+              (DEFTHM THM5
+                (IMPLIES (NATP N)
+                         (EQUAL (EXPT X N) (N-EXPT X N)))
+                :HINTS (("Goal" :IN-THEORY (DISABLE (:REWRITE N-EXPT-EXPT)
+                                                    APPEND)))
+                :RULE-CLASSES NIL)
+              NIL)
+             ((:DISABLE N-EXPT-EXPT)
+              :REMOVE
+              (DEFTHM THM5
+                (IMPLIES (NATP N)
+                         (EQUAL (EXPT X N) (N-EXPT X N)))
+                :HINTS (("Goal" :USE N-EXPT-EXPT
+                                :IN-THEORY (DISABLE APPEND)))
+                :RULE-CLASSES NIL))
+             ((:DISABLE BINARY-APPEND)
+              :REMOVE
+              (DEFTHM THM5
+                (IMPLIES (NATP N)
+                         (EQUAL (EXPT X N) (N-EXPT X N)))
+                :HINTS (("Goal" :USE N-EXPT-EXPT
+                                :IN-THEORY (DISABLE (:REWRITE N-EXPT-EXPT))))
+                :RULE-CLASSES NIL))))
+       (:SYMBOL-TABLE ((NATP . :BUILTIN)
+                       (N-EXPT-EXPT :SYSTEM . "arithmetic/binomial.lisp")
+                       (N-EXPT :SYSTEM . "arithmetic/binomial.lisp")
+                       (IMPLIES . :BUILTIN)
+                       (EXPT . :BUILTIN)
+                       (EQUAL . :BUILTIN)
+                       (APPEND . :BUILTIN))))
+ (THM6
+  (:GOAL (IMPLIES (NATP N)
+                  (EQUAL (EXPT X N) (N-EXPT X N))))
+  (:HASH 1043268899)
+  (:EXPANSION-STACK (DEFFACT))
+  (:GOAL-CLAUSES (((NOT (NATP N))
+                   (EQUAL (EXPT X N) (N-EXPT X N)))))
+  (:EVENT (DEFTHM THM6
+            (IMPLIES (NATP N)
+                     (EQUAL (EXPT X N) (N-EXPT X N)))
+            :HINTS (("Goal" :RESTRICT ((ASSOCIATIVITY-OF-+ ((I 3))))
+                            :HANDS-OFF (NTH F1)
+                            :CASES ((EQUAL (CHOOSE K N) 17))))
+            :RULE-CLASSES NIL))
+  (:RULE-CLASSES NIL)
+  (:USED-INDUCTION NIL)
+  (:HINT-SETTING-ALIST
+       (((:RESTRICT ((ASSOCIATIVITY-OF-+ ((I 3)))))
+         :REMOVE
+         (DEFTHM THM6
+           (IMPLIES (NATP N)
+                    (EQUAL (EXPT X N) (N-EXPT X N)))
+           :HINTS (("Goal" :HANDS-OFF (NTH F1)
+                           :CASES ((EQUAL (CHOOSE K N) 17))))
+           :RULE-CLASSES NIL))
+        ((:HANDS-OFF (NTH F1))
+         :REMOVE
+         (DEFTHM THM6
+           (IMPLIES (NATP N)
+                    (EQUAL (EXPT X N) (N-EXPT X N)))
+           :HINTS (("Goal" :RESTRICT ((ASSOCIATIVITY-OF-+ ((I 3))))
+                           :CASES ((EQUAL (CHOOSE K N) 17))))
+           :RULE-CLASSES NIL))
+        ((:CASES ((EQUAL (CHOOSE K N) 17)))
+         :REMOVE
+         (DEFTHM THM6
+           (IMPLIES (NATP N)
+                    (EQUAL (EXPT X N) (N-EXPT X N)))
+           :HINTS (("Goal" :RESTRICT ((ASSOCIATIVITY-OF-+ ((I 3))))
+                           :HANDS-OFF (NTH F1)))
+           :RULE-CLASSES NIL))))
+  (:SYMBOL-TABLE
+    ((NTH . :BUILTIN)
+     (NATP . :BUILTIN)
+     (N-EXPT :SYSTEM . "arithmetic/binomial.lisp")
+     (IMPLIES . :BUILTIN)
+     (F1 .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test5.lisp")
+     (EXPT . :BUILTIN)
+     (EQUAL . :BUILTIN)
+     (CHOOSE :SYSTEM . "arithmetic/binomial.lisp")
+     (ASSOCIATIVITY-OF-+ . :BUILTIN))))
+ (THM7
+  (:GOAL (IMPLIES (NATP N)
+                  (EQUAL (EXPT X N) (N-EXPT X N))))
+  (:HASH 1043268899)
+  (:EXPANSION-STACK (DEFFACT))
+  (:GOAL-CLAUSES (((NOT (NATP N))
+                   (EQUAL (EXPT X N) (N-EXPT X N)))))
+  (:EVENT
+     (DEFTHM THM7
+       (IMPLIES (NATP N)
+                (EQUAL (EXPT X N) (N-EXPT X N)))
+       :HINTS (("Goal" :CLAUSE-PROCESSOR (:FUNCTION AUTOHIDE-CP :HINT '(NTH))
+                       :EXPAND ((APPEND U V))))
+       :RULE-CLASSES NIL))
+  (:RULE-CLASSES NIL)
+  (:USED-INDUCTION NIL)
+  (:HINT-SETTING-ALIST
+       (((:CLAUSE-PROCESSOR (:FUNCTION AUTOHIDE-CP :HINT '(NTH)))
+         :REMOVE
+         (DEFTHM THM7
+           (IMPLIES (NATP N)
+                    (EQUAL (EXPT X N) (N-EXPT X N)))
+           :HINTS (("Goal" :EXPAND ((APPEND U V))))
+           :RULE-CLASSES NIL))
+        ((:EXPAND ((APPEND U V)))
+         :REMOVE
+         (DEFTHM THM7
+           (IMPLIES (NATP N)
+                    (EQUAL (EXPT X N) (N-EXPT X N)))
+           :HINTS
+           (("Goal" :CLAUSE-PROCESSOR (:FUNCTION AUTOHIDE-CP :HINT '(NTH))))
+           :RULE-CLASSES NIL))))
+  (:SYMBOL-TABLE ((NATP . :BUILTIN)
+                  (N-EXPT :SYSTEM . "arithmetic/binomial.lisp")
+                  (IMPLIES . :BUILTIN)
+                  (EXPT . :BUILTIN)
+                  (EQUAL . :BUILTIN)
+                  (BINARY-APPEND . :BUILTIN)
+                  (AUTOHIDE-CP :SYSTEM
+                               . "clause-processors/autohide.lisp"))))
+ (THM8
+   (:GOAL (IMPLIES (NATP N)
+                   (EQUAL (EXPT X N) (N-EXPT X N))))
+   (:HASH 1043268899)
+   (:EXPANSION-STACK (DEFFACT))
+   (:GOAL-CLAUSES (((NOT (NATP N))
+                    (EQUAL (EXPT X N) (N-EXPT X N)))))
+   (:EVENT (DEFTHM THM8
+             (IMPLIES (NATP N)
+                      (EQUAL (EXPT X N) (N-EXPT X N)))
+             :HINTS (("Goal" :CASES ((< 5 (CHOOSE I J)))
+                             :EXPAND (APPEND U V)
+                             :DO-NOT '(GENERALIZE FERTILIZE)))
+             :RULE-CLASSES NIL))
+   (:RULE-CLASSES NIL)
+   (:USED-INDUCTION NIL)
+   (:HINT-SETTING-ALIST (((:CASES ((< 5 (CHOOSE I J))))
+                          :REMOVE
+                          (DEFTHM THM8
+                            (IMPLIES (NATP N)
+                                     (EQUAL (EXPT X N) (N-EXPT X N)))
+                            :HINTS (("Goal" :EXPAND (APPEND U V)
+                                            :DO-NOT '(GENERALIZE FERTILIZE)))
+                            :RULE-CLASSES NIL))
+                         ((:EXPAND (APPEND U V))
+                          :REMOVE
+                          (DEFTHM THM8
+                            (IMPLIES (NATP N)
+                                     (EQUAL (EXPT X N) (N-EXPT X N)))
+                            :HINTS (("Goal" :CASES ((< 5 (CHOOSE I J)))
+                                            :DO-NOT '(GENERALIZE FERTILIZE)))
+                            :RULE-CLASSES NIL))
+                         ((:DO-NOT-1 GENERALIZE)
+                          :REMOVE
+                          (DEFTHM THM8
+                            (IMPLIES (NATP N)
+                                     (EQUAL (EXPT X N) (N-EXPT X N)))
+                            :HINTS (("Goal" :CASES ((< 5 (CHOOSE I J)))
+                                            :EXPAND (APPEND U V)
+                                            :DO-NOT '(FERTILIZE)))
+                            :RULE-CLASSES NIL))
+                         ((:DO-NOT-1 FERTILIZE)
+                          :REMOVE
+                          (DEFTHM THM8
+                            (IMPLIES (NATP N)
+                                     (EQUAL (EXPT X N) (N-EXPT X N)))
+                            :HINTS (("Goal" :CASES ((< 5 (CHOOSE I J)))
+                                            :EXPAND (APPEND U V)
+                                            :DO-NOT '(GENERALIZE)))
+                            :RULE-CLASSES NIL))))
+   (:SYMBOL-TABLE ((NATP . :BUILTIN)
+                   (N-EXPT :SYSTEM . "arithmetic/binomial.lisp")
+                   (IMPLIES . :BUILTIN)
+                   (EXPT . :BUILTIN)
+                   (EQUAL . :BUILTIN)
+                   (CHOOSE :SYSTEM . "arithmetic/binomial.lisp")
+                   (BINARY-APPEND . :BUILTIN)
+                   (< . :BUILTIN)))))

@@ -1,0 +1,4077 @@
+
+44 ;failure_count_hints
+50 ;total_count_hints
+23 ;failure_count_hypotheses
+25 ;total_count_hypotheses
+3 ;failure_count_book_runes
+3 ;total_count_book_runes
+62 ;failure_count_single_rune
+91 ;total_count_single_rune
+("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp"
+ (THM1
+      (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                    (BINARY-APPEND X (BINARY-APPEND Y Z))))
+      (:HASH 38295251)
+      (:EXPANSION-STACK NIL)
+      (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                              (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+      (:EVENT (DEFTHM THM1
+                (EQUAL (APPEND (APPEND X Y) Z)
+                       (APPEND X Y Z))
+                :HINTS (("Goal" :IN-THEORY (ENABLE CAR-CONS)))
+                :RULE-CLASSES NIL))
+      (:RULE-CLASSES NIL)
+      (:USED-INDUCTION T)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST
+           (((:ENABLE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CAR (CONS (CAR X)
+                                 (BINARY-APPEND (CDR X) Y)))
+                      (CAR X))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                              (CAR X))))
+             (DEFTHM THM1
+               (EQUAL (APPEND (APPEND X Y) Z)
+                      (APPEND X Y Z))
+               :RULE-CLASSES NIL))))
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST
+           (((:REWRITE CDR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                                     Z)
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (CONS (CAR X) (APPEND (CDR X) Y))
+                                      Z)
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:INDUCTION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             NIL NIL)
+            ((:REWRITE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CONS (CAR (CONS (CAR X)
+                                       (BINARY-APPEND (CDR X) Y)))
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z))
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CONS (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                                    (APPEND (APPEND (CDR X) Y) Z))
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:DEFINITION ENDP) :REMOVE)
+            ((:DEFINITION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((ENDP X)
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((IMPLIES (AND (NOT (ENDP X))
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (APPEND X Y) Z)
+                              (APPEND X Y Z)))))
+            ((:DEFINITION NOT) :REMOVE)))
+      (:SYMBOL-TABLE ((NOT . :BUILTIN)
+                      (EQUAL . :BUILTIN)
+                      (ENDP . :BUILTIN)
+                      (CDR-CONS . :BUILTIN)
+                      (CAR-CONS . :BUILTIN)
+                      (BINARY-APPEND . :BUILTIN))))
+ (THM1-LOCAL
+      (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                    (BINARY-APPEND X (BINARY-APPEND Y Z))))
+      (:HASH 38295251)
+      (:EXPANSION-STACK (LOCAL))
+      (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                              (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+      (:EVENT (DEFTHM THM1-LOCAL
+                (EQUAL (APPEND (APPEND X Y) Z)
+                       (APPEND X Y Z))
+                :HINTS (("Goal" :IN-THEORY (ENABLE CAR-CONS)))
+                :RULE-CLASSES NIL))
+      (:RULE-CLASSES NIL)
+      (:USED-INDUCTION T)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST
+           (((:ENABLE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CAR (CONS (CAR X)
+                                 (BINARY-APPEND (CDR X) Y)))
+                      (CAR X))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                              (CAR X))))
+             (DEFTHM THM1-LOCAL
+               (EQUAL (APPEND (APPEND X Y) Z)
+                      (APPEND X Y Z))
+               :RULE-CLASSES NIL))))
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST
+           (((:REWRITE CDR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                                     Z)
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (CONS (CAR X) (APPEND (CDR X) Y))
+                                      Z)
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:INDUCTION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             NIL NIL)
+            ((:REWRITE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CONS (CAR (CONS (CAR X)
+                                       (BINARY-APPEND (CDR X) Y)))
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z))
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CONS (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                                    (APPEND (APPEND (CDR X) Y) Z))
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:DEFINITION ENDP) :REMOVE)
+            ((:DEFINITION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((ENDP X)
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((IMPLIES (AND (NOT (ENDP X))
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (APPEND X Y) Z)
+                              (APPEND X Y Z)))))
+            ((:DEFINITION NOT) :REMOVE)))
+      (:SYMBOL-TABLE ((NOT . :BUILTIN)
+                      (EQUAL . :BUILTIN)
+                      (ENDP . :BUILTIN)
+                      (CDR-CONS . :BUILTIN)
+                      (CAR-CONS . :BUILTIN)
+                      (BINARY-APPEND . :BUILTIN))))
+ (THM2
+      (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                    (BINARY-APPEND X (BINARY-APPEND Y Z))))
+      (:HASH 38295251)
+      (:EXPANSION-STACK (MY-DEFTHM))
+      (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                              (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+      (:EVENT (DEFTHM THM2
+                (EQUAL (APPEND (APPEND X Y) Z)
+                       (APPEND X Y Z))
+                :HINTS (("Goal" :IN-THEORY (ENABLE CAR-CONS)))
+                :RULE-CLASSES NIL))
+      (:RULE-CLASSES NIL)
+      (:USED-INDUCTION T)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST
+           (((:ENABLE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CAR (CONS (CAR X)
+                                 (BINARY-APPEND (CDR X) Y)))
+                      (CAR X))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                              (CAR X))))
+             (DEFTHM THM2
+               (EQUAL (APPEND (APPEND X Y) Z)
+                      (APPEND X Y Z))
+               :RULE-CLASSES NIL))))
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST
+           (((:REWRITE CDR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                                     Z)
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (CONS (CAR X) (APPEND (CDR X) Y))
+                                      Z)
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:INDUCTION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             NIL NIL)
+            ((:REWRITE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CONS (CAR (CONS (CAR X)
+                                       (BINARY-APPEND (CDR X) Y)))
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z))
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CONS (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                                    (APPEND (APPEND (CDR X) Y) Z))
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:DEFINITION ENDP) :REMOVE)
+            ((:DEFINITION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((ENDP X)
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((IMPLIES (AND (NOT (ENDP X))
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (APPEND X Y) Z)
+                              (APPEND X Y Z)))))
+            ((:DEFINITION NOT) :REMOVE)))
+      (:SYMBOL-TABLE ((NOT . :BUILTIN)
+                      (EQUAL . :BUILTIN)
+                      (ENDP . :BUILTIN)
+                      (CDR-CONS . :BUILTIN)
+                      (CAR-CONS . :BUILTIN)
+                      (BINARY-APPEND . :BUILTIN))))
+ (THM3
+      (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                    (BINARY-APPEND X (BINARY-APPEND Y Z))))
+      (:HASH 38295251)
+      (:EXPANSION-STACK (MAKE-EVENT))
+      (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                              (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+      (:EVENT (DEFTHM THM3
+                (EQUAL (APPEND (APPEND X Y) Z)
+                       (APPEND X Y Z))
+                :HINTS (("Goal" :IN-THEORY (ENABLE CAR-CONS)))
+                :RULE-CLASSES NIL))
+      (:RULE-CLASSES NIL)
+      (:USED-INDUCTION T)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST
+           (((:ENABLE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CAR (CONS (CAR X)
+                                 (BINARY-APPEND (CDR X) Y)))
+                      (CAR X))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                              (CAR X))))
+             (DEFTHM THM3
+               (EQUAL (APPEND (APPEND X Y) Z)
+                      (APPEND X Y Z))
+               :RULE-CLASSES NIL))))
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST
+           (((:REWRITE CDR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                                     Z)
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (CONS (CAR X) (APPEND (CDR X) Y))
+                                      Z)
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:INDUCTION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             NIL NIL)
+            ((:REWRITE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CONS (CAR (CONS (CAR X)
+                                       (BINARY-APPEND (CDR X) Y)))
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z))
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CONS (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                                    (APPEND (APPEND (CDR X) Y) Z))
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:DEFINITION ENDP) :REMOVE)
+            ((:DEFINITION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((ENDP X)
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((IMPLIES (AND (NOT (ENDP X))
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (APPEND X Y) Z)
+                              (APPEND X Y Z)))))
+            ((:DEFINITION NOT) :REMOVE)))
+      (:SYMBOL-TABLE ((NOT . :BUILTIN)
+                      (EQUAL . :BUILTIN)
+                      (ENDP . :BUILTIN)
+                      (CDR-CONS . :BUILTIN)
+                      (CAR-CONS . :BUILTIN)
+                      (BINARY-APPEND . :BUILTIN))))
+ (THM4
+      (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                    (BINARY-APPEND X (BINARY-APPEND Y Z))))
+      (:HASH 38295251)
+      (:EXPANSION-STACK (MY-DEFTHM ENCAPSULATE ENCAPSULATE WITH-OUTPUT
+                                   PROGN WITH-OUTPUT DEFSECTION))
+      (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                              (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+      (:EVENT (DEFTHM THM4
+                (EQUAL (APPEND (APPEND X Y) Z)
+                       (APPEND X Y Z))
+                :HINTS (("Goal" :IN-THEORY (ENABLE CAR-CONS)))
+                :RULE-CLASSES NIL))
+      (:RULE-CLASSES NIL)
+      (:USED-INDUCTION T)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST
+           (((:ENABLE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CAR (CONS (CAR X)
+                                 (BINARY-APPEND (CDR X) Y)))
+                      (CAR X))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                              (CAR X))))
+             (DEFTHM THM4
+               (EQUAL (APPEND (APPEND X Y) Z)
+                      (APPEND X Y Z))
+               :RULE-CLASSES NIL))))
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST
+           (((:REWRITE CDR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                                     Z)
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (CONS (CAR X) (APPEND (CDR X) Y))
+                                      Z)
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:INDUCTION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             NIL NIL)
+            ((:REWRITE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CONS (CAR (CONS (CAR X)
+                                       (BINARY-APPEND (CDR X) Y)))
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z))
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CONS (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                                    (APPEND (APPEND (CDR X) Y) Z))
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:DEFINITION ENDP) :REMOVE)
+            ((:DEFINITION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((ENDP X)
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((IMPLIES (AND (NOT (ENDP X))
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (APPEND X Y) Z)
+                              (APPEND X Y Z)))))
+            ((:DEFINITION NOT) :REMOVE)))
+      (:SYMBOL-TABLE ((NOT . :BUILTIN)
+                      (EQUAL . :BUILTIN)
+                      (ENDP . :BUILTIN)
+                      (CDR-CONS . :BUILTIN)
+                      (CAR-CONS . :BUILTIN)
+                      (BINARY-APPEND . :BUILTIN))))
+ (THM5
+      (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                    (BINARY-APPEND X (BINARY-APPEND Y Z))))
+      (:HASH 38295251)
+      (:EXPANSION-STACK (DEFRULE PROGN
+                          ENCAPSULATE WITH-OUTPUT
+                          PROGN WITH-OUTPUT DEFSECTION))
+      (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                              (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+      (:EVENT (DEFTHM THM5
+                (EQUAL (APPEND (APPEND X Y) Z)
+                       (APPEND X Y Z))
+                :RULE-CLASSES NIL
+                :HINTS (("Goal" :IN-THEORY (ENABLE CAR-CONS)))))
+      (:RULE-CLASSES NIL)
+      (:USED-INDUCTION T)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST
+           (((:ENABLE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CAR (CONS (CAR X)
+                                 (BINARY-APPEND (CDR X) Y)))
+                      (CAR X))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                              (CAR X))))
+             (DEFTHM THM5
+               (EQUAL (APPEND (APPEND X Y) Z)
+                      (APPEND X Y Z))
+               :RULE-CLASSES NIL))))
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST
+           (((:REWRITE CDR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                                     Z)
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (CONS (CAR X) (APPEND (CDR X) Y))
+                                      Z)
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:INDUCTION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             NIL NIL)
+            ((:REWRITE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CONS (CAR (CONS (CAR X)
+                                       (BINARY-APPEND (CDR X) Y)))
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z))
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CONS (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                                    (APPEND (APPEND (CDR X) Y) Z))
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:DEFINITION ENDP) :REMOVE)
+            ((:DEFINITION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((ENDP X)
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((IMPLIES (AND (NOT (ENDP X))
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (APPEND X Y) Z)
+                              (APPEND X Y Z)))))
+            ((:DEFINITION NOT) :REMOVE)))
+      (:SYMBOL-TABLE ((NOT . :BUILTIN)
+                      (EQUAL . :BUILTIN)
+                      (ENDP . :BUILTIN)
+                      (CDR-CONS . :BUILTIN)
+                      (CAR-CONS . :BUILTIN)
+                      (BINARY-APPEND . :BUILTIN))))
+ (CONSP-OF-EMPLOYEE
+  (:GOAL (CONSP (EMPLOYEE NAME SALARY POSITION)))
+  (:HASH 77081976)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES (((CONSP (EMPLOYEE NAME SALARY POSITION)))))
+  (:EVENT (DEFTHM CONSP-OF-EMPLOYEE
+            (CONSP (EMPLOYEE NAME SALARY POSITION))
+            :RULE-CLASSES :TYPE-PRESCRIPTION
+            :HINTS (("Goal" :IN-THEORY (ENABLE EMPLOYEE)))))
+  (:RULE-CLASSES :TYPE-PRESCRIPTION)
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST (((:ENABLE EMPLOYEE)
+                         :REMOVE
+                         (DEFTHM CONSP-OF-EMPLOYEE
+                           (CONSP (EMPLOYEE NAME SALARY POSITION))
+                           :RULE-CLASSES :TYPE-PRESCRIPTION))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:TYPE-PRESCRIPTION EMPLOYEE)
+                 (((CONSP (EMPLOYEE NAME SALARY POSITION))))
+                 ((CONSP (EMPLOYEE NAME SALARY POSITION)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((EMPLOYEE
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (CONSP . :BUILTIN))))
+ (BOOLEANP-OF-EMPLOYEE-P
+  (:GOAL (BOOLEANP (EMPLOYEE-P X)))
+  (:HASH 1823218487)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES (((BOOLEANP (EMPLOYEE-P X)))))
+  (:EVENT (DEFTHM BOOLEANP-OF-EMPLOYEE-P
+            (BOOLEANP (EMPLOYEE-P X))
+            :RULE-CLASSES :TYPE-PRESCRIPTION
+            :HINTS (("Goal" :IN-THEORY (ENABLE EMPLOYEE-P)))))
+  (:RULE-CLASSES :TYPE-PRESCRIPTION)
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST (((:ENABLE EMPLOYEE-P)
+                         :REMOVE
+                         (DEFTHM BOOLEANP-OF-EMPLOYEE-P
+                           (BOOLEANP (EMPLOYEE-P X))
+                           :RULE-CLASSES :TYPE-PRESCRIPTION))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)
+                 (((BOOLEANP (EMPLOYEE-P X))))
+                 ((BOOLEANP (EMPLOYEE-P X)))
+                 NIL NIL)
+                ((:TYPE-PRESCRIPTION EMPLOYEE-P)
+                 (((BOOLEANP (EMPLOYEE-P X))))
+                 ((BOOLEANP (EMPLOYEE-P X)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((EMPLOYEE-P
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (BOOLEANP-COMPOUND-RECOGNIZER . :BUILTIN)
+    (BOOLEANP . :BUILTIN))))
+ (EMPLOYEE-P-OF-EMPLOYEE
+  (:GOAL (EQUAL (EMPLOYEE-P (EMPLOYEE NAME SALARY POSITION))
+                'T))
+  (:HASH 1882596047)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES (((EQUAL (EMPLOYEE-P (EMPLOYEE NAME SALARY POSITION))
+                          'T))))
+  (:EVENT
+   (DEFTHM EMPLOYEE-P-OF-EMPLOYEE
+    (EQUAL (EMPLOYEE-P (EMPLOYEE NAME SALARY POSITION))
+           T)
+    :HINTS
+    (("Goal"
+         :IN-THEORY (UNION-THEORIES '(EMPLOYEE-P EMPLOYEE)
+                                    (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY))
+         :USE ((:INSTANCE BOOLEANP-OF-EMPLOYEE-P
+                          (X (EMPLOYEE NAME SALARY POSITION))))))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+    (((:IN-THEORY (UNION-THEORIES '(EMPLOYEE-P EMPLOYEE)
+                                  (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))
+      (((EMPLOYEE-P (EMPLOYEE NAME SALARY POSITION))))
+      ((EMPLOYEE-P (EMPLOYEE NAME SALARY POSITION)))
+      NIL NIL
+      (DEFTHM EMPLOYEE-P-OF-EMPLOYEE
+        (EQUAL (EMPLOYEE-P (EMPLOYEE NAME SALARY POSITION))
+               T)
+        :HINTS
+        (("Goal" :USE ((:INSTANCE BOOLEANP-OF-EMPLOYEE-P
+                                  (X (EMPLOYEE NAME SALARY POSITION))))))))
+     ((:USE ((:INSTANCE BOOLEANP-OF-EMPLOYEE-P
+                        (X (EMPLOYEE NAME SALARY POSITION)))))
+      :REMOVE
+      (DEFTHM EMPLOYEE-P-OF-EMPLOYEE
+        (EQUAL (EMPLOYEE-P (EMPLOYEE NAME SALARY POSITION))
+               T)
+        :HINTS
+        (("Goal"
+              :IN-THEORY
+              (UNION-THEORIES '(EMPLOYEE-P EMPLOYEE)
+                              (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY))))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST
+   (((:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)
+     :REMOVE)
+    ((:DEFINITION EMPLOYEE)
+     (((CONSP (EMPLOYEE NAME SALARY POSITION))
+       (NOT (BOOLEANP 'NIL))))
+     ((IMPLIES (NOT (CONSP (EMPLOYEE NAME SALARY POSITION)))
+               (NOT (BOOLEANP NIL))))
+     NIL NIL)
+    ((:DEFINITION EMPLOYEE-P)
+     (((NOT
+           (BOOLEANP
+                (EMPLOYEE-P (CONS ':EMPLOYEE
+                                  (CONS (CONS 'NAME NAME)
+                                        (CONS (CONS 'SALARY SALARY)
+                                              (CONS (CONS 'POSITION POSITION)
+                                                    'NIL)))))))
+       (EQUAL (EMPLOYEE-P (CONS ':EMPLOYEE
+                                (CONS (CONS 'NAME NAME)
+                                      (CONS (CONS 'SALARY SALARY)
+                                            (CONS (CONS 'POSITION POSITION)
+                                                  'NIL)))))
+              'T)))
+     ((IMPLIES (BOOLEANP (EMPLOYEE-P (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                           (CONS 'SALARY SALARY)
+                                           (CONS 'POSITION POSITION))))
+               (EQUAL (EMPLOYEE-P (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                        (CONS 'SALARY SALARY)
+                                        (CONS 'POSITION POSITION)))
+                      T)))
+     NIL NIL)
+    ((:DEFINITION NOT) :REMOVE)
+    ((:DEFINITION ASSOC-EQUAL) :REMOVE)
+    ((:REWRITE CAR-CONS)
+     (((EQUAL (CAR (CONS ':EMPLOYEE
+                         (CONS (CONS 'NAME NAME)
+                               (CONS (CONS 'SALARY SALARY)
+                                     (CONS (CONS 'POSITION POSITION)
+                                           'NIL)))))
+              ':EMPLOYEE)
+       (NOT (BOOLEANP 'NIL))))
+     ((IMPLIES (NOT (EQUAL (CAR (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                      (CONS 'SALARY SALARY)
+                                      (CONS 'POSITION POSITION)))
+                           :EMPLOYEE))
+               (NOT (BOOLEANP NIL))))
+     NIL NIL)
+    ((:DEFINITION ALISTP)
+     (((ALISTP (CONS (CONS 'NAME NAME)
+                     (CONS (CONS 'SALARY SALARY)
+                           (CONS (CONS 'POSITION POSITION) 'NIL))))
+       (NOT (BOOLEANP 'NIL))))
+     ((IMPLIES (NOT (ALISTP (LIST (CONS 'NAME NAME)
+                                  (CONS 'SALARY SALARY)
+                                  (CONS 'POSITION POSITION))))
+               (NOT (BOOLEANP NIL))))
+     NIL NIL)
+    ((:EXECUTABLE-COUNTERPART EQUAL)
+     :REMOVE)
+    ((:EXECUTABLE-COUNTERPART CONSP)
+     :REMOVE)
+    ((:REWRITE CDR-CONS)
+     (((NOT (BOOLEANP 'NIL))
+       (CONSP (CDR (CONS ':EMPLOYEE
+                         (CONS (CONS 'NAME NAME)
+                               (CONS (CONS 'SALARY SALARY)
+                                     (CONS (CONS 'POSITION POSITION)
+                                           'NIL))))))))
+     ((IMPLIES (BOOLEANP NIL)
+               (CONSP (CDR (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                 (CONS 'SALARY SALARY)
+                                 (CONS 'POSITION POSITION))))))
+     NIL NIL)))
+  (:SYMBOL-TABLE
+   ((NOT . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (EMPLOYEE-P
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EMPLOYEE
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (CONSP . :BUILTIN)
+    (CDR-CONS . :BUILTIN)
+    (CAR-CONS . :BUILTIN)
+    (BOOLEANP-OF-EMPLOYEE-P
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (BOOLEANP-COMPOUND-RECOGNIZER . :BUILTIN)
+    (ASSOC-EQUAL . :BUILTIN)
+    (ALISTP . :BUILTIN))))
+ (TAG-OF-EMPLOYEE
+  (:GOAL (EQUAL (TAG$INLINE (EMPLOYEE NAME SALARY POSITION))
+                ':EMPLOYEE))
+  (:HASH 647313907)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES (((EQUAL (TAG$INLINE (EMPLOYEE NAME SALARY POSITION))
+                          ':EMPLOYEE))))
+  (:EVENT
+     (DEFTHM TAG-OF-EMPLOYEE
+       (EQUAL (TAG (EMPLOYEE NAME SALARY POSITION))
+              :EMPLOYEE)
+       :HINTS
+       (("Goal" :IN-THEORY
+                (UNION-THEORIES '(EMPLOYEE)
+                                (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY))))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+     (((:IN-THEORY (UNION-THEORIES '(EMPLOYEE)
+                                   (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))
+       (((EQUAL (TAG$INLINE (EMPLOYEE NAME SALARY POSITION))
+                ':EMPLOYEE)))
+       ((EQUAL (TAG (EMPLOYEE NAME SALARY POSITION))
+               :EMPLOYEE))
+       NIL NIL
+       (DEFTHM TAG-OF-EMPLOYEE
+         (EQUAL (TAG (EMPLOYEE NAME SALARY POSITION))
+                :EMPLOYEE)))))
+  (:BOOK-RUNES-ALIST
+     (((:SYSTEM . "std/util/da-base.lisp")
+       (((EQUAL (TAG$INLINE (CONS ':EMPLOYEE
+                                  (CONS (CONS 'NAME NAME)
+                                        (CONS (CONS 'SALARY SALARY)
+                                              (CONS (CONS 'POSITION POSITION)
+                                                    'NIL)))))
+                ':EMPLOYEE)))
+       ((EQUAL (TAG (LIST :EMPLOYEE (CONS 'NAME NAME)
+                          (CONS 'SALARY SALARY)
+                          (CONS 'POSITION POSITION)))
+               :EMPLOYEE))
+       NIL NIL)))
+  (:RUNE-ALIST
+     (((:EXECUTABLE-COUNTERPART EQUAL)
+       :REMOVE)
+      ((:DEFINITION EMPLOYEE)
+       (((EQUAL (CAR (EMPLOYEE NAME SALARY POSITION))
+                ':EMPLOYEE)))
+       ((EQUAL (CAR (EMPLOYEE NAME SALARY POSITION))
+               :EMPLOYEE))
+       NIL NIL)
+      ((:REWRITE CAR-CONS)
+       (((EQUAL (CAR (CONS ':EMPLOYEE
+                           (CONS (CONS 'NAME NAME)
+                                 (CONS (CONS 'SALARY SALARY)
+                                       (CONS (CONS 'POSITION POSITION)
+                                             'NIL)))))
+                ':EMPLOYEE)))
+       ((EQUAL (CAR (LIST :EMPLOYEE (CONS 'NAME NAME)
+                          (CONS 'SALARY SALARY)
+                          (CONS 'POSITION POSITION)))
+               :EMPLOYEE))
+       NIL NIL)
+      ((:DEFINITION TAG$INLINE)
+       (((EQUAL (TAG$INLINE (CONS ':EMPLOYEE
+                                  (CONS (CONS 'NAME NAME)
+                                        (CONS (CONS 'SALARY SALARY)
+                                              (CONS (CONS 'POSITION POSITION)
+                                                    'NIL)))))
+                ':EMPLOYEE)))
+       ((EQUAL (TAG (LIST :EMPLOYEE (CONS 'NAME NAME)
+                          (CONS 'SALARY SALARY)
+                          (CONS 'POSITION POSITION)))
+               :EMPLOYEE))
+       NIL NIL)))
+  (:SYMBOL-TABLE
+   ((TAG$INLINE :SYSTEM . "std/util/da-base.lisp")
+    (EQUAL . :BUILTIN)
+    (EMPLOYEE
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (CAR-CONS . :BUILTIN))))
+ (TAG-WHEN-EMPLOYEE-P
+  (:GOAL (IMPLIES (EMPLOYEE-P X)
+                  (EQUAL (TAG$INLINE X) ':EMPLOYEE)))
+  (:HASH 1775858550)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES (((NOT (EMPLOYEE-P X))
+                   (EQUAL (TAG$INLINE X) ':EMPLOYEE))))
+  (:EVENT
+     (DEFTHM TAG-WHEN-EMPLOYEE-P
+       (IMPLIES (EMPLOYEE-P X)
+                (EQUAL (TAG X) :EMPLOYEE))
+       :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST 0)
+                      (:FORWARD-CHAINING))
+       :HINTS
+       (("Goal" :IN-THEORY
+                (UNION-THEORIES '(EMPLOYEE-P)
+                                (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY))))))
+  (:RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST 0)
+                  (:FORWARD-CHAINING)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+    (((EMPLOYEE-P X)
+      (((EQUAL (CAR X) ':EMPLOYEE)))
+      ((EQUAL (CAR X) :EMPLOYEE))
+      NIL NIL
+      (DEFTHM TAG-WHEN-EMPLOYEE-P
+        (EQUAL (TAG X) :EMPLOYEE)
+        :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST 0)
+                       (:FORWARD-CHAINING))
+        :HINTS
+        (("Goal" :IN-THEORY
+                 (UNION-THEORIES '(EMPLOYEE-P)
+                                 (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))))
+      (EMPLOYEE-P X))))
+  (:HINT-SETTING-ALIST
+     (((:IN-THEORY (UNION-THEORIES '(EMPLOYEE-P)
+                                   (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))
+       (((NOT (EMPLOYEE-P X))
+         (EQUAL (TAG$INLINE X) ':EMPLOYEE)))
+       ((IMPLIES (EMPLOYEE-P X)
+                 (EQUAL (TAG X) :EMPLOYEE)))
+       NIL NIL
+       (DEFTHM TAG-WHEN-EMPLOYEE-P
+         (IMPLIES (EMPLOYEE-P X)
+                  (EQUAL (TAG X) :EMPLOYEE))
+         :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST 0)
+                        (:FORWARD-CHAINING))))))
+  (:BOOK-RUNES-ALIST (((:SYSTEM . "std/util/da-base.lisp")
+                       (((NOT (CONSP X))
+                         (NOT (EQUAL (CAR X) ':EMPLOYEE))
+                         (NOT (ALISTP (CDR X)))
+                         (NOT (CONSP (CDR X)))
+                         (EQUAL (TAG$INLINE X) ':EMPLOYEE)))
+                       ((IMPLIES (AND (CONSP X)
+                                      (EQUAL (CAR X) :EMPLOYEE)
+                                      (ALISTP (CDR X))
+                                      (CONSP (CDR X)))
+                                 (EQUAL (TAG X) :EMPLOYEE)))
+                       NIL NIL)))
+  (:RUNE-ALIST (((:DEFINITION EMPLOYEE-P)
+                 (((NOT (EMPLOYEE-P X))
+                   (EQUAL (CAR X) ':EMPLOYEE)))
+                 ((IMPLIES (EMPLOYEE-P X)
+                           (EQUAL (CAR X) :EMPLOYEE)))
+                 NIL NIL)
+                ((:DEFINITION TAG$INLINE)
+                 (((NOT (CONSP X))
+                   (NOT (EQUAL (CAR X) ':EMPLOYEE))
+                   (NOT (ALISTP (CDR X)))
+                   (NOT (CONSP (CDR X)))
+                   (EQUAL (TAG$INLINE X) ':EMPLOYEE)))
+                 ((IMPLIES (AND (CONSP X)
+                                (EQUAL (CAR X) :EMPLOYEE)
+                                (ALISTP (CDR X))
+                                (CONSP (CDR X)))
+                           (EQUAL (TAG X) :EMPLOYEE)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((TAG$INLINE :SYSTEM . "std/util/da-base.lisp")
+    (IMPLIES . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (EMPLOYEE-P
+      .
+      "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp"))))
+ (EMPLOYEE-P-WHEN-WRONG-TAG
+  (:GOAL (IMPLIES (NOT (EQUAL (TAG$INLINE X) ':EMPLOYEE))
+                  (EQUAL (EMPLOYEE-P X) 'NIL)))
+  (:HASH 314165166)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES (((EQUAL (TAG$INLINE X) ':EMPLOYEE)
+                   (EQUAL (EMPLOYEE-P X) 'NIL))))
+  (:EVENT
+     (DEFTHM EMPLOYEE-P-WHEN-WRONG-TAG
+       (IMPLIES (NOT (EQUAL (TAG X) :EMPLOYEE))
+                (EQUAL (EMPLOYEE-P X) NIL))
+       :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST 1))
+       :HINTS
+       (("Goal" :IN-THEORY
+                (UNION-THEORIES '(EMPLOYEE-P)
+                                (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY))))))
+  (:RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST 1)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+    (((NOT (EQUAL (TAG$INLINE X) ':EMPLOYEE))
+      (((NOT (CONSP X))
+        (NOT (EQUAL (CAR X) ':EMPLOYEE))
+        (NOT (ALISTP (CDR X)))
+        (NOT (CONSP (CDR X)))))
+      ((IMPLIES (AND (CONSP X)
+                     (EQUAL (CAR X) :EMPLOYEE)
+                     (ALISTP (CDR X)))
+                (NOT (CONSP (CDR X)))))
+      NIL NIL
+      (DEFTHM EMPLOYEE-P-WHEN-WRONG-TAG
+        (EQUAL (EMPLOYEE-P X) NIL)
+        :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST 1))
+        :HINTS
+        (("Goal" :IN-THEORY
+                 (UNION-THEORIES '(EMPLOYEE-P)
+                                 (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))))
+      (NOT (EQUAL (TAG X) :EMPLOYEE)))))
+  (:HINT-SETTING-ALIST
+     (((:IN-THEORY (UNION-THEORIES '(EMPLOYEE-P)
+                                   (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))
+       :REMOVE
+       (DEFTHM EMPLOYEE-P-WHEN-WRONG-TAG
+         (IMPLIES (NOT (EQUAL (TAG X) :EMPLOYEE))
+                  (EQUAL (EMPLOYEE-P X) NIL))
+         :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST 1))))))
+  (:BOOK-RUNES-ALIST (((:SYSTEM . "std/util/da-base.lisp")
+                       (((EQUAL (TAG$INLINE X) ':EMPLOYEE)
+                         (NOT (CONSP X))
+                         (NOT (EQUAL (CAR X) ':EMPLOYEE))
+                         (NOT (ALISTP (CDR X)))
+                         (NOT (CONSP (CDR X)))))
+                       ((IMPLIES (AND (NOT (EQUAL (TAG X) :EMPLOYEE))
+                                      (CONSP X)
+                                      (EQUAL (CAR X) :EMPLOYEE)
+                                      (ALISTP (CDR X)))
+                                 (NOT (CONSP (CDR X)))))
+                       NIL NIL)))
+  (:RUNE-ALIST (((:EXECUTABLE-COUNTERPART EQUAL)
+                 :REMOVE)
+                ((:DEFINITION TAG$INLINE)
+                 (((EQUAL (TAG$INLINE X) ':EMPLOYEE)
+                   (NOT (CONSP X))
+                   (NOT (EQUAL (CAR X) ':EMPLOYEE))
+                   (NOT (ALISTP (CDR X)))
+                   (NOT (CONSP (CDR X)))))
+                 ((IMPLIES (AND (NOT (EQUAL (TAG X) :EMPLOYEE))
+                                (CONSP X)
+                                (EQUAL (CAR X) :EMPLOYEE)
+                                (ALISTP (CDR X)))
+                           (NOT (CONSP (CDR X)))))
+                 NIL NIL)
+                ((:DEFINITION EMPLOYEE-P)
+                 (((EQUAL (CAR X) ':EMPLOYEE)
+                   (NOT (EMPLOYEE-P X))))
+                 ((IMPLIES (NOT (EQUAL (CAR X) :EMPLOYEE))
+                           (NOT (EMPLOYEE-P X))))
+                 NIL NIL)
+                ((:DEFINITION NOT) :REMOVE)))
+  (:SYMBOL-TABLE
+   ((TAG$INLINE :SYSTEM . "std/util/da-base.lisp")
+    (NOT . :BUILTIN)
+    (IMPLIES . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (EMPLOYEE-P
+      .
+      "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp"))))
+ (CONSP-WHEN-EMPLOYEE-P
+  (:GOAL (IMPLIES (EMPLOYEE-P X) (CONSP X)))
+  (:HASH 554178344)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES (((NOT (EMPLOYEE-P X)) (CONSP X))))
+  (:EVENT
+     (DEFTHM CONSP-WHEN-EMPLOYEE-P
+       (IMPLIES (EMPLOYEE-P X) (CONSP X))
+       :RULE-CLASSES :COMPOUND-RECOGNIZER
+       :HINTS
+       (("Goal" :IN-THEORY
+                (UNION-THEORIES '(EMPLOYEE-P)
+                                (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY))))))
+  (:RULE-CLASSES :COMPOUND-RECOGNIZER)
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+    (((EMPLOYEE-P X)
+      (((CONSP X)))
+      ((CONSP X))
+      NIL NIL
+      (DEFTHM CONSP-WHEN-EMPLOYEE-P
+        (CONSP X)
+        :RULE-CLASSES :COMPOUND-RECOGNIZER
+        :HINTS
+        (("Goal" :IN-THEORY
+                 (UNION-THEORIES '(EMPLOYEE-P)
+                                 (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))))
+      (EMPLOYEE-P X))))
+  (:HINT-SETTING-ALIST
+     (((:IN-THEORY (UNION-THEORIES '(EMPLOYEE-P)
+                                   (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))
+       (((NOT (EMPLOYEE-P X)) (CONSP X)))
+       ((IMPLIES (EMPLOYEE-P X) (CONSP X)))
+       NIL NIL
+       (DEFTHM CONSP-WHEN-EMPLOYEE-P
+         (IMPLIES (EMPLOYEE-P X) (CONSP X))
+         :RULE-CLASSES :COMPOUND-RECOGNIZER))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:DEFINITION EMPLOYEE-P)
+                 (((NOT (EMPLOYEE-P X)) (CONSP X)))
+                 ((IMPLIES (EMPLOYEE-P X) (CONSP X)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((IMPLIES . :BUILTIN)
+    (EMPLOYEE-P
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (CONSP . :BUILTIN))))
+ (EMPLOYEE->NAME-OF-EMPLOYEE
+  (:GOAL (EQUAL (EMPLOYEE->NAME$INLINE (EMPLOYEE NAME SALARY POSITION))
+                NAME))
+  (:HASH 1449779399)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES
+       (((EQUAL (EMPLOYEE->NAME$INLINE (EMPLOYEE NAME SALARY POSITION))
+                NAME))))
+  (:EVENT
+     (DEFTHM EMPLOYEE->NAME-OF-EMPLOYEE
+       (EQUAL (EMPLOYEE->NAME (EMPLOYEE NAME SALARY POSITION))
+              NAME)
+       :HINTS
+       (("Goal" :IN-THEORY
+                (UNION-THEORIES '(EMPLOYEE->NAME EMPLOYEE)
+                                (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY))))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+     (((:IN-THEORY (UNION-THEORIES '(EMPLOYEE->NAME EMPLOYEE)
+                                   (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))
+       (((EQUAL (EMPLOYEE->NAME$INLINE (EMPLOYEE NAME SALARY POSITION))
+                NAME)))
+       ((EQUAL (EMPLOYEE->NAME (EMPLOYEE NAME SALARY POSITION))
+               NAME))
+       NIL NIL
+       (DEFTHM EMPLOYEE->NAME-OF-EMPLOYEE
+         (EQUAL (EMPLOYEE->NAME (EMPLOYEE NAME SALARY POSITION))
+                NAME)))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST
+   (((:DEFINITION ASSOC-EQUAL)
+     (((EQUAL (CDR (ASSOC-EQUAL 'NAME
+                                (CONS (CONS 'NAME NAME)
+                                      (CONS (CONS 'SALARY SALARY)
+                                            (CONS (CONS 'POSITION POSITION)
+                                                  'NIL)))))
+              NAME)))
+     ((EQUAL (CDR (ASSOC-EQUAL 'NAME
+                               (LIST (CONS 'NAME NAME)
+                                     (CONS 'SALARY SALARY)
+                                     (CONS 'POSITION POSITION))))
+             NAME))
+     NIL NIL)
+    ((:DEFINITION EMPLOYEE)
+     (((EQUAL (CDR (ASSOC-EQUAL 'NAME
+                                (CDR (EMPLOYEE NAME SALARY POSITION))))
+              NAME)))
+     ((EQUAL (CDR (ASSOC-EQUAL 'NAME
+                               (CDR (EMPLOYEE NAME SALARY POSITION))))
+             NAME))
+     NIL NIL)
+    ((:EXECUTABLE-COUNTERPART EQUAL)
+     :REMOVE)
+    ((:DEFINITION EMPLOYEE->NAME$INLINE)
+     (((EQUAL (EMPLOYEE->NAME$INLINE
+                   (CONS ':EMPLOYEE
+                         (CONS (CONS 'NAME NAME)
+                               (CONS (CONS 'SALARY SALARY)
+                                     (CONS (CONS 'POSITION POSITION)
+                                           'NIL)))))
+              NAME)))
+     ((EQUAL (EMPLOYEE->NAME (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                   (CONS 'SALARY SALARY)
+                                   (CONS 'POSITION POSITION)))
+             NAME))
+     NIL NIL)
+    ((:REWRITE CAR-CONS)
+     (((NOT (EQUAL 'NAME
+                   (CAR (CAR (CONS (CONS 'NAME NAME)
+                                   (CONS (CONS 'SALARY SALARY)
+                                         (CONS (CONS 'POSITION POSITION)
+                                               'NIL)))))))
+       (EQUAL (CDR (CAR (CONS (CONS 'NAME NAME)
+                              (CONS (CONS 'SALARY SALARY)
+                                    (CONS (CONS 'POSITION POSITION)
+                                          'NIL)))))
+              NAME)))
+     ((IMPLIES (EQUAL 'NAME
+                      (CAR (CAR (LIST (CONS 'NAME NAME)
+                                      (CONS 'SALARY SALARY)
+                                      (CONS 'POSITION POSITION)))))
+               (EQUAL (CDR (CAR (LIST (CONS 'NAME NAME)
+                                      (CONS 'SALARY SALARY)
+                                      (CONS 'POSITION POSITION))))
+                      NAME)))
+     NIL NIL)
+    ((:REWRITE CDR-CONS)
+     (((EQUAL
+        (CDR
+          (ASSOC-EQUAL 'NAME
+                       (CDR (CONS ':EMPLOYEE
+                                  (CONS (CONS 'NAME NAME)
+                                        (CONS (CONS 'SALARY SALARY)
+                                              (CONS (CONS 'POSITION POSITION)
+                                                    'NIL)))))))
+        NAME)))
+     ((EQUAL (CDR (ASSOC-EQUAL 'NAME
+                               (CDR (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                          (CONS 'SALARY SALARY)
+                                          (CONS 'POSITION POSITION)))))
+             NAME))
+     NIL NIL)))
+  (:SYMBOL-TABLE
+   ((EQUAL . :BUILTIN)
+    (EMPLOYEE->NAME$INLINE
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EMPLOYEE->NAME
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EMPLOYEE
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (CDR-CONS . :BUILTIN)
+    (CAR-CONS . :BUILTIN)
+    (ASSOC-EQUAL . :BUILTIN))))
+ (EMPLOYEE->SALARY-OF-EMPLOYEE
+  (:GOAL (EQUAL (EMPLOYEE->SALARY$INLINE (EMPLOYEE NAME SALARY POSITION))
+                SALARY))
+  (:HASH 1497863307)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES
+       (((EQUAL (EMPLOYEE->SALARY$INLINE (EMPLOYEE NAME SALARY POSITION))
+                SALARY))))
+  (:EVENT
+     (DEFTHM EMPLOYEE->SALARY-OF-EMPLOYEE
+       (EQUAL (EMPLOYEE->SALARY (EMPLOYEE NAME SALARY POSITION))
+              SALARY)
+       :HINTS
+       (("Goal" :IN-THEORY
+                (UNION-THEORIES '(EMPLOYEE->SALARY EMPLOYEE)
+                                (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY))))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+     (((:IN-THEORY (UNION-THEORIES '(EMPLOYEE->SALARY EMPLOYEE)
+                                   (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))
+       (((EQUAL (EMPLOYEE->SALARY$INLINE (EMPLOYEE NAME SALARY POSITION))
+                SALARY)))
+       ((EQUAL (EMPLOYEE->SALARY (EMPLOYEE NAME SALARY POSITION))
+               SALARY))
+       NIL NIL
+       (DEFTHM EMPLOYEE->SALARY-OF-EMPLOYEE
+         (EQUAL (EMPLOYEE->SALARY (EMPLOYEE NAME SALARY POSITION))
+                SALARY)))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST
+   (((:DEFINITION ASSOC-EQUAL)
+     (((EQUAL (CDR (ASSOC-EQUAL 'SALARY
+                                (CONS (CONS 'NAME NAME)
+                                      (CONS (CONS 'SALARY SALARY)
+                                            (CONS (CONS 'POSITION POSITION)
+                                                  'NIL)))))
+              SALARY)))
+     ((EQUAL (CDR (ASSOC-EQUAL 'SALARY
+                               (LIST (CONS 'NAME NAME)
+                                     (CONS 'SALARY SALARY)
+                                     (CONS 'POSITION POSITION))))
+             SALARY))
+     NIL NIL)
+    ((:DEFINITION EMPLOYEE)
+     (((EQUAL (CDR (ASSOC-EQUAL 'SALARY
+                                (CDR (EMPLOYEE NAME SALARY POSITION))))
+              SALARY)))
+     ((EQUAL (CDR (ASSOC-EQUAL 'SALARY
+                               (CDR (EMPLOYEE NAME SALARY POSITION))))
+             SALARY))
+     NIL NIL)
+    ((:EXECUTABLE-COUNTERPART EQUAL)
+     :REMOVE)
+    ((:DEFINITION EMPLOYEE->SALARY$INLINE)
+     (((EQUAL (EMPLOYEE->SALARY$INLINE
+                   (CONS ':EMPLOYEE
+                         (CONS (CONS 'NAME NAME)
+                               (CONS (CONS 'SALARY SALARY)
+                                     (CONS (CONS 'POSITION POSITION)
+                                           'NIL)))))
+              SALARY)))
+     ((EQUAL (EMPLOYEE->SALARY (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                     (CONS 'SALARY SALARY)
+                                     (CONS 'POSITION POSITION)))
+             SALARY))
+     NIL NIL)
+    ((:REWRITE CAR-CONS)
+     (((NOT (EQUAL 'SALARY
+                   (CAR (CAR (CONS (CONS 'NAME NAME)
+                                   (CONS (CONS 'SALARY SALARY)
+                                         (CONS (CONS 'POSITION POSITION)
+                                               'NIL)))))))
+       (EQUAL (CDR (CAR (CONS (CONS 'NAME NAME)
+                              (CONS (CONS 'SALARY SALARY)
+                                    (CONS (CONS 'POSITION POSITION)
+                                          'NIL)))))
+              SALARY)))
+     ((IMPLIES (EQUAL 'SALARY
+                      (CAR (CAR (LIST (CONS 'NAME NAME)
+                                      (CONS 'SALARY SALARY)
+                                      (CONS 'POSITION POSITION)))))
+               (EQUAL (CDR (CAR (LIST (CONS 'NAME NAME)
+                                      (CONS 'SALARY SALARY)
+                                      (CONS 'POSITION POSITION))))
+                      SALARY)))
+     NIL NIL)
+    ((:REWRITE CDR-CONS)
+     (((EQUAL
+        (CDR
+          (ASSOC-EQUAL 'SALARY
+                       (CDR (CONS ':EMPLOYEE
+                                  (CONS (CONS 'NAME NAME)
+                                        (CONS (CONS 'SALARY SALARY)
+                                              (CONS (CONS 'POSITION POSITION)
+                                                    'NIL)))))))
+        SALARY)))
+     ((EQUAL (CDR (ASSOC-EQUAL 'SALARY
+                               (CDR (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                          (CONS 'SALARY SALARY)
+                                          (CONS 'POSITION POSITION)))))
+             SALARY))
+     NIL NIL)))
+  (:SYMBOL-TABLE
+   ((EQUAL . :BUILTIN)
+    (EMPLOYEE->SALARY$INLINE
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EMPLOYEE->SALARY
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EMPLOYEE
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (CDR-CONS . :BUILTIN)
+    (CAR-CONS . :BUILTIN)
+    (ASSOC-EQUAL . :BUILTIN))))
+ (EMPLOYEE->POSITION-OF-EMPLOYEE
+  (:GOAL (EQUAL (EMPLOYEE->POSITION$INLINE (EMPLOYEE NAME SALARY POSITION))
+                POSITION))
+  (:HASH 1321686919)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT
+                           MAKE-EVENT STD::DEFAGGREGATE))
+  (:GOAL-CLAUSES
+       (((EQUAL (EMPLOYEE->POSITION$INLINE (EMPLOYEE NAME SALARY POSITION))
+                POSITION))))
+  (:EVENT
+     (DEFTHM EMPLOYEE->POSITION-OF-EMPLOYEE
+       (EQUAL (EMPLOYEE->POSITION (EMPLOYEE NAME SALARY POSITION))
+              POSITION)
+       :HINTS
+       (("Goal" :IN-THEORY
+                (UNION-THEORIES '(EMPLOYEE->POSITION EMPLOYEE)
+                                (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY))))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+     (((:IN-THEORY (UNION-THEORIES '(EMPLOYEE->POSITION EMPLOYEE)
+                                   (THEORY 'STD::DEFAGGREGATE-BASIC-THEORY)))
+       (((EQUAL (EMPLOYEE->POSITION$INLINE (EMPLOYEE NAME SALARY POSITION))
+                POSITION)))
+       ((EQUAL (EMPLOYEE->POSITION (EMPLOYEE NAME SALARY POSITION))
+               POSITION))
+       NIL NIL
+       (DEFTHM EMPLOYEE->POSITION-OF-EMPLOYEE
+         (EQUAL (EMPLOYEE->POSITION (EMPLOYEE NAME SALARY POSITION))
+                POSITION)))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST
+   (((:DEFINITION ASSOC-EQUAL)
+     (((EQUAL (CDR (ASSOC-EQUAL 'POSITION
+                                (CONS (CONS 'NAME NAME)
+                                      (CONS (CONS 'SALARY SALARY)
+                                            (CONS (CONS 'POSITION POSITION)
+                                                  'NIL)))))
+              POSITION)))
+     ((EQUAL (CDR (ASSOC-EQUAL 'POSITION
+                               (LIST (CONS 'NAME NAME)
+                                     (CONS 'SALARY SALARY)
+                                     (CONS 'POSITION POSITION))))
+             POSITION))
+     NIL NIL)
+    ((:DEFINITION EMPLOYEE)
+     (((EQUAL (CDR (ASSOC-EQUAL 'POSITION
+                                (CDR (EMPLOYEE NAME SALARY POSITION))))
+              POSITION)))
+     ((EQUAL (CDR (ASSOC-EQUAL 'POSITION
+                               (CDR (EMPLOYEE NAME SALARY POSITION))))
+             POSITION))
+     NIL NIL)
+    ((:EXECUTABLE-COUNTERPART EQUAL)
+     :REMOVE)
+    ((:DEFINITION EMPLOYEE->POSITION$INLINE)
+     (((EQUAL (EMPLOYEE->POSITION$INLINE
+                   (CONS ':EMPLOYEE
+                         (CONS (CONS 'NAME NAME)
+                               (CONS (CONS 'SALARY SALARY)
+                                     (CONS (CONS 'POSITION POSITION)
+                                           'NIL)))))
+              POSITION)))
+     ((EQUAL (EMPLOYEE->POSITION (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                       (CONS 'SALARY SALARY)
+                                       (CONS 'POSITION POSITION)))
+             POSITION))
+     NIL NIL)
+    ((:REWRITE CAR-CONS)
+     (((NOT (EQUAL 'POSITION
+                   (CAR (CAR (CONS (CONS 'NAME NAME)
+                                   (CONS (CONS 'SALARY SALARY)
+                                         (CONS (CONS 'POSITION POSITION)
+                                               'NIL)))))))
+       (EQUAL (CDR (CAR (CONS (CONS 'NAME NAME)
+                              (CONS (CONS 'SALARY SALARY)
+                                    (CONS (CONS 'POSITION POSITION)
+                                          'NIL)))))
+              POSITION)))
+     ((IMPLIES (EQUAL 'POSITION
+                      (CAR (CAR (LIST (CONS 'NAME NAME)
+                                      (CONS 'SALARY SALARY)
+                                      (CONS 'POSITION POSITION)))))
+               (EQUAL (CDR (CAR (LIST (CONS 'NAME NAME)
+                                      (CONS 'SALARY SALARY)
+                                      (CONS 'POSITION POSITION))))
+                      POSITION)))
+     NIL NIL)
+    ((:REWRITE CDR-CONS)
+     (((EQUAL
+        (CDR
+          (ASSOC-EQUAL 'POSITION
+                       (CDR (CONS ':EMPLOYEE
+                                  (CONS (CONS 'NAME NAME)
+                                        (CONS (CONS 'SALARY SALARY)
+                                              (CONS (CONS 'POSITION POSITION)
+                                                    'NIL)))))))
+        POSITION)))
+     ((EQUAL (CDR (ASSOC-EQUAL 'POSITION
+                               (CDR (LIST :EMPLOYEE (CONS 'NAME NAME)
+                                          (CONS 'SALARY SALARY)
+                                          (CONS 'POSITION POSITION)))))
+             POSITION))
+     NIL NIL)))
+  (:SYMBOL-TABLE
+   ((EQUAL . :BUILTIN)
+    (EMPLOYEE->POSITION$INLINE
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EMPLOYEE->POSITION
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EMPLOYEE
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (CDR-CONS . :BUILTIN)
+    (CAR-CONS . :BUILTIN)
+    (ASSOC-EQUAL . :BUILTIN))))
+ (THM6 (:GOAL (IMPLIES (IF (NATP X) (< X '10) 'NIL)
+                       (NATP (LEN (MAKE-LIST-AC X 'NIL 'NIL)))))
+       (:HASH 872105661)
+       (:EXPANSION-STACK (STD::DEFTHM-NATP WITH-PROVER-STEP-LIMIT LOCAL))
+       (:GOAL-CLAUSES (((NOT (NATP X))
+                        (NOT (< X '10))
+                        (NATP (LEN (MAKE-LIST-AC X 'NIL 'NIL))))))
+       (:EVENT (DEFTHM THM6
+                 (IMPLIES (AND (NATP X) (< X 10))
+                          (NATP (LEN (MAKE-LIST X))))
+                 :RULE-CLASSES (:REWRITE)))
+       (:RULE-CLASSES (:REWRITE))
+       (:USED-INDUCTION NIL)
+       (:HYP-ALIST (((NATP X)
+                     :REMOVE
+                     (DEFTHM THM6
+                       (IMPLIES (< X 10)
+                                (NATP (LEN (MAKE-LIST X))))
+                       :RULE-CLASSES (:REWRITE))
+                     (NATP X))
+                    ((< X '10)
+                     :REMOVE
+                     (DEFTHM THM6
+                       (IMPLIES (NATP X)
+                                (NATP (LEN (MAKE-LIST X))))
+                       :RULE-CLASSES (:REWRITE))
+                     (< X 10))))
+       (:HINT-SETTING-ALIST NIL)
+       (:BOOK-RUNES-ALIST NIL)
+       (:RUNE-ALIST (((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+                      (((NOT (NATP X))
+                        (NOT (< X '10))
+                        (NATP (LEN (MAKE-LIST-AC X 'NIL 'NIL)))))
+                      ((IMPLIES (AND (NATP X) (< X 10))
+                                (NATP (LEN (MAKE-LIST-AC X NIL NIL)))))
+                      NIL NIL)
+                     ((:TYPE-PRESCRIPTION LEN)
+                      (((NOT (NATP X))
+                        (NOT (< X '10))
+                        (NATP (LEN (MAKE-LIST-AC X 'NIL 'NIL)))))
+                      ((IMPLIES (AND (NATP X) (< X 10))
+                                (NATP (LEN (MAKE-LIST-AC X NIL NIL)))))
+                      NIL NIL)))
+       (:SYMBOL-TABLE ((NATP-COMPOUND-RECOGNIZER . :BUILTIN)
+                       (NATP . :BUILTIN)
+                       (MAKE-LIST-AC . :BUILTIN)
+                       (LEN . :BUILTIN)
+                       (IMPLIES . :BUILTIN)
+                       (IF . :BUILTIN)
+                       (< . :BUILTIN))))
+ (THM7
+  (:GOAL (CONSP (FOO X)))
+  (:HASH 307618445)
+  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD
+                                 DEFRULED PROGN WITH-OUTPUT ENCAPSULATE
+                                 WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                                 PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((CONSP (FOO X)))))
+  (:EVENT (DEFTHM THM7 (CONSP (FOO X))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST NIL)
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:TYPE-PRESCRIPTION FOO)
+                 (((CONSP (FOO X))))
+                 ((CONSP (FOO X)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((FOO .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (CONSP . :BUILTIN))))
+ (THM8
+  (:GOAL (EQUAL (FOO X) (CONS X X)))
+  (:HASH 2124148126)
+  (:EXPANSION-STACK (WITH-OUTPUT PROGN WITH-OUTPUT DEFTHMD
+                                 DEFRULED PROGN WITH-OUTPUT ENCAPSULATE
+                                 WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                                 PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((EQUAL (FOO X) (CONS X X)))))
+  (:EVENT (DEFTHM THM8
+            (EQUAL (FOO X) (CONS X X))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST NIL)
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:DEFINITION FOO)
+                 (((EQUAL (FOO X) (CONS X X))))
+                 ((EQUAL (FOO X) (CONS X X)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((FOO .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EQUAL . :BUILTIN)
+    (CONS . :BUILTIN))))
+ (STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM
+      (:GOAL (IF (EQUAL (NATP X) 'T)
+                 (EQUAL (NATP X) 'T)
+               (EQUAL (NATP X) 'NIL)))
+      (:HASH 348306127)
+      (:EXPANSION-STACK (LOCAL WITH-OUTPUT ENCAPSULATE PROGN PROGN
+                               MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                               PROGN WITH-OUTPUT ENCAPSULATE
+                               WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                               PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+      (:GOAL-CLAUSES (((EQUAL (NATP X) 'T)
+                       (EQUAL (NATP X) 'NIL))))
+      (:EVENT (DEFTHM STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM
+                (OR (EQUAL (NATP X) T)
+                    (EQUAL (NATP X) NIL))
+                :RULE-CLASSES :TYPE-PRESCRIPTION))
+      (:RULE-CLASSES :TYPE-PRESCRIPTION)
+      (:USED-INDUCTION NIL)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST NIL)
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST (((:TYPE-PRESCRIPTION NATP)
+                     (((EQUAL (NATP X) 'T) (NOT (NATP X))))
+                     ((IMPLIES (NOT (EQUAL (NATP X) T))
+                               (NOT (NATP X))))
+                     NIL NIL)
+                    ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+                     (((EQUAL (NATP X) 'T) (NOT (NATP X))))
+                     ((IMPLIES (NOT (EQUAL (NATP X) T))
+                               (NOT (NATP X))))
+                     NIL NIL)))
+      (:SYMBOL-TABLE ((NATP-COMPOUND-RECOGNIZER . :BUILTIN)
+                      (NATP . :BUILTIN)
+                      (IF . :BUILTIN)
+                      (EQUAL . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-CONS
+  (:GOAL (EQUAL (NAT-FREE-LISTP (CONS A X))
+                (IF (NOT (NATP A))
+                    (NAT-FREE-LISTP X)
+                  'NIL)))
+  (:HASH 727680330)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NATP A)
+                   (EQUAL (NAT-FREE-LISTP (CONS A X))
+                          (NAT-FREE-LISTP X)))
+                  ((NOT (NATP A))
+                   (EQUAL (NAT-FREE-LISTP (CONS A X))
+                          'NIL))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-CONS
+       (EQUAL (NAT-FREE-LISTP (CONS A X))
+              (AND (NOT (NATP A)) (NAT-FREE-LISTP X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-CONS
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-CONS
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NATP A))
+           (NOT (NAT-FREE-LISTP (CONS A X)))))
+         ((IMPLIES (NATP A)
+                   (NOT (NAT-FREE-LISTP (CONS A X)))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-CONS
+           (EQUAL (NAT-FREE-LISTP (CONS A X))
+                  (AND (NOT (NATP A)) (NAT-FREE-LISTP X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:DEFINITION SYNP) :REMOVE)
+                ((:DEFINITION NOT) :REMOVE)
+                ((:DEFINITION ATOM) :REMOVE)
+                ((:DEFINITION NAT-FREE-LISTP)
+                 (((NOT (ATOM X))
+                   (EQUAL (NAT-FREE-LISTP X) 'T)))
+                 ((IMPLIES (ATOM X)
+                           (EQUAL (NAT-FREE-LISTP X) T)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((SYNP . :BUILTIN)
+    (NOT . :BUILTIN)
+    (NATP . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IF . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (ELEMENT-LIST-P-OF-CONS :SYSTEM . "std/lists/abstract.lisp")
+    (CONS . :BUILTIN)
+    (ATOM . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-CDR-WHEN-NAT-FREE-LISTP
+  (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                  (NAT-FREE-LISTP (CDR X))))
+  (:HASH 120665370)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NAT-FREE-LISTP (CDR X)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-CDR-WHEN-NAT-FREE-LISTP
+       (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                (NAT-FREE-LISTP (CDR X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-CDR-WHEN-ELEMENT-LIST-P
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP (DOUBLE-REWRITE X))
+     (((NOT (CONSP X))
+       (NAT-FREE-LISTP (CDR X))))
+     ((IMPLIES (CONSP X)
+               (NAT-FREE-LISTP (CDR X))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-CDR-WHEN-NAT-FREE-LISTP
+       (NAT-FREE-LISTP (CDR X))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-CDR-WHEN-ELEMENT-LIST-P
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP (DOUBLE-REWRITE X)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-CDR-WHEN-ELEMENT-LIST-P
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         :REMOVE
+         (DEFTHM NAT-FREE-LISTP-OF-CDR-WHEN-NAT-FREE-LISTP
+           (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                    (NAT-FREE-LISTP (CDR X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-CDR-WHEN-ELEMENT-LIST-P
+         :SYSTEM . "std/lists/abstract.lisp")
+    (DOUBLE-REWRITE . :BUILTIN)
+    (CDR . :BUILTIN))))
+ (NAT-FREE-LISTP-WHEN-NOT-CONSP
+  (:GOAL (IMPLIES (NOT (CONSP X))
+                  (NAT-FREE-LISTP X)))
+  (:HASH 378932281)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((CONSP X) (NAT-FREE-LISTP X))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-WHEN-NOT-CONSP
+       (IMPLIES (NOT (CONSP X))
+                (NAT-FREE-LISTP X))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-WHEN-NOT-CONSP-NON-TRUE-LIST
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NOT (CONSP X))
+     (((NOT (CONSP X)) (NAT-FREE-LISTP X)))
+     ((IMPLIES (CONSP X) (NAT-FREE-LISTP X)))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-WHEN-NOT-CONSP
+       (NAT-FREE-LISTP X)
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-WHEN-NOT-CONSP-NON-TRUE-LIST
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NOT (CONSP X)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-WHEN-NOT-CONSP-NON-TRUE-LIST
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         :REMOVE
+         (DEFTHM NAT-FREE-LISTP-WHEN-NOT-CONSP
+           (IMPLIES (NOT (CONSP X))
+                    (NAT-FREE-LISTP X))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NOT . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-WHEN-NOT-CONSP-NON-TRUE-LIST
+         :SYSTEM . "std/lists/abstract.lisp")
+    (CONSP . :BUILTIN))))
+ (NATP-OF-CAR-WHEN-NAT-FREE-LISTP
+  (:GOAL (IMPLIES (NAT-FREE-LISTP X)
+                  (IFF (NATP (CAR X))
+                       (IF (NOT (CONSP X)) (NATP 'NIL) 'NIL))))
+  (:HASH 7750838)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
+                   (CONSP X)
+                   (IFF (NATP (CAR X)) (NATP 'NIL)))
+                  ((NOT (NAT-FREE-LISTP X))
+                   (NOT (CONSP X))
+                   (IFF (NATP (CAR X)) 'NIL))))
+  (:EVENT
+   (DEFTHM NATP-OF-CAR-WHEN-NAT-FREE-LISTP
+    (IMPLIES (NAT-FREE-LISTP X)
+             (IFF (NATP (CAR X))
+                  (AND (NOT (CONSP X)) (NATP NIL))))
+    :HINTS
+    (("goal"
+          :USE
+          ((:FUNCTIONAL-INSTANCE
+                ELEMENT-P-OF-CAR-WHEN-ELEMENT-LIST-P-WHEN-UNKNOWN-NIL-NEGATED
+                (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+    :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP X)
+     (((NOT (NATP (CAR X))) (NOT (CONSP X))))
+     ((IMPLIES (NATP (CAR X))
+               (NOT (CONSP X))))
+     NIL NIL
+     (DEFTHM NATP-OF-CAR-WHEN-NAT-FREE-LISTP
+      (IFF (NATP (CAR X))
+           (AND (NOT (CONSP X)) (NATP NIL)))
+      :HINTS
+      (("goal"
+          :USE
+          ((:FUNCTIONAL-INSTANCE
+                ELEMENT-P-OF-CAR-WHEN-ELEMENT-LIST-P-WHEN-UNKNOWN-NIL-NEGATED
+                (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+      :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP X))))
+  (:HINT-SETTING-ALIST
+   (((:USE
+          ((:FUNCTIONAL-INSTANCE
+                ELEMENT-P-OF-CAR-WHEN-ELEMENT-LIST-P-WHEN-UNKNOWN-NIL-NEGATED
+                (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+     (((NATP (CAR X))
+       (CONSP X)
+       (NOT (NATP 'NIL))))
+     ((IMPLIES (AND (NOT (NATP (CAR X)))
+                    (NOT (CONSP X)))
+               (NOT (NATP NIL))))
+     NIL NIL
+     (DEFTHM NATP-OF-CAR-WHEN-NAT-FREE-LISTP
+       (IMPLIES (NAT-FREE-LISTP X)
+                (IFF (NATP (CAR X))
+                     (AND (NOT (CONSP X)) (NATP NIL))))
+       :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:DEFINITION IFF) :REMOVE)
+                ((:TYPE-PRESCRIPTION STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM)
+                 :REMOVE)))
+  (:SYMBOL-TABLE
+   ((NOT . :BUILTIN)
+    (NATP . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (IFF . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-P-OF-CAR-WHEN-ELEMENT-LIST-P-WHEN-UNKNOWN-NIL-NEGATED
+         :SYSTEM . "std/lists/abstract.lisp")
+    (STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (CONSP . :BUILTIN)
+    (CAR . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-APPEND
+  (:GOAL (EQUAL (NAT-FREE-LISTP (BINARY-APPEND A B))
+                (IF (NAT-FREE-LISTP A)
+                    (NAT-FREE-LISTP B)
+                  'NIL)))
+  (:HASH 1851236830)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP A))
+                   (EQUAL (NAT-FREE-LISTP (BINARY-APPEND A B))
+                          (NAT-FREE-LISTP B)))
+                  ((NAT-FREE-LISTP A)
+                   (EQUAL (NAT-FREE-LISTP (BINARY-APPEND A B))
+                          'NIL))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-APPEND
+       (EQUAL (NAT-FREE-LISTP (APPEND A B))
+              (AND (NAT-FREE-LISTP A)
+                   (NAT-FREE-LISTP B)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-APPEND-NON-TRUE-LIST
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-APPEND-NON-TRUE-LIST
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP A))
+           (EQUAL (NAT-FREE-LISTP (BINARY-APPEND A B))
+                  (NAT-FREE-LISTP B))))
+         ((IMPLIES (NAT-FREE-LISTP A)
+                   (EQUAL (NAT-FREE-LISTP (APPEND A B))
+                          (NAT-FREE-LISTP B))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-APPEND
+           (EQUAL (NAT-FREE-LISTP (APPEND A B))
+                  (AND (NAT-FREE-LISTP A)
+                       (NAT-FREE-LISTP B)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IF . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (ELEMENT-LIST-P-OF-APPEND-NON-TRUE-LIST
+         :SYSTEM . "std/lists/abstract.lisp")
+    (BINARY-APPEND . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-LIST-FIX
+  (:GOAL (EQUAL (NAT-FREE-LISTP (TRUE-LIST-FIX X))
+                (NAT-FREE-LISTP X)))
+  (:HASH 280438709)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((EQUAL (NAT-FREE-LISTP (TRUE-LIST-FIX X))
+                          (NAT-FREE-LISTP X)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-LIST-FIX
+       (EQUAL (NAT-FREE-LISTP (LIST-FIX X))
+              (NAT-FREE-LISTP X))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-LIST-FIX-NON-TRUE-LISTP
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-LIST-FIX-NON-TRUE-LISTP
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((EQUAL (NAT-FREE-LISTP (TRUE-LIST-FIX X))
+                  (NAT-FREE-LISTP X))))
+         ((EQUAL (NAT-FREE-LISTP (TRUE-LIST-FIX X))
+                 (NAT-FREE-LISTP X)))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-LIST-FIX
+           (EQUAL (NAT-FREE-LISTP (LIST-FIX X))
+                  (NAT-FREE-LISTP X))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((TRUE-LIST-FIX . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EQUAL . :BUILTIN)
+    (ELEMENT-LIST-P-OF-LIST-FIX-NON-TRUE-LISTP
+         :SYSTEM . "std/lists/list-fix.lisp"))))
+ (NAT-FREE-LISTP-OF-SFIX
+  (:GOAL (IFF (NAT-FREE-LISTP (SET::SFIX X))
+              (IF (NAT-FREE-LISTP X)
+                  (NAT-FREE-LISTP X)
+                (NOT (SET::SETP X)))))
+  (:HASH 1778854736)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
+                   (IFF (NAT-FREE-LISTP (SET::SFIX X))
+                        (NAT-FREE-LISTP X)))
+                  ((NAT-FREE-LISTP X)
+                   (IFF (NAT-FREE-LISTP (SET::SFIX X))
+                        (NOT (SET::SETP X))))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-SFIX
+       (IFF (NAT-FREE-LISTP (SET::SFIX X))
+            (OR (NAT-FREE-LISTP X)
+                (NOT (SET::SETP X))))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-SFIX
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-SFIX
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP (SET::SFIX X)))
+           (NAT-FREE-LISTP X)
+           (NOT (SET::SETP X))))
+         ((IMPLIES (AND (NAT-FREE-LISTP (SET::SFIX X))
+                        (NOT (NAT-FREE-LISTP X)))
+                   (NOT (SET::SETP X))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-SFIX
+           (IFF (NAT-FREE-LISTP (SET::SFIX X))
+                (OR (NAT-FREE-LISTP X)
+                    (NOT (SET::SETP X))))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((SET::SFIX :SYSTEM . "std/osets/top.lisp")
+    (SET::SETP :SYSTEM . "std/osets/top.lisp")
+    (NOT . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IFF . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-LIST-P-OF-SFIX :SYSTEM
+                            . "std/osets/element-list.lisp"))))
+ (NAT-FREE-LISTP-OF-INSERT
+  (:GOAL (IFF (NAT-FREE-LISTP (SET::INSERT A X))
+              (IF (NAT-FREE-LISTP (SET::SFIX X))
+                  (NOT (NATP A))
+                'NIL)))
+  (:HASH 1000185865)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (SET::SFIX X)))
+                   (IFF (NAT-FREE-LISTP (SET::INSERT A X))
+                        (NOT (NATP A))))
+                  ((NAT-FREE-LISTP (SET::SFIX X))
+                   (IFF (NAT-FREE-LISTP (SET::INSERT A X))
+                        'NIL))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-INSERT
+       (IFF (NAT-FREE-LISTP (SET::INSERT A X))
+            (AND (NAT-FREE-LISTP (SET::SFIX X))
+                 (NOT (NATP A))))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-INSERT
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-INSERT
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NAT-FREE-LISTP (SET::INSERT A X))
+           (SET::SETP X)
+           (NATP A)))
+         ((IMPLIES (AND (NOT (NAT-FREE-LISTP (SET::INSERT A X)))
+                        (NOT (SET::SETP X)))
+                   (NATP A)))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-INSERT
+           (IFF (NAT-FREE-LISTP (SET::INSERT A X))
+                (AND (NAT-FREE-LISTP (SET::SFIX X))
+                     (NOT (NATP A))))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((SET::SFIX :SYSTEM . "std/osets/top.lisp")
+    (NOT . :BUILTIN)
+    (NATP . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (SET::INSERT :SYSTEM . "std/osets/top.lisp")
+    (IFF . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-LIST-P-OF-INSERT :SYSTEM
+                              . "std/osets/element-list.lisp"))))
+ (NAT-FREE-LISTP-OF-DELETE
+  (:GOAL (IMPLIES (NAT-FREE-LISTP X)
+                  (NAT-FREE-LISTP (SET::DELETE K X))))
+  (:HASH 2021682011)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
+                   (NAT-FREE-LISTP (SET::DELETE K X)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-DELETE
+       (IMPLIES (NAT-FREE-LISTP X)
+                (NAT-FREE-LISTP (SET::DELETE K X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-DELETE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP X)
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (SET::DELETE K X))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (SET::DELETE K X))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-DELETE
+       (NAT-FREE-LISTP (SET::DELETE K X))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-DELETE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP X))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-DELETE
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (SET::DELETE K X))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (SET::DELETE K X))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-DELETE
+           (IMPLIES (NAT-FREE-LISTP X)
+                    (NAT-FREE-LISTP (SET::DELETE K X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-DELETE :SYSTEM . "std/osets/element-list.lisp")
+    (SET::DELETE :SYSTEM . "std/osets/top.lisp"))))
+ (NAT-FREE-LISTP-OF-MERGESORT
+  (:GOAL (IFF (NAT-FREE-LISTP (SET::MERGESORT X))
+              (NAT-FREE-LISTP (TRUE-LIST-FIX X))))
+  (:HASH 1019406015)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((IFF (NAT-FREE-LISTP (SET::MERGESORT X))
+                        (NAT-FREE-LISTP (TRUE-LIST-FIX X))))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-MERGESORT
+       (IFF (NAT-FREE-LISTP (SET::MERGESORT X))
+            (NAT-FREE-LISTP (LIST-FIX X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-MERGESORT
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-MERGESORT
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NAT-FREE-LISTP (SET::MERGESORT X))
+           (NOT (NAT-FREE-LISTP X))))
+         ((IMPLIES (NOT (NAT-FREE-LISTP (SET::MERGESORT X)))
+                   (NOT (NAT-FREE-LISTP X))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-MERGESORT
+           (IFF (NAT-FREE-LISTP (SET::MERGESORT X))
+                (NAT-FREE-LISTP (LIST-FIX X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((TRUE-LIST-FIX . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (SET::MERGESORT :SYSTEM . "std/osets/top.lisp")
+    (IFF . :BUILTIN)
+    (ELEMENT-LIST-P-OF-MERGESORT :SYSTEM
+                                 . "std/osets/element-list.lisp"))))
+ (NAT-FREE-LISTP-OF-UNION
+  (:GOAL (IFF (NAT-FREE-LISTP (SET::UNION X Y))
+              (IF (NAT-FREE-LISTP (SET::SFIX X))
+                  (NAT-FREE-LISTP (SET::SFIX Y))
+                'NIL)))
+  (:HASH 593256241)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (SET::SFIX X)))
+                   (IFF (NAT-FREE-LISTP (SET::UNION X Y))
+                        (NAT-FREE-LISTP (SET::SFIX Y))))
+                  ((NAT-FREE-LISTP (SET::SFIX X))
+                   (IFF (NAT-FREE-LISTP (SET::UNION X Y))
+                        'NIL))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-UNION
+       (IFF (NAT-FREE-LISTP (SET::UNION X Y))
+            (AND (NAT-FREE-LISTP (SET::SFIX X))
+                 (NAT-FREE-LISTP (SET::SFIX Y))))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-UNION
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-UNION
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NAT-FREE-LISTP (SET::UNION X Y))
+           (NOT (NAT-FREE-LISTP X))
+           (SET::SETP Y)))
+         ((IMPLIES (AND (NOT (NAT-FREE-LISTP (SET::UNION X Y)))
+                        (NAT-FREE-LISTP X))
+                   (SET::SETP Y)))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-UNION
+           (IFF (NAT-FREE-LISTP (SET::UNION X Y))
+                (AND (NAT-FREE-LISTP (SET::SFIX X))
+                     (NAT-FREE-LISTP (SET::SFIX Y))))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((SET::UNION :SYSTEM . "std/osets/top.lisp")
+    (SET::SFIX :SYSTEM . "std/osets/top.lisp")
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IFF . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-LIST-P-OF-UNION :SYSTEM
+                             . "std/osets/element-list.lisp"))))
+ (NAT-FREE-LISTP-OF-INTERSECT-1
+  (:GOAL (IMPLIES (NAT-FREE-LISTP X)
+                  (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+  (:HASH 545565413)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
+                   (NAT-FREE-LISTP (SET::INTERSECT X Y)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-INTERSECT-1
+       (IMPLIES (NAT-FREE-LISTP X)
+                (NAT-FREE-LISTP (SET::INTERSECT X Y)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-INTERSECT-1
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP X)
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-INTERSECT-1
+       (NAT-FREE-LISTP (SET::INTERSECT X Y))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-INTERSECT-1
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP X))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-INTERSECT-1
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-INTERSECT-1
+           (IMPLIES (NAT-FREE-LISTP X)
+                    (NAT-FREE-LISTP (SET::INTERSECT X Y)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (SET::INTERSECT :SYSTEM . "std/osets/top.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-INTERSECT-1 :SYSTEM
+                                   . "std/osets/element-list.lisp"))))
+ (NAT-FREE-LISTP-OF-INTERSECT-2
+  (:GOAL (IMPLIES (NAT-FREE-LISTP Y)
+                  (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+  (:HASH 540863291)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP Y))
+                   (NAT-FREE-LISTP (SET::INTERSECT X Y)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-INTERSECT-2
+       (IMPLIES (NAT-FREE-LISTP Y)
+                (NAT-FREE-LISTP (SET::INTERSECT X Y)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-INTERSECT-2
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP Y)
+     (((NAT-FREE-LISTP Y)
+       (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP Y))
+               (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-INTERSECT-2
+       (NAT-FREE-LISTP (SET::INTERSECT X Y))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-INTERSECT-2
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP Y))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-INTERSECT-2
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP Y))
+           (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+         ((IMPLIES (NAT-FREE-LISTP Y)
+                   (NAT-FREE-LISTP (SET::INTERSECT X Y))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-INTERSECT-2
+           (IMPLIES (NAT-FREE-LISTP Y)
+                    (NAT-FREE-LISTP (SET::INTERSECT X Y)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (SET::INTERSECT :SYSTEM . "std/osets/top.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-INTERSECT-2 :SYSTEM
+                                   . "std/osets/element-list.lisp"))))
+ (NAT-FREE-LISTP-OF-DIFFERENCE
+  (:GOAL (IMPLIES (NAT-FREE-LISTP X)
+                  (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
+  (:HASH 1383662359)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
+                   (NAT-FREE-LISTP (SET::DIFFERENCE X Y)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-DIFFERENCE
+       (IMPLIES (NAT-FREE-LISTP X)
+                (NAT-FREE-LISTP (SET::DIFFERENCE X Y)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-DIFFERENCE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP X)
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-DIFFERENCE
+       (NAT-FREE-LISTP (SET::DIFFERENCE X Y))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-DIFFERENCE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP X))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-DIFFERENCE
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (SET::DIFFERENCE X Y))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-DIFFERENCE
+           (IMPLIES (NAT-FREE-LISTP X)
+                    (NAT-FREE-LISTP (SET::DIFFERENCE X Y)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-DIFFERENCE :SYSTEM . "std/osets/element-list.lisp")
+    (SET::DIFFERENCE :SYSTEM . "std/osets/top.lisp"))))
+ (NAT-FREE-LISTP-OF-DUPLICATED-MEMBERS
+  (:GOAL (IMPLIES (NAT-FREE-LISTP X)
+                  (NAT-FREE-LISTP (DUPLICATED-MEMBERS X))))
+  (:HASH 2076063288)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
+                   (NAT-FREE-LISTP (DUPLICATED-MEMBERS X)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-DUPLICATED-MEMBERS
+       (IMPLIES (NAT-FREE-LISTP X)
+                (NAT-FREE-LISTP (DUPLICATED-MEMBERS X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-DUPLICATED-MEMBERS
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP X)
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (DUPLICATED-MEMBERS X))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (DUPLICATED-MEMBERS X))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-DUPLICATED-MEMBERS
+       (NAT-FREE-LISTP (DUPLICATED-MEMBERS X))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-DUPLICATED-MEMBERS
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP X))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-DUPLICATED-MEMBERS
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (DUPLICATED-MEMBERS X))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (DUPLICATED-MEMBERS X))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-DUPLICATED-MEMBERS
+           (IMPLIES (NAT-FREE-LISTP X)
+                    (NAT-FREE-LISTP (DUPLICATED-MEMBERS X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-DUPLICATED-MEMBERS
+         :SYSTEM
+         . "defsort/duplicated-members.lisp")
+    (DUPLICATED-MEMBERS :SYSTEM
+                        . "defsort/duplicated-members.lisp"))))
+ (NAT-FREE-LISTP-OF-REV
+  (:GOAL (EQUAL (NAT-FREE-LISTP (REV X))
+                (NAT-FREE-LISTP (TRUE-LIST-FIX X))))
+  (:HASH 663505461)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((EQUAL (NAT-FREE-LISTP (REV X))
+                          (NAT-FREE-LISTP (TRUE-LIST-FIX X))))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-REV
+       (EQUAL (NAT-FREE-LISTP (REV X))
+              (NAT-FREE-LISTP (LIST-FIX X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-REV
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-REV
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((EQUAL (NAT-FREE-LISTP (REV X))
+                  (NAT-FREE-LISTP X))))
+         ((EQUAL (NAT-FREE-LISTP (REV X))
+                 (NAT-FREE-LISTP X)))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-REV
+           (EQUAL (NAT-FREE-LISTP (REV X))
+                  (NAT-FREE-LISTP (LIST-FIX X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((TRUE-LIST-FIX . :BUILTIN)
+    (REV :SYSTEM . "std/lists/list-defuns.lisp")
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (EQUAL . :BUILTIN)
+    (ELEMENT-LIST-P-OF-REV :SYSTEM . "std/lists/rev.lisp"))))
+ (NAT-FREE-LISTP-OF-RCONS
+  (:GOAL (IFF (NAT-FREE-LISTP (RCONS A X))
+              (IF (NOT (NATP A))
+                  (NAT-FREE-LISTP (TRUE-LIST-FIX X))
+                'NIL)))
+  (:HASH 110361705)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NATP A)
+                   (IFF (NAT-FREE-LISTP (RCONS A X))
+                        (NAT-FREE-LISTP (TRUE-LIST-FIX X))))
+                  ((NOT (NATP A))
+                   (IFF (NAT-FREE-LISTP (RCONS A X))
+                        'NIL))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-RCONS
+       (IFF (NAT-FREE-LISTP (RCONS A X))
+            (AND (NOT (NATP A))
+                 (NAT-FREE-LISTP (LIST-FIX X))))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-RCONS
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-RCONS
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NAT-FREE-LISTP (RCONS A X))
+           (NATP A)
+           (NOT (NAT-FREE-LISTP X))))
+         ((IMPLIES (AND (NOT (NAT-FREE-LISTP (RCONS A X)))
+                        (NOT (NATP A)))
+                   (NOT (NAT-FREE-LISTP X))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-RCONS
+           (IFF (NAT-FREE-LISTP (RCONS A X))
+                (AND (NOT (NATP A))
+                     (NAT-FREE-LISTP (LIST-FIX X))))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((TRUE-LIST-FIX . :BUILTIN)
+    (RCONS :SYSTEM . "std/lists/list-defuns.lisp")
+    (NOT . :BUILTIN)
+    (NATP . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IFF . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-LIST-P-OF-RCONS :SYSTEM . "std/lists/rcons.lisp"))))
+ (NATP-WHEN-MEMBER-EQUAL-OF-NAT-FREE-LISTP
+  (:GOAL (IF (IMPLIES (IF (MEMBER-EQUAL A X)
+                          (NAT-FREE-LISTP X)
+                        'NIL)
+                      (NOT (NATP A)))
+             (IMPLIES (IF (NAT-FREE-LISTP X)
+                          (MEMBER-EQUAL A X)
+                        'NIL)
+                      (NOT (NATP A)))
+           'NIL))
+  (:HASH 1504314159)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (MEMBER-EQUAL A X))
+                   (NOT (NAT-FREE-LISTP X))
+                   (NOT (NATP A)))))
+  (:EVENT
+    (DEFTHM NATP-WHEN-MEMBER-EQUAL-OF-NAT-FREE-LISTP
+      (AND (IMPLIES (AND (MEMBER-EQUAL A X)
+                         (NAT-FREE-LISTP X))
+                    (NOT (NATP A)))
+           (IMPLIES (AND (NAT-FREE-LISTP X)
+                         (MEMBER-EQUAL A X))
+                    (NOT (NATP A))))
+      :HINTS
+      (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                          ELEMENT-P-WHEN-MEMBER-EQUAL-OF-ELEMENT-LIST-NEGATED
+                          (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                          (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                          (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                          (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+      :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-P-WHEN-MEMBER-EQUAL-OF-ELEMENT-LIST-NEGATED
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (MEMBER-EQUAL A X))
+           (NOT (NAT-FREE-LISTP X))
+           (NOT (NATP A))))
+         ((IMPLIES (AND (MEMBER-EQUAL A X)
+                        (NAT-FREE-LISTP X))
+                   (NOT (NATP A))))
+         NIL NIL
+         (DEFTHM NATP-WHEN-MEMBER-EQUAL-OF-NAT-FREE-LISTP
+           (AND (IMPLIES (AND (MEMBER-EQUAL A X)
+                              (NAT-FREE-LISTP X))
+                         (NOT (NATP A)))
+                (IMPLIES (AND (NAT-FREE-LISTP X)
+                              (MEMBER-EQUAL A X))
+                         (NOT (NATP A))))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NOT . :BUILTIN)
+    (NATP . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (MEMBER-EQUAL . :BUILTIN)
+    (IMPLIES . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-P-WHEN-MEMBER-EQUAL-OF-ELEMENT-LIST-NEGATED
+         :SYSTEM . "std/lists/sets.lisp"))))
+ (NAT-FREE-LISTP-WHEN-SUBSETP-EQUAL
+  (:GOAL (IF (IMPLIES (IF (SUBSETP-EQUAL X Y)
+                          (NAT-FREE-LISTP Y)
+                        'NIL)
+                      (NAT-FREE-LISTP X))
+             (IMPLIES (IF (NAT-FREE-LISTP Y)
+                          (SUBSETP-EQUAL X Y)
+                        'NIL)
+                      (NAT-FREE-LISTP X))
+           'NIL))
+  (:HASH 423430814)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (SUBSETP-EQUAL X Y))
+                   (NOT (NAT-FREE-LISTP Y))
+                   (NAT-FREE-LISTP X))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-WHEN-SUBSETP-EQUAL
+       (AND (IMPLIES (AND (SUBSETP-EQUAL X Y)
+                          (NAT-FREE-LISTP Y))
+                     (NAT-FREE-LISTP X))
+            (IMPLIES (AND (NAT-FREE-LISTP Y)
+                          (SUBSETP-EQUAL X Y))
+                     (NAT-FREE-LISTP X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-NON-TRUE-LIST
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-NON-TRUE-LIST
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (SUBSETP-EQUAL X Y))
+           (NOT (NAT-FREE-LISTP Y))
+           (NAT-FREE-LISTP X)))
+         ((IMPLIES (AND (SUBSETP-EQUAL X Y)
+                        (NAT-FREE-LISTP Y))
+                   (NAT-FREE-LISTP X)))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-WHEN-SUBSETP-EQUAL
+           (AND (IMPLIES (AND (SUBSETP-EQUAL X Y)
+                              (NAT-FREE-LISTP Y))
+                         (NAT-FREE-LISTP X))
+                (IMPLIES (AND (NAT-FREE-LISTP Y)
+                              (SUBSETP-EQUAL X Y))
+                         (NAT-FREE-LISTP X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((SUBSETP-EQUAL . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-LIST-P-WHEN-SUBSETP-EQUAL-NON-TRUE-LIST
+         :SYSTEM . "std/lists/sets.lisp"))))
+ (NAT-FREE-LISTP-SET-EQUIV-CONGRUENCE
+  (:GOAL (IMPLIES (SET-EQUIV X Y)
+                  (EQUAL (NAT-FREE-LISTP X)
+                         (NAT-FREE-LISTP Y))))
+  (:HASH 1193912431)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (SET-EQUIV X Y))
+                   (EQUAL (NAT-FREE-LISTP X)
+                          (NAT-FREE-LISTP Y)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-SET-EQUIV-CONGRUENCE
+       (IMPLIES (SET-EQUIV X Y)
+                (EQUAL (NAT-FREE-LISTP X)
+                       (NAT-FREE-LISTP Y)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-SET-EQUIV-CONGRUENCE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES :CONGRUENCE))
+  (:RULE-CLASSES :CONGRUENCE)
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((SET-EQUIV X Y)
+     (((SET-EQUIV X Y)
+       (EQUAL (NAT-FREE-LISTP X)
+              (NAT-FREE-LISTP Y))))
+     ((IMPLIES (NOT (SET-EQUIV X Y))
+               (EQUAL (NAT-FREE-LISTP X)
+                      (NAT-FREE-LISTP Y))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-SET-EQUIV-CONGRUENCE
+       (EQUAL (NAT-FREE-LISTP X)
+              (NAT-FREE-LISTP Y))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-SET-EQUIV-CONGRUENCE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES :CONGRUENCE)
+     (SET-EQUIV X Y))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-SET-EQUIV-CONGRUENCE
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (SET-EQUIV X Y))
+           (EQUAL (NAT-FREE-LISTP X)
+                  (NAT-FREE-LISTP Y))))
+         ((IMPLIES (SET-EQUIV X Y)
+                   (EQUAL (NAT-FREE-LISTP X)
+                          (NAT-FREE-LISTP Y))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-SET-EQUIV-CONGRUENCE
+           (IMPLIES (SET-EQUIV X Y)
+                    (EQUAL (NAT-FREE-LISTP X)
+                           (NAT-FREE-LISTP Y)))
+           :RULE-CLASSES :CONGRUENCE))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:DEFINITION NOT) :REMOVE)))
+  (:SYMBOL-TABLE
+   ((SET-EQUIV :SYSTEM . "std/lists/list-defuns.lisp")
+    (NOT . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (ELEMENT-LIST-P-SET-EQUIV-CONGRUENCE :SYSTEM . "std/lists/sets.lisp"))))
+ (NAT-FREE-LISTP-OF-SET-DIFFERENCE-EQUAL
+  (:GOAL (IMPLIES (NAT-FREE-LISTP X)
+                  (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y))))
+  (:HASH 407354357)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
+                   (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-SET-DIFFERENCE-EQUAL
+       (IMPLIES (NAT-FREE-LISTP X)
+                (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-SET-DIFFERENCE-EQUAL
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP X)
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-SET-DIFFERENCE-EQUAL
+       (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-SET-DIFFERENCE-EQUAL
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP X))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-SET-DIFFERENCE-EQUAL
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-SET-DIFFERENCE-EQUAL
+           (IMPLIES (NAT-FREE-LISTP X)
+                    (NAT-FREE-LISTP (SET-DIFFERENCE-EQUAL X Y)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((SET-DIFFERENCE-EQUAL . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-SET-DIFFERENCE-EQUAL
+         :SYSTEM . "std/lists/sets.lisp"))))
+ (NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-1
+  (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                  (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+  (:HASH 2002965299)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-1
+       (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-1
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP (DOUBLE-REWRITE X))
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-1
+       (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-1
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP (DOUBLE-REWRITE X)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-1
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-1
+           (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                    (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (INTERSECTION-EQUAL . :BUILTIN)
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-1 :SYSTEM . "std/lists/sets.lisp")
+    (DOUBLE-REWRITE . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-2
+  (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE Y))
+                  (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+  (:HASH 1270898974)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE Y)))
+                   (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-2
+       (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE Y))
+                (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-2
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP (DOUBLE-REWRITE Y))
+     (((NAT-FREE-LISTP Y)
+       (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP Y))
+               (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-2
+       (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-2
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP (DOUBLE-REWRITE Y)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-2
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP Y))
+           (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+         ((IMPLIES (NAT-FREE-LISTP Y)
+                   (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-INTERSECTION-EQUAL-2
+           (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE Y))
+                    (NAT-FREE-LISTP (INTERSECTION-EQUAL X Y)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (INTERSECTION-EQUAL . :BUILTIN)
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-INTERSECTION-EQUAL-2 :SYSTEM . "std/lists/sets.lisp")
+    (DOUBLE-REWRITE . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-UNION-EQUAL
+  (:GOAL (EQUAL (NAT-FREE-LISTP (UNION-EQUAL X Y))
+                (IF (NAT-FREE-LISTP (TRUE-LIST-FIX X))
+                    (NAT-FREE-LISTP (DOUBLE-REWRITE Y))
+                  'NIL)))
+  (:HASH 1935476358)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (TRUE-LIST-FIX X)))
+                   (EQUAL (NAT-FREE-LISTP (UNION-EQUAL X Y))
+                          (NAT-FREE-LISTP (DOUBLE-REWRITE Y))))
+                  ((NAT-FREE-LISTP (TRUE-LIST-FIX X))
+                   (EQUAL (NAT-FREE-LISTP (UNION-EQUAL X Y))
+                          'NIL))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-UNION-EQUAL
+       (EQUAL (NAT-FREE-LISTP (UNION-EQUAL X Y))
+              (AND (NAT-FREE-LISTP (LIST-FIX X))
+                   (NAT-FREE-LISTP (DOUBLE-REWRITE Y))))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-UNION-EQUAL
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-UNION-EQUAL
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (EQUAL (NAT-FREE-LISTP (UNION-EQUAL X Y))
+                  (NAT-FREE-LISTP Y))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (EQUAL (NAT-FREE-LISTP (UNION-EQUAL X Y))
+                          (NAT-FREE-LISTP Y))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-UNION-EQUAL
+           (EQUAL (NAT-FREE-LISTP (UNION-EQUAL X Y))
+                  (AND (NAT-FREE-LISTP (LIST-FIX X))
+                       (NAT-FREE-LISTP (DOUBLE-REWRITE Y))))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((UNION-EQUAL . :BUILTIN)
+    (TRUE-LIST-FIX . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IF . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (ELEMENT-LIST-P-OF-UNION-EQUAL :SYSTEM . "std/lists/sets.lisp")
+    (DOUBLE-REWRITE . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-TAKE
+  (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                  (IFF (NAT-FREE-LISTP (TAKE N X))
+                       (IF (NOT (NATP 'NIL))
+                           (NOT (NATP 'NIL))
+                         (NOT (< (LEN X) (NFIX N)))))))
+  (:HASH 1194820615)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NATP 'NIL)
+                   (IFF (NAT-FREE-LISTP (TAKE N X))
+                        (NOT (NATP 'NIL))))
+                  ((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NOT (NATP 'NIL))
+                   (IFF (NAT-FREE-LISTP (TAKE N X))
+                        (NOT (< (LEN X) (NFIX N)))))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-TAKE
+       (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                (IFF (NAT-FREE-LISTP (TAKE N X))
+                     (OR (NOT (NATP NIL))
+                         (<= (NFIX N) (LEN X)))))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-TAKE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP (DOUBLE-REWRITE X))
+     (((NAT-FREE-LISTP X)
+       (NOT (NAT-FREE-LISTP (TAKE N X)))
+       (NOT (NATP 'NIL))
+       (NOT (< (LEN X) (NFIX N)))))
+     ((IMPLIES (AND (NOT (NAT-FREE-LISTP X))
+                    (NAT-FREE-LISTP (TAKE N X))
+                    (NATP NIL))
+               (<= (NFIX N) (LEN X))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-TAKE
+       (IFF (NAT-FREE-LISTP (TAKE N X))
+            (OR (NOT (NATP NIL))
+                (<= (NFIX N) (LEN X))))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-TAKE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP (DOUBLE-REWRITE X)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-TAKE
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NOT (NAT-FREE-LISTP (TAKE N X)))
+           (NOT (NATP 'NIL))
+           (NOT (< (LEN X) (NFIX N)))))
+         ((IMPLIES (AND (NAT-FREE-LISTP X)
+                        (NAT-FREE-LISTP (TAKE N X))
+                        (NATP NIL))
+                   (<= (NFIX N) (LEN X))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-TAKE
+           (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                    (IFF (NAT-FREE-LISTP (TAKE N X))
+                         (OR (NOT (NATP NIL))
+                             (<= (NFIX N) (LEN X)))))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((TAKE . :BUILTIN)
+    (NOT . :BUILTIN)
+    (NFIX . :BUILTIN)
+    (NATP . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (LEN . :BUILTIN)
+    (IMPLIES . :BUILTIN)
+    (IFF . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-LIST-P-OF-TAKE :SYSTEM . "std/lists/take.lisp")
+    (DOUBLE-REWRITE . :BUILTIN)
+    (< . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-REPEAT
+  (:GOAL (IFF (NAT-FREE-LISTP (REPEAT N X))
+              (IF (NOT (NATP X))
+                  (NOT (NATP X))
+                (ZP N))))
+  (:HASH 1835221520)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NATP X)
+                   (IFF (NAT-FREE-LISTP (REPEAT N X))
+                        (NOT (NATP X))))
+                  ((NOT (NATP X))
+                   (IFF (NAT-FREE-LISTP (REPEAT N X))
+                        (ZP N)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-REPEAT
+       (IFF (NAT-FREE-LISTP (REPEAT N X))
+            (OR (NOT (NATP X)) (ZP N)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-REPEAT
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-REPEAT
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP (REPEAT N X)))
+           (NOT (NATP X))
+           (ZP N)))
+         ((IMPLIES (AND (NAT-FREE-LISTP (REPEAT N X))
+                        (NATP X))
+                   (ZP N)))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-REPEAT
+           (IFF (NAT-FREE-LISTP (REPEAT N X))
+                (OR (NOT (NATP X)) (ZP N)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((ZP . :BUILTIN)
+    (REPEAT :SYSTEM . "std/lists/list-defuns.lisp")
+    (NOT . :BUILTIN)
+    (NATP . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IFF . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-LIST-P-OF-REPEAT :SYSTEM . "std/lists/repeat.lisp"))))
+ (NATP-OF-NTH-WHEN-NAT-FREE-LISTP
+  (:GOAL (IMPLIES (IF (NAT-FREE-LISTP X)
+                      (< (NFIX N) (LEN X))
+                    'NIL)
+                  (NOT (NATP (NTH N X)))))
+  (:HASH 39931198)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
+                   (NOT (< (NFIX N) (LEN X)))
+                   (NOT (NATP (NTH N X))))))
+  (:EVENT
+   (DEFTHM NATP-OF-NTH-WHEN-NAT-FREE-LISTP
+    (IMPLIES (AND (NAT-FREE-LISTP X)
+                  (< (NFIX N) (LEN X)))
+             (NOT (NATP (NTH N X))))
+    :HINTS
+    (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                        ELEMENT-P-OF-NTH-WHEN-ELEMENT-LIST-P-WHEN-NIL-UNKNOWN
+                        (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                        (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                        (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                        (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+    :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP X)
+     (((NAT-FREE-LISTP X)
+       (NOT (< (NFIX N) (LEN X)))
+       (NOT (NATP (NTH N X)))))
+     ((IMPLIES (AND (NOT (NAT-FREE-LISTP X))
+                    (< (NFIX N) (LEN X)))
+               (NOT (NATP (NTH N X)))))
+     NIL NIL
+     (DEFTHM NATP-OF-NTH-WHEN-NAT-FREE-LISTP
+       (IMPLIES (< (NFIX N) (LEN X))
+                (NOT (NATP (NTH N X))))
+       :HINTS
+       (("goal"
+             :USE ((:FUNCTIONAL-INSTANCE
+                        ELEMENT-P-OF-NTH-WHEN-ELEMENT-LIST-P-WHEN-NIL-UNKNOWN
+                        (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                        (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                        (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                        (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP X))
+    ((< (NFIX N) (LEN X))
+     (((< (NFIX N) (LEN X))
+       (NOT (NAT-FREE-LISTP X))
+       (NOT (NATP (NTH N X)))))
+     ((IMPLIES (AND (<= (LEN X) (NFIX N))
+                    (NAT-FREE-LISTP X))
+               (NOT (NATP (NTH N X)))))
+     NIL NIL
+     (DEFTHM NATP-OF-NTH-WHEN-NAT-FREE-LISTP
+       (IMPLIES (NAT-FREE-LISTP X)
+                (NOT (NATP (NTH N X))))
+       :HINTS
+       (("goal"
+             :USE ((:FUNCTIONAL-INSTANCE
+                        ELEMENT-P-OF-NTH-WHEN-ELEMENT-LIST-P-WHEN-NIL-UNKNOWN
+                        (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                        (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                        (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                        (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (< (NFIX N) (LEN X)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-P-OF-NTH-WHEN-ELEMENT-LIST-P-WHEN-NIL-UNKNOWN
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NOT (< (NFIX N) (LEN X)))
+           (NOT (NATP (NTH N X)))))
+         ((IMPLIES (AND (NAT-FREE-LISTP X)
+                        (< (NFIX N) (LEN X)))
+                   (NOT (NATP (NTH N X)))))
+         NIL NIL
+         (DEFTHM NATP-OF-NTH-WHEN-NAT-FREE-LISTP
+           (IMPLIES (AND (NAT-FREE-LISTP X)
+                         (< (NFIX N) (LEN X)))
+                    (NOT (NATP (NTH N X))))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NTH . :BUILTIN)
+    (NOT . :BUILTIN)
+    (NFIX . :BUILTIN)
+    (NATP . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (LEN . :BUILTIN)
+    (IMPLIES . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-P-OF-NTH-WHEN-ELEMENT-LIST-P-WHEN-NIL-UNKNOWN
+         :SYSTEM . "std/util/deflist.lisp")
+    (< . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-UPDATE-NTH
+  (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                  (IFF (NAT-FREE-LISTP (UPDATE-NTH N Y X))
+                       (IF (NOT (NATP Y))
+                           (IF (NOT (< (LEN X) (NFIX N)))
+                               (NOT (< (LEN X) (NFIX N)))
+                             (NOT (NATP 'NIL)))
+                         'NIL))))
+  (:HASH 66435064)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NOT (NATP Y))
+                   (IFF (NAT-FREE-LISTP (UPDATE-NTH N Y X))
+                        'NIL))
+                  ((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NATP Y)
+                   (< (LEN X) (NFIX N))
+                   (IFF (NAT-FREE-LISTP (UPDATE-NTH N Y X))
+                        (NOT (< (LEN X) (NFIX N)))))
+                  ((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NATP Y)
+                   (NOT (< (LEN X) (NFIX N)))
+                   (IFF (NAT-FREE-LISTP (UPDATE-NTH N Y X))
+                        (NOT (NATP 'NIL))))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-UPDATE-NTH
+       (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                (IFF (NAT-FREE-LISTP (UPDATE-NTH N Y X))
+                     (AND (NOT (NATP Y))
+                          (OR (<= (NFIX N) (LEN X))
+                              (NOT (NATP NIL))))))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-UPDATE-NTH
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP (DOUBLE-REWRITE X))
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (UPDATE-NTH N Y X))
+       (NATP Y)
+       (< (LEN X) (NFIX N))))
+     ((IMPLIES (AND (NOT (NAT-FREE-LISTP X))
+                    (NOT (NAT-FREE-LISTP (UPDATE-NTH N Y X)))
+                    (NOT (NATP Y)))
+               (< (LEN X) (NFIX N))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-UPDATE-NTH
+       (IFF (NAT-FREE-LISTP (UPDATE-NTH N Y X))
+            (AND (NOT (NATP Y))
+                 (OR (<= (NFIX N) (LEN X))
+                     (NOT (NATP NIL)))))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-UPDATE-NTH
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP (DOUBLE-REWRITE X)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-UPDATE-NTH
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (UPDATE-NTH N Y X))
+           (NATP Y)
+           (< (LEN X) (NFIX N))))
+         ((IMPLIES (AND (NAT-FREE-LISTP X)
+                        (NOT (NAT-FREE-LISTP (UPDATE-NTH N Y X)))
+                        (NOT (NATP Y)))
+                   (< (LEN X) (NFIX N))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-UPDATE-NTH
+           (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                    (IFF (NAT-FREE-LISTP (UPDATE-NTH N Y X))
+                         (AND (NOT (NATP Y))
+                              (OR (<= (NFIX N) (LEN X))
+                                  (NOT (NATP NIL))))))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((UPDATE-NTH . :BUILTIN)
+    (NOT . :BUILTIN)
+    (NFIX . :BUILTIN)
+    (NATP . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (LEN . :BUILTIN)
+    (IMPLIES . :BUILTIN)
+    (IFF . :BUILTIN)
+    (IF . :BUILTIN)
+    (ELEMENT-LIST-P-OF-UPDATE-NTH :SYSTEM . "std/util/deflist.lisp")
+    (DOUBLE-REWRITE . :BUILTIN)
+    (< . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-BUTLAST
+  (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                  (NAT-FREE-LISTP (BUTLAST X N))))
+  (:HASH 411485593)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NAT-FREE-LISTP (BUTLAST X N)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-BUTLAST
+       (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                (NAT-FREE-LISTP (BUTLAST X N)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-BUTLAST
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP (DOUBLE-REWRITE X))
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (BUTLAST X N))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (BUTLAST X N))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-BUTLAST
+       (NAT-FREE-LISTP (BUTLAST X N))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-BUTLAST
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP (DOUBLE-REWRITE X)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-BUTLAST
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (BUTLAST X N))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (BUTLAST X N))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-BUTLAST
+           (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                    (NAT-FREE-LISTP (BUTLAST X N)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-BUTLAST :SYSTEM . "std/util/deflist.lisp")
+    (DOUBLE-REWRITE . :BUILTIN)
+    (BUTLAST . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-NTHCDR
+  (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                  (NAT-FREE-LISTP (NTHCDR N X))))
+  (:HASH 439164549)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NAT-FREE-LISTP (NTHCDR N X)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-NTHCDR
+       (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                (NAT-FREE-LISTP (NTHCDR N X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-NTHCDR
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP (DOUBLE-REWRITE X))
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (NTHCDR N X))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (NTHCDR N X))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-NTHCDR
+       (NAT-FREE-LISTP (NTHCDR N X))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-NTHCDR
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP (DOUBLE-REWRITE X)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-NTHCDR
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (NTHCDR N X))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (NTHCDR N X))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-NTHCDR
+           (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                    (NAT-FREE-LISTP (NTHCDR N X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NTHCDR . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-NTHCDR :SYSTEM . "std/util/deflist.lisp")
+    (DOUBLE-REWRITE . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-LAST
+  (:GOAL (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                  (NAT-FREE-LISTP (LAST X))))
+  (:HASH 523851808)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (DOUBLE-REWRITE X)))
+                   (NAT-FREE-LISTP (LAST X)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-LAST
+       (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                (NAT-FREE-LISTP (LAST X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-LAST
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP (DOUBLE-REWRITE X))
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (LAST X))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (LAST X))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-LAST
+       (NAT-FREE-LISTP (LAST X))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-LAST
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP (DOUBLE-REWRITE X)))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-LAST
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (LAST X))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (LAST X))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-LAST
+           (IMPLIES (NAT-FREE-LISTP (DOUBLE-REWRITE X))
+                    (NAT-FREE-LISTP (LAST X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (LAST . :BUILTIN)
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-LAST :SYSTEM . "std/util/deflist.lisp")
+    (DOUBLE-REWRITE . :BUILTIN))))
+ (NAT-FREE-LISTP-OF-REMOVE
+  (:GOAL
+     (IMPLIES
+          (NAT-FREE-LISTP X)
+          (NAT-FREE-LISTP
+               ((LAMBDA (X L)
+                  (RETURN-LAST 'MBE1-RAW
+                               (REMOVE-EQL-EXEC X L)
+                               (RETURN-LAST 'PROGN
+                                            (REMOVE-EQL-EXEC$GUARD-CHECK X L)
+                                            (REMOVE-EQUAL X L))))
+                A X))))
+  (:HASH 1333305031)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP X))
+                   (NAT-FREE-LISTP (REMOVE-EQUAL A X)))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-REMOVE
+       (IMPLIES (NAT-FREE-LISTP X)
+                (NAT-FREE-LISTP (REMOVE A X)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-REMOVE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST
+   (((NAT-FREE-LISTP X)
+     (((NAT-FREE-LISTP X)
+       (NAT-FREE-LISTP (REMOVE-EQUAL A X))))
+     ((IMPLIES (NOT (NAT-FREE-LISTP X))
+               (NAT-FREE-LISTP (REMOVE-EQUAL A X))))
+     NIL NIL
+     (DEFTHM NAT-FREE-LISTP-OF-REMOVE
+       (NAT-FREE-LISTP (REMOVE A X))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-REMOVE
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE)))
+     (NAT-FREE-LISTP X))))
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-REMOVE
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (NAT-FREE-LISTP (REMOVE-EQUAL A X))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (NAT-FREE-LISTP (REMOVE-EQUAL A X))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-REMOVE
+           (IMPLIES (NAT-FREE-LISTP X)
+                    (NAT-FREE-LISTP (REMOVE A X)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((RETURN-LAST . :BUILTIN)
+    (REMOVE-EQUAL . :BUILTIN)
+    (REMOVE-EQL-EXEC$GUARD-CHECK . :BUILTIN)
+    (REMOVE-EQL-EXEC . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IMPLIES . :BUILTIN)
+    (ELEMENT-LIST-P-OF-REMOVE :SYSTEM . "std/util/deflist.lisp"))))
+ (NAT-FREE-LISTP-OF-REVAPPEND
+  (:GOAL (EQUAL (NAT-FREE-LISTP (REVAPPEND X Y))
+                (IF (NAT-FREE-LISTP (TRUE-LIST-FIX X))
+                    (NAT-FREE-LISTP Y)
+                  'NIL)))
+  (:HASH 447841500)
+  (:EXPANSION-STACK (PROGN WITH-OUTPUT PROGN WITH-OUTPUT
+                           DEFSECTION-PROGN ENCAPSULATE PROGN PROGN
+                           MAKE-EVENT WITH-OUTPUT STD::DEFLIST
+                           PROGN WITH-OUTPUT ENCAPSULATE
+                           WITH-OUTPUT PROGN WITH-OUTPUT DEFSECTION
+                           PROGN MAKE-EVENT WITH-OUTPUT DEFINE))
+  (:GOAL-CLAUSES (((NOT (NAT-FREE-LISTP (TRUE-LIST-FIX X)))
+                   (EQUAL (NAT-FREE-LISTP (REVAPPEND X Y))
+                          (NAT-FREE-LISTP Y)))
+                  ((NAT-FREE-LISTP (TRUE-LIST-FIX X))
+                   (EQUAL (NAT-FREE-LISTP (REVAPPEND X Y))
+                          'NIL))))
+  (:EVENT
+     (DEFTHM NAT-FREE-LISTP-OF-REVAPPEND
+       (EQUAL (NAT-FREE-LISTP (REVAPPEND X Y))
+              (AND (NAT-FREE-LISTP (LIST-FIX X))
+                   (NAT-FREE-LISTP Y)))
+       :HINTS
+       (("goal" :USE ((:FUNCTIONAL-INSTANCE
+                           ELEMENT-LIST-P-OF-REVAPPEND
+                           (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                           (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                           (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                           (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T))))))
+       :RULE-CLASSES ((:REWRITE))))
+  (:RULE-CLASSES ((:REWRITE)))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:USE ((:FUNCTIONAL-INSTANCE
+                     ELEMENT-LIST-P-OF-REVAPPEND
+                     (ELEMENT-P (LAMBDA (X) (NOT (NATP X))))
+                     (NON-ELEMENT-P (LAMBDA (X) (NATP X)))
+                     (ELEMENT-LIST-P (LAMBDA (X) (NAT-FREE-LISTP X)))
+                     (ELEMENT-LIST-FINAL-CDR-P (LAMBDA (STD::X) T)))))
+         (((NOT (NAT-FREE-LISTP X))
+           (EQUAL (NAT-FREE-LISTP (REVAPPEND X Y))
+                  (NAT-FREE-LISTP Y))))
+         ((IMPLIES (NAT-FREE-LISTP X)
+                   (EQUAL (NAT-FREE-LISTP (REVAPPEND X Y))
+                          (NAT-FREE-LISTP Y))))
+         NIL NIL
+         (DEFTHM NAT-FREE-LISTP-OF-REVAPPEND
+           (EQUAL (NAT-FREE-LISTP (REVAPPEND X Y))
+                  (AND (NAT-FREE-LISTP (LIST-FIX X))
+                       (NAT-FREE-LISTP Y)))
+           :RULE-CLASSES ((:REWRITE))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST NIL)
+  (:SYMBOL-TABLE
+   ((TRUE-LIST-FIX . :BUILTIN)
+    (REVAPPEND . :BUILTIN)
+    (NAT-FREE-LISTP
+         .
+         "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test9.lisp")
+    (IF . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (ELEMENT-LIST-P-OF-REVAPPEND :SYSTEM . "std/util/deflist.lisp")))))

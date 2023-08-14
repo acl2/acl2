@@ -654,7 +654,8 @@ MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
    system/doc/manual \
    system/doc/manual-fast \
-   doc/xdoc.sao
+   doc/xdoc.sao \
+   kestrel/acl2data/gather/tests/runs
 
 .PHONY: clean_books clean
 

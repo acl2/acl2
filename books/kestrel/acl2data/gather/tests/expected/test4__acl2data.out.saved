@@ -1,0 +1,39 @@
+
+0 ;failure_count_hints
+0 ;total_count_hints
+1 ;failure_count_hypotheses
+1 ;total_count_hypotheses
+0 ;failure_count_book_runes
+0 ;total_count_book_runes
+1 ;failure_count_single_rune
+2 ;total_count_single_rune
+("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test4.lisp"
+     (FOO (:GOAL (IMPLIES (NOT (EQUAL X 'NIL))
+                          (NOT (EQUAL (CAR X) X))))
+          (:HASH 1300018047)
+          (:EXPANSION-STACK NIL)
+          (:GOAL-CLAUSES (((EQUAL X 'NIL)
+                           (NOT (EQUAL (CAR X) X)))))
+          (:EVENT (DEFTHM FOO
+                    (IMPLIES (NOT (EQUAL X NIL))
+                             (NOT (EQUAL (CAR X) X)))))
+          (:RULE-CLASSES (:REWRITE))
+          (:USED-INDUCTION NIL)
+          (:HYP-ALIST (((NOT (EQUAL X 'NIL))
+                        (((NOT (EQUAL (CAR X) X))))
+                        ((NOT (EQUAL (CAR X) X)))
+                        NIL
+                        NIL (DEFTHM FOO (NOT (EQUAL (CAR X) X)))
+                        (NOT (EQUAL X NIL)))))
+          (:HINT-SETTING-ALIST NIL)
+          (:BOOK-RUNES-ALIST NIL)
+          (:RUNE-ALIST (((:ELIM CAR-CDR-ELIM)
+                         (((NOT X) (NOT (EQUAL (CAR X) X))))
+                         ((IMPLIES X (NOT (EQUAL (CAR X) X))))
+                         NIL NIL)
+                        ((:DEFINITION NOT) :REMOVE)))
+          (:SYMBOL-TABLE ((NOT . :BUILTIN)
+                          (IMPLIES . :BUILTIN)
+                          (EQUAL . :BUILTIN)
+                          (CAR-CDR-ELIM . :BUILTIN)
+                          (CAR . :BUILTIN)))))
