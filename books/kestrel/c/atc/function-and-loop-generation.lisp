@@ -2937,6 +2937,8 @@
                                  (fn-guard symbolp)
                                  (fn-def* symbolp)
                                  (init-formals symbol-listp)
+                                 (affect symbol-listp)
+                                 (typed-formals atc-symbol-varinfo-alistp)
                                  (context-preamble true-listp)
                                  (prog-const symbolp)
                                  (compst-var symbolp)
@@ -2952,6 +2954,7 @@
                                  (body-type typep)
                                  (body-limit pseudo-termp)
                                  (prec-tags atc-string-taginfo-alistp)
+                                 (prec-objs atc-string-objinfo-alistp)
                                  (names-to-avoid symbol-listp)
                                  state)
   :returns (mv (events pseudo-event-form-listp)
@@ -2985,29 +2988,53 @@
        ((mv lemma-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                         lemma-name nil names-to-avoid wrld))
        (formals (formals+ fn wrld))
-       (result-var (genvar$ 'atc "RESULT" nil formals state))
+       (result-var (if (type-case body-type :void)
+                       nil
+                     (genvar$ 'atc "RESULT" nil formals state)))
        (limit `(binary-+ '1 ,body-limit))
-       (type-pred (atc-type-to-recognizer body-type prec-tags))
+       (type-pred (and result-var
+                       (atc-type-to-recognizer body-type prec-tags)))
+       (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
+       (fn-results (append (and result-var
+                                (list result-var))
+                           affect-new))
+       (fn-binder (if (endp (cdr fn-results))
+                      (car fn-results)
+                    `(mv ,@fn-results)))
+       (new-compst (atc-gen-fun-endstate affect
+                                         typed-formals
+                                         compst-var
+                                         prec-objs
+                                         nil))
+       (hyps `(and (compustatep ,compst-var)
+                   (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
+                   ,@context-preamble
+                   (,fn-guard ,@formals)
+                   (integerp ,limit-var)
+                   (>= ,limit-var ,limit)))
+       (concl-exec `(equal (exec-fun (ident ,(symbol-name fn))
+                                     (list ,@init-formals)
+                                     ,compst-var
+                                     ,fenv-var
+                                     ,limit-var)
+                           (mv ,result-var ,new-compst)))
+       (concl (if result-var
+                  `(and ,concl-exec
+                        (,type-pred ,result-var))
+                concl-exec))
        (lemma-formula
-        `(implies (and (compustatep ,compst-var)
-                       (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
-                       ,@context-preamble
-                       (,fn-guard ,@formals)
-                       (integerp ,limit-var)
-                       (>= ,limit-var ,limit))
-                  (let ((,result-var (,fn ,@formals)))
-                    (and (equal (exec-fun (ident ,(symbol-name fn))
-                                          (list ,@init-formals)
-                                          ,compst-var
-                                          ,fenv-var
-                                          ,limit-var)
-                                (mv ,result-var ,compst-var))
-                         (,type-pred ,result-var)))))
-       (valuep-when-type-pred (atc-type-to-valuep-thm body-type prec-tags))
+        `(implies ,hyps
+                  (b* ((,fn-binder (,fn ,@formals)))
+                    ,concl)))
+       (valuep-when-type-pred
+        (and result-var
+             (atc-type-to-valuep-thm body-type prec-tags)))
        (type-of-value-when-type-pred
-        (atc-type-to-type-of-value-thm body-type prec-tags))
+        (and result-var
+             (atc-type-to-type-of-value-thm body-type prec-tags)))
        (type-to-quoted-thm?
-        (atc-type-to-type-to-quoted-thms body-type prec-tags))
+        (and result-var
+             (atc-type-to-type-to-quoted-thms body-type prec-tags)))
        (lemma-hints
         `(("Goal" :in-theory '(exec-fun-open
                                not-zp-of-limit-variable
@@ -3020,13 +3047,17 @@
                                mv-nth-of-cons
                                (:e zp)
                                value-optionp-when-valuep
-                               ,valuep-when-type-pred
+                               (:e value-optionp)
+                               (:e type-of-value-option)
+                               ,@(and result-var
+                                      (list* valuep-when-type-pred
+                                             type-of-value-when-type-pred
+                                             type-to-quoted-thm?))
                                type-of-value-option-when-valuep
-                               ,type-of-value-when-type-pred
-                               ,@type-to-quoted-thm?
                                (:e fun-info->result)
                                (:e tyname-to-type)
-                               ,@(and (type-integerp body-type)
+                               ,@(and result-var
+                                      (type-integerp body-type)
                                       `((:e ,(pack 'type-
                                                    (type-kind body-type)))))
                                ,pop-frame-thm
@@ -3045,14 +3076,8 @@
                        ,(untranslate$ (uguard+ fn wrld) nil state)
                        (integerp ,limit-var)
                        (>= ,limit-var ,limit))
-                  (let ((,result-var (,fn ,@formals)))
-                    (and (equal (exec-fun (ident ,(symbol-name fn))
-                                          (list ,@init-formals)
-                                          ,compst-var
-                                          ,fenv-var
-                                          ,limit-var)
-                                (mv ,result-var ,compst-var))
-                         (,type-pred ,result-var)))))
+                  (b* ((,fn-binder (,fn ,@formals)))
+                    ,concl)))
        (hints `(("Goal"
                  :use ,lemma-name
                  :in-theory '(,fn-guard))))
@@ -3267,11 +3292,20 @@
             fn-correct-thm
             names-to-avoid)
         (if (and body.thm-name
-                 (not (type-case body.type :void))) ; temporary
+                 (or (not affect)
+                     (and (consp affect)
+                          (not (cdr affect))
+                          (b* ((formal (car affect))
+                               (info (cdr (assoc-eq formal typed-formals))))
+                            (and info
+                                 (type-case (atc-var-info->type info)
+                                            :array))))))
             (atc-gen-fun-correct-thm fn
                                      fn-guard
                                      fn-def*
                                      init-formals
+                                     affect
+                                     typed-formals
                                      context-preamble
                                      prog-const
                                      compst-var
@@ -3287,6 +3321,7 @@
                                      body.type
                                      body.limit
                                      prec-tags
+                                     prec-objs
                                      names-to-avoid
                                      state)
           (b* (((mv events print-event name)

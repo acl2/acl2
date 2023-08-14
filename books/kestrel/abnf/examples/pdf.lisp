@@ -1,40 +1,50 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2023 BAE Systems, Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 BAE Systems
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors: Letitia Li (letitia.li@baesystems.com)
 ;          Alessandro Coglio (coglio@kestrel.edu)
 
-(in-package "ACL2")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "../grammar-parser/executable")
-(include-book "../notation/syntax-abstraction")
-(include-book "../operations/well-formedness")
-(include-book "../operations/closure")
+(in-package "ABNF")
+
+(include-book "../grammar-definer/defgrammar")
+(include-book "../grammar-definer/deftreeops")
 
 ; (depends-on "pdf.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Parse the ABNF grammar of PDF into ACL2,
-; and check that it is well-formed and closed.
-
-(defsection *pdf-grammar-rules*
+(defxdoc+ pdf-example
   :parents (examples)
-  :short "The ABNF grammar of the PDF (Portable Document Format) syntax."
+  :short "An ABNF grammar of the PDF (Portable Document Format) syntax."
+  :order-subtopics t
+  :default-parent t)
 
-  (make-event
-   (mv-let (tree state)
-     (abnf::parse-grammar-from-file "pdf.abnf" state)
-     (value `(defconst *pdf-grammar-rules*
-               (abnf::abstract-rulelist ',tree)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (add-const-to-untranslate-preprocess *pdf-grammar-rules*)
+(defgrammar *pdf-grammar-rules*
+  :short "The PDF grammar rules from our grammar."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The file @('pdf.abnf') contains the grammar rules.
+     The ABNF grammar parser and abstractor are used
+     to build an ACL2 representation of the PDF grammar rules.")
+   (xdoc::p
+    "The PDF grammar rules are well-formed and closed.")
+   (xdoc::p
+    "We use @(tsee add-const-to-untranslate-preprocess)
+     to keep this constant unexpanded in output."))
+  :file "pdf.abnf"
+  :untranslate t
+  :well-formed t
+  :closed t)
 
-  (defrule rulelist-wfp-of-*pdf-grammar-rules*
-    (abnf::rulelist-wfp *pdf-grammar-rules*))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defrule rulelist-closedp-of-*all-pdf-grammar-rules*
-    (abnf::rulelist-closedp *pdf-grammar-rules*)))
+(deftreeops *pdf-grammar-rules* :prefix pdf-cst)
