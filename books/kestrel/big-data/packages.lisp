@@ -145,4 +145,5 @@
 (defconst *excluded-prefixes-due-to-packages*
   '("projects/apply-model/"
     "projects/legacy-defrstobj/"
+    ;; todo: old copies of coi, set-theory, osets
     "projects/milawa/ACL2/"))

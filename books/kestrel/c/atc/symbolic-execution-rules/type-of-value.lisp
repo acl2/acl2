@@ -38,6 +38,11 @@
                     (type-pointer (value-pointer->reftype x))))
     :enable type-of-value)
 
+  (defruled type-of-value-of-if*
+    (equal (type-of-value (if* a b c))
+           (if* a (type-of-value b) (type-of-value c)))
+    :enable if*)
+
   (defval *atc-type-of-value-rules*
     '(type-of-value-when-ucharp
       type-of-value-when-scharp

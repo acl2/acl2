@@ -88,32 +88,32 @@
 
 ;; We define a list of all pairs of members of a list l:
 
-(defun pairs-aux (l m)
+(defun cart-prod (l r)
   (if (consp l)
-      (append (conses (car l) m)
-              (pairs-aux (cdr l) m))
+      (append (conses (car l) r)
+              (cart-prod (cdr l) r))
     ()))
 
-(defund pairs (l)
-  (pairs-aux l l))
+(defund cart-square (l)
+  (cart-prod l l))
 
-(defthmd member-pairs
-  (implies (member-equal x (pairs l))
+(defthmd member-cart-square
+  (implies (member-equal x (cart-square l))
            (and (consp x)
 	        (member-equal (car x) l)
 		(member-equal (cdr x) l))))
 
-;; If l is a dlist, then so is (pairs l):
+;; If l is a dlist, then so is (cart-square l):
 
-(defthm dlistp-pairs
+(defthm dlistp-cart-square
   (implies (dlistp l)
-           (dlistp (pairs l))))
+           (dlistp (cart-square l))))
 
 ;; The length of the list of pairs of members of (sqrt-list p) is greater than p:
 
-(defthmd len-pairs-sqrt-list
+(defthmd len-cart-square-sqrt-list
   (implies (posp p)
-           (> (len (pairs (sqrt-list p)))
+           (> (len (cart-square (sqrt-list p)))
 	      p)))
 
 ;; Given an integer j and a list of pairs of integers (a . b), compute the list of
@@ -128,24 +128,24 @@
 ;; We are interested in the following instance of mod-list:
 
 (defund diff-list (p)
-  (mod-list (pairs (sqrt-list p))
+  (mod-list (cart-square (sqrt-list p))
             (root1 -1 p)
 	    p))
 
-;; Note that the length of this list is that of (pairs (sqrt-list p)):
+;; Note that the length of this list is that of (cart-square (sqrt-list p)):
 
 (defthmd len-diff-list
   (implies (posp p)
-           (and (equal (len (diff-list p)) (len (pairs (sqrt-list p))))
+           (and (equal (len (diff-list p)) (len (cart-square (sqrt-list p))))
                 (> (len (diff-list p)) p))))
 
 ;;  We have the following formula for the kth member of (diff-list p):
 
 (defthmd nth-diff-list
-  (implies (and (posp p) (natp k) (< k (len (pairs (sqrt-list p)))))
+  (implies (and (posp p) (natp k) (< k (len (cart-square (sqrt-list p)))))
            (equal (nth k (diff-list p))
-	          (mod (- (car (nth k (pairs (sqrt-list p))))
-		          (* (root1 -1 p) (cdr (nth k (pairs (sqrt-list p))))))
+	          (mod (- (car (nth k (cart-square (sqrt-list p))))
+		          (* (root1 -1 p) (cdr (nth k (cart-square (sqrt-list p))))))
 		       p))))
 
 ;; (diff-list p) is a sublist of the list (nats p) of the first p natural nunbers:
@@ -176,7 +176,7 @@
 ;; By dcex-lemma, there exist distinct indices m = (dcex1 (diff-list p)) and
 ;; n = (dcex2 (diff-list p)) such that 0 <= m < n < (len (diff-list p)) and
 ;; (nth m (diff-list p)) = (nth n (diff-list p)).  We extract the corresponding
-;; members of (pairs (sqrt-list p))::
+;; members of (cart-square (sqrt-list p))::
 
 (defthmd diff-list-diff
   (implies (and (primep p)
@@ -187,11 +187,11 @@
 
 (defund pair1 (p)
   (nth (dcex1 (diff-list p))
-       (pairs (sqrt-list p))))
+       (cart-square (sqrt-list p))))
 
 (defund pair2 (p)
   (nth (dcex2 (diff-list p))
-       (pairs (sqrt-list p))))
+       (cart-square (sqrt-list p))))
 
 ;; Note that these two pairs are distinct.
 ;; Let (pair1 p) = (a1 . b1) and (pair2 p) = (a2 . b2).  Let j = (root1 -1 p).

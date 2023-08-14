@@ -17,7 +17,7 @@
 
 ;; Handles goal like (implies (and a_1 a_2 ...) (and b_1 b_2 ...)) where the as
 ;; and bs are, in general, disjunctions and the a_i obviously imply some of the
-;; b_i (in the sense that som b_i has the all the disjuncts of some a_i, in the
+;; b_i (in the sense that some b_i has the all the disjuncts of some a_i, in the
 ;; same order, but may have additional disjuncts).  (The extra disjuncts may
 ;; often mention the flag variable in a defthm-flag proof.)
 

@@ -653,6 +653,11 @@
        (("Goal"
          :expand (objdesign-of-var-aux var frame (scope-list-fix scopes)))))
 
+     (defrule objdesign-kind-of-objdesign-of-var-aux
+       (b* ((objdes (objdesign-of-var-aux var frame scopes)))
+         (implies objdes
+                  (equal (objdesign-kind objdes) :auto))))
+
      (defrule objdesign-auto->scope-of-objdesign-of-var-aux-upper-bound
        (b* ((objdes (objdesign-of-var-aux var frame scopes)))
          (implies objdes
@@ -685,7 +690,15 @@
        :enable (objdesign-of-var-aux
                 len
                 fix
-                nth-of-minus1-and-cdr)))))
+                nth-of-minus1-and-cdr))))
+
+  ///
+
+  (defrule objdesign-kind-of-objdesign-of-var
+    (b* ((objdes (objdesign-of-var var compst)))
+      (implies (and objdes
+                    (> (compustate-frames-number compst) 0))
+               (member-equal (objdesign-kind objdes) '(:auto :static))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

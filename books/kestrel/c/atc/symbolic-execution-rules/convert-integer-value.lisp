@@ -262,6 +262,12 @@
 
   ;; from sint:
 
+  (defruled convert-integer-value-of-sint-and-sint
+    (implies (and (sintp val)
+                  (equal type (type-sint)))
+             (equal (convert-integer-value val type)
+                    val)))
+
   (defruled convert-integer-value-of-sint-and-slong
     (implies (and (sintp val)
                   (equal type (type-slong)))
@@ -294,6 +300,12 @@
 
   ;; from uint:
 
+  (defruled convert-integer-value-of-uint-and-uint
+    (implies (and (uintp val)
+                  (equal type (type-uint)))
+             (equal (convert-integer-value val type)
+                    val)))
+
   (defruled convert-integer-value-of-uint-and-slong
     (implies (and (uintp val)
                   (equal type (type-slong))
@@ -322,6 +334,12 @@
 
   ;; from slong:
 
+  (defruled convert-integer-value-of-slong-and-slong
+    (implies (and (slongp val)
+                  (equal type (type-slong)))
+             (equal (convert-integer-value val type)
+                    val)))
+
   (defruled convert-integer-value-of-slong-and-sllong
     (implies (and (slongp val)
                   (equal type (type-sllong)))
@@ -342,6 +360,12 @@
 
   ;; from ulong:
 
+  (defruled convert-integer-value-of-ulong-and-ulong
+    (implies (and (ulongp val)
+                  (equal type (type-ulong)))
+             (equal (convert-integer-value val type)
+                    val)))
+
   (defruled convert-integer-value-of-ulong-and-sllong
     (implies (and (ulongp val)
                   (equal type (type-sllong))
@@ -357,11 +381,25 @@
 
   ;; from sllong:
 
+  (defruled convert-integer-value-of-sllong-and-sllong
+    (implies (and (sllongp val)
+                  (equal type (type-sllong)))
+             (equal (convert-integer-value val type)
+                    val)))
+
   (defruled convert-integer-value-of-sllong-and-ullong
     (implies (and (sllongp val)
                   (equal type (type-ullong)))
              (equal (convert-integer-value val type)
                     (ullong-from-sllong val))))
+
+  ;; from ullong:
+
+  (defruled convert-integer-value-of-ullong-and-ullong
+    (implies (and (ullongp val)
+                  (equal type (type-ullong)))
+             (equal (convert-integer-value val type)
+                    val)))
 
   ;; all the rules:
 
@@ -390,18 +428,24 @@
       convert-integer-value-of-ushort-and-uint
       convert-integer-value-of-ushort-and-ulong
       convert-integer-value-of-ushort-and-ullong
+      convert-integer-value-of-sint-and-sint
       convert-integer-value-of-sint-and-slong
       convert-integer-value-of-sint-and-sllong
       convert-integer-value-of-sint-and-uint
       convert-integer-value-of-sint-and-ulong
       convert-integer-value-of-sint-and-ullong
+      convert-integer-value-of-uint-and-uint
       convert-integer-value-of-uint-and-slong
       convert-integer-value-of-uint-and-sllong
       convert-integer-value-of-uint-and-ulong
       convert-integer-value-of-uint-and-ullong
+      convert-integer-value-of-slong-and-slong
       convert-integer-value-of-slong-and-sllong
       convert-integer-value-of-slong-and-ulong
       convert-integer-value-of-slong-and-ullong
+      convert-integer-value-of-ulong-and-ulong
       convert-integer-value-of-ulong-and-sllong
       convert-integer-value-of-ulong-and-ullong
-      convert-integer-value-of-sllong-and-ullong)))
+      convert-integer-value-of-sllong-and-sllong
+      convert-integer-value-of-sllong-and-ullong
+      convert-integer-value-of-ullong-and-ullong)))

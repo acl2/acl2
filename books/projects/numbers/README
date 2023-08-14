@@ -7,8 +7,8 @@ number theory.  It includes the following ACL2 books:
 
   euclid
      Divisibility, primes, and two theorems of Euclid:
-     (1) The infinitude of the set of primes
-     (2) If p is a prime and p divides a * b, then p divides either a or b.
+       (1) The infinitude of the set of primes
+       (2) If p is a prime and p divides a * b, then p divides either a or b.
      Several corollaries of (2) are also proved, including the Fundamental 
      Theorem of Arithmetic and the Chinese Remainder Theorem.
 
@@ -20,10 +20,10 @@ number theory.  It includes the following ACL2 books:
      Quadratic residues and Euler's Criterion: if p is an odd prime and p does
      not divide m, then
 
-          mod(m^((p-1)/2),p) = 1   if m is a quadratic residue mod p
-                               p-1 if not.
+          mod(m^((p-1)/2),p) = 1    if m is a quadratic residue mod p
+                               p-1  if not.
 
-     A by-product of the proof is Wilson's Theorem: mod((p-1)!,p) = p-1.
+     A by-product of the proof is Wilson's Theorem: mod((p-1)!, p) = p-1.
      As a consequence, we also prove the First Supplement to the Law of Quadratic
      Reciprocity: -1 is a quadratic residue mod p iff mod(p,4) = 1.
 
@@ -47,7 +47,7 @@ number theory.  It includes the following ACL2 books:
   mersenne
       An application to the Mersenne prime problem by way of a theorem of Euler:
       if p and 2*p+1 are both prime and mod(p,4) = 3, then 2^p-1 is divisible by
-      2*p+1")
+      2*p+1").
 
   pratt
       Vaughn Pratt's method of prime certification applied to the prime 2^255 - 19.
@@ -55,15 +55,43 @@ number theory.  It includes the following ACL2 books:
   girard
       An odd prime p is a sum of two squares iff (mod p 4) = 1.
 
+  sum4squares
+      Every natural number is a sum of 4 squares.
+
+  divisors
+      The number of positive divisors of a positive integer n and the sum of these
+      divisors are both multiplicative functions of n.  These results, in combination 
+      with the Fundamental Theorem of Arithmetic, provide formulas for both of these 
+      quantities.  As an application, we derive the Euclid-Euler characterization of
+      even perfect numbers.
+
+  triples
+      Given integers m and n with m > n > 0, let a = m^2 - n^2, b = 2mn, and 
+      c = m^2 + n^2.  Then a, b, and c form a Pythagorean triple, i.e., a^2 + b^2 = 
+      c^2.  In fact, for every Pythagorean triple a, b, c, there exist m and n that 
+      satisfy these relations, possibly with a and b interchanged.
+
   partitions
-      Euler's partition theorem: A partition of a positive integer n is a list of 
-      positive integers that sum to n.  Two partitions are equivalent if one is a
-      permutation of the other.  The number of equivalence classes of partitions of
+      A partition of a positive integer n is a list of positive integers that sum 
+      to n.  Two partitions are equivalent if one is a permutation of the other.  
+      Euler's partition theorem: The number of equivalence classes of partitions of
       n consisting of odd integers is equal to the number of equivalence classes of 
       partitions of n consisting of distinct integers.
 
+  ballot
+      Bertrand's ballot theorem:  In an election, Candidates A and B receive a and b 
+      votes, respectively.  The votes are counted sequentially.  If a > b, then the
+      probability that A maintains a strict lead throughout the count is (a-b)/(a+b).
+
+  birthday
+      What is the probability that in a party of k people, at least 2 have the same
+      birthday?
+
+  triangular
+      The sum of the reciprocals of the triangular numbers is 2.
+
   z2q
-      A bijection from the integers to the rartionals
+      A bijection from the integers to the rationals.
 
   harmonic
-      Divergence of the harmonic series
+      Divergence of the harmonic series.

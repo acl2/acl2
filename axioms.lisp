@@ -9485,6 +9485,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro acl2-unwind-protect (expl body cleanup1 cleanup2)
 
+; See the Essay on Unwind-Protect.  See also acl2-unwind-protect-alt.
+
 ; Warning: Keep in sync with acl2-unwind-protect-raw.
 
 ; Note: If the names used for the erp and val results are changed in the #+
@@ -14362,6 +14364,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     brr-evisc-tuple-oracle-update
     iprint-oracle-updates
     #-acl2-devel iprint-ar-aref1
+    #-acl2-devel brr-near-missp
   ))
 
 (defconst *initial-macros-with-raw-code*
@@ -17448,7 +17451,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   ((eq key :defun-mode)
    (member-eq val '(:logic :program)))
   ((eq key :verify-guards-eagerness)
-   (member val '(0 1 2)))
+   (member val '(0 1 2 3)))
   ((eq key :enforce-redundancy)
    (member-eq val '(t nil :warn)))
   ((eq key :compile-fns)

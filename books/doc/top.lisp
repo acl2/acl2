@@ -68,6 +68,8 @@
 (include-book "relnotes")
 (include-book "practices")
 
+(include-book "100-theorems")
+
 (include-book "xdoc/save" :dir :system)
 (include-book "xdoc/archive" :dir :system)
 
@@ -216,7 +218,7 @@
 (include-book "misc/dump-events" :dir :system)
 (include-book "std/testing/eval" :dir :system)
 (include-book "misc/expander" :dir :system)
-(include-book "misc/file-io" :dir :system)
+(include-book "misc/file-io-doc" :dir :system)
 (include-book "misc/find-lemmas" :dir :system)
 (include-book "misc/hons-help" :dir :system)
 ; The definition of QCAR in misc/hons-tests.lisp conflicts with that

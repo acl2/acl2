@@ -28,6 +28,14 @@
                  (declare (ignore x))
                  '7))
 
+;; A test with a trivial formal that is also ignored (should not get an ignore
+;; declaration for y since y is a trivial lambda formal and will not even be
+;; bound in the let):
+(assert-equal (reconstruct-lets-in-term '((lambda (x y) (binary-+ x '1)) z y))
+              ;; todo: untranslate:
+              '(let ((x z)) (binary-+ x '1)))
+
+
 ;; A test with just an mv-let
 ;; :trans (mv-let (x y) (mv 3 4) (+ x y))
 (assert-equal (reconstruct-lets-in-term '((lambda (mv)

@@ -8619,6 +8619,9 @@
                                     :ideal))
                                  (t :common-lisp-compliant)))
                                (verify-guards :common-lisp-compliant)
+                               ((= (default-verify-guards-eagerness wrld)
+                                   3)
+                                :common-lisp-compliant)
                                (t :ideal))))
       (value (list* stobjs-in-lst defun-mode non-executablep symbol-class))))))
 

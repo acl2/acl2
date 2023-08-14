@@ -333,41 +333,37 @@
   :hints (("Goal" :in-theory (enable parse-json-string-char))))
 
 ;; Returns (mv erp parsed-chars remaining-chars).
-(defund parse-json-string-chars-and-final-quote (chars)
-  (declare (xargs :guard (character-listp chars)
+(defund parse-json-string-chars-and-final-quote (chars acc)
+  (declare (xargs :guard (and (character-listp chars)
+                              (character-listp acc))
                   :measure (len chars)))
   (if (endp chars)
       (mv :no-closing-quote nil chars)
     (let ((first-char (first chars)))
       (if (eql first-char #\") ;found the end of the string
-          (mv nil nil (rest chars))
+          (mv nil (reverse acc) (rest chars))
         (mv-let (erp parsed-char chars)
           (parse-json-string-char chars)
           (if erp
               (mv erp nil chars)
-            (mv-let (erp parsed-chars chars)
-              (parse-json-string-chars-and-final-quote chars)
-              (if erp
-                  (mv erp nil chars)
-                (mv nil
-                    (append parsed-char parsed-chars)
-                    chars)))))))))
+            (parse-json-string-chars-and-final-quote chars (revappend parsed-char acc))))))))
 
 (defthm len-of-mv-nth-2-of-parse-json-string-chars-and-final-quote-bound
-  (implies (not (mv-nth 0 (parse-json-string-chars-and-final-quote chars)))
-           (< (len (mv-nth 2 (parse-json-string-chars-and-final-quote chars)))
+  (implies (not (mv-nth 0 (parse-json-string-chars-and-final-quote chars acc)))
+           (< (len (mv-nth 2 (parse-json-string-chars-and-final-quote chars acc)))
               (len chars)))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable parse-json-string-chars-and-final-quote))))
 
 (defthm character-listp-of-mv-nth-2-of-parse-json-string-chars-and-final-quote
   (implies (character-listp chars)
-           (character-listp (mv-nth 2 (parse-json-string-chars-and-final-quote chars))))
+           (character-listp (mv-nth 2 (parse-json-string-chars-and-final-quote chars acc))))
   :hints (("Goal" :in-theory (enable parse-json-string-chars-and-final-quote))))
 
 (defthm character-listp-of-mv-nth-1-of-parse-json-string-chars-and-final-quote
-  (implies (character-listp chars)
-           (character-listp (mv-nth 1 (parse-json-string-chars-and-final-quote chars))))
+  (implies (and (character-listp chars)
+                (character-listp acc))
+           (character-listp (mv-nth 1 (parse-json-string-chars-and-final-quote chars acc))))
   :hints (("Goal" :in-theory (enable parse-json-string-chars-and-final-quote))))
 
 ;; Parse a string, including the closing quote.  Returns (mv erp parsed-string
@@ -377,7 +373,7 @@
                               (eql #\" (first chars)))))
   (let ((chars (cdr chars))) ;Skip the opening double quote
     (mv-let (erp parsed-chars chars)
-      (parse-json-string-chars-and-final-quote chars)
+      (parse-json-string-chars-and-final-quote chars nil)
       (if erp
           (mv erp "" chars)
         (mv nil (coerce parsed-chars 'string) chars)))))

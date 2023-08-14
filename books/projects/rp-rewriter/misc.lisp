@@ -1276,50 +1276,51 @@ RP-Rewriter will throw an eligible error.</p>"
                       (and (or sigs fncs openers)
                            (hard-error 'defthmrp-fn "something unexpected happened.... contact Mertcan Temel<temelmertcan@gmail.com>~%" nil))))
                ((when (not sigs))
-                `(,(if (or disabled disabled-for-ACL2) 'defthmd 'defthm)
-                  ,name
-                  ,term
-                  :rule-classes ,rule-classes
-                  ,@hints)))
-            `(encapsulate nil ;;defsection ,name
-               ;;,sigs ;; no need to have the sigs here as we don't want to export the functions.
-               (local
-                (progn
-                  ,@fncs))
-               (local
-                (defthm ,rule-name-for-rp
-                  ,reduced-body
-                  ,@hints))
-               (,(if (or disabled disabled-for-ACL2) 'defthmd 'defthm)
-                ,name ,term
-                :rule-classes ,rule-classes
-                :hints (("Goal"
-                         :use ((:instance ,rule-name-for-rp))
-                         :in-theory (union-theories
-                                     '(hard-error hons-copy return-last ,@(strip-cars fnc-names))
-                                     (theory 'minimal-theory)))
-                        (and stable-under-simplificationp
-                             '(:in-theory (e/d () ()))))))))
-         (t `(,(if (or disabled disabled-for-ACL2) 'defthmd 'defthm)
-              ,name
-              ,term
-              :rule-classes ,rule-classes
-              ,@hints))))
-       (body `(with-output :stack :pop ,body)))
+                `((with-output :stack :pop
+                    (,(if (or disabled disabled-for-ACL2) 'defthmd 'defthm)
+                     ,name
+                     ,term
+                     :rule-classes ,rule-classes
+                     ,@hints)))))
+            `((encapsulate nil ;;defsection ,name
+                ;;,sigs ;; no need to have the sigs here as we don't want to export the functions.
+                (local
+                 (progn
+                   ,@fncs))
+                (local
+                 (with-output :stack :pop
+                   (defthm ,rule-name-for-rp
+                     ,reduced-body
+                     ,@hints)))
+                (,(if (or disabled disabled-for-ACL2) 'defthmd 'defthm)
+                 ,name ,term
+                 :rule-classes ,rule-classes
+                 :hints (("Goal"
+                          :use ((:instance ,rule-name-for-rp))
+                          :in-theory (union-theories
+                                      '(hard-error hons-copy return-last ,@(strip-cars fnc-names))
+                                      (theory 'minimal-theory)))
+                         (and stable-under-simplificationp
+                              '(:in-theory (e/d () ())))))))))
+         (t `(:stach :pop
+                     (,(if (or disabled disabled-for-ACL2) 'defthmd 'defthm)
+                      ,name
+                      ,term
+                      :rule-classes ,rule-classes
+                      ,@hints)))))
+       (body `(with-output :off :all :on (error) :gag-mode nil ,@body)))
     (value
-     (if (or disable-meta-rules
-             enable-meta-rules
-             enable-rules
-             disable-rules
-             add-rp-rule)
-         `(defsection ,name
-            (with-output
-              :off :all :on (error 
-                             ,@(and (not supress-warnings) '(comment)))
-              :stack :push
-              ;;:stack :push
-              (progn
-              
+     `(with-output
+        :off :all :on (error 
+                       ,@(and (not supress-warnings) '(comment)))
+        :stack :push
+        ,(if (or disable-meta-rules
+                 enable-meta-rules
+                 enable-rules
+                 disable-rules
+                 add-rp-rule)
+             `(defsection ,name
+                
                 ,@(and enable-meta-rules `((local
                                             (enable-meta-rules ,@enable-meta-rules))))
 
@@ -1338,9 +1339,8 @@ RP-Rewriter will throw an eligible error.</p>"
                                       :lambda-opt ,lambda-opt
                                       :disabled ,(or disabled disabled-for-rp)
                                       :rw-direction ,rw-direction
-                                      :ruleset ,ruleset)))
-                )))
-       body))))
+                                      :ruleset ,ruleset))))
+           body)))))
 
 (defmacro defthmrp (name term &rest args)
   `(make-event

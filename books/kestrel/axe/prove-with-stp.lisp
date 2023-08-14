@@ -14,7 +14,7 @@
 
 (include-book "axe-clause-utilities") ; for handle-constant-disjuncts
 (include-book "translate-dag-to-stp")
-(include-book "conjunctions-and-disjunctions") ; for get-axe-disjunction-from-dag-items
+;(include-book "conjunctions-and-disjunctions") ; for get-axe-disjunction-from-dag-items
 (include-book "make-term-into-dag-array-basic") ;for make-terms-into-dag-array-basic
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
@@ -147,18 +147,19 @@
                                      bounded-possibly-negated-nodenump
                                      all-<))))
 
-;; todo: make local or move
-(defthm <-of--1-and-maxelem
-  (implies (and (all-natp x)
-                (consp x))
-           (< -1 (MAXELEM x))))
+;; ;; todo?
+;; (local
+;;  (defthm <-of--1-and-maxelem
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;            (< -1 (MAXELEM x)))))
 
-;dup
-(local
- (defthm maxelem-bound
-  (implies (and (all-natp x)
-                (consp x))
-           (<= 0 (maxelem x)))))
+;; ;dup
+;; (local
+;;  (defthm maxelem-bound
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;            (<= 0 (maxelem x)))))
 
 (local (in-theory (disable nth-of-cdr
                            ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
@@ -713,8 +714,8 @@
 (defund get-nodenums-of-negations-of-disjuncts (disjuncts dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-possibly-negated-nodenumsp disjuncts dag-len))
-                  :guard-hints (("Goal" :expand ((STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS DISJUNCTS))
-                                 :in-theory (enable car-becomes-nth-of-0 STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
+                  :guard-hints (("Goal" :expand ((strip-nots-from-possibly-negated-nodenums disjuncts))
+                                 :in-theory (enable car-becomes-nth-of-0 strip-not-from-possibly-negated-nodenum
                                                     possibly-negated-nodenump
                                                     bounded-possibly-negated-nodenumsp
                                                     bounded-possibly-negated-nodenump)))))
@@ -2035,13 +2036,6 @@
                               ;;todo: more?
                               )
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
-                                 :in-theory (e/d (;bounded-possibly-negated-nodenumsp
-                                                  ;bounded-possibly-negated-nodenump
-                                                  ;strip-nots-from-possibly-negated-nodenums
-                                                  ;;possibly-negated-nodenump
-                                                  )
-                                                 (;POSSIBLY-NEGATED-NODENUMP
-                                                  ))
                                  :expand (;(possibly-negated-nodenumsp disjuncts)
                                           (strip-nots-from-possibly-negated-nodenums disjuncts)
                                           )))))
@@ -2063,7 +2057,7 @@
                       (prog2$ (cw "Dropping a disjunct that is a (possibly negated) variable: ~x0.~%" expr)
                               nil)
                     (if (call-of 'quote expr)
-                        (prog2$ (cw "Dropping a disjunct that is the constant ~x0.~%" expr)
+                        (prog2$ (cw "Dropping a disjunct that is the constant ~x0.~%" expr) ; can this happen?
                                 nil)
                       (if (boolean-typep (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
                           t

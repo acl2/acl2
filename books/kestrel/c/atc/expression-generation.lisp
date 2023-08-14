@@ -1767,6 +1767,9 @@
                                  (:e ident->name)
                                  read-object-of-add-var
                                  read-object-of-add-frame
+                                 read-object-of-update-object-same
+                                 read-object-of-update-object-disjoint
+                                 object-disjointp-commutative
                                  ,mem-typep-of-fn))))
                 (objdes `(objdesign-member
                           ,(add-suffix-to-fn arg-term "-OBJDES")
@@ -2833,6 +2836,8 @@
                                      compustatep-of-add-var
                                      compustatep-of-enter-scope
                                      compustatep-of-update-var
+                                     compustatep-of-exit-scope
+                                     compustatep-of-if*-when-both-compustatep
                                      exec-expr-call-or-pure-when-pure
                                      (:e expr-kind)
                                      not-zp-of-limit-variable

@@ -516,7 +516,7 @@ ensure that untranslation is being done as efficiently as possible.</p>"
 
 
 ; Now we define a really simple untranslate preprocessor that simply returns
-; variables, constants, and lambdas in tact, but looks up function applications
+; variables, constants, and lambdas intact, but looks up function applications
 ; in the database and rewrites them if there is a matching rule.
 
 (defun untranslate-pattern-preprocessor (term world)

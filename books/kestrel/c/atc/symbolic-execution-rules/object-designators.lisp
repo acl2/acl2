@@ -172,6 +172,34 @@
              read-var-of-update-var
              objdesign-of-var-of-update-var))
 
+  (defruled objdesign-of-var-of-update-object-iff
+    (iff (objdesign-of-var var (update-object objdes val compst))
+         (objdesign-of-var var compst))
+    :enable (objdesign-of-var
+             update-object
+             top-frame))
+
+  (defruled objdesign-of-var-of-update-object
+    (equal (objdesign-of-var var (update-object objdes val compst))
+           (objdesign-of-var var compst))
+    :enable (objdesign-of-var
+             update-object
+             top-frame))
+
+  (defruled read-object-auto/static-of-update-object-alloc
+    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static))
+                  (equal (objdesign-kind objdes2) :alloc))
+             (equal (read-object objdes (update-object objdes2 val compst))
+                    (read-object objdes compst)))
+    :enable (read-object
+             update-object))
+
+  (defruled objdesign-of-var-of-if*-when-both-objdesign-of-var
+    (implies (and (objdesign-of-var var b)
+                  (objdesign-of-var var c))
+             (objdesign-of-var var (if* a b c)))
+    :enable if*)
+
   (defval *atc-object-designator-rules*
     '(objdesign-of-var-when-static
       not-nil-when-objdesignp
