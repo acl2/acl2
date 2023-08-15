@@ -300,14 +300,15 @@ Now (IMPLIES 'T (=< X (CONS A Y))) is replaced by (=< X (CONS A Y)).
 (defun maybe-write-bookdata (full-book-string full-book-name wrld ctx state)
 
 ; We are given a full-book-string and corresponding full-book-name, say for
-; foo.lisp.  Then when state global 'write-bookdata is non-nil, successful
-; certification of full-book-name will cause a file foo__bookdata.out to be
-; written.  That file will be of the form (full-book-name . kwd-values), where
-; kwd-values is a keyword-value-listp that associates keywords with lists as
-; follows.  In each case, only events in the world after including the book are
-; considered, hence not events that are merely local or events events within
-; other books, but including events from the portcullis (certification world)
-; for foo.lisp.  The keyword :books is associated with the list of
+; foo.lisp.  Then when state global 'write-bookdata is not :never, and either
+; it's also not nil or environment variable ACL2_WRITE_BOOKDATA is non-empty,
+; then certification of full-book-name will cause a file foo__bookdata.out to
+; be written.  That file will be of the form (full-book-name . kwd-values),
+; where kwd-values is a keyword-value-listp that associates keywords with lists
+; as follows.  In each case, only events in the world after including the book
+; are considered, hence not events that are merely local or events events
+; within other books, but including events from the portcullis (certification
+; world) for foo.lisp.  The keyword :books is associated with the list of
 ; full-book-names of included books.  Each other keyword is associated with an
 ; alist that associates each key, a package name, with a list of symbol-names
 ; for symbols in that package that are introduced for that keyword, as follows.
@@ -321,29 +322,40 @@ Now (IMPLIES 'T (=< X (CONS A Y))) is replaced by (=< X (CONS A Y)).
 ; :THEORIES - theory name introduced by deftheory
 ; :THMS     - theorem name introduced by defthm or defaxiom
 
-  (cond
-   ((null (f-get-global 'write-bookdata state))
-    state)
-   (t (let ((outfile (concatenate 'string
-                                  (remove-lisp-suffix full-book-string t)
-                                  "__bookdata.out")))
-        (mv-let
-         (channel state)
-         (open-output-channel outfile :object state)
-         (cond ((null channel)
-                (prog2$ (er hard ctx
-                            "Error in maybe-write-bookdata: Unable to open ~
-                             file ~x0 for output."
-                            outfile)
-                        state))
-               (t (pprogn
-                   (print-object$-fn (cons full-book-name
-                                           (bookdata-alist full-book-name
-                                                           wrld))
-                                     nil ; serialize-character
-                                     channel
-                                     state)
-                   (close-output-channel channel state)))))))))
+  (let ((write-bookdata (f-get-global 'write-bookdata state)))
+    (cond
+     ((eq write-bookdata :never)
+      state)
+     (t
+      (mv-let (erp val state)
+        (if write-bookdata
+            (value t)
+          (getenv! "ACL2_WRITE_BOOKDATA" state))
+        (assert$
+         (null erp)
+         (cond
+          (val
+           (let ((outfile (concatenate 'string
+                                       (remove-lisp-suffix full-book-string t)
+                                       "__bookdata.out")))
+             (mv-let
+               (channel state)
+               (open-output-channel outfile :object state)
+               (cond ((null channel)
+                      (prog2$ (er hard ctx
+                                  "Error in maybe-write-bookdata: Unable to ~
+                                  open file ~x0 for output."
+                                  outfile)
+                              state))
+                     (t (pprogn
+                         (print-object$-fn (cons full-book-name
+                                                 (bookdata-alist full-book-name
+                                                                 wrld))
+                                           nil ; serialize-character
+                                           channel
+                                           state)
+                         (close-output-channel channel state)))))))
+          (t state))))))))
 |#
 
 (defun maybe-write-bookdata (full-book-string full-book-name wrld ctx state)
