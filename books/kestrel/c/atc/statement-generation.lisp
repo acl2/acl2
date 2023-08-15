@@ -1398,18 +1398,22 @@
                                               (member-name identp)
                                               (member-term pseudo-termp)
                                               (member-type typep)
+                                              (struct-write-fn symbolp)
                                               (wrapper? symbolp)
                                               (gin stmt-ginp)
                                               state)
   :returns (mv erp
                (item block-itemp)
+               (val-term* pseudo-termp :hyp (and (symbolp struct-write-fn)
+                                                 (pseudo-termp member-term)
+                                                 (symbolp var)))
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
                (thm-index posp)
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to a scalar member of a structure."
-  (b* (((reterr) (irr-block-item) nil nil 1 nil)
+  (b* (((reterr) (irr-block-item) nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        ((unless (eq wrapper? nil))
         (reterr
@@ -1490,9 +1494,12 @@
        (expr-limit `(binary-+ '1 ,asg-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
+       ((when (eq struct-write-fn 'quote))
+        (reterr (raise "Internal error: structure writer is QUOTE.")))
+       (term `(,struct-write-fn ,member-term ,var))
        (events (append struct.events member.events)))
-    (retok item item-limit events member.thm-index member.names-to-avoid))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
+    (retok item term item-limit events member.thm-index member.names-to-avoid))
+  :prepwork ((local (in-theory (enable pseudo-termp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3628,10 +3635,11 @@
                       :proofs (and body.thm-name t))
                      state)))
                 (retok items-gout)))
-             ((erp okp & member-term tag member-name member-type)
+             ((erp okp fn member-term tag member-name member-type)
               (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
               (b* (((erp asg-item
+                         & ; asg-term
                          asg-limit
                          asg-events
                          thm-index
@@ -3642,6 +3650,7 @@
                                                           member-name
                                                           member-term
                                                           member-type
+                                                          fn
                                                           wrapper?
                                                           gin
                                                           state))
