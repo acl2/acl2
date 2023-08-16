@@ -56,3 +56,4 @@ startjob.*.wrap
 .#*
 \#*.*\#
 *@event-data.lsp
+*@event-data.lsp.temp

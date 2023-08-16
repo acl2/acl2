@@ -647,8 +647,7 @@ CLEAN_FILES_EXPLICIT := \
    projects/apply-model-2/ex1/evaluation-apply.lisp \
    projects/apply-model-2/ex1/evaluation-user-defs.lisp \
    projects/apply-model-2/ex2/evaluation-apply.lisp \
-   projects/apply-model-2/ex2/evaluation-user-defs.lisp \
-   demos/event-data/.sys
+   projects/apply-model-2/ex2/evaluation-user-defs.lisp
 
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
