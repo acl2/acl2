@@ -1413,10 +1413,12 @@
                (new-inscope atc-symbol-varinfo-alist-listp)
                (new-context atc-contextp)
                (thm-index posp)
-               (names-to-avoid symbol-listp))
+               (names-to-avoid symbol-listp)
+               (pointerp booleanp))
   :short "Generate a C block item statement that consists of
           an assignment to a scalar member of a structure."
-  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+  (b* (((reterr)
+        (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
        ((unless (eq wrapper? nil))
@@ -1515,7 +1517,8 @@
                gin.inscope
                gin.context
                member.thm-index
-               member.names-to-avoid))
+               member.names-to-avoid
+               pointerp))
        (new-compst `(update-var (ident ',(symbol-name var))
                                 ,struct-write-term
                                 ,gin.compst-var))
@@ -1586,7 +1589,9 @@
                ,@writer-return-thms
                ident-fix-when-identp
                identp-of-ident
-               equal-of-ident-and-ident)))))
+               equal-of-ident-and-ident
+               compustate-frames-number-of-update-var
+               write-var-okp-of-update-var)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -1661,7 +1666,8 @@
            new-inscope
            new-context
            thm-index
-           names-to-avoid))
+           names-to-avoid
+           pointerp))
   :guard-hints
   (("Goal"
     :in-theory (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite)))
@@ -3808,11 +3814,12 @@
                          asg-term
                          asg-limit
                          asg-events
-                         & ; asg-thm
+                         asg-thm
                          new-inscope
                          new-context
                          thm-index
-                         names-to-avoid)
+                         names-to-avoid
+                         pointerp)
                     (atc-gen-block-item-struct-scalar-asg var
                                                           val-term
                                                           tag
@@ -3834,20 +3841,42 @@
                                    :names-to-avoid names-to-avoid
                                    :proofs t)
                                   state))
-                   (limit `(binary-+ ,asg-limit ,body.limit))
                    (term (acl2::close-lambdas
-                          `((lambda (,var) ,body.term) ,asg-term))))
-                (retok (make-stmt-gout
-                        :items (cons asg-item body.items)
-                        :type body.type
-                        :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
-                        :limit limit
-                        :events asg-events
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid))))
+                          `((lambda (,var) ,body.term) ,asg-term)))
+                   ((when pointerp)
+                    (retok (make-stmt-gout
+                            :items (cons asg-item body.items)
+                            :type body.type
+                            :term term
+                            :context (make-atc-context :preamble nil :premises nil)
+                            :inscope nil
+                            :limit `(binary-+ ,asg-limit ,body.limit)
+                            :events (append asg-events
+                                            body.events)
+                            :thm-name nil
+                            :thm-index body.thm-index
+                            :names-to-avoid body.names-to-avoid)))
+                   (items-gout
+                    (atc-gen-block-item-list-cons
+                     term
+                     asg-item
+                     asg-limit
+                     asg-events
+                     asg-thm
+                     body.items
+                     body.limit
+                     body.events
+                     body.thm-name
+                     body.type
+                     body.context
+                     body.inscope
+                     (change-stmt-gin
+                      gin
+                      :thm-index body.thm-index
+                      :names-to-avoid body.names-to-avoid
+                      :proofs (and body.thm-name t))
+                     state)))
+                (retok items-gout)))
              ((erp okp index-term elem-term tag member elem-type)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)

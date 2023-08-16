@@ -676,6 +676,10 @@
            (raise "Internal error: ~x0 not in scope after 'else'.")
            (mv nil nil nil))
           (else-var-thm (atc-var-info->thm else-var-info))
+          (value-kind-thms
+           (atc-string-taginfo-alist-to-value-kind-thms prec-tags))
+          (writer-return-thms
+           (atc-string-taginfo-alist-to-writer-return-thms prec-tags))
           (then-hints
            `(("Goal"
               :in-theory '(,then-var-thm
@@ -723,7 +727,9 @@
                            slong-arrayp-of-slong-array-write
                            ullong-arrayp-of-ullong-array-write
                            sllong-arrayp-of-sllong-array-write
-                           compustatep-of-update-object))))
+                           compustatep-of-update-object
+                           ,@value-kind-thms
+                           ,@writer-return-thms))))
           (else-hints
            `(("Goal"
               :in-theory '(,else-var-thm
@@ -771,7 +777,9 @@
                            slong-arrayp-of-slong-array-write
                            ullong-arrayp-of-ullong-array-write
                            sllong-arrayp-of-sllong-array-write
-                           compustatep-of-update-object))))
+                           compustatep-of-update-object
+                           ,@value-kind-thms
+                           ,@writer-return-thms))))
           (instructions
            `((casesplit ,(atc-contextualize
                           test-term
