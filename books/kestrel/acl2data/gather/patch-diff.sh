@@ -4,6 +4,11 @@
 # Written by Matt Kaufmann
 # License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+# Causes some 'diff' implementations to use the 'stone' algorithm
+# (without this, a build failed on an M2 Mac due to diff not finding
+# all the common lines):
+export POSIX_PEDANTIC=true
+
 if [ "$ACL2DATA_ACL2_DIR" != "" ]
 then
     export acl2_dir="$ACL2DATA_ACL2_DIR"
