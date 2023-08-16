@@ -1456,6 +1456,7 @@
    ((:system . "kestrel/axe/supporting-nodes.lisp") :rune)
    ((:system . "kestrel/axe/merge-nodes-into-dag-array.lisp") :rune)
    ((:system . "projects/apply/copy-nat-tree.lisp") :rune)
+   ((:system . "kestrel/axe/normalize-xors.lisp") :rune)
 
 ; Apparently because hard error isn't caught
    ((:system . "clause-processors/basic-examples.lisp"))
@@ -1463,6 +1464,7 @@
 ; Failed; maybe from from (logbitp-reasoning)
    ((:system . "centaur/sv/svex/4vec-x-override.lisp"))
    ((:system . "centaur/sv/svex/compose-theory-fixpoint.lisp"))
+   ((:system . "centaur/sv/svtv/svtv-spec-override-transparency.lisp"))
 
 ; Raw Lisp error from user-defined function prev-stobj-binding
    ((:system . "centaur/aignet/constprop.lisp"))
@@ -1475,6 +1477,10 @@
    ((:system . "rtl/rel11/support/markstein.lisp"))
    ((:system . "centaur/vl/loader/parser/statements.lisp"))
    ((:system . "projects/rp-rewriter/lib/mult3/summation-tree-meta-fncs-correct.lisp"))
+
+; Killed after running for about an hour as the only process; might not
+; generate much acl2data anyhow, given other books in that directory.
+   ((:system . "projects/rp-rewriter/lib/mult3/demo/demo-2-expanded.lisp"))
 
    )
  state)

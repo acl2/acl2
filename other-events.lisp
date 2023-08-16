@@ -16532,7 +16532,7 @@
                                 (getenv! "ACL2_WRITE_EVENT_DATA" state))))
     (cond
      ((null write-event-data) (value nil))
-     (t (let ((filename (event-data-filename full-book-string)))
+     (t (let ((filename (event-data-filename full-book-string t)))
           (mv-let (channel state)
             (open-output-channel filename :object state)
             (cond ((null channel)
@@ -17656,6 +17656,22 @@
                                                                   (pathname-unix-to-os
                                                                    (cdr pair)
                                                                    state)))
+                                                           (when event-data-channel
+                                                             (let ((old
+                                                                    (pathname-unix-to-os
+                                                                     (event-data-filename
+                                                                      full-book-string
+                                                                      t)
+                                                                     state))
+                                                                   (new
+                                                                    (pathname-unix-to-os
+                                                                     (event-data-filename
+                                                                      full-book-string
+                                                                      nil)
+                                                                     state)))
+                                                               (when (probe-file new)
+                                                                 (delete-file new))
+                                                               (rename-file old new)))
                                                            (when
                                                                (and
                                                                 os-compiled-file
@@ -35149,7 +35165,7 @@
            (cached (value (cons cached current-event-data-fal)))
            (t
             (let ((event-data-filename
-                   (event-data-filename full-book-string)))
+                   (event-data-filename full-book-string nil)))
               (with-packages-unhidden
                (mv-let (channel state)
                  (open-input-channel event-data-filename :object state)
