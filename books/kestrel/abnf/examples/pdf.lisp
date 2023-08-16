@@ -21,7 +21,15 @@
 
 (defxdoc+ pdf-example
   :parents (examples)
-  :short "An ABNF grammar of the PDF (Portable Document Format) syntax."
+  :short "An ABNF grammar of a subset of
+          the PDF (Portable Document Format) syntax."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The PDF format is defined in "
+    (xdoc::ahref "https://www.iso.org/standard/75839.html" "ISO 32000")
+    ". The ABNF grammar given here is based on that standard,
+     but is not part of that standard."))
   :order-subtopics t
   :default-parent t)
 
