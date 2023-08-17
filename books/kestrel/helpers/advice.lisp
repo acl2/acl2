@@ -1958,6 +1958,7 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: Avoid theory-invariant violations from enabling.
+;; TODO: Support passing in multiple rules, but then we might have to find a book for each one (should be safe if they are all in the goal)?
 (defun try-add-enable-hint (rule     ; the rule to try enabling
                             book-map ; info on where the rule may be found
                             current-book-absolute-path
