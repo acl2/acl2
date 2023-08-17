@@ -76,14 +76,17 @@
        ;; TODO: Also look at the goal (handle implies, etc.):
        (equated-boolean-terms-in-checkpoints (equated-boolean-terms-in-clauses checkpoint-clauses (acl2::ens state) wrld))
        (recs
-        (list (make-rec (concatenate 'string "cases" "0" ;(acl2::nat-to-string 0)
-                                     )
-                        :add-cases-hint
+        (if equated-boolean-terms-in-checkpoints
+            (list (make-rec (concatenate 'string "cases" "0" ;(acl2::nat-to-string 0)
+                                         )
+                            :add-cases-hint
                         ;; todo: can we do better (e.g., only splitting on one thing in each equality)?
-                        (acl2::all-case-combinations equated-boolean-terms-in-checkpoints)
-                        5 ; confidence percentage (quite high) TODO: allow unknown?  TODO: Allow this to depend on the number of cases?
-                        nil
-                        )))
+                            (acl2::all-case-combinations equated-boolean-terms-in-checkpoints)
+                            5 ; confidence percentage (quite high) TODO: allow unknown?  TODO: Allow this to depend on the number of cases?
+                            nil
+                            ))
+          ;; Don't make any recommendations:
+          nil))
        ;; todo: how to choose when we can't return them all?:
        (recs (acl2::firstn num-recs recs))
        ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
