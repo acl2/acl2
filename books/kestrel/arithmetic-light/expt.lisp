@@ -21,7 +21,6 @@
 (local (include-book "minus"))
 (local (include-book "divide"))
 (local (include-book "plus"))
-(local (include-book "floor"))
 (local (include-book "even-and-odd"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -289,15 +288,6 @@
                                   (commutativity-2-of-*
                                    iff ; saves 3 seconds
                                    )))))
-
-;where should this go?
-(defthm floor-of-expt-2-and-2
-  (implies (integerp n)
-           (equal (floor (expt 2 n) 2)
-                  (if (posp n)
-                      (expt 2 (+ -1 n))
-                    0)))
-  :hints (("Goal" :in-theory (e/d (expt) ()))))
 
 (defthm expt-of-*
   (equal (expt (* r1 r2) i)

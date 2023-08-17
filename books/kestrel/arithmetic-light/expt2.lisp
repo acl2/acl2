@@ -21,6 +21,7 @@
 (local (include-book "times"))
 (local (include-book "times-and-divide"))
 (local (include-book "plus"))
+(local (include-book "floor")) ; because integer-length calls floor
 
 (defthm integerp-of-expt2
   (implies (integerp i)
