@@ -117,7 +117,7 @@
                 )
            (equal (< (ash i c) (* x (expt 2 c)))
                   (< (ifix i) x)))
-  :hints (("Goal" :cases ((< 0 X))
+  :hints (("Goal"; :cases ((< 0 X))
            :in-theory (enable ash))))
 
 ;commutes the *
@@ -136,7 +136,7 @@
                 )
            (equal (< (* x (expt 2 c)) (ash i c))
                   (< x (ifix i))))
-  :hints (("Goal" :cases ((< X 0))
+  :hints (("Goal"; :cases ((< X 0))
            :in-theory (enable <-of-ash-arg2))))
 
 ;commutes the *
