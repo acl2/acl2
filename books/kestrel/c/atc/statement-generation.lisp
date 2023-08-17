@@ -3839,7 +3839,7 @@
                                    :inscope new-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs t)
+                                   :proofs (and asg-thm t))
                                   state))
                    (term (acl2::close-lambdas
                           `((lambda (,var) ,body.term) ,asg-term)))
