@@ -84,6 +84,27 @@
             (recommendation-listp (make-enable-recs-aux names num)))
    :hints (("Goal" :in-theory (enable recommendation-listp)))))
 
+;; Don't bother wasting time with trying to enable implies or not.
+;; (I suppose we could try if they are disabled, but that is very rare.)
+(defconst *fns-to-never-enable* '(implies not))
+
+;; This version keeps the first of each set of duplicates.
+(defund remove-duplicates-equal-alt (x)
+  (declare (xargs :guard (true-listp x)))
+  (if (endp x)
+      nil
+    (let ((item (first x)))
+      (cons item
+            (remove-duplicates-equal-alt
+             (if (member-equal item (rest x))
+                 (remove-equal item (rest x))
+               (rest x)))))))
+
+(defthm symbol-listp-of-remove-duplicates-equal-alt
+  (implies (symbol-listp x)
+           (symbol-listp (remove-duplicates-equal-alt x)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-equal-alt))))
+
 ;; TODO: Don't even make recs for things that are enabled (in the theory, or by the current hints)?
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 ;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
@@ -107,11 +128,9 @@
        ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
        ; (translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
        (fns-in-goal (set-difference-eq (acl2::defined-fns-in-term translated-theorem-body wrld)
-                                               ;; Don't bother wasting time with trying to enable implies
-                                               ;; (I suppose we could try it if implies is disabled):
-                                       '(implies)))
-       (fns-in-checkpoints (acl2::defined-fns-in-term-lists checkpoint-clauses wrld nil))
-       (fns-only-in-checkpoints (set-difference-eq fns-in-checkpoints fns-in-goal))
+                                       *fns-to-never-enable*))
+       (fns-in-checkpoints (set-difference-eq (acl2::defined-fns-in-term-lists checkpoint-clauses wrld nil)
+                                              *fns-to-never-enable*))
        ;; we'll try the ones in the goal first (todo: do a more sophisticated ranking?):
        ;; todo: prefer ones defined in the current book?  more complex ones?
        ;; todo: make a rec that enables all (sensible functions?)
@@ -119,7 +138,8 @@
        ;; todo: try all defined functions in the conclusion
        ;; todo: try all defined functions
        ;; the order here matters (todo: what order to choose?)
-       (fns-to-try-enabling (append fns-in-goal fns-only-in-checkpoints))
+       (fns-to-try-enabling (append fns-in-goal fns-in-checkpoints))
+       (fns-to-try-enabling (remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
        (fns-to-try-enabling (acl2::firstn num-recs fns-to-try-enabling))
        (fns-beyond-the-limit (nthcdr num-recs fns-to-try-enabling))
        (- (and fns-beyond-the-limit
