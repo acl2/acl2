@@ -318,7 +318,14 @@ PATHSPEC exists and is a symlink pointing to an existent file."
         (pathname (concatenate 'string system-tmpdir "/")))))
 
 ;; Windows has no MKSTEMP.
-#-windows
+;; Also, the osicat-fd-streams feature indicates that the wrapper function
+;; make-fd-stream has been created.
+;; Note that this feature was needed to prevent a compilation error on ccl,
+;; which caused (asdf:load-system "osicat") to always recompile.
+;; To improve the situation with ccl,  you may be able to add (to fd-streams.lisp)
+;; a wrapper for osicat::make-fd-stream to call ccl::make-fd-stream.
+;; For more background See https://github.com/osicat/osicat/issues/37
+#+(and osicat-fd-streams (not windows))
 (defun %open-temporary-file/fd-streams (filename element-type external-format)
   (handler-case
       (multiple-value-bind (fd path)
@@ -334,6 +341,7 @@ PATHSPEC exists and is a symlink pointing to an existent file."
     (nix:posix-error ()
       (error 'file-error :pathname filename))))
 
+#-(and osicat-fd-streams (not windows))
 (defun %open-temporary-file/no-fd-streams (filename element-type external-format)
   (do ((counter 100 (1- counter)))
       ((zerop counter) (error 'file-error :pathname filename))

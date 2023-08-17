@@ -32,10 +32,10 @@
 (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
 (local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -1473,11 +1473,9 @@
                                   (fn-thms symbol-symbol-alistp)
                                   (fn-fun-env-thm symbolp)
                                   (limit pseudo-termp)
-                                  (deprecated keyword-listp)
                                   state)
-  (declare (ignore deprecated))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+  :returns (mv (events pseudo-event-form-listp)
+               (print-event pseudo-event-formp)
                (name symbolp :hyp (symbol-symbol-alistp fn-thms)))
   :short "Generate the correctness theorem for a C function."
   :long
@@ -1754,8 +1752,12 @@
         (evmac-generate-defthm name
                                :formula formula
                                :hints hints
-                               :enable nil)))
-    (mv (list local-event) (list exported-event) name))
+                               :enable nil))
+       (print-event `(cw-event "~%~x0~|" ',exported-event)))
+    (mv (list local-event
+              exported-event)
+        print-event
+        name))
   :guard-hints
   (("Goal"
     :in-theory
@@ -2056,6 +2058,15 @@
      note that it cannot conflict with other variables,
      for the same reason as @('x-ptr').")
    (xdoc::p
+    "In addition, for each formal @('x') not representing an external object
+     and whose C type is a pointer or array,
+     we generate a portion of the preamble saying that
+     the designated object is disjoint from
+     the objects designated by other formal parameters.
+     We collect these disjointness hypotheses separately,
+     so that we can put them all at the end of the final list of preamble terms,
+     instead of interspersed with other preamble terms, for readability.")
+   (xdoc::p
     "For each formal @('x') not representing an external object
      and whose C type is not pointer or array (i.e. is integer of structure),
      we generate no preamble terms.
@@ -2066,32 +2077,79 @@
      @('x') equals @(tsee read-object) applied to
      the object designator for the variable in static storage.
      This is adequate whether the external object is an integer or an array."))
-  (b* (((when (endp typed-formals)) nil)
-       ((cons var info) (car typed-formals))
-       (type (atc-var-info->type info))
-       (externalp (atc-var-info->externalp info))
-       (terms
-        (if externalp
-            `((equal ,var
-                     (read-object (objdesign-static (ident ,(symbol-name var)))
-                                  ,compst-var)))
-          (if (member-eq (type-kind type) '(:pointer :array))
-              (b* ((var-ptr (add-suffix-to-fn var "-PTR"))
-                   (var-objdes (add-suffix-to-fn var "-OBJDES"))
-                   (reftype (if (type-case type :pointer)
-                                (type-pointer->to type)
-                              (type-array->of type))))
-                `((valuep ,var-ptr)
-                  (equal (value-kind ,var-ptr) :pointer)
-                  (value-pointer-validp ,var-ptr)
-                  (equal ,var-objdes (value-pointer->designator ,var-ptr))
-                  (equal (objdesign-kind ,var-objdes) :alloc)
-                  (equal (value-pointer->reftype ,var-ptr)
-                         ,(type-to-maker reftype))
-                  (equal ,var (read-object ,var-objdes ,compst-var))))
-            nil)))
-       (more-terms (atc-gen-context-preamble (cdr typed-formals) compst-var)))
-    (append terms more-terms)))
+  (b* (((mv terms-about-single-formals
+            terms-about-formal-pairs)
+        (atc-gen-context-preamble-aux typed-formals compst-var)))
+    (append terms-about-single-formals
+            terms-about-formal-pairs))
+
+  :prepwork
+  ((define atc-gen-context-preamble-aux
+     ((typed-formals atc-symbol-varinfo-alistp)
+      (compst-var symbolp))
+     :returns (mv (terms-about-single-formals true-listp)
+                  (terms-about-formal-pairs true-listp))
+     :parents nil
+     (b* (((when (endp typed-formals)) (mv nil nil))
+          ((cons var info) (car typed-formals))
+          (type (atc-var-info->type info))
+          (externalp (atc-var-info->externalp info))
+          ((mv terms-about-this-formal
+               terms-about-this-and-other-formals)
+           (if externalp
+               (mv `((equal ,var
+                            (read-object (objdesign-static (ident
+                                                            ,(symbol-name var)))
+                                         ,compst-var)))
+                   nil)
+             (if (member-eq (type-kind type) '(:pointer :array))
+                 (b* ((var-ptr (add-suffix-to-fn var "-PTR"))
+                      (var-objdes (add-suffix-to-fn var "-OBJDES"))
+                      (reftype (if (type-case type :pointer)
+                                   (type-pointer->to type)
+                                 (type-array->of type)))
+                      (terms-about-this-formal
+                       `((valuep ,var-ptr)
+                         (equal (value-kind ,var-ptr) :pointer)
+                         (value-pointer-validp ,var-ptr)
+                         (equal ,var-objdes
+                                (value-pointer->designator ,var-ptr))
+                         (equal (objdesign-kind ,var-objdes) :alloc)
+                         (equal (value-pointer->reftype ,var-ptr)
+                                ,(type-to-maker reftype))
+                         (equal ,var (read-object ,var-objdes ,compst-var))))
+                      (terms-about-this-and-other-formals
+                       (atc-gen-context-preamble-aux-aux var-ptr
+                                                         (cdr typed-formals))))
+                   (mv terms-about-this-formal
+                       terms-about-this-and-other-formals))
+               (mv nil nil))))
+          ((mv more-terms-about-single-formals
+               more-terms-about-formal-pairs)
+           (atc-gen-context-preamble-aux (cdr typed-formals) compst-var)))
+       (mv (append terms-about-this-formal
+                   more-terms-about-single-formals)
+           (append terms-about-this-and-other-formals
+                   more-terms-about-formal-pairs)))
+
+     :prepwork
+     ((define atc-gen-context-preamble-aux-aux
+        ((this-var-ptr symbolp)
+         (typed-formals-rest atc-symbol-varinfo-alistp))
+        :returns (terms true-listp)
+        (b* (((when (endp typed-formals-rest)) nil)
+             ((cons other-var other-info) (car typed-formals-rest)))
+          (if (and (member-equal (type-kind (atc-var-info->type other-info))
+                                 '(:pointer :array))
+                   (not (atc-var-info->externalp other-info)))
+              (cons `(object-disjointp
+                      (value-pointer->designator ,this-var-ptr)
+                      (value-pointer->designator ,(add-suffix-to-fn other-var
+                                                                    "-PTR")))
+                    (atc-gen-context-preamble-aux-aux this-var-ptr
+                                                      (cdr typed-formals-rest)))
+            (atc-gen-context-preamble-aux-aux this-var-ptr
+                                              (cdr typed-formals-rest)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2630,9 +2688,8 @@
 
 (define atc-gen-pop-frame-thm ((fn symbolp)
                                (fn-guard symbolp)
-                               (context-start atc-contextp)
                                (compst-var symbolp)
-                               (context-end atc-contextp)
+                               (context atc-contextp)
                                (names-to-avoid symbol-listp)
                                (wrld plist-worldp))
   :returns (mv (thm-event pseudo-event-formp)
@@ -2648,7 +2705,7 @@
      yields the initial computation state;
      this is only the case for the functions
      for which we support the generation of this theorem, of course;
-     it is not true in general, and we will need to generalize it.")
+     it is not true in general, and we will generalize this.")
    (xdoc::p
     "we ``save'' the initial computation state
      in a variable that we obtain by adding @('0')
@@ -2656,34 +2713,18 @@
      We should refine this to ensure that the variable does not interfere
      with other variables.")
    (xdoc::p
-    "The @('context-start') parameter of this ACL2 function is
-     the context at the start of the function body
-     (incorporating the function parameters);
-     this is used to contextualize the theorem.
-     The @('context-end') parameter of this ACL2 function is
+    "The @('context') parameter of this ACL2 function is
      the context at the end of the function body;
      this is used to contextualize the computation state
-     from where the frame is popped.
-     More precisely, the ``difference'' between the ending and starting context
-     is used to contextualize the computation state;
-     we double-check that
-     the starting context is a prefix of the ending context."))
+     from where the frame is popped."))
   (b* ((compst0-var (pack compst-var "0"))
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
-       (premises-start (atc-context->premises context-start))
-       (premises-end (atc-context->premises context-end))
-       ((unless (prefixp premises-start premises-end))
-        (raise "Internal error: prefix ~x0 is not a prefix of context ~x1."
-               context-start context-end)
-        (mv '(_) nil nil))
-       (premises-diff (nthcdr (len premises-start) premises-end))
-       (compst-term (atc-contextualize-compustate compst-var premises-diff))
-       (formula `(equal (pop-frame ,compst-term)
+       (formula `(equal (pop-frame ,compst-var)
                         ,compst0-var))
        (formula (atc-contextualize formula
-                                   context-start
+                                   context
                                    fn
                                    fn-guard
                                    compst-var
@@ -2692,8 +2733,20 @@
                                    nil
                                    wrld))
        (formula `(let ((,compst0-var ,compst-var)) ,formula))
-       (hints `(("Goal" :in-theory '(pop-frame-of-add-var
-                                     pop-frame-of-add-frame))))
+       (hints
+        `(("Goal" :in-theory '(pop-frame-of-if*
+                               update-var-of-enter-scope
+                               update-var-of-add-var
+                               exit-scope-of-enter-scope
+                               exit-scope-of-add-var
+                               compustate-frames-number-of-add-var-not-zero
+                               compustate-frames-number-of-enter-scope-not-zero
+                               compustate-frames-number-of-add-frame-not-zero
+                               compustatep-of-add-var
+                               compustatep-of-enter-scope
+                               pop-frame-of-add-var
+                               pop-frame-of-add-frame
+                               acl2::if*-when-same))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -2723,8 +2776,8 @@
                                  (prec-tags atc-string-taginfo-alistp)
                                  (names-to-avoid symbol-listp)
                                  state)
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+  :returns (mv (events pseudo-event-form-listp)
+               (print-event pseudo-event-formp)
                (name symbolp :hyp (symbol-symbol-alistp fn-thms))
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the correctness theorem for a C function."
@@ -2829,9 +2882,12 @@
         (evmac-generate-defthm name
                                :formula formula
                                :hints hints
-                               :enable nil)))
-    (mv (list lemma-event local-event)
-        (list exported-event)
+                               :enable nil))
+       (print-event `(cw-event "~%~x0~|" ',exported-event)))
+    (mv (list lemma-event
+              local-event
+              exported-event)
+        print-event
         name
         names-to-avoid)))
 
@@ -2846,14 +2902,12 @@
                         (init-fun-env-thm symbolp)
                         (fn-thms symbol-symbol-alistp)
                         (print evmac-input-print-p)
-                        (deprecated keyword-listp)
                         (names-to-avoid symbol-listp)
                         state)
   :guard (not (eq fn 'quote))
   :returns (mv erp
                (fundef fundefp)
-               (local-event pseudo-event-form-listp)
-               (exported-event pseudo-event-form-listp)
+               (events pseudo-event-form-listp)
                (updated-prec-fns atc-symbol-fninfo-alistp
                                  :hyp (atc-symbol-fninfo-alistp prec-fns)
                                  :hints (("Goal" :in-theory (enable acons))))
@@ -2879,7 +2933,7 @@
      another 1 from there to @(tsee exec-block-item-list)
      in the @(':compound') case,
      and then we use the limit for the block."))
-  (b* (((reterr) (irr-fundef) nil nil nil nil)
+  (b* (((reterr) (irr-fundef) nil nil nil)
        (wrld (w state))
        (name (symbol-name fn))
        ((unless (paident-stringp name))
@@ -2976,8 +3030,7 @@
                        :prec-objs prec-objs
                        :thm-index 1
                        :names-to-avoid names-to-avoid
-                       :proofs proofs
-                       :deprecated deprecated)
+                       :proofs proofs)
                       state))
        (names-to-avoid body.names-to-avoid)
        ((when (and (type-case body.type :void)
@@ -2996,16 +3049,12 @@
        ((mv pop-frame-event
             pop-frame-thm
             names-to-avoid)
-        (if (and proofs
-                 body.proofs)
-            (atc-gen-pop-frame-thm fn
-                                   fn-guard
-                                   context
-                                   compst-var
-                                   body.context
-                                   names-to-avoid
-                                   wrld)
-          (mv '(_) nil names-to-avoid)))
+        (atc-gen-pop-frame-thm fn
+                               fn-guard
+                               compst-var
+                               body.context
+                               names-to-avoid
+                               wrld))
        (id (make-ident :name name))
        ((mv tyspec &) (ident+type-to-tyspec+declor id body.type))
        (fundef (make-fundef :tyspec tyspec
@@ -3014,101 +3063,91 @@
                             :body body.items))
        (finfo (fun-info-from-fundef fundef))
        (limit `(binary-+ '2 ,body.limit))
-       ((mv local-events
-            exported-events
+       (fn-fun-env-event
+        (atc-gen-cfun-fun-env-thm fn
+                                  fn-fun-env-thm
+                                  prog-const
+                                  finfo
+                                  init-fun-env-thm))
+       ((mv fn-result-events
             fn-result-thm
+            names-to-avoid)
+        (atc-gen-fn-result-thm fn
+                               body.type
+                               affect
+                               typed-formals
+                               prec-fns
+                               prec-tags
+                               prec-objs
+                               names-to-avoid
+                               state))
+       ((mv fn-correct-events
+            fn-correct-print-event
             fn-correct-thm
             names-to-avoid)
-        (if proofs
-            (b* ((fn-fun-env-event
-                  (atc-gen-cfun-fun-env-thm fn
-                                            fn-fun-env-thm
-                                            prog-const
-                                            finfo
-                                            init-fun-env-thm))
-                 ((mv fn-result-events
-                      fn-result-thm
-                      names-to-avoid)
-                  (atc-gen-fn-result-thm fn
-                                         body.type
-                                         affect
-                                         typed-formals
-                                         prec-fns
-                                         prec-tags
-                                         prec-objs
-                                         names-to-avoid
-                                         state))
-                 ((mv fn-correct-local-events
-                      fn-correct-exported-events
-                      fn-correct-thm
-                      names-to-avoid)
-                  (if body.proofs
-                      (atc-gen-fun-correct-thm fn
-                                               fn-guard
-                                               fn-def*
-                                               init-formals
-                                               context-preamble
-                                               prog-const
-                                               compst-var
-                                               fenv-var
-                                               limit-var
-                                               fn-thms
-                                               fn-fun-env-thm
-                                               init-scope-expand-thm
-                                               init-scope-scopep-thm
-                                               push-init-thm
-                                               pop-frame-thm
-                                               body.thm-name
-                                               body.type
-                                               body.limit
-                                               prec-tags
-                                               names-to-avoid
-                                               state)
-                    (b* (((mv local-events exported-events name)
-                          (atc-gen-cfun-correct-thm fn
-                                                    typed-formals
-                                                    body.type
-                                                    affect
-                                                    prec-fns
-                                                    prec-tags
-                                                    prec-objs
-                                                    prog-const
-                                                    compst-var
-                                                    fenv-var
-                                                    limit-var
-                                                    fn-thms
-                                                    fn-fun-env-thm
-                                                    limit
-                                                    deprecated
-                                                    state)))
-                      (mv local-events exported-events name names-to-avoid))))
-                 (progress-start?
-                  (and (evmac-input-print->= print :info)
-                       `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
-                 (progress-end? (and (evmac-input-print->= print :info)
-                                     `((cw-event " done.~%"))))
-                 (local-events (append progress-start?
-                                       (list fn-fun-env-event)
-                                       (list fn-guard-event)
-                                       fn-def*-events
-                                       formals-events
-                                       (list init-scope-expand-event)
-                                       (list init-scope-scopep-event)
-                                       (list push-init-thm-event)
-                                       init-inscope-events
-                                       body.events
-                                       (and body.proofs
-                                            (list pop-frame-event))
-                                       fn-result-events
-                                       fn-correct-local-events
-                                       progress-end?))
-                 (exported-events fn-correct-exported-events))
-              (mv local-events
-                  exported-events
-                  fn-result-thm
-                  fn-correct-thm
-                  names-to-avoid))
-          (mv nil nil nil nil names-to-avoid)))
+        (if (and body.thm-name
+                 (not (type-case body.type :void))) ; temporary
+            (atc-gen-fun-correct-thm fn
+                                     fn-guard
+                                     fn-def*
+                                     init-formals
+                                     context-preamble
+                                     prog-const
+                                     compst-var
+                                     fenv-var
+                                     limit-var
+                                     fn-thms
+                                     fn-fun-env-thm
+                                     init-scope-expand-thm
+                                     init-scope-scopep-thm
+                                     push-init-thm
+                                     pop-frame-thm
+                                     body.thm-name
+                                     body.type
+                                     body.limit
+                                     prec-tags
+                                     names-to-avoid
+                                     state)
+          (b* (((mv events print-event name)
+                (atc-gen-cfun-correct-thm fn
+                                          typed-formals
+                                          body.type
+                                          affect
+                                          prec-fns
+                                          prec-tags
+                                          prec-objs
+                                          prog-const
+                                          compst-var
+                                          fenv-var
+                                          limit-var
+                                          fn-thms
+                                          fn-fun-env-thm
+                                          limit
+                                          state)))
+            (mv events print-event name names-to-avoid))))
+       (progress-start?
+        (and (evmac-input-print->= print :info)
+             `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
+       (progress-end? (and (evmac-input-print->= print :info)
+                           `((cw-event " done.~%"))))
+       (print-result? (and (evmac-input-print->= print :result)
+                           (list fn-correct-print-event)))
+       (local-events (append progress-start?
+                             (list fn-fun-env-event)
+                             (list fn-guard-event)
+                             fn-def*-events
+                             formals-events
+                             (list init-scope-expand-event)
+                             (list init-scope-scopep-event)
+                             (list push-init-thm-event)
+                             init-inscope-events
+                             body.events
+                             (and body.thm-name
+                                  (list pop-frame-event))
+                             fn-result-events
+                             fn-correct-events
+                             progress-end?
+                             print-result?))
        (info (make-atc-fn-info
               :out-type body.type
               :in-types (atc-var-info-list->type-list
@@ -3121,8 +3160,7 @@
               :fun-env-thm fn-fun-env-thm
               :limit limit)))
     (retok fundef
-           local-events
-           exported-events
+           (and proofs local-events)
            (acons fn info prec-fns)
            names-to-avoid))
   :guard-hints
@@ -3639,9 +3677,7 @@
                                        (prec-tags atc-string-taginfo-alistp)
                                        (prec-objs atc-string-objinfo-alistp)
                                        (names-to-avoid symbol-listp)
-                                       (deprecated keyword-listp)
                                        state)
-  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-test-thm symbolp)
                (updated-names-to-avoid symbol-listp
@@ -3814,9 +3850,7 @@
                                        (fn-thms symbol-symbol-alistp)
                                        (limit pseudo-termp)
                                        (names-to-avoid symbol-listp)
-                                       (deprecated keyword-listp)
                                        state)
-  (declare (ignore deprecated))
   :returns (mv (local-events pseudo-event-form-listp)
                (correct-body-thm symbolp)
                (updated-names-to-avoid symbol-listp
@@ -3955,8 +3989,8 @@
                                   (names-to-avoid symbol-listp)
                                   state)
   :guard (irecursivep+ fn (w state))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+  :returns (mv (events pseudo-event-form-listp)
+               (print-event pseudo-event-formp)
                (fn-correct-thm symbolp :hyp (symbol-symbol-alistp fn-thms))
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
@@ -4247,11 +4281,11 @@
                                :formula formula-thm
                                :hints thm-hints
                                :enable nil))
-       (local-events (list correct-lemma-event
-                           correct-thm-local-event))
-       (exported-events (list correct-thm-exported-event)))
-    (mv local-events
-        exported-events
+       (print-event `(cw-event "~%~x0~|" ',correct-thm-exported-event)))
+    (mv (list correct-lemma-event
+              correct-thm-local-event
+              correct-thm-exported-event)
+        print-event
         correct-thm
         names-to-avoid)))
 
@@ -4267,7 +4301,6 @@
                       (fn-appconds symbol-symbol-alistp)
                       (appcond-thms keyword-symbol-alistp)
                       (print evmac-input-print-p)
-                      (deprecated keyword-listp)
                       (names-to-avoid symbol-listp)
                       state)
   :guard (and (function-symbolp fn (w state))
@@ -4275,8 +4308,7 @@
               (irecursivep+ fn (w state))
               (not (eq fn 'quote)))
   :returns (mv erp
-               (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+               (events pseudo-event-form-listp)
                (updated-prec-fns atc-symbol-fninfo-alistp
                                  :hyp (and (symbolp fn)
                                            (atc-symbol-fninfo-alistp prec-fns))
@@ -4301,7 +4333,7 @@
     "For now we do not generate a guard function for the guard of @('fn');
      also, we do not generate theorems for the formal parameters for now.
      We will change this soon."))
-  (b* (((reterr) nil nil nil nil)
+  (b* (((reterr) nil nil nil)
        (wrld (w state))
        ((mv measure-of-fn-event
             measure-of-fn
@@ -4336,18 +4368,16 @@
                                            :prec-objs prec-objs
                                            :thm-index 1
                                            :names-to-avoid names-to-avoid
-                                           :proofs nil
-                                           :deprecated deprecated)
+                                           :proofs nil)
                            state))
        (names-to-avoid loop.names-to-avoid)
-       ((erp local-events
-             exported-events
+       ((erp events
              natp-of-measure-of-fn-thm
              fn-result-thm
              fn-correct-thm
              names-to-avoid)
         (if proofs
-            (b* (((reterr) nil nil nil nil nil nil)
+            (b* (((reterr) nil nil nil nil nil)
                  ((mv fn-result-events
                       fn-result-thm
                       names-to-avoid)
@@ -4401,7 +4431,6 @@
                                                  prec-tags
                                                  prec-objs
                                                  names-to-avoid
-                                                 deprecated
                                                  state))
                  ((mv body-local-events
                       correct-body-thm
@@ -4419,10 +4448,9 @@
                                                  fn-thms
                                                  loop.limit-body
                                                  names-to-avoid
-                                                 deprecated
                                                  state))
-                 ((mv correct-local-events
-                      correct-exported-events
+                 ((mv correct-events
+                      print-event
                       fn-correct-thm
                       names-to-avoid)
                   (atc-gen-loop-correct-thm fn
@@ -4450,28 +4478,30 @@
                        `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
                  (progress-end? (and (evmac-input-print->= print :info)
                                      `((cw-event " done.~%"))))
-                 (local-events (append (list fn-guard-event)
-                                       formals-events
-                                       loop.events
-                                       progress-start?
-                                       (and measure-of-fn
-                                            (list measure-of-fn-event))
-                                       fn-result-events
-                                       exec-stmt-while-events
-                                       (list natp-of-measure-of-fn-thm-event)
-                                       (list termination-of-fn-thm-event)
-                                       test-local-events
-                                       body-local-events
-                                       correct-local-events
-                                       progress-end?))
-                 (exported-events correct-exported-events))
-              (retok local-events
-                     exported-events
+                 (print-result?
+                  (and (evmac-input-print->= print :result)
+                       (list print-event)))
+                 (events (append progress-start?
+                                 (list fn-guard-event)
+                                 formals-events
+                                 loop.events
+                                 (and measure-of-fn
+                                      (list measure-of-fn-event))
+                                 fn-result-events
+                                 exec-stmt-while-events
+                                 (list natp-of-measure-of-fn-thm-event)
+                                 (list termination-of-fn-thm-event)
+                                 test-local-events
+                                 body-local-events
+                                 correct-events
+                                 progress-end?
+                                 print-result?)))
+              (retok events
                      natp-of-measure-of-fn-thm
                      fn-result-thm
                      fn-correct-thm
                      names-to-avoid))
-          (retok nil nil nil nil nil names-to-avoid)))
+          (retok nil nil nil nil names-to-avoid)))
        (info (make-atc-fn-info :out-type nil
                                :in-types (atc-var-info-list->type-list
                                           (strip-cdrs typed-formals))
@@ -4482,8 +4512,7 @@
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
                                :limit loop.limit-all)))
-    (retok local-events
-           exported-events
+    (retok events
            (acons fn info prec-fns)
            names-to-avoid))
   :prepwork

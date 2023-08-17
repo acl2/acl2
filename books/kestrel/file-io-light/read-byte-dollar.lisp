@@ -13,6 +13,7 @@
 (include-book "kestrel/utilities/channel-contents" :dir :system)
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "channels"))
+(local (include-book "channels2"))
 (local (include-book "open-input-channel-p"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
@@ -32,68 +33,6 @@
 ;;            (equal (update-open-input-channels (open-input-channels state) state)
 ;;                   state))
 ;;   :hints (("Goal" :in-theory (enable open-input-channels update-open-input-channels))))
-
-(local
- (defthm cadr-of-cadr-of-assoc-equal-of-open-input-channels-when-open-input-channel-p1
-   (implies (open-input-channel-p1 channel typ state)
-            (equal (cadr (cadr (assoc-equal channel (open-input-channels state))))
-                   typ))
-   :hints (("Goal" :in-theory (enable open-input-channel-p1)))))
-
-(local
- (defthm cadr-of-cadr-of-assoc-equal-of-open-input-channels-when-open-input-channel-p
-   (implies (open-input-channel-p channel typ state)
-            (equal (cadr (cadr (assoc-equal channel (open-input-channels state))))
-                   typ))
-   :hints (("Goal" :in-theory (enable open-input-channel-p)))))
-
-
-;move
-(local
- (defthm open-input-channel-p1-of-update-open-input-channels-of-add-pair-same
-  (equal (open-input-channel-p1 channel
-                                typ
-                                (update-open-input-channels (add-pair channel val (open-input-channels state))
-                                                            state))
-         (equal (cadr (car val))
-                typ))
-  :hints (("Goal" :in-theory (enable open-input-channel-p1)))))
-
-;move
-(local
- (defthm open-input-channel-p1-of-update-open-input-channels-of-add-pair-diff
-  (implies (not (equal channel channel2))
-           (equal (open-input-channel-p1 channel
-                                         typ
-                                         (update-open-input-channels (add-pair channel2 val channels)
-                                                                     state))
-                  (open-input-channel-p1 channel
-                                         typ
-                                         (update-open-input-channels channels
-                                                                     state))))
-  :hints (("Goal" :in-theory (enable open-input-channel-p1)))))
-
-;; Trying to introduce some abstractions to the channel machinery
-(local
- (defund channel-header-type (header)
-  (cadr header)))
-
-(local
- (defthm channel-header-type-of-cadr-of-assoc-equal-of-open-input-channels
-  (implies (open-input-channel-p1 channel typ state)
-           (equal (channel-header-type
-                   (cadr (assoc-equal channel (open-input-channels state))))
-                  typ))
-  :hints (("Goal" :in-theory (enable open-input-channel-p1 channel-header-type)))))
-
-;move
-(local
- (defthm open-input-channel-p1-of-update-open-input-channels-of-add-pair-both
-  (equal (open-input-channel-p1 channel typ (update-open-input-channels (add-pair channel2 val channels) state))
-         (if (equal channel channel2)
-             (equal (channel-header-type (car val)) typ)
-           (open-input-channel-p1 channel typ (update-open-input-channels channels state))))
-  :hints (("Goal" :in-theory (enable open-input-channel-p1 channel-header-type)))))
 
 ;; Note that this doesn't assume state-p.
 ;move?

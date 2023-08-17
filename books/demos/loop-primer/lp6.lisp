@@ -123,7 +123,9 @@
 ;          when (and (arity (cadr rune) world)
 ;                    (> (arity (cadr rune) world) 9))
 ;          collect (cadr rune)))
-; (UPDATE-BRR-DATA-1-BUILTIN MEMOIZE-FORM SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1)
+; (EVISCERATE EVISCERATE1-LST EVISCERATE1
+;             UPDATE-BRR-DATA-1-BUILTIN MEMOIZE-FORM
+;             SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1)
 
 ; However, make-event can be used to create a suitable defthm.
 
@@ -139,8 +141,9 @@
    `(defthm lp6-8
       (equal
        ',names
-       '(UPDATE-BRR-DATA-1-BUILTIN MEMOIZE-FORM SEARCH-FN SEARCH-FN-GUARD
-                                   BUILD-STATE1))
+       '(EVISCERATE EVISCERATE1-LST EVISCERATE1
+                    UPDATE-BRR-DATA-1-BUILTIN MEMOIZE-FORM
+                    SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1))
       :rule-classes nil)))
 
 ; -----------------------------------------------------------------

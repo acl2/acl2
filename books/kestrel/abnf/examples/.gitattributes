@@ -4,3 +4,4 @@ imf.abnf text eol=crlf
 smtp.abnf text eol=crlf
 imap.abnf text eol=crlf
 json.abnf text eol=crlf
+pdf.abnf text eol=crlf

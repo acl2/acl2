@@ -15,7 +15,7 @@
 
 (include-book "../language/static-semantics")
 
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -497,7 +497,7 @@
         :res-type ,<type>p
         :short ,(str::cat "Right shift of a value of "
                           type1-string
-                          " by an integer C:6.5.7].")
+                          " by an integer [C:6.5.7].")
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer

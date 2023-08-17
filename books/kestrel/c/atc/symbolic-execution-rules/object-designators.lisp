@@ -14,6 +14,8 @@
 (include-book "../../language/computation-states")
 (include-book "../symbolic-computation-states")
 
+(local (xdoc::set-default-parents atc-symbolic-execution-rules))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -169,6 +171,21 @@
     :enable (read-object-of-objdesign-of-var-to-read-var
              read-var-of-update-var
              objdesign-of-var-of-update-var))
+
+  (defruled objdesign-of-var-of-update-object
+    (equal (objdesign-of-var var (update-object objdes val compst))
+           (objdesign-of-var var compst))
+    :enable (objdesign-of-var
+             update-object
+             top-frame))
+
+  (defruled read-object-auto/static-of-update-object-alloc
+    (implies (and (member-equal (objdesign-kind objdes) '(:auto :static))
+                  (equal (objdesign-kind objdes2) :alloc))
+             (equal (read-object objdes (update-object objdes2 val compst))
+                    (read-object objdes compst)))
+    :enable (read-object
+             update-object))
 
   (defval *atc-object-designator-rules*
     '(objdesign-of-var-when-static

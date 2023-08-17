@@ -282,6 +282,10 @@
 (defun eval-ground-subexpressions1 (term ens wrld safe-mode gc-off ttree
                                          hands-off-fns memo)
 
+; We return (flg term' ttree' memo'), where: term is provably equal to term' as
+; justified by ttree' extending ttree; if flg is nil then term' = term and
+; ttree' = ttree; and memo' extends memo as described below.
+
 ; We do not evaluate ground calls of the function symbols listed in
 ; hands-off-fns.
 
@@ -302,23 +306,28 @@
         (eq (ffn-symb term) 'hide))
     (mv nil term ttree memo))
    ((flambda-applicationp term)
-    (mv-let
-      (flg args ttree memo)
-      (eval-ground-subexpressions1-lst (fargs term) ens wrld safe-mode gc-off
-                                       ttree
-                                       hands-off-fns
-                                       memo)
-      (cond
-       ((all-quoteps args)
-        (mv-let
-          (flg val ttree memo)
-          (eval-ground-subexpressions1
-           (sublis-var (pairlis$ (lambda-formals (ffn-symb term)) args)
-                       (lambda-body (ffn-symb term)))
-           ens wrld safe-mode gc-off ttree hands-off-fns memo)
-          (declare (ignore flg))
-          (mv t val ttree memo)))
-       (flg
+    (let ((lam (ffn-symb term)))
+      (mv-let (flg args ttree memo)
+        (eval-ground-subexpressions1-lst (fargs term) ens wrld safe-mode gc-off
+                                         ttree hands-off-fns memo)
+        (cond
+         ((all-quoteps args)
+          (mv-let
+            (flg val ttree memo)
+            (eval-ground-subexpressions1
+             (sublis-var (pairlis$ (lambda-formals (ffn-symb term)) args)
+                         (lambda-body lam))
+             ens wrld safe-mode gc-off ttree hands-off-fns memo)
+            (declare (ignore flg))
+            (mv t val ttree memo)))
+         (t
+          (mv-let (flg-body body ttree memo)
+            (eval-ground-subexpressions1 (lambda-body lam)
+                                         ens wrld safe-mode gc-off ttree
+                                         hands-off-fns memo)
+        
+            (cond
+             ((or flg flg-body)
 
 ; We could look for just those args that are quoteps, and substitute those,
 ; presumably then calling make-lambda-application to create a lambda out of the
@@ -326,8 +335,13 @@
 ; noting that through Version_2.9.4 we did not evaluate any ground lambda
 ; applications.
 
-        (mv t (cons-term (ffn-symb term) args) ttree memo))
-       (t (mv nil term ttree memo)))))
+              (mv t
+                  (fcons-term (if flg-body
+                                  (make-lambda (lambda-formals lam) body)
+                                lam)
+                              args)
+                  ttree memo))
+             (t (mv nil term ttree memo)))))))))
    ((eq (ffn-symb term) 'if)
     (mv-let
       (flg1 arg1 ttree memo)

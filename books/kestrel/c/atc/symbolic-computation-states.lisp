@@ -575,6 +575,18 @@
              add-var
              push-frame))
 
+  (defruled pop-frame-of-exit-scope
+    (equal (pop-frame (exit-scope compst))
+           (pop-frame compst))
+    :enable (pop-frame
+             exit-scope
+             push-frame))
+
+  (defruled pop-frame-of-if*
+    (equal (pop-frame (if* a b c))
+           (if* a (pop-frame b) (pop-frame c)))
+    :enable if*)
+
   (defval *atc-pop-frame-rules*
     '(pop-frame-of-add-frame
       pop-frame-of-enter-scope
@@ -1582,6 +1594,15 @@
                            (type-of-value old-val))))
     :enable (write-object-okp
              read-object))
+
+  (defruled write-object-okp-when-valuep-of-read-object-no-syntaxp
+    (implies (and (equal (objdesign-kind objdes) :alloc)
+                  (equal old-val (read-object objdes compst))
+                  (valuep old-val))
+             (equal (write-object-okp objdes val compst)
+                    (equal (type-of-value val)
+                           (type-of-value old-val))))
+    :enable (write-object-okp-when-valuep-of-read-object))
 
   (defruled write-object-to-update-object
     (implies (write-object-okp objdes val compst)

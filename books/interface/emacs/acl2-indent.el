@@ -54,7 +54,9 @@
 
 ;; This is mainly relevant for :hints
 (defcustom indent-string-headed-list t
-  "Controls indentation in list beginning with string: T to indent to first element; NIL do not indent.")
+  "Controls indentation in list with string head. T: Indent to first element; NIL: no indent"
+  :type 'boolean
+  :group 'customize)
 ;; This is mainly for :hints
 ;; This default gives 
 ;;  :hints ((“Goal” :use (:instance foo)
@@ -144,8 +146,8 @@
       ;; distinguished forms and this is the first undistinguished form,
       ;; or if this is the first undistinguished form and the preceding
       ;; distinguished form has indentation at least as great as body-indent.
-      (if (or (and (= i 0) (= count 0))
-              (and (= count 0) (<= body-indent normal-indent)))
+      (if (or (and (= i 0) (<= count 0))
+              (and (<= count 0) (<= body-indent normal-indent)))
           body-indent
         normal-indent))))
 
@@ -217,8 +219,8 @@
                  (if (or (= indent-first-function-arg 0) ; 
                          (list-not-a-functionp state))
                      car-indent
-                 ;; First argument of ordinary function on a new line
-                 (+ car-indent indent-first-function-arg)))))))))
+                   ;; First argument of ordinary function on a new line
+                   (+ car-indent indent-first-function-arg)))))))))
 
 (defun preceding-double-quote-column (pos)
   (save-excursion
@@ -236,6 +238,95 @@
                 (looking-at ";[^;]"))
          (current-column))))
 
+;; lisp-ppss is not in Emacs 24
+(defvar *old-emacs* (not (fboundp 'lisp-ppss)))
+
+(require 'cl-macs)
+
+(when *old-emacs*            ; Old emacs: try to define necessary new fns
+  (defun lisp-ppss (&optional pos)
+    "Return Parse-Partial-Sexp State at POS, defaulting to point.
+     Like `syntax-ppss' but includes the character address of the last
+     complete sexp in the innermost containing list at position
+     2 (counting from 0).  This is important for Lisp indentation."
+  (unless pos (setq pos (point)))
+  (let ((pss (syntax-ppss pos)))
+    (if (nth 9 pss)
+        (let ((sexp-start (car (last (nth 9 pss)))))
+          (parse-partial-sexp sexp-start pos nil nil (syntax-ppss sexp-start)))
+      pss)))
+
+  (cl-defstruct (lisp-indent-state
+                  (:constructor nil)
+                  (:constructor lisp-indent-initial-state
+                   (&aux (ppss (lisp-ppss))
+                         (ppss-point (point))
+                         (stack (make-list (1+ (car ppss)) nil)))))
+    stack ;; Cached indentation, per depth.
+    ppss
+    ppss-point)
+
+  (defun lisp-indent-calc-next (state)
+    "Move to next line and return calculated indent for it.
+STATE is updated by side effect, the first state should be
+created by `lisp-indent-initial-state'.  This function may move
+by more than one line to cross a string literal."
+    (let* ((indent-stack (lisp-indent-state-stack state))
+           (ppss (lisp-indent-state-ppss state))
+           (ppss-point (lisp-indent-state-ppss-point state))
+           (indent-depth (car ppss))    ; Corresponding to indent-stack.
+           (depth indent-depth))
+      ;; Parse this line so we can learn the state to indent the
+      ;; next line.
+      (while (let ((last-sexp (nth 2 ppss)))
+               (setq ppss (parse-partial-sexp
+                            ppss-point (progn (end-of-line) (point))
+                            nil nil ppss))
+               ;; Preserve last sexp of state (position 2) for
+               ;; `calculate-lisp-indent', if we're at the same depth.
+               (if (and (not (nth 2 ppss)) (= depth (car ppss)))
+                   (setf (nth 2 ppss) last-sexp)
+                 (setq last-sexp (nth 2 ppss)))
+               (setq depth (car ppss))
+               ;; Skip over newlines within strings.
+               (and (not (eobp)) (nth 3 ppss)))
+        (let ((string-start (nth 8 ppss)))
+          (setq ppss (parse-partial-sexp (point) (point-max)
+                                         nil nil ppss 'syntax-table))
+          (setf (nth 2 ppss) string-start) ; Finished a complete string.
+          (setq depth (car ppss)))
+        (setq ppss-point (point)))
+      (setq ppss-point (point))
+      (let* ((depth-delta (- depth indent-depth)))
+        (cond ((< depth-delta 0)
+               (setq indent-stack (nthcdr (- depth-delta) indent-stack)))
+              ((> depth-delta 0)
+               (setq indent-stack (nconc (make-list depth-delta nil)
+                                         indent-stack)))))
+      (prog1
+          (let (indent)
+            (cond ((= (forward-line 1) 1)
+                   ;; Can't move to the next line, apparently end of buffer.
+                   nil)
+                  ((null indent-stack)
+                   ;; Negative depth, probably some kind of syntax
+                   ;; error.  Reset the state.
+                   (setq ppss (parse-partial-sexp (point) (point))))
+                  ((car indent-stack))
+                  ((integerp (setq indent (calculate-lisp-indent (elt ppss 1))))
+                   (setf (car indent-stack) indent))
+                  ((consp indent)       ; (COLUMN CONTAINING-SEXP-START)
+                   (car indent))
+                  ;; This only happens if we're in a string, but the
+                  ;; loop should always skip over strings (unless we hit
+                  ;; end of buffer, which is taken care of by the first
+                  ;; clause).
+                  (t (error "This shouldn't happen"))))
+        (setf (lisp-indent-state-stack state) indent-stack)
+        (setf (lisp-indent-state-ppss-point state) ppss-point)
+        (setf (lisp-indent-state-ppss state) ppss))))
+  )
+
 (defun acl2-indent-line (&optional indent)
   "Indent current line as Lisp code."
   (interactive)
@@ -251,7 +342,9 @@
                                  (looking-at ")") ; Line up close paren at beginning of line with matching open
                                  (save-excursion (goto-char (elt pps-state 1)) (current-column)))
                             indent
-                            (calculate-lisp-indent (lisp-ppss))))))
+                            (calculate-lisp-indent (if *old-emacs*
+                                                       (car (elt (lisp-ppss) 9))
+                                                     (lisp-ppss)))))))
     (if (or (null indent)
             (looking-at "\\s<\\s<\\s<")
             (integerp (nth 4 pps-state)))
@@ -283,7 +376,7 @@
                  (make-progress-reporter "Indenting region..." (point) end))))
       (let ((ppss (lisp-indent-state-ppss parse-state)))
         (unless (or (and (bolp) (eolp)) (nth 3 ppss))
-          (acl2-indent-line (calculate-lisp-indent ppss))))
+          (acl2-indent-line (calculate-lisp-indent (if *old-emacs* (car (elt ppss 9)) ppss)))))
       (let ((indent nil))
         (while (progn (setq indent (lisp-indent-calc-next parse-state))
                       (< (point) end))
@@ -316,10 +409,8 @@
   (setq indent-region-function 'acl2-indent-region)
   (setq lisp-indent-function 'acl2-indent-function))
 
-(if (boundp 'acl2-mode-map) 
-    (add-hook 'acl2-mode-hook 'use-acl2-lisp-indent)
-  (if (boundp 'lisp-mode-map)
-      (add-hook 'lisp-mode-hook 'use-acl2-lisp-indent)))
+(add-hook 'acl2-mode-hook 'use-acl2-lisp-indent)
+(add-hook 'lisp-mode-hook 'use-acl2-lisp-indent)
 
 (defun normal-function (indent-point state)
   (if (looking-at " ")
@@ -351,6 +442,10 @@
 
 (put 'verify-guards 'acl2-indent-hook 1)
 
+;; Possible additions
+;(put 'er-soft+ 'acl2-indent-hook 3)
+;(put 'er-soft 'acl2-indent-hook 3)
+
 ;; Only necessary if indent-def-beginning-functions-like-defun is nil
 (put 'defthm 'acl2-indent-hook 1)
 (put 'defthmd 'acl2-indent-hook 1)
@@ -373,7 +468,7 @@
 (put 'defconst 'acl2-indent-hook 1)
 (put 'defprojection 'acl2-indent-hook 'defun)
 (put 'deflist 'acl2-indent-hook 'defun)
-(put 'defaggregate 'acl2-indent-hook 2)
+(put 'defaggregate 'acl2-indent-hook 1)
 (put 'defchoose 'acl2-indent-hook 2)
 (put 'defsum 'acl2-indent-hook 1)
 (put 'definj 'acl2-indent-hook 1)

@@ -1,6 +1,6 @@
 ; Utilities involving tables
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,3 +25,24 @@
                'table-alist
                (put-assoc-equal key-name value old-alist)
                wrld))))
+
+;; Overwrites the entire table named TABLE-NAME with ALIST.
+;; Returns an error triple, (mv erp val state).
+(defun overwrite-table-programmatic (table-name alist state)
+  (declare (xargs :mode :program :stobjs state))
+  (with-output! :off :all ; silence TABLE-FN (Is this needed?)
+    (table-fn table-name
+              (list nil (kwote alist) :clear)
+              state
+              `(table ,table-name nil ',alist :clear))))
+
+;; Sets KEY to VALUE in the table whose name is TABLE-NAME.
+;; Returns an error triple, (mv erp val state).
+(defun set-table-entry-programmatic (table-name key value state)
+  (declare (xargs :guard (symbolp table-name) ; keys and values can be anything
+                  :mode :program :stobjs state))
+  (with-output! :off :all ; silence TABLE-FN (Is this needed?)
+    (table-fn table-name
+              (list (kwote key) (kwote value))
+              state
+              `(table ,table-name nil ',key ',value))))

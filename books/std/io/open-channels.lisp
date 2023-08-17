@@ -27,9 +27,11 @@
 
 (in-package "ACL2")
 
+; Matt K. mod for conversion of eviscerate-top to logic mode:
+(local (in-theory (enable iprint-oracle-updates)))
+
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-
 
 ; Here is a small theory tweak we need:
 

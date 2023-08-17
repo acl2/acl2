@@ -16089,8 +16089,12 @@
       (mv-let (channel state)
         (open-input-channel useless-runes-filename :object state)
         (cond (channel
-               (mv-let (alist state)
-                 (read-file-iterate-safe channel nil state)
+               (er-let* ((alist
+                          (state-global-let*
+                           ((current-package "ACL2" set-current-package-state))
+                           (mv-let (alist state)
+                             (read-file-iterate-safe channel nil state)
+                             (value alist)))))
                  (pprogn (io? event nil state
                               (useless-runes-filename)
                               (fms! "; Note: Consulting useless-runes ~
@@ -18249,8 +18253,8 @@
       (verify-guards ,@args)))
    (t
     `(make-event
-      (if (int= (default-verify-guards-eagerness (w state))
-                2)
+      (if (member (default-verify-guards-eagerness (w state))
+                  '(2 3))
           '(verify-guards ,@args)
         '(value-triple :skipped))
       :expansion? ; Don't store expansion if eagerness is 1 (the default).
@@ -24941,65 +24945,78 @@
   '(close-trace-file-fn nil state))
 
 (defmacro break-on-error (&optional (on 't))
-
-; It should suffice to trace error1 and not illegal, since raw-ev-fncall turns
-; hard errors into soft errors (mv t msg latches), which in turn cause calls of
-; error1 in trans-eval.  We trace on exit so that the error message will be
-; printed.
-
-  (let* ((error1-trace-form
-          '(error1 :entry (:fmt (msg "[Breaking on error:]"))
-                   :exit (prog2$ (maybe-print-call-history state) (break$))
-                   :compile nil))
-         (er-cmp-fn-trace-form
-          '(er-cmp-fn :entry ; body of error1, to avoid second break on error1
-                      (pprogn (io? error nil state (ctx msg)
-                                   (error-fms nil ctx nil
-                                              "~|[Breaking on cmp error:]~|~@0"
-                                              (list (cons #\0 msg))
-                                              state))
-                              (mv :enter-break nil state))
-                      :exit (prog2$ (maybe-print-call-history state) (break$))
-                      :compile nil))
-         (throw-raw-ev-fncall-string
-          "[Breaking on error (entry to ev-fncall-msg)]")
-         (throw-raw-ev-fncall-trace-form
-          `(throw-raw-ev-fncall
-            :def
-            (throw-raw-ev-fncall (val) (throw 'raw-ev-fncall val))
-            :multiplicity
-            1
-            :entry
-            (progn (fmt-abbrev
-                    "~%ACL2 Error ~@0:   ~@1"
-                    (list (cons #\0 ,throw-raw-ev-fncall-string)
-                          (cons #\1 (ev-fncall-msg
-                                     (car arglist)
-                                     (w state)
-                                     (user-stobj-alist state))))
-                    0 *standard-co* state
-                    "~|~%")
-                   (maybe-print-call-history state)
-                   (break$)))))
-    `(let ((on ,on))
-       (er-progn
-        (case on
-          (:all  (trace! ,error1-trace-form
-                         ,er-cmp-fn-trace-form
-                         ,throw-raw-ev-fncall-trace-form))
-          ((t)   (trace! ,error1-trace-form
-                         ,er-cmp-fn-trace-form
-                         (,@throw-raw-ev-fncall-trace-form
-                          :cond
-                          (not (f-get-global 'in-prove-flg
-                                             state)))))
-           ((nil) (with-output :off warning (untrace$ error1
-                                                      er-cmp-fn
-                                                      throw-raw-ev-fncall)))
-           (otherwise (er soft 'break-on-error
-                          "Illegal argument value for break-on-error: ~x0."
-                          on)))
-         (value :invisible)))))
+  `(if (raw-mode-p state)
+       (er soft 'break-on-error
+           "It is illegal to call ~x0 while in raw-mode.  Consider exiting ~
+            raw-mode and then trying again."
+           'break-on-error)
+     ,(let* ((error1-trace-form
+              '(error1
+                :entry (:fmt (msg "[Breaking on error:]"))
+                :exit (prog2$ (maybe-print-call-history state)
+                              (break$))
+                :compile nil))
+             (er-cmp-fn-trace-form
+              '(er-cmp-fn
+                :entry ; body of error1, to avoid second break on error1
+                (pprogn (io? error nil state (ctx msg)
+                             (error-fms nil ctx nil
+                                        "~|[Breaking on cmp error:]~|~@0"
+                                        (list (cons #\0 msg))
+                                        state))
+                        (mv :enter-break nil state))
+                :exit (prog2$ (maybe-print-call-history state)
+                              (break$))
+                :compile nil))
+             (abort!-trace-form
+              `(abort! :entry
+                       (progn (fmt-abbrev
+                               "~%Breaking on abort to top level."
+                               nil 0 *standard-co* state "~|~%")
+                              (maybe-print-call-history state)
+                              (break$))))
+             (throw-raw-ev-fncall-string
+              "[Breaking on error (entry to ev-fncall-msg)]")
+             (throw-raw-ev-fncall-trace-form
+              `(throw-raw-ev-fncall
+                :def
+                (throw-raw-ev-fncall (val)
+                                     (throw 'raw-ev-fncall val))
+                :multiplicity
+                1
+                :entry
+                (progn (fmt-abbrev
+                        "~%ACL2 Error ~@0:   ~@1"
+                        (list (cons #\0 ,throw-raw-ev-fncall-string)
+                              (cons #\1 (ev-fncall-msg
+                                         (car arglist)
+                                         (w state)
+                                         (user-stobj-alist state))))
+                        0 *standard-co* state
+                        "~|~%")
+                       (maybe-print-call-history state)
+                       (break$)))))
+        `(let ((on ,on))
+           (er-progn
+            (case on
+              (:all  (trace! ,error1-trace-form
+                             ,er-cmp-fn-trace-form
+                             ,abort!-trace-form
+                             ,throw-raw-ev-fncall-trace-form))
+              ((t)   (trace! ,error1-trace-form
+                             ,er-cmp-fn-trace-form
+                             ,abort!-trace-form
+                             (,@throw-raw-ev-fncall-trace-form
+                              :cond
+                              (not (f-get-global 'in-prove-flg
+                                                 state)))))
+              ((nil) (with-output :off warning (untrace$ error1
+                                                         er-cmp-fn
+                                                         throw-raw-ev-fncall)))
+              (otherwise (er soft 'break-on-error
+                             "Illegal argument value for break-on-error: ~x0."
+                             on)))
+            (value :invisible))))))
 
 ; The following code supports the explain-giant-lambda-object utility that the
 ; user might invoke when hons-copy-lambda-object? signals an error because a
@@ -32524,10 +32541,10 @@
                      (not (eq (caddr stobjs-out) 'state))
                      (member-eq nil (cdddr stobjs-out)))
                  (er soft ctx
-                     "The form ~x0 was expected either to return a result ~
-                      that is either a single ordinary value or else is a ~
-                      tuple (mv erp val state stobj1 stobj2 ... stobjk) for ~
-                      some k >= 0.  But the shape of that result was ~x1."
+                     "The form ~x0 was expected to return a result that is ~
+                      either a single ordinary value or else is a tuple (mv ~
+                      erp val state stobj1 stobj2 ... stobjk) for some k >= ~
+                      0.  But the shape of that result was ~x1."
                      form
                      (prettyify-stobjs-out stobjs-out)))
                 ((car vals)
@@ -35089,14 +35106,14 @@
                :on-behalf-of :quiet!)
               ,@(memoize-partial-calls tuples)))))))
 
-(defun read-event-data-fal-1 (alist fal)
+(defun read-event-data-fal (alist fal)
   (cond ((endp alist) fal)
         (t
          (let* ((key (caar alist))
                 (val (cdar alist))
                 (old (cdr (hons-get key fal))))
-           (read-event-data-fal-1 (cdr alist)
-                                  (hons-acons key (cons val old) fal))))))
+           (read-event-data-fal (cdr alist)
+                                (hons-acons key (cons val old) fal))))))
 
 (defun first-non-string-key-pair (fal)
   (cond ((atom fal) nil)
@@ -35126,10 +35143,15 @@
                  (open-input-channel event-data-filename :object state)
                  (cond
                   (channel
-                   (mv-let (alist state)
-                     (read-file-iterate-safe channel nil state)
+                   (er-let* ((alist
+                              (state-global-let*
+                               ((current-package "ACL2"
+                                                 set-current-package-state))
+                               (mv-let (alist state)
+                                 (read-file-iterate-safe channel nil state)
+                                 (value alist)))))
                      (let ((file-event-data-fal
-                            (read-event-data-fal-1 alist 'read-event-data-fal)))
+                            (read-event-data-fal alist 'read-event-data-fal)))
                        (pprogn
                         (close-input-channel channel state)
                         (let ((new-event-data-fal

@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; Somewhat similar to bounded-integer-listp, which is built-in.
+
 (include-book "kestrel/sequences/defforall" :dir :system) ;reduce?
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 

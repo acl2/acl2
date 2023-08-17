@@ -23,7 +23,6 @@
 (include-book "function-queries")
 (include-book "genvar-dollar")
 (include-book "getprops")
-(include-book "good-atom-listp")
 (include-book "included-books")
 (include-book "install-not-normalized-dollar")
 (include-book "install-not-normalized-event")

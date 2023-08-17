@@ -750,6 +750,11 @@
   :enable (ep)
   :rule-classes :linear))
 
+(encapsulate ()
+; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
+; generating guard conjectures.
+(local (in-theory (disable (expt))))
+
 (defund x87-post-comp (u fcw)
   (declare (xargs :guard (and (real/rationalp u)
                               (not (= u 0))
@@ -760,7 +765,7 @@
                     (e/d (nrepp nrepp-lpn drepp-drnd-1 drepp-drnd-2 expt-2-13
                                 expt-expw-as-bias expo-shift exactp-shift
                                 abs<spn-as-expo lpn<abs-as-expo)
-                         (abs expt (expt) acl2::|(expt c (* d n))|))))))
+                         (abs expt acl2::|(expt c (* d n))|))))))
   (let* ((rmode (fcw-rc fcw))
          (r (rnd u rmode (fcw-pc fcw)))
          (rsgn (if (< r 0) 1 0))
@@ -797,6 +802,7 @@
                   (mv (zencode rsgn (ep)) (set-flag (pbit) flags))
                 (mv (nencode s (ep)) (if (> (abs r) (abs u)) (set-flag (c1) flags) flags)))))
         (mv (nencode r (ep)) (if (> (abs r) (abs u)) (set-flag (c1) flags) flags))))))
+)
 
 (defrule x87-post-comp-type
   (natp (mv-nth 1 (x87-post-comp u fcw)))
@@ -1050,7 +1056,7 @@
                                            expt-expw-as-bias
                                            abs<spn-as-expo
                                            lpn<abs-as-expo)
-                              (abs))))))
+                                    (abs))))))
   (let* ((rmode (fpscr-rc fpscr))
          (r (rnd u rmode (prec f)))
          (sgn (if (< u 0) 1 0)))

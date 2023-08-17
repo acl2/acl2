@@ -242,6 +242,25 @@
 			(:instance divides-transitive (x (cpd x y)) (y (gcd x y)) (z x))
 			(:instance divides-transitive (x (cpd x y)) (y (gcd x y)) (z y))))))
 
+(defthmd cpd-divides
+  (implies (and (integerp x) (not (= x 0))
+                (integerp y) (not (= y 0))
+		(not (= (gcd x y) 1)))
+	   (and (primep (cpd x y))
+	        (divides (cpd x y) x)
+	        (divides (cpd x y) y))))
+
+(defthmd rel-prime-pow-list
+  (implies (and (prime-pow-list-p l) (>= (len l) 2))
+	   (equal (gcd (expt (caar l) (cdar l))
+		       (pow-prod (cdr l)))
+		  1))
+  :hints (("Subgoal *1/1" :use
+    ((:instance cpd-divides (x (expt (caar l) (cdar l))) (y (pow-prod (cdr l))))
+     (:instance primep-divides-prime-power (p (caar l)) (n (cdar l))
+			                   (q (cpd (expt (caar l) (cdar l)) (pow-prod (cdr l)))))
+     (:instance prime-divisor-prime-pow-list (l (cdr l)) (p (cpd (expt (caar l) (cdar l)) (pow-prod (cdr l)))))))))
+
 (defthmd gcd-divisor
   (implies (and (integerp x) (integerp y)                
                 (integerp d) (not (= d 0))
@@ -257,3 +276,16 @@
 			(:instance least-divisor-divides (k 2) (n (gcd x d)))
 			(:instance divides-gcd (d (least-prime-divisor (gcd x d))))
 			(:instance gcd-divides (y d))))))
+
+(defthmd gcd-divisor-2
+  (implies (and (integerp x) (integerp y)                
+                (integerp c) (not (= c 0))
+                (integerp d) (not (= d 0))
+		(divides c x)
+		(divides d y)
+		(= (gcd x y) 1))
+	   (equal (gcd c d) 1))
+  :hints (("Goal" :use (gcd-divisor
+			(:instance gcd-commutative (y d))
+			(:instance gcd-divisor (x d) (y x) (d c))
+			(:instance gcd-commutative (x c) (y d))))))

@@ -17,8 +17,8 @@
 
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 
-(local (include-book "kestrel/std/system/good-atom-listp" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 (local (include-book "projects/apply/loop" :dir :system))
 (local (in-theory (disable acl2::loop-book-theory)))
@@ -314,6 +314,7 @@
 (define atc-check-array-write ((var symbolp) (val pseudo-termp))
   :returns (mv erp
                (yes/no booleanp)
+               (fn symbolp)
                (sub pseudo-termp)
                (elem pseudo-termp)
                (elem-type typep))
@@ -339,8 +340,8 @@
      If they do, the components are returned for further processing.
      We also return the types of the index and element
      as gathered from the name of the array write function."))
-  (b* (((reterr) nil nil nil (irr-type))
-       ((acl2::fun (no)) (retok nil nil nil (irr-type)))
+  (b* (((reterr) nil nil nil nil (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil nil (irr-type)))
        ((mv okp fn args) (fty-check-fn-call val))
        ((unless okp) (no))
        ((mv okp fixtype array write) (atc-check-symbol-3part fn))
@@ -363,7 +364,7 @@
                 fn var)))
        (sub (second args))
        (elem (third args)))
-    (retok t sub elem elem-type))
+    (retok t fn sub elem elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-array-write-sub

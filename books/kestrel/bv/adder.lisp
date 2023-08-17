@@ -127,11 +127,11 @@
            :use (:instance split-bv (y y)
                            (m (+ -1 n))))))
 
-(defthm expt-of-one-less-combine
-  (implies (posp n)
-           (EQUAL (+ (EXPT 2 (+ -1 N)) (EXPT 2 (+ -1 N)))
-                  (EXPT 2 N)))
-  :hints (("Goal" :in-theory (enable expt))))
+;; (defthm expt-of-one-less-combine
+;;   (implies (posp n)
+;;            (EQUAL (+ (EXPT 2 (+ -1 N)) (EXPT 2 (+ -1 N)))
+;;                   (EXPT 2 N)))
+;;   :hints (("Goal" :in-theory (enable expt))))
 
 (defthm equal-of-sum-of-low-bits-alt3
   (implies (and (unsigned-byte-p n y)
@@ -158,20 +158,22 @@
            (< (+ X Y) (EXPT 2 N)))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P expt))))
 
-(defthmd expt-split
-  (implies (and (syntaxp (atom n))
-                (natp n))
-           (equal (expt 2 N)
-                  (+ (expt 2 (+ -1 n)) (expt 2 (+ -1 n)))))
-  :hints (("Goal" :in-theory (enable expt))))
+;; (defthmd expt-split
+;;   (implies (and (syntaxp (atom n))
+;;                 (natp n))
+;;            (equal (expt 2 N)
+;;                   (+ (expt 2 (+ -1 n)) (expt 2 (+ -1 n)))))
+;;   :hints (("Goal" :in-theory (enable expt))))
 
-(theory-invariant (incompatible (:rewrite expt-split) (:rewrite EXPT-OF-ONE-LESS-COMBINE)))
+;; (theory-invariant (incompatible (:rewrite expt-split) (:rewrite EXPT-OF-ONE-LESS-COMBINE)))
 
 (defthm bound-lemma-strong
   (implies (and (UNSIGNED-BYTE-P (+ -1 N) X)
                 (UNSIGNED-BYTE-P (+ -1 N) Y))
            (< (+ X Y)  (+ -1 (EXPT 2 N))))
-  :hints (("Goal" :in-theory (e/d (UNSIGNED-BYTE-P expt-split) (EXPT-OF-ONE-LESS-COMBINE)))))
+  :hints (("Goal" :in-theory (e/d (UNSIGNED-BYTE-P ;expt-split
+                                   ) (;EXPT-OF-ONE-LESS-COMBINE
+                                      )))))
 
 (defthm <-of-expt-cancel-hack
   (implies (posp n)

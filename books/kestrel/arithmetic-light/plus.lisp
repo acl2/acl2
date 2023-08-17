@@ -37,6 +37,7 @@
                   (integerp (fix y))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
+;; TODO: Drop (see fold-consts-in-+)
 (defthm +-combine-constants
   (implies (syntaxp (and (quotep k2) ;tested first to fail fast
                          (quotep k1)))
@@ -74,28 +75,24 @@
 (defthm equal-of-+-cancel-same-2+
   (equal (equal (+ y1 x y2) x)
          (and (equal (+ y1 y2) 0)
-              (acl2-numberp x)))
-  :hints (("Goal" :cases ((equal (+ y1 y2) 0)))))
+              (acl2-numberp x))))
 
 ;; Only needed for Axe, as ACL2 can match equalities either way?
 (defthmd equal-of-+-cancel-same-2+-alt
   (equal (equal x (+ y1 x y2))
          (and (equal (+ y1 y2) 0)
-              (acl2-numberp x)))
-  :hints (("Goal" :cases ((equal (+ y1 y2) 0)))))
+              (acl2-numberp x))))
 
 (defthm equal-of-+-cancel-same-3
   (equal (equal (+ y1 y2 x) x)
          (and (equal (+ y1 y2) 0)
-              (acl2-numberp x)))
-  :hints (("Goal" :cases ((equal (+ y1 y2) 0)))))
+              (acl2-numberp x))))
 
 ;; Only needed for Axe, as ACL2 can match equalities either way?
 (defthmd equal-of-+-cancel-same-3-alt
   (equal (equal x (+ y1 y2 x))
          (and (equal (+ y1 y2) 0)
-              (acl2-numberp x)))
-  :hints (("Goal" :cases ((equal (+ y1 y2) 0)))))
+              (acl2-numberp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -166,8 +163,7 @@
 
 (defthm <-of-+-cancel-1-2
   (equal (< x (+ y x))
-         (< 0 y))
-  :hints (("Goal" :cases ((< 0 y)))))
+         (< 0 y)))
 
 (defthm <-of-+-cancel-1+-2+
   (equal (< (+ x w) (+ y x z))
@@ -192,8 +188,7 @@
 
 (defthm <-of-+-cancel-2-1
   (equal (< (+ y x) x)
-         (< y 0))
-  :hints (("Goal" :cases ((< y 0)))))
+         (< y 0)))
 
 (defthm <-of-+-combine-constants-1
   (implies (syntaxp (and (quotep k2)
@@ -223,8 +218,7 @@
                          (quotep k2)))
            (equal (equal k1 (+ k2 x))
                   (and (acl2-numberp k1)
-                       (equal (- k1 k2) (fix x)))))
-  :hints (("Goal" :cases ((equal k1 (+ k2 x))))))
+                       (equal (- k1 k2) (fix x))))))
 
 (defthm rationalp-of-+-when-rationalp-arg1
   (implies (rationalp x)

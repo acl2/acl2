@@ -311,7 +311,13 @@
                             zip
                             logior-opener-var)
                            (lognot-of-logand
-                            mod-sum-cases)))))
+                            ;; for speed:
+                            floor-when-<
+                            unicity-of-1
+                            my-floor-lower-bound-linear
+                            <=-of-logand-same-arg2
+                            floor-upper-bound-linear
+                            )))))
 
 (defthmd logior-of-logand
   (implies (and (integerp i)

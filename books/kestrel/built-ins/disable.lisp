@@ -50,7 +50,8 @@
                        brkpt1-brr-data-entry
                        brkpt2-brr-data-entry
                        update-brr-data-1
-                       update-brr-data-2)))
+                       update-brr-data-2
+                       brr-near-missp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

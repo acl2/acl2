@@ -1,6 +1,7 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2023 Aleo Systems Inc. (https://www.aleo.org)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +14,8 @@
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
+(include-book "indexed-names")
+(include-book "convenience-constructors")
 (include-book "well-formedness")
 (include-book "semantics")
 (include-book "proof-support")
@@ -24,7 +27,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ prime-field-constraint-systems
+(defxdoc+ pfcs
   :parents (acl2::kestrel-books acl2::projects)
   :short "A library for PFCSes (Prime Field Constraint Systems)."
   :long
@@ -33,7 +36,7 @@
     "The notion of PFCS (Prime Field Constraint System)
      is introduced by this library;
      it is not an existing notion that this library formalizes.
-     We write `PFCS` for the singular `Prime Field Constraint System',
+     We write `PFCS' for the singular `Prime Field Constraint System',
      and`PFCSes' for the plural `Prime Field Constraint Systems'.")
    (xdoc::p
     "A PFCS is a system of constraints over a prime field;
@@ -66,12 +69,14 @@
       and can supports more modular
       verification, analysis, transformation, and synthesis."))
    (xdoc::p
-    "Currently this library contains an abstract syntax of PFCSes,
+    "Currently this library contains
+     a concrete syntax of PFCSes,
+     an abstract syntax of PFCSes,
      some operations on the abstract syntax,
      a notion of well-formedness,
      a semantics expressed as a shallow embedding,
      a semantics expressed as a deep embedding,
-     and some preliminary tools to support proofs about PFCSes;
+     and some tools to support proofs about PFCSes;
      see the documentation of these artifacts for more information.
      This library also includes some examples.
      This library is a work in progress;

@@ -111,19 +111,11 @@
   (declare (xargs
             :guard
             (and (true-listp lst)
-                 (loop$ for e in lst
-                        always
-                        (or (acl2-numberp e)
-                            (symbolp e)
-                            (characterp e)
-                            (stringp e))))))
+                 (loop$ for e in lst always (atom e)))))
   (loop$ for e in lst
          append
          :guard
-         (or (acl2-numberp e)
-             (symbolp e)
-             (characterp e)
-             (stringp e))
+         (atom e)
          (explode-atom e 10)))
 
 (defthm packn1-loop$-is-packn1
@@ -198,7 +190,7 @@
                               (equal (len lst1) (len lst2)))))
   (loop$ for e in lst1
          as  d in lst2
-         always 
+         always
          (or (eq e '*)
              (eq d '*)
              (equal e d))))
