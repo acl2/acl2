@@ -41,9 +41,12 @@
 ;; TODO: Don't even make recs for things that are enabled (in the theory, or by the current hints)?
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 ;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
-(defun make-enable-recs (formula num-recs print state)
-  (declare (xargs :guard (and ;; formula is an untranslated term
-                          (natp num-recs))
+(defun make-enable-recs (formula ; an untranslated term
+                         num-recs
+                         print
+                         state)
+  (declare (xargs :guard (and (natp num-recs)
+                              (acl2::print-levelp print))
                   :stobjs state
                   :mode :program ; because of acl2::translate-term
                   ))

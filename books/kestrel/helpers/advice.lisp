@@ -3106,13 +3106,21 @@
         state)))
 
 ;; Goes through the MODELS, getting recs from each.  Returns an alist from model-names to rec-lists.
-;; Returns (mv erp rec-alist state).
-(defun get-recs-from-models-aux (num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem model-info-alist timeout debug print acc state)
+;; Returns (mv erp rec-alist state), where REC-ALIST maps models to rec lists.
+(defun get-recs-from-models-aux (num-recs-per-model
+                                 disallowed-rec-types
+                                 checkpoint-clauses
+                                 theorem-body ; an untranslated-term
+                                 broken-theorem ; a thm or defthm form
+                                 model-info-alist
+                                 timeout
+                                 debug
+                                 print
+                                 acc
+                                 state)
   (declare (xargs :guard (and (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
-                              ;; theorem-body is an untranslated-term
-                              ;; broken-theorem is a thm or defthm form
                               (model-info-alistp model-info-alist)
                               (natp timeout)
                               (booleanp debug)
