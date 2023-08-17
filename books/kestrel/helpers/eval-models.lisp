@@ -486,7 +486,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;Returns (mv erp first-working-rec-num-or-nil state).
-(defun try-recs-in-order (recs rec-num checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state)
+(defun try-recs-in-order (recs rec-num checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)
   (declare (xargs :guard (and (help::recommendation-listp recs)
                               (posp rec-num)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
@@ -501,12 +501,13 @@
                               (or (null step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
-                                  (rationalp time-limit)))
+                                  (rationalp time-limit))
+                              (help::model-namep model))
                   :mode :program ; because of help::try-recommendation
                   :stobjs state))
   (if (endp recs)
       (prog2$ (and (acl2::print-level-at-least-tp print)
-                   (cw "No working rec found.~%") ; todo: print the model name.
+                   (cw "No working rec found for ~x0.~%" model)
                    )
               (mv nil ; no error
                   nil ; no working rec found
@@ -534,12 +535,13 @@
                                (- (help::show-successful-recommendation maybe-successful-rec))
                                (state (acl2::unwiden-margins state)))
                             state)
-                        state)))
+                        state))
+               (- (cw "~%")))
             (mv nil ; no-error
                 rec-num
                 state))
         ;; keep looking:
-        (try-recs-in-order (rest recs) (+ 1 rec-num) checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state)))))
+        (try-recs-in-order (rest recs) (+ 1 rec-num) checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)))))
 
 ;; Walks through the RECOMMENDATION-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
@@ -585,8 +587,10 @@
                             (help::show-recommendations recs state))
                   state))
          ((mv start-time state) (get-cpu-time state)) ; or we could use real time (here and below)
+         (- (and (acl2::print-level-at-least-tp print)
+                 (cw "TRYING RECOMMENDATIONS FOR ~x0:~%" model)))
          ((mv erp first-working-rec-num-or-nil state)
-          (try-recs-in-order recs 1 checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state))
+          (try-recs-in-order recs 1 checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state))
          ((mv end-time state) (get-cpu-time state))
          ((when erp) (mv erp nil state)))
       (eval-models-on-checkpoints-aux (rest recommendation-alist)
@@ -833,7 +837,7 @@
             (submit-event `(skip-proofs ,defthm) print nil state))
            ((when erp) (mv erp nil nil nil rand state))
            (models-that-worked (models-that-worked model-results))
-           (- (cw " ~x0 models worked: ~X12.~%" (len models-that-worked) models-that-worked nil))
+           (- (cw "~% For ~x0, ~x1 models worked: ~X23.~%" theorem-name (len models-that-worked) models-that-worked nil))
            (- (cw ")~%")))
         (mv nil ; no error
             breakage-type
