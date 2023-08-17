@@ -72,6 +72,7 @@
 (include-book "recommendations")
 (include-book "model-enable")
 (include-book "model-history")
+(include-book "model-cases")
 (include-book "kestrel/utilities/book-of-event" :dir :system)
 (include-book "kestrel/utilities/checkpoints" :dir :system)
 (include-book "kestrel/utilities/ld-history" :dir :system)
@@ -292,7 +293,7 @@
 
 ;; TODO: Make this extensible:
 (defconst *function-models*
-  '(:enable :history))
+  '(:enable :history :cases))
 
 
 
@@ -3145,8 +3146,13 @@
                 (if (member-eq :exact-hints disallowed-rec-types)
                     (mv nil nil state) ; don't bother creating recs as they will be disallowed below
                   (make-recs-from-history num-recs-per-model print state))
-              ;; It's a normal ML model:
-              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state))))
+              (if (eq :cases model)
+                  ;; Make recs that try splitting into cases:
+                  (if (member-eq :add-cases-hint disallowed-rec-types)
+                      (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+                    (make-cases-recs translated-theorem-body checkpoint-clauses num-recs-per-model print state))
+                ;; It's a normal ML model:
+                (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state)))))
          (- (and erp (cw "Note: Skipping ~x0 due to errors.~%" model)))
          ;; Remove any recs that are disallowed (todo: drop this now?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
