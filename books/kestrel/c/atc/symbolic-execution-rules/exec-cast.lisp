@@ -147,11 +147,24 @@
                    value-kind-when-slongp
                    value-kind-when-ullongp
                    value-kind-when-sllongp
-                   ifix)
+                   ifix
+                   not-errorp-when-expr-valuep
+                   not-errorp-when-valuep
+                   valuep-when-ucharp
+                   valuep-when-scharp
+                   valuep-when-ushortp
+                   valuep-when-sshortp
+                   valuep-when-uintp
+                   valuep-when-sintp
+                   valuep-when-ulongp
+                   valuep-when-slongp
+                   valuep-when-ullongp
+                   valuep-when-sllongp
+                   value-integerp
+                   value-unsigned-integerp
+                   value-signed-integerp)
                   :disable
-                  ((:e integer-type-rangep)
-                   (:e integer-type-max)
-                   (:e integer-type-min))))
+                  ((:e tau-system))))
          (event `(defruled ,name
                    ,formula
                    ,@hints)))

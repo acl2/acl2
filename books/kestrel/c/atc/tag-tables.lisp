@@ -343,7 +343,7 @@
 (define atc-string-taginfo-alist-to-member-read-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
-  :short "Project the @(tsee exec-memberp) theorems
+  :short "Project the @(tsee exec-member) and @(tsee exec-memberp) theorems
           out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
@@ -357,7 +357,8 @@
 (define atc-string-taginfo-alist-to-member-write-thms
   ((prec-tags atc-string-taginfo-alistp))
   :returns (thms symbol-listp)
-  :short "Project the @(tsee exec-expr-asg) with @(':memberp') theorems
+  :short "Project the @(tsee exec-expr-asg)
+          with @(':member') and @(':memberp') theorems
           out of a tag information alist."
   (b* (((when (endp prec-tags)) nil)
        (info (cdar prec-tags))
