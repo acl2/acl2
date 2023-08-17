@@ -3132,13 +3132,13 @@
     (b* ((entry (first model-info-alist))
          (model (car entry))
          (model-info (cdr entry))
+         (translated-theorem-body (acl2::translate-term theorem-body 'get-recs-from-models-aux (w state))) ; todo: just do once, outside this loop
          ((mv erp recs state)
           (if (eq :enable model)
               ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
               (if (member-eq :add-enable-hint disallowed-rec-types)
                   (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                ;; todo: translate outside make-enable-recs?:
-                (make-enable-recs theorem-body num-recs-per-model print state))
+                (make-enable-recs translated-theorem-body checkpoint-clauses num-recs-per-model print state))
             (if (eq :history model)
                 ;; Make recs based on hints given to recent theorems:
                 (if (member-eq :exact-hints disallowed-rec-types)
