@@ -624,300 +624,310 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                         (context rp-term-listp))
     :returns (mv res-term res-dont-rw)
     :guard-debug t
-    (case-match term
-      (('sv::svex-alist-eval ('quote svex-alist) env-orig)
-       (b* ((- (vescmul-clear-memoize-tables))
+    (time$
+     (case-match term
+       (('sv::svex-alist-eval ('quote svex-alist) env-orig)
+        (b* ((- (vescmul-clear-memoize-tables))
 
-            (env (rp::ex-from-rp env-orig))
-            ((mv falistp env) (case-match env
-                                (('falist ('quote x) &) (mv t x))
-                                (& (mv nil env))))
-            ((unless falistp)
-             (if (and (consp env) (equal (car env) 'cons))
-                 (progn$
-                  (cw "Note: the environment of svex-eval-alist is not a fast-alist. Making it a fast-alist now.~%")
-                  (mv `(sv::svex-alist-eval ',svex-alist (make-fast-alist ,env-orig))
-                      `(nil t (nil t))))
-               (mv term nil)))
+             (env (rp::ex-from-rp env-orig))
+             ((mv falistp env) (case-match env
+                                 (('falist ('quote x) &) (mv t x))
+                                 (& (mv nil env))))
+             ((unless falistp)
+              (if (and (consp env) (equal (car env) 'cons))
+                  (progn$
+                   (cw "Note: the environment of svex-eval-alist is not a fast-alist. Making it a fast-alist now.~%")
+                   (mv `(sv::svex-alist-eval ',svex-alist (make-fast-alist ,env-orig))
+                       `(nil t (nil t))))
+                (mv term nil)))
 
-            ((Unless (sv::svex-alist-p svex-alist)) ;; for guards
-             (mv term (raise "given sv::svex-alist does not have sv::svex-alist: ~p0." svex-alist)))
-            ((Unless (sv::svex-alist-no-foreign-op-p svex-alist)) ;; to convert svex-eval to eval$
-             (mv term (raise "given sv::svex-alist has foreign operands: ~p0" svex-alist)))
-            ((Unless (check-context-for-adder-warrants context)) ;; check for existence of warrants.
-             (mv term (raise "Some necessary warrants were not found in the context: ~p0" context)))
+             ((Unless (sv::svex-alist-p svex-alist)) ;; for guards
+              (mv term (raise "given sv::svex-alist does not have sv::svex-alist: ~p0." svex-alist)))
+             ((Unless (sv::svex-alist-no-foreign-op-p svex-alist)) ;; to convert svex-eval to eval$
+              (mv term (raise "given sv::svex-alist has foreign operands: ~p0" svex-alist)))
+             ((Unless (check-context-for-adder-warrants context)) ;; check for existence of warrants.
+              (mv term (raise "Some necessary warrants were not found in the context: ~p0" context)))
 
-            (config (svex-reduce-w/-env-config-1))
+             (config (svex-reduce-w/-env-config-1))
 
-            (- (cw "Starting: svl::svex-alist-reduce-w/-env. ~%"))
-            (- (time-tracker :rewrite-adders-in-svex :end))
-            (- (time-tracker :rewrite-adders-in-svex :init
-                             :times '(1 2 3 4 5)
-                             :interval 5
-                             ))
-            (- (time-tracker :rewrite-adders-in-svex :start!))
-            (config (svl::change-svex-reduce-config
-                     config :skip-bitor/and/xor-repeated t))
-            (svex-alist (svl::svexalist-convert-bitnot-to-bitxor svex-alist))
-            (svex-alist (svl::svex-alist-reduce-w/-env svex-alist :env env :config config))
-            (- (acl2::sneaky-save 'orig-svex-alist svex-alist))
-            (- (time-tracker :rewrite-adders-in-svex :stop))
-            (- (time-tracker :rewrite-adders-in-svex :print?
-                             :min-time 0
-                             :msg "The total runtime of svl::svex-alist-reduce-w/-env ~
-was ~st seconds."))
+             (- (cw "Starting: svl::svex-alist-reduce-w/-env. ~%"))
+             ;; (- (time-tracker :rewrite-adders-in-svex :end))
+             ;; (- (time-tracker :rewrite-adders-in-svex :init
+             ;;                  :times '(1 2 3 4 5)
+             ;;                  :interval 5
+             ;;                  ))
+             ;; (- (time-tracker :rewrite-adders-in-svex :start!))
+             (config (svl::change-svex-reduce-config
+                      config :skip-bitor/and/xor-repeated t))
+             (svex-alist
+              (time$
+               (b* ((svex-alist (svl::svexalist-convert-bitnot-to-bitxor svex-alist))
+                    (svex-alist (svl::svex-alist-reduce-w/-env svex-alist :env env :config config)))
+                 svex-alist)
+               :msg "---- svl::svex-alist-reduce-w/-env took ~st seconds (real-time), or ~sc seconds ~
+  (cpu-time), and ~sa bytes allocated.~%~%"))
+                           
+             (- (acl2::sneaky-save 'orig-svex-alist svex-alist))
+             ;;  (- (time-tracker :rewrite-adders-in-svex :stop))
+             ;;             (- (time-tracker :rewrite-adders-in-svex :print?
+             ;;                              :min-time 0
+             ;;                              :msg "The total runtime of svl::svex-alist-reduce-w/-env ~
+             ;; was ~st seconds."))
 
-            (config (svl::change-svex-reduce-config
-                     config
-                     :skip-bitor/and/xor-repeated nil
-                     :keep-missing-env-vars nil))
+             (config (svl::change-svex-reduce-config
+                      config
+                      :skip-bitor/and/xor-repeated nil
+                      :keep-missing-env-vars nil))
 
-            (- (cw "Starting: rp::rewrite-adders-in-svex-alist. ~%"))
-            (- (time-tracker :rewrite-adders-in-svex :end))
-            (- (time-tracker :rewrite-adders-in-svex :init
-                             :times '(1 2 3 4 5)
-                             :interval 5
-                             ))
-            (- (time-tracker :rewrite-adders-in-svex :start!))
+             (- (cw "Starting: rp::rewrite-adders-in-svex-alist. ~%"))
+             (- (time-tracker :rewrite-adders-in-svex :end))
+             (- (time-tracker :rewrite-adders-in-svex :init
+                              :times '(1 2 3 4 5)
+                              :interval 5
+                              ))
+             (- (time-tracker :rewrite-adders-in-svex :start!))
 
-            (- (if (aggressive-find-adders-in-svex)
-                   (cw "Aggressive mode is enabled. Disabling may reduce the time spent during adder pattern search. To disable run:~%(rp::enable-aggressive-find-adders-in-svex nil) ~%~%")
-                 (cw "Warning: Aggressive mode is disabled. Enabling may help a failing proof go through. To enable run:~%(rp::enable-aggressive-find-adders-in-svex t) ~%")))
+             (- (if (aggressive-find-adders-in-svex)
+                    (cw "Aggressive mode is enabled. Disabling may reduce the time spent during adder pattern search. To disable run:~%(rp::enable-aggressive-find-adders-in-svex nil) ~%~%")
+                  (cw "Warning: Aggressive mode is disabled. Enabling may help a failing proof go through. To enable run:~%(rp::enable-aggressive-find-adders-in-svex t) ~%")))
 
-            (svex-alist (wrap-pp-with-id-alist svex-alist))
-            (tstate (make-find-f/h-adders-state))
+             (svex-alist (wrap-pp-with-id-alist svex-alist))
+             (tstate (make-find-f/h-adders-state))
 
-            (svex-alist (find-f/h-adders-in-svex-alist svex-alist
-                                                       *find-f/h-adders-in-svex-alist-limit*
-                                                       :adder-type 'fa))
+             (svex-alist (find-f/h-adders-in-svex-alist svex-alist
+                                                        *find-f/h-adders-in-svex-alist-limit*
+                                                        :adder-type 'fa))
 
-            ;;(- (design_res-broken svex-alist "after-fa"))
+             ;;(- (design_res-broken svex-alist "after-fa"))
 
-            #|(- (cwe "resulting svexl-alist after full-adders ~p0 ~%"
-            (svl::svex-alist-to-svexl-alist svex-alist)))|#
+             #|(- (cwe "resulting svexl-alist after full-adders ~p0 ~%"
+             (svl::svex-alist-to-svexl-alist svex-alist)))|#
 
-            (- (acl2::sneaky-save 'after-fa svex-alist))
-            (- (cw "~%Access the svexl-alist after full-adder search:
+             (- (acl2::sneaky-save 'after-fa svex-alist))
+             (- (cw "~%Access the svexl-alist after full-adder search:
 (b* (((mv res state) (acl2::sneaky-load 'rp::after-fa state)))
    (mv state (svl::svex-alist-to-svexl-alist res))) ~%"))
 
-            (- (time-tracker :rewrite-adders-in-svex :stop))
-            (- (time-tracker :rewrite-adders-in-svex :print?
-                             :min-time 0
-                             :msg "Search for full adder patterns took ~st secs.~%~%"))
+             (- (time-tracker :rewrite-adders-in-svex :stop))
+             (- (time-tracker :rewrite-adders-in-svex :print?
+                              :min-time 0
+                              :msg "Search for full adder patterns took ~st secs.~%~%"))
 
-            (- (time-tracker :rewrite-adders-in-svex :end))
-            (- (time-tracker :rewrite-adders-in-svex :init
-                             :times '(1 2 3 4 5)
-                             :interval 5
-                             ))
-            (- (time-tracker :rewrite-adders-in-svex :start!))
+             (- (time-tracker :rewrite-adders-in-svex :end))
+             (- (time-tracker :rewrite-adders-in-svex :init
+                              :times '(1 2 3 4 5)
+                              :interval 5
+                              ))
+             (- (time-tracker :rewrite-adders-in-svex :start!))
 
-            ;;(svex-alist (svl::light-svex-alist-simplify-bitand/or/xor svex-alist))
+             ;;(svex-alist (svl::light-svex-alist-simplify-bitand/or/xor svex-alist))
 
-            (svex-alist (find-f/h-adders-in-svex-alist svex-alist
-                                                       *find-f/h-adders-in-svex-alist-limit*
-                                                       :adder-type 'ha
-                                                       :tstate (change-find-f/h-adders-state
-                                                                tstate
-                                                                :track-column?
-                                                                ;; it  will try
-                                                                ;; again in the
-                                                                ;; end  without
-                                                                ;; track-column?
-                                                                ;; if  it makes
-                                                                ;; 4+    parses
-                                                                ;; first.
-                                                                40;(+ 4 *find-f/h-adders-in-svex-alist-limit*)
-                                                                )))
-            (- (acl2::sneaky-save 'after-round1 svex-alist))
-            (- (cw "~%Access the svexl-alist after full-adder and half-adder search:
+             (svex-alist (find-f/h-adders-in-svex-alist svex-alist
+                                                        *find-f/h-adders-in-svex-alist-limit*
+                                                        :adder-type 'ha
+                                                        :tstate (change-find-f/h-adders-state
+                                                                 tstate
+                                                                 :track-column?
+                                                                 ;; it  will try
+                                                                 ;; again in the
+                                                                 ;; end  without
+                                                                 ;; track-column?
+                                                                 ;; if  it makes
+                                                                 ;; 4+    parses
+                                                                 ;; first.
+                                                                 40 ;(+ 4 *find-f/h-adders-in-svex-alist-limit*)
+                                                                 )))
+             (- (acl2::sneaky-save 'after-round1 svex-alist))
+             (- (cw "~%Access the svexl-alist after full-adder and half-adder search:
 (b* (((mv res state) (acl2::sneaky-load 'rp::after-round1 state)))
    (mv state (svl::svex-alist-to-svexl-alist res))) ~%"))
 
-            (- (time-tracker :rewrite-adders-in-svex :stop))
-            (- (time-tracker :rewrite-adders-in-svex :print?
-                             :min-time 0
-                             :msg "Search for half adder patterns took ~st secs.~%~%"))
+             (- (time-tracker :rewrite-adders-in-svex :stop))
+             (- (time-tracker :rewrite-adders-in-svex :print?
+                              :min-time 0
+                              :msg "Search for half adder patterns took ~st secs.~%~%"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            ;; Final leg
-            (- (time-tracker :rewrite-adders-in-svex :end))
-            (- (time-tracker :rewrite-adders-in-svex :init
-                             :times '(1 2 3 4 5)
-                             :interval 5
-                             ))
-            (- (time-tracker :rewrite-adders-in-svex :start!))
+             ;; Final leg
+             (- (time-tracker :rewrite-adders-in-svex :end))
+             (- (time-tracker :rewrite-adders-in-svex :init
+                              :times '(1 2 3 4 5)
+                              :interval 5
+                              ))
+             (- (time-tracker :rewrite-adders-in-svex :start!))
 
-            (- (cw "~%"))
-            (- (cw "Now will perform global simplification, remove potentialy misidentified half-adders, perform another round of full-adder/half-adder detection, and finalize the search. ~%~%"))
+             (- (cw "~%"))
+             (- (cw "Now will perform global simplification, remove potentialy misidentified half-adders, perform another round of full-adder/half-adder detection, and finalize the search. ~%~%"))
 
-            ;; (- (cw "--- Let's try to reduce number of negations~%"))
-            ;; (new-svex-alist (svl::svex-alist-reduce-bit-negations svex-alist))
-            ;; (- (if (hons-equal new-svex-alist svex-alist)
-            ;;        (cw "-> Nothing is changed after negation reduction attempt. ~%")
-            ;;      (cw "-> Could clean some number negations. ~%")))
-            ;; (svex-alist new-svex-alist)
+             ;; (- (cw "--- Let's try to reduce number of negations~%"))
+             ;; (new-svex-alist (svl::svex-alist-reduce-bit-negations svex-alist))
+             ;; (- (if (hons-equal new-svex-alist svex-alist)
+             ;;        (cw "-> Nothing is changed after negation reduction attempt. ~%")
+             ;;      (cw "-> Could clean some number negations. ~%")))
+             ;; (svex-alist new-svex-alist)
 
-            ;; I have  seen a case (32X32_UBP_AR_VCSkA)  where simplifying before
-            ;; removing ha-pairs helps.
-            (svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist :nodes-to-skip-alist nil))
-            ;;(svex-alist (svl::light-svex-alist-simplify-bitand/or/xor svex-alist))
-            (svex-alist (fix-order-of-fa/ha-chain-args-alist svex-alist))
+             ;; I have  seen a case (32X32_UBP_AR_VCSkA)  where simplifying before
+             ;; removing ha-pairs helps.
+             (svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist :nodes-to-skip-alist nil))
+             ;;(svex-alist (svl::light-svex-alist-simplify-bitand/or/xor svex-alist))
+             (svex-alist (fix-order-of-fa/ha-chain-args-alist svex-alist))
 
-            ;; this should trigger a second round because of :track-column? limitation..
-            (new-svex-alist (search-and-add-ha-c-for-shifted svex-alist))
+             ;; this should trigger a second round because of :track-column? limitation..
+             (new-svex-alist (search-and-add-ha-c-for-shifted svex-alist))
 
-            ;;(- (design_res-broken svex-alist "before remove-ha-pairs-under-gates-alist"))
+             ;;(- (design_res-broken svex-alist "before remove-ha-pairs-under-gates-alist"))
 
-            (new-svex-alist (remove-unpaired-fa-s-alist new-svex-alist))
-            ;; remove half-adders under gates..
-            (new-svex-alist (remove-ha-pairs-under-gates-alist new-svex-alist))
-            ;; try maybe global simplification here to clear out more clutter. Maybe this is unnecessary
+             (new-svex-alist (remove-unpaired-fa-s-alist new-svex-alist))
+             ;; remove half-adders under gates..
+             (new-svex-alist (remove-ha-pairs-under-gates-alist new-svex-alist))
+             ;; try maybe global simplification here to clear out more clutter. Maybe this is unnecessary
 
-            ;;(- (design_res-broken svex-alist "after remove-ha-pairs-under-gates-alist"))
+             ;;(- (design_res-broken svex-alist "after remove-ha-pairs-under-gates-alist"))
 
-            (disable-search (and*-exec (not (aggressive-find-adders-in-svex)) 
-                                       (equal new-svex-alist svex-alist)
-                                       (not (adders-under-gates?-alist new-svex-alist))))
-            (- (and disable-search
-                    (cw "- Agressive mode is disabled and removing adders did not change anything -> ending the search.~%")))
-            (svex-alist new-svex-alist)
+             (disable-search (and*-exec (not (aggressive-find-adders-in-svex)) 
+                                        (equal new-svex-alist svex-alist)
+                                        (not (adders-under-gates?-alist new-svex-alist))))
+             (- (and disable-search
+                     (cw "- Agressive mode is disabled and removing adders did not change anything -> ending the search.~%")))
+             (svex-alist new-svex-alist)
 
-            ;; There's  something  off  somewhere  that calling  this  twice  was
-            ;; necessary to properly clean stuff.  May have to do with inside-out
-            ;; vs. outside-in simplificaiton
-            (svl::nodes-to-skip-alist nil)
-            (svex-alist (if disable-search svex-alist (svl::svex-alist-simplify-bitand/or/xor-outside-in svex-alist)))
-            (svex-alist (if disable-search svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist)))
-            ;;(svex-alist (if disable-search svex-alist (svl::light-svex-alist-simplify-bitand/or/xor svex-alist)))
-            (svex-alist (if disable-search svex-alist (fix-order-of-fa/ha-chain-args-alist svex-alist)))
+             ;; There's  something  off  somewhere  that calling  this  twice  was
+             ;; necessary to properly clean stuff.  May have to do with inside-out
+             ;; vs. outside-in simplificaiton
+             (svl::nodes-to-skip-alist nil)
+             (svex-alist (if disable-search svex-alist (svl::svex-alist-simplify-bitand/or/xor-outside-in svex-alist)))
+             (svex-alist (if disable-search svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist)))
+             ;;(svex-alist (if disable-search svex-alist (svl::light-svex-alist-simplify-bitand/or/xor svex-alist)))
+             (svex-alist (if disable-search svex-alist (fix-order-of-fa/ha-chain-args-alist svex-alist)))
 
-            #|(- (cwe "resulting svexl-alist after removing half-adders and global simplification ~p0 ~%"
-            (svl::svex-alist-to-svexl-alist svex-alist)))|#
+             #|(- (cwe "resulting svexl-alist after removing half-adders and global simplification ~p0 ~%"
+             (svl::svex-alist-to-svexl-alist svex-alist)))|#
 
-            (tstate (change-find-f/h-adders-state tstate
-                                                  :pp-id-cleaned t
-                                                  :reduce-bit-negations t))
-            (svex-alist (if disable-search svex-alist
-                          (find-f/h-adders-in-svex-alist svex-alist
-                                                         *find-f/h-adders-in-svex-alist-limit*
-                                                         :adder-type 'fa
-                                                         :tstate (change-find-f/h-adders-state
-                                                                            tstate
-                                                                            :skip-vector-adder t))))
-            ((mv svex-alist not-changed?)
-             (if disable-search (mv svex-alist t)
-               (b* ((- (cw "---~%"))
-                    (new-svex-alist (find-f/h-adders-in-svex-alist svex-alist
-                                                                   *find-f/h-adders-in-svex-alist-limit*
-                                                                   :adder-type 'ha
-                                                                   :tstate (change-find-f/h-adders-state
-                                                                            tstate
-                                                                            :track-column? 20
-                                                                            :skip-light-simplify t
-                                                                            :skip-vector-adder t))))
-                 (mv new-svex-alist (equal svex-alist new-svex-alist)))))
-
-            
-            ((mv svex-alist not-changed?)
-             (if (or* disable-search not-changed?) (mv svex-alist t)
-               (b* ((- (cw "---- ~%--- Previous half-adder search (1) made some changes. Let's look for full-adders again.~%"))
-                    ;; (new-svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist))
-                    ;; (new-svex-alist (remove-ha-pairs-under-gates-alist new-svex-alist))
-                    (new-svex-alist svex-alist)
-                    (new-svex-alist2 (find-f/h-adders-in-svex-alist new-svex-alist
+             (tstate (change-find-f/h-adders-state tstate
+                                                   :pp-id-cleaned t
+                                                   :reduce-bit-negations t))
+             (svex-alist (if disable-search svex-alist
+                           (find-f/h-adders-in-svex-alist svex-alist
+                                                          *find-f/h-adders-in-svex-alist-limit*
+                                                          :adder-type 'fa
+                                                          :tstate (change-find-f/h-adders-state
+                                                                   tstate
+                                                                   :skip-vector-adder t))))
+             ((mv svex-alist not-changed?)
+              (if disable-search (mv svex-alist t)
+                (b* ((- (cw "---~%"))
+                     (new-svex-alist (find-f/h-adders-in-svex-alist svex-alist
                                                                     *find-f/h-adders-in-svex-alist-limit*
-                                                                    :adder-type 'fa
+                                                                    :adder-type 'ha
                                                                     :tstate (change-find-f/h-adders-state
                                                                              tstate
-                                                                             ;;:skip-vector-adder t
-                                                                             :only-quick-search t)))
-                    ((when (equal new-svex-alist new-svex-alist2))
-                     (mv svex-alist t)))
-                 (mv new-svex-alist2 nil))))
+                                                                             :track-column? 20
+                                                                             :skip-light-simplify t
+                                                                             :skip-vector-adder t))))
+                  (mv new-svex-alist (equal svex-alist new-svex-alist)))))
 
-            ((mv svex-alist not-changed?)
-             (if (or* disable-search not-changed?) (mv svex-alist t)
-               (b* ((- (cw "---- ~%--- Previous full-adder search (2) made some changes. Let's look for half-adders again.~%"))
-                    (new-svex-alist (find-f/h-adders-in-svex-alist svex-alist
-                                                                   *find-f/h-adders-in-svex-alist-limit*
-                                                                   :adder-type 'ha
-                                                                   :tstate (change-find-f/h-adders-state
-                                                                            tstate
-                                                                            :track-column? 10
-                                                                            :skip-light-simplify t
-                                                                            :skip-vector-adder t))))
-                 (mv new-svex-alist (equal svex-alist new-svex-alist)))))
+            
+             ((mv svex-alist not-changed?)
+              (if (or* disable-search not-changed?) (mv svex-alist t)
+                (b* ((- (cw "---- ~%--- Previous half-adder search (1) made some changes. Let's look for full-adders again.~%"))
+                     ;; (new-svex-alist (svl::svex-alist-simplify-bitand/or/xor svex-alist))
+                     ;; (new-svex-alist (remove-ha-pairs-under-gates-alist new-svex-alist))
+                     (new-svex-alist svex-alist)
+                     (new-svex-alist2 (find-f/h-adders-in-svex-alist new-svex-alist
+                                                                     *find-f/h-adders-in-svex-alist-limit*
+                                                                     :adder-type 'fa
+                                                                     :tstate (change-find-f/h-adders-state
+                                                                              tstate
+                                                                              ;;:skip-vector-adder t
+                                                                              :only-quick-search t)))
+                     ((when (equal new-svex-alist new-svex-alist2))
+                      (mv svex-alist t)))
+                  (mv new-svex-alist2 nil))))
 
-            ((mv svex-alist ?not-changed?)
-             (if (or* disable-search not-changed?) (mv svex-alist t)
-               (b* ((- (cw "---- ~%--- Previous half-adder search (3) made some changes. Let's look for full-adders again.~%"))
-                    (new-svex-alist (find-f/h-adders-in-svex-alist svex-alist
-                                                                   *find-f/h-adders-in-svex-alist-limit*
-                                                                   :adder-type 'fa)))
-                 (mv new-svex-alist (equal svex-alist new-svex-alist)))))
+             ((mv svex-alist not-changed?)
+              (if (or* disable-search not-changed?) (mv svex-alist t)
+                (b* ((- (cw "---- ~%--- Previous full-adder search (2) made some changes. Let's look for half-adders again.~%"))
+                     (new-svex-alist (find-f/h-adders-in-svex-alist svex-alist
+                                                                    *find-f/h-adders-in-svex-alist-limit*
+                                                                    :adder-type 'ha
+                                                                    :tstate (change-find-f/h-adders-state
+                                                                             tstate
+                                                                             :track-column? 10
+                                                                             :skip-light-simplify t
+                                                                             :skip-vector-adder t))))
+                  (mv new-svex-alist (equal svex-alist new-svex-alist)))))
 
-            ((mv svex-alist ?not-changed?)
-             (if (or* disable-search not-changed?) (mv svex-alist t)
-               (b* ((- (cw "---- ~%--- Previous full-adder search (4) made some changes. Let's look for half-adders again.~%"))
-                    (new-svex-alist (find-f/h-adders-in-svex-alist svex-alist
-                                                                   *find-f/h-adders-in-svex-alist-limit*
-                                                                   :adder-type 'ha
-                                                                   :tstate (change-find-f/h-adders-state
-                                                                            tstate
-                                                                            :track-column? 5
-                                                                            :skip-vector-adder t))))
-                 (mv new-svex-alist (equal svex-alist new-svex-alist)))))
+             ((mv svex-alist ?not-changed?)
+              (if (or* disable-search not-changed?) (mv svex-alist t)
+                (b* ((- (cw "---- ~%--- Previous half-adder search (3) made some changes. Let's look for full-adders again.~%"))
+                     (new-svex-alist (find-f/h-adders-in-svex-alist svex-alist
+                                                                    *find-f/h-adders-in-svex-alist-limit*
+                                                                    :adder-type 'fa)))
+                  (mv new-svex-alist (equal svex-alist new-svex-alist)))))
 
-            (- (acl2::sneaky-save 'after-round2 svex-alist))
-            (- (cw "~%Access the svexl-alist after the second round of full-adder and half-adder search:
+             ((mv svex-alist ?not-changed?)
+              (if (or* disable-search not-changed?) (mv svex-alist t)
+                (b* ((- (cw "---- ~%--- Previous full-adder search (4) made some changes. Let's look for half-adders again.~%"))
+                     (new-svex-alist (find-f/h-adders-in-svex-alist svex-alist
+                                                                    *find-f/h-adders-in-svex-alist-limit*
+                                                                    :adder-type 'ha
+                                                                    :tstate (change-find-f/h-adders-state
+                                                                             tstate
+                                                                             :track-column? 5
+                                                                             :skip-vector-adder t))))
+                  (mv new-svex-alist (equal svex-alist new-svex-alist)))))
+
+             (- (acl2::sneaky-save 'after-round2 svex-alist))
+             (- (cw "~%Access the svexl-alist after the second round of full-adder and half-adder search:
 (b* (((mv res state) (acl2::sneaky-load 'rp::after-round2 state)))
    (mv state (svl::svex-alist-to-svexl-alist res))) ~%"))
 
-            (svex-alist (if disable-search svex-alist
-                          (svl::svex-alist-simplify-bitand/or/xor svex-alist)))
-            ;; prob unnecessary
+             (svex-alist (if disable-search svex-alist
+                           (svl::svex-alist-simplify-bitand/or/xor svex-alist)))
+             ;; prob unnecessary
             
-            (svex-alist (if disable-search svex-alist
-                          (remove-ha-pairs-under-gates-alist svex-alist :wrap-with-id t)))
-            (svex-alist (if disable-search svex-alist
-                          (remove-unpaired-fa-s-alist svex-alist)))
-            ;; (svex-alist (if disable-search svex-alist
-            ;;               (svl::svex-alist-simplify-bitand/or/xor svex-alist))) ;; prob unnecessary
+             (svex-alist (if disable-search svex-alist
+                           (remove-ha-pairs-under-gates-alist svex-alist :wrap-with-id t)))
+             (svex-alist (if disable-search svex-alist
+                           (remove-unpaired-fa-s-alist svex-alist)))
+             ;; (svex-alist (if disable-search svex-alist
+             ;;               (svl::svex-alist-simplify-bitand/or/xor svex-alist))) ;; prob unnecessary
 
-            ;; to be enabled manually to make s-c-spec-meta work faster. but left
-            ;; disabled by default because debugging becomes difficult with this.
-            (svex-alist (if (merge-fa-chains)
-                            (merge-fa-s-c-chains-alist svex-alist)
-                          svex-alist))
+             ;; to be enabled manually to make s-c-spec-meta work faster. but left
+             ;; disabled by default because debugging becomes difficult with this.
+             (svex-alist (if (merge-fa-chains)
+                             (merge-fa-s-c-chains-alist svex-alist)
+                           svex-alist))
 
-            (- (time-tracker :rewrite-adders-in-svex :stop))
-            (- (time-tracker :rewrite-adders-in-svex :print?
-                             :min-time 0
-                             :msg "Final round of searching for adders took ~st secs.~%~%"))
+             (- (time-tracker :rewrite-adders-in-svex :stop))
+             (- (time-tracker :rewrite-adders-in-svex :print?
+                              :min-time 0
+                              :msg "Final round of searching for adders took ~st secs.~%~%"))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-            (- (cw "Finished: rp::rewrite-adders-in-svex-alist.~%"))
+             (- (cw "Finished: rp::rewrite-adders-in-svex-alist.~%"))
 
-            (- (cw "Starting: svl::svex-alist-to-svexl-alist ~%"))
-            (svexl-alist (svl::svex-alist-to-svexl-alist svex-alist))
-            (- (let ((x (svl::svexl-alist->node-array svexl-alist))) ;; for guards
-                 (cw "Finished: svl::svex-alist-to-svexl-alist. Resulting svexl-alist has ~p0 nodes.~%~%" (len x))))
+             (- (cw "Starting: svl::svex-alist-to-svexl-alist ~%"))
+             (svexl-alist (svl::svex-alist-to-svexl-alist svex-alist))
+             (- (let ((x (svl::svexl-alist->node-array svexl-alist))) ;; for guards
+                  (cw "Finished: svl::svex-alist-to-svexl-alist. Resulting svexl-alist has ~p0 nodes.~%~%" (len x))))
 
-            (- (missed-adder-warning svexl-alist))
+             (- (missed-adder-warning svexl-alist))
 
-            ;;(- (cwe "resulting svexl-alist: ~p0 ~%" svexl-alist))
-            (- (acl2::sneaky-save 'after-all svexl-alist))
-            (- (cw "Access the resulting svexl-alist:~%(acl2::sneaky-load 'rp::after-all state)~%"))
+             ;;(- (cwe "resulting svexl-alist: ~p0 ~%" svexl-alist))
+             (- (acl2::sneaky-save 'after-all svexl-alist))
+             (- (cw "Access the resulting svexl-alist:~%(acl2::sneaky-load 'rp::after-all state)~%"))
 
-            (- (clear-memoize-table 'replace-adder-patterns-in-svex))
+             (- (clear-memoize-table 'replace-adder-patterns-in-svex))
 
-            (& (hons-clear t))
-            )
-         (mv `(svl::svexl-alist-eval$ ',svexl-alist ,env-orig)
-             `(nil t t))))
-      (& (mv term nil)))
+             (& (hons-clear t))
+             )
+          (mv `(svl::svexl-alist-eval$ ',svexl-alist ,env-orig)
+              `(nil t t))))
+       (& (mv term nil)))
+     :mintime 1/8
+     :msg "~%---- Preprocessing SVEXes and Finding adders took ~st seconds (real-time), or ~sc seconds ~
+  (cpu-time), and ~sa bytes allocated.~%~%")
     ///
 
     (local

@@ -1302,7 +1302,7 @@ RP-Rewriter will throw an eligible error.</p>"
                                       (theory 'minimal-theory)))
                          (and stable-under-simplificationp
                               '(:in-theory (e/d () ())))))))))
-         (t `(:stach :pop
+         (t `(:stack :pop
                      (,(if (or disabled disabled-for-ACL2) 'defthmd 'defthm)
                       ,name
                       ,term

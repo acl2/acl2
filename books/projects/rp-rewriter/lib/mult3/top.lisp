@@ -323,6 +323,7 @@
            (failed? (cdr (hons-assoc-equal name (table-alist 'mult-failed (w state)))))
            (end-message (cdr (hons-assoc-equal 'end-message (table-alist 'mult-timer (w state)))))
            (end-message (str::cat (if failed? "The above event " "Proof for this conjecture ") end-message))
+           (- (cw "~p0~%~p1~%" (if failed? '"!!! This proof has failed !!!" "") end-message))
            (lst `(,(str::Cat "--- Starting the proofs for "
                              (if (stringp print-message) (str::cat "- " print-message " - ") "")
                              (symbol-name name) " ---")
@@ -428,6 +429,10 @@
               (print-message ',print-message)
 
               (- (cw "~%-------~%Starting verify-svtv-of-mult for ~p0~%~%" ',name))
+              (- (cw "~%--- Starting the proofs for ~s0~s1 ---"
+                     (if (stringp print-message) (str::cat "- " print-message " - ") "")
+                     (symbol-name ',name)))
+              
               ;; ---------------
               ;; make decisions based on read-from-file:
               ((mv invars outvars has-modified)
