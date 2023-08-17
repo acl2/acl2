@@ -124,8 +124,6 @@
        (- (and (acl2::print-level-at-least-tp print)
                (cw "Making ~x0 :enable recommendations: " ; the line is ended below when we print the time
                    num-recs)))
-       (print-timep (acl2::print-level-at-least-tp print))
-       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
        ; (translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
        (fns-in-goal (set-difference-eq (acl2::defined-fns-in-term translated-theorem-body wrld)
                                        *fns-to-never-enable*))
@@ -144,17 +142,7 @@
        (fns-beyond-the-limit (nthcdr num-recs fns-to-try-enabling))
        (- (and fns-beyond-the-limit
                (cw "Suppressing ~x0 enable recs (beyond num-recs): ~X12.~%" (len fns-beyond-the-limit) fns-beyond-the-limit nil)))
-       (recs (make-enable-recs-aux fns-to-try-enabling 1))
-       ;; Compute elapsed time:
-       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (time-diff (- done-time start-time))
-       (time-diff (if (< time-diff 0)
-                      (prog2$ (cw "Warning: negative time reported: ~x0.~%")
-                              0)
-                    time-diff))
-       (- (and print-timep (prog2$ (acl2::print-to-hundredths time-diff)
-                                   (cw "s~%") ; s = seconds
-                                   ))))
+       (recs (make-enable-recs-aux fns-to-try-enabling 1)))
     (mv nil recs state)))
 
 ;; (local

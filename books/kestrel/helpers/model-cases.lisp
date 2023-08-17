@@ -69,9 +69,6 @@
        (- (and (acl2::print-level-at-least-tp print)
                (cw "Making ~x0 :cases recommendations: " ; the line is ended below when we print the time
                    num-recs)))
-       ;; todo: factor out this timing stuff?
-       (print-timep (acl2::print-level-at-least-tp print))
-       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
        ;; For now, just suggest cases when we have a boolean term equated to something else:
        ;; TODO: Also look at the goal (handle implies, etc.):
        (equated-boolean-terms-in-checkpoints (equated-boolean-terms-in-clauses checkpoint-clauses (acl2::ens state) wrld))
@@ -88,9 +85,5 @@
           ;; Don't make any recommendations:
           nil))
        ;; todo: how to choose when we can't return them all?:
-       (recs (acl2::firstn num-recs recs))
-       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (- (and print-timep (prog2$ (acl2::print-to-hundredths (- done-time start-time))
-                                   (cw "s~%") ; s = seconds
-                                   ))))
+       (recs (acl2::firstn num-recs recs)))
     (mv nil recs state)))

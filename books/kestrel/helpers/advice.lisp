@@ -3074,19 +3074,12 @@
                (post-data (acons-all-to-val (rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types)) ; todo: drop this?  can the models handle disallowed unknown rec types?
                                             "off"
                                             post-data))
-               (print-timep (acl2::print-level-at-least-tp print))
-               ((mv server-start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
                ;; Send POST requqest to server and parse the response:
                ((mv erp parsed-response state)
                 (post-and-parse-response-as-json server-url timeout post-data debug state))
                ((when erp)
                 ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
                 (mv erp nil state))
-               ;; Print the elapsed time:
-               ((mv server-done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-               (- (and print-timep (prog2$ (acl2::print-to-hundredths (- server-done-time server-start-time))
-                                           (cw "s~%") ; s = seconds
-                                           )))
                ((when (not (acl2::parsed-json-arrayp parsed-response)))
                 (er hard? 'get-recs-from-ml-model "Error: Response from server is not a JSON array: ~x0." parsed-response)
                 (mv :bad-server-response nil state)))
@@ -3135,6 +3128,9 @@
          (model (car entry))
          (model-info (cdr entry))
          (translated-theorem-body (acl2::translate-term theorem-body 'get-recs-from-models-aux (w state))) ; todo: just do once, outside this loop
+         (print-timep (acl2::print-level-at-least-tp print))
+         ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+
          ((mv erp recs state)
           (if (eq :enable model)
               ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
@@ -3153,8 +3149,21 @@
                     (make-cases-recs translated-theorem-body checkpoint-clauses num-recs-per-model print state))
                 ;; It's a normal ML model:
                 (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state)))))
-         (- (and erp (cw "Note: Skipping ~x0 due to errors.~%" model)))
-         ;; Remove any recs that are disallowed (todo: drop this now?):
+         ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+         (- (if erp
+                (cw "Note: Skipping ~x0 due to errors.~%" model)
+              (if print-timep
+                  (let* ((time-diff (- done-time start-time))
+                         (time-diff (if (< time-diff 0)
+                                        (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
+                                                0)
+                                      time-diff)))
+                    (progn$ (cw "Got ~x0 recs in " (len recs))
+                            (acl2::print-to-hundredths time-diff)
+                            (cw "s~%") ; s = seconds
+                            ))
+                (cw "Got ~x0 recs.~%" (len recs)))))
+         ;; Remove any recs that are disallowed (todo: drop this now? or print something here?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
       (get-recs-from-models-aux num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem
                                 (rest model-info-alist)
