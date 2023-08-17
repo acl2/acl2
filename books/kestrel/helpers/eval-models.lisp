@@ -138,6 +138,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun models-that-worked (model-results)
+  (declare (xargs :guard (model-result-listp model-results)))
+  (if (endp model-results)
+      nil
+    (let* ((model-result (first model-results))
+           (model-name (first model-result))
+           (first-working-rec-num-or-nil (third model-result)))
+      (if first-working-rec-num-or-nil
+          (cons model-name (models-that-worked (rest model-results)))
+        (models-that-worked (rest model-results))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Maps test-infos to model-result-lists.  Each test may thus have many
 ;; model-results, once for each model.
 (defun result-alistp (alist)
@@ -694,12 +707,12 @@
       (if (not (true-listp theorem-hints))
           (er hard? 'breakable-eventp "Bad hints in ~x0: ~x1." (cadr event) theorem-hints)
         (if (null theorem-hints)
-            (prog2$ (cw "Skipping ~x0 since it has no hints to remove.~%" (cadr event))
+            (prog2$ (cw "Skipping ~x0: no hints.~%" (cadr event))
                     nil)
           (if (and (eq breakage-plan :goal-partial)
                    (null (hint-keyword-value-list-for-goal-spec "Goal" theorem-hints)))
               ;; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints):
-              (prog2$ (cw "Skipping ~x0 since it has no hints on Goal.~%" (cadr event))
+              (prog2$ (cw "Skipping ~x0: no hints on Goal.~%" (cadr event))
                       nil)
             t))))))
 
@@ -736,18 +749,19 @@
        ;;                 '(:rewrite)))
        ;; (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (theorem-hints (cadr (assoc-keyword :hints (cdddr defthm))))
+       (- (cw "~%(Working on ~x0.~%" theorem-name)) ; paren is closed on various exit branches below.
+       ((when (null theorem-hints)) ; todo: this cannot happen?
+        (prog2$ (cw " Skip: ~x0 has no hints to remove.)~%" theorem-name)
+                (mv nil            ; no error
+                    :not-attempted ; no breakage of hints possible
+                    t ; trivialp (there were no hints, and we assume it proves without them))
+                    nil rand state)))
        ((when (not (breakable-eventp defthm breakage-plan)))
-        (mv nil ; no error
-            :not-attempted ; no breakage of hints possible
-            t
-            nil rand state))
-
-       ;; ((when (null theorem-hints))
-       ;;  (cw "Skipping ~x0 since it has no hints to remove.~%" theorem-name)
-       ;;  (mv nil ; no error
-       ;;      :not-attempted ; no breakage of hints possible
-       ;;      t ; there were no hints (and we assume it proves without them)
-       ;;      nil rand state))
+        (prog2$ (cw "Skip: ~x0 is not breakable by ~x1.)~%" theorem-name breakage-plan)
+                (mv nil    ; no error
+                    :not-attempted ; no breakage of hints possible
+                    t
+                    nil rand state)))
 
        ;; ((when (and (eq breakage-plan :goal-partial)
        ;;             (null (hint-keyword-value-list-for-goal-spec "Goal" theorem-hints))))
@@ -760,22 +774,21 @@
        ;; Break the hints:
        ((mv breakage-type broken-theorem-hints rand)
         (if (eq breakage-plan :goal-partial)
-            (b* ((- (cw "Removing part of the Goal hint.~%"))
+            (b* ((- (cw " Removing part of the Goal hint.~%"))
                  ;; (- (cw "rand is ~x0.~%" rand))
                  ((mv breakage-type broken-theorem-hints rand) (randomly-break-hints theorem-hints rand))
                  (rand (minstd-rand0-next rand)))
               (mv breakage-type broken-theorem-hints rand))
           ;; breakage-plan must be :all:
-          (prog2$ (cw "Removing all the :hints.~%")
+          (prog2$ (cw " Removing all the :hints.~%")
                   (mv :all nil rand))))
 
        ((when (eq :none breakage-type))
-        (cw "NOTE: No way to break hints: ~x0.~%" theorem-hints)
+        (cw " Skip: No way to break hints: ~x0).~%" theorem-hints)
         (mv nil ; no error
             :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
             t ; we found no way to break the hints, for some reason (maybe only an empty enable, or something like that)
             nil rand state))
-       (- (cw "(ADVICE: ~x0: " theorem-name))
        ((mv erp provedp & checkpoint-clauses state)
         (help::try-proof-and-get-checkpoint-clauses theorem-name
                                                     theorem-body
@@ -785,9 +798,10 @@
                                                     step-limit time-limit
                                                     t ; suppress-trivial-warningp
                                                     state))
-       ((when erp) (mv erp nil nil nil rand state)))
+       ((when erp) (prog2$ (cw " ERROR.)~%")
+                           (mv erp nil nil nil rand state))))
     (if provedp
-        (b* ((- (cw "Trivial: Broken hints worked for ~x0)~%" theorem-name)) ;todo: tabulate these
+        (b* ((- (cw " Skip: Broken hints worked for ~x0)~%" theorem-name)) ;todo: tabulate these
              ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
               (submit-event `(skip-proofs ,defthm) print nil state))
              ((when erp) (mv erp nil nil nil rand state)))
@@ -798,7 +812,8 @@
               rand
               state))
       ;; Breaking the hints did break the theorem, yielding checkpoints:
-      (b* (((mv erp model-results state)
+      (b* ((- (cw " ~x0 ~s1.~%" (len checkpoint-clauses) (if (= 1 (len checkpoint-clauses)) "checkpoint" "checkpoints")))
+           ((mv erp model-results state)
             (eval-models-on-checkpoints checkpoint-clauses
                                         theorem-name
                                         theorem-body
@@ -817,8 +832,9 @@
            ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
             (submit-event `(skip-proofs ,defthm) print nil state))
            ((when erp) (mv erp nil nil nil rand state))
-           (- (cw ")~%")) ; todo: print which model(s) worked
-           )
+           (models-that-worked (models-that-worked model-results))
+           (- (cw " ~x0 models worked: ~X12.~%" (len models-that-worked) models-that-worked nil))
+           (- (cw ")~%")))
         (mv nil ; no error
             breakage-type
             nil ; not trivial
@@ -920,12 +936,15 @@
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems indicated by THEOREMS-TO-TRY.
 ;; Returns (mv erp result-alist+rand state), where RESULT-ALIST+RAND is a cons of RESULT-ALIST and RAND, and where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;; Since this returns an error triple, it can be wrapped in revert-world.
+;; Example: (eval-models-on-book "expt.lisp" :all 10 t nil 10000 5 (help::make-model-info-alist :all (w state)) 10000 :all 1 state)
 (defun eval-models-on-book (filename ; the book, with .lisp extension, we should have already checked that it exists
                             theorems-to-try
                             num-recs-per-model
                             print
                             debug step-limit time-limit
-                            model-info-alist timeout breakage-plan
+                            model-info-alist
+                            timeout ; todo: how compare to time-limit?
+                            breakage-plan
                             rand
                             state)
   (declare (xargs :guard (and (stringp filename)
