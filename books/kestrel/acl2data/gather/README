@@ -1,0 +1,235 @@
+Copyright (C) 2022, ForrestHunt, Inc.
+Written by Matt Kaufmann
+License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+************* DISCLAIMER **************
+
+The material in and below this directory was developed as a prototype.
+It may work fine, and there are reasonably numerous comments, as well
+as regression tests (see tests/run-tests.lisp and tests/run-tests.sh).
+However, it may or may not be maintained in the future.  You are
+welcome to contact Matt Kaufmann (matthew.j.kaufmann@gmail.com) with
+requests, but understand that he might or might not provide
+maintenance, including bug fixes and enhancements.
+
+********** END OF DISCLAIMER **********
+
+TABLE OF CONTENTS
+-----------------
+I.   Interpreting Results, Especially, in *__acl2data.out Files
+II.  How to Generate acl2data Files from the ACL2 Regression Suite
+III. Miscellaneous Notes
+
+===========================================
+
+I.   Interpreting Results, Especially, in *__acl2data.out Files
+
+See tests/ for some runs and results.
+
+There are normally four types of retries, indicated by keys in
+*__acl2data.out files as follows.
+
+:HYP-ALIST
+:HINT-SETTING-ALIST
+:BOOK-RUNES-ALIST
+:RUNE-ALIST
+
+But for the so-call "advice runes", we may retry only for
+:HINT-SETTING-ALIST, in spite of the description below (that applies
+to all four keys above, even though only the :HINT-SETTING-ALIST is
+used for advice runes).
+
+Each of these keywords is associated with a list of "retry_entry"
+items (we'll get to that overall structure later below): one
+retry_entry per removal.  For example, if there are four hypotheses to
+be removed for a given theorem, then there will be four retry_entry
+items associated with :HYP-ALIST.  Many retry entries have the
+following four fields, except that each :HYP-ALIST entry has an
+additional field as shown below.  (The four "list-of" items can be
+replaced by a single keyword, but we'll defer discussion of that till
+later below.)
+
+; form of a retry_entry
+(removed-item ; see below
+ list-of-top-level-checkpoints-each-as-a-translated-clause
+ list-of-top-level-checkpoints-each-as-an-untranslated-term
+ list-of-under-induction-checkpoints-each-as-a-translated-clause
+ list-of-under-induction-checkpoints-each-as-an-untranslated-term
+ broken-theorem
+ untranslated-removed-hypothesis ; only for :HYP-ALIST
+ advice ; only for advice runs
+ )
+
+However, the four list-of-xxx fields can be replaced in their entirety
+by a single keyword, :REMOVE or :FAIL.  When there are lists of
+checkpoints or :FAIL, we know that the retry failed; on the other
+hand, the :REMOVE keyword indicates that the retry succeeded, i.e.,
+the proof succeeded (within a certain time-limit based on the original
+proof time; see function acl2data-time-limit in patch.lsp if
+interested in details) when the removed-item was removed.
+
+Here are a few observations on the :HINT-SETTING-ALIST case.  First,
+only hints on "Goal" (case-insensitive of course) are considered, and
+only those whose translations match hint-for-hint (probably by far the
+most common case, but fails for custom-keyword-hints).  The
+removed-item may be just part of a hint in the following cases.
+
+- :use hints (denoted :use-1)
+
+- :expand hints (denoted :expand-1)
+
+- :do-not hints (denoted :do-not-1)
+
+- :in-theory hints using enable, disable, e/d, enable*, disable*, or
+  e/d* (respectively denoted :enable, :disable, e/d, :enable*,
+  :disable*, or e/d*).
+
+For example, in an event with
+
+  :hints (("Goal" :use (app-assoc-4 nth)))
+
+where nth doesn't need to be used, we would see the following
+retry_entry.
+
+ ((:USE-1 NTH) :REMOVE)
+
+There are plenty of examples in tests/expected/
+
+Let's move up now to the format of *__acl2data.out files.  See each
+tests/expected/test*__acl2data.out.saved for examples (where those
+filenames were originally created without the ".saved" extension).
+Each *__acl2data.out file starts with lines indicating, for each of
+the four types of retries, the number of failed retries and the total
+number of retries, as shown.
+
+<natp> ;failure_count_hints
+<natp> ;total_count_hints
+<natp> ;failure_count_hypotheses
+<natp> ;total_count_hypotheses
+<natp> ;failure_count_book_runes
+<natp> ;total_count_book_runes
+<natp> ;failure_count_single_rune
+<natp> ;total_count_single_rune
+
+This preamble is followed by a single list
+
+("<book_name>"
+ event-item1
+ event-item2
+ ...
+ event-itemk)
+
+where "<book_name>" denotes the book being certified and each
+event-itemi is as follows.
+
+ (<event-name>
+  (:GOAL <translated_goal>)
+  (:HASH <hash>)
+  (:EXPANSION-STACK <stack>)
+  (:EVENT <event_read_from_book>)
+  (:GOAL-CLAUSES <goal_clauses>)
+  (:RULE-CLASSES <rule-classes_read_from_book, default (:REWRITE)>)
+  (:USED-INDUCTION <boolean>)
+  (:HYP-ALIST <list of retry_entry items>)
+  (:HINT-SETTING-ALIST <list of retry_entry items>)
+  (:BOOK-RUNES-ALIST <list of retry_entry items>)
+  (:RUNE-ALIST <list of retry_entry items>)
+  (:SYMBOL-TABLE <symbol_table>))
+
+Here, <symbol_table> is an alist whose keys are symbols that name
+events.  There are no duplicate keys.  Each such symbol is associated
+with the given event (the one named <event-name> above), either in the
+translated formula, one or more of the hints, or a (non-fake) rune
+reported in the summary.  Reporting for hints is incomplete -- for
+example, it ignores substitutions in :use hints -- but it may be
+adequate for ML.  Each symbol is an associated with the book in which
+that event was introduced, except that if the event was built into
+ACL2 then the symbol is associated with :BUILTIN.  The
+:EXPANSION-STACK entry indicates how macroexpansion of a form in the
+book led to the defthm event being processed.
+
+============================================
+
+II.  How to Generate acl2data Files from the ACL2 Regression Suite
+
+This section describes how to generate *__acl2data.out files for the
+ACL2 regression suite (so-called "community books", i.e., the books/
+directory of a distribution).  Here we generate a run in a new
+directory named run11.0/, but of course other names are possible.  In
+the commands below, adjust "-j 70" according to how many threads you
+want to make available for the run.
+
+mkdir run11.0
+cd run11.0
+git clone https://github.com/acl2/acl2 .
+make
+make clean-books # perhaps not necessary
+./books/build/cert.pl --acl2 `pwd`/saved_acl2  -j 70 books/kestrel/acl2data/gather/patch-book
+(time nice make -j 70 -l 70 regression-everything USE_QUICKLISP=1 ACL2_USELESS_RUNES= ACL2_CUSTOMIZATION=`pwd`/books/kestrel/acl2data/gather/customize.lsp ACL2=`pwd`/saved_acl2) >& make-regression.log&
+
+Make a note of the process ID printed in response to the last command
+above, in case you want to kill the job.  Here is how you might want
+to arrange to kill the job automatically after 40 hours, where "<id>"
+denotes the process ID you have just noted.  The number 144000
+represents 40 hours: 3600 seconds per hour times 40 hours = 144000
+seconds.
+
+(sleep 144000 ; pkill -g <id>)&
+
+Progress can be observed with the following command, which picks up
+both "CERTIFICATION FAILED" and "PCERT0->PCERT1 CONVERSION FAILED":
+
+fgrep -a 'ION FAILED' make-regression.log | grep -v 'book.lisp$'
+
+The .cert.out file for some failures should say the following;
+don't worry about those.
+
+HARD ACL2 ERROR in ACL2::ACL2DATA:  This book was marked as one whose
+certification should fail (quickly).
+
+Others may fail for many different reasons; you can add those to
+customize.lsp accordingly.  The format is mostly obvious if you look
+in that file, but here's a bit of explanation: it can be
+
+   (<sysfile>)
+
+to indicate that there should be no retries, or you can indicate
+specific retries to skip, e.g.:
+
+   (<sysfile> :rune)
+
+The following commands show you how any books have been certified so
+far and how many of those certifications generated acl2data files,
+which are not generated in some cases; see for example customize.lsp.
+
+find . -name '*_acl2data.out' -print | wc -l
+find . -name '*.cert' -print | wc -l
+
+When the run is complete you can generate a gzipped tarfile of
+results, acl2data.tgz, as follows.
+
+$ find . -name '*__acl2data.out' -print | tar cfz acl2data.tgz -T -
+
+============================================
+
+III. Miscellaneous Notes
+
+The supporting books in this directory avoid dependence on b*, to
+support a more complete acl2data run.
+
+File customize.lsp was developed as several runs exposed problems with
+certification of some of the books.  See the comments in that file,
+which explain why various books are excluded from generating acl2data
+files or at least from specified types of retries.
+
+The :SYMBOL-TABLE doesn't include symbols from substitutions the or
+:theorem in :use or :by hints, since presumably those aren't used in
+machine learning.  It also doesn't includes symbols from :OR or
+:BACKTRACK hints, since those are probably very rare but would take
+some effort to implement.
+
+The book books/kestrel/acl2data/gather/tests/run-tests.lisp invokes a
+script run-tests.sh in that directory, which in turn runs regression
+tests.
+
+============================================================

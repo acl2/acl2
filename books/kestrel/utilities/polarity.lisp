@@ -46,7 +46,7 @@
 ;; hyp to (not "positive").  So the hyp becomes (not (not "positive")). But
 ;; then we rerwrite "positive" because it is also a conclusion, indicating (to
 ;; the old version of this tool) that we want to weaken it!  Now this tool
-;; actually checks the current literal, rather than looking for TERM in teh
+;; actually checks the current literal, rather than looking for TERM in the
 ;; entire clause.
 
 ;; This tool essentially does the following: Strip NOTs from TERM, flipping the
