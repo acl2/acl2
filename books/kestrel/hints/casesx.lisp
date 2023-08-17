@@ -37,9 +37,15 @@
 
 ;(all-case-combinations-aux '((foo x) (not (bar y))))
 
-;; Returns a list of conjunctions.
+;; Returns a list of cases covering all ways that the TERMS can be true/false.
 (defun all-case-combinations (terms)
-  (cons-onto-all 'and (all-case-combinations-aux terms)))
+  (if (not (consp terms))
+      (er hard? ':casesx "We do not permit empty :casesx hints.")
+    (if (= 1 (len terms))
+        ;; special case (no AND required):
+        (let ((term (first terms)))
+          (list term `(not ,term)))
+      (cons-onto-all 'and (all-case-combinations-aux terms)))))
 
 (add-custom-keyword-hint :casesx (splice-keyword-alist :casesx (list :cases (all-case-combinations val)) keyword-alist)
                          :checker (mv nil (true-listp val) state))
