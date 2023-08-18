@@ -2463,7 +2463,8 @@
                                          :thm-index thm-index
                                          :names-to-avoid names-to-avoid
                                          :proofs (and item-thm-name t))
-                                        state))))
+                                        state)))
+  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
