@@ -3091,7 +3091,8 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+    (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
