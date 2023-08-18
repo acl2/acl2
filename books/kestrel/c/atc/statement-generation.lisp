@@ -1384,11 +1384,12 @@
            new-context
            thm-index
            names-to-avoid))
-  :prepwork ((local (in-theory (enable pseudo-termp))))
   :guard-hints
   (("Goal"
     :in-theory
-    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+    (e/d (pseudo-termp
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
