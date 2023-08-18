@@ -16,6 +16,7 @@
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
+(include-book "kestrel/strings-light/strip-suffix-from-string" :dir :system)
 (local (include-book "kestrel/axe/merge-sort-less-than-rules" :dir :system)) ; todo: move
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -1026,7 +1027,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Walks through the BOOK-TO-THEOREMS-ALIST, obtaining and evaluating advice for (some or no theorems in) each book.
-;; Returns (mv erp event state).
+;; Returns (mv erp state).
 (defun eval-models-on-books-fn-aux (book-to-theorems-alist
                                     base-dir
                                     num-recs-per-model
@@ -1059,7 +1060,7 @@
       (progn$ (cw "~%======================================================================~%")
               (cw "~%OVERALL RESULTS (~x0 total theorems):~%" (len result-alist-acc))
               (show-model-evaluations (strip-cars model-info-alist) result-alist-acc num-recs-per-model)
-              (mv nil '(value-triple :invisible) state))
+              (mv nil state))
     (b* ((- (cw "~%======================================================================~%"))
          (- (cw "Processing book #~x0 of ~x1.~%" (+ 1 done-book-count) total-book-count))
          (entry (first book-to-theorems-alist))
@@ -1121,6 +1122,13 @@
                   :stobjs state))
   (b* ( ;; Elaborate options:
        (model-info-alist (help::make-model-info-alist models (w state)))
+       ;; make it an absolute path (better way to do this?):
+       (base-dir (canonical-pathname base-dir t state))
+       ((when (not base-dir))
+        (er hard? 'eval-models-on-books-fn "ERROR: Dir ~x0 not found." base-dir)
+        (mv t nil state))
+       (base-dir (strip-suffix-from-string "/" base-dir))
+       (- (cw "base-dir is ~s0.~%" base-dir))
        ;; Initialize the source of randomness:
        ((mv rand state)
         (if (eq :random seed)
@@ -1147,10 +1155,14 @@
        ;; Randomize book order:
        (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist rand))
        (rand (minstd-rand0-next rand))
-       (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist))))
-    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit model-info-alist timeout breakage-plan 0
-                                 (len book-to-theorems-alist)
-                                 nil rand state)))
+       (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist)))
+       (state (acl2::widen-margins state))
+       ((mv erp state)
+        (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit model-info-alist timeout breakage-plan 0
+                                     (len book-to-theorems-alist)
+                                     nil rand state))
+       (state (acl2::unwiden-margins state)))
+    (mv erp '(value-triple :invisible) state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; TODO: Record the sources of recs that work (note that names may get combined with /)?
