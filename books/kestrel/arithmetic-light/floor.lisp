@@ -15,7 +15,7 @@
 (local (include-book "denominator"))
 (local (include-book "times"))
 (local (include-book "plus"))
-;(local (include-book "minus"))
+(local (include-book "minus"))
 (local (include-book "divide"))
 (local (include-book "times-and-divide"))
 (local (include-book "nonnegative-integer-quotient"))
@@ -412,6 +412,7 @@
                     0)))
   :hints (("Goal" :cases ((equal 0 j)))))
 
+;; TODO: Remove this:
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
 ;proved by ihs/quotient-remainder-lemmas
@@ -425,7 +426,8 @@
                           (and (not (equal j1 0)) (equal j2 0))
                           (and (not (equal j1 0)) (not (equal j2 0)))))))
 
-(local (include-book "arithmetic/inequalities" :dir :system)) ;for <-*-/-LEFT
+;; TODO: Remove this:
+;(local (include-book "arithmetic/inequalities" :dir :system)) ;for <-*-/-LEFT
 
 ;move
 (defthm <-*-/-left-with-addend
@@ -435,9 +437,7 @@
                 (real/rationalp y)
                 (real/rationalp a))
            (equal (< (+ k (* x (/ y))) a)
-                  (< (+ (* k y) x) (* a y))))
-  :hints (("Goal" :use (:instance <-*-/-left (x (+ (* k y) x)))
-           :in-theory (disable <-*-/-left))))
+                  (< (+ (* k y) x) (* a y)))))
 
 ;move
 (defthm <-*-/-left-with-addend-alt
@@ -448,8 +448,7 @@
                 (real/rationalp a))
            (equal (< a (+ k (* x (/ y))))
                   (< (* a y) (+ (* k y) x))))
-  :hints (("Goal" :use (:instance <-*-right-cancel (x a) (y (+ k (* x (/ y)))) (z y))
-           :in-theory (disable <-*-right-cancel))))
+)
 
 (in-theory (disable floor ceiling mod))
 
@@ -534,8 +533,7 @@
                 (real/rationalp a))
            (equal (< (+ k (* x (/ y)) k2) a)
                   (< (+ (* k y) (* k2 y) x) (* a y))))
-  :hints (("Goal" :use (:instance <-*-/-left (x (+ (* k y) (* k2 y) x)))
-           :in-theory (disable <-*-/-left))))
+)
 
 ;; (defthmd floor-equal-split
 ;;   (equal (equal (floor x y) (floor z y))
@@ -614,7 +612,7 @@
                       (equal j 1))))
   :hints (("Goal" :use ((:instance my-floor-upper-bound))
            :in-theory (disable my-floor-upper-bound
-                               <-*-/-left)
+                               )
            :cases ((< 1 j)
 ;                  (equal j 0)
                    (< j 1)))))
@@ -745,11 +743,8 @@
                 (rationalp j)
                 (rationalp k)
                 (<= (+ 1 k) (floor x j)))
-           (<= (+ j (* j k)) x))
-  :hints (("Goal" :use ((:instance *-of-floor-upper-bound (i x))
-                        (:instance <-*-left-cancel (x (floor x j)) (y (+ 1 k)) (z j)))
-           :in-theory (disable <-*-left-cancel
-                               *-of-floor-upper-bound))))
+           (<= (+ j (* j k)) x)))
+
 ;move or drop
 (defthmd <-bound-hack
   (implies (and (< x y)
@@ -757,8 +752,7 @@
                 (integerp y)
                 (posp j))
            (< (* j x) (+ j (* j y))))
-  :hints (("Goal" :use (:instance <-*-left-cancel (x y) (y (+ 1 x)) (z j))
-           :in-theory (disable <-*-left-cancel))))
+)
 
 (defthmd floor-bound-lemma-2
   (implies (and (< (floor i j) (+ 1 k))
@@ -768,14 +762,7 @@
                 (integerp k) ; gen to (rationalp k)?
                 )
            ;; says that k+1 is greater than the quotient
-           (< i (+ j (* j k))))
-  :hints (("Goal" :cases ((integerp k))
-           :use ((:instance my-floor-lower-bound-alt (i i))
-                        (:instance <-*-left-cancel (x k) (y (floor i j)) (z j)))
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (disable <-*-left-cancel
-                               *-preserves->=-for-nonnegatives
-                               my-floor-lower-bound-alt))))
+           (< i (+ j (* j k)))))
 
 (defthmd <-of-floor-arg2
   (implies (and (rationalp i)
@@ -816,11 +803,7 @@
                 (rationalp i)
                 (rationalp k)
                 (rationalp j))
-           (<= (* k j) i))
-  :hints (("Goal" :in-theory (disable my-floor-upper-bound
-                                      <-*-left-cancel)
-           :use ((:instance <-*-left-cancel (x (floor i j)) (y m) (z j))
-                 (:instance my-floor-upper-bound)))))
+           (<= (* k j) i)))
 
 (defthmd bound-from-floor-bound-back
   (implies (and (<= (* k j) i)
@@ -831,7 +814,7 @@
            (<= k (floor i j)))
   :hints  (("Goal" :in-theory (disable ;floor-bound-lemma2
                                        my-floor-lower-bound-alt
-                                       <-*-left-cancel)
+                                       )
             :use (;(:instance <-*-left-cancel (x  (floor x n)) (y  m) (z n))
 ;                  (:instance floor-lower-bound (y n))
                   (:instance floor-weak-monotone (i1 (* k j)) (i2 i))
@@ -1015,9 +998,9 @@
            :cases ((rationalp i))
            :use (floor-bound-hack-eric (:instance my-floor-upper-bound))
            :in-theory (e/d (posp) (floor-bounded-by-/ my-floor-upper-bound ;floor-bound-lemma3
-                                                      <-*-/-left
-                                                      <-y-*-y-x
-                                                      <-*-/-right
+                                                      ;<-*-/-left
+                                                      ;<-y-*-y-x
+                                                      ;<-*-/-right
                                                       floor-bound-hack-eric
                                                       <-of-*-of-/-arg1
                                                       <-of-*-of-/-arg2
@@ -1034,33 +1017,36 @@
   :rule-classes ((:linear :trigger-terms ((floor i j))))
   :hints (("Goal" :cases ((< j 0)))))
 
-(defthm <=-of-floor-same-when-negative-integer
-  (implies (and (<= i 0) ; this case
-                (integerp i) ; this case
-                (rationalp i)
-                (rationalp j)
+(encapsulate ()
+  (local (include-book "arithmetic/inequalities" :dir :system))
+
+  (defthm <=-of-floor-same-when-negative-integer
+    (implies (and (<= i 0) ; this case
+                  (integerp i) ; this case
+                  (rationalp i)
+                  (rationalp j)
                 ;; j is not in (0,1):
-                (or ;(integerp j) ; could drop
-                    (<= 1 j)
-                    (<= j 0)))
-           (<= i (floor i j)))
-  :hints (("Goal" :use (:instance <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
-                                  (x (/ i j)))
-           :in-theory (disable <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
-                               <-*-/-left-commuted
-                               <-*-/-right
-                               <-of-*-of-/-arg1-arg1
-                               <-of-*-of-/-arg2-arg2
-                               <-of-*-of-/-arg2
-                               <-of-*-of-/-arg1-alt))))
+                  (or ;(integerp j) ; could drop
+                   (<= 1 j)
+                   (<= j 0)))
+             (<= i (floor i j)))
+    :hints (("Goal" :use (:instance <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
+                                    (x (/ i j)))
+             :in-theory (disable <=-of---of-nonnegative-integer-quotient-of---of-numerator-and-denominator-same
+                                 <-*-/-left-commuted
+                                 <-*-/-right
+                                 <-of-*-of-/-arg1-arg1
+                                 <-of-*-of-/-arg2-arg2
+                                 <-of-*-of-/-arg2
+                                 <-of-*-of-/-arg1-alt)))))
 
 ;; The floor brings i closer to 0 (or leaves it unchanged).
 (defthm <=-of-floor-same-when-negative-integer-2
   (implies (and (<= i 0)     ; this case
-                (integerp i) ; this case
-                (integerp j) ; this case
-                )
-           (<= i (floor i j))))
+                  (integerp i) ; this case
+                  (integerp j) ; this case
+                  )
+             (<= i (floor i j))))
 
 ;; (defthm <=-of-quoitient-and-floor-when-negative-integer
 ;;   (implies (and (<= i 0)     ; this case
@@ -1348,15 +1334,24 @@
                      (+ -1/2 (/ i 2)))))
    :hints (("Goal" :in-theory (enable floor-of-2-cases evenp))))
 
-(defthm unsigned-byte-p-of-floor-by-2-strong
-  (implies (integerp x)
-           (equal (unsigned-byte-p n (floor x 2))
-                  (and (natp n)
-                       (unsigned-byte-p (+ 1 n) x))))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p
-                                     ;expt-of-+
-                                     <-of-floor-arg1
-                                     ))))
+(encapsulate ()
+  ;; Copied from expt2.lisp, to avoid a circular book dependency.
+  (local
+   (defthm integerp-of-expt2
+     (implies (integerp i)
+              (equal (integerp (expt 2 i))
+                     (<= 0 i)))))
+
+  (defthm unsigned-byte-p-of-floor-by-2-strong
+    (implies (integerp x)
+             (equal (unsigned-byte-p n (floor x 2))
+                    (and (natp n)
+                         (unsigned-byte-p (+ 1 n) x))))
+    :hints (("Goal" :in-theory (enable unsigned-byte-p
+                                       ;my-floor-lower-bound-2
+                                       expt
+                                       <-of-floor-arg1
+                                       )))))
 
 (defthm equal-of-floor-and-*-of-/
   (equal (equal (floor i j) (* i (/ j)))
@@ -1428,7 +1423,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use (helper1
                  (:instance helper2 (kup (+ 1 (floor k 1)))))
-           :in-theory (disable <-*-/-LEFT
+           :in-theory (disable ;<-*-/-LEFT
                                <-OF-*-OF-/-ARG1-ARG2
                                <-OF-*-OF-/-ARG1
                                helper1))))

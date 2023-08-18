@@ -22,6 +22,22 @@
 (assert-equal (enable-items-in-theory-expression '(disable* foo bar) '(a b (:r c)) nil) '(e/d* nil (foo bar) (a b (:r c))))
 (assert-equal (enable-items-in-theory-expression ''(foo bar) '(a b (:r c)) nil) ''(foo bar a b (:r c)))
 
+(assert-equal (enable-items-in-theory-expression '(e/d) '(a b (:r c)) nil) '(enable a b (:r c))) ; no args (unusual)
+(assert-equal (enable-items-in-theory-expression '(e/d ()) '(a b (:r c)) nil) '(enable a b (:r c))) ; trailing empty list
+(assert-equal (enable-items-in-theory-expression '(e/d (foo)) '(a b (:r c)) nil) '(enable foo a b (:r c))) ; one arg (unusual)
+(assert-equal (enable-items-in-theory-expression '(e/d (foo) ()) '(a b (:r c)) nil) '(enable foo a b (:r c))) ; trailing empty list
+(assert-equal (enable-items-in-theory-expression '(e/d (foo) (bar)) '(a b (:r c)) nil) '(e/d (foo) (bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression '(e/d (foo) (bar) (baz)) '(a b (:r c)) nil) '(e/d (foo) (bar) (baz a b (:r c)))) ; merge into last item
+(assert-equal (enable-items-in-theory-expression '(e/d (foo) (bar) (baz b)) '(a b (:r c)) nil) '(e/d (foo) (bar) (baz b a (:r c)))) ; removes dups
+
+(assert-equal (enable-items-in-theory-expression '(e/d*) '(a b (:r c)) nil) '(enable* a b (:r c))) ; no args (unusual)
+(assert-equal (enable-items-in-theory-expression '(e/d* ()) '(a b (:r c)) nil) '(enable* a b (:r c))) ; trailing empty list
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo)) '(a b (:r c)) nil) '(enable* foo a b (:r c))) ; one arg (unusual)
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo) ()) '(a b (:r c)) nil) '(enable* foo a b (:r c))) ; trailing empty list
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo) (bar)) '(a b (:r c)) nil) '(e/d* (foo) (bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo) (bar) (baz)) '(a b (:r c)) nil) '(e/d* (foo) (bar) (baz a b (:r c)))) ; merge into last item
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo) (bar) (baz b)) '(a b (:r c)) nil) '(e/d* (foo) (bar) (baz b a (:r c)))) ; removes dups
+
 ;; Tests with starp=t.
 (assert-equal (enable-items-in-theory-expression nil '(a b (:r c)) t) '(expand-ruleset '(a b (:r c)) world))
 (assert-equal (enable-items-in-theory-expression '(enable foo bar) '(a b (:r c)) t) '(enable* foo bar a b (:r c)))
@@ -29,6 +45,24 @@
 (assert-equal (enable-items-in-theory-expression '(disable foo bar) '(a b (:r c)) t) '(e/d* nil (foo bar) (a b (:r c))))
 (assert-equal (enable-items-in-theory-expression '(disable* foo bar) '(a b (:r c)) t) '(e/d* nil (foo bar) (a b (:r c))))
 (assert-equal (enable-items-in-theory-expression ''(foo bar) '(a b (:r c)) t) '(union-theories '(foo bar) (expand-ruleset '(a b (:r c)) world)))
+
+(assert-equal (enable-items-in-theory-expression '(e/d) '(a b (:r c)) t) '(enable* a b (:r c))) ; no args (unusual)
+(assert-equal (enable-items-in-theory-expression '(e/d ()) '(a b (:r c)) t) '(enable* a b (:r c))) ; trailing empty list
+(assert-equal (enable-items-in-theory-expression '(e/d (foo)) '(a b (:r c)) t) '(enable* foo a b (:r c))) ; one arg (unusual)
+(assert-equal (enable-items-in-theory-expression '(e/d (foo) ()) '(a b (:r c)) t) '(enable* foo a b (:r c))) ; trailing empty list
+(assert-equal (enable-items-in-theory-expression '(e/d (foo) (bar)) '(a b (:r c)) t) '(e/d* (foo) (bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression '(e/d (foo) (bar) (baz)) '(a b (:r c)) t) '(e/d* (foo) (bar) (baz a b (:r c)))) ; merge into last item
+(assert-equal (enable-items-in-theory-expression '(e/d (foo) (bar) (baz b)) '(a b (:r c)) t) '(e/d* (foo) (bar) (baz b a (:r c)))) ; removes dups
+
+(assert-equal (enable-items-in-theory-expression '(e/d*) '(a b (:r c)) t) '(enable* a b (:r c))) ; no args (unusual)
+(assert-equal (enable-items-in-theory-expression '(e/d* ()) '(a b (:r c)) t) '(enable* a b (:r c))) ; trailing empty list
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo)) '(a b (:r c)) t) '(enable* foo a b (:r c))) ; one arg (unusual)
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo) ()) '(a b (:r c)) t) '(enable* foo a b (:r c))) ; trailing empty list
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo) (bar)) '(a b (:r c)) t) '(e/d* (foo) (bar) (a b (:r c))))
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo) (bar) (baz)) '(a b (:r c)) t) '(e/d* (foo) (bar) (baz a b (:r c)))) ; merge into last item
+(assert-equal (enable-items-in-theory-expression '(e/d* (foo) (bar) (baz b)) '(a b (:r c)) t) '(e/d* (foo) (bar) (baz b a (:r c)))) ; removes dups
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tests with starp=nil.
 (assert-equal (disable-items-in-theory-expression nil '(a b (:r c)) nil) 'nil)
