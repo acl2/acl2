@@ -1030,17 +1030,17 @@
 
 ;; Walks through the BOOK-TO-THEOREMS-ALIST, obtaining and evaluating advice for (some or no theorems in) each book.
 ;; Returns (mv erp state).
-(defun eval-models-on-books-fn-aux (book-to-theorems-alist
-                                    base-dir
-                                    num-recs-per-model
-                                    print
-                                    debug step-limit time-limit
-                                    model-info-alist timeout breakage-plan
-                                    done-book-count
-                                    total-book-count
-                                    result-alist-acc ; a result-alist
-                                    rand
-                                    state)
+(defun eval-models-on-books (book-to-theorems-alist
+                             base-dir
+                             num-recs-per-model
+                             print
+                             debug step-limit time-limit
+                             model-info-alist timeout breakage-plan
+                             done-book-count
+                             total-book-count
+                             result-alist-acc ; a result-alist
+                             rand
+                             state)
   (declare (xargs :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
                               (natp num-recs-per-model)
@@ -1091,14 +1091,15 @@
          ;;            (cw "NO HINTS NEEDED : ~x0~%" trivial-count)
          ;;            (cw "ERROR           : ~x0~%~%" error-count)))
          )
-      (eval-models-on-books-fn-aux (rest book-to-theorems-alist)
-                                   base-dir num-recs-per-model print debug step-limit time-limit model-info-alist timeout breakage-plan done-book-count total-book-count
-                                   result-alist-acc
-                                   rand
-                                   state))))
+      (eval-models-on-books (rest book-to-theorems-alist)
+                            base-dir num-recs-per-model print debug step-limit time-limit model-info-alist timeout breakage-plan done-book-count total-book-count
+                            result-alist-acc
+                            rand
+                            state))))
 
+;; Evaluate all of the MODELS on some or all of the TESTS.  This groups the tests by book for efficiency.
 ;; Returns (mv erp event state).
-(defun eval-models-on-books-fn (tests base-dir num-recs-per-model excluded-prefixes seed print debug step-limit time-limit timeout breakage-plan models num-tests state)
+(defun eval-models-on-tests-fn (tests base-dir num-recs-per-model excluded-prefixes seed print debug step-limit time-limit timeout breakage-plan models num-tests state)
   (declare (xargs :guard (and (alistp tests)
                               (string-listp (strip-cars tests))
                               (symbol-listp (strip-cdrs tests))
@@ -1127,7 +1128,7 @@
        ;; make it an absolute path (better way to do this?):
        (base-dir (canonical-pathname base-dir t state))
        ((when (not base-dir))
-        (er hard? 'eval-models-on-books-fn "ERROR: Dir ~x0 not found." base-dir)
+        (er hard? 'eval-models-on-tests-fn "ERROR: Dir ~x0 not found." base-dir)
         (mv t nil state))
        (base-dir (strip-suffix-from-string "/" base-dir))
        (- (cw "base-dir is ~s0.~%" base-dir))
@@ -1144,7 +1145,7 @@
        ((when (and (not (eq :all num-tests))
                    (> num-tests len-tests)))
         (mv :not-enough-tests nil state))
-       ;; Choose which
+       ;; Choose which tests to use:
        (tests (if (eq :all num-tests)
                   (prog2$ (cw "Using all ~x0 tests.~%" len-tests)
                           tests)
@@ -1160,9 +1161,9 @@
        (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist)))
        (state (acl2::widen-margins state))
        ((mv erp state)
-        (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit model-info-alist timeout breakage-plan 0
-                                     (len book-to-theorems-alist)
-                                     nil rand state))
+        (eval-models-on-books book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit model-info-alist timeout breakage-plan 0
+                              (len book-to-theorems-alist)
+                              nil rand state))
        (state (acl2::unwiden-margins state)))
     (mv erp '(value-triple :invisible) state)))
 
@@ -1173,7 +1174,7 @@
 ;; TODO: Determine which models solve problems on which most or all other models fail.
 ;; TODO: Delete only parts of hints, like Matt's tool does.
 ;; Rec names should not include slash or digits?
-(defmacro eval-models-on-books (tests ; pairs of the form (book-name . theorem-name) where book-names are relative to BASE-DIR and have the .lisp extension
+(defmacro eval-models-on-tests (tests ; pairs of the form (book-name . theorem-name) where book-names are relative to BASE-DIR and have the .lisp extension
                                 base-dir               ; no trailing slash
                                 &key
                                 (excluded-prefixes 'nil) ; relative to BASE-DIR
@@ -1187,4 +1188,4 @@
                                 (step-limit '10000)
                                 (time-limit '5)
                                 (num-recs-per-model '20))
-  `(make-event (eval-models-on-books-fn ,tests ,base-dir ,num-recs-per-model ,excluded-prefixes ,seed ,print ,debug ,step-limit ,time-limit ,timeout ,breakage-plan ,models ,num-tests state)))
+  `(make-event (eval-models-on-tests-fn ,tests ,base-dir ,num-recs-per-model ,excluded-prefixes ,seed ,print ,debug ,step-limit ,time-limit ,timeout ,breakage-plan ,models ,num-tests state)))
