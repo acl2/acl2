@@ -13,6 +13,8 @@
 
 (include-book "std/util/bstar" :dir :system) ; todo: maybe drop?
 (include-book "kestrel/hints/goal-specs" :dir :system)
+(local (include-book "kestrel/lists-light/reverse" :dir :system)) ; overkill?
+(local (include-book "kestrel/typed-lists-light/true-list-listp" :dir :system))
 ; (include-book "tools/rulesets" :dir :system) ; not strictly needed
 
 (defund union-equal-at-end (x y)
@@ -33,6 +35,82 @@
       `(union-theories ,expr (expand-ruleset ',enable-items world))
     `(union-theories ,expr ',enable-items)))
 
+(defund strip-leading-nils (items)
+  (declare (xargs :guard (true-listp items)))
+  (if (endp items)
+      items
+    (if (equal nil (first items))
+        (strip-leading-nils (rest items))
+      items)))
+
+(defthm true-listp-of-strip-leading-nils
+  (implies (true-listp items)
+           (true-listp (strip-leading-nils items)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable strip-leading-nils))))
+
+(defthm true-list-listp-of-strip-leading-nils
+  (implies (true-list-listp items)
+           (true-list-listp (strip-leading-nils items)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable strip-leading-nils))))
+
+(defund strip-trailing-nils (items)
+  (declare (xargs :guard (true-listp items)))
+  (reverse (strip-leading-nils (reverse items))))
+
+(defthm true-listp-of-strip-trailing-nils
+  (implies (true-listp items)
+           (true-listp (strip-trailing-nils items)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable strip-trailing-nils))))
+
+(defthm true-list-listp-of-strip-trailing-nils
+  (implies (true-list-listp items)
+           (true-list-listp (strip-trailing-nils items)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable strip-trailing-nils))))
+
+(defun add-items-to-enable-expression (old-enable-args new-enable-args starp)
+  (declare (xargs :guard (and (true-listp old-enable-args)
+                              (true-listp new-enable-args)
+                              (booleanp starp))))
+  (let ((enable-args (union-equal-at-end old-enable-args new-enable-args)))
+    (if starp
+        `(enable* ,@enable-args)
+      `(enable ,@enable-args))))
+
+(defun enable-items-in-e/d-expression (e/d-args enable-items starp)
+  (declare (xargs :guard (and (true-list-listp e/d-args)
+                              (true-listp enable-items)
+                              (booleanp starp))
+                  :guard-hints (("Goal" :in-theory (enable true-listp-of-car-when-true-list-listp
+                                                           true-listp-of-car-of-last-when-true-list-listp)))))
+  (let* ((e/d-args (strip-trailing-nils e/d-args))) ; any trailing empty lists do nothing
+    (if (endp e/d-args)
+        ;; no e/d args are left, so just make a regular enable:
+        (if starp
+            `(enable* ,@enable-items)
+          `(enable ,@enable-items))
+      (if (endp (rest e/d-args))
+          ;; special case: only a single e/d arg is left, so it is just like an enable:
+          (add-items-to-enable-expression (first e/d-args) enable-items starp)
+        ;; there are at least 2 e/d args:
+        (if (evenp (len e/d-args))
+            ;; add the new items as a final arg to e/d (even length so far ensures they will be enabled, not disabled)
+            (let ((final-e/d-args (append e/d-args (list enable-items))))
+              (if starp
+                  `(e/d* ,@final-e/d-args)
+                `(e/d ,@final-e/d-args)))
+          ;; odd number of existing args, so the final one is an enable, so merge into it:
+          (let* ((non-final-args (butlast e/d-args 1))
+                 (final-arg (car (last e/d-args)))
+                 (new-final-arg (union-equal-at-end final-arg enable-items))
+                 (final-e/d-args (append non-final-args (list new-final-arg))))
+            (if starp
+                `(e/d* ,@final-e/d-args)
+              `(e/d ,@final-e/d-args))))))))
+
 (defund enable-items-in-theory-expression (expr enable-items starp)
   (declare (xargs :guard (and (true-listp expr)
                               (true-listp enable-items)
@@ -45,15 +123,10 @@
         (er hard? 'enable-items-in-theory-expression "Unsupported theory expression: ~x0." expr)
       (let ((fn (ffn-symb expr)))
         (case fn
-          ((enable enable*)
-           (let ((old-items (fargs expr)))
-             (if (not (true-listp old-items))
-                 (er hard? 'enable-items-in-theory-expression "Unsupported theory expression: ~x0." expr)
-               (let ((new-enable-args (union-equal-at-end old-items enable-items))
-                     (enable-variant (if (or starp (eq fn 'enable*))
-                                         'enable*
-                                       'enable)))
-                 `(,enable-variant ,@new-enable-args)))))
+          (enable
+           (add-items-to-enable-expression (fargs expr) enable-items starp))
+          (enable*
+           (add-items-to-enable-expression (fargs expr) enable-items t))
           (disable
            ;; can't tell if there is overlap (existing items might be theories),
            ;; so arrange to have the enable done after the disable:
@@ -65,16 +138,18 @@
            ;; so arrange to have the enable done after the disable:
            `(e/d* () ,(fargs expr) ,enable-items))
           (e/d
-           (enable-items-in-theory-expression-gen expr enable-items starp) ;todo: do better
-           )
+           (if (not (true-list-listp (fargs expr)))
+               (er hard? 'enable-items-in-theory-expression "Illegal e/d expression: ~x0" expr)
+             (enable-items-in-e/d-expression (fargs expr) enable-items starp)))
           (e/d*
-           (enable-items-in-theory-expression-gen expr enable-items starp) ;todo: do better
-           )
+           (if (not (true-list-listp (fargs expr)))
+               (er hard? 'enable-items-in-theory-expression "Illegal e/d* expression: ~x0" expr)
+             (enable-items-in-e/d-expression (fargs expr) enable-items t)))
           (quote (if starp
                      (enable-items-in-theory-expression-gen expr enable-items starp) ; will test starp again
                    (if (true-listp (unquote expr))
                        `(quote ,(union-equal-at-end (unquote expr) enable-items))
-                     (er hard? 'enable-items-in-theory-expression "Illegal in-theory expression: ~x0" expr))))
+                     (er hard? 'enable-items-in-theory-expression "Illegal theory expression: ~x0" expr))))
           (append
            (enable-items-in-theory-expression-gen expr enable-items starp) ;todo: do better
            ;; (if (and (eq fn 'append)
@@ -317,7 +392,7 @@
               (if (true-listp (second expr))
                   `(quote ,(union-equal (set-difference-equal (second expr) disable-runes)
                                         enable-runes))
-                (er hard? 'e/d-runes-in-theory-expression "Illegal in-theory expression: ~x0" expr))
+                (er hard? 'e/d-runes-in-theory-expression "Illegal theory expression: ~x0" expr))
             (if (and (eq fn 'append)
                      (null disable-runes)
                      (consp (second expr))
