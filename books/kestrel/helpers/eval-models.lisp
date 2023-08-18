@@ -721,6 +721,26 @@
                       nil)
             t))))))
 
+;; Returns a list of defthm/defthmd names.
+(defun breakable-theorems-to-try (events theorems-to-try breakage-plan acc)
+  (declare (xargs :guard (and (true-listp events)
+                              (or (eq :all theorems-to-try)
+                                  (symbol-listp theorems-to-try))
+                              (member-eq breakage-plan '(:all :goal-partial))
+                              (true-listp acc))))
+  (if (endp events)
+      (reverse acc)
+    (let ((event (first events)))
+      (breakable-theorems-to-try (rest events)
+                                 theorems-to-try
+                                 breakage-plan
+                                 (if (and (advice-eventp event theorems-to-try)
+                                          (breakable-eventp event breakage-plan))
+                                     (cons (cadr event) acc)
+                                   acc)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
 ;; Here, trivialp means "no model was needed".
@@ -808,7 +828,7 @@
     (if provedp
         (b* ((- (cw " Skip: Broken hints worked for ~x0)~%" theorem-name)) ;todo: tabulate these
              ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-              (submit-event `(skip-proofs ,defthm) print nil state))
+              (submit-event `(skip-proofs ,defthm) nil nil state))
              ((when erp) (mv erp nil nil nil rand state)))
           (mv nil ; no error
               breakage-type
@@ -834,11 +854,13 @@
                                         '(:add-hyp)
                                         state))
            ((when erp) (mv erp nil nil nil rand state))
-           ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-            (submit-event `(skip-proofs ,defthm) print nil state))
-           ((when erp) (mv erp nil nil nil rand state))
            (models-that-worked (models-that-worked model-results))
            (- (cw "~% For ~x0, ~x1 models worked: ~X23.~%" theorem-name (len models-that-worked) models-that-worked nil))
+           (- (cw "Broken hints were: ~X01.~%" broken-theorem-hints nil)) ; todo: highlight what was removed
+           (- (cw "Actual hints were: ~X01.~%" theorem-hints nil))
+           ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
+            (submit-event `(skip-proofs ,defthm) nil nil state))
+           ((when erp) (mv erp nil nil nil rand state))
            (- (cw ")~%")))
         (mv nil ; no error
             breakage-type
@@ -883,7 +905,7 @@
             (if erp
                 ;; If there is an error, the result is meaningless.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
                 (b* (((mv erp state)
-                      (submit-event `(skip-proofs ,event) print nil state))
+                      (submit-event `(skip-proofs ,event) nil nil state))
                      ((when erp)
                       (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                       (mv erp nil rand state)))
@@ -891,7 +913,7 @@
               (if trivialp
                   ;; If the theorem is trivial, no useful information is returned.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
                   (b* (((mv erp state)
-                        (submit-event `(skip-proofs ,event) print nil state))
+                        (submit-event `(skip-proofs ,event) nil nil state))
                        ((when erp)
                         (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
                         (mv erp nil rand state)))
@@ -908,33 +930,13 @@
         ;; Not something for which we will try advice, so submit it and continue:
         (b* (((mv erp state)
               ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-              (submit-event `(skip-proofs ,event) print nil state))
+              (submit-event `(skip-proofs ,event) nil nil state))
              ;; FIXME: Anything that tries to read from a file will give an error since the current dir won't be right.
              ((when erp)
               (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
               (mv erp nil rand state))
              (- (and (acl2::print-level-at-least-tp print) (cw "~x0~%" (shorten-event event)))))
           (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist timeout breakage-plan result-alist-acc rand state))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns a list of defthm/defthmd names.
-(defun breakable-theorems-to-try (events theorems-to-try breakage-plan acc)
-  (declare (xargs :guard (and (true-listp events)
-                              (or (eq :all theorems-to-try)
-                                  (symbol-listp theorems-to-try))
-                              (member-eq breakage-plan '(:all :goal-partial))
-                              (true-listp acc))))
-  (if (endp events)
-      (reverse acc)
-    (let ((event (first events)))
-      (breakable-theorems-to-try (rest events)
-                                 theorems-to-try
-                                 breakage-plan
-                                 (if (and (advice-eventp event theorems-to-try)
-                                          (breakable-eventp event breakage-plan))
-                                     (cons (cadr event) acc)
-                                   acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
