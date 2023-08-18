@@ -10701,7 +10701,7 @@
                       (list :enabled   (and (enabled-runep rune ens wrld) t))
                       (list :pattern   (untranslate pattern nil wrld)
                             pattern)
-                      (list :condition (untranslate condition t wrld)
+                      (list :condition (untranslate (conjoin condition) t wrld)
                             condition)
                       (list :scheme    (untranslate scheme nil wrld)
                             scheme))
