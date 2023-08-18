@@ -4073,7 +4073,7 @@
                       :proofs (and body.thm-name t))
                      state)))
                 (retok items-gout)))
-             ((erp okp index-term elem-term tag member-name elem-type)
+             ((erp okp & index-term elem-term tag member-name elem-type)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
               (b* (((erp asg-item

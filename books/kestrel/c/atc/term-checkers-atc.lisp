@@ -626,6 +626,7 @@
                                       (prec-tags atc-string-taginfo-alistp))
   :returns (mv erp
                (yes/no booleanp)
+               (fn symbolp)
                (index pseudo-termp)
                (elem pseudo-termp)
                (tag identp)
@@ -663,8 +664,9 @@
     "Similarly to @(tsee atc-check-struct-read-array),
      we consult the @('prec-tags') alist,
      which must contain the C structure type associated to the writer."))
-  (b* (((reterr) nil nil nil (irr-ident) (irr-ident) (irr-type))
-       ((acl2::fun (no)) (retok nil nil nil (irr-ident) (irr-ident) (irr-type)))
+  (b* (((reterr) nil nil nil nil (irr-ident) (irr-ident) (irr-type))
+       ((acl2::fun (no))
+        (retok nil nil nil nil (irr-ident) (irr-ident) (irr-type)))
        ((mv okp fn args) (fty-check-fn-call val))
        ((unless okp) (no))
        ((mv okp struct tag write member element) (atc-check-symbol-5part fn))
@@ -698,7 +700,7 @@
        ((unless (equal (third args) var))
         (reterr (raise "Internal error: ~x0 is not applied to the variable ~x1."
                        fn var))))
-    (retok t index mem tag member elem-type))
+    (retok t fn index mem tag member elem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-write-array-index
