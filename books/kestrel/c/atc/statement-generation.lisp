@@ -1757,19 +1757,26 @@
                                              (index-term pseudo-termp)
                                              (elem-term pseudo-termp)
                                              (elem-type typep)
-                                             ;; (struct-write-fn symbolp)
+                                             (struct-write-fn symbolp)
                                              (wrapper? symbolp)
                                              (gin stmt-ginp)
                                              state)
   :returns (mv erp
                (item block-itemp)
+               (val-term* pseudo-termp :hyp (and (symbolp struct-write-fn)
+                                                 (pseudo-termp index-term)
+                                                 (pseudo-termp elem-term)
+                                                 (symbolp var)))
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
+               (thm-name symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
                (thm-index posp)
                (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to an element of an array member of a structure."
-  (b* (((reterr) (irr-block-item) nil nil 1 nil)
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
        ((unless (eq wrapper? nil))
         (reterr
@@ -1873,14 +1880,42 @@
        (asg-limit ''1)
        (expr-limit `(binary-+ '1 ,asg-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
-       (item-limit `(binary-+ '1 ,stmt-limit)))
+       (item-limit `(binary-+ '1 ,stmt-limit))
+       ((when (eq struct-write-fn 'quote))
+        (reterr (raise "Internal error: structure writer is QUOTE.")))
+       (struct-write-term `(,struct-write-fn ,index-term ,elem-term ,var))
+       (varinfo (atc-get-var var gin.inscope))
+       ((unless varinfo)
+        (reterr (raise "Internal error: no information for variable ~x0." var)))
+       ((when (or (not elem.thm-name)
+                  (atc-var-info->externalp varinfo))) ; <- temporary
+        (retok item
+               struct-write-term
+               item-limit
+               (append struct.events index.events elem.events)
+               nil
+               gin.inscope
+               gin.context
+               elem.thm-index
+               elem.names-to-avoid))
+       ;; (new-compst gin.compst-var) ; TODO
+       ;; (new-compst (untranslate$ new-compst nil state))
+       (new-context gin.context) ; TODO
+       (new-inscope gin.inscope) ; TODO
+       (thm-index elem.thm-index)
+       (names-to-avoid elem.names-to-avoid)
+       (events (append struct.events
+                       index.events
+                       elem.events)))
     (retok item
+           struct-write-term
            item-limit
-           (append struct.events
-                   index.events
-                   elem.events)
-           elem.thm-index
-           elem.names-to-avoid))
+           events
+           nil
+           new-inscope
+           new-context
+           thm-index
+           names-to-avoid))
   :prepwork ((local (in-theory (enable pseudo-termp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4073,12 +4108,16 @@
                       :proofs (and body.thm-name t))
                      state)))
                 (retok items-gout)))
-             ((erp okp & index-term elem-term tag member-name elem-type)
+             ((erp okp fn index-term elem-term tag member-name elem-type)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
               (b* (((erp asg-item
+                         & ; asg-term
                          asg-limit
                          asg-events
+                         & ; asg-thm
+                         & ; new-inscope
+                         & ; new-context
                          thm-index
                          names-to-avoid)
                     (atc-gen-block-item-struct-array-asg var
@@ -4088,6 +4127,7 @@
                                                          index-term
                                                          elem-term
                                                          elem-type
+                                                         fn
                                                          wrapper?
                                                          gin
                                                          state))
