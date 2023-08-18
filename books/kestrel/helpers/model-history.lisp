@@ -104,13 +104,7 @@
   (b* ((- (and (acl2::print-level-at-least-tp print)
                (cw "Making ~x0 :history recommendations: " ; the line is ended below when we print the time
                    num-recs)))
-       (print-timep (acl2::print-level-at-least-tp print))
-       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
        (events ;;(acl2::get-command-sequence-fn 1 :max state)
         (acl2::top-level-defthms-in-world (w state)))
-       (recs (make-recs-from-history-events num-recs events))
-       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (- (and print-timep (prog2$ (acl2::print-to-hundredths (- done-time start-time))
-                                   (cw "s~%") ; s = seconds
-                                   ))))
+       (recs (make-recs-from-history-events num-recs events)))
     (mv nil recs state)))

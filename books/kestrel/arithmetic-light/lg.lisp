@@ -62,7 +62,7 @@
   (implies (natp x)
            (equal (posp (lg x))
                   (< 1 x)))
-  :hints (("Goal" :cases ((< 1 X))
+  :hints (("Goal"; :cases ((< 1 X))
            :in-theory (enable lg integer-length))))
 
 (defthm natp-of-lg-type
