@@ -1672,6 +1672,8 @@
         (if pointerp
             `(objdesign-of-var-of-update-object-iff
               read-object-of-objdesign-of-var-to-read-var
+              read-object-of-update-object-same
+              read-object-of-update-object-disjoint
               read-var-of-update-object
               compustate-frames-number-of-enter-scope-not-zero
               read-var-of-enter-scope
