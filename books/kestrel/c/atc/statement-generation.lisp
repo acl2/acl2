@@ -1413,12 +1413,10 @@
                (new-inscope atc-symbol-varinfo-alist-listp)
                (new-context atc-contextp)
                (thm-index posp)
-               (names-to-avoid symbol-listp)
-               (pointerp booleanp))
+               (names-to-avoid symbol-listp))
   :short "Generate a C block item statement that consists of
           an assignment to a scalar member of a structure."
-  (b* (((reterr)
-        (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil nil)
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        (wrld (w state))
        ((stmt-gin gin) gin)
        ((unless (eq wrapper? nil))
@@ -1507,7 +1505,6 @@
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
        ((when (or (not member.thm-name)
-                  pointerp ; <- temporary
                   (atc-var-info->externalp varinfo))) ; <- temporary
         (retok item
                struct-write-term
@@ -1517,11 +1514,14 @@
                gin.inscope
                gin.context
                member.thm-index
-               member.names-to-avoid
-               pointerp))
-       (new-compst `(update-var (ident ',(symbol-name var))
-                                ,struct-write-term
-                                ,gin.compst-var))
+               member.names-to-avoid))
+       (new-compst (if pointerp
+                       `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                                       ,struct-write-term
+                                       ,gin.compst-var)
+                     `(update-var (ident ',(symbol-name var))
+                                  ,struct-write-term
+                                  ,gin.compst-var)))
        (new-compst (untranslate$ new-compst nil state))
        (asg-thm-name (pack gin.fn '-correct- member.thm-index))
        ((mv asg-thm-name names-to-avoid)
@@ -1552,9 +1552,41 @@
         (atc-string-taginfo-alist-to-writer-return-thms gin.prec-tags))
        (valuep-when-member-type-pred
         (atc-type-to-valuep-thm member-type gin.prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms gin.prec-tags))
        (asg-hints
         (if pointerp
-            nil ; TODO
+            `(("Goal"
+               :in-theory
+               '(,@exec-expr-asg-thms
+                 (:e expr-kind)
+                 (:e expr-binary->op)
+                 (:e expr-binary->arg1)
+                 (:e expr-binary->arg2)
+                 (:e expr-memberp->target)
+                 (:e expr-memberp->name)
+                 (:e expr-ident->get)
+                 (:e binop-kind)
+                 equal-of-const-and-ident
+                 (:e identp)
+                 (:e ident->name)
+                 (:e str-fix)
+                 not-zp-of-limit-variable
+                 read-var-to-read-object-of-objdesign-of-var
+                 ,(atc-var-info->thm varinfo)
+                 objdesign-of-var-of-const-identifier
+                 ,member.thm-name
+                 expr-valuep-of-expr-value
+                 expr-value->value-of-expr-value
+                 value-fix-when-valuep
+                 ,valuep-when-member-type-pred
+                 write-object-to-update-object
+                 write-object-okp-of-enter-scope
+                 write-object-okp-of-add-var
+                 write-object-okp-of-add-frame
+                 write-object-okp-when-valuep-of-read-object-no-syntaxp
+                 ,@valuep-thms
+                 ,@type-of-value-thms
+                 ,@writer-return-thms)))
           `(("Goal"
              :in-theory
              '(,@exec-expr-asg-thms
@@ -1623,27 +1655,71 @@
                               :term struct-write-term)
                              (make-atc-premise-compustate
                               :var gin.compst-var
-                              :term `(update-var
-                                      (ident ,(symbol-name var))
-                                      ,var
-                                      ,gin.compst-var)))))
+                              :term (if pointerp
+                                        `(update-object
+                                          ,(add-suffix-to-fn var "-OBJDES")
+                                          ,var
+                                          ,gin.compst-var)
+                                      `(update-var
+                                        (ident ,(symbol-name var))
+                                        ,var
+                                        ,gin.compst-var))))))
        (notflexarrmem-thms (atc-type-to-notflexarrmem-thms (type-struct tag)
                                                            gin.prec-tags))
        (value-kind-thms
         (atc-string-taginfo-alist-to-value-kind-thms gin.prec-tags))
-       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms gin.prec-tags))
-       (new-inscope-rules `(objdesign-of-var-of-update-var
-                            read-object-of-objdesign-var-of-update-var
-                            remove-flexible-array-member-when-absent
-                            ,@notflexarrmem-thms
-                            ,@value-kind-thms
-                            value-fix-when-valuep
-                            ,@valuep-thms
-                            ,@writer-return-thms
-                            equal-of-ident-and-ident
-                            (:e str-fix)
-                            ident-fix-when-identp
-                            identp-of-ident))
+       (new-inscope-rules
+        (if pointerp
+            `(objdesign-of-var-of-update-object-iff
+              read-object-of-objdesign-of-var-to-read-var
+              read-var-of-update-object
+              compustate-frames-number-of-enter-scope-not-zero
+              read-var-of-enter-scope
+              compustate-frames-number-of-add-var-not-zero
+              compustate-frames-number-of-update-object
+              read-var-of-add-var
+              not-flexible-array-member-p-when-ucharp
+              not-flexible-array-member-p-when-scharp
+              not-flexible-array-member-p-when-ushortp
+              not-flexible-array-member-p-when-sshortp
+              not-flexible-array-member-p-when-uintp
+              not-flexible-array-member-p-when-sintp
+              not-flexible-array-member-p-when-ulongp
+              not-flexible-array-member-p-when-slongp
+              not-flexible-array-member-p-when-ullongp
+              not-flexible-array-member-p-when-sllongp
+              not-flexible-array-member-p-when-value-pointer
+              read-object-of-update-object-same
+              remove-flexible-array-member-when-absent
+              value-fix-when-valuep
+              valuep-when-ucharp
+              valuep-when-scharp
+              valuep-when-ushortp
+              valuep-when-sshortp
+              valuep-when-uintp
+              valuep-when-sintp
+              valuep-when-ulongp
+              valuep-when-slongp
+              valuep-when-ullongp
+              valuep-when-sllongp
+              ,@valuep-thms
+              ,@writer-return-thms
+              equal-of-ident-and-ident
+              (:e str-fix)
+              ident-fix-when-identp
+              identp-of-ident)
+          `(objdesign-of-var-of-update-var
+            read-object-of-objdesign-var-of-update-var
+            remove-flexible-array-member-when-absent
+            ,@notflexarrmem-thms
+            ,@value-kind-thms
+            value-fix-when-valuep
+            ,@valuep-thms
+            ,@writer-return-thms
+            equal-of-ident-and-ident
+            (:e str-fix)
+            ident-fix-when-identp
+            identp-of-ident)))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -1666,8 +1742,7 @@
            new-inscope
            new-context
            thm-index
-           names-to-avoid
-           pointerp))
+           names-to-avoid))
   :guard-hints
   (("Goal"
     :in-theory (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite)))
@@ -3818,8 +3893,7 @@
                          new-inscope
                          new-context
                          thm-index
-                         names-to-avoid
-                         pointerp)
+                         names-to-avoid)
                     (atc-gen-block-item-struct-scalar-asg var
                                                           val-term
                                                           tag
@@ -3843,19 +3917,6 @@
                                   state))
                    (term (acl2::close-lambdas
                           `((lambda (,var) ,body.term) ,asg-term)))
-                   ((when pointerp)
-                    (retok (make-stmt-gout
-                            :items (cons asg-item body.items)
-                            :type body.type
-                            :term term
-                            :context (make-atc-context :preamble nil :premises nil)
-                            :inscope nil
-                            :limit `(binary-+ ,asg-limit ,body.limit)
-                            :events (append asg-events
-                                            body.events)
-                            :thm-name nil
-                            :thm-index body.thm-index
-                            :names-to-avoid body.names-to-avoid)))
                    (items-gout
                     (atc-gen-block-item-list-cons
                      term
