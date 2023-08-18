@@ -55,6 +55,10 @@ number theory.  It includes the following ACL2 books:
 The remaining books are motivated by the Web page http://www.cs.ru.nl/~freek/100/, 
 "Formalizing 100 Theorems":
 
+  subsets
+      The number of subsets of a set of order n is 2^n.  For 0 <= k <= n, the number
+      of subsets of order k is n!/(k!(n - k)!).
+
   girard
       An odd prime p is a sum of two squares iff (mod p 4) = 1.
 
@@ -87,7 +91,7 @@ The remaining books are motivated by the Web page http://www.cs.ru.nl/~freek/100
       probability that A maintains a strict lead throughout the count is (a-b)/(a+b).
 
   subseq
-      If l is a list of distincr rationals of length greater than (a - 1)(b - 1), 
+      If l is a list of distinct rationals of length greater than (a - 1)(b - 1), 
       where a and b are positive integers, then l has either an ascending subsequence 
       of length a or a descending subsequence of length b.
 
