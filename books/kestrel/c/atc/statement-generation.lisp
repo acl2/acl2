@@ -1750,6 +1750,141 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-struct-array-asg ((var symbolp)
+                                             (val-term pseudo-termp)
+                                             (tag identp)
+                                             (member-name identp)
+                                             (index-term pseudo-termp)
+                                             (elem-term pseudo-termp)
+                                             (elem-type typep)
+                                             ;; (struct-write-fn symbolp)
+                                             (wrapper? symbolp)
+                                             (gin stmt-ginp)
+                                             state)
+  :returns (mv erp
+               (item block-itemp)
+               (limit pseudo-termp)
+               (events pseudo-event-form-listp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
+  :short "Generate a C block item statement that consists of
+          an assignment to an element of an array member of a structure."
+  (b* (((reterr) (irr-block-item) nil nil 1 nil)
+       ((stmt-gin gin) gin)
+       ((unless (eq wrapper? nil))
+        (reterr
+         (msg "The structure write term ~x0 ~
+               to which ~x1 is bound ~
+               has the ~x2 wrapper, which is disallowed."
+              val-term var wrapper?)))
+       ((erp (pexpr-gout struct))
+        (atc-gen-expr-pure var
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs gin.proofs)
+                           state))
+       ((unless (member-equal struct.type
+                              (list (type-struct tag)
+                                    (type-pointer (type-struct tag)))))
+        (reterr
+         (msg "The structure ~x0 of type ~x1 ~
+               does not have the expected type ~x2 or ~x3. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var
+              struct.type
+              (type-struct tag)
+              (type-pointer (type-struct tag)))))
+       (pointerp (type-case struct.type :pointer))
+       ((when (and pointerp
+                   (not (member-eq var gin.affect))))
+        (reterr
+         (msg "The structure ~x0 ~
+               is being written to by pointer, ~
+               but it is not among the variables ~x1 ~
+               currently affected."
+              var gin.affect)))
+       ((erp (pexpr-gout index))
+        (atc-gen-expr-pure index-term
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index struct.thm-index
+                            :names-to-avoid struct.names-to-avoid
+                            :proofs (and struct.thm-name t))
+                           state))
+       ((unless (type-integerp index.type))
+        (reterr
+         (msg "The structure ~x0 of type ~x1 ~
+               is being written to with ~
+               an index ~x2 of type ~x3, ~
+               instead of a C integer type as expected. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var struct.type index-term index.type)))
+       ((erp (pexpr-gout elem))
+        (atc-gen-expr-pure elem-term
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index index.thm-index
+                            :names-to-avoid index.names-to-avoid
+                            :proofs (and index.thm-name t))
+                           state))
+       ((unless (equal elem.type elem-type))
+        (reterr
+         (msg "The structure ~x0 of type ~x1 ~
+               is being written to with ~
+               a member array element ~x2 of type ~x3, ~
+               instead of type ~x4 as expected.
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var struct.type elem-term elem.type elem-type)))
+       (asg-mem (if pointerp
+                    (make-expr-memberp :target struct.expr
+                                       :name member-name)
+                  (make-expr-member :target struct.expr
+                                    :name member-name)))
+       (asg (make-expr-binary
+             :op (binop-asg)
+             :arg1 (make-expr-arrsub :arr asg-mem
+                                     :sub index.expr)
+             :arg2 elem.expr))
+       (stmt (stmt-expr asg))
+       (item (block-item-stmt stmt))
+       (asg-limit ''1)
+       (expr-limit `(binary-+ '1 ,asg-limit))
+       (stmt-limit `(binary-+ '1 ,expr-limit))
+       (item-limit `(binary-+ '1 ,stmt-limit)))
+    (retok item
+           item-limit
+           (append struct.events
+                   index.events
+                   elem.events)
+           elem.thm-index
+           elem.names-to-avoid))
+  :prepwork ((local (in-theory (enable pseudo-termp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-block-item-list-none ((term pseudo-termp)
                                       (gin stmt-ginp)
                                       state)
@@ -3938,132 +4073,44 @@
                       :proofs (and body.thm-name t))
                      state)))
                 (retok items-gout)))
-             ((erp okp index-term elem-term tag member elem-type)
+             ((erp okp index-term elem-term tag member-name elem-type)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
-              (b* (((unless (eq wrapper? nil))
-                    (reterr
-                     (msg "The structure write term ~x0 ~
-                           to which ~x1 is bound ~
-                           has the ~x2 wrapper, which is disallowed."
-                          val-term var wrapper?)))
-                   ((erp (pexpr-gout struct))
-                    (atc-gen-expr-pure var
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
-                                       state))
-                   ((erp pointerp)
-                    (cond
-                     ((equal struct.type (type-struct tag))
-                      (retok nil))
-                     ((equal struct.type (type-pointer (type-struct tag)))
-                      (retok t))
-                     (t (reterr
-                         (msg "The structure ~x0 of type ~x1 ~
-                               does not have the expected type ~x2 or ~x3. ~
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var
-                              struct.type
-                              (type-struct tag)
-                              (type-pointer (type-struct tag)))))))
-                   ((when (and pointerp
-                               (not (member-eq var gin.affect))))
-                    (reterr
-                     (msg "The structure ~x0 ~
-                           is being written to by pointer, ~
-                           but it is not among the variables ~x1 ~
-                           currently affected."
-                          var gin.affect)))
-                   ((erp (pexpr-gout index))
-                    (atc-gen-expr-pure index-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index struct.thm-index
-                                        :names-to-avoid struct.names-to-avoid
-                                        :proofs (and struct.thm-name t))
-                                       state))
-                   ((unless (type-integerp index.type))
-                    (reterr
-                     (msg "The structure ~x0 of type ~x1 ~
-                           is being written to with ~
-                           an index ~x2 of type ~x3, ~
-                           instead of a C integer type as expected. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var struct.type index-term index.type)))
-                   ((erp (pexpr-gout elem))
-                    (atc-gen-expr-pure elem-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index index.thm-index
-                                        :names-to-avoid index.names-to-avoid
-                                        :proofs (and index.thm-name t))
-                                       state))
-                   ((unless (equal elem.type elem-type))
-                    (reterr
-                     (msg "The structure ~x0 of type ~x1 ~
-                           is being written to with ~
-                           a member array element ~x2 of type ~x3, ~
-                           instead of type ~x4 as expected.
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var struct.type elem-term elem.type elem-type)))
-                   (asg-mem (if pointerp
-                                (make-expr-memberp :target struct.expr
-                                                   :name member)
-                              (make-expr-member :target struct.expr
-                                                :name member)))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (make-expr-arrsub :arr asg-mem
-                                                 :sub index.expr)
-                         :arg2 elem.expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
+              (b* (((erp asg-item
+                         asg-limit
+                         asg-events
+                         thm-index
+                         names-to-avoid)
+                    (atc-gen-block-item-struct-array-asg var
+                                                         val-term
+                                                         tag
+                                                         member-name
+                                                         index-term
+                                                         elem-term
+                                                         elem-type
+                                                         wrapper?
+                                                         gin
+                                                         state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body
-                                   :thm-index elem.thm-index
-                                   :names-to-avoid elem.names-to-avoid
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
                                    :proofs nil)
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
-                                              (list (pseudo-term-quote 4)
+                                              (list asg-limit
                                                     body.limit))))
                 (retok (make-stmt-gout
-                        :items (cons item body.items)
+                        :items (cons asg-item body.items)
                         :type body.type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
                         :inscope nil
                         :limit limit
-                        :events (append struct.events
-                                        index.events
-                                        elem.events
+                        :events (append asg-events
                                         body.events)
                         :thm-name nil
                         :thm-index body.thm-index
