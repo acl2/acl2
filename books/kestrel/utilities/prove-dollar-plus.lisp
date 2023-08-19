@@ -16,6 +16,15 @@
 ;(include-book "tools/prove-dollar" :dir :system)
 (include-book "prove-dollar-nice")
 
+;dup
+(defund true-last-prover-steps (state)
+  (declare (xargs :stobjs state
+                  :mode :program ; why?
+                  ))
+  (let ((steps (last-prover-steps state)))
+    ;; replace nil, which can happen for very trivial theorems, with 0:
+    (or steps 0)))
+
 ;; Returns (mv erp provedp failure-info state), where failure-info may be
 ;; :step-limit-reached, :time-limit-reached, or :unknown.
 ;; TODO: How to determine if the time-limit was reached?
@@ -45,9 +54,7 @@
     (if erp
         (mv erp nil nil state)
       ;; no error (but may have failed to prove):
-      (let* ((prover-steps (last-prover-steps state))
-             ;; replace nil, which can happen for very trivial theorems, with 0:
-             (prover-steps (or prover-steps 0)))
+      (let ((prover-steps (true-last-prover-steps state)))
         (if val
             ;; proved:
             (progn$ (and print (cw "Proved it in ~x0 steps.~%" prover-steps))
