@@ -26,6 +26,15 @@
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "tables")
 
+;dup
+(defund true-last-prover-steps (state)
+  (declare (xargs :stobjs state
+                  :mode :program ; why?
+                  ))
+  (let ((steps (last-prover-steps state)))
+    ;; replace nil, which can happen for very trivial theorems, with 0:
+    (or steps 0)))
+
 ;; Turns on inhibiting of the error type indicated by STR (case insensitive).
 ;; Returns an error triple, (mv erp val state).
 (defun add-inhibit-er-programmatic (str state)
@@ -97,17 +106,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Calls prove$ on TERM using the HINTS and/or INSTRUCTIONS and/or OTF-FLG.
-;; Returns (mv erp provedp elapsed-time state), where if the error indicator,
-;; ERP, is non-nil, then PROVEDP indicates whether the proof succeeded, and
-;; ELAPSED-TIME is in seconds for the proof attempt or failure.
-;; TODO: Consider also returning the number of proof steps.
-(defun prove$-nice-with-time (term
-                              hints
-                              instructions
-                              otf-flg
-                              time-limit ; warning: not portable!
-                              step-limit
-                              state)
+;; Returns (mv erp provedp elapsed-time prover-steps-counted state), where if
+;; the error indicator, ERP, is non-nil, then PROVEDP indicates whether the
+;; proof succeeded, and ELAPSED-TIME (in seconds) and PROVER-STEPS-COUNTED are
+;; meaningful for the proof attempt or failure.  TODO: Consider also returning
+;; the number of proof steps.
+(defun prove$-nice-with-time-and-steps (term
+                                        hints
+                                        instructions
+                                        otf-flg
+                                        time-limit ; warning: not portable!
+                                        step-limit
+                                        state)
   (declare (xargs :guard (and (booleanp otf-flg)
                               (or (and (rationalp time-limit)
                                        (<= 0 time-limit))
@@ -125,9 +135,29 @@
       (mv-let (end-time state)
         (acl2::get-real-time state)
         (if erp
-            (mv erp nil nil state)
-          (mv nil provedp (- end-time start-time) state))))))
+            (mv erp nil nil nil state)
+          (mv nil provedp (- end-time start-time) (true-last-prover-steps state) state))))))
 
+;; Returns (mv erp provedp elapsed-time state).  See doc for prove$-nice-with-time-and-steps.
+(defun prove$-nice-with-time (term
+                              hints
+                              instructions
+                              otf-flg
+                              time-limit ; warning: not portable!
+                              step-limit
+                              state)
+  (declare (xargs :guard (and (booleanp otf-flg)
+                              (or (and (rationalp time-limit)
+                                       (<= 0 time-limit))
+                                  (null time-limit))
+                              (or (natp step-limit)
+                                  (null step-limit)))
+                  :mode :program
+                  :stobjs state))
+  (mv-let (erp provedp elapsed-time prover-steps-counted state)
+    (prove$-nice-with-time-and-steps term hints instructions otf-flg time-limit step-limit state)
+    (declare (ignore prover-steps-counted))
+    (mv erp provedp elapsed-time state)))
 
 ;; Returns (mv erp provedp elapsed-time state).
 ;; Like prove$-nice-with-time, except this one does the proof twice to avoid
