@@ -1384,11 +1384,12 @@
            new-context
            thm-index
            names-to-avoid))
-  :prepwork ((local (in-theory (enable pseudo-termp))))
   :guard-hints
   (("Goal"
     :in-theory
-    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+    (e/d (pseudo-termp
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1747,8 +1748,10 @@
            names-to-avoid))
   :guard-hints
   (("Goal"
-    :in-theory (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite)))
-  :prepwork ((local (in-theory (enable pseudo-termp)))))
+    :in-theory
+    (e/d (pseudo-termp
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2632,7 +2635,8 @@
                                          :thm-index thm-index
                                          :names-to-avoid names-to-avoid
                                          :proofs (and item-thm-name t))
-                                        state))))
+                                        state)))
+  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3259,7 +3263,8 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+    (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
