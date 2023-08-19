@@ -3129,25 +3129,27 @@
          (translated-theorem-body (acl2::translate-term theorem-body 'get-recs-from-models-aux (w state))) ; todo: just do once, outside this loop
          (print-timep (acl2::print-level-at-least-tp print))
          ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-
+         ;; Dispatch to the model:
          ((mv erp recs state)
-          (if (eq :enable model)
-              ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
-              (if (member-eq :add-enable-hint disallowed-rec-types)
-                  (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                (make-enable-recs translated-theorem-body checkpoint-clauses num-recs-per-model print state))
-            (if (eq :history model)
-                ;; Make recs based on hints given to recent theorems:
-                (if (member-eq :exact-hints disallowed-rec-types)
-                    (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                  (make-recs-from-history num-recs-per-model print state))
-              (if (eq :cases model)
-                  ;; Make recs that try splitting into cases:
-                  (if (member-eq :add-cases-hint disallowed-rec-types)
-                      (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-                    (make-cases-recs translated-theorem-body checkpoint-clauses num-recs-per-model print state))
-                ;; It's a normal ML model:
-                (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state)))))
+          (case model
+            (:enable
+             ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
+             (if (member-eq :add-enable-hint disallowed-rec-types)
+                 (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+               (make-enable-recs translated-theorem-body checkpoint-clauses num-recs-per-model print state)))
+            (:history
+             ;; Make recs based on hints given to recent theorems:
+             (if (member-eq :exact-hints disallowed-rec-types)
+                 (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+               (make-recs-from-history num-recs-per-model print state)))
+            (:cases
+             ;; Make recs that try splitting into cases:
+             (if (member-eq :add-cases-hint disallowed-rec-types)
+                 (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+               (make-cases-recs translated-theorem-body checkpoint-clauses num-recs-per-model print state)))
+            (otherwise
+             ;; It's a normal ML model:
+             (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state))))
          ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
          (- (if erp
                 (cw "Note: Skipping ~x0 due to errors.~%" model)
