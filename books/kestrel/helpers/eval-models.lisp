@@ -744,6 +744,7 @@
 ;; Determines which models can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
 ;; Here, trivialp means "no model was needed".
+;; ttodo: think about trivialp vs :not-attempted.
 (defun eval-models-and-submit-defthm-event (defthm
                                             num-recs-per-model
                                             current-book-absolute-path
@@ -758,8 +759,10 @@
                               (acl2::print-levelp print)
                               (booleanp debug)
                               (or (null step-limit)
+                                  (eq :auto step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
+                                  (eq :auto time-limit)
                                   (rationalp time-limit))
                               (help::model-info-alistp model-info-alist)
                               (natp model-query-timeout)
@@ -790,7 +793,6 @@
                     :not-attempted ; no breakage of hints possible
                     t
                     nil rand state)))
-
        ;; ((when (and (eq breakage-plan :goal-partial)
        ;;             (null (hint-keyword-value-list-for-goal-spec "Goal" theorem-hints))))
        ;;  (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
@@ -816,17 +818,39 @@
             :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
             t ; we found no way to break the hints, for some reason (maybe only an empty enable, or something like that)
             nil rand state))
+       (- (cw "Breaking by: ~x0.~%" breakage-type))
+       ;; Record time and steps for the working proof (we expect the proof to always work):
+       ((mv erp provedp elapsed-time prover-steps-counted state)
+        (prove$-nice-with-time-and-steps theorem-body
+                                         theorem-hints
+                                         nil ;instructions -- todo skip if these are present (maybe it will have no hints, so we do)
+                                         theorem-otf-flg ;todo: think about this
+                                         nil ; no time-limit
+                                         nil ; no step-limit
+                                         state))
+       ((when (or erp
+                  (not provedp)))
+        (cw " ERROR: Failed to prove original theorem!: ~x0).~%" theorem-name)
+        (mv nil ; we suppress the error, so we can continue
+            :not-attempted
+            t ;todo: think about this
+            nil rand state))
        ;; Try the proof with the broken hints (usually will fail, yielding checkpoints):
+       ;; TODO: Skip if this hit a limit?
        ((mv erp provedp & checkpoint-clauses state)
         (help::try-proof-and-get-checkpoint-clauses theorem-name
                                                     theorem-body
                                                     (acl2::translate-term theorem-body 'eval-models-and-submit-defthm-event (w state))
                                                     broken-theorem-hints
                                                     theorem-otf-flg ; or use nil ?
-                                                    step-limit time-limit
+                                                    ;; We have to use some limits here, to avoid runaway proofs, but we hope that
+                                                    ;; these limits will rarely apply (they might mess up the checkpoints?):
+                                                    ;; todo: are the 10000 and the 5 comparable?
+                                                    (+ 100000 (* 10 prover-steps-counted))
+                                                    (+ 1 (* 10 elapsed-time))
                                                     t ; suppress-trivial-warningp
                                                     state))
-       ((when erp) (prog2$ (cw " ERROR.)~%")
+       ((when erp) (prog2$ (cw " ERROR: ~x0.)~%" erp)
                            (mv erp nil nil nil rand state)))
        ((when provedp)
         (b* ((- (cw " Skip: Broken hints worked for ~x0)~%" theorem-name)) ;todo: tabulate these
@@ -842,6 +866,16 @@
        ;; Breaking the hints did break the theorem, yielding checkpoints:
        (- (cw " ~x0 ~s1.~%" (len checkpoint-clauses) (if (= 1 (len checkpoint-clauses)) "checkpoint" "checkpoints")))
        ;; Try all the models, except :add-hyp (todo: a general way to say which models change the theorem?!):
+       (step-limit-for-tries (if (null step-limit)
+                                 nil
+                               (if (eq :auto step-limit)
+                                   (+ 100000 (* 3 prover-steps-counted))
+                                 step-limit)))
+       (time-limit-for-tries (if (null time-limit)
+                                 nil
+                               (if (eq :auto time-limit)
+                                   (+ 1 (* 3 elapsed-time))
+                                 time-limit)))
        ((mv erp model-results state)
         (eval-models-on-checkpoints checkpoint-clauses
                                     theorem-name
@@ -854,7 +888,8 @@
                                     model-info-alist
                                     model-query-timeout
                                     debug
-                                    step-limit time-limit
+                                    step-limit-for-tries
+                                    time-limit-for-tries
                                     '(:add-hyp)
                                     state))
        ((when erp) (mv erp nil nil nil rand state))
@@ -888,8 +923,10 @@
                               (acl2::print-levelp print)
                               (booleanp debug)
                               (or (null step-limit)
+                                  (eq :auto step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
+                                  (eq :auto time-limit)
                                   (rationalp time-limit))
                               (help::model-info-alistp model-info-alist)
                               (natp model-query-timeout)
@@ -968,8 +1005,10 @@
                               (acl2::print-levelp print)
                               (booleanp debug)
                               (or (null step-limit)
+                                  (eq :auto step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
+                                  (eq :auto time-limit)
                                   (rationalp time-limit))
                               (help::model-info-alistp model-info-alist)
                               (natp model-query-timeout)
@@ -1054,8 +1093,10 @@
                               (acl2::print-levelp print)
                               (booleanp debug)
                               (or (null step-limit)
+                                  (eq :auto step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
+                                  (eq :auto time-limit)
                                   (rationalp time-limit))
                               (help::model-info-alistp model-info-alist)
                               (natp model-query-timeout)
@@ -1118,8 +1159,10 @@
                               (acl2::print-levelp print)
                               (booleanp debug)
                               (or (null step-limit)
+                                  (eq :auto step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
+                                  (eq :auto time-limit)
                                   (rationalp time-limit))
                               (natp model-query-timeout)
                               (member-eq breakage-plan '(:all :goal-partial))
@@ -1192,7 +1235,7 @@
                                 (num-tests ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
                                 (print 'nil)
                                 (debug 'nil)
-                                (step-limit '10000)
-                                (time-limit '5)
+                                (step-limit ':auto)
+                                (time-limit ':auto)
                                 (num-recs-per-model '20))
   `(make-event (eval-models-on-tests-fn ,tests ,base-dir ,num-recs-per-model ,excluded-prefixes ,seed ,print ,debug ,step-limit ,time-limit ,model-query-timeout ,breakage-plan ,models ,num-tests state)))
