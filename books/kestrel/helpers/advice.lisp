@@ -106,7 +106,14 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 
-(local (in-theory (disable member-equal len true-listp nth reverse mv-nth)))
+(local (in-theory (disable member-equal len true-listp nth reverse mv-nth
+                           state-p
+                           acl2::checkpoint-list-guard
+                           global-table
+                           put-global
+                           get-global
+                           set-fmt-hard-right-margin
+                           acl2::deref-macro-name)))
 
 (local (in-theory (enable stringp-of-nth-0-when-recommendationp
                           rationalp-of-nth-3-when-recommendationp
@@ -177,14 +184,6 @@
                   (cdr res)
                 (er hard? 'handle-macro-alias "Bad macro aliases table."))
             name))))))
-
-(local (in-theory (disable state-p
-                           acl2::checkpoint-list-guard
-                           global-table
-                           put-global
-                           get-global
-                           set-fmt-hard-right-margin
-                           acl2::deref-macro-name)))
 
 ;move
 ;; TODO: What kinds of things can ITEM be?  A runic-designator?  A theory?
@@ -2024,15 +2023,16 @@
               (mv nil nil state))
              ;; FN exists and just needs to be enabled:
              (new-hints (acl2::enable-items-in-hints theorem-hints (list fn) t))
-             ((mv provedp state)
-              (prove$-no-error 'try-add-enable-hint
-                               theorem-body
-                               new-hints
-                               theorem-otf-flg
-                               step-limit time-limit
-                               state))
+             ((mv provedp failure-info state)
+              (prove$-no-error-with-failure-info 'try-add-enable-hint
+                                                 theorem-body
+                                                 new-hints
+                                                 theorem-otf-flg
+                                                 step-limit time-limit
+                                                 state))
+             (failure-snippet (fms-to-string-one-line "enabling function ~x0 didn't help" (acons #\0 fn nil)))
              ((when (not provedp))
-              (and (acl2::print-level-at-least-tp print) (cw "fail (enabling function ~x0 didn't help)~%" fn))
+              (and (acl2::print-level-at-least-tp print) (cw-failure-message failure-snippet failure-info))
               (mv nil nil state))
              (rec (make-successful-rec rec-name
                                        :add-enable-hint ; in case it was a :use-lemma rec, we force the type to be :add-enable-hint here, to ensure duplicates get removed
@@ -3243,6 +3243,7 @@
                   :mode :program))
   (b* ( ;; Try the theorem with the given hints (todo: consider also getting rid of any existng hints):
        ((mv provedp state)
+        ;; todo: print if a limit is reached
         (prove$-no-error 'try-proof-and-get-checkpoints theorem-body theorem-hints theorem-otf-flg step-limit time-limit state))
        ;; TODO: What if the step-limit applied?  We may want to see how many steps this attempt uses, to decide how many steps to allow in future attempts.
        ((when provedp)
@@ -3257,7 +3258,7 @@
             nil ; checkpoints, meaningless
             state))
        ;; The proof failed, so get the checkpoints:
-       (raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
+       (raw-checkpoint-clauses (acl2::checkpoint-list
                                 t                     ; todo: consider non-top
                                 state))
        ((when (eq :unavailable raw-checkpoint-clauses))
@@ -3267,7 +3268,8 @@
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        ;; TODO: Or use :otf-flg to get the real checkpoints?
        (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
-                               (clausify-term translated-theorem-body (w state))
+                               (prog2$ (cw "Note: Replacing bogus checkpoints.~%") ; todo: eventually remove this?
+                                       (clausify-term translated-theorem-body (w state)))
                              raw-checkpoint-clauses))
        ((when (null checkpoint-clauses))
         ;; A step-limit may fire before checkpoints can be generated:
@@ -3774,7 +3776,7 @@
        (- (and (acl2::print-level-at-least-tp print) (cw "Original hints were:~%~X01.~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
        ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
-       (raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
+       (raw-checkpoint-clauses (acl2::checkpoint-list
                                 t               ; todo: consider non-top
                                 state))
        ((when (eq :unavailable raw-checkpoint-clauses))
@@ -3818,7 +3820,7 @@
 
        ;; Try to ensure the checkpoints are restored, in case the tool is run again:
        (state
-        (b* ((new-raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
+        (b* ((new-raw-checkpoint-clauses (acl2::checkpoint-list
                                           t ; todo: consider non-top
                                           state))
              ((when (equal new-raw-checkpoint-clauses raw-checkpoint-clauses))
@@ -3832,7 +3834,7 @@
              ((when provedp) ; surprising!
               (cw "WARNING: Tried the theorem again and it worked!")
               state)
-             (new-raw-checkpoint-clauses (acl2::checkpoint-list ;-pretty
+             (new-raw-checkpoint-clauses (acl2::checkpoint-list
                                           t ; todo: consider non-top
                                           state))
              ((when (not (equal new-raw-checkpoint-clauses raw-checkpoint-clauses)))
