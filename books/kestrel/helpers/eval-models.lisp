@@ -741,7 +741,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
+;; Determines which models can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
 ;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
 ;; Here, trivialp means "no model was needed".
 (defun eval-models-and-submit-defthm-event (defthm num-recs-per-model current-book-absolute-path print debug step-limit time-limit
@@ -807,13 +807,13 @@
           ;; breakage-plan must be :all:
           (prog2$ (cw " Removing all the :hints.~%")
                   (mv :all nil rand))))
-
        ((when (eq :none breakage-type))
         (cw " Skip: No way to break hints: ~x0).~%" theorem-hints)
         (mv nil ; no error
             :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
             t ; we found no way to break the hints, for some reason (maybe only an empty enable, or something like that)
             nil rand state))
+       ;; Try the proof with the broken hints (usually will fail, yielding checkpoints):
        ((mv erp provedp & checkpoint-clauses state)
         (help::try-proof-and-get-checkpoint-clauses theorem-name
                                                     theorem-body
@@ -824,8 +824,8 @@
                                                     t ; suppress-trivial-warningp
                                                     state))
        ((when erp) (prog2$ (cw " ERROR.)~%")
-                           (mv erp nil nil nil rand state))))
-    (if provedp
+                           (mv erp nil nil nil rand state)))
+       ((when provedp)
         (b* ((- (cw " Skip: Broken hints worked for ~x0)~%" theorem-name)) ;todo: tabulate these
              ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
               (submit-event `(skip-proofs ,defthm) nil nil state))
@@ -835,39 +835,43 @@
               t   ; theorem was trivial (no hints needed)
               nil
               rand
-              state))
-      ;; Breaking the hints did break the theorem, yielding checkpoints:
-      (b* ((- (cw " ~x0 ~s1.~%" (len checkpoint-clauses) (if (= 1 (len checkpoint-clauses)) "checkpoint" "checkpoints")))
-           ((mv erp model-results state)
-            (eval-models-on-checkpoints checkpoint-clauses
-                                        theorem-name
-                                        theorem-body
-                                        broken-theorem-hints
-                                        theorem-otf-flg
-                                        num-recs-per-model
-                                        current-book-absolute-path
-                                        print
-                                        model-info-alist
-                                        timeout
-                                        debug
-                                        step-limit time-limit
-                                        '(:add-hyp)
-                                        state))
-           ((when erp) (mv erp nil nil nil rand state))
-           (models-that-worked (models-that-worked model-results))
-           (- (cw "~% For ~x0, ~x1 models worked: ~X23.~%" theorem-name (len models-that-worked) models-that-worked nil))
-           (- (cw "Broken hints were: ~X01.~%" broken-theorem-hints nil)) ; todo: highlight what was removed
-           (- (cw "Actual hints were: ~X01.~%" theorem-hints nil))
-           ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-            (submit-event `(skip-proofs ,defthm) nil nil state))
-           ((when erp) (mv erp nil nil nil rand state))
-           (- (cw ")~%")))
-        (mv nil ; no error
-            breakage-type
-            nil ; not trivial
-            model-results
-            rand
-            state)))))
+              state)))
+       ;; Breaking the hints did break the theorem, yielding checkpoints:
+       (- (cw " ~x0 ~s1.~%" (len checkpoint-clauses) (if (= 1 (len checkpoint-clauses)) "checkpoint" "checkpoints")))
+       ;; Try all the models, except :add-hyp (todo: a general way to say which models change the theorem?!):
+       ((mv erp model-results state)
+        (eval-models-on-checkpoints checkpoint-clauses
+                                    theorem-name
+                                    theorem-body
+                                    broken-theorem-hints
+                                    theorem-otf-flg
+                                    num-recs-per-model
+                                    current-book-absolute-path
+                                    print
+                                    model-info-alist
+                                    timeout
+                                    debug
+                                    step-limit time-limit
+                                    '(:add-hyp)
+                                    state))
+       ((when erp) (mv erp nil nil nil rand state))
+       (models-that-worked (models-that-worked model-results))
+       (- (cw "~% For ~x0, ~x1 models worked: ~X23.~%" theorem-name (len models-that-worked) models-that-worked nil))
+       (- (cw "Broken hints were: ~X01.~%" broken-theorem-hints nil)) ; todo: highlight what was removed
+       (- (cw "Actual hints were: ~X01.~%" theorem-hints nil))
+           ;; Submit the event, so we can process further events (we use
+           ;; skip-proofs for speed, but see the attachment to
+           ;; always-do-proofs-during-make-event-expansion below):
+       ((mv erp state)
+        (submit-event `(skip-proofs ,defthm) nil nil state))
+       ((when erp) (mv erp nil nil nil rand state))
+       (- (cw ")~%")))
+    (mv nil ; no error
+        breakage-type
+        nil ; not trivial
+        model-results
+        rand
+        state)))
 
 ;; Returns (mv erp result-alist rand state), where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;throws an error if any event fails
