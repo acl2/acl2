@@ -774,7 +774,7 @@
        ;;                 '(:rewrite)))
        ;; (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
        (theorem-hints (cadr (assoc-keyword :hints (cdddr defthm))))
-       (- (cw "~%(Working on ~x0.~%" theorem-name)) ; paren is closed on various exit branches below.
+       (- (cw "~%(Working on ~x0~%" theorem-name)) ; paren is closed on various exit branches below.
        ((when (null theorem-hints)) ; todo: this cannot happen?
         (prog2$ (cw " Skip: ~x0 has no hints to remove.)~%" theorem-name)
                 (mv nil            ; no error
