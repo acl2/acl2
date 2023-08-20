@@ -25,21 +25,7 @@
 
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "tables")
-
-
-(verify-termination get-event-data-1) ; can't verify guards
-(verify-termination get-event-data)
-(verify-termination last-prover-steps)
-;dup
-;; Still returns the negation of the limit, if the step limit was reached.
-(defund true-last-prover-steps (state)
-  (declare (xargs :stobjs state
-                  :verify-guards nil
-                  ;:mode :program ; why?
-                  ))
-  (let ((steps (last-prover-steps state)))
-    ;; replace nil, which can happen for very trivial theorems, with 0:
-    (or steps 0)))
+(include-book "last-prover-steps-dollar")
 
 ;; Turns on inhibiting of the error type indicated by STR (case insensitive).
 ;; Returns an error triple, (mv erp val state).
@@ -70,8 +56,8 @@
     ;; message:
     (add-inhibit-er-programmatic "step-limit" state) ; todo: this may no longer be needed?
     ;; Don't print an error if the rewrite stack depth is exceeded:
-    (add-inhibit-er-programmatic "Call depth" state)
-    (if time-limit ;awkward, due to how prove$ handles time-limit
+    (add-inhibit-er-programmatic "Call depth" state) ; todo: this may no longer be needed?
+    (if time-limit ;awkward, due to how prove$ handles time-limit (todo: is this still an issue?)
         (prove$ term
                 :hints hints
                 :instructions instructions
@@ -142,8 +128,9 @@
         (acl2::get-real-time state)
         (if erp
             (mv erp nil nil nil state)
-          (mv nil provedp (- end-time start-time) (true-last-prover-steps state) state))))))
+          (mv nil provedp (- end-time start-time) (last-prover-steps$ state) state))))))
 
+;; A wrapper for prove$-nice-with-time-and-steps that discards the steps, returning only the time.
 ;; Returns (mv erp provedp elapsed-time state).  See doc for prove$-nice-with-time-and-steps.
 (defun prove$-nice-with-time (term
                               hints
@@ -164,6 +151,8 @@
     (prove$-nice-with-time-and-steps term hints instructions otf-flg time-limit step-limit state)
     (declare (ignore prover-steps-counted))
     (mv erp provedp elapsed-time state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp provedp elapsed-time state).
 ;; Like prove$-nice-with-time, except this one does the proof twice to avoid

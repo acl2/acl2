@@ -1,6 +1,6 @@
 ; An interface to prove$ that indicates whether a step limit was reached.
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,20 +15,6 @@
 
 ;(include-book "tools/prove-dollar" :dir :system)
 (include-book "prove-dollar-nice")
-
-(verify-termination get-event-data-1) ; can't verify guards
-(verify-termination get-event-data)
-(verify-termination last-prover-steps)
-;dup
-;; Still returns the negation of the limit, if the step limit was reached.
-(defund true-last-prover-steps (state)
-  (declare (xargs :stobjs state
-                  :verify-guards nil
-                  ;:mode :program ; why?
-                  ))
-  (let ((steps (last-prover-steps state)))
-    ;; replace nil, which can happen for very trivial theorems, with 0:
-    (or steps 0)))
 
 ;; Returns (mv erp provedp failure-info state), where failure-info may be
 ;; :step-limit-reached, :time-limit-reached, or :unknown.
@@ -58,7 +44,7 @@
     (if erp
         (mv erp nil nil state)
       ;; no error (but may have failed to prove):
-      (let ((prover-steps (true-last-prover-steps state)))
+      (let ((prover-steps (last-prover-steps$ state)))
         (if provedp
             (progn$ (and print (cw "Proved it in ~x0 steps.~%" prover-steps))
                     (mv nil t nil state))
