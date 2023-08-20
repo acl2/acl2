@@ -1941,14 +1941,149 @@
                                :formula okp-lemma-formula
                                :hints okp-lemma-hints
                                :enable nil))
-       ;; (new-compst gin.compst-var) ; TODO
-       ;; (new-compst (untranslate$ new-compst nil state))
+       (new-compst (if pointerp
+                       `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                                       ,struct-write-term
+                                       ,gin.compst-var)
+                     `(update-var (ident ',(symbol-name var))
+                                  ,struct-write-term
+                                  ,gin.compst-var)))
+       (new-compst (untranslate$ new-compst nil state))
+       (asg-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv asg-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         asg-thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (asg-formula `(equal (exec-expr-asg ',asg
+                                           ,gin.compst-var
+                                           ,gin.fenv-var
+                                           ,gin.limit-var)
+                            ,new-compst))
+       (asg-formula (atc-contextualize asg-formula
+                                       gin.context
+                                       gin.fn
+                                       gin.fn-guard
+                                       gin.compst-var
+                                       gin.limit-var
+                                       asg-limit
+                                       t
+                                       wrld))
+       (exec-expr-asg-thms
+        (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
+       (valuep-when-elem-type-pred
+        (atc-type-to-valuep-thm elem.type gin.prec-tags))
+       (valuep-when-index-type-pred
+        (atc-type-to-valuep-thm index.type gin.prec-tags))
+       (value-kind-when-elem-type-pred
+        (atc-type-to-value-kind-thm elem.type gin.prec-tags))
+       (value-kind-when-index-type-pred
+        (atc-type-to-value-kind-thm index.type gin.prec-tags))
+       (index-type-pred (atc-type-to-recognizer index.type gin.prec-tags))
+       (cintegerp-when-index-type-pred (pack 'cintegerp-when- index-type-pred))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms gin.prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms gin.prec-tags))
+       (writer-return-thms
+        (atc-string-taginfo-alist-to-writer-return-thms gin.prec-tags))
+       (asg-hints
+        (if pointerp
+            `(("Goal"
+               :in-theory
+               '(,@exec-expr-asg-thms
+                 (:e expr-kind)
+                 (:e expr-binary->op)
+                 (:e expr-binary->arg1)
+                 (:e expr-binary->arg2)
+                 (:e expr-arrsub->arr)
+                 (:e expr-arrsub->sub)
+                 (:e expr-memberp->target)
+                 (:e expr-memberp->name)
+                 (:e expr-ident->get)
+                 (:e binop-kind)
+                 equal-of-const-and-ident
+                 (:e identp)
+                 (:e ident->name)
+                 (:e str-fix)
+                 not-zp-of-limit-variable
+                 read-var-to-read-object-of-objdesign-of-var
+                 ,(atc-var-info->thm varinfo)
+                 objdesign-of-var-of-const-identifier
+                 ,index.thm-name
+                 ,elem.thm-name
+                 expr-valuep-of-expr-value
+                 apconvert-expr-value-when-not-value-array
+                 ,valuep-when-elem-type-pred
+                 ,valuep-when-index-type-pred
+                 ,value-kind-when-elem-type-pred
+                 ,value-kind-when-index-type-pred
+                 expr-value->value-of-expr-value
+                 value-fix-when-valuep
+                 ,cintegerp-when-index-type-pred
+                 ,okp-lemma-name
+                 write-object-to-update-object
+                 write-object-okp-of-enter-scope
+                 write-object-okp-of-add-var
+                 write-object-okp-of-add-frame
+                 write-object-okp-when-valuep-of-read-object-no-syntaxp
+                 ,@valuep-thms
+                 ,@type-of-value-thms
+                 ,@writer-return-thms)))
+          `(("Goal"
+             :in-theory
+             '(,@exec-expr-asg-thms
+               (:e expr-kind)
+               (:e expr-binary->op)
+               (:e expr-binary->arg1)
+               (:e expr-binary->arg2)
+               (:e expr-arrsub->arr)
+               (:e expr-arrsub->sub)
+               (:e expr-member->target)
+               (:e expr-member->name)
+               (:e expr-ident->get)
+               (:e binop-kind)
+               equal-of-const-and-ident
+               (:e identp)
+               (:e ident->name)
+               (:e str-fix)
+               not-zp-of-limit-variable
+               read-var-to-read-object-of-objdesign-of-var
+               ,(atc-var-info->thm varinfo)
+               objdesign-of-var-of-const-identifier
+               ,elem.thm-name
+               expr-valuep-of-expr-value
+               apconvert-expr-value-when-not-value-array
+               value-kind-when-sintp
+               expr-value->value-of-expr-value
+               value-fix-when-valuep
+               ,valuep-when-elem-type-pred
+               ,valuep-when-index-type-pred
+               ,cintegerp-when-index-type-pred
+               ,okp-lemma-name
+               ,index.thm-name
+               write-var-of-const-identifier
+               write-var-to-update-var
+               compustate-frames-number-of-enter-scope-not-zero
+               compustate-frames-number-of-add-var-not-zero
+               write-var-okp-of-enter-scope
+               write-var-okp-of-add-var
+               ,@type-of-value-thms
+               ,@writer-return-thms
+               ident-fix-when-identp
+               identp-of-ident
+               equal-of-ident-and-ident
+               compustate-frames-number-of-update-var
+               write-var-okp-of-update-var)))))
+       ((mv asg-event &) (evmac-generate-defthm asg-thm-name
+                                                :formula asg-formula
+                                                :hints asg-hints
+                                                :enable nil))
        (new-context gin.context) ; TODO
        (new-inscope gin.inscope) ; TODO
        (events (append struct.events
                        index.events
                        elem.events
-                       (list okp-lemma-event))))
+                       (list okp-lemma-event
+                             asg-event))))
     (retok item
            struct-write-term
            item-limit
