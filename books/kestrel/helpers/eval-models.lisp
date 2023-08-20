@@ -821,6 +821,9 @@
        (- (cw "Breaking by: ~x0.~%" breakage-type))
        ;; Record time and steps for the working proof (we expect the proof to always work):
        ((mv erp provedp elapsed-time prover-steps-counted state)
+        ;; todo: should we do it twice, to get a more accurate time? (on the other hand,
+        ;; maybe this is fair, as GC may also occur while we are trying a rec,
+        ;; causing us to lose).
         (prove$-nice-with-time-and-steps theorem-body
                                          theorem-hints
                                          nil ;instructions -- todo skip if these are present (maybe it will have no hints, so we do)
