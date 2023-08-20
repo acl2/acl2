@@ -230,6 +230,7 @@
 ;;     (cons (untranslate-list (first clauses) iff-flg wrld)
 ;;           (untranslate-clauses (rest clauses) iff-flg wrld))))
 
+;; todo: distinguish top from non-top checkpoints
 (defun make-numbered-checkpoint-entries (current-number checkpoint-clauses)
   (declare (xargs :guard (and (natp current-number)
                               (acl2::pseudo-term-list-listp checkpoint-clauses))
@@ -3024,11 +3025,16 @@
            (model-info-alistp (rest alist))))))
 
 ;; Returns (mv erp recs state).
-(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print state)
+(defun get-recs-from-ml-model (model
+                               num-recs disallowed-rec-types
+                               checkpoint-clauses-top
+                               ;; checkpoint-clauses-non-top ; todo: use these too
+                               broken-theorem model-info timeout debug print state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses-top)
+                              ;; (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
                               ;; broken-theorem is a thm or defthm form
                               (model-infop model-info)
                               (natp timeout)
@@ -3104,6 +3110,7 @@
 (defun get-recs-from-models (num-recs-per-model
                              disallowed-rec-types
                              checkpoint-clauses-top
+                             checkpoint-clauses-non-top
                              theorem-body ; an untranslated-term (todo: translate outside this function?)
                              broken-theorem ; a thm or defthm form
                              model-info-alist
@@ -3115,12 +3122,14 @@
   (declare (xargs :guard (and (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses-top)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
                               (model-info-alistp model-info-alist)
                               (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
                   :mode :program
                   :stobjs state))
+;  (declare (ignore checkpoint-clauses-non-top)) ; ttodo
   (if (endp model-info-alist)
       (mv nil acc state) ; no error
     (b* ((entry (first model-info-alist))
@@ -3166,7 +3175,7 @@
                 (cw "Got ~x0 recs.~%" (len recs)))))
          ;; Remove any recs that are disallowed (todo: drop this now? or print something here?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
-      (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top theorem-body broken-theorem
+      (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem
                             (rest model-info-alist)
                             timeout debug print
                                 ;; Associate this model with its recs in the result:
@@ -3201,7 +3210,7 @@
 ;; Attempts to prove the given theorem using the given hints.  If the proof
 ;; worked, returns a recommendation that includes the hints that worked.
 ;; Otherwise, unless there is an error, returns the checkpoints from the failed
-;; proof attempt.  Returns (mv erp provedp rec checkpoint-clauses-top state) where
+;; proof attempt.  Returns (mv erp provedp rec checkpoint-clauses-top checkpoint-clauses-non-top state) where
 ;; PROVEDP determines whether REC or CHECKPOINTS is meaningful.
 (defun try-proof-and-get-checkpoint-clauses (theorem-name
                                              theorem-body
@@ -3238,15 +3247,15 @@
             t   ; proved (with the original hints)
             (make-successful-rec "original" :exact-hints theorem-hints nil theorem-body theorem-hints theorem-otf-flg :unavailable)
             nil ; checkpoints, meaningless
+            nil ; checkpoints, meaningless
             state))
        ;; The proof failed, so get the checkpoints:
-       (raw-checkpoint-clauses-top (acl2::checkpoint-list
-                                t                     ; todo: consider non-top
-                                state))
+       (raw-checkpoint-clauses-top (acl2::checkpoint-list t ; top-level checkpoints
+                                                          state))
        ((when (eq :unavailable raw-checkpoint-clauses-top))
         ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
         (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
-        (mv :no-checkpoints nil nil nil state))
+        (mv :no-checkpoints nil nil nil nil state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        ;; TODO: Or use :otf-flg to get the real checkpoints?
        (checkpoint-clauses-top (if (equal raw-checkpoint-clauses-top '((acl2::<goal>)))
@@ -3256,15 +3265,23 @@
        ((when (null checkpoint-clauses-top))
         ;; A step-limit may fire before checkpoints can be generated:
         (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
-        (mv :no-checkpoints nil nil nil state)))
+        (mv :no-checkpoints nil nil nil nil state))
+       ;; Now the non-top checkpoints, oo which there may be none:
+       (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
+                                                          state))
+       ;; todo: any special values to handle here?
+       )
     (mv nil ; no error
         nil ; didn't prove
         nil ; meaningless
         checkpoint-clauses-top
+        checkpoint-clauses-non-top
         state)))
 
+;; Gets recommendations from all models and tries them.
 ;; Returns (mv erp successp best-rec state).
 (defun best-rec-for-checkpoints (checkpoint-clauses-top
+                                 checkpoint-clauses-non-top
                                  theorem-name
                                  theorem-body
                                  theorem-hints
@@ -3283,6 +3300,7 @@
                                  max-wins
                                  state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses-top)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
                               (booleanp avoid-current-bookp)
@@ -3309,7 +3327,7 @@
                   :mode :program))
   (b* ((state (acl2::widen-margins state))
        ((mv erp recommendation-alist state)
-        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top theorem-body broken-theorem model-info-alist timeout debug print nil state))
+        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem model-info-alist timeout debug print nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs recommendation-alist))
@@ -3406,7 +3424,7 @@
                               (booleanp suppress-trivial-warningp))
                   :stobjs state
                   :mode :program))
-  (b* (((mv erp provedp rec checkpoint-clauses-top state)
+  (b* (((mv erp provedp rec checkpoint-clauses-top checkpoint-clauses-non-top state)
         (try-proof-and-get-checkpoint-clauses theorem-name
                                               theorem-body
                                               translated-theorem-body
@@ -3423,6 +3441,7 @@
             state)
       ;; Didn't prove using the supplied hints, so try advice:
       (best-rec-for-checkpoints checkpoint-clauses-top
+                                checkpoint-clauses-non-top
                                 theorem-name
                                 theorem-body
                                 theorem-hints
@@ -3758,8 +3777,7 @@
        (- (and (acl2::print-level-at-least-tp print) (cw "Original hints were:~%~X01.~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
        ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
-       (raw-checkpoint-clauses-top (acl2::checkpoint-list
-                                    t               ; todo: consider non-top
+       (raw-checkpoint-clauses-top (acl2::checkpoint-list t ; top-level checkpoints
                                     state))
        ((when (eq :unavailable raw-checkpoint-clauses-top))
         (er hard? 'advice-fn "No checkpoints are available (perhaps the most recent theorem succeeded).")
@@ -3771,13 +3789,17 @@
                                                                     'advice-fn
                                                                     wrld)
                                               wrld)
-                             raw-checkpoint-clauses-top))
-       (- (and (acl2::print-level-at-least-tp print) (cw "Proof checkpoints to use: ~X01.)~%" checkpoint-clauses-top nil)))
+                               raw-checkpoint-clauses-top))
+       (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
+                                                          state))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Top-level Proof checkpoints to use: ~X01.)~%" checkpoint-clauses-top nil)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Non-top-level Proof checkpoints to use: ~X01.)~%" checkpoint-clauses-non-top nil)))
        ((mv erp
             & ;; successp
             & ;; best-rec
             state)
         (best-rec-for-checkpoints checkpoint-clauses-top
+                                  checkpoint-clauses-non-top
                                   theorem-name
                                   theorem-body
                                   theorem-hints
@@ -3858,7 +3880,8 @@
 ;; TODO: Also return the source of each rec?
 ;; TODO: Also return unsuccessful actions?
 ;; WARNING: This should not be used for evaluation of models/recommendations, as it allows the current-book to be used to prove checkpoints from its own theorems!
-(defun all-successful-actions-for-checkpoints (checkpoint-clauses
+(defun all-successful-actions-for-checkpoints (checkpoint-clauses-top
+                                               checkpoint-clauses-non-top
                                                theorem-body ; untranslated
                                                theorem-hints
                                                theorem-otf-flg
@@ -3873,7 +3896,8 @@
                                                time-limit
                                                disallowed-rec-types
                                                state)
-  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
+  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses-top)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
                               (booleanp theorem-otf-flg)
@@ -3894,7 +3918,7 @@
                   :mode :program))
   (b* ( ;; Get all the recs to try:
        ((mv erp recommendation-alist state)
-        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body
+        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body
                               ;; the presumed broken-theorem:
                               `(defthm fake-theorem-name ; todo: use the real name?
                                  ,theorem-body
@@ -3948,16 +3972,17 @@
 
 ;; Example call:
 ;; (help::all-successful-actions-for-checkpoints (list (list '(equal (len (append x y)) (binary-+ (len x) (len y)))))
-;;                                      '(equal (len (append x y)) (+ (len x) (len y)))
-;;                                      nil ; theorem-hints
-;;                                      nil ; theorem-otf-flg
-;;                                      10  ; num-recs-per-model
-;;                                      "/home/ewsmith/acl2/books/kestrel/arithmetic-light/mod.lisp" ; current-book-absolute-path
-;;                                      t ; whether to try to improve successful recommendations
-;;                                      nil ; print
-;;                                      nil ; debug
-;;                                      nil ; step-limit
-;;                                      nil ; time-limit
-;;                                      '(:add-hyp :exact-hints) ; disallowed-rec-types
-;;                                      help::*known-models*
-;;                                      state)
+;;                                               (list (list '(equal (len (append x y)) (binary-+ (len x) (len y)))))
+;;                                               '(equal (len (append x y)) (+ (len x) (len y)))
+;;                                               nil ; theorem-hints
+;;                                               nil ; theorem-otf-flg
+;;                                               10  ; num-recs-per-model
+;;                                               "/home/ewsmith/acl2/books/kestrel/arithmetic-light/mod.lisp" ; current-book-absolute-path
+;;                                               t ; whether to try to improve successful recommendations
+;;                                               nil ; print
+;;                                               nil ; debug
+;;                                               nil ; step-limit
+;;                                               nil ; time-limit
+;;                                               '(:add-hyp :exact-hints) ; disallowed-rec-types
+;;                                               help::*known-models*
+;;                                               state)
