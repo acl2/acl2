@@ -3024,11 +3024,11 @@
            (model-info-alistp (rest alist))))))
 
 ;; Returns (mv erp recs state).
-(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state)
+(defun get-recs-from-ml-model (model num-recs disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
                               (rec-type-listp disallowed-rec-types)
-                              (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses-top)
                               ;; broken-theorem is a thm or defthm form
                               (model-infop model-info)
                               (natp timeout)
@@ -3062,13 +3062,13 @@
                        (cw "Asking server for ~x0 recommendations from ~x1 on ~x2 ~s3: " ; the line is ended below when we print the time
                            num-recs
                            model
-                           (len checkpoint-clauses)
-                           (if (< 1 (len checkpoint-clauses)) "checkpoints" "checkpoint"))))
+                           (len checkpoint-clauses-top)
+                           (if (< 1 (len checkpoint-clauses-top)) "checkpoints" "checkpoint"))))
                ;; Assemble the data to send with the POST request (an alist):
                (post-data (acons "use-group" model-string ; the name of the model to use (often a group of models, one for each action type)
                                  (acons "n" (acl2::nat-to-string num-recs)
                                         (acons "broken-theorem" (fms-to-string "~X01" (acons #\0 broken-theorem (acons #\1 nil nil))) ;; todo: should we translate this?
-                                               (make-numbered-checkpoint-entries 0 checkpoint-clauses)))))
+                                               (make-numbered-checkpoint-entries 0 checkpoint-clauses-top)))))
                ;; Turn off certain recommendation types (TODO: Could a generative model return something like :exact-hints?):
                (post-data (acons-all-to-val (rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types)) ; todo: drop this?  can the models handle disallowed unknown rec types?
                                             "off"
@@ -3103,7 +3103,7 @@
 ;; Returns (mv erp rec-alist state), where REC-ALIST maps model-names to rec lists.
 (defun get-recs-from-models (num-recs-per-model
                              disallowed-rec-types
-                             checkpoint-clauses
+                             checkpoint-clauses-top
                              theorem-body ; an untranslated-term (todo: translate outside this function?)
                              broken-theorem ; a thm or defthm form
                              model-info-alist
@@ -3114,7 +3114,7 @@
                              state)
   (declare (xargs :guard (and (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
-                              (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses-top)
                               (model-info-alistp model-info-alist)
                               (natp timeout)
                               (booleanp debug)
@@ -3136,7 +3136,7 @@
              ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
              (if (member-eq :add-enable-hint disallowed-rec-types)
                  (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-               (make-enable-recs translated-theorem-body checkpoint-clauses num-recs-per-model print state)))
+               (make-enable-recs translated-theorem-body checkpoint-clauses-top num-recs-per-model print state)))
             (:history
              ;; Make recs based on hints given to recent theorems:
              (if (member-eq :exact-hints disallowed-rec-types)
@@ -3146,10 +3146,10 @@
              ;; Make recs that try splitting into cases:
              (if (member-eq :add-cases-hint disallowed-rec-types)
                  (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-               (make-cases-recs translated-theorem-body checkpoint-clauses num-recs-per-model print state)))
+               (make-cases-recs translated-theorem-body checkpoint-clauses-top num-recs-per-model print state)))
             (otherwise
              ;; It's a normal ML model:
-             (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses broken-theorem model-info timeout debug print state))))
+             (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print state))))
          ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
          (- (if erp
                 (cw "Note: Skipping ~x0 due to errors.~%" model)
@@ -3166,7 +3166,7 @@
                 (cw "Got ~x0 recs.~%" (len recs)))))
          ;; Remove any recs that are disallowed (todo: drop this now? or print something here?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
-      (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem
+      (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top theorem-body broken-theorem
                             (rest model-info-alist)
                             timeout debug print
                                 ;; Associate this model with its recs in the result:
@@ -3201,7 +3201,7 @@
 ;; Attempts to prove the given theorem using the given hints.  If the proof
 ;; worked, returns a recommendation that includes the hints that worked.
 ;; Otherwise, unless there is an error, returns the checkpoints from the failed
-;; proof attempt.  Returns (mv erp provedp rec checkpoint-clauses state) where
+;; proof attempt.  Returns (mv erp provedp rec checkpoint-clauses-top state) where
 ;; PROVEDP determines whether REC or CHECKPOINTS is meaningful.
 (defun try-proof-and-get-checkpoint-clauses (theorem-name
                                              theorem-body
@@ -3240,31 +3240,31 @@
             nil ; checkpoints, meaningless
             state))
        ;; The proof failed, so get the checkpoints:
-       (raw-checkpoint-clauses (acl2::checkpoint-list
+       (raw-checkpoint-clauses-top (acl2::checkpoint-list
                                 t                     ; todo: consider non-top
                                 state))
-       ((when (eq :unavailable raw-checkpoint-clauses))
+       ((when (eq :unavailable raw-checkpoint-clauses-top))
         ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
         (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
         (mv :no-checkpoints nil nil nil state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        ;; TODO: Or use :otf-flg to get the real checkpoints?
-       (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
+       (checkpoint-clauses-top (if (equal raw-checkpoint-clauses-top '((acl2::<goal>)))
                                (prog2$ (cw "Note: Replacing bogus checkpoints.~%") ; todo: eventually remove this?
                                        (clausify-term translated-theorem-body (w state)))
-                             raw-checkpoint-clauses))
-       ((when (null checkpoint-clauses))
+                             raw-checkpoint-clauses-top))
+       ((when (null checkpoint-clauses-top))
         ;; A step-limit may fire before checkpoints can be generated:
         (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
         (mv :no-checkpoints nil nil nil state)))
     (mv nil ; no error
         nil ; didn't prove
         nil ; meaningless
-        checkpoint-clauses
+        checkpoint-clauses-top
         state)))
 
 ;; Returns (mv erp successp best-rec state).
-(defun best-rec-for-checkpoints (checkpoint-clauses
+(defun best-rec-for-checkpoints (checkpoint-clauses-top
                                  theorem-name
                                  theorem-body
                                  theorem-hints
@@ -3282,7 +3282,7 @@
                                  disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
                                  max-wins
                                  state)
-  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
+  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses-top)
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
                               (booleanp avoid-current-bookp)
@@ -3309,7 +3309,7 @@
                   :mode :program))
   (b* ((state (acl2::widen-margins state))
        ((mv erp recommendation-alist state)
-        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem model-info-alist timeout debug print nil state))
+        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top theorem-body broken-theorem model-info-alist timeout debug print nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs recommendation-alist))
@@ -3406,7 +3406,7 @@
                               (booleanp suppress-trivial-warningp))
                   :stobjs state
                   :mode :program))
-  (b* (((mv erp provedp rec checkpoint-clauses state)
+  (b* (((mv erp provedp rec checkpoint-clauses-top state)
         (try-proof-and-get-checkpoint-clauses theorem-name
                                               theorem-body
                                               translated-theorem-body
@@ -3422,7 +3422,7 @@
             rec
             state)
       ;; Didn't prove using the supplied hints, so try advice:
-      (best-rec-for-checkpoints checkpoint-clauses
+      (best-rec-for-checkpoints checkpoint-clauses-top
                                 theorem-name
                                 theorem-body
                                 theorem-hints
@@ -3758,26 +3758,26 @@
        (- (and (acl2::print-level-at-least-tp print) (cw "Original hints were:~%~X01.~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
        ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
-       (raw-checkpoint-clauses (acl2::checkpoint-list
-                                t               ; todo: consider non-top
-                                state))
-       ((when (eq :unavailable raw-checkpoint-clauses))
+       (raw-checkpoint-clauses-top (acl2::checkpoint-list
+                                    t               ; todo: consider non-top
+                                    state))
+       ((when (eq :unavailable raw-checkpoint-clauses-top))
         (er hard? 'advice-fn "No checkpoints are available (perhaps the most recent theorem succeeded).")
         (mv :no-checkpoints nil state))
        ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
        ;; TODO: Or use :otf-flg to get the real checkpoints?
-       (checkpoint-clauses (if (equal raw-checkpoint-clauses '((acl2::<goal>)))
+       (checkpoint-clauses-top (if (equal raw-checkpoint-clauses-top '((acl2::<goal>)))
                                (clausify-term (acl2::translate-term (acl2::most-recent-failed-theorem-goal state)
                                                                     'advice-fn
                                                                     wrld)
                                               wrld)
-                             raw-checkpoint-clauses))
-       (- (and (acl2::print-level-at-least-tp print) (cw "Proof checkpoints to use: ~X01.)~%" checkpoint-clauses nil)))
+                             raw-checkpoint-clauses-top))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Proof checkpoints to use: ~X01.)~%" checkpoint-clauses-top nil)))
        ((mv erp
             & ;; successp
             & ;; best-rec
             state)
-        (best-rec-for-checkpoints checkpoint-clauses
+        (best-rec-for-checkpoints checkpoint-clauses-top
                                   theorem-name
                                   theorem-body
                                   theorem-hints
@@ -3802,10 +3802,10 @@
 
        ;; Try to ensure the checkpoints are restored, in case the tool is run again:
        (state
-        (b* ((new-raw-checkpoint-clauses (acl2::checkpoint-list
-                                          t ; todo: consider non-top
-                                          state))
-             ((when (equal new-raw-checkpoint-clauses raw-checkpoint-clauses))
+        (b* ((new-raw-checkpoint-clauses-top (acl2::checkpoint-list
+                                              t ; todo: consider non-top
+                                              state))
+             ((when (equal new-raw-checkpoint-clauses-top raw-checkpoint-clauses-top))
               state ; no need to do anything
               )
              ((mv provedp state)
@@ -3816,10 +3816,10 @@
              ((when provedp) ; surprising!
               (cw "WARNING: Tried the theorem again and it worked!")
               state)
-             (new-raw-checkpoint-clauses (acl2::checkpoint-list
-                                          t ; todo: consider non-top
-                                          state))
-             ((when (not (equal new-raw-checkpoint-clauses raw-checkpoint-clauses)))
+             (new-raw-checkpoint-clauses-top (acl2::checkpoint-list
+                                              t ; todo: consider non-top
+                                              state))
+             ((when (not (equal new-raw-checkpoint-clauses-top raw-checkpoint-clauses-top)))
               (acl2::print-level-at-least-tp print)
               (cw "Clearing checkpoints since we failed to restore them.~%")
               (let ((state (f-put-global 'gag-state-saved nil state)))

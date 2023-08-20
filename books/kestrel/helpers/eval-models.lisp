@@ -605,7 +605,7 @@
                        state))))
 
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
-(defun eval-models-on-checkpoints (checkpoint-clauses
+(defun eval-models-on-checkpoints (checkpoint-clauses-top
                                    theorem-name
                                    theorem-body
                                    theorem-hints
@@ -619,7 +619,7 @@
                                    step-limit time-limit
                                    disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
                                    state)
-  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
+  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses-top)
                               (or (null current-book-absolute-path)
                                   (stringp current-book-absolute-path))
                               ;; (booleanp avoid-current-bookp)
@@ -641,7 +641,7 @@
                   :mode :program))
   (b* ( ;; Get the rec-lists for all the models:
        ((mv erp recommendation-alist state)
-        (help::get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body
+        (help::get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top theorem-body
                                     ;; the presumed broken-theorem:
                                     `(defthm ,theorem-name
                                        ,theorem-body
@@ -836,7 +836,7 @@
             nil rand state))
        ;; Try the proof with the broken hints (usually will fail, yielding checkpoints):
        ;; TODO: Skip if this hit a limit?
-       ((mv erp provedp & checkpoint-clauses state)
+       ((mv erp provedp & checkpoint-clauses-top state)
         (help::try-proof-and-get-checkpoint-clauses theorem-name
                                                     theorem-body
                                                     (acl2::translate-term theorem-body 'eval-models-and-submit-defthm-event (w state))
@@ -863,7 +863,7 @@
               rand
               state)))
        ;; Breaking the hints did break the theorem, yielding checkpoints:
-       (- (cw " ~x0 ~s1.~%" (len checkpoint-clauses) (if (= 1 (len checkpoint-clauses)) "checkpoint" "checkpoints")))
+       (- (cw " ~x0 ~s1.~%" (len checkpoint-clauses-top) (if (= 1 (len checkpoint-clauses-top)) "checkpoint" "checkpoints")))
        ;; Try all the models, except :add-hyp (todo: a general way to say which models change the theorem?!):
        (step-limit-for-tries (if (null step-limit)
                                  nil
@@ -876,7 +876,7 @@
                                    (+ 1 (* 3 elapsed-time))
                                  time-limit)))
        ((mv erp model-results state)
-        (eval-models-on-checkpoints checkpoint-clauses
+        (eval-models-on-checkpoints checkpoint-clauses-top
                                     theorem-name
                                     theorem-body
                                     broken-theorem-hints
