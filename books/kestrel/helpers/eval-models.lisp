@@ -546,16 +546,16 @@
 ;; Walks through the RECOMMENDATION-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
 (defun eval-model-recs (recommendation-alist
-                                       theorem-name
-                                       theorem-body
-                                       theorem-hints
-                                       theorem-otf-flg
-                                       current-book-absolute-path
-                                       print
-                                       debug
-                                       step-limit time-limit
-                                       model-results-acc
-                                       state)
+                        theorem-name
+                        theorem-body
+                        theorem-hints
+                        theorem-otf-flg
+                        current-book-absolute-path
+                        print
+                        debug
+                        step-limit time-limit
+                        model-results-acc
+                        state)
   (declare (xargs :guard (and (alistp recommendation-alist) ; todo: strengthen
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
@@ -592,17 +592,17 @@
          ((mv end-time state) (get-cpu-time state))
          ((when erp) (mv erp nil state)))
       (eval-model-recs (rest recommendation-alist)
-                                      theorem-name
-                                      theorem-body
-                                      theorem-hints
-                                      theorem-otf-flg
-                                      current-book-absolute-path
-                                      print
-                                      debug
-                                      step-limit time-limit
-                                      (cons (list model (len recs) first-working-rec-num-or-nil (acl2::round-to-hundredths (- end-time start-time)))
-                                            model-results-acc)
-                                      state))))
+                       theorem-name
+                       theorem-body
+                       theorem-hints
+                       theorem-otf-flg
+                       current-book-absolute-path
+                       print
+                       debug
+                       step-limit time-limit
+                       (cons (list model (len recs) first-working-rec-num-or-nil (acl2::round-to-hundredths (- end-time start-time)))
+                             model-results-acc)
+                       state))))
 
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
 (defun eval-models-on-checkpoints (checkpoint-clauses
@@ -651,16 +651,16 @@
        ((when erp) (mv erp nil state)))
     ;; Try all the recs and record which ones worked:
     (eval-model-recs recommendation-alist
-                                    theorem-name
-                                    theorem-body
-                                    theorem-hints
-                                    theorem-otf-flg
-                                    current-book-absolute-path
-                                    print
-                                    debug
-                                    step-limit time-limit
-                                    nil
-                                    state)))
+                     theorem-name
+                     theorem-body
+                     theorem-hints
+                     theorem-otf-flg
+                     current-book-absolute-path
+                     print
+                     debug
+                     step-limit time-limit
+                     nil
+                     state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

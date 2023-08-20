@@ -3102,16 +3102,16 @@
 ;; Goes through the MODELS, getting recs from each.  Returns an alist from model-names to rec-lists.
 ;; Returns (mv erp rec-alist state), where REC-ALIST maps model-names to rec lists.
 (defun get-recs-from-models (num-recs-per-model
-                                 disallowed-rec-types
-                                 checkpoint-clauses
-                                 theorem-body ; an untranslated-term (todo: translate outside this function?)
-                                 broken-theorem ; a thm or defthm form
-                                 model-info-alist
-                                 timeout
-                                 debug
-                                 print
-                                 acc
-                                 state)
+                             disallowed-rec-types
+                             checkpoint-clauses
+                             theorem-body ; an untranslated-term (todo: translate outside this function?)
+                             broken-theorem ; a thm or defthm form
+                             model-info-alist
+                             timeout
+                             debug
+                             print
+                             acc
+                             state)
   (declare (xargs :guard (and (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses)
@@ -3167,11 +3167,11 @@
          ;; Remove any recs that are disallowed (todo: drop this now? or print something here?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
       (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body broken-theorem
-                                (rest model-info-alist)
-                                timeout debug print
+                            (rest model-info-alist)
+                            timeout debug print
                                 ;; Associate this model with its recs in the result:
-                                (acons model recs acc)
-                                state))))
+                            (acons model recs acc)
+                            state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
