@@ -2077,13 +2077,30 @@
                                                 :formula asg-formula
                                                 :hints asg-hints
                                                 :enable nil))
+       ((mv item
+            item-limit
+            item-events
+            & ; item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-asg asg
+                                asg-limit
+                                (append struct.events
+                                        index.events
+                                        elem.events
+                                        (list okp-lemma-event
+                                              asg-event))
+                                asg-thm-name
+                                new-compst
+                                (change-stmt-gin
+                                 gin
+                                 :thm-index thm-index
+                                 :names-to-avoid names-to-avoid
+                                 :proofs t)
+                                state))
        (new-context gin.context) ; TODO
        (new-inscope gin.inscope) ; TODO
-       (events (append struct.events
-                       index.events
-                       elem.events
-                       (list okp-lemma-event
-                             asg-event))))
+       (events item-events))
     (retok item
            struct-write-term
            item-limit
