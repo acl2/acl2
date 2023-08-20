@@ -487,10 +487,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;Returns (mv erp first-working-rec-num-or-nil state).
-(defun try-recs-in-order (recs rec-num checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)
+(defun try-recs-in-order (recs rec-num theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)
   (declare (xargs :guard (and (help::recommendation-listp recs)
                               (posp rec-num)
-                              (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -542,12 +541,11 @@
                 rec-num
                 state))
         ;; keep looking:
-        (try-recs-in-order (rest recs) (+ 1 rec-num) checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)))))
+        (try-recs-in-order (rest recs) (+ 1 rec-num) theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)))))
 
 ;; Walks through the RECOMMENDATION-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
-(defun eval-models-on-checkpoints-aux (recommendation-alist
-                                       checkpoint-clauses
+(defun eval-model-recs (recommendation-alist
                                        theorem-name
                                        theorem-body
                                        theorem-hints
@@ -559,7 +557,6 @@
                                        model-results-acc
                                        state)
   (declare (xargs :guard (and (alistp recommendation-alist) ; todo: strengthen
-                              (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -591,11 +588,10 @@
          (- (and (acl2::print-level-at-least-tp print)
                  (cw "TRYING RECOMMENDATIONS FOR ~x0:~%" model)))
          ((mv erp first-working-rec-num-or-nil state)
-          (try-recs-in-order recs 1 checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state))
+          (try-recs-in-order recs 1 theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state))
          ((mv end-time state) (get-cpu-time state))
          ((when erp) (mv erp nil state)))
-      (eval-models-on-checkpoints-aux (rest recommendation-alist)
-                                      checkpoint-clauses
+      (eval-model-recs (rest recommendation-alist)
                                       theorem-name
                                       theorem-body
                                       theorem-hints
@@ -653,8 +649,8 @@
                                        ,@(and theorem-hints `(:hints ,theorem-hints)))
                                     model-info-alist model-query-timeout debug print nil state))
        ((when erp) (mv erp nil state)))
-    (eval-models-on-checkpoints-aux recommendation-alist
-                                    checkpoint-clauses
+    ;; Try all the recs and record which ones worked:
+    (eval-model-recs recommendation-alist
                                     theorem-name
                                     theorem-body
                                     theorem-hints
