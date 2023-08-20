@@ -2098,9 +2098,95 @@
                                  :names-to-avoid names-to-avoid
                                  :proofs t)
                                 state))
-       (new-context gin.context) ; TODO
-       (new-inscope gin.inscope) ; TODO
-       (events item-events))
+       (new-context
+        (atc-context-extend gin.context
+                            (list
+                             (make-atc-premise-cvalue
+                              :var var
+                              :term struct-write-term)
+                             (make-atc-premise-compustate
+                              :var gin.compst-var
+                              :term (if pointerp
+                                        `(update-object
+                                          ,(add-suffix-to-fn var "-OBJDES")
+                                          ,var
+                                          ,gin.compst-var)
+                                      `(update-var
+                                        (ident ,(symbol-name var))
+                                        ,var
+                                        ,gin.compst-var))))))
+       (notflexarrmem-thms (atc-type-to-notflexarrmem-thms (type-struct tag)
+                                                           gin.prec-tags))
+       (value-kind-thms
+        (atc-string-taginfo-alist-to-value-kind-thms gin.prec-tags))
+       (new-inscope-rules
+        (if pointerp
+            `(objdesign-of-var-of-update-object-iff
+              read-object-of-objdesign-of-var-to-read-var
+              read-object-of-update-object-same
+              read-object-of-update-object-disjoint
+              read-var-of-update-object
+              compustate-frames-number-of-enter-scope-not-zero
+              read-var-of-enter-scope
+              compustate-frames-number-of-add-var-not-zero
+              compustate-frames-number-of-update-object
+              read-var-of-add-var
+              not-flexible-array-member-p-when-ucharp
+              not-flexible-array-member-p-when-scharp
+              not-flexible-array-member-p-when-ushortp
+              not-flexible-array-member-p-when-sshortp
+              not-flexible-array-member-p-when-uintp
+              not-flexible-array-member-p-when-sintp
+              not-flexible-array-member-p-when-ulongp
+              not-flexible-array-member-p-when-slongp
+              not-flexible-array-member-p-when-ullongp
+              not-flexible-array-member-p-when-sllongp
+              not-flexible-array-member-p-when-value-pointer
+              read-object-of-update-object-same
+              remove-flexible-array-member-when-absent
+              value-fix-when-valuep
+              valuep-when-ucharp
+              valuep-when-scharp
+              valuep-when-ushortp
+              valuep-when-sshortp
+              valuep-when-uintp
+              valuep-when-sintp
+              valuep-when-ulongp
+              valuep-when-slongp
+              valuep-when-ullongp
+              valuep-when-sllongp
+              ,@valuep-thms
+              ,@writer-return-thms
+              equal-of-ident-and-ident
+              (:e str-fix)
+              ident-fix-when-identp
+              identp-of-ident)
+          `(objdesign-of-var-of-update-var
+            read-object-of-objdesign-var-of-update-var
+            remove-flexible-array-member-when-absent
+            ,@notflexarrmem-thms
+            ,@value-kind-thms
+            value-fix-when-valuep
+            ,@valuep-thms
+            ,@writer-return-thms
+            equal-of-ident-and-ident
+            (:e str-fix)
+            ident-fix-when-identp
+            identp-of-ident)))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope gin.fn
+                             gin.fn-guard
+                             gin.inscope
+                             new-context
+                             gin.compst-var
+                             new-inscope-rules
+                             gin.prec-tags
+                             thm-index
+                             names-to-avoid
+                             wrld))
+       (thm-index (1+ thm-index))
+       (events (append item-events
+                       new-inscope-events)))
     (retok item
            struct-write-term
            item-limit
