@@ -26,10 +26,16 @@
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "tables")
 
+
+(verify-termination get-event-data-1) ; can't verify guards
+(verify-termination get-event-data)
+(verify-termination last-prover-steps)
 ;dup
+;; Still returns the negation of the limit, if the step limit was reached.
 (defund true-last-prover-steps (state)
   (declare (xargs :stobjs state
-                  :mode :program ; why?
+                  :verify-guards nil
+                  ;:mode :program ; why?
                   ))
   (let ((steps (last-prover-steps state)))
     ;; replace nil, which can happen for very trivial theorems, with 0:
@@ -42,7 +48,7 @@
   ;; Oddly, keys are set to nil in this table (the values are irrelevant):
   (set-table-entry-programmatic 'inhibit-er-table str nil state))
 
-;; Returns (mv erp provedp state).
+;; Returns (mv erp provedp state), where PROVEDP is valid only when ERP is nil.
 (defun prove$-nice-fn (term
                        hints
                        instructions
@@ -80,7 +86,7 @@
               :ignore-ok t ; okay to have ignored let-vars
               :step-limit step-limit)))))
 
-;; Returns (mv erp provedp state).
+;; Returns (mv erp provedp state), where PROVEDP is valid only when ERP is nil.
 ;; See also prove-dollar+.
 (defmacro prove$-nice (term
                        &key
