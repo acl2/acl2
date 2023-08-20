@@ -1759,6 +1759,7 @@
                                              (index-term pseudo-termp)
                                              (elem-term pseudo-termp)
                                              (elem-type typep)
+                                             (flexiblep booleanp)
                                              (struct-write-fn symbolp)
                                              (wrapper? symbolp)
                                              (gin stmt-ginp)
@@ -1780,6 +1781,7 @@
           an assignment to an element of an array member of a structure."
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
        ((stmt-gin gin) gin)
+       (wrld (w state))
        ((unless (eq wrapper? nil))
         (reterr
          (msg "The structure write term ~x0 ~
@@ -1900,15 +1902,50 @@
                gin.context
                elem.thm-index
                elem.names-to-avoid))
+       (okp-lemma-name (pack gin.fn '-asg- elem.thm-index '-okp-lemma))
+       ((mv okp-lemma-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                           nil
+                                           elem.names-to-avoid
+                                           wrld))
+       (thm-index (1+ elem.thm-index))
+       (info (atc-get-tag-info tag gin.prec-tags))
+       (struct-tag (defstruct-info->fixtype (atc-tag-info->defstruct info)))
+       (index-okp (packn-pos (list struct-tag
+                                   '-
+                                   (ident->name member-name)
+                                   '-index-okp)
+                             struct-write-fn))
+       (okp-lemma-formula
+        (if flexiblep
+            `(,index-okp ,index-term ,var)
+          `(,index-okp ,index-term)))
+       (okp-lemma-formula (atc-contextualize okp-lemma-formula
+                                             gin.context
+                                             gin.fn
+                                             gin.fn-guard
+                                             nil
+                                             nil
+                                             nil
+                                             nil
+                                             wrld))
+       (okp-lemma-hints
+        `(("Goal"
+           :in-theory '(,gin.fn-guard if* test* declar assign)
+           :use (:guard-theorem ,gin.fn))))
+       ((mv okp-lemma-event &)
+        (evmac-generate-defthm okp-lemma-name
+                               :formula okp-lemma-formula
+                               :hints okp-lemma-hints
+                               :enable nil))
        ;; (new-compst gin.compst-var) ; TODO
        ;; (new-compst (untranslate$ new-compst nil state))
        (new-context gin.context) ; TODO
        (new-inscope gin.inscope) ; TODO
-       (thm-index elem.thm-index)
-       (names-to-avoid elem.names-to-avoid)
        (events (append struct.events
                        index.events
-                       elem.events)))
+                       elem.events
+                       (list okp-lemma-event))))
     (retok item
            struct-write-term
            item-limit
@@ -1918,7 +1955,12 @@
            new-context
            thm-index
            names-to-avoid))
-  :prepwork ((local (in-theory (enable pseudo-termp)))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (e/d (pseudo-termp
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4110,7 +4152,14 @@
                       :proofs (and body.thm-name t))
                      state)))
                 (retok items-gout)))
-             ((erp okp fn index-term elem-term tag member-name elem-type &)
+             ((erp okp
+                   fn
+                   index-term
+                   elem-term
+                   tag
+                   member-name
+                   elem-type
+                   flexiblep)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
               (b* (((erp asg-item
@@ -4129,6 +4178,7 @@
                                                          index-term
                                                          elem-term
                                                          elem-type
+                                                         flexiblep
                                                          fn
                                                          wrapper?
                                                          gin
