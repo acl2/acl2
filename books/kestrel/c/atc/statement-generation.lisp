@@ -1003,7 +1003,7 @@
                             value-fix-when-valuep
                             ,valuep-when-type
                             objdesign-of-var-of-update-var
-                            read-object-of-objdesign-var-of-update-var
+                            read-object-of-objdesign-of-var-of-update-var
                             ident-fix-when-identp
                             identp-of-ident
                             equal-of-ident-and-ident
@@ -1712,7 +1712,7 @@
               ident-fix-when-identp
               identp-of-ident)
           `(objdesign-of-var-of-update-var
-            read-object-of-objdesign-var-of-update-var
+            read-object-of-objdesign-of-var-of-update-var
             remove-flexible-array-member-when-absent
             ,@notflexarrmem-thms
             ,@value-kind-thms
@@ -2162,7 +2162,7 @@
               ident-fix-when-identp
               identp-of-ident)
           `(objdesign-of-var-of-update-var
-            read-object-of-objdesign-var-of-update-var
+            read-object-of-objdesign-of-var-of-update-var
             remove-flexible-array-member-when-absent
             ,@notflexarrmem-thms
             ,@value-kind-thms
