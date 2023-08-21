@@ -2205,85 +2205,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-block-item-list-none ((term pseudo-termp)
-                                      (gin stmt-ginp)
-                                      state)
-  :returns (gout stmt-goutp)
-  :short "Generate an empty list of block items."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The empty list of block items itself is trivial of course,
-     but we also generate a theorem about
-     @(tsee exec-block-item-list) applied to the empty list of block items.
-     This provide uniformity with non-empty lists of block items,
-     when lists of block items that may be empty or not are involved
-     within larger constructs.")
-   (xdoc::p
-    "We return 1 as the limit,
-     which is needed in @(tsee exec-block-item-list)
-     to not return an error due to the limit being exhausted."))
-  (b* (((stmt-gin gin) gin)
-       (wrld (w state))
-       (limit (pseudo-term-quote 1))
-       ((when (not gin.proofs))
-        (make-stmt-gout
-         :items nil
-         :type (type-void)
-         :term term
-         :context gin.context
-         :inscope nil
-         :limit limit
-         :events nil
-         :thm-name nil
-         :thm-index gin.thm-index
-         :names-to-avoid gin.names-to-avoid))
-       (name (pack gin.fn '-correct- gin.thm-index))
-       ((mv name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
-       (thm-index (1+ gin.thm-index))
-       (formula `(equal (exec-block-item-list nil
-                                              ,gin.compst-var
-                                              ,gin.fenv-var
-                                              ,gin.limit-var)
-                        (mv nil ,gin.compst-var)))
-       (formula (atc-contextualize formula
-                                   gin.context
-                                   gin.fn
-                                   gin.fn-guard
-                                   gin.compst-var
-                                   gin.limit-var
-                                   limit
-                                   t
-                                   wrld))
-       (hints
-        '(("Goal" :in-theory '(exec-block-item-list-of-nil
-                               not-zp-of-limit-variable
-                               compustatep-of-add-frame
-                               compustatep-of-enter-scope
-                               compustatep-of-exit-scope
-                               compustatep-of-add-var
-                               compustatep-of-update-var
-                               compustatep-of-update-object
-                               compustatep-of-if*-when-both-compustatep))))
-       ((mv event &) (evmac-generate-defthm name
-                                            :formula formula
-                                            :hints hints
-                                            :enable nil)))
-    (make-stmt-gout
-     :items nil
-     :type (type-void)
-     :term term
-     :context gin.context
-     :inscope gin.inscope
-     :limit limit
-     :events (list event)
-     :thm-name name
-     :thm-index thm-index
-     :names-to-avoid names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-gen-block-item-integer-asg ((var symbolp)
                                         (val-term pseudo-termp)
                                         (arg-term pseudo-termp)
@@ -2382,6 +2303,85 @@
            gin.context
            int.thm-index
            int.names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-block-item-list-none ((term pseudo-termp)
+                                      (gin stmt-ginp)
+                                      state)
+  :returns (gout stmt-goutp)
+  :short "Generate an empty list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The empty list of block items itself is trivial of course,
+     but we also generate a theorem about
+     @(tsee exec-block-item-list) applied to the empty list of block items.
+     This provide uniformity with non-empty lists of block items,
+     when lists of block items that may be empty or not are involved
+     within larger constructs.")
+   (xdoc::p
+    "We return 1 as the limit,
+     which is needed in @(tsee exec-block-item-list)
+     to not return an error due to the limit being exhausted."))
+  (b* (((stmt-gin gin) gin)
+       (wrld (w state))
+       (limit (pseudo-term-quote 1))
+       ((when (not gin.proofs))
+        (make-stmt-gout
+         :items nil
+         :type (type-void)
+         :term term
+         :context gin.context
+         :inscope nil
+         :limit limit
+         :events nil
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid))
+       (name (pack gin.fn '-correct- gin.thm-index))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
+       (thm-index (1+ gin.thm-index))
+       (formula `(equal (exec-block-item-list nil
+                                              ,gin.compst-var
+                                              ,gin.fenv-var
+                                              ,gin.limit-var)
+                        (mv nil ,gin.compst-var)))
+       (formula (atc-contextualize formula
+                                   gin.context
+                                   gin.fn
+                                   gin.fn-guard
+                                   gin.compst-var
+                                   gin.limit-var
+                                   limit
+                                   t
+                                   wrld))
+       (hints
+        '(("Goal" :in-theory '(exec-block-item-list-of-nil
+                               not-zp-of-limit-variable
+                               compustatep-of-add-frame
+                               compustatep-of-enter-scope
+                               compustatep-of-exit-scope
+                               compustatep-of-add-var
+                               compustatep-of-update-var
+                               compustatep-of-update-object
+                               compustatep-of-if*-when-both-compustatep))))
+       ((mv event &) (evmac-generate-defthm name
+                                            :formula formula
+                                            :hints hints
+                                            :enable nil)))
+    (make-stmt-gout
+     :items nil
+     :type (type-void)
+     :term term
+     :context gin.context
+     :inscope gin.inscope
+     :limit limit
+     :events (list event)
+     :thm-name name
+     :thm-index thm-index
+     :names-to-avoid names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
