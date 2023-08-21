@@ -3172,19 +3172,18 @@
              ;; It's a normal ML model:
              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print state))))
          ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-         (- (if erp
-                (cw "Note: Skipping ~x0 due to errors.~%" model)
-              (if print-timep
-                  (let* ((time-diff (- done-time start-time))
-                         (time-diff (if (< time-diff 0)
-                                        (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
-                                                0)
-                                      time-diff)))
-                    (progn$ (cw "Got ~x0 recs in " (len recs))
-                            (acl2::print-to-hundredths time-diff)
-                            (cw "s~%") ; s = seconds
-                            ))
-                (cw "Got ~x0 recs.~%" (len recs)))))
+         (- (and erp (cw "Error using ~x0.~%" model)))
+         (- (if print-timep
+                (let* ((time-diff (- done-time start-time))
+                       (time-diff (if (< time-diff 0)
+                                      (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
+                                              0)
+                                    time-diff)))
+                  (progn$ (cw "Got ~x0 recs in " (len recs))
+                          (acl2::print-to-hundredths time-diff)
+                          (cw "s~%") ; s = seconds
+                          ))
+              (cw "Got ~x0 recs.~%" (len recs))))
          ;; Remove any recs that are disallowed (todo: drop this now? or print something here?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
       (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem
@@ -3278,7 +3277,7 @@
         ;; A step-limit may fire before checkpoints can be generated:
         (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
         (mv :no-checkpoints nil nil nil nil state))
-       ;; Now the non-top checkpoints, oo which there may be none:
+       ;; Now the non-top checkpoints, of which there may be none:
        (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
                                                           state))
        ;; todo: any special values to handle here?
