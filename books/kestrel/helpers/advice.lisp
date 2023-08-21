@@ -293,9 +293,11 @@
 
 ;; TODO: Make this extensible:
 (defconst *function-models*
-  '(:enable :history :cases))
-
-
+  '(:enable-fns-body
+    :enable-fns-top-cps
+    :enable-fns-non-top-cps
+    :history
+    :cases))
 
 ;; (defconst *known-models* (strip-cars *known-models-and-strings*))
 
@@ -3141,11 +3143,21 @@
          ;; Dispatch to the model:
          ((mv erp recs state)
           (case model
-            (:enable
+            (:enable-fns-body
              ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
              (if (member-eq :add-enable-hint disallowed-rec-types)
                  (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-               (make-enable-recs translated-theorem-body checkpoint-clauses-top num-recs-per-model print state)))
+               (make-enable-fns-body-recs translated-theorem-body num-recs-per-model print state)))
+            (:enable-fns-top-cps
+             ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
+             (if (member-eq :add-enable-hint disallowed-rec-types)
+                 (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+               (make-enable-fns-checkpoints-recs checkpoint-clauses-top num-recs-per-model print state)))
+            (:enable-fns-non-top-cps
+             ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
+             (if (member-eq :add-enable-hint disallowed-rec-types)
+                 (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+               (make-enable-fns-checkpoints-recs checkpoint-clauses-non-top num-recs-per-model print state)))
             (:history
              ;; Make recs based on hints given to recent theorems:
              (if (member-eq :exact-hints disallowed-rec-types)
@@ -3482,12 +3494,15 @@
 ;; Returns a model-info-alist representing the selected MODELS, using the acl2::advice-server table.
 (defund make-model-info-alist (models wrld)
   (declare (xargs :guard (and (or (eq :all models)
+                                  (eq :non-ml models)
                                   (model-namep models) ; represents a singleton set
                                   (model-namesp models))
                               (plist-worldp wrld))
                   :verify-guards nil ; todo: and use tools!
                   ))
-  (let* ( ;; single model stands for singleton list of that model:
+  (let* (;; Desugar :non-ml option:
+         (models (if (eq :non-ml models) *function-models* models))
+         ;; single model stands for singleton list of that model:
          (models (if (model-namep models) ; excludes :all
                      (list models)
                    models))
@@ -3505,9 +3520,14 @@
              (all-server-models (strip-cars advice-server-alist))
              (server-models (if (eq :all models)
                                 all-server-models
-                              (intersection-eq all-server-models models))))
-        (append (acons-all-to-val function-models :function nil)
-                (filter-advice-server-alist advice-server-alist server-models))))))
+                              (intersection-eq all-server-models models)))
+             (unknown-models (if (eq :all models)
+                                 nil
+                               (set-difference-eq (set-difference-eq models function-models) server-models))))
+        (if unknown-models
+            (er hard? 'make-model-info-alist "Unknown models: ~x0." unknown-models)
+          (append (acons-all-to-val function-models :function nil)
+                  (filter-advice-server-alist advice-server-alist server-models)))))))
 
 ;; Returns (mv erp event state).
 (defun defthm-advice-fn (theorem-name
@@ -3546,6 +3566,7 @@
                                   (null max-wins)
                                   (natp max-wins))
                               (or (eq :all models)
+                                  (eq :non-ml models)
                                   (model-namep models) ; represents a singleton set
                                   (model-namesp models)))
                   :stobjs state
@@ -3650,6 +3671,7 @@
                               (null max-wins)
                               (natp max-wins))
                           (or (eq :all models)
+                              (eq :non-ml models)
                               (model-namep models) ; represents a singleton set
                               (model-namesp models)))
                   :stobjs state
@@ -3749,6 +3771,7 @@
                                   (null max-wins)
                                   (natp max-wins))
                               (or (eq :all models)
+                                  (eq :non-ml models)
                                   (model-namep models) ; represents a singleton set
                                   (model-namesp models)))
                   :stobjs state

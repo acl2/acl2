@@ -108,13 +108,11 @@
 ;; TODO: Don't even make recs for things that are enabled (in the theory, or by the current hints)?
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 ;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
-(defun make-enable-recs (translated-theorem-body
-                         checkpoint-clauses
-                         num-recs
-                         print
-                         state)
+(defun make-enable-fns-body-recs (translated-theorem-body
+                                  num-recs
+                                  print
+                                  state)
   (declare (xargs :guard (and (pseudo-termp translated-theorem-body)
-                              (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (natp num-recs)
                               (acl2::print-levelp print))
                   :stobjs state
@@ -122,13 +120,11 @@
                   ))
   (b* ((wrld (w state))
        (- (and (acl2::print-level-at-least-tp print)
-               (cw "Making ~x0 :enable recommendations: " ; the line is ended below when we print the time
+               (cw "Making ~x0 :enable recommendations for body functions: " ; the line is ended below when we print the time
                    num-recs)))
        ; (translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
        (fns-in-goal (set-difference-eq (acl2::defined-fns-in-term translated-theorem-body wrld)
                                        *fns-to-never-enable*))
-       (fns-in-checkpoints (set-difference-eq (acl2::defined-fns-in-term-lists checkpoint-clauses wrld nil)
-                                              *fns-to-never-enable*))
        ;; we'll try the ones in the goal first (todo: do a more sophisticated ranking?):
        ;; todo: prefer ones defined in the current book?  more complex ones?
        ;; todo: make a rec that enables all (sensible functions?)
@@ -136,8 +132,8 @@
        ;; todo: try all defined functions in the conclusion
        ;; todo: try all defined functions
        ;; the order here matters (todo: what order to choose?)
-       (fns-to-try-enabling (append fns-in-goal fns-in-checkpoints))
-       (fns-to-try-enabling (remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
+       (fns-to-try-enabling fns-in-goal)
+       ;; (fns-to-try-enabling (remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
        (fns-to-try-enabling (acl2::firstn num-recs fns-to-try-enabling))
        (fns-beyond-the-limit (nthcdr num-recs fns-to-try-enabling))
        (- (and fns-beyond-the-limit
@@ -149,3 +145,35 @@
 ;;  (defthm recommendation-listp-of-make-enable-recs
 ;;    (implies (pseudo-termp formula)
 ;;             (recommendation-listp (make-enable-recs formula wrld)))))
+
+(defun make-enable-fns-checkpoints-recs (checkpoint-clauses
+                                         num-recs
+                                         print
+                                         state)
+  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              (natp num-recs)
+                              (acl2::print-levelp print))
+                  :stobjs state
+;                  :mode :program ; because of acl2::translate-term
+                  ))
+  (b* ((wrld (w state))
+       (- (and (acl2::print-level-at-least-tp print)
+               (cw "Making ~x0 :enable recommendations for checkpoints functions: " ; the line is ended below when we print the time
+                   num-recs)))
+       (fns-in-checkpoints (set-difference-eq (acl2::defined-fns-in-term-lists checkpoint-clauses wrld nil)
+                                              *fns-to-never-enable*))
+       ;; we'll try the ones in the goal first (todo: do a more sophisticated ranking?):
+       ;; todo: prefer ones defined in the current book?  more complex ones?
+       ;; todo: make a rec that enables all (sensible functions?)
+       ;; todo: remove any functions already enabled, at least in the goal hint?
+       ;; todo: try all defined functions in the conclusion
+       ;; todo: try all defined functions
+       ;; the order here matters (todo: what order to choose?)
+       (fns-to-try-enabling fns-in-checkpoints)
+       (fns-to-try-enabling (remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
+       (fns-to-try-enabling (acl2::firstn num-recs fns-to-try-enabling))
+       (fns-beyond-the-limit (nthcdr num-recs fns-to-try-enabling))
+       (- (and fns-beyond-the-limit
+               (cw "Suppressing ~x0 enable recs (beyond num-recs): ~X12.~%" (len fns-beyond-the-limit) fns-beyond-the-limit nil)))
+       (recs (make-enable-recs-aux fns-to-try-enabling 1)))
+    (mv nil recs state)))

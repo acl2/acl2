@@ -23,7 +23,7 @@
 ;; A simple test, with extensive guard checking
 (deftest
   (defthm-advice test (equal x x) :rule-classes nil
-    :models '(:enable :history) ; don't contact the server (todo: allow :non-ml and :ml)
+    :models '(:enable-fns-body :history) ; don't contact the server (todo: allow :non-ml :ml)
     )
   )
 
@@ -32,7 +32,7 @@
   (defthm-advice test2
     (equal (len (append x y))
            (+ (len x) (len y)))
-    :models '(:enable :history) ; don't contact the server
+    :models :non-ml ; don't contact the servers
     )
   )
 

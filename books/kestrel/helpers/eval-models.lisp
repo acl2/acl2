@@ -463,7 +463,7 @@
     (let* ((pair (first alist))
            (model (car pair))
            (percent-string (cdr pair)))
-      (prog2$ (cw "~s0: ~s1%~%" (symbol-to-left-padded-string-of-length model 21) percent-string) ;todo: align better
+      (prog2$ (cw "~s0: ~s1%~%" (symbol-to-left-padded-string-of-length model 30) percent-string) ;todo: align better
               (show-success-percentages (rest alist))))))
 
 ;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
@@ -1173,6 +1173,7 @@
                               (natp model-query-timeout)
                               (member-eq breakage-plan '(:all :goal-partial))
                               (or (eq :all models)
+                                  (eq :non-ml models)
                                   (help::model-namep models) ; special case for a single model
                                   (help::model-namesp models))
                               (or (eq :all num-tests)
