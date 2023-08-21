@@ -2284,6 +2284,107 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-block-item-integer-asg ((var symbolp)
+                                        (val-term pseudo-termp)
+                                        (arg-term pseudo-termp)
+                                        (type typep)
+                                        (integer-write-fn symbolp)
+                                        (wrapper? symbolp)
+                                        (gin stmt-ginp)
+                                        state)
+  :returns (mv erp
+               (item block-itemp)
+               (val-term* pseudo-termp :hyp (symbolp integer-write-fn))
+               (limit pseudo-termp)
+               (events pseudo-event-form-listp)
+               (thm-name symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
+  :short "Generate a C block item statement that consists of
+          an assignment to a pointed integer."
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+       ((stmt-gin gin) gin)
+       ((unless (eq wrapper? nil))
+        (reterr
+         (msg "The pointed integer write term ~x0 ~
+               to which ~x1 is bound ~
+               has the ~x2 wrapper, which is disallowed."
+              val-term var wrapper?)))
+       ((unless (member-eq var gin.affect))
+        (reterr
+         (msg "The pointed integer ~x0 is being written to, ~
+               but it is not among the variables ~x1 ~
+               currently affected."
+              var gin.affect)))
+       ((erp (pexpr-gout ptr))
+        (atc-gen-expr-pure var
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs gin.proofs)
+                           state))
+       ((unless (equal ptr.type (type-pointer type)))
+        (reterr
+         (msg "The variable ~x0 of type ~x1 does not have ~
+               the expected type ~x2. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var ptr.type (type-pointer type))))
+       ((erp (pexpr-gout int))
+        (atc-gen-expr-pure arg-term
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index ptr.thm-index
+                            :names-to-avoid ptr.names-to-avoid
+                            :proofs (and ptr.thm-name t))
+                           state))
+       ((unless (equal int.type type))
+        (reterr
+         (msg "The term ~x0 of type ~x1 does not have ~
+               the expected type ~x1. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              arg-term int.type type)))
+       (asg (make-expr-binary
+             :op (binop-asg)
+             :arg1 (make-expr-unary
+                    :op (unop-indir)
+                    :arg ptr.expr)
+             :arg2 int.expr))
+       (stmt (stmt-expr asg))
+       (item (block-item-stmt stmt))
+       (item-limit ''4)
+       ((when (eq integer-write-fn 'quote))
+        (reterr (raise "Internal error: integer writer is QUOTE.")))
+       (integer-write-term `(,integer-write-fn ,var ,int.term)))
+    (retok item
+           integer-write-term
+           item-limit
+           (append ptr.events
+                   int.events)
+           nil
+           gin.inscope
+           gin.context
+           int.thm-index
+           int.names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-block-item-list-one
   ((term pseudo-termp)
    (item block-itemp)
@@ -4195,95 +4296,47 @@
               (atc-update-var-term-alist (list var)
                                          (list val-instance)
                                          gin.var-term-alist))
-             ((erp okp & arg-term type) (atc-check-integer-write val-term))
+             ((erp okp fn arg-term type) (atc-check-integer-write val-term))
              ((when okp)
-              (b* (((unless (eq wrapper? nil))
-                    (reterr
-                     (msg "The pointed integer write term ~x0 ~
-                           to which ~x1 is bound ~
-                           has the ~x2 wrapper, which is disallowed."
-                          arg-term var wrapper?)))
-                   ((unless (member-eq var gin.affect))
-                    (reterr
-                     (msg "The pointed integer ~x0 is being written to, ~
-                           but it is not among the variables ~x1 ~
-                           currently affected."
-                          var gin.affect)))
-                   ((erp (pexpr-gout ptr))
-                    (atc-gen-expr-pure var
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
-                                       state))
-                   ((unless (equal ptr.type (type-pointer type)))
-                    (reterr
-                     (msg "The variable ~x0 of type ~x1 does not have ~
-                           the expected type ~x2. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var ptr.type (type-pointer type))))
-                   ((erp (pexpr-gout int))
-                    (atc-gen-expr-pure arg-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index ptr.thm-index
-                                        :names-to-avoid ptr.names-to-avoid
-                                        :proofs (and ptr.thm-name t))
-                                       state))
-                   ((unless (equal int.type type))
-                    (reterr
-                     (msg "The term ~x0 of type ~x1 does not have ~
-                           the expected type ~x1. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          arg-term int.type type)))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (make-expr-unary
-                                :op (unop-indir)
-                                :arg ptr.expr)
-                         :arg2 int.expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
+              (b* (((erp asg-item
+                         & ; asg-term
+                         asg-limit
+                         asg-events
+                         & ; asg-thm
+                         & ; new-inscope
+                         & ; new-context
+                         thm-index
+                         names-to-avoid)
+                    (atc-gen-block-item-integer-asg var
+                                                    val-term
+                                                    arg-term
+                                                    type
+                                                    fn
+                                                    wrapper?
+                                                    gin
+                                                    state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
                                    :var-term-alist var-term-alist-body
-                                   :thm-index int.thm-index
-                                   :names-to-avoid int.names-to-avoid
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
                                    :proofs nil)
                                   state))
-                   (limit (pseudo-term-fncall 'binary-+
-                                              (list (pseudo-term-quote 4)
-                                                    body.limit))))
+                   (limit `(binary-+ ,asg-limit ,body.limit)))
                 (retok (make-stmt-gout
-                        :items (cons item body.items)
+                        :items (cons asg-item body.items)
                         :type body.type
                         :term term
                         :context (make-atc-context :preamble nil :premises nil)
                         :inscope nil
                         :limit limit
-                        :events (append ptr.events
-                                        int.events
+                        :events (append asg-events
                                         body.events)
                         :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid))))
+                        :thm-index thm-index
+                        :names-to-avoid names-to-avoid))))
              ((erp okp fn sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
