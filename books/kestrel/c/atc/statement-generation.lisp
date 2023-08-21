@@ -2080,7 +2080,7 @@
        ((mv item
             item-limit
             item-events
-            & ; item-thm-name
+            item-thm-name
             thm-index
             names-to-avoid)
         (atc-gen-block-item-asg asg
@@ -2191,7 +2191,7 @@
            struct-write-term
            item-limit
            events
-           nil
+           item-thm-name
            new-inscope
            new-context
            thm-index
@@ -4409,9 +4409,9 @@
                          & ; asg-term
                          asg-limit
                          asg-events
-                         & ; asg-thm
-                         & ; new-inscope
-                         & ; new-context
+                         asg-thm
+                         new-inscope
+                         new-context
                          thm-index
                          names-to-avoid)
                     (atc-gen-block-item-struct-array-asg var
@@ -4430,10 +4430,12 @@
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
+                                   :context new-context
                                    :var-term-alist var-term-alist-body
+                                   :inscope new-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs nil)
+                                   :proofs (and asg-thm t))
                                   state))
                    (limit (pseudo-term-fncall 'binary-+
                                               (list asg-limit
