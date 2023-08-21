@@ -545,7 +545,7 @@
 
 ;; Walks through the RECOMMENDATION-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
-(defun eval-model-recs (recommendation-alist
+(defun eval-model-recs (recommendation-alist ; maps model names to rec-lists
                         theorem-name
                         theorem-body
                         theorem-hints
