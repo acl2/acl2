@@ -2398,14 +2398,65 @@
                                  :thm-index thm-index
                                  :names-to-avoid names-to-avoid
                                  :proofs t)
-                                state)))
+                                state))
+       (new-context
+        (atc-context-extend gin.context
+                            (list
+                             (make-atc-premise-cvalue
+                              :var var
+                              :term integer-write-term)
+                             (make-atc-premise-compustate
+                              :var gin.compst-var
+                              :term `(update-object
+                                      ,(add-suffix-to-fn var "-OBJDES")
+                                      ,var
+                                      ,gin.compst-var)))))
+       (type-pred-of-type-write (pack type-pred '-of- (type-kind type) '-write))
+       (not-flexible-array-member-p-when-type-pred
+        (pack 'not-flexible-array-member-p-when- type-pred))
+       (new-inscope-rules
+        `(objdesign-of-var-of-update-object-iff
+          read-object-of-objdesign-of-var-to-read-var
+          read-var-of-update-object
+          compustate-frames-number-of-add-var-not-zero
+          read-object-of-update-object-same
+          read-object-of-update-object-disjoint
+          object-disjointp-commutative
+          read-var-of-add-var
+          remove-flexible-array-member-when-absent
+          not-flexible-array-member-p-when-value-pointer
+          value-fix-when-valuep
+          ,valuep-when-type-pred
+          ,type-pred-of-type-write
+          ,not-flexible-array-member-p-when-type-pred
+          ident-fix-when-identp
+          identp-of-ident
+          equal-of-ident-and-ident
+          (:e str-fix)
+          read-var-of-update-object
+          compustate-frames-number-of-enter-scope-not-zero
+          read-var-of-enter-scope))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope gin.fn
+                             gin.fn-guard
+                             gin.inscope
+                             new-context
+                             gin.compst-var
+                             new-inscope-rules
+                             gin.prec-tags
+                             thm-index
+                             names-to-avoid
+                             wrld))
+       (thm-index (1+ thm-index))
+       (events (append item-events
+                       new-inscope-events)))
     (retok item
            integer-write-term
            item-limit
-           item-events
+           events
            item-thm-name
-           gin.inscope
-           gin.context
+           new-inscope
+           new-context
            thm-index
            names-to-avoid))
   :guard-hints
