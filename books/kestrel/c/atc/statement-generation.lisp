@@ -2379,14 +2379,31 @@
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
-                                                :enable nil)))
+                                                :enable nil))
+       ((mv item
+            item-limit
+            item-events
+            item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-asg asg
+                                asg-limit
+                                (append ptr.events
+                                        int.events
+                                        (list asg-event))
+                                asg-thm-name
+                                new-compst
+                                (change-stmt-gin
+                                 gin
+                                 :thm-index thm-index
+                                 :names-to-avoid names-to-avoid
+                                 :proofs t)
+                                state)))
     (retok item
            integer-write-term
            item-limit
-           (append ptr.events
-                   int.events
-                   (list asg-event))
-           nil
+           item-events
+           item-thm-name
            gin.inscope
            gin.context
            thm-index
