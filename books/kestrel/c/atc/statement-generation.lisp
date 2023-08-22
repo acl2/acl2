@@ -2226,6 +2226,7 @@
   :short "Generate a C block item statement that consists of
           an assignment to a pointed integer."
   (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+       (wrld (w state))
        ((stmt-gin gin) gin)
        ((unless (eq wrapper? nil))
         (reterr
@@ -2289,20 +2290,113 @@
              :arg2 int.expr))
        (stmt (stmt-expr asg))
        (item (block-item-stmt stmt))
-       (item-limit ''4)
+       (asg-limit ''1)
+       (expr-limit `(binary-+ '1 ,asg-limit))
+       (stmt-limit `(binary-+ '1 ,expr-limit))
+       (item-limit `(binary-+ '1 ,stmt-limit))
        ((when (eq integer-write-fn 'quote))
         (reterr (raise "Internal error: integer writer is QUOTE.")))
-       (integer-write-term `(,integer-write-fn ,var ,int.term)))
+       (integer-write-term `(,integer-write-fn ,int.term))
+       (varinfo (atc-get-var var gin.inscope))
+       ((unless varinfo)
+        (reterr (raise "Internal error: no information for variable ~x0." var)))
+       ((when (or (not int.thm-name)
+                  (atc-var-info->externalp varinfo))) ; <- temporary
+        (retok item
+               integer-write-term
+               item-limit
+               (append ptr.events
+                       int.events)
+               nil
+               gin.inscope
+               gin.context
+               int.thm-index
+               int.names-to-avoid))
+       (new-compst `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                                   ,integer-write-term
+                                   ,gin.compst-var))
+       (new-compst (untranslate$ new-compst nil state))
+       (asg-thm-name (pack gin.fn '-correct- int.thm-index))
+       ((mv asg-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix asg-thm-name
+                                           nil
+                                           int.names-to-avoid
+                                           wrld))
+       (thm-index (1+ int.thm-index))
+       (asg-formula `(equal (exec-expr-asg ',asg
+                                           ,gin.compst-var
+                                           ,gin.fenv-var
+                                           ,gin.limit-var)
+                            ,new-compst))
+       (asg-formula (atc-contextualize asg-formula
+                                       gin.context
+                                       gin.fn
+                                       gin.fn-guard
+                                       gin.compst-var
+                                       gin.limit-var
+                                       asg-limit
+                                       t
+                                       wrld))
+       (type-pred (atc-type-to-recognizer type gin.prec-tags))
+       (exec-expr-asg-thm (pack 'exec-expr-asg-indir-when- type-pred))
+       (value-kind-thm (atc-type-to-value-kind-thm type gin.prec-tags))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
+       (type-of-value-thm (atc-type-to-type-of-value-thm type gin.prec-tags))
+       (type-fix-when-type-pred (pack (type-kind type) '-fix-when- type-pred))
+       (asg-hints
+        `(("Goal"
+           :in-theory '(,exec-expr-asg-thm
+                        (:e expr-kind)
+                        (:e expr-binary->op)
+                        (:e expr-binary->arg1)
+                        (:e expr-binary->arg2)
+                        (:e binop-kind)
+                        (:e expr-unary->op)
+                        (:e expr-unary->arg)
+                        (:e unop-kind)
+                        not-zp-of-limit-variable
+                        (:e expr-ident->get)
+                        read-var-of-const-identifier
+                        (:e identp)
+                        (:e ident->name)
+                        read-var-to-read-object-of-objdesign-of-var
+                        ,(atc-var-info->thm varinfo)
+                        ,ptr.thm-name
+                        ,int.thm-name
+                        expr-valuep-of-expr-value
+                        apconvert-expr-value-when-not-value-array
+                        ,value-kind-thm
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep
+                        ,valuep-when-type-pred
+                        write-object-to-update-object
+                        write-object-okp-of-add-var
+                        write-object-okp-of-add-frame
+                        write-object-okp-when-valuep-of-read-object-no-syntaxp
+                        ,type-of-value-thm
+                        ,integer-write-fn
+                        ,type-fix-when-type-pred))))
+       ((mv asg-event &) (evmac-generate-defthm asg-thm-name
+                                                :formula asg-formula
+                                                :hints asg-hints
+                                                :enable nil)))
     (retok item
            integer-write-term
            item-limit
            (append ptr.events
-                   int.events)
+                   int.events
+                   (list asg-event))
            nil
            gin.inscope
            gin.context
-           int.thm-index
-           int.names-to-avoid)))
+           thm-index
+           names-to-avoid))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (e/d (pseudo-termp
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
