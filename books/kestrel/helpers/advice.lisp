@@ -296,6 +296,9 @@
   '(:enable-fns-body
     :enable-fns-top-cps
     :enable-fns-non-top-cps
+    :enable-rules-body
+    :enable-rules-top-cps
+    :enable-rules-non-top-cps
     :history
     :cases))
 
@@ -3158,6 +3161,21 @@
              (if (member-eq :add-enable-hint disallowed-rec-types)
                  (mv nil nil state) ; don't bother creating recs as they will be disallowed below
                (make-enable-fns-checkpoints-recs checkpoint-clauses-non-top num-recs-per-model print state)))
+            (:enable-rules-body
+             ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
+             (if (member-eq :add-enable-hint disallowed-rec-types)
+                 (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+               (make-enable-rules-body-recs translated-theorem-body num-recs-per-model print state)))
+            (:enable-rules-top-cps
+             ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
+             (if (member-eq :add-enable-hint disallowed-rec-types)
+                 (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+               (make-enable-rules-checkpoints-recs checkpoint-clauses-top num-recs-per-model print state)))
+            (:enable-rules-non-top-cps
+             ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
+             (if (member-eq :add-enable-hint disallowed-rec-types)
+                 (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+               (make-enable-rules-checkpoints-recs checkpoint-clauses-non-top num-recs-per-model print state)))
             (:history
              ;; Make recs based on hints given to recent theorems:
              (if (member-eq :exact-hints disallowed-rec-types)
