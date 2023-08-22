@@ -185,10 +185,12 @@
           :verify-guards nil))
   (if (and (rp-cl-args-p cl-args)
            (true-listp cl))
-      (rp-clause-processor-aux
-       cl cl-args
-       rp-state
-       state)
+      (time$ (rp-clause-processor-aux cl cl-args
+                                      rp-state
+                                      state)
+             ;;:mintime 1/2
+             :msg "RP-Rewriter took ~st seconds (real-time), or ~sc seconds ~
+  (cpu-time), and ~sa bytes allocated.~%~%")
     (mv (hard-error 'rp-rewriter
                     "Given cl-args does not satisfy rp-cl-args-p: ~p0 ~%"
                     (list (cons #\0 cl-args)))

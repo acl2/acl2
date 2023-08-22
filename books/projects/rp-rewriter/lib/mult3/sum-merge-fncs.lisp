@@ -208,8 +208,8 @@
           (('s ('quote x) & &)
            (mv (+ rest (ifix x))
                (+ 6 rest-size)))
-          (('c ('quote (x . &))  & & &)
-           (mv (+ rest (ifix x))
+          (('c ('quote (x . y))  & & &)
+           (mv (+ rest (ifix x) (ifix y))
                (+ 8 rest-size)))
           (& (mv rest rest-size)))))
     ///
@@ -249,8 +249,8 @@
                  (equalsp booleanp))
     (cond ((or (atom x)
                (atom y))
-           (mv (not (atom x)) (equal x y)))
-          ((equal (car x) (car y))
+           (mv (not (atom x)) (rp-equal-cnt-subterms x y 0)))
+          ((rp-equal-cnt (car x) (car y) 0)
            (pp-list-order-aux (cdr x) (cdr y)))
           (t
            ;; lexorder2- sort from small to large
@@ -262,21 +262,26 @@
         (not (atom x))
       (len-compare (cdr x) (cdr y))))
 
-  (define pp-list-order (x y skip-hash)
+  (define pp-list-order (x y
+                           (x-has-hash booleanp)
+                           (y-has-hash booleanp))
     :returns (mv (order)
                  (equalsp booleanp))
     (b* (((when (equal y '('1)))
-          (mv nil (equal x y)))
+          (mv nil (rp-equal-cnt-subterms x y 0)))
          ((when (equal x '('1)))
-          (mv t (equal x y)))
+          (mv t (rp-equal-cnt-subterms x y 0)))
 
          ;;((when t) (pp-list-order-aux x y))
 
-         (hash-x (or skip-hash (and-list-hash x)))
-         (hash-y (or skip-hash (and-list-hash y)))
+         ((when (not* (equal x-has-hash y-has-hash)))
+          (mv (not* y-has-hash) (rp-equal-cnt-subterms x y 0)))
+         
+         (hash-x (or x-has-hash (and-list-hash x)))
+         (hash-y (or y-has-hash (and-list-hash y)))
          ((unless (equal hash-x hash-y))
           (mv (> hash-x hash-y)
-              nil))
+              (rp-equal-cnt-subterms x y 0)))
          ;;(len-x (len x))
          ;;(len-y (len y))
          )
@@ -328,31 +333,35 @@
                     (quotep y)))
           (cond ((and (quotep x)
                       (quotep y))
-                 (mv (not (lexorder y x)) (equal x y)))
+                 (mv (not* (lexorder y x)) (equal x y)))
                 ((quotep x)
                  (mv t (equal x y)))
                 (t (mv nil (equal x y)))))
          #|((when (equal x ''1))
          (mv t (equal x y)))|#
-         ((mv x-lst x-hash x-good-format)
-          (case-match x
+         ((mv x-lst x-hash x-hash-has x-is-and-list)
+          (case-match* x
             (('and-list ('quote hash) ('list . lst))
-             (mv lst (ifix hash) t))
+             (mv lst (ifix hash) t t))
+            (('and-times-list ('quote hash) ('list . lst) x)
+             (mv (cons x lst) (ifix hash) t nil))
             (&
-             (mv (list x) 0 nil))))
-         ((mv y-lst y-hash y-good-format)
-          (case-match y
+             (mv (list x) 0 nil nil))))
+         ((mv y-lst y-hash y-hash-has y-is-and-list)
+          (case-match* y
             (('and-list ('quote hash) ('list . lst))
-             (mv lst (ifix hash) t))
+             (mv lst (ifix hash) t t))
+            (('and-times-list ('quote hash) ('list . lst) x)
+             (mv (cons x lst) (ifix hash) t nil))
             (&
-             (mv (list y) 0 nil)))))
+             (mv (list y) 0 nil nil)))))
       (if (= x-hash y-hash)
           (b* (((mv order equalsp)
                 (pp-list-order x-lst y-lst
-                               (and* x-good-format y-good-format))))
-            (if (and* x-good-format y-good-format)
-                (mv order equalsp)
-              (mv order (equal x y))))
+                               x-hash-has y-hash-has)))
+            (mv order (if (and*-exec x-is-and-list y-is-and-list)
+                          equalsp
+                        (rp-equal-cnt x y 0))))
         (mv (> x-hash y-hash) nil))))
 
   ;; (defthm pp-list-order-sanity
