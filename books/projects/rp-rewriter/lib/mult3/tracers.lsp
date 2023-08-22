@@ -196,12 +196,34 @@
                      (pp-lst-orderedp pp-res-lst))
                 (msg "")
               (progn$
-               (msg "---Not ordered from s-of-s-fix-lst:~%--Inputs: s-lst: ~x0.~%pp-lst:~x1.~%c-lst:~x2.~%--Returned: pp-res-lst: ~x3.~%c-res-lst: ~x4 . ~%"
-                   (list (ordered-s/c-p-lst s-lst) s-lst)
-                   (list (pp-lst-orderedp pp-lst) pp-lst)
-                   (list (ordered-s/c-p-lst c-lst) c-lst)
-                   (list (pp-lst-orderedp pp-res-lst) pp-res-lst)
-                   (list (ordered-s/c-p-lst c-res-lst) c-res-lst))
+               (msg "---Not ordered from s-of-s-fix-lst:~%--Inputs: s-lst: ~x0.~%pp-lst:~x1.~%c-lst:~x2.~%--Returned: pp-res-lst: ~x3.~%c-res-lst: ~x4 . ~% ~$"
+                   (list (and (ordered-s/c-p-lst s-lst) :s-lst-ok) s-lst)
+                   (list (and (pp-lst-orderedp pp-lst) :pp-lst-ok) pp-lst)
+                   (list (and (ordered-s/c-p-lst c-lst) :c-lst-ok) c-lst)
+                   (list (and (pp-lst-orderedp pp-res-lst) :pp-res-lst-ok) pp-res-lst)
+                   (list (and (ordered-s/c-p-lst c-res-lst) :c-res-lst-ok) c-res-lst))
+               ;;(break$)
+               ))))))
+
+(trace$
+ (pp-sum-merge-aux
+  :cond (or (equal acl2::traced-fn 's-of-s-fix-lst)) ;; Don't want to see *1* functions
+  :entry (:fmt! (msg ""))
+  :exit  (:fmt!
+          (b* (((list pp-res-lst c-res-lst)
+                acl2::values)
+               ((list pp1-lst pp2-lst)
+                acl2::arglist))
+            (if (and (ordered-s/c-p-lst c-res-lst)
+                     (pp-lst-orderedp pp-res-lst))
+                (msg "")
+              (progn$
+               (msg "---Not ordered from s-of-s-fix-lst:~%--Inputs: s-lst: ~x0.~%pp-lst:~x1.~%c-lst:~x2.~%--Returned: pp-res-lst: ~x3.~%c-res-lst: ~x4 . ~% ~$"
+                   (if (ordered-s/c-p-lst s-lst) :s-lst-ok s-lst)
+                   (if (pp-lst-orderedp pp-lst) :pp-lst-ok pp-lst)
+                   (if (ordered-s/c-p-lst c-lst) :c-lst-ok c-lst)
+                   (if (pp-lst-orderedp pp-res-lst) :pp-res-lst-ok pp-res-lst)
+                   (if (ordered-s/c-p-lst c-res-lst) :c-res-lst-ok c-res-lst))
                ;;(break$)
                ))))))
 
@@ -223,7 +245,7 @@
                                  (and (equal (caar acl2::arglist) 'c-spec)
                                       (ordered-s/c-p res-term)))))
                    (msg "---Not ordered from s-c-spec-meta Input:
-  ~x0. res-term: ~x1. ~%"
+  ~x0. res-term: ~x1. ~% ~$"
                         acl2::arglist res-term))
                   ((or (and (equal (caar acl2::arglist) 's-c-spec)
                             (or (s/c-has-times (cadr res-term))
@@ -233,7 +255,7 @@
                        (and (equal (caar acl2::arglist) 'c-spec)
                             (s/c-has-times res-term)))
                    (msg "---bad times from s-c-spec-meta Input:
-  ~x0. res-term: ~x1. ~%"
+  ~x0. res-term: ~x1. ~% ~$"
                         acl2::arglist res-term))
                   (t 
                    (msg ""))))
