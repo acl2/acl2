@@ -28,6 +28,8 @@
             (symbol-listp (acl2::firstn n syms)))
    :hints (("Goal" :in-theory (enable acl2::firstn)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund acl2::defined-fns-in-terms (terms wrld acc)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (plist-worldp wrld)
@@ -43,6 +45,8 @@
            (symbol-listp (acl2::defined-fns-in-terms terms wrld acc)))
   :hints (("Goal" :in-theory (enable acl2::defined-fns-in-terms))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund acl2::defined-fns-in-term-lists (term-lists wrld acc)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp term-lists)
                               (plist-worldp wrld)
@@ -56,6 +60,8 @@
                 (symbol-listp acc))
            (symbol-listp (acl2::defined-fns-in-term-lists term-lists wrld acc)))
   :hints (("Goal" :in-theory (enable acl2::defined-fns-in-term-lists))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;move
 (local
@@ -88,6 +94,8 @@
 ;; (I suppose we could try if they are disabled, but that is very rare.)
 (defconst *fns-to-never-enable* '(implies not))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; This version keeps the first of each set of duplicates.
 (defund remove-duplicates-equal-alt (x)
   (declare (xargs :guard (true-listp x)))
@@ -105,6 +113,8 @@
            (symbol-listp (remove-duplicates-equal-alt x)))
   :hints (("Goal" :in-theory (enable remove-duplicates-equal-alt))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: Don't even make recs for things that are enabled (in the theory, or by the current hints)?
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 ;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
@@ -115,24 +125,22 @@
   (declare (xargs :guard (and (pseudo-termp translated-theorem-body)
                               (natp num-recs)
                               (acl2::print-levelp print))
-                  :stobjs state
-;                  :mode :program ; because of acl2::translate-term
-                  ))
+                  :stobjs state))
   (b* ((wrld (w state))
        (- (and (acl2::print-level-at-least-tp print)
                (cw "Making ~x0 :enable recommendations for body functions: " ; the line is ended below when we print the time
                    num-recs)))
        ; (translated-formula (acl2::translate-term formula 'make-enable-recs wrld))
-       (fns-in-goal (set-difference-eq (acl2::defined-fns-in-term translated-theorem-body wrld)
-                                       *fns-to-never-enable*))
+       (fns-in-goal (acl2::defined-fns-in-term translated-theorem-body wrld))
        ;; we'll try the ones in the goal first (todo: do a more sophisticated ranking?):
        ;; todo: prefer ones defined in the current book?  more complex ones?
        ;; todo: make a rec that enables all (sensible functions?)
        ;; todo: remove any functions already enabled, at least in the goal hint?
        ;; todo: try all defined functions in the conclusion
        ;; todo: try all defined functions
+       ;; perhaps count occurences
        ;; the order here matters (todo: what order to choose?)
-       (fns-to-try-enabling fns-in-goal)
+       (fns-to-try-enabling (set-difference-eq fns-in-goal *fns-to-never-enable*))
        ;; (fns-to-try-enabling (remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
        (fns-to-try-enabling (acl2::firstn num-recs fns-to-try-enabling))
        (fns-beyond-the-limit (nthcdr num-recs fns-to-try-enabling))
