@@ -3167,7 +3167,7 @@
              ;; Make recs that try splitting into cases:
              (if (member-eq :add-cases-hint disallowed-rec-types)
                  (mv nil nil state) ; don't bother creating recs as they will be disallowed below
-               (make-cases-recs translated-theorem-body checkpoint-clauses-top num-recs-per-model print state)))
+               (make-cases-recs translated-theorem-body checkpoint-clauses-top checkpoint-clauses-non-top num-recs-per-model print state)))
             (otherwise
              ;; It's a normal ML model:
              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print state))))
