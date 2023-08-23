@@ -189,12 +189,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;move
-(defund rewrite-rules-for-fn (fn wrld)
+;; Includes :definition rules, etc.
+(defund rules-for-fn (fn wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp wrld))))
   (getprop fn 'acl2::lemmas nil 'acl2::current-acl2-world wrld))
 
-(defun acl2::one-way-unifyp (pat term)
+;; A wrapper for one-way-unify that simply returns a boolean.
+(defund acl2::one-way-unifyp (pat term)
   (declare (xargs :guard (and (pseudo-termp pat)
                               (pseudo-termp term))))
   (mv-let (matchp subst)
@@ -202,71 +204,119 @@
     (declare (ignore subst))
     matchp))
 
-(defun rules-that-match-term-aux (rules term)
-  (declare (xargs :guard (and (true-listp rules) ; todo
-                              (pseudo-termp term))
+;; something similar in axe
+(defun objectivep (obj)
+  (declare (xargs :guard t))
+  (member-eq obj '(t nil :?)))
+
+(defun invert-objective (obj)
+  (declare (xargs :guard (objectivep obj)))
+  (if (eq  t obj)
+      nil
+    (if (eq nil obj)
+        t
+      ;; obj is ?:
+      obj)))
+
+;; Returns a list of runes.
+;; todo: think about the order -- usually want most recent ones first, but that may be handled at a higher level.
+(defun runes-that-match-term-aux (rules term objective)
+  (declare (xargs :guard (and (true-listp rules) ; todo, a list of weak-rewrite-rule?
+                              (pseudo-termp term)
+                              (objectivep objective))
                   :verify-guards nil))
   (if (endp rules)
       nil
     (let* ((rule (first rules))
-           (lhs (access acl2::rewrite-rule rule :lhs)))
+           (lhs (access acl2::rewrite-rule rule :lhs))
+           (rhs (access acl2::rewrite-rule rule :rhs)))
       (if (not (pseudo-termp lhs)) ; drop?  ;for guards
-          (er hard? 'rules-that-match-term-aux "Bad rule: ~x0." rule)
-        (if (acl2::one-way-unifyp lhs term)
+          (er hard? 'runes-that-match-term-aux "Bad rule: ~x0." rule)
+        (if (and (if (eq objective :?)
+                     t
+                   (if (eq objective t)
+                       (not (equal rhs *nil*))
+                     ;; objective is nil:
+                     (not (and (quotep rhs)
+                               (unquote rhs)))))
+                 (acl2::one-way-unifyp lhs term))
             (cons (access acl2::rewrite-rule rule :rune)
-                  (rules-that-match-term-aux (rest rules) term))
-          (rules-that-match-term-aux (rest rules) term))))))
+                  (runes-that-match-term-aux (rest rules) term objective))
+          (runes-that-match-term-aux (rest rules) term objective))))))
 
-(defund rules-that-match-term (term wrld)
+;; Returns a list of runes.
+;; todo: could restrict to function call terms
+(defund runes-that-match-term (term objective wrld)
   (declare (xargs :guard (and (pseudo-termp term)
+                              (objectivep objective) ; todo: ensure this matches the rewrite-objective datatype?
                               (plist-worldp wrld))
                   :verify-guards nil ; todo
                   ))
   (if (or (acl2::variablep term)
           (acl2::fquotep term))
-      nil
+      nil ; consider rewrite-quoted-constant rules?
     (let ((fn (acl2::ffn-symb term)))
       (if (acl2::flambdap fn)
           nil
-        (rules-that-match-term-aux (rewrite-rules-for-fn fn wrld) term)))))
+        (runes-that-match-term-aux (rules-for-fn fn wrld) term objective)))))
 
 (mutual-recursion
- ;todo: these are really runes?
- (defund rules-that-match-any-subterm (term wrld)
+ (defund runes-that-match-any-subterm (term objective wrld)
    (declare (xargs :guard (and (pseudo-termp term)
+                               (objectivep objective)
                                (plist-worldp wrld))
                    :verify-guards nil ;;done below
                    ))
    (if (acl2::variablep term)
-       nil
+       nil ; no rules match a var
      (let ((fn (acl2::ffn-symb term)))
        (if (eq 'quote fn)
-           nil
-         (union-equal (rules-that-match-term term wrld)
-                      (union-equal (if (acl2::flambdap fn)
-                                       (rules-that-match-any-subterm (acl2::lambda-body fn) wrld)
-                                     nil)
-                                   (rules-that-match-any-subterm-list (acl2::fargs term) wrld)))))))
+           nil ; no rules match a constant
+         (if (eq 'not fn) ; todo: do any rules have a not as the lhs?
+             (runes-that-match-any-subterm (acl2::fargn term 1) (invert-objective objective) wrld)
+           (if (eq 'implies fn)
+               (append (runes-that-match-any-subterm (acl2::fargn term 1) (invert-objective objective) wrld)
+                       (runes-that-match-any-subterm (acl2::fargn term 2) objective wrld))
+             (if (eq 'if fn)
+                 (let* ((then-branch (acl2::fargn term 2))
+                        (else-branch (acl2::fargn term 3))
+                        (test-objective (if (and (equal then-branch *t*)
+                                                 (equal else-branch *nil*))
+                                            objective ; special case (if x t nil)
+                                          (if (and (equal then-branch *nil*)
+                                                   (equal else-branch *t*))
+                                              (invert-objective objective) ; special case (if x nil t)
+                                            :?))))
+                   (append (runes-that-match-any-subterm (acl2::fargn term 1) test-objective wrld)
+                           (runes-that-match-any-subterm then-branch objective wrld)
+                           (runes-that-match-any-subterm else-branch objective wrld)))
+               (union-equal (runes-that-match-term term objective wrld)
+                            (union-equal (if (acl2::flambdap fn)
+                                             (runes-that-match-any-subterm (acl2::lambda-body fn) objective wrld)
+                                           nil)
+                                         (runes-that-match-any-subterm-list (acl2::fargs term) ':? wrld))))))))))
 
- (defund rules-that-match-any-subterm-list (terms wrld)
+ (defund runes-that-match-any-subterm-list (terms objective wrld)
    (declare (xargs :guard (and (pseudo-term-listp terms)
+                               (objectivep objective)
                                (plist-worldp wrld))))
    (if (endp terms)
        nil
-     (union-equal (rules-that-match-any-subterm (first terms) wrld)
-                  (rules-that-match-any-subterm-list (rest terms) wrld)))))
+     (union-equal (runes-that-match-any-subterm (first terms) objective wrld)
+                  (runes-that-match-any-subterm-list (rest terms) objective wrld)))))
 
-;(verify-guards rules-that-match-any-subterm)
+;(verify-guards runes-that-match-any-subterm)
 
-(defund rules-that-match-any-subterm-list-list (term-lists wrld)
+(defund runes-that-match-any-subterm-list-list (term-lists objective wrld)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp term-lists)
+                              (objectivep objective)
                               (plist-worldp wrld))
                   :verify-guards nil ; todo
                   ))
   (if (endp term-lists)
       nil
-    (union-equal (rules-that-match-any-subterm-list (first term-lists) wrld)
-                 (rules-that-match-any-subterm-list-list (rest term-lists) wrld))))
+    (union-equal (runes-that-match-any-subterm-list (first term-lists) objective wrld)
+                 (runes-that-match-any-subterm-list-list (rest term-lists) objective wrld))))
 
 (defun filter-runes (runes rule-classes)
   (if (endp runes)
@@ -297,17 +347,19 @@
                   :stobjs state))
   (b* ((wrld (w state))
        (- (and (acl2::print-level-at-least-tp print)
-               (cw "Making ~x0 :enable rule recs for checkpoints: " ; the line is ended below when we print the time
+               (cw "Making ~x0 :enable rule recs for body: " ; the line is ended below when we print the time
                    num-recs)))
-       (runes (rules-that-match-any-subterm translated-theorem-body wrld))
+       (runes (runes-that-match-any-subterm translated-theorem-body t wrld))
        ;; Keep only :rewrite rules:
        (runes (filter-runes runes '(:rewrite)))
        (runes (filter-disabled-runes runes (acl2::ens state) (w state)))
        ;; we'll try the ones in the goal first (todo: do a more sophisticated ranking?):
-       ;; todo: prefer ones introduced in the current book?  more complex ones?
+       ;; todo: prefer more complex ones?
        ;; todo: make a rec that enables all (sensible) rules?
        ;; todo: remove any rules already enabled, at least in the goal hint?
        ;; todo: prefer ones in the conclusion
+       ;; todo: prefer more recent ones (e.g., ones introduced in the current book)?
+       ;; todo: exclude ones whose hyps are obviously false for this theorem
        ;; perhaps count occurences
        ;; the order here matters (todo: what order to choose?)
        ;; (fns-to-try-enabling (set-difference-eq fns-in-goal *fns-to-never-enable*))
@@ -331,9 +383,9 @@
                   :stobjs state))
   (b* ((wrld (w state))
        (- (and (acl2::print-level-at-least-tp print)
-               (cw "Making ~x0 :enable rule recs for body: " ; the line is ended below when we print the time
+               (cw "Making ~x0 :enable rule recs for checkpoints: " ; the line is ended below when we print the time
                    num-recs)))
-       (runes (rules-that-match-any-subterm-list-list checkpoint-clauses wrld))
+       (runes (runes-that-match-any-subterm-list-list checkpoint-clauses t wrld))
        ;; Keep only :rewrite rules:
        (runes (filter-runes runes '(:rewrite)))
        (runes (filter-disabled-runes runes (acl2::ens state) (w state)))
