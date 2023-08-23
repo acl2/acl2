@@ -787,7 +787,7 @@
      the argument for a formal of pointer or array type
      must be identical to the formal.
      This is because these arguments and formals
-     represent arrays and pointers to structures,
+     represent arrays and pointers,
      and thus they must be passed around exactly by their name,
      similarly to stobjs in ACL2.
      This code checks the condition."))
