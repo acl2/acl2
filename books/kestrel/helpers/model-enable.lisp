@@ -17,8 +17,8 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
-(include-book "kestrel/typed-lists-light/symbol-listp" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -62,13 +62,6 @@
   :hints (("Goal" :in-theory (enable acl2::defined-fns-in-term-lists))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;move
-(local
- (defthm rationalp-of-mv-nth-0-of-read-run-time
-  (rationalp (mv-nth 0 (read-run-time state)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable read-run-time)))))
 
 ;; todo: support enabling more than one thing in a single rec
 (defun make-enable-recs-aux (names num)
