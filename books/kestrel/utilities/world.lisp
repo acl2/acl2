@@ -18,6 +18,7 @@
 
 (include-book "legal-variable-listp")
 (include-book "kestrel/world-light/fn-definedp" :dir :system)
+(include-book "kestrel/world-light/world-triplep" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 ;; TODO: Change some of these to just take wrld instead of state.
@@ -375,14 +376,6 @@
                   (fn-definedp (first names) wrld))
              (defthm-body (first names) wrld))
          (ensure-all-theoremsp (rest names) wrld))))
-
-;; Recognize a triple of the form (symb prop . val).
-(defund world-triplep (trip)
-  (declare (xargs :guard t))
-  (and (consp trip)
-       (symbolp (car trip))
-       (consp (cdr trip))
-       (symbolp (cadr trip))))
 
 ;; Returns (mv defun-names defthm-names).  In the result, older defuns/defthms come first.
 (defund defuns-and-defthms-in-world (world
