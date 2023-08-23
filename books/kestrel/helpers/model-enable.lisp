@@ -39,39 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund acl2::defined-fns-in-terms (terms wrld acc)
-  (declare (xargs :guard (and (pseudo-term-listp terms)
-                              (plist-worldp wrld)
-                              (symbol-listp acc))))
-  (if (endp terms)
-      acc ; todo: think about the order here
-    (acl2::defined-fns-in-terms (rest terms) wrld (union-eq (acl2::defined-fns-in-term (first terms) wrld)
-                                                            acc))))
-
-(defthm symbol-listp-of-defined-fns-in-terms
-  (implies (and (pseudo-term-listp terms)
-                (symbol-listp acc))
-           (symbol-listp (acl2::defined-fns-in-terms terms wrld acc)))
-  :hints (("Goal" :in-theory (enable acl2::defined-fns-in-terms))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund acl2::defined-fns-in-term-lists (term-lists wrld acc)
-  (declare (xargs :guard (and (acl2::pseudo-term-list-listp term-lists)
-                              (plist-worldp wrld)
-                              (symbol-listp acc))))
-  (if (endp term-lists)
-      acc
-    (acl2::defined-fns-in-term-lists (rest term-lists) wrld (acl2::defined-fns-in-terms (first term-lists) wrld acc))))
-
-(defthm symbol-listp-of-defined-fns-in-term-lists
-  (implies (and (acl2::pseudo-term-list-listp term-lists)
-                (symbol-listp acc))
-           (symbol-listp (acl2::defined-fns-in-term-lists term-lists wrld acc)))
-  :hints (("Goal" :in-theory (enable acl2::defined-fns-in-term-lists))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; todo: support enabling more than one thing in a single rec
 (defun make-enable-recs-aux (names num)
   (declare (xargs :guard (and (symbol-listp names)
