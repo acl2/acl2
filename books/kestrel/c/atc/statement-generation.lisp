@@ -2338,11 +2338,12 @@
                                        t
                                        wrld))
        (type-pred (atc-type-to-recognizer type gin.prec-tags))
-       (exec-expr-asg-thm (pack 'exec-expr-asg-indir-when- type-pred))
+       (exec-expr-asg-thm
+        (pack 'exec-expr-asg-indir-when- type-pred '-for-modular-proofs))
        (value-kind-thm (atc-type-to-value-kind-thm type gin.prec-tags))
        (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
        (type-of-value-thm (atc-type-to-type-of-value-thm type gin.prec-tags))
-       (type-fix-when-type-pred (pack (type-kind type) '-fix-when- type-pred))
+       (type-pred-of-integer-write-fn (pack type-pred '-of- integer-write-fn))
        (asg-hints
         `(("Goal"
            :in-theory '(,exec-expr-asg-thm
@@ -2374,8 +2375,7 @@
                         write-object-okp-of-add-frame
                         write-object-okp-when-valuep-of-read-object-no-syntaxp
                         ,type-of-value-thm
-                        ,integer-write-fn
-                        ,type-fix-when-type-pred))))
+                        ,type-pred-of-integer-write-fn))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -2435,7 +2435,9 @@
           (:e str-fix)
           read-var-of-update-object
           compustate-frames-number-of-enter-scope-not-zero
-          read-var-of-enter-scope))
+          read-var-of-enter-scope
+          read-var-of-update-object
+          compustate-frames-number-of-update-object))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -4461,12 +4463,12 @@
              ((erp okp fn arg-term type) (atc-check-integer-write val-term))
              ((when okp)
               (b* (((erp asg-item
-                         & ; asg-term
+                         asg-term
                          asg-limit
                          asg-events
-                         & ; asg-thm
-                         & ; new-inscope
-                         & ; new-context
+                         asg-thm
+                         new-inscope
+                         new-context
                          thm-index
                          names-to-avoid)
                     (atc-gen-block-item-integer-asg var
@@ -4481,24 +4483,36 @@
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
+                                   :context new-context
                                    :var-term-alist var-term-alist-body
+                                   :inscope new-inscope
                                    :thm-index thm-index
                                    :names-to-avoid names-to-avoid
-                                   :proofs nil)
+                                   :proofs (and asg-thm t))
                                   state))
-                   (limit `(binary-+ ,asg-limit ,body.limit)))
-                (retok (make-stmt-gout
-                        :items (cons asg-item body.items)
-                        :type body.type
-                        :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
-                        :limit limit
-                        :events (append asg-events
-                                        body.events)
-                        :thm-name nil
-                        :thm-index thm-index
-                        :names-to-avoid names-to-avoid))))
+                   (term (acl2::close-lambdas
+                          `((lambda (,var) ,body.term) ,asg-term)))
+                   (items-gout
+                    (atc-gen-block-item-list-cons
+                     term
+                     asg-item
+                     asg-limit
+                     asg-events
+                     asg-thm
+                     body.items
+                     body.limit
+                     body.events
+                     body.thm-name
+                     body.type
+                     body.context
+                     body.inscope
+                     (change-stmt-gin
+                      gin
+                      :thm-index body.thm-index
+                      :names-to-avoid body.names-to-avoid
+                      :proofs (and body.thm-name t))
+                     state)))
+                (retok items-gout)))
              ((erp okp fn sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
