@@ -17,16 +17,25 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
+(include-book "kestrel/lists-light/remove-duplicates-equal-alt" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
 (local
+ ;; Where should this go?
  (defthm symbol-listp-of-firstn
    (implies (symbol-listp syms)
             (symbol-listp (acl2::firstn n syms)))
    :hints (("Goal" :in-theory (enable acl2::firstn)))))
+
+(local
+ ;; Where should this go?
+ (defthm acl2::symbol-listp-of-remove-duplicates-equal-alt
+   (implies (symbol-listp x)
+            (symbol-listp (acl2::remove-duplicates-equal-alt x)))
+   :hints (("Goal" :in-theory (enable acl2::remove-duplicates-equal-alt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,25 +98,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This version keeps the first of each set of duplicates.
-(defund remove-duplicates-equal-alt (x)
-  (declare (xargs :guard (true-listp x)))
-  (if (endp x)
-      nil
-    (let ((item (first x)))
-      (cons item
-            (remove-duplicates-equal-alt
-             (if (member-equal item (rest x))
-                 (remove-equal item (rest x))
-               (rest x)))))))
-
-(defthm symbol-listp-of-remove-duplicates-equal-alt
-  (implies (symbol-listp x)
-           (symbol-listp (remove-duplicates-equal-alt x)))
-  :hints (("Goal" :in-theory (enable remove-duplicates-equal-alt))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; TODO: Don't even make recs for things that are enabled (in the theory, or by the current hints)?
 ;; TODO: Put in macro-aliases, like append, when possible.  What if there are multiple macro-aliases for a function?  Prefer ones that appear in the untranslated formula?
 ;; Returns (mv erp recs state), where recs is a list of recs, which should contain no duplicates.
@@ -134,7 +124,7 @@
        ;; perhaps count occurences
        ;; the order here matters (todo: what order to choose?)
        (fns-to-try-enabling (set-difference-eq fns-in-goal *fns-to-never-enable*))
-       ;; (fns-to-try-enabling (remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
+       ;; (fns-to-try-enabling (acl2::remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
        (fns-to-try-enabling (acl2::firstn num-recs fns-to-try-enabling))
        (fns-beyond-the-limit (nthcdr num-recs fns-to-try-enabling))
        (- (and fns-beyond-the-limit
@@ -171,7 +161,7 @@
        ;; todo: try all defined functions
        ;; the order here matters (todo: what order to choose?)
        (fns-to-try-enabling fns-in-checkpoints)
-       (fns-to-try-enabling (remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
+       (fns-to-try-enabling (acl2::remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
        (fns-to-try-enabling (acl2::firstn num-recs fns-to-try-enabling))
        (fns-beyond-the-limit (nthcdr num-recs fns-to-try-enabling))
        (- (and fns-beyond-the-limit
@@ -356,7 +346,7 @@
        ;; perhaps count occurences
        ;; the order here matters (todo: what order to choose?)
        ;; (fns-to-try-enabling (set-difference-eq fns-in-goal *fns-to-never-enable*))
-       ;; (fns-to-try-enabling (remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
+       ;; (fns-to-try-enabling (acl2::remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
        (runes-to-try-enabling (acl2::firstn num-recs runes))
        (runes-beyond-the-limit (nthcdr num-recs runes-to-try-enabling))
        (- (and runes-beyond-the-limit
@@ -390,7 +380,7 @@
        ;; perhaps count occurences
        ;; the order here matters (todo: what order to choose?)
        ;; (fns-to-try-enabling (set-difference-eq fns-in-goal *fns-to-never-enable*))
-       ;; (fns-to-try-enabling (remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
+       ;; (fns-to-try-enabling (acl2::remove-duplicates-equal-alt fns-to-try-enabling)) ; keeps the first instance of each
        (runes-to-try-enabling (acl2::firstn num-recs runes))
        (runes-beyond-the-limit (nthcdr num-recs runes-to-try-enabling))
        (- (and runes-beyond-the-limit
