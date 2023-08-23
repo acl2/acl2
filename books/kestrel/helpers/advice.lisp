@@ -3136,7 +3136,7 @@
                   :stobjs state))
 ;  (declare (ignore checkpoint-clauses-non-top)) ; ttodo
   (if (endp model-info-alist)
-      (mv nil acc state) ; no error
+      (mv nil (reverse acc) state) ; no error
     (b* ((entry (first model-info-alist))
          (model (car entry))
          (model-info (cdr entry))
@@ -3190,7 +3190,7 @@
              ;; It's a normal ML model:
              (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print state))))
          ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-         (- (and erp (cw "Error using ~x0.~%" model)))
+         (- (and erp (cw "Error using ~x0.~%" model))) ; but continue
          (- (if print-timep
                 (let* ((time-diff (- done-time start-time))
                        (time-diff (if (< time-diff 0)
@@ -3207,7 +3207,7 @@
       (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem
                             (rest model-info-alist)
                             timeout debug print
-                                ;; Associate this model with its recs in the result:
+                            ;; Associate this model with its recs in the result:
                             (acons model recs acc)
                             state))))
 
