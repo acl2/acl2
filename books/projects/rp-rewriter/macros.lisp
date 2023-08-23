@@ -490,7 +490,7 @@ preserve-current-theory) </p>
   :autodoc nil
   :short "Creates a function and a macro to replace case-match, and prevent
   excessive casesplitting when proving lemmas."
-  
+  :parents (rp-utilities)
   (define create-case-match-macro-fn (name pattern extra-cond)
     :mode :program
     (acl2::template-subst

@@ -856,6 +856,8 @@
                                  ;; maybe skip svex-simplify as it can potentially have soundness bugs.
                                  ;; best to try this out when we get a problem with sanity check.
                                  (skip-svex-simplify 'nil)
+
+                                 (skip-dumping-to-verilog 'nil)
                                  
                                  )
   `(make-event
@@ -868,7 +870,9 @@
          (output-vars ',output-vars)
          (assume ',assume)
          (export-to-svexl ',export-to-svexl)
-         (sanity-check ,sanity-check)
+         (skip-dumping-to-verilog ,skip-dumping-to-verilog)
+         (sanity-check (and (not skip-dumping-to-verilog)
+                            ,sanity-check))
          (config nil) ;,svl-config)
          (skip-svex-simplify ,skip-svex-simplify)
 
@@ -944,10 +948,12 @@
                                (svex-alist-to-svexl-alist svex-alist)))
 
          ((mv & parse-events-for-sanity-check state)
-          (svl::svex-alist-to-verilog-fn svex-alist
-                                         output-file-name
-                                         :extra-lines nil
-                                         :config config))
+          (if skip-dumping-to-verilog
+              (mv nil nil state)
+            (svl::svex-alist-to-verilog-fn svex-alist
+                                           output-file-name
+                                           :extra-lines nil
+                                           :config config)))
 
          (- (fast-alist-free falist-env))
 
@@ -1015,7 +1021,10 @@
 
                            ;; maybe skip svex-simplify as it can potentially have soundness bugs.
                            ;; best to try this out when we get a problem with sanity check.
-                           (skip-svex-simplify 'nil))
+                           (skip-svex-simplify 'nil)
+
+                           (skip-dumping-to-verilog 'nil)
+                           )
   `(make-event
     (b* ((svex ,svex)
          (svex-alist `((_out . ,svex)))
@@ -1032,6 +1041,7 @@
                               :skip-svex-simplify ,',skip-svex-simplify
 
                               :sanity-check ,',sanity-check
+                              :skip-dumping-to-verilog ,',skip-dumping-to-verilog
                               ))))
 
 (defmacro svtv-to-verilog (svtv

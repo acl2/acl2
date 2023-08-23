@@ -970,6 +970,7 @@ symbol for the updated meta-rule caller function. ~%"
   (defsection disable-meta-rules
     :short "Disable meta rules with given meta function name list."
     :long "See @(see rp-ruleset) for description."
+    :parents (rp-ruleset)
     (defmacro disable-meta-rules (&rest args)
       (if (not args)
           `(value-triple :none)
@@ -981,6 +982,7 @@ symbol for the updated meta-rule caller function. ~%"
   (defsection enable-meta-rules
     :short "Enable meta rules with given meta function name list."
     :long "See @(see rp-ruleset) for description."
+    :parents (rp-ruleset)
     (defmacro enable-meta-rules (&rest args)
       (if (not args)
           `(value-triple :none)

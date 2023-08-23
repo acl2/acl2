@@ -151,32 +151,35 @@
   (define pp-instance-hash (e)
     :returns (hash integerp)
     :inline t
-    (case-match e
-      (('and-list ('quote hash) &)
-       (ifix hash))
-      (('and-times-list ('quote hash) &)
-       (ifix hash))
-      (('-- ('and-list ('quote hash) &))
-       (ifix hash))
-      (('-- ('and-times-list ('quote hash) &))
-       (ifix hash))
-      (''1
-       1)
-      (&
-       (if (binary-fnc-p (ex-from-rp e))
-           (binary-fnc-hash e)
-         0)
-       )))
+    (b* ((e (ex-from-rp/times e)))
+      (case-match e
+        (('and-list ('quote hash) &)
+         (ifix hash))
+        (('and-times-list ('quote hash) &)
+         (ifix hash))
+        (('-- ('and-list ('quote hash) &))
+         (ifix hash))
+        (('-- ('and-times-list ('quote hash) &))
+         (ifix hash))
+        (''1
+         1)
+        (&
+         (if (binary-fnc-p (ex-from-rp e))
+             (binary-fnc-hash e)
+           0)
+         ))))
 
   (defwarrant pp-instance-hash$inline)
 
-  (define pp-lst-hash ((pp-lst rp-term-listp))
-    ;;:inline t
-    :returns (hash-code integerp)
+  (define pp-lst-hash ((pp-lst rp-term-listp)
+                       &key
+                       ((acc integerp) '0))
+    :inline t ;; tail-recursive..
+    :returns (hash-code integerp :hyp (integerp acc))
     (if (atom pp-lst)
-        0
-      (+ (pp-instance-hash (car pp-lst))
-         (pp-lst-hash (cdr pp-lst)))))
+        acc
+      (pp-lst-hash (cdr pp-lst)
+                   :acc (+ acc (pp-instance-hash (car pp-lst))))))
 
   (define calculate-pp-hash ((pp rp-termp))
     :returns (hash-code integerp)
@@ -189,6 +192,13 @@
       (& 0)))
 
   (defwarrant calculate-pp-hash$inline)
+
+  (local
+   (defthm ingerep-of-+/*
+     (implies (and (integerp x)
+                   (integerp y))
+              (and (integerp (+ x y))
+                   (integerp (* x y))))))
 
   (define get-hash-code-of-single-s (s)
     :returns (hash-code integerp)
@@ -2523,9 +2533,8 @@ nil)))
                   (''1
                    (mv (list ''1) nil t))
                   ;; extra cases adds up!!!
-                  
-                  ;; (('and-times-list & ('list . lst) s/c)
-                  ;;  (mv lst s/c (is-c-bitp-traverse s/c)))
+                  (('and-times-list & ('list . lst) s/c)
+                   (mv lst s/c (is-c-bitp-traverse s/c)))
                   (& (mv nil nil nil)
                      #|(if (has-bitp-rp a)
                          (mv (list a) nil t)
@@ -2921,6 +2930,7 @@ c2-lst: ~p2 ~%"
             ;;(to-be-coughed-c-lst2 (add-c-rp-bitp to-be-coughed-c-lst2))
 
             (sign (if (< coef 0) -1 1))
+            ;;(sign 1)
 
             (to-be-coughed-c-lst2 (append-with-times (- sign) to-be-coughed-c-lst2 nil))
             (to-be-coughed-pp-lst2 (append-with-times (- sign) to-be-coughed-pp-lst2 nil))
@@ -5071,7 +5081,9 @@ nil
                  ''0
                (c-spec-meta-aux s pp-lst c-lst quarternaryp))))
           (& term))))
-    (mv result t)))
+    (mv result t))
+  ///
+  (profile 's-c-spec-meta))
 
 #|
 
