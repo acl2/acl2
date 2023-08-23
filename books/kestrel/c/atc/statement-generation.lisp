@@ -3813,6 +3813,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-cfun-call-stmt ((called-fn symbolp)
+                                (arg-terms pseudo-term-listp)
+                                (arg-types type-listp)
+                                (affect symbol-listp)
+                                (limit pseudo-termp)
+                                (gin stmt-ginp)
+                                state)
+  :returns (mv erp (gout stmt-goutp))
+  :short "Generate a C block item statement that consists of
+          a call of a @('void') function."
+  (b* (((reterr) (irr-stmt-gout))
+       (wrld (w state))
+       ((stmt-gin gin) gin)
+       ((when gin.loop-flag)
+        (reterr
+         (msg "A loop body must end with ~
+               a recursive call on every path, ~
+               but in the function ~x0 it ends with ~
+               a call of ~x1 on arguments ~x2 instead."
+              gin.fn called-fn arg-terms)))
+       ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
+                                          arg-types
+                                          arg-terms))
+        (reterr
+         (msg "The call of ~x0 with arguments ~x1 ~
+               does not satisfy the restrictions ~
+               on array and pointer arguments being identical to the formals."
+              called-fn arg-terms)))
+       ((unless (equal gin.affect affect))
+        (reterr
+         (msg "When generating C code for the function ~x0, ~
+               a call of the non-recursive function ~x1 ~
+               has been encountered that affects ~x2, ~
+               which differs from the variables ~x3 ~
+               being affected here."
+              gin.fn called-fn affect gin.affect)))
+       ((erp (pexprs-gout args))
+        (atc-gen-expr-pure-list arg-terms
+                                (make-pexprs-gin
+                                 :context gin.context
+                                 :inscope gin.inscope
+                                 :prec-tags gin.prec-tags
+                                 :fn gin.fn
+                                 :fn-guard gin.fn-guard
+                                 :compst-var gin.compst-var
+                                 :thm-index gin.thm-index
+                                 :names-to-avoid gin.names-to-avoid
+                                 :proofs gin.proofs)
+                                state))
+       ((unless (equal args.types arg-types))
+        (reterr
+         (msg "The function ~x0 with argument types ~x1 is applied to ~
+               expression terms ~x2 returning ~x3. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              called-fn arg-types arg-terms args.types)))
+       (call-expr
+        (make-expr-call :fun (make-ident :name (symbol-name called-fn))
+                        :args args.exprs))
+       ((when (eq called-fn 'quote))
+        (reterr (raise "Internal error: called function is QUOTE.")))
+       (term `(,called-fn ,@args.terms)))
+    (retok (make-stmt-gout
+            :items (list (block-item-stmt (stmt-expr call-expr)))
+            :type (type-void)
+            :term term
+            :context (make-atc-context :preamble nil :premises nil)
+            :inscope nil
+            :limit `(binary-+ '5 ,limit)
+            :events args.events
+            :thm-name nil
+            :thm-index args.thm-index
+            :names-to-avoid args.names-to-avoid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-stmt ((term pseudo-termp) (gin stmt-ginp) state)
   :returns (mv erp
                (gout stmt-goutp
@@ -4999,61 +5075,13 @@
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
-        (b* (((when gin.loop-flag)
-              (reterr
-               (msg "A loop body must end with ~
-                     a recursive call on every path, ~
-                     but in the function ~x0 it ends with ~x1 instead."
-                    gin.fn term)))
-             ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
-                                                in-types
-                                                arg-terms))
-              (reterr
-               (msg "The call ~x0 does not satisfy the restrictions ~
-                     on array arguments being identical to the formals."
-                    term)))
-             ((unless (equal gin.affect fn-affect))
-              (reterr
-               (msg "When generating C code for the function ~x0, ~
-                     a call of the non-recursive function ~x1 ~
-                     has been encountered that affects ~x2, ~
-                     which differs from the variables ~x3 ~
-                     being affected here."
-                    gin.fn loop-fn fn-affect gin.affect)))
-             ((erp (pexprs-gout args))
-              (atc-gen-expr-pure-list arg-terms
-                                      (make-pexprs-gin
-                                       :context gin.context
-                                       :inscope gin.inscope
-                                       :prec-tags gin.prec-tags
-                                       :fn gin.fn
-                                       :fn-guard gin.fn-guard
-                                       :compst-var gin.compst-var
-                                       :thm-index gin.thm-index
-                                       :names-to-avoid gin.names-to-avoid
-                                       :proofs gin.proofs)
-                                      state))
-             ((unless (equal args.types in-types))
-              (reterr
-               (msg "The function ~x0 with input types ~x1 is applied to ~
-                     expression terms ~x2 returning ~x3. ~
-                     This is indicative of provably dead code, ~
-                     given that the code is guard-verified."
-                    called-fn in-types arg-terms args.types)))
-             (call-expr (make-expr-call :fun (make-ident
-                                              :name (symbol-name called-fn))
-                                        :args args.exprs)))
-          (retok (make-stmt-gout
-                  :items (list (block-item-stmt (stmt-expr call-expr)))
-                  :type (type-void)
-                  :term term
-                  :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil
-                  :limit `(binary-+ '5 ,limit)
-                  :events args.events
-                  :thm-name nil
-                  :thm-index args.thm-index
-                  :names-to-avoid args.names-to-avoid))))
+        (atc-gen-cfun-call-stmt called-fn
+                                arg-terms
+                                in-types
+                                fn-affect
+                                limit
+                                gin
+                                state))
        ((when gin.loop-flag)
         (reterr
          (msg "A loop body must end with ~
