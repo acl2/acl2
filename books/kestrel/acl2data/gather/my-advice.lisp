@@ -30,9 +30,12 @@
 (table advice-server :leidos-gpt '("https://proof.kestrel.edu/machine_interface" "leidos-gpt"))
 |#
 
-(defun advice-recs-1 (checkpoint-list ubody uhints otf-flg time-limit state)
+(defun advice-recs-1 (top-level-checkpoint-list
+                      under-induction-checkpoint-list
+                      ubody uhints otf-flg time-limit state)
   (help::all-successful-actions-for-checkpoints
-   checkpoint-list
+   top-level-checkpoint-list
+   under-induction-checkpoint-list
    ubody
    uhints
    otf-flg ; !! Maybe should be nil.
@@ -117,8 +120,8 @@
 ; recommendations, or :NONE when we don't get a result from the advice tool,
 ; generally because we don't ask for one in the case of :REMOVE.
 
-; In other than the :REMOVE case, we use top-level checkpoints if possible,
-; else induction checkpoints, else the original term as a list of checkpoints.
+; In other than the :REMOVE case, we use top-level checkpoints and the
+; induction checkpoints, else the original term as a list of top-level checkpoints.
 ; A special case is when the top-level checkpoints, i.e., the top level list of
 ; checkpoint lists, is ((<GOAL>)).  We replace that with ((tterm)) where tterm
 ; is the translated term to be proved.
@@ -141,13 +144,13 @@
                                     (list (list tterm))
                                     top-level-clause-list))
          (under-induction-clause-list (cadddr entry))
-         (clause-list (append top-level-clause-list
-                              under-induction-clause-list))
          (broken-defthm (car (last entry)))
          ((mv ubody uhints otf-flg)
           (deconstruct-broken-defthm broken-defthm))
          ((mv erp recs state) ; (er recs) -- see comment above about patbind-er
-          (advice-recs-1 clause-list ubody uhints otf-flg time-limit state))
+          (advice-recs-1 top-level-clause-list
+                         under-induction-clause-list
+                         ubody uhints otf-flg time-limit state))
          ((when erp)
           (mv erp recs state)))
       (value (cons (extend-acl2data-alist-entry-with-recs entry recs)

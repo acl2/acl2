@@ -522,9 +522,9 @@
               (if (= new-coef 0)
                   rest
                 (cons (change-pp-e e1 :coef new-coef) rest))))
-           ((if* (equal e1.hash e2.hash)
-                 (b* (((mv order &) (pp-list-order e1.elements e2.elements nil))) order)
-                 (< e1.hash e2.hash))
+           ((if (equal e1.hash e2.hash)
+                (b* (((mv order &) (pp-list-order e1.elements e2.elements nil nil))) order)
+              (< e1.hash e2.hash))
             (cons e1
                   (merge-sorted-pp-e-lists (cdr first) second)))
            (t
@@ -602,9 +602,9 @@
               (if (= new-coef 0)
                   nil
                 (list (change-pp-e e1 :coef new-coef)))))
-           ((if* (equal e1.hash e2.hash)
-                 (b* (((mv order &) (pp-list-order e1.elements e2.elements nil))) order)
-                 (< e1.hash e2.hash))
+           ((if (equal e1.hash e2.hash)
+                (b* (((mv order &) (pp-list-order e1.elements e2.elements nil nil))) order)
+              (< e1.hash e2.hash))
             lst)
            (t (list e2 e1)))))
        (t (b* ((first-size (floor len 2))

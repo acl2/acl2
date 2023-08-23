@@ -28,9 +28,11 @@
         nil
       (let ((arg1 (acl2::fargn lit 1))
             (arg2 (acl2::fargn lit 2)))
-        (if (term-is-booleanp arg1 ens wrld)
+        (if (and (term-is-booleanp arg1 ens wrld)
+                 (not (quotep arg1)))
             (list arg1)
-          (if (term-is-booleanp arg2 ens wrld)
+          (if (and (term-is-booleanp arg2 ens wrld)
+                   (not (quotep arg2)))
               (list arg2)
             nil))))))
 
@@ -51,39 +53,53 @@
 ;; todo: look at checkpoints and goal
 ;; todo: perhaps do something different if there is an induction happening?
 (defun make-cases-recs (translated-theorem-body
-                        checkpoint-clauses
+                        checkpoint-clauses-top
+                        checkpoint-clauses-non-top
                         num-recs
                         print
                         state)
   (declare (xargs :guard (and (pseudo-termp translated-theorem-body)
-                              (acl2::pseudo-term-list-listp checkpoint-clauses)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses-top)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
                               (natp num-recs)
-                              (acl2::print-levelp print)
-                              )
+                              (acl2::print-levelp print))
                   :stobjs state
-                  :mode :program ; because of acl2::translate-term
-                  )
-           (ignore translated-theorem-body) ; todo
-           )
+                  :mode :program ; because this ultimately calls type-set
+                  ))
+  (declare (ignore translated-theorem-body)) ; todo: would it be good to use this?
   (b* ((wrld (w state))
        (- (and (acl2::print-level-at-least-tp print)
                (cw "Making ~x0 :cases recommendations: " ; the line is ended below when we print the time
                    num-recs)))
        ;; For now, just suggest cases when we have a boolean term equated to something else:
        ;; TODO: Also look at the goal (handle implies, etc.):
-       (equated-boolean-terms-in-checkpoints (equated-boolean-terms-in-clauses checkpoint-clauses (acl2::ens state) wrld))
-       (recs
-        (if equated-boolean-terms-in-checkpoints
+       (equated-boolean-terms-in-top-checkpoints (equated-boolean-terms-in-clauses checkpoint-clauses-top (acl2::ens state) wrld))
+       (equated-boolean-terms-in-non-top-checkpoints (equated-boolean-terms-in-clauses checkpoint-clauses-non-top (acl2::ens state) wrld))
+       (top-recs
+        (if equated-boolean-terms-in-top-checkpoints
             (list (make-rec (concatenate 'string "cases" "0" ;(acl2::nat-to-string 0)
                                          )
                             :add-cases-hint
                         ;; todo: can we do better (e.g., only splitting on one thing in each equality)?
-                            (acl2::all-case-combinations equated-boolean-terms-in-checkpoints)
+                            (acl2::all-case-combinations equated-boolean-terms-in-top-checkpoints)
+                            5 ; confidence percentage (quite high) TODO: allow unknown?  TODO: Allow this to depend on the number of cases?
+                            nil
+                            ))
+          ;; Don't make any recommendations:
+          nil))
+       ;; TODO: These hints really should be put onto inductive subgoals:
+       (non-top-recs
+        (if equated-boolean-terms-in-non-top-checkpoints
+            (list (make-rec (concatenate 'string "cases" "0" ;(acl2::nat-to-string 0)
+                                         )
+                            :add-cases-hint
+                            ;; todo: can we do better (e.g., only splitting on one thing in each equality)?
+                            (acl2::all-case-combinations equated-boolean-terms-in-non-top-checkpoints)
                             5 ; confidence percentage (quite high) TODO: allow unknown?  TODO: Allow this to depend on the number of cases?
                             nil
                             ))
           ;; Don't make any recommendations:
           nil))
        ;; todo: how to choose when we can't return them all?:
-       (recs (acl2::firstn num-recs recs)))
+       (recs (acl2::firstn num-recs (append top-recs non-top-recs))))
     (mv nil recs state)))

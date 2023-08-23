@@ -154,6 +154,9 @@
     (('cons ('cons & &)
             rest)
      (alistp-meta-term rest))
+    (('cons ('quote (& . &))
+            rest)
+     (alistp-meta-term rest))
     (''nil
      t)
     (('quote rest)
