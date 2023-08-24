@@ -2608,7 +2608,7 @@
    (types type-list)
    (terms pseudo-term-listp)
    (events pseudo-event-form-list)
-   (thm-name symbol)
+   (thm-names symbol-list)
    (thm-index pos)
    (names-to-avoid symbol-list))
   :pred pexprs-goutp)
@@ -2622,7 +2622,7 @@
                           :types nil
                           :terms nil
                           :events nil
-                          :thm-name nil
+                          :thm-names nil
                           :thm-index 1
                           :names-to-avoid nil))
 
@@ -2646,7 +2646,7 @@
                                  :types nil
                                  :terms nil
                                  :events nil
-                                 :thm-name nil
+                                 :thm-names nil
                                  :thm-index gin.thm-index
                                  :names-to-avoid gin.names-to-avoid)))
        ((erp (pexpr-gout first))
@@ -2674,7 +2674,7 @@
             :types (cons first.type rest.types)
             :terms (cons first.term rest.terms)
             :events (append first.events rest.events)
-            :thm-name nil
+            :thm-names (cons first.thm-name rest.thm-names)
             :thm-index rest.thm-index
             :names-to-avoid rest.names-to-avoid)))
   :verify-guards nil ; done below
