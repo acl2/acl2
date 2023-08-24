@@ -267,6 +267,9 @@
        (<= 0 p)
        (<= p 100)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognizes a well-formed recommendation (coming from one of the models).
 ;; todo: strengthen
 (defund recommendationp (rec)
   (declare (xargs :guard t))

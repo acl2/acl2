@@ -2868,7 +2868,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund same-recp (rec1 rec2)
+;; todo: require the book-map to be the same
+(defund equivalent-recommendationsp (rec1 rec2)
   (declare (xargs :guard (and (recommendationp rec1)
                               (recommendationp rec2))))
   (and (equal (nth 1 rec1) (nth 1 rec2))
@@ -2882,7 +2883,7 @@
   (if (endp recs)
       nil
     (let ((this-rec (first recs)))
-      (if (same-recp rec this-rec)
+      (if (equivalent-recommendationsp rec this-rec)
           this-rec
         (find-equivalent-rec rec (rest recs))))))
 
