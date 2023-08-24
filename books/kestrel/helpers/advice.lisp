@@ -2868,13 +2868,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: require the book-map to be the same
-(defund equivalent-recommendationsp (rec1 rec2)
-  (declare (xargs :guard (and (recommendationp rec1)
-                              (recommendationp rec2))))
-  (and (equal (nth 1 rec1) (nth 1 rec2))
-       (equal (nth 2 rec1) (nth 2 rec2))))
-
 ;; Returns a member of RECS that is equivalent to REC, or nil.
 (defund find-equivalent-rec (rec recs)
   (declare (xargs :guard (and (recommendationp rec)
