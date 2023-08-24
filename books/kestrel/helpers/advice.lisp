@@ -3111,24 +3111,24 @@
         state)))
 
 ;; Goes through the MODELS, getting recs from each.  Returns an alist from model-names to rec-lists.
-;; Returns (mv erp rec-alist state), where REC-ALIST maps model-names to rec lists.
-(defun get-recs-from-models (num-recs-per-model
+;; Returns (mv erp model-rec-alist state), where MODEL-REC-ALIST maps model-names to rec lists.
+(defun get-recs-from-models (model-info-alist
+                             num-recs-per-model
                              disallowed-rec-types
                              checkpoint-clauses-top
                              checkpoint-clauses-non-top
                              theorem-body ; an untranslated-term (todo: translate outside this function?)
                              broken-theorem ; a thm or defthm form
-                             model-info-alist
                              timeout
                              debug
                              print
                              acc
                              state)
-  (declare (xargs :guard (and (natp num-recs-per-model)
+  (declare (xargs :guard (and (model-info-alistp model-info-alist)
+                              (natp num-recs-per-model)
                               (rec-type-listp disallowed-rec-types)
                               (acl2::pseudo-term-list-listp checkpoint-clauses-top)
                               (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
-                              (model-info-alistp model-info-alist)
                               (natp timeout)
                               (booleanp debug)
                               (acl2::print-levelp print))
@@ -3204,8 +3204,8 @@
               (cw "Got ~x0 recs.~%" (len recs))))
          ;; Remove any recs that are disallowed (todo: drop this now? or print something here?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
-      (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem
-                            (rest model-info-alist)
+      (get-recs-from-models (rest model-info-alist)
+                            num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem
                             timeout debug print
                             ;; Associate this model with its recs in the result:
                             (acons model recs acc)
@@ -3355,11 +3355,11 @@
                   :stobjs state
                   :mode :program))
   (b* ((state (acl2::widen-margins state))
-       ((mv erp recommendation-alist state)
-        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem model-info-alist timeout debug print nil state))
+       ((mv erp model-rec-alist state)
+        (get-recs-from-models model-info-alist num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem timeout debug print nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
-       (recommendation-lists (strip-cdrs recommendation-alist))
+       (recommendation-lists (strip-cdrs model-rec-alist))
        (recommendations (merge-rec-lists-into-recs recommendation-lists nil)) ; also removes duplicates
        ;; Sort the whole list by confidence (hope the numbers are comparable):
        (recommendations (merge-sort-recs-by-confidence recommendations)) ; todo: not a stable sort, messes up the order
@@ -3934,7 +3934,7 @@
                                                debug
                                                step-limit
                                                time-limit
-                                               disallowed-rec-types
+                                               disallowed-rec-types ; todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
                                                state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses-top)
                               (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
@@ -3957,19 +3957,19 @@
                   :stobjs state
                   :mode :program))
   (b* ( ;; Get all the recs to try:
-       ((mv erp recommendation-alist state)
-        (get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body
+       ((mv erp model-rec-alist state)
+        (get-recs-from-models model-info-alist
+                              num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body
                               ;; the presumed broken-theorem:
                               `(defthm fake-theorem-name ; todo: use the real name?
                                  ,theorem-body
                                  ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
                                  ,@(and theorem-hints `(:hints ,theorem-hints)))
-                              model-info-alist
                               40 ; todo: timeout
                               debug print nil state))
        ((when erp) (mv erp nil state))
        ;; Combine all the lists:
-       (recommendation-lists (strip-cdrs recommendation-alist))
+       (recommendation-lists (strip-cdrs model-rec-alist))
        (recommendations (merge-rec-lists-into-recs recommendation-lists nil)) ; also removes duplicates
        ;; Maybe print the recommendations:
        (state (if (acl2::print-level-at-least-tp print)
