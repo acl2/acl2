@@ -3818,6 +3818,7 @@
                                 (arg-types type-listp)
                                 (affect symbol-listp)
                                 (limit pseudo-termp)
+                                (called-fn-guard symbolp)
                                 (gin stmt-ginp)
                                 state)
   :returns (mv erp (gout stmt-goutp))
@@ -3874,7 +3875,49 @@
                         :args args.exprs))
        ((when (eq called-fn 'quote))
         (reterr (raise "Internal error: called function is QUOTE.")))
-       (term `(,called-fn ,@args.terms)))
+       (term `(,called-fn ,@args.terms))
+       ((when (or (not gin.proofs)
+                  (consp (cdr affect)) ; <- temporary
+                  (b* ((info (atc-get-var (car affect) gin.inscope)))
+                    (and info
+                         (atc-var-info->externalp info))))) ; <- temporary
+        (retok (make-stmt-gout
+                :items (list (block-item-stmt (stmt-expr call-expr)))
+                :type (type-void)
+                :term term
+                :context (make-atc-context :preamble nil :premises nil)
+                :inscope nil
+                :limit `(binary-+ '5 ,limit)
+                :events args.events
+                :thm-name nil
+                :thm-index args.thm-index
+                :names-to-avoid args.names-to-avoid)))
+       (guard-lemma-name (pack gin.fn '-call- args.thm-index '-guard-lemma))
+       ((mv guard-lemma-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix guard-lemma-name
+                                           nil
+                                           args.names-to-avoid
+                                           wrld))
+       (thm-index (1+ args.thm-index))
+       (guard-lemma-formula `(,called-fn-guard ,@args.terms))
+       (guard-lemma-formula (atc-contextualize guard-lemma-formula
+                                               gin.context
+                                               gin.fn
+                                               gin.fn-guard
+                                               nil
+                                               nil
+                                               nil
+                                               nil
+                                               wrld))
+       (guard-lemma-hints
+        `(("Goal"
+           :in-theory '(,gin.fn-guard ,called-fn-guard if* test*)
+           :use (:guard-theorem ,gin.fn))))
+       ((mv guard-lemma-event &)
+        (evmac-generate-defthm guard-lemma-name
+                               :formula guard-lemma-formula
+                               :hints guard-lemma-hints
+                               :enable nil)))
     (retok (make-stmt-gout
             :items (list (block-item-stmt (stmt-expr call-expr)))
             :type (type-void)
@@ -3882,10 +3925,11 @@
             :context (make-atc-context :preamble nil :premises nil)
             :inscope nil
             :limit `(binary-+ '5 ,limit)
-            :events args.events
+            :events (append args.events
+                            (list guard-lemma-event))
             :thm-name nil
-            :thm-index args.thm-index
-            :names-to-avoid args.names-to-avoid))))
+            :thm-index thm-index
+            :names-to-avoid names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5071,7 +5115,14 @@
                  a recursive call to the loop function occurs ~
                  not at the end of the computation on some path."
                 gin.fn))))
-       ((mv okp called-fn arg-terms in-types out-type fn-affect limit &)
+       ((mv okp
+            called-fn
+            arg-terms
+            in-types
+            out-type
+            fn-affect
+            limit
+            called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
@@ -5080,6 +5131,7 @@
                                 in-types
                                 fn-affect
                                 limit
+                                called-fn-guard
                                 gin
                                 state))
        ((when gin.loop-flag)
