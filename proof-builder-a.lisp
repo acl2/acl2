@@ -22,7 +22,7 @@
 
 ; PC globals are those that can be changed from inside the proof-builder's
 ; interactive loop, and whose values we want saved.  Note that state-stack can
-; also be changed outside the interactive loop (by use of :instruction), so we
+; also be changed outside the interactive loop (by use of :instructions), so we
 ; need to be careful.  We'll manage this by keeping state-stack as a PC global,
 ; updating pc-output upon entry to reflect the latest value of state-stack.
 

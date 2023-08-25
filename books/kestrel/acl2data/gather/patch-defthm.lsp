@@ -91,8 +91,8 @@
                                              'include-book-with-locals)
                                          (eq ld-skip-proofsp 'initialize-acl2))
                                      (value nil)
-                                   (translate-instructions name instructions
-                                                           ctx wrld1 state)))
+                                   (translate-instructions instructions ctx
+                                                           state)))
 
 ; Observe that we do not translate the hints if ld-skip-proofsp is non-nil.
 ; Once upon a time we translated the hints unless ld-skip-proofsp was

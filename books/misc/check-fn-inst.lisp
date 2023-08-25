@@ -40,6 +40,7 @@
 
                   (thm-fn 't
                           state
+                          nil
                           (list
                            (list "Goal"
                                  :use
