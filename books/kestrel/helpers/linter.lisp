@@ -666,8 +666,7 @@
                      (cw "~%   Ground term: ~x0." term))))))))))
 
  (defun lint-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
-   (declare (xargs :guard (and (true-listp terms)
-                               (pseudo-term-listp terms))
+   (declare (xargs :guard (pseudo-term-listp terms)
                    :stobjs state))
    (if (endp terms)
        nil

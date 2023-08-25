@@ -424,6 +424,23 @@
            (symbol-listp (mv-nth 1 (defuns-and-defthms-in-world world triple-to-stop-at whole-world defuns-acc defthms-acc))))
   :hints (("Goal" :in-theory (enable defuns-and-defthms-in-world))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a list of all the names of defthms in the world.
+(defund defthms-in-world (world)
+  (declare (xargs :guard (plist-worldp world)))
+  (mv-let (defun-names defthm-names)
+    (defuns-and-defthms-in-world world nil world nil nil)
+    (declare (ignore defun-names))
+    defthm-names))
+
+(defthm symbol-listp-of-defthms-in-world
+  (implies (plist-worldp world)
+           (symbol-listp (defthms-in-world world)))
+  :hints (("Goal" :in-theory (enable defthms-in-world))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Extracts the triples that represent defthms in WORLD.  If
 ;; MAYBE-TRIPLE-TO-STOP-AT is nil, or is not a triple in WORLD, all of the
 ;; defthm triples are returned.  Otherwise, only triples newer than
