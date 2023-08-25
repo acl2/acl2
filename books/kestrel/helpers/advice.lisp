@@ -885,7 +885,7 @@
           (mv :bad-rec nil state))
          ((mv erp parsed-object state) (acl2::read-string-as-single-item object "ACL2" state))
          ((when erp)
-          (cw "Error (~x0) parsing recommended action: ~x1." erp object)
+          (cw " Error (~x0) parsing action object for ~x1: ~x2.~%" erp type object)
           (mv nil ;; :none :parse-error
               :none state))
          (name (concatenate 'string (model-to-nice-string source) "[" (acl2::nat-to-string rec-num) "]")))
