@@ -486,8 +486,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Returns (mv erp first-working-rec-num-or-nil state).
-(defun try-recs-in-order (recs rec-num theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)
+(defun result-cachep (cache)
+  (declare (xargs :guard t))
+  (and (alistp cache)
+       (help::recommendation-listp (strip-cars cache))
+       (boolean-listp (strip-cdrs cache))))
+
+;; Returns t, nil, or :unknown.
+(defun assoc-in-result-cache (rec cache)
+  (declare (xargs :guard (and (help::recommendationp rec)
+                              (result-cachep cache))
+                  :guard-hints (("Goal" :in-theory (enable help::recommendation-listp)))
+                  ))
+  (if (endp cache)
+      :unknown
+    (let* ((entry (first cache))
+           (entry-rec (car entry)))
+      (if (help::equivalent-recommendationsp rec entry-rec)
+          (progn$ ;(cw "Cache hit on ~x0.~%" rec)
+                  (cdr entry))
+        (assoc-in-result-cache rec (rest cache))))))
+
+;;Returns (mv erp first-working-rec-num-or-nil result-cache state).
+(defun try-recs-in-order (recs rec-num theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state)
   (declare (xargs :guard (and (help::recommendation-listp recs)
                               (posp rec-num)
                               (symbolp theorem-name)
@@ -502,7 +523,8 @@
                                   (natp step-limit))
                               (or (null time-limit)
                                   (rationalp time-limit))
-                              (help::model-namep model))
+                              (help::model-namep model)
+                              (result-cachep result-cache))
                   :mode :program ; because of help::try-recommendation
                   :stobjs state))
   (if (endp recs)
@@ -511,8 +533,26 @@
                    )
               (mv nil ; no error
                   nil ; no working rec found
+                  result-cache
                   state))
     (b* ((rec (first recs))
+         (cache-result (assoc-in-result-cache rec result-cache))
+         ((when (eq t cache-result))
+          (and (acl2::print-level-at-least-tp print)
+               (cw "Rec #~x0 is known to work, from the cache.~%" rec-num) ; todo: print the model name.
+               )
+          ;; todo: maybe print it (see below)
+          (mv nil ; no-error
+              rec-num ; this rec is known to work
+              result-cache
+              state))
+         ((when (eq nil cache-result))
+          (and (acl2::print-level-at-least-tp print)
+               (cw "Rec #~x0 is known to fail, from the cache.~%" rec-num) ; todo: print the model name.
+               )
+          ;; keep looking:
+          (try-recs-in-order (rest recs) (+ 1 rec-num) theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state))
+         ;; cache-result is :unknown:
          ((mv erp maybe-successful-rec state)
           (help::try-recommendation rec
                                     current-book-absolute-path
@@ -525,7 +565,8 @@
                                     nil ; improve-recsp (just want to know if the rec works)
                                     print
                                     state))
-         ((when erp) (mv erp nil state)))
+         ((when erp) (mv erp nil result-cache state))
+         (result-cache (acons rec (if maybe-successful-rec t nil) result-cache)))
       (if maybe-successful-rec
           (b* ((- (and (acl2::print-level-at-least-tp print)
                        (cw "Rec #~x0 worked.~%" rec-num) ; todo: print the model name.
@@ -538,10 +579,12 @@
                         state))
                (- (cw "~%")))
             (mv nil ; no-error
-                rec-num
+                rec-num ; this rec worked
+                result-cache
                 state))
-        ;; keep looking:
-        (try-recs-in-order (rest recs) (+ 1 rec-num) theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)))))
+        ;; not successful, so keep looking:
+        (try-recs-in-order (rest recs) (+ 1 rec-num) theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state)))))
+
 
 ;; Walks through the MODEL-REC-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
@@ -555,6 +598,7 @@
                         debug
                         step-limit time-limit
                         model-results-acc
+                        result-cache
                         state)
   (declare (xargs :guard (and (alistp model-rec-alist) ; todo: strengthen
                               (symbolp theorem-name)
@@ -569,7 +613,8 @@
                                   (natp step-limit))
                               (or (null time-limit)
                                   (rationalp time-limit))
-                              (true-listp model-results-acc))
+                              (true-listp model-results-acc)
+                              (result-cachep result-cache))
                   :stobjs state
                   :mode :program))
   (if (endp model-rec-alist)
@@ -587,8 +632,8 @@
          ((mv start-time state) (get-cpu-time state)) ; or we could use real time (here and below)
          (- (and (acl2::print-level-at-least-tp print)
                  (cw "TRYING RECOMMENDATIONS FOR ~x0:~%" model)))
-         ((mv erp first-working-rec-num-or-nil state)
-          (try-recs-in-order recs 1 theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state))
+         ((mv erp first-working-rec-num-or-nil result-cache state)
+          (try-recs-in-order recs 1 theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state))
          ((mv end-time state) (get-cpu-time state))
          ((when erp) (mv erp nil state)))
       (eval-model-recs (rest model-rec-alist)
@@ -597,6 +642,7 @@
                        step-limit time-limit
                        (cons (list model (len recs) first-working-rec-num-or-nil (acl2::round-to-hundredths (- end-time start-time)))
                              model-results-acc)
+                       result-cache
                        state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -836,6 +882,7 @@
                          current-book-absolute-path print debug
                          step-limit-for-tries time-limit-for-tries
                          nil ; empty acc
+                         nil ; empty result-cache
                          state))
        ((when erp) (mv erp nil nil nil rand state)) ; todo: should an error count against the model(s) whose rec caused it?
        (models-that-worked (models-that-worked model-results))
