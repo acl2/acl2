@@ -35,6 +35,7 @@
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/lists/true-listp" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -2020,7 +2021,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-context-preamble ((typed-formals atc-symbol-varinfo-alistp)
-                                  (compst-var symbolp))
+                                  (compst-var symbolp)
+                                  (fenv-var symbolp)
+                                  (prog-const symbolp))
   :returns (terms true-listp)
   :short "Generate a context preamble from the formals of a function."
   :long
@@ -2081,7 +2084,8 @@
   (b* (((mv terms-about-single-formals
             terms-about-formal-pairs)
         (atc-gen-context-preamble-aux typed-formals compst-var)))
-    (append terms-about-single-formals
+    (append (list `(equal ,fenv-var (init-fun-env (preprocess ,prog-const))))
+            terms-about-single-formals
             terms-about-formal-pairs))
 
   :prepwork
@@ -2940,7 +2944,6 @@
                                  (affect symbol-listp)
                                  (typed-formals atc-symbol-varinfo-alistp)
                                  (context-preamble true-listp)
-                                 (prog-const symbolp)
                                  (compst-var symbolp)
                                  (fenv-var symbolp)
                                  (limit-var symbolp)
@@ -3007,7 +3010,6 @@
                                          prec-objs
                                          nil))
        (hyps `(and (compustatep ,compst-var)
-                   (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
                    ,@context-preamble
                    (,fn-guard ,@formals)
                    (integerp ,limit-var)
@@ -3071,7 +3073,6 @@
        (name (cdr (assoc-eq fn fn-thms)))
        (formula
         `(implies (and (compustatep ,compst-var)
-                       (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
                        ,@context-preamble
                        ,(untranslate$ (uguard+ fn wrld) nil state)
                        (integerp ,limit-var)
@@ -3159,7 +3160,10 @@
        (compst-var (genvar$ 'atc "COMPST" nil formals state))
        (fenv-var (genvar$ 'atc "FENV" nil formals state))
        (limit-var (genvar$ 'atc "LIMIT" nil formals state))
-       (context-preamble (atc-gen-context-preamble typed-formals compst-var))
+       (context-preamble (atc-gen-context-preamble typed-formals
+                                                   compst-var
+                                                   fenv-var
+                                                   prog-const))
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        ((mv init-scope-expand-event
@@ -3307,7 +3311,6 @@
                                      affect
                                      typed-formals
                                      context-preamble
-                                     prog-const
                                      compst-var
                                      fenv-var
                                      limit-var
