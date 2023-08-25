@@ -3389,7 +3389,8 @@
               :correct-thm fn-correct-thm
               :measure-nat-thm nil
               :fun-env-thm fn-fun-env-thm
-              :limit limit)))
+              :limit limit
+              :guard fn-guard)))
     (retok fundef
            (and proofs local-events)
            (acons fn info prec-fns)
@@ -4742,7 +4743,8 @@
                                :correct-thm fn-correct-thm
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
-                               :limit loop.limit-all)))
+                               :limit loop.limit-all
+                               :guard nil))) ; <- not used for now
     (retok events
            (acons fn info prec-fns)
            names-to-avoid))
