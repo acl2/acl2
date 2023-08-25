@@ -1893,7 +1893,7 @@
                                       typed-formals
                                       prec-fns
                                       wrld))
-       ((mv okp & & & & affected &)
+       ((mv okp & & & & affected & &)
         (atc-check-cfun-call term nil prec-fns wrld))
        ((when okp) (retok affected))
        ((mv okp & & & affected & &)

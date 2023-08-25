@@ -5071,7 +5071,7 @@
                  a recursive call to the loop function occurs ~
                  not at the end of the computation on some path."
                 gin.fn))))
-       ((mv okp called-fn arg-terms in-types out-type fn-affect limit)
+       ((mv okp called-fn arg-terms in-types out-type fn-affect limit &)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))

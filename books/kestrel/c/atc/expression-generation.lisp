@@ -2901,7 +2901,7 @@
      to not stop right away due to the limit being 0."))
   (b* (((reterr) (irr-expr-gout))
        ((expr-gin gin) gin)
-       ((mv okp called-fn arg-terms in-types out-type affect limit)
+       ((mv okp called-fn arg-terms in-types out-type affect limit &)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
        ((when okp)
         (b* (((when (type-case out-type :void))
