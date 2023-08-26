@@ -2666,12 +2666,12 @@
 
 (define atc-gen-block-item-list-one
   ((term pseudo-termp)
+   (type typep)
    (item block-itemp)
    (item-limit pseudo-termp)
    (item-events pseudo-event-form-listp)
    (item-thm symbolp)
    (result-term pseudo-termp)
-   (result-type typep)
    (new-compst "An untranslated term.")
    (new-context atc-contextp)
    (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2720,7 +2720,7 @@
        ((when (not gin.proofs))
         (make-stmt-gout
          :items items
-         :type result-type
+         :type type
          :term term
          :context new-context
          :inscope nil
@@ -2749,7 +2749,7 @@
                                     t
                                     wrld))
        (type-pred (and result-term
-                       (atc-type-to-recognizer result-type gin.prec-tags)))
+                       (atc-type-to-recognizer type gin.prec-tags)))
        (formula (if result-term
                     (b* ((formula2 `(,type-pred ,result-uterm))
                          (formula2 (atc-contextualize formula2 gin.context
@@ -2758,8 +2758,7 @@
                       `(and ,formula1 ,formula2))
                   formula1))
        (valuep-when-type-pred (and result-term
-                                   (atc-type-to-valuep-thm result-type
-                                                           gin.prec-tags)))
+                                   (atc-type-to-valuep-thm type gin.prec-tags)))
        (hints
         `(("Goal" :in-theory '(exec-block-item-list-when-consp
                                not-zp-of-limit-variable
@@ -2781,7 +2780,7 @@
                                             :enable nil)))
     (make-stmt-gout
      :items items
-     :type result-type
+     :type type
      :term term
      :context new-context
      :inscope new-inscope
@@ -3281,12 +3280,12 @@
                                   :proofs (and stmt-thm-name t))
                                  state)))
     (retok (atc-gen-block-item-list-one expr.term
+                                        expr.type
                                         item
                                         item-limit
                                         item-events
                                         item-thm-name
                                         expr.term
-                                        expr.type
                                         gin.compst-var
                                         gin.context
                                         nil
@@ -3903,12 +3902,12 @@
           (mv nil nil thm-index names-to-avoid)))
        ((stmt-gout gout)
         (atc-gen-block-item-list-one term
+                                     type
                                      item
                                      item-limit
                                      item-events
                                      item-thm-name
                                      (and (not voidp) term)
-                                     type
                                      new-compst
                                      new-context
                                      (and voidp new-inscope)
