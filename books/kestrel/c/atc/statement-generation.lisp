@@ -3824,6 +3824,17 @@
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C block item statement that consists of
           a call of a @('void') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also generate a theorem about @(tsee exec-expr-call-or-asg)
+     applied to the call expression.
+     The limit is 2 more than the function's limit:
+     it takes 1 to go from @(tsee exec-expr-call-or-asg)
+     to @(tsee exec-expr-call),
+     and another 1 to go from there to @(tsee exec-expr-pure-list).
+     Since the limit term for the function is over the function's formal,
+     we need to perform a substitution of the formals with the actuals."))
   (b* (((reterr) (irr-stmt-gout))
        (wrld (w state))
        ((stmt-gin gin) gin)
@@ -3917,19 +3928,61 @@
         (evmac-generate-defthm guard-lemma-name
                                :formula guard-lemma-formula
                                :hints guard-lemma-hints
-                               :enable nil)))
+                               :enable nil))
+       (call-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv call-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         call-thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (called-formals (formals+ called-fn wrld))
+       ((unless (equal (len called-formals) (len args.terms)))
+        (reterr (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
+                       called-fn called-formals args.terms)))
+       (limit-for-actuals
+        (fsubcor-var (formals+ called-fn wrld) args.terms limit))
+       ((unless (pseudo-termp limit-for-actuals))
+        (reterr (raise "Internal error: ~x0 is not a pseudo-term.")))
+       (call-limit `(binary-+ '2 ,limit-for-actuals))
+       (new-compst `(update-object ,(add-suffix-to-fn (car affect) "-OBJDES")
+                                   (,called-fn ,@args.terms)
+                                   ,gin.compst-var))
+       (call-formula `(equal (exec-expr-call-or-asg ',call-expr
+                                                    ,gin.compst-var
+                                                    ,gin.fenv-var
+                                                    ,gin.limit-var)
+                             ,new-compst))
+       (call-formula (atc-contextualize call-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        call-limit
+                                        t
+                                        wrld))
+       (call-hints `(("Goal" :in-theory '()))) ; TODO
+       ((mv call-event &) (evmac-generate-defthm call-thm-name
+                                                 :formula call-formula
+                                                 :hints call-hints
+                                                 :enable nil))
+       (- call-event)) ; TODO: don't ignore this
     (retok (make-stmt-gout
             :items (list (block-item-stmt (stmt-expr call-expr)))
             :type (type-void)
             :term term
             :context (make-atc-context :preamble nil :premises nil)
             :inscope nil
-            :limit `(binary-+ '5 ,limit)
+            :limit `(binary-+ '3 ,call-limit)
             :events (append args.events
                             (list guard-lemma-event))
             :thm-name nil
             :thm-index thm-index
-            :names-to-avoid names-to-avoid))))
+            :names-to-avoid names-to-avoid)))
+  :guard-hints (("Goal" :in-theory (enable length)))
+  :prepwork
+  ((defrulel verify-guards-lemma
+     (implies (symbol-listp x)
+              (not (stringp x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
