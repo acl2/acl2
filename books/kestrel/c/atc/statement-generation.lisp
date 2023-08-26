@@ -2671,7 +2671,6 @@
    (item-limit pseudo-termp)
    (item-events pseudo-event-form-listp)
    (item-thm symbolp)
-   (result-term pseudo-termp)
    (new-compst "An untranslated term.")
    (new-context atc-contextp)
    (new-inscope atc-symbol-varinfo-alist-listp)
@@ -2733,12 +2732,16 @@
        (thm-index (1+ gin.thm-index))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
-       (result-uterm (untranslate$ result-term nil state))
+       (voidp (type-case type :void))
+       (uterm (untranslate$ term nil state))
        (formula1 `(equal (exec-block-item-list ',items
                                                ,gin.compst-var
                                                ,gin.fenv-var
                                                ,gin.limit-var)
-                         (mv ,result-uterm ,new-compst)))
+                         (mv ,(if voidp
+                                  nil
+                                uterm)
+                             ,new-compst)))
        (formula1 (atc-contextualize formula1
                                     gin.context
                                     gin.fn
@@ -2748,16 +2751,16 @@
                                     items-limit
                                     t
                                     wrld))
-       (type-pred (and result-term
+       (type-pred (and (not voidp)
                        (atc-type-to-recognizer type gin.prec-tags)))
-       (formula (if result-term
-                    (b* ((formula2 `(,type-pred ,result-uterm))
+       (formula (if (not voidp)
+                    (b* ((formula2 `(,type-pred ,uterm))
                          (formula2 (atc-contextualize formula2 gin.context
                                                       gin.fn gin.fn-guard
                                                       nil nil nil nil wrld)))
                       `(and ,formula1 ,formula2))
                   formula1))
-       (valuep-when-type-pred (and result-term
+       (valuep-when-type-pred (and (not voidp)
                                    (atc-type-to-valuep-thm type gin.prec-tags)))
        (hints
         `(("Goal" :in-theory '(exec-block-item-list-when-consp
@@ -2767,7 +2770,7 @@
                                value-optionp-when-valuep
                                (:e value-optionp)
                                (:e valuep)
-                               ,@(and result-term
+                               ,@(and (not voidp)
                                       (list valuep-when-type-pred))
                                ,item-thm
                                exec-block-item-list-of-nil
@@ -3285,7 +3288,6 @@
                                         item-limit
                                         item-events
                                         item-thm-name
-                                        expr.term
                                         gin.compst-var
                                         gin.context
                                         nil
@@ -3907,7 +3909,6 @@
                                      item-limit
                                      item-events
                                      item-thm-name
-                                     (and (not voidp) term)
                                      new-compst
                                      new-context
                                      (and voidp new-inscope)
