@@ -192,6 +192,103 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-term-type-formula ((term pseudo-termp)
+                                   (type typep)
+                                   (affect symbol-listp)
+                                   (inscope atc-symbol-varinfo-alist-listp)
+                                   (prec-tags atc-string-taginfo-alistp)
+                                   state)
+  :returns (mv (formula "An untranslated term.")
+               (thm-names symbol-listp))
+  :short "Generate a type formula for a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each ACL2 term translated to C
+     returns 0 or 1 C values
+     and affects 0 or more C objects:
+     the returned C value (if any) and the affected C objects
+     are represented by the ACL2 values returned by the term.
+     (So if the term returns 0 C values, it must affect at least one C object,
+     because terms always return at least one ACL2 value.)
+     Each value returned by the term has a C type,
+     which has a corresponding ACL2 recognizer.
+     Here we return a formula that is a conjunction of assertions,
+     one per value returned by the term,
+     which applies the associated recognizer
+     to the corresponding term's result.")
+   (xdoc::p
+    "We also return the names of the theorems from the symbol table
+     that are associated to each variable for the affected objects.
+     These are used to prove the formula returned here.")
+   (xdoc::p
+    "We go through the @('affect') list and collect
+     the list of corresponding types, from the symbol table @('inscope').
+     If @('type') is not @('void'), we @(tsee cons) it to the list.
+     This way, we obtain the list of all the types of
+     all the values returned by the term.
+     This list cannot be empty, because a term always returns some values.
+     If there is just one, we return a single formula
+     that applies the (only) type's recognizer to the term.
+     If there are two or more, we go through them,
+     and return formulas that apply each type recognizer
+     to the @(tsee mv-nth) of the term with increasing index."))
+  (b* ((uterm (untranslate$ term nil state))
+       ((mv affect-types thm-names) (atc-gen-type-formulas-aux affect inscope))
+       (types (if (type-case type :void)
+                  affect-types
+                (cons type affect-types)))
+       ((when (endp types))
+        (raise "Internal error: term ~x0 returns no values." term)
+        (mv nil nil))
+       ((when (endp (cdr types)))
+        (b* ((pred (atc-type-to-recognizer (car types) prec-tags)))
+          (mv `(,pred ,uterm) thm-names)))
+       (conjuncts (atc-gen-type-formulas-aux-aux uterm 0 types prec-tags))
+       (formula `(and ,@conjuncts)))
+    (mv formula thm-names))
+
+  :prepwork
+
+  ((define atc-gen-type-formulas-aux ((affect symbol-listp)
+                                      (inscope atc-symbol-varinfo-alist-listp))
+     :returns (mv (types type-listp)
+                  (thm-names symbol-listp))
+     :parents nil
+     (b* (((when (endp affect)) (mv nil nil))
+          (var (car affect))
+          (info (atc-get-var var inscope))
+          ((unless info)
+           (raise "Internal error: no information for variable ~x0." var)
+           (mv nil nil))
+          (type (atc-var-info->type info))
+          (thm-name (atc-var-info->thm info))
+          ((mv more-types more-thm-names)
+           (atc-gen-type-formulas-aux (cdr affect) inscope)))
+       (mv (cons type more-types)
+           (cons thm-name more-thm-names)))
+     ///
+     (more-returns
+      (types true-listp :rule-classes :type-prescription)))
+
+   (define atc-gen-type-formulas-aux-aux ((uterm "An untranslated term.")
+                                          (index natp)
+                                          (types type-listp)
+                                          (prec-tags atc-string-taginfo-alistp))
+     :returns (conjuncts true-listp)
+     :parents nil
+     (b* (((when (endp types)) nil)
+          (type (car types))
+          (pred (atc-type-to-recognizer type prec-tags))
+          (formula `(,pred (mv-nth ,index ,uterm)))
+          (more-formulas (atc-gen-type-formulas-aux-aux uterm
+                                                        (1+ index)
+                                                        (cdr types)
+                                                        prec-tags)))
+       (cons formula more-formulas)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod stmt-gin
   :short "Inputs for C statement generation."
   :long
@@ -2507,22 +2604,39 @@
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
        (thm-index (1+ gin.thm-index))
-       (formula `(equal (exec-block-item-list nil
-                                              ,gin.compst-var
-                                              ,gin.fenv-var
-                                              ,gin.limit-var)
-                        (mv nil ,gin.compst-var)))
-       (formula (atc-contextualize formula
-                                   gin.context
-                                   gin.fn
-                                   gin.fn-guard
-                                   gin.compst-var
-                                   gin.limit-var
-                                   limit
-                                   t
-                                   wrld))
+       (exec-formula `(equal (exec-block-item-list nil
+                                                   ,gin.compst-var
+                                                   ,gin.fenv-var
+                                                   ,gin.limit-var)
+                             (mv nil ,gin.compst-var)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        limit
+                                        t
+                                        wrld))
+       ((mv type-formula type-thms)
+        (atc-gen-term-type-formula term
+                                   (type-void)
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags
+                                   state))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (formula `(and ,exec-formula ,type-formula))
        (hints
-        '(("Goal" :in-theory '(exec-block-item-list-of-nil
+        `(("Goal" :in-theory '(exec-block-item-list-of-nil
                                not-zp-of-limit-variable
                                compustatep-of-add-frame
                                compustatep-of-enter-scope
@@ -2530,7 +2644,8 @@
                                compustatep-of-add-var
                                compustatep-of-update-var
                                compustatep-of-update-object
-                               compustatep-of-if*-when-both-compustatep))))
+                               compustatep-of-if*-when-both-compustatep
+                               ,@type-thms))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
