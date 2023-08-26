@@ -192,12 +192,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-term-type-formula ((term pseudo-termp)
+(define atc-gen-term-type-formula ((uterm "An untranslated term.")
                                    (type typep)
                                    (affect symbol-listp)
                                    (inscope atc-symbol-varinfo-alist-listp)
-                                   (prec-tags atc-string-taginfo-alistp)
-                                   state)
+                                   (prec-tags atc-string-taginfo-alistp))
   :returns (mv (formula "An untranslated term.")
                (thm-names symbol-listp))
   :short "Generate a type formula for a term."
@@ -233,13 +232,12 @@
      If there are two or more, we go through them,
      and return formulas that apply each type recognizer
      to the @(tsee mv-nth) of the term with increasing index."))
-  (b* ((uterm (untranslate$ term nil state))
-       ((mv affect-types thm-names) (atc-gen-type-formulas-aux affect inscope))
+  (b* (((mv affect-types thm-names) (atc-gen-type-formulas-aux affect inscope))
        (types (if (type-case type :void)
                   affect-types
                 (cons type affect-types)))
        ((when (endp types))
-        (raise "Internal error: term ~x0 returns no values." term)
+        (raise "Internal error: term ~x0 returns no values." uterm)
         (mv nil nil))
        ((when (endp (cdr types)))
         (b* ((pred (atc-type-to-recognizer (car types) prec-tags)))
@@ -2619,12 +2617,11 @@
                                         t
                                         wrld))
        ((mv type-formula type-thms)
-        (atc-gen-term-type-formula term
+        (atc-gen-term-type-formula (untranslate$ term nil state)
                                    (type-void)
                                    gin.affect
                                    gin.inscope
-                                   gin.prec-tags
-                                   state))
+                                   gin.prec-tags))
        (type-formula (atc-contextualize type-formula
                                         gin.context
                                         gin.fn
