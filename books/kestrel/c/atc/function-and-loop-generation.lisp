@@ -262,10 +262,13 @@
                type)))
     (mv type defobj-pred arg))
   :guard-hints
-  (("Goal" :in-theory (enable acl2::true-listp-when-pseudo-term-listp
-                              iff-consp-when-true-listp
-                              symbolp-of-car-of-pseudo-termp
-                              pseudo-term-listp-of-cdr-of-pseudo-termp))))
+  (("Goal" :in-theory (e/d (acl2::true-listp-when-pseudo-term-listp
+                            iff-consp-when-true-listp
+                            symbolp-of-car-of-pseudo-termp
+                            pseudo-term-listp-of-cdr-of-pseudo-termp
+                            alistp-when-atc-string-objinfo-alistp-rewrite
+                            alistp-when-atc-string-taginfo-alistp-rewrite)
+                           ((:e tau-system)))))) ; for speed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3400,7 +3403,9 @@
           true-listp-when-atc-symbol-varinfo-alist-listp-rewrite
           symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp
           alistp-when-atc-symbol-fninfo-alistp-rewrite)
-         ((:e tau-system)))))) ; <-- for speed
+         ((:e tau-system)
+          acl2::strip-cars-when-atom
+          acl2::list-fix-when-len-zero)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
