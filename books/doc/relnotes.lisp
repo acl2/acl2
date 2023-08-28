@@ -420,6 +420,9 @@
      See the documentation for details,
      including functional differences with @(tsee guard-theorem-no-simplify).")
 
+   (xdoc::p
+    "Theorems about the built-in @(tsee fsubcor-var) have been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
