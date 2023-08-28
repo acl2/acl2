@@ -729,7 +729,8 @@
                (in-types type-listp)
                (out-type typep)
                (affect symbol-listp)
-               (limit pseudo-termp))
+               (limit pseudo-termp)
+               (fn-guard symbolp))
   :short "Check if a term may represent a call to a C function."
   :long
   (xdoc::topstring
@@ -748,7 +749,7 @@
      in order to obtain the real arguments of the call
      from the point of view of the top level of
      where this call term occurs."))
-  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil nil))
+  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil nil nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((when (irecursivep+ term.fn wrld)) (no))
@@ -760,8 +761,9 @@
        (affect (atc-fn-info->affect info))
        ((when (null out-type)) (no))
        (limit (atc-fn-info->limit info))
-       (limit (fty-fsublis-var var-term-alist limit)))
-    (mv t term.fn term.args in-types out-type affect limit))
+       (limit (fty-fsublis-var var-term-alist limit))
+       (fn-guard (atc-fn-info->guard info)))
+    (mv t term.fn term.args in-types out-type affect limit fn-guard))
   ///
 
   (defret pseudo-term-count-of-atc-check-cfun-call
@@ -787,7 +789,7 @@
      the argument for a formal of pointer or array type
      must be identical to the formal.
      This is because these arguments and formals
-     represent arrays and pointers to structures,
+     represent arrays and pointers,
      and thus they must be passed around exactly by their name,
      similarly to stobjs in ACL2.
      This code checks the condition."))

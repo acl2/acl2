@@ -11,6 +11,7 @@
    (erp val state)
    (thm-fn property
            state
+           nil
            `(("Goal" :clause-processor (:function sat :hint ,hint-arg)))
            NIL
            NIL)
@@ -36,6 +37,7 @@
    (erp val state)
    (thm-fn property
            state
+           nil
            `(("Goal" :clause-processor (:function sat :hint ,hint-arg)))
            NIL
            NIL)
@@ -61,6 +63,7 @@
    (erp val state)
    (thm-fn property
            state
+           nil
            `(("Goal" :clause-processor (:function sat :hint ,hint-arg)))
            NIL
            NIL)

@@ -28728,7 +28728,7 @@
                                      (default-hints wrld)
                                      ctx wrld state))
                   (:INSTRUCTIONS
-                   (translate-instructions name-tree val ctx wrld state))
+                   (translate-instructions val ctx state))
                   (:OTF-FLG
                    (value val))
                   (:ATTACH

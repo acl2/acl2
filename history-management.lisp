@@ -4101,6 +4101,7 @@
             main-timer                 ;;; preserve accumulated summary info
             verbose-theory-warning     ;;; warn if disabling a *bbody-alist* key
             pc-ss-alist                ;;; for saves under :instructions hints
+            pc-output                  ;;; for thm-fn
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
             splitter-output            ;;; allow user to modify this in a book

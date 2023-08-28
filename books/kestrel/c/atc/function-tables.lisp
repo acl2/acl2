@@ -55,8 +55,9 @@
      that looking up the function in the function environment
      yields the information for the function
      (@('nil') if the function is recursive);
-     and a limit that suffices to execute the code generated from the function,
-     as explained below.
+     a limit that suffices to execute the code generated from the function,
+     as explained below;
+     and the locally generated function for the guard of the function.
      The limit is a term that may depend on the function's parameters.
      For a non-recursive function,
      the term expresses a limit that suffices to execute @(tsee exec-fun)
@@ -86,7 +87,8 @@
    (correct-thm symbol)
    (measure-nat-thm symbol)
    (fun-env-thm symbol)
-   (limit pseudo-term))
+   (limit pseudo-term)
+   (guard symbol))
   :pred atc-fn-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
