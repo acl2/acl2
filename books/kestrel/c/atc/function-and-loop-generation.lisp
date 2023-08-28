@@ -3396,6 +3396,7 @@
            names-to-avoid))
   :guard-hints
   (("Goal"
+    :do-not '(preprocess)
     :in-theory
     (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite
           alistp-when-atc-symbol-varinfo-alistp-rewrite
