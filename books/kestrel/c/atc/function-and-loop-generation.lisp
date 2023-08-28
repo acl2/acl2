@@ -2995,8 +2995,6 @@
                        nil
                      (genvar$ 'atc "RESULT" nil formals state)))
        (limit `(binary-+ '1 ,body-limit))
-       (type-pred (and result-var
-                       (atc-type-to-recognizer body-type prec-tags)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (fn-results (append (and result-var
                                 (list result-var))
@@ -3009,25 +3007,29 @@
                                          compst-var
                                          prec-objs
                                          nil))
-       (hyps `(and (compustatep ,compst-var)
-                   ,@context-preamble
-                   (,fn-guard ,@formals)
-                   (integerp ,limit-var)
-                   (>= ,limit-var ,limit)))
-       (concl-exec `(equal (exec-fun (ident ,(symbol-name fn))
+       (exec-hyps `(and (compustatep ,compst-var)
+                        ,@context-preamble
+                        (,fn-guard ,@formals)
+                        (integerp ,limit-var)
+                        (>= ,limit-var ,limit)))
+       (exec-concl `(equal (exec-fun (ident ,(symbol-name fn))
                                      (list ,@init-formals)
                                      ,compst-var
                                      ,fenv-var
                                      ,limit-var)
                            (mv ,result-var ,new-compst)))
-       (concl (if result-var
-                  `(and ,concl-exec
-                        (,type-pred ,result-var))
-                concl-exec))
-       (lemma-formula
-        `(implies ,hyps
-                  (b* ((,fn-binder (,fn ,@formals)))
-                    ,concl)))
+       (type-hyps `(,fn-guard ,@formals))
+       ((mv type-concl &) (atc-gen-term-type-formula `(,fn ,@formals)
+                                                     body-type
+                                                     affect
+                                                     (list typed-formals)
+                                                     prec-tags))
+       (exec-formula `(implies ,exec-hyps
+                               (b* ((,fn-binder (,fn ,@formals)))
+                                 ,exec-concl)))
+       (type-formula `(implies ,type-hyps
+                               ,type-concl))
+       (lemma-formula `(and ,exec-formula ,type-formula))
        (valuep-when-type-pred
         (and result-var
              (atc-type-to-valuep-thm body-type prec-tags)))
@@ -3078,7 +3080,7 @@
                        (integerp ,limit-var)
                        (>= ,limit-var ,limit))
                   (b* ((,fn-binder (,fn ,@formals)))
-                    ,concl)))
+                    ,exec-concl)))
        (hints `(("Goal"
                  :use ,lemma-name
                  :in-theory '(,fn-guard))))
