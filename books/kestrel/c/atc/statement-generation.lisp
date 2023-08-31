@@ -3927,25 +3927,24 @@
                                        thm-index
                                        names-to-avoid
                                        wrld)
-          (mv nil nil thm-index names-to-avoid)))
-       ((stmt-gout gout)
-        (atc-gen-block-item-list-one term
-                                     type
-                                     item
-                                     item-limit
-                                     item-events
-                                     item-thm-name
-                                     new-compst
-                                     new-context
-                                     (and voidp new-inscope)
-                                     (change-stmt-gin
-                                      gin
-                                      :thm-index thm-index
-                                      :names-to-avoid names-to-avoid
-                                      :proofs (and item-thm-name t))
-                                     state)))
+          (mv nil nil thm-index names-to-avoid))))
     (retok
-     (change-stmt-gout gout :events (append gout.events new-inscope-events))))
+     (atc-gen-block-item-list-one term
+                                  type
+                                  item
+                                  item-limit
+                                  (append item-events
+                                          new-inscope-events)
+                                  item-thm-name
+                                  new-compst
+                                  new-context
+                                  (and voidp new-inscope)
+                                  (change-stmt-gin
+                                   gin
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs (and item-thm-name t))
+                                  state)))
   :guard-hints
   (("Goal"
     :in-theory
