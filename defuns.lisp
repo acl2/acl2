@@ -5728,8 +5728,31 @@
                                     (mv erp val state))))
              (otherwise (mv erp val state)))))))))
 
-(defun verify-guards-fn (name state hints otf-flg guard-debug
-                              guard-simplify event-form)
+(defun verify-guards-old-dcl-alist (fn wrld)
+
+; Return an alist mapping each of :guard-hints, :guard-debug, and
+; :guard-simplify to their values in the existing (latest) definition of fn,
+; if any; else return nil.
+
+  (let ((ev (get-defun-event fn wrld)))
+    (and ev
+         (assert$
+          (and (consp ev)
+               (member-eq (car ev) '(defun defund)))
+          (let* ((dcls (butlast (cdddr ev) 1))
+                 (h-lst (fetch-dcl-field :guard-hints dcls))
+                 (d-lst (fetch-dcl-field :guard-debug dcls))
+                 (s-lst (fetch-dcl-field :guard-simplify dcls)))
+            (append (and h-lst (list (cons :guard-hints (car h-lst))))
+                    (and d-lst (list (cons :guard-debug (car d-lst))))
+                    (and s-lst (list (cons :guard-simplify (car s-lst))))))))))
+
+(defun verify-guards-fn (name state
+                              hints hints-p
+                              otf-flg
+                              guard-debug guard-debug-p
+                              guard-simplify guard-simplify-p
+                              event-form)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -5742,20 +5765,25 @@
            (msg "( VERIFY-GUARDS ~x0)"
                 name))
           (t (cons 'verify-guards name)))
-    (let ((wrld (w state))
-          (event-form (or event-form
-                          (list* 'verify-guards
-                                 name
-                                 (append
-                                  (if hints
-                                      (list :hints hints)
-                                    nil)
-                                  (if otf-flg
-                                      (list :otf-flg otf-flg)
-                                    nil)))))
-          (assumep (or (eq (ld-skip-proofsp state) 'include-book)
-                       (eq (ld-skip-proofsp state) 'include-book-with-locals)
-                       (eq (ld-skip-proofsp state) 'initialize-acl2))))
+    (let* ((wrld (w state))
+           (event-form (or event-form
+                           (list* 'verify-guards
+                                  name
+                                  (append
+                                   (if hints
+                                       (list :hints hints)
+                                     nil)
+                                   (if otf-flg
+                                       (list :otf-flg otf-flg)
+                                     nil)))))
+           (assumep (or (eq (ld-skip-proofsp state) 'include-book)
+                        (eq (ld-skip-proofsp state) 'include-book-with-locals)
+                        (eq (ld-skip-proofsp state) 'initialize-acl2)))
+           (old-alist (verify-guards-old-dcl-alist name wrld))
+           (guard-simplify (if (and (not guard-simplify-p)
+                                    (assoc-eq :guard-simplify old-alist))
+                               (cdr (assoc-eq :guard-simplify old-alist))
+                             guard-simplify)))
       (er-let* ((names (chk-acceptable-verify-guards name t guard-simplify ctx
                                                      wrld state)))
         (cond
@@ -5766,31 +5794,41 @@
              (with-useless-runes
               name
               wrld
-              (er-let*
-                  ((hints (if assumep
-                              (value nil)
-                            (translate-hints+
-                             (cons "Guard Lemma for" name)
-                             hints
-                             (default-hints wrld)
-                             ctx wrld state)))
-                   (pair (verify-guards-fn1 names hints otf-flg guard-debug
-                                            guard-simplify ctx state)))
+              (let ((hints
+                     (if (and (not hints-p)
+                              (assoc-eq :guard-hints old-alist))
+                         (cdr (assoc-eq :guard-hints old-alist))
+                       hints))
+                    (guard-debug
+                     (if (and (not guard-debug-p)
+                              (assoc-eq :guard-debug old-alist))
+                         (cdr (assoc-eq :guard-debug old-alist))
+                       guard-debug)))
+                (er-let*
+                    ((hints (if assumep
+                                (value nil)
+                              (translate-hints+
+                               (cons "Guard Lemma for" name)
+                               hints
+                               (default-hints wrld)
+                               ctx wrld state)))
+                     (pair (verify-guards-fn1 names hints otf-flg guard-debug
+                                              guard-simplify ctx state)))
 
 ; pair is of the form (wrld1 . ttree)
 
-                (er-progn
-                 (chk-assumption-free-ttree (cdr pair) ctx state)
-                 (install-event name
-                                event-form
-                                'verify-guards
-                                0
-                                (cdr pair)
-                                nil
-                                nil
-                                nil
-                                (car pair)
-                                state)))))))))
+                  (er-progn
+                   (chk-assumption-free-ttree (cdr pair) ctx state)
+                   (install-event name
+                                  event-form
+                                  'verify-guards
+                                  0
+                                  (cdr pair)
+                                  nil
+                                  nil
+                                  nil
+                                  (car pair)
+                                  state))))))))))
     :event-type 'verify-guards
     :event event-form)))
 

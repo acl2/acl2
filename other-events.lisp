@@ -495,15 +495,17 @@
             (list 'quote event-form)))
     (defmacro verify-guards (&whole event-form name
                                     &key
-                                    hints otf-flg guard-debug
-                                    (guard-simplify 't))
+                                    (hints 'nil hints-p)
+                                    (guard-debug 'nil guard-debug-p)
+                                    (guard-simplify 't guard-simplify-p)
+                                    otf-flg)
       (list 'verify-guards-fn
             (list 'quote name)
             'state
-            (list 'quote hints)
+            (list 'quote hints) (list 'quote hints-p)
             (list 'quote otf-flg)
-            (list 'quote guard-debug)
-            (list 'quote guard-simplify)
+            (list 'quote guard-debug) (list 'quote guard-debug-p)
+            (list 'quote guard-simplify) (list 'quote guard-simplify-p)
             (list 'quote event-form)))
     (defmacro defmacro (&whole event-form &rest mdef)
       (list 'defmacro-fn
