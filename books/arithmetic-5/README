@@ -11,7 +11,7 @@ Robert Krug, and repeated in ../arithmetic/README):
   Robert is not aware of any rewriting loops.
 
   While arithmetic-3 is generally not as powerful as arithmetic-5,
-  and it may have more rewriting loops than arithmetic-3,
+  and it may have more rewriting loops than arithmetic-5,
   cases have been observed in which arithmetic-3 proves something
   that arithmetic-5 does not prove, and cases in which arithmetic-3
   is faster than arithmetic-5.
