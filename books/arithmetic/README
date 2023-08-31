@@ -13,7 +13,7 @@ Robert Krug, and repeated in ../arithmetic-5/README):
   While arithmetic-3 is generally not as powerful as arithmetic-5,
   and it may have more rewriting loops than arithmetic-5,
   cases have been observed in which arithmetic-3 proves something
-  that arithmetic-5 does not prove, and cases in which arithmetic-3
+  that arithmetic-5 does not prove, as well as cases in which arithmetic-3
   is faster than arithmetic-5.
 
   Note that arithmetic-2 is totally obsolete.  We may stop

@@ -13,7 +13,7 @@ Robert Krug, and repeated in ../arithmetic/README):
   While arithmetic-3 is generally not as powerful as arithmetic-5,
   and it may have more rewriting loops than arithmetic-5,
   cases have been observed in which arithmetic-3 proves something
-  that arithmetic-5 does not prove, and cases in which arithmetic-3
+  that arithmetic-5 does not prove, as well as cases in which arithmetic-3
   is faster than arithmetic-5.
   [NOTE added by Matt K.: I have seen at least one example in which
   arithmetic-3 proves the theorem in 0.30 seconds but arithmetic-5
