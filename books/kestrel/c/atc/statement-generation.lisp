@@ -16,6 +16,7 @@
 
 (include-book "kestrel/std/system/close-lambdas" :dir :system)
 
+(local (include-book "kestrel/std/system/fsubcor-var" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -4080,8 +4081,6 @@
                        called-fn called-formals args.terms)))
        (limit-for-actuals
         (fsubcor-var (formals+ called-fn wrld) args.terms limit))
-       ((unless (pseudo-termp limit-for-actuals))
-        (reterr (raise "Internal error: ~x0 is not a pseudo-term.")))
        (call-limit `(binary-+ '2 ,limit-for-actuals))
        (new-compst `(update-object ,(add-suffix-to-fn (car affect) "-OBJDES")
                                    (,called-fn ,@args.terms)
