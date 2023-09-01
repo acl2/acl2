@@ -2966,6 +2966,7 @@
   :returns (mv (events pseudo-event-form-listp)
                (print-event pseudo-event-formp)
                (name symbolp :hyp (symbol-symbol-alistp fn-thms))
+               (lemma-name symbolp)
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the correctness theorem for a C function."
   :long
@@ -3098,6 +3099,7 @@
               exported-event)
         print-event
         name
+        lemma-name
         names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3299,6 +3301,7 @@
        ((mv fn-correct-events
             fn-correct-print-event
             fn-correct-thm
+            fn-correct-lemma-thm
             names-to-avoid)
         (if (and body.thm-name
                  (or (not affect)
@@ -3348,7 +3351,7 @@
                                           fn-fun-env-thm
                                           limit
                                           state)))
-            (mv events print-event name names-to-avoid))))
+            (mv events print-event name nil names-to-avoid))))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
@@ -3392,6 +3395,7 @@
               :affect affect
               :result-thm fn-result-thm
               :correct-thm fn-correct-thm
+              :correct-mod-thm fn-correct-lemma-thm
               :measure-nat-thm nil
               :fun-env-thm fn-fun-env-thm
               :limit limit
@@ -4749,6 +4753,7 @@
                                :affect loop.affect
                                :result-thm fn-result-thm
                                :correct-thm fn-correct-thm
+                               :correct-mod-thm nil
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
                                :limit loop.limit-all

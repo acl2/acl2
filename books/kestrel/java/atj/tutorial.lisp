@@ -110,7 +110,7 @@
   (xdoc::p
    "For instance, the "
    (xdoc::ahref "http://isabelle.in.tum.de" "Isabelle") ", "
-   (xdoc::ahref "https://coq.inria.fr" "Coq") ", and "
+   (xdoc::ahref "https://coq.inria.fr" "Coq") ", "
    (xdoc::ahref "http://pvs.csl.sri.com" "PVS") ", and "
    (xdoc::ahref "https://hol-theorem-prover.org" "HOL")
    " theorem provers include facilities to generate code

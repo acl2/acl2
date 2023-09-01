@@ -16,6 +16,7 @@
 
 (include-book "kestrel/std/system/close-lambdas" :dir :system)
 
+(local (include-book "kestrel/std/system/fsubcor-var" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -217,6 +218,19 @@
      which applies the associated recognizer
      to the corresponding term's result.")
    (xdoc::p
+    "For any array value returned by the term,
+     we also return, as part of the formula,
+     assertions saying that the length of each array
+     is the same as the corresponding variables.
+     Since a C array type is described by both the element type and the size,
+     it makes sense that assertions about the length
+     accompany assertions involving the recognizers
+     (which only talk about the element type).
+     These assertions are not generated
+     if the term is exactly the variable array,
+     because otherwise the rewrite rule would be illegal,
+     rewriting something to itself.")
+   (xdoc::p
     "We also return the names of the theorems from the symbol table
      that are associated to each variable for the affected objects.
      These are used to prove the formula returned here.")
@@ -240,9 +254,23 @@
         (raise "Internal error: term ~x0 returns no values." uterm)
         (mv nil nil))
        ((when (endp (cdr types)))
-        (b* ((pred (atc-type-to-recognizer (car types) prec-tags)))
-          (mv `(,pred ,uterm) thm-names)))
-       (conjuncts (atc-gen-type-formulas-aux-aux uterm 0 types prec-tags))
+        (b* ((type (car types))
+             (pred (atc-type-to-recognizer type prec-tags)))
+          (if (or (symbolp uterm)
+                  (not (type-case type :array)))
+              (mv `(,pred ,uterm) thm-names)
+            (b* ((elemtype (type-array->of type))
+                 (elemfixtype (type-kind elemtype))
+                 (array-length (pack elemfixtype '-array-length)))
+              (mv `(and (,pred ,uterm)
+                        (equal (,array-length ,uterm)
+                               (,array-length ,(car affect))))
+                  thm-names)))))
+       (affected-vars (if (type-case type :void)
+                          affect
+                        (cons nil affect)))
+       (conjuncts
+        (atc-gen-type-formulas-aux-aux uterm 0 types affected-vars prec-tags))
        (formula `(and ,@conjuncts)))
     (mv formula thm-names))
 
@@ -272,18 +300,28 @@
    (define atc-gen-type-formulas-aux-aux ((uterm "An untranslated term.")
                                           (index natp)
                                           (types type-listp)
+                                          (affected-vars symbol-listp)
                                           (prec-tags atc-string-taginfo-alistp))
      :returns (conjuncts true-listp)
      :parents nil
      (b* (((when (endp types)) nil)
           (type (car types))
           (pred (atc-type-to-recognizer type prec-tags))
-          (formula `(,pred (mv-nth ,index ,uterm)))
-          (more-formulas (atc-gen-type-formulas-aux-aux uterm
-                                                        (1+ index)
-                                                        (cdr types)
-                                                        prec-tags)))
-       (cons formula more-formulas)))))
+          (conjuncts
+           (if (type-case type :array)
+               (b* ((elemtype (type-array->of type))
+                    (elemfixtype (type-kind elemtype))
+                    (array-length (pack elemfixtype '-array-length)))
+                 `((,pred (mv-nth ,index ,uterm))
+                   (equal (,array-length (mv-nth ,index ,uterm))
+                          (,array-length ,(car affected-vars)))))
+             `((,pred (mv-nth ,index ,uterm)))))
+          (more-conjuncts (atc-gen-type-formulas-aux-aux uterm
+                                                         (1+ index)
+                                                         (cdr types)
+                                                         (cdr affected-vars)
+                                                         prec-tags)))
+       (append conjuncts more-conjuncts)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -503,11 +541,22 @@
                                                           wrld)))
                       `(and ,exec-formula ,type-formula))
                   exec-formula))
-       (hints `(("Goal" :in-theory '(exec-block-item-when-stmt
-                                     (:e block-item-kind)
-                                     not-zp-of-limit-variable
-                                     (:e block-item-stmt->get)
-                                     ,stmt-thm))))
+       (hints
+        `(("Goal" :in-theory '(exec-block-item-when-stmt
+                               (:e block-item-kind)
+                               not-zp-of-limit-variable
+                               (:e block-item-stmt->get)
+                               ,stmt-thm
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -2658,7 +2707,17 @@
                                compustatep-of-update-var
                                compustatep-of-update-object
                                compustatep-of-if*-when-both-compustatep
-                               ,@type-thms))))
+                               ,@type-thms
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -2793,7 +2852,17 @@
                                exec-block-item-list-of-nil
                                not-zp-of-limit-minus-const
                                compustatep-of-exit-scope
-                               compustatep-of-if*-when-both-compustatep))))
+                               compustatep-of-if*-when-both-compustatep
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -2913,15 +2982,26 @@
                                         nil
                                         wrld))
        (formula `(and ,exec-formula ,type-formula))
-       (hints `(("Goal" :in-theory '(exec-block-item-list-when-consp
-                                     not-zp-of-limit-variable
-                                     ,item-thm
-                                     mv-nth-of-cons
-                                     (:e zp)
-                                     (:e value-optionp)
-                                     not-zp-of-limit-minus-const
-                                     (:e valuep)
-                                     ,items-thm))))
+       (hints
+        `(("Goal" :in-theory '(exec-block-item-list-when-consp
+                               not-zp-of-limit-variable
+                               ,item-thm
+                               mv-nth-of-cons
+                               (:e zp)
+                               (:e value-optionp)
+                               not-zp-of-limit-minus-const
+                               (:e valuep)
+                               ,items-thm
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        (thm-name (pack gin.fn '-correct- gin.thm-index))
        (thm-index (1+ gin.thm-index))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
@@ -3062,10 +3142,10 @@
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                         (mv ,(if voidp
-                                  nil
-                                uterm)
-                             ,new-compst)))
+                             (mv ,(if voidp
+                                      nil
+                                    uterm)
+                                 ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3088,17 +3168,28 @@
                                         nil
                                         wrld))
        (formula `(and ,exec-formula ,type-formula))
-       (hints `(("Goal" :in-theory '(,lemma-name
-                                     (:e len)
-                                     (:e take)
-                                     (:e nthcdr)
-                                     not-zp-of-limit-variable
-                                     ,items1-thm
-                                     mv-nth-of-cons
-                                     (:e zp)
-                                     (:e value-optionp)
-                                     ,items2-thm
-                                     (:e valuep)))))
+       (hints
+        `(("Goal" :in-theory '(,lemma-name
+                               (:e len)
+                               (:e take)
+                               (:e nthcdr)
+                               not-zp-of-limit-variable
+                               ,items1-thm
+                               mv-nth-of-cons
+                               (:e zp)
+                               (:e value-optionp)
+                               ,items2-thm
+                               (:e valuep)
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
@@ -3635,7 +3726,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                   (mv ,then-uterm/nil ,then-new-compst)))
+                                       (mv ,then-uterm/nil ,then-new-compst)))
        (then-stmt-exec-formula (atc-contextualize then-stmt-exec-formula
                                                   then-context-start
                                                   gin.fn
@@ -3649,7 +3740,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                   (mv ,else-uterm/nil ,else-new-compst)))
+                                       (mv ,else-uterm/nil ,else-new-compst)))
        (else-stmt-exec-formula (atc-contextualize else-stmt-exec-formula
                                                   else-context-start
                                                   gin.fn
@@ -3712,7 +3803,17 @@
                                compustate-frames-number-of-add-var-not-zero
                                compustatep-of-add-frame
                                compustatep-of-add-var
-                               compustatep-of-enter-scope))))
+                               compustatep-of-enter-scope
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        (else-stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-compound
                                (:e stmt-kind)
@@ -3732,7 +3833,17 @@
                                compustate-frames-number-of-add-var-not-zero
                                compustatep-of-add-frame
                                compustatep-of-add-var
-                               compustatep-of-enter-scope))))
+                               compustatep-of-enter-scope
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv then-stmt-event &)
         (evmac-generate-defthm then-stmt-thm
                                :formula then-stmt-formula
@@ -3808,7 +3919,17 @@
                                    value-fix-when-valuep
                                    ,valuep-when-test-type-pred
                                    apconvert-expr-value-when-not-value-array
-                                   ,value-kind-when-test-type-pred)))
+                                   ,value-kind-when-test-type-pred
+                                   uchar-array-length-of-uchar-array-write
+                                   schar-array-length-of-schar-array-write
+                                   ushort-array-length-of-ushort-array-write
+                                   sshort-array-length-of-sshort-array-write
+                                   uint-array-length-of-uint-array-write
+                                   sint-array-length-of-sint-array-write
+                                   ulong-array-length-of-ulong-array-write
+                                   slong-array-length-of-slong-array-write
+                                   ullong-array-length-of-ullong-array-write
+                                   sllong-array-length-of-sllong-array-write)))
           `(("Goal" :in-theory '(exec-stmt-when-if-and-true
                                  exec-stmt-when-if-and-false
                                  (:e stmt-kind)
@@ -3830,7 +3951,17 @@
                                  compustatep-of-add-var
                                  compustate-frames-number-of-add-var-not-zero
                                  exit-scope-of-enter-scope
-                                 ,@if-stmt-type-thms)))))
+                                 ,@if-stmt-type-thms
+                                 uchar-array-length-of-uchar-array-write
+                                 schar-array-length-of-schar-array-write
+                                 ushort-array-length-of-ushort-array-write
+                                 sshort-array-length-of-sshort-array-write
+                                 uint-array-length-of-uint-array-write
+                                 sint-array-length-of-sint-array-write
+                                 ulong-array-length-of-ulong-array-write
+                                 slong-array-length-of-slong-array-write
+                                 ullong-array-length-of-ullong-array-write
+                                 sllong-array-length-of-sllong-array-write)))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize
                        test-term
@@ -3926,25 +4057,24 @@
                                        thm-index
                                        names-to-avoid
                                        wrld)
-          (mv nil nil thm-index names-to-avoid)))
-       ((stmt-gout gout)
-        (atc-gen-block-item-list-one term
-                                     type
-                                     item
-                                     item-limit
-                                     item-events
-                                     item-thm-name
-                                     new-compst
-                                     new-context
-                                     (and voidp new-inscope)
-                                     (change-stmt-gin
-                                      gin
-                                      :thm-index thm-index
-                                      :names-to-avoid names-to-avoid
-                                      :proofs (and item-thm-name t))
-                                     state)))
+          (mv nil nil thm-index names-to-avoid))))
     (retok
-     (change-stmt-gout gout :events (append gout.events new-inscope-events))))
+     (atc-gen-block-item-list-one term
+                                  type
+                                  item
+                                  item-limit
+                                  (append item-events
+                                          new-inscope-events)
+                                  item-thm-name
+                                  new-compst
+                                  new-context
+                                  (and voidp new-inscope)
+                                  (change-stmt-gin
+                                   gin
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs (and item-thm-name t))
+                                  state)))
   :guard-hints
   (("Goal"
     :in-theory
@@ -4027,7 +4157,13 @@
        ((when (eq called-fn 'quote))
         (reterr (raise "Internal error: called function is QUOTE.")))
        (term `(,called-fn ,@args.terms))
+       (uterm (untranslate$ term nil state))
+       (fninfo (cdr (assoc-eq called-fn gin.prec-fns)))
+       ((unless fninfo)
+        (reterr (raise "Internal error: function ~x0 has no info." called-fn)))
+       (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
        ((when (or (not gin.proofs)
+                  (not called-fn-thm)
                   (consp (cdr affect)) ; <- temporary
                   (b* ((info (atc-get-var (car affect) gin.inscope)))
                     (and info
@@ -4080,18 +4216,16 @@
                        called-fn called-formals args.terms)))
        (limit-for-actuals
         (fsubcor-var (formals+ called-fn wrld) args.terms limit))
-       ((unless (pseudo-termp limit-for-actuals))
-        (reterr (raise "Internal error: ~x0 is not a pseudo-term.")))
        (call-limit `(binary-+ '2 ,limit-for-actuals))
        (new-compst `(update-object ,(add-suffix-to-fn (car affect) "-OBJDES")
                                    (,called-fn ,@args.terms)
                                    ,gin.compst-var))
-       (call-formula `(equal (exec-expr-call-or-asg ',call-expr
+       (exec-formula `(equal (exec-expr-call-or-asg ',call-expr
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
                                                     ,gin.limit-var)
                              ,new-compst))
-       (call-formula (atc-contextualize call-formula
+       (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
                                         gin.fn-guard
@@ -4100,12 +4234,135 @@
                                         call-limit
                                         t
                                         wrld))
-       (call-hints `(("Goal" :in-theory '()))) ; TODO
+       ((mv type-formula inscope-thms)
+        (atc-gen-term-type-formula uterm
+                                   (type-void)
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (call-formula `(and ,exec-formula ,type-formula))
+       (call-hints
+        `(("Goal"
+           :in-theory
+           '(exec-expr-call-or-asg-when-call
+             exec-expr-call-open
+             exec-expr-pure-list-of-nil
+             exec-expr-pure-list-when-consp
+             ,@args.thm-names
+             ,called-fn-thm
+             ,guard-lemma-name
+             ,@inscope-thms
+             exec-fun-of-const-identifier
+             (:e identp)
+             (:e ident->name)
+             apconvert-expr-value-when-not-value-array
+             value-kind-when-ucharp
+             value-kind-when-scharp
+             value-kind-when-ushortp
+             value-kind-when-sshortp
+             value-kind-when-uintp
+             value-kind-when-sintp
+             value-kind-when-ulongp
+             value-kind-when-slongp
+             value-kind-when-ullongp
+             value-kind-when-sllongp
+             value-kind-when-uchar-arrayp
+             value-kind-when-schar-arrayp
+             value-kind-when-ushort-arrayp
+             value-kind-when-sshort-arrayp
+             value-kind-when-uint-arrayp
+             value-kind-when-sint-arrayp
+             value-kind-when-ulong-arrayp
+             value-kind-when-slong-arrayp
+             value-kind-when-ullong-arrayp
+             value-kind-when-sllong-arrayp
+             ,@(atc-string-taginfo-alist-to-value-kind-thms gin.prec-tags)
+             valuep-when-ucharp
+             valuep-when-scharp
+             valuep-when-ushortp
+             valuep-when-sshortp
+             valuep-when-uintp
+             valuep-when-sintp
+             valuep-when-ulongp
+             valuep-when-slongp
+             valuep-when-ullongp
+             valuep-when-sllongp
+             valuep-when-uchar-arrayp
+             valuep-when-schar-arrayp
+             valuep-when-ushort-arrayp
+             valuep-when-sshort-arrayp
+             valuep-when-uint-arrayp
+             valuep-when-sint-arrayp
+             valuep-when-ulong-arrayp
+             valuep-when-slong-arrayp
+             valuep-when-ullong-arrayp
+             valuep-when-sllong-arrayp
+             ,@(atc-string-taginfo-alist-to-valuep-thms gin.prec-tags)
+             type-of-value-when-ucharp
+             type-of-value-when-scharp
+             type-of-value-when-ushortp
+             type-of-value-when-sshortp
+             type-of-value-when-uintp
+             type-of-value-when-sintp
+             type-of-value-when-ulongp
+             type-of-value-when-slongp
+             type-of-value-when-ullongp
+             type-of-value-when-sllongp
+             type-of-value-when-uchar-arrayp
+             type-of-value-when-schar-arrayp
+             type-of-value-when-ushort-arrayp
+             type-of-value-when-sshort-arrayp
+             type-of-value-when-uint-arrayp
+             type-of-value-when-sint-arrayp
+             type-of-value-when-ulong-arrayp
+             type-of-value-when-slong-arrayp
+             type-of-value-when-ullong-arrayp
+             type-of-value-when-sllong-arrayp
+             ,@(atc-string-taginfo-alist-to-type-of-value-thms gin.prec-tags)
+             expr-valuep-of-expr-value
+             expr-value->value-of-expr-value
+             value-fix-when-valuep
+             (:e value-listp)
+             value-listp-of-cons
+             (:e value-optionp)
+             (:e expr-kind)
+             (:e expr-call->fun)
+             (:e expr-call->args)
+             not-zp-of-limit-variable
+             not-zp-of-limit-minus-const
+             compustatep-of-add-var
+             compustatep-of-enter-scope
+             compustatep-of-add-frame
+             mv-nth-of-cons
+             (:e zp)
+             write-object-to-update-object
+             write-object-okp-of-add-var
+             write-object-okp-of-enter-scope
+             write-object-okp-of-add-frame
+             write-object-okp-when-valuep-of-read-object-no-syntaxp
+             value-array->length-when-uchar-arrayp
+             value-array->length-when-schar-arrayp
+             value-array->length-when-ushort-arrayp
+             value-array->length-when-sshort-arrayp
+             value-array->length-when-uint-arrayp
+             value-array->length-when-sint-arrayp
+             value-array->length-when-ulong-arrayp
+             value-array->length-when-slong-arrayp
+             value-array->length-when-ullong-arrayp
+             value-array->length-when-sllong-arrayp))))
        ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                  :formula call-formula
                                                  :hints call-hints
-                                                 :enable nil))
-       (- call-event)) ; TODO: don't ignore this
+                                                 :enable nil)))
     (retok (make-stmt-gout
             :items (list (block-item-stmt (stmt-expr call-expr)))
             :type (type-void)
@@ -4114,7 +4371,8 @@
             :inscope nil
             :limit `(binary-+ '3 ,call-limit)
             :events (append args.events
-                            (list guard-lemma-event))
+                            (list guard-lemma-event
+                                  call-event))
             :thm-name nil
             :thm-index thm-index
             :names-to-avoid names-to-avoid)))
