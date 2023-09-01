@@ -10,9 +10,11 @@ Robert Krug, and repeated in ../arithmetic/README):
   sometimes-slower (but more complete) reasoning, use arithmetic-5.
   Robert is not aware of any rewriting loops.
 
-  Don't use arithmetic-3.  It's not as powerful as arithmetic-5
-  (Robert doesn't know if it's faster), and it may have more rewriting
-  loops than arithmetic-5.
+  While arithmetic-3 is generally not as powerful as arithmetic-5,
+  and it may have more rewriting loops than arithmetic-5,
+  cases have been observed in which arithmetic-3 proves something
+  that arithmetic-5 does not prove, as well as cases in which arithmetic-3
+  is faster than arithmetic-5.
   [NOTE added by Matt K.: I have seen at least one example in which
   arithmetic-3 proves the theorem in 0.30 seconds but arithmetic-5
   takes 7.97 seconds.  So clearly arithmetic-3 is better sometimes!]

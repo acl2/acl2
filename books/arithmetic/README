@@ -10,9 +10,11 @@ Robert Krug, and repeated in ../arithmetic-5/README):
   sometimes-slower (but more complete) reasoning, use arithmetic-5.
   Robert is not aware of any rewriting loops.
 
-  Don't use arithmetic-3.  It's not as powerful as arithmetic-5
-  (Robert doesn't know if it's faster), and it may have more rewriting
-  loops than arithmetic-5.
+  While arithmetic-3 is generally not as powerful as arithmetic-5,
+  and it may have more rewriting loops than arithmetic-5,
+  cases have been observed in which arithmetic-3 proves something
+  that arithmetic-5 does not prove, as well as cases in which arithmetic-3
+  is faster than arithmetic-5.
 
   Note that arithmetic-2 is totally obsolete.  We may stop
   distributing it.
@@ -46,6 +48,6 @@ Many people contributed to these books, especially
 
   Bishop Brock
   John Cowles
-  Matt Kaufmann  
+  Matt Kaufmann
   Art Flatau
   Ruben Gamboa
