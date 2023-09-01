@@ -4411,18 +4411,37 @@
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
-                                                 :enable nil)))
+                                                 :enable nil))
+       ((mv item
+            item-limit
+            item-events
+            & ; item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-stmt stmt
+                                 stmt-limit
+                                 (append args.events
+                                         (list guard-lemma-event
+                                               call-event
+                                               stmt-event))
+                                 stmt-thm-name
+                                 term
+                                 (type-void)
+                                 new-compst
+                                 (change-stmt-gin
+                                  gin
+                                  :thm-index thm-index
+                                  :names-to-avoid names-to-avoid
+                                  :proofs (and stmt-thm-name t))
+                                 state)))
     (retok (make-stmt-gout
-            :items (list (block-item-stmt stmt))
+            :items (list item)
             :type (type-void)
             :term term
             :context (make-atc-context :preamble nil :premises nil)
             :inscope nil
-            :limit `(binary-+ '2 ,call-limit)
-            :events (append args.events
-                            (list guard-lemma-event
-                                  call-event
-                                  stmt-event))
+            :limit `(binary-+ '1 ,item-limit)
+            :events item-events
             :thm-name nil
             :thm-index thm-index
             :names-to-avoid names-to-avoid)))
