@@ -4362,17 +4362,67 @@
        ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                  :formula call-formula
                                                  :hints call-hints
+                                                 :enable nil))
+       (stmt (stmt-expr call-expr))
+       (stmt-limit `(binary-+ '1 ,call-limit))
+       (stmt-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv stmt-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix stmt-thm-name
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (thm-index (1+ thm-index))
+       (stmt-exec-formula `(equal (exec-stmt ',stmt
+                                             ,gin.compst-var
+                                             ,gin.fenv-var
+                                             ,gin.limit-var)
+                                  (mv nil ,new-compst)))
+       (stmt-exec-formula (atc-contextualize stmt-exec-formula
+                                             gin.context
+                                             gin.fn
+                                             gin.fn-guard
+                                             gin.compst-var
+                                             gin.limit-var
+                                             stmt-limit
+                                             t
+                                             wrld))
+       ((mv stmt-type-formula &) (atc-gen-term-type-formula uterm
+                                                            (type-void)
+                                                            gin.affect
+                                                            gin.inscope
+                                                            gin.prec-tags))
+       (stmt-type-formula (atc-contextualize stmt-type-formula
+                                             gin.context
+                                             gin.fn
+                                             gin.fn-guard
+                                             nil
+                                             nil
+                                             nil
+                                             nil
+                                             wrld))
+       (stmt-formula `(and ,stmt-exec-formula ,stmt-type-formula))
+       (stmt-hints
+        `(("Goal" :in-theory '(exec-stmt-when-expr
+                               (:e stmt-kind)
+                               (:e stmt-expr->get)
+                               not-zp-of-limit-variable
+                               ,call-thm-name
+                               compustatep-of-update-object))))
+       ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
+                                                 :formula stmt-formula
+                                                 :hints stmt-hints
                                                  :enable nil)))
     (retok (make-stmt-gout
-            :items (list (block-item-stmt (stmt-expr call-expr)))
+            :items (list (block-item-stmt stmt))
             :type (type-void)
             :term term
             :context (make-atc-context :preamble nil :premises nil)
             :inscope nil
-            :limit `(binary-+ '3 ,call-limit)
+            :limit `(binary-+ '2 ,call-limit)
             :events (append args.events
                             (list guard-lemma-event
-                                  call-event))
+                                  call-event
+                                  stmt-event))
             :thm-name nil
             :thm-index thm-index
             :names-to-avoid names-to-avoid)))
