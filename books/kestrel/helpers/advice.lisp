@@ -72,6 +72,7 @@
 (include-book "recommendations")
 (include-book "model-enable")
 (include-book "model-history")
+(include-book "model-induct")
 (include-book "model-cases")
 (include-book "kestrel/utilities/book-of-event" :dir :system)
 (include-book "kestrel/utilities/checkpoints" :dir :system)
@@ -300,6 +301,7 @@
     :enable-rules-top-cps
     :enable-rules-non-top-cps
     :history
+    :induct
     :cases))
 
 ;; (defconst *known-models* (strip-cars *known-models-and-strings*))
@@ -1619,9 +1621,11 @@
                (prog2$ (cw "NOTE: After ~x0, ~x1 is undefined or unsuitable for :induct.~%" include-book-form name-to-induct) ;; todo: add debug arg and only print in that case
                        (mv nil nil state))
              ;; The include-book brought in the desired name (and that thing can be used with :induct), so now try the proof, with :induct item:
-             (b* ( ; todo: ensure this is nice:
-                  ;; todo: switch arg order:
-                  (hints-with-induct (acl2::enable-items-in-hints (acl2::merge-hint-setting-into-goal-hint :induct induct-term hints) (list `(:i ,name-to-induct)) t))
+             (b* ((hints-with-induct (acl2::merge-hint-setting-into-goal-hint :induct induct-term hints))
+                  ;; todo: switch arg order of enable-items-in-hints:
+                  (hints-with-induct (acl2::enable-items-in-hints hints-with-induct (list name-to-induct ; :induction rule and definition
+                                                                                          ;;`(:i ,name-to-induct)
+                                                                                          ) t))
                   ((mv provedp state) (prove$-no-error 'try-induct-with-include-book theorem-body hints-with-induct otf-flg step-limit time-limit state)))
                (if provedp
                    ;; We proved it with the :induct hint.  Now, try again without the :induct (just the include-book):
@@ -2521,6 +2525,7 @@
 
 ;; Returns (mv erp maybe-successful-rec state).
 ;; TODO: We need more than a symbol
+;; TODO: Consider :induction rules that are defthms.
 (defun try-add-induct-hint (item
                             book-map ; info on where the rule may be found
                             current-book-absolute-path avoid-current-bookp
@@ -2547,81 +2552,101 @@
   (b* (((when (eq 'acl2::unknown/untrained item)) ;; A leidos model can return this
         (and (acl2::print-level-at-least-tp print) (cw "fail (ignoring :induct hint with ~x0)~%" item))
         (mv nil nil state))
-       (rec-name (nth 0 rec)))
-    (if (symbolp item)
-        ;; TODO: Try looking for calls of the given symbol in the theorem (or checkpoints?), maybe just one with arguments that are vars?:
+       (rec-name (nth 0 rec))
+       (wrld (w state))
+       ((when (and (symbolp item)
+                   (not (member-eq item '(t nil))))) ; todo: :induct nil currently always fails?
+        ;; We've been given just a symbol, not a whole term, and it's not T or NIL.
+        ;; TODO: Try looking for calls of the given symbol in the theorem (or checkpoints?), maybe just ones where the actuals for the measured-subset are vars?:
         (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (need arguments of ~x0 to create :induct hint)~%" item))
-                (mv nil nil state))
-      ;; The item is a term:
-      (let ((induct-term item))
-        ;; TODO: Go look for books that may define the things in the term (should there usually be just one function?).
-        (if (not (and (consp induct-term)
-                      (symbolp (acl2::ffn-symb induct-term))
-                      (symbol-listp (acl2::fargs induct-term))))
-            (prog2$ (and (acl2::print-level-at-least-tp print) (cw "skip (:induct hint, ~x0, is not a function applied to vars)~%" induct-term)) ; todo: generalize!
-                    (mv nil nil state))
-          (let ((name-to-induct (acl2::ffn-symb induct-term)))
-            (if (acl2::recursivep name-to-induct nil (w state)) ; todo: quit here is it is already defined but is not a recursive function
-                ;; Don't need to include any books:
-                (b* ((new-hints (acl2::enable-items-in-hints (acl2::merge-hint-setting-into-goal-hint :induct induct-term theorem-hints) (list `(:i ,name-to-induct)) t))
-                     ((mv provedp state) (prove$-no-error 'try-add-induct-hint
-                                                          theorem-body
-                                                          new-hints
-                                                          theorem-otf-flg
-                                                          step-limit time-limit
-                                                          state))
-                     (rec (make-successful-rec rec-name
-                                               :add-induct-hint
-                                               induct-term
-                                               nil
-                                               theorem-body new-hints theorem-otf-flg
-                                               (symbol-table-for-event name-to-induct current-book-absolute-path (w state))))
-                     (- (and (acl2::print-level-at-least-tp print)
-                             (if provedp (cw-success-message rec) (cw "fail (:induct ~x0 didn't help)~%" induct-term)))))
-                  (mv nil (if provedp rec nil) state))
-              ;; NAME-TO-INDUCT is not in the current world, so try to find where it is defined:
-              (b* ((book-map-keys (strip-cars book-map))
-                   ((when (not (member-equal name-to-induct book-map-keys)))
-                    (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil name-to-induct)
-                    (mv :bad-book-map nil state))
-                   (include-book-info (acl2::lookup-eq name-to-induct book-map))
-                   ((when (eq :builtin include-book-info))
-                    (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" name-to-induct)
-                    (mv :bad-book-info nil state))
-                   ;; TODO: Filter out include-books that are known to clash with this tool?
-                   (include-books-to-try include-book-info) ; renames for clarity
-                   (max-books-to-try 3)
-                   ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
-                   ((mv maybe-successful-rec limit-reachedp state)
-                    ;; TODO: We should also ensure that all names in the induct-term are defined when we try include-books:
-                    (try-induct-with-include-books include-books-to-try
-                                                   theorem-body
-                                                   induct-term
-                                                   name-to-induct
-                                                   0 ; include-book-count
-                                                   max-books-to-try
-                                                   current-book-absolute-path
-                                                   avoid-current-bookp
-                                                   theorem-name
-                                                   theorem-hints ; will be augmented with a :induct of induct-term
-                                                   theorem-otf-flg
-                                                   step-limit time-limit
-                                                   rec-name
-                                                   improve-recsp
-                                                   state)))
-                (if maybe-successful-rec
-                    (prog2$ (and (acl2::print-level-at-least-tp print)
-                                 (cw-success-message maybe-successful-rec))
-                            (mv nil maybe-successful-rec state))
-                  ;; failed:
-                  (if limit-reachedp
-                      (prog2$ (and (acl2::print-level-at-least-tp print)
-                                   ;; todo: clarify whether we even found an include-book that works:
-                                   (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) name-to-induct))
-                              (mv nil nil state))
-                    (prog2$ (and (acl2::print-level-at-least-tp print)
-                                 (cw "fail (:induct ~x0 didn't help)~%" induct-term))
-                            (mv nil nil state))))))))))))
+                (mv nil nil state)))
+       ;; Decide whether the ITEM is ok.  If so, get the function symbol and check whether it is known in the world:
+       ((mv okp name-to-induct knownp)
+        (if (symbolp item) ; must be t or nil (see check above)
+            (mv t nil t)
+          ;; ITEM must be a term:
+          (let ((induct-term item))
+            (if (not (and (consp induct-term)
+                          (symbolp (acl2::ffn-symb induct-term))))
+                (mv nil nil nil)
+              ;; structure is ok, but is it a known function?
+              (let ((name-to-induct (acl2::ffn-symb induct-term)))
+                (if (acl2::defined-functionp name-to-induct wrld)
+                    (if (acl2::recursivep name-to-induct nil wrld)
+                        (if (let ((controlling-actuals (filter-actuals-for-formals (acl2::fn-formals name-to-induct wrld) (acl2::fargs induct-term) (acl2::measured-subset+ name-to-induct wrld))))
+                              (and (symbol-listp controlling-actuals) ; controlling actuals must be distinct vars (see :doc induction)
+                                   (no-duplicatesp-eq controlling-actuals)))
+                            (mv t name-to-induct t)
+                          (mv nil nil nil))
+                      (mv nil nil nil))
+                  ;; ok but not known:
+                  (mv t name-to-induct nil)))))))
+       ((when (not okp))
+        (and (acl2::print-level-at-least-tp print) (cw "skip (:induct hint, ~x0, is not a suitable :induct hint)~%" item))
+        (mv nil nil state)))
+    (if knownp
+        ;; Don't need to include any books:
+        (b* ((new-hints (acl2::merge-hint-setting-into-goal-hint :induct item theorem-hints))
+             ;; We go ahead and enable the :induction rune explicitly:
+             (new-hints (if name-to-induct ; will be nil for :induct t or :induct nil
+                            (acl2::enable-items-in-hints new-hints (list name-to-induct) ; :induction rule and definition
+                                                         ;; (list `(:i ,name-to-induct))
+                                                         t)
+                          new-hints))
+             ((mv provedp state) (prove$-no-error 'try-add-induct-hint theorem-body new-hints theorem-otf-flg step-limit time-limit state))
+             (rec (make-successful-rec rec-name
+                                       :add-induct-hint
+                                       item
+                                       nil
+                                       theorem-body new-hints theorem-otf-flg
+                                       (symbol-table-for-event name-to-induct current-book-absolute-path wrld)))
+             (- (and (acl2::print-level-at-least-tp print)
+                     (if provedp (cw-success-message rec) (cw "fail (:induct ~x0 didn't help)~%" item)))))
+          (mv nil (if provedp rec nil) state))
+      ;; NAME-TO-INDUCT is not in the current world, so try to find where it is defined:
+      ;; TODO: Go look for books that may define other things in the term (should there usually be just one function?).
+      (b* ((book-map-keys (strip-cars book-map))
+           ((when (not (member-equal name-to-induct book-map-keys)))
+            (cw "error (Bad book map, ~X01, for ~x2).~%" book-map nil name-to-induct)
+            (mv :bad-book-map nil state))
+           (include-book-info (acl2::lookup-eq name-to-induct book-map))
+           ((when (eq :builtin include-book-info))
+            (cw "error (~x0 does not seem to be built-in, contrary to the book-map).~%" name-to-induct)
+            (mv :bad-book-info nil state))
+           ;; TODO: Filter out include-books that are known to clash with this tool?
+           (include-books-to-try include-book-info) ; renames for clarity
+           (max-books-to-try 3)
+           ;; TODO: Try to get a good variety of books here, if there are too many to try them all:
+           ((mv maybe-successful-rec limit-reachedp state)
+            ;; TODO: We should also ensure that all names in the item are defined when we try include-books:
+            (try-induct-with-include-books include-books-to-try
+                                           theorem-body
+                                           item
+                                           name-to-induct
+                                           0 ; include-book-count
+                                           max-books-to-try
+                                           current-book-absolute-path
+                                           avoid-current-bookp
+                                           theorem-name
+                                           theorem-hints ; will be augmented with a :induct of item
+                                           theorem-otf-flg
+                                           step-limit time-limit
+                                           rec-name
+                                           improve-recsp
+                                           state)))
+        (if maybe-successful-rec
+            (prog2$ (and (acl2::print-level-at-least-tp print)
+                         (cw-success-message maybe-successful-rec))
+                    (mv nil maybe-successful-rec state))
+          ;; failed:
+          (if limit-reachedp
+              (prog2$ (and (acl2::print-level-at-least-tp print)
+                           ;; todo: clarify whether we even found an include-book that works:
+                           (cw "fail (Note: We only tried ~x0 of the ~x1 books that might contain ~x2)~%" max-books-to-try (len include-books-to-try) name-to-induct))
+                      (mv nil nil state))
+            (prog2$ (and (acl2::print-level-at-least-tp print)
+                         (cw "fail (:induct ~x0 didn't help)~%" item))
+                    (mv nil nil state))))))))
 
 ;; Returns (mv erp maybe-successful-rec state).
 (defun try-exact-hints (hints theorem-body theorem-otf-flg step-limit time-limit rec print state)
@@ -3175,6 +3200,11 @@
              (if (member-eq :exact-hints disallowed-rec-types)
                  (mv nil nil state) ; don't bother creating recs as they will be disallowed below
                (make-recs-from-history num-recs-per-model print state)))
+            (:induct
+             ;; Make recs that suggest induction schemes:
+             (if (member-eq :add-induct-hint disallowed-rec-types)
+                 (mv nil nil state) ; don't bother creating recs as they will be disallowed below
+               (make-induct-recs translated-theorem-body checkpoint-clauses-top checkpoint-clauses-non-top num-recs-per-model print state)))
             (:cases
              ;; Make recs that try splitting into cases:
              (if (member-eq :add-cases-hint disallowed-rec-types)
@@ -3623,6 +3653,7 @@
 ;; that this may be slow (if many pieces of advice are tried), and it makes a
 ;; call to the advice server over the Internet.  So it may be best not to leave
 ;; calls of defthm-advice in your book, once suitable advice has been found.
+;; todo: add instructions
 (defmacro defthm-advice (name
                          body
                          &key
@@ -3724,6 +3755,7 @@
                   (mv nil event state)))
       (mv :no-proof-found nil state))))
 
+;; todo: add instructions
 (defmacro thm-advice ( ; no name
                       body
                       &key
