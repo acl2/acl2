@@ -81,8 +81,7 @@
                                   "It is illegal to supply non-nil values for ~
                                   both :hints and :instructions to ~x0."
                                   'prove$))
-                       (t (translate-instructions nil instructions ctx wrld1
-                                                  state))))
+                       (t (translate-instructions instructions ctx state))))
                 (thints (translate-hints+ 'thm
                                           hints
                                           (and (null instructions)

@@ -64,6 +64,14 @@
                     (equal (str-fix x)
                            (ident->name c)))))
 
+  (defruled equal-of-const-and-ident
+    (implies (and (syntaxp (and (quotep x)
+                                (quotep c)))
+                  (identp c))
+             (equal (equal c (ident x))
+                    (equal (str-fix x)
+                           (ident->name c)))))
+
   (defruled equal-of-ident-and-ident
     (equal (equal (ident x)
                   (ident y))

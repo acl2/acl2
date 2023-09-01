@@ -632,7 +632,6 @@
 
 (define atc-process-const-name ((options symbol-alistp)
                                 (target-fns symbol-listp)
-                                (proofs booleanp)
                                 (wrld plist-worldp))
   :returns (mv erp
                (prog-const symbolp)
@@ -674,21 +673,9 @@
      whose name is obtained by adding @('-body-limit')
      after the constant name and the target function name;
      this will express a limit sufficient to run
-     any instance of the loop body.")
-   (xdoc::p
-    "If the @(':proofs') input is @('nil'),
-     the @(':const-name') input must be absent
-     and we return @('nil') for this as well as for the theorem names.
-     No constant and theorems are generated when @(':proofs') is @('nil')."))
+     any instance of the loop body."))
   (b* (((reterr) nil nil nil nil nil)
        (const-name-option (assoc-eq :const-name options))
-       ((when (not proofs))
-        (if (consp const-name-option)
-            (reterr (msg "Since the :PROOFS input is NIL, ~
-                          the :CONST-NAME input must be absent, ~
-                          but it is ~x0 instead."
-                         (cdr const-name-option)))
-          (retok nil nil nil nil nil)))
        (const-name (if (consp const-name-option)
                        (cdr const-name-option)
                      :auto))
@@ -846,7 +833,7 @@
        ((erp pretty-printing) (atc-process-pretty-printing options))
        ((erp proofs) (atc-process-proofs options))
        ((erp prog-const wf-thm fn-thms fn-limits fn-body-limits)
-        (atc-process-const-name options target-fns proofs wrld))
+        (atc-process-const-name options target-fns wrld))
        ((erp print) (atc-process-print options)))
     (retok targets
            file-name

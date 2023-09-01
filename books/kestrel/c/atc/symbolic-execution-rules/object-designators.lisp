@@ -159,7 +159,7 @@
              read-var-of-enter-scope
              objdesign-of-var-of-enter-scope-iff))
 
-  (defruled read-object-of-objdesign-var-of-update-var
+  (defruled read-object-of-objdesign-of-var-of-update-var
     (implies (objdesign-of-var var (update-var var2 val compst))
              (equal (read-object
                      (objdesign-of-var var (update-var var2 val compst))

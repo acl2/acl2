@@ -223,9 +223,6 @@
       (xdoc::li
        "Any other symbol, to use as the name of the constant."))
      (xdoc::p
-      "This input must be absent if @(':proofs') is @('nil').
-       The named constant is generated only if @(':proofs') is @('t').")
-     (xdoc::p
       "In the rest of this documentation page,
        let @('*program*') be the symbol specified by this input,
        if applicable (i.e. when @(':proofs') is @('t'))."))

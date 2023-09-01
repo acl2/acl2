@@ -179,16 +179,23 @@
   (declare
    (xargs :stobjs (rp-state state)
           :guard t
-          :guard-hints (("goal"
-                         :in-theory (e/d ()
-                                         (rp-meta-valid-syntaxp-sk))))
+; Matt K. mod, 8/30/2023: The :guard-hints were formerly ignored by a later
+; verify-guards event, but that has changed.  When the verify-guards event
+; below uses the :in-theory below on "goal", guard verification fails, because
+; RP-META-VALID-SYNTAXP-SK does not designate any rules.  So we comment this
+; out so that once again, there are no :hints for the verify-guards event.
+;         :guard-hints (("goal"
+;                        :in-theory (e/d ()
+;                                        (rp-meta-valid-syntaxp-sk))))
           :verify-guards nil))
   (if (and (rp-cl-args-p cl-args)
            (true-listp cl))
-      (rp-clause-processor-aux
-       cl cl-args
-       rp-state
-       state)
+      (time$ (rp-clause-processor-aux cl cl-args
+                                      rp-state
+                                      state)
+             ;;:mintime 1/2
+             :msg "RP-Rewriter took ~st seconds (real-time), or ~sc seconds ~
+  (cpu-time), and ~sa bytes allocated.~%~%")
     (mv (hard-error 'rp-rewriter
                     "Given cl-args does not satisfy rp-cl-args-p: ~p0 ~%"
                     (list (cons #\0 cl-args)))

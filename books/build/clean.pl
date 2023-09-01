@@ -206,6 +206,11 @@ sub consider_file
 	return;
     }
 
+    if ($file =~ /\@event-data.lsp.temp$/) {
+	push(@rm, $what);
+	return;
+    }
+
     if ($file =~ /^TMP/) {
 	push(@rm, $what);
 	return;

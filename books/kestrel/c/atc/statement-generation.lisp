@@ -16,6 +16,7 @@
 
 (include-book "kestrel/std/system/close-lambdas" :dir :system)
 
+(local (include-book "kestrel/std/system/fsubcor-var" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -192,6 +193,138 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-term-type-formula ((uterm "An untranslated term.")
+                                   (type typep)
+                                   (affect symbol-listp)
+                                   (inscope atc-symbol-varinfo-alist-listp)
+                                   (prec-tags atc-string-taginfo-alistp))
+  :returns (mv (formula "An untranslated term.")
+               (thm-names symbol-listp))
+  :short "Generate a type formula for a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each ACL2 term translated to C
+     returns 0 or 1 C values
+     and affects 0 or more C objects:
+     the returned C value (if any) and the affected C objects
+     are represented by the ACL2 values returned by the term.
+     (So if the term returns 0 C values, it must affect at least one C object,
+     because terms always return at least one ACL2 value.)
+     Each value returned by the term has a C type,
+     which has a corresponding ACL2 recognizer.
+     Here we return a formula that is a conjunction of assertions,
+     one per value returned by the term,
+     which applies the associated recognizer
+     to the corresponding term's result.")
+   (xdoc::p
+    "For any array value returned by the term,
+     we also return, as part of the formula,
+     assertions saying that the length of each array
+     is the same as the corresponding variables.
+     Since a C array type is described by both the element type and the size,
+     it makes sense that assertions about the length
+     accompany assertions involving the recognizers
+     (which only talk about the element type).
+     These assertions are not generated
+     if the term is exactly the variable array,
+     because otherwise the rewrite rule would be illegal,
+     rewriting something to itself.")
+   (xdoc::p
+    "We also return the names of the theorems from the symbol table
+     that are associated to each variable for the affected objects.
+     These are used to prove the formula returned here.")
+   (xdoc::p
+    "We go through the @('affect') list and collect
+     the list of corresponding types, from the symbol table @('inscope').
+     If @('type') is not @('void'), we @(tsee cons) it to the list.
+     This way, we obtain the list of all the types of
+     all the values returned by the term.
+     This list cannot be empty, because a term always returns some values.
+     If there is just one, we return a single formula
+     that applies the (only) type's recognizer to the term.
+     If there are two or more, we go through them,
+     and return formulas that apply each type recognizer
+     to the @(tsee mv-nth) of the term with increasing index."))
+  (b* (((mv affect-types thm-names) (atc-gen-type-formulas-aux affect inscope))
+       (types (if (type-case type :void)
+                  affect-types
+                (cons type affect-types)))
+       ((when (endp types))
+        (raise "Internal error: term ~x0 returns no values." uterm)
+        (mv nil nil))
+       ((when (endp (cdr types)))
+        (b* ((type (car types))
+             (pred (atc-type-to-recognizer type prec-tags)))
+          (if (or (symbolp uterm)
+                  (not (type-case type :array)))
+              (mv `(,pred ,uterm) thm-names)
+            (b* ((elemtype (type-array->of type))
+                 (elemfixtype (type-kind elemtype))
+                 (array-length (pack elemfixtype '-array-length)))
+              (mv `(and (,pred ,uterm)
+                        (equal (,array-length ,uterm)
+                               (,array-length ,(car affect))))
+                  thm-names)))))
+       (affected-vars (if (type-case type :void)
+                          affect
+                        (cons nil affect)))
+       (conjuncts
+        (atc-gen-type-formulas-aux-aux uterm 0 types affected-vars prec-tags))
+       (formula `(and ,@conjuncts)))
+    (mv formula thm-names))
+
+  :prepwork
+
+  ((define atc-gen-type-formulas-aux ((affect symbol-listp)
+                                      (inscope atc-symbol-varinfo-alist-listp))
+     :returns (mv (types type-listp)
+                  (thm-names symbol-listp))
+     :parents nil
+     (b* (((when (endp affect)) (mv nil nil))
+          (var (car affect))
+          (info (atc-get-var var inscope))
+          ((unless info)
+           (raise "Internal error: no information for variable ~x0." var)
+           (mv nil nil))
+          (type (atc-var-info->type info))
+          (thm-name (atc-var-info->thm info))
+          ((mv more-types more-thm-names)
+           (atc-gen-type-formulas-aux (cdr affect) inscope)))
+       (mv (cons type more-types)
+           (cons thm-name more-thm-names)))
+     ///
+     (more-returns
+      (types true-listp :rule-classes :type-prescription)))
+
+   (define atc-gen-type-formulas-aux-aux ((uterm "An untranslated term.")
+                                          (index natp)
+                                          (types type-listp)
+                                          (affected-vars symbol-listp)
+                                          (prec-tags atc-string-taginfo-alistp))
+     :returns (conjuncts true-listp)
+     :parents nil
+     (b* (((when (endp types)) nil)
+          (type (car types))
+          (pred (atc-type-to-recognizer type prec-tags))
+          (conjuncts
+           (if (type-case type :array)
+               (b* ((elemtype (type-array->of type))
+                    (elemfixtype (type-kind elemtype))
+                    (array-length (pack elemfixtype '-array-length)))
+                 `((,pred (mv-nth ,index ,uterm))
+                   (equal (,array-length (mv-nth ,index ,uterm))
+                          (,array-length ,(car affected-vars)))))
+             `((,pred (mv-nth ,index ,uterm)))))
+          (more-conjuncts (atc-gen-type-formulas-aux-aux uterm
+                                                         (1+ index)
+                                                         (cdr types)
+                                                         (cdr affected-vars)
+                                                         prec-tags)))
+       (append conjuncts more-conjuncts)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod stmt-gin
   :short "Inputs for C statement generation."
   :long
@@ -321,8 +454,8 @@
                                  (stmt-limit pseudo-termp)
                                  (stmt-events pseudo-event-form-listp)
                                  (stmt-thm symbolp)
-                                 (result-term pseudo-termp)
-                                 (result-type typep)
+                                 (term? pseudo-termp)
+                                 (type typep)
                                  (new-compst "An untranslated term.")
                                  (gin stmt-ginp)
                                  state)
@@ -347,6 +480,16 @@
      and a possibly updated computation state;
      these are the same as the ones for the statement theorem.")
    (xdoc::p
+    "If @('term?') is not @('nil'),
+     we also generate, as part of the theorem,
+     an assertion that the term returns a value, or values,
+     of the expected type(s).
+     Callers pass a non-@('nil') @('term?')
+     when the blok item corresponds to a full ACL2 term
+     (e.g. a conditional);
+     while they pass @('nil') otherwise
+     (e.g. for an assignment).")
+   (xdoc::p
     "The limit for the block item is
      1 more than the limit for the statement,
      because we need 1 to go from @(tsee exec-block-item)
@@ -362,41 +505,58 @@
        (thm-index (1+ gin.thm-index))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
-       (result-uterm (untranslate$ result-term nil state))
-       (formula1 `(equal (exec-block-item ',item
-                                          ,gin.compst-var
-                                          ,gin.fenv-var
-                                          ,gin.limit-var)
-                         (mv ,result-uterm ,new-compst)))
-       (formula1 (atc-contextualize formula1
-                                    gin.context
-                                    gin.fn
-                                    gin.fn-guard
-                                    gin.compst-var
-                                    gin.limit-var
-                                    item-limit
-                                    t
-                                    wrld))
-       (formula (if result-term
-                    (b* ((type-pred
-                          (atc-type-to-recognizer result-type gin.prec-tags))
-                         (formula2 `(,type-pred ,result-uterm))
-                         (formula2 (atc-contextualize formula2
-                                                      gin.context
-                                                      gin.fn
-                                                      gin.fn-guard
-                                                      nil
-                                                      nil
-                                                      nil
-                                                      nil
-                                                      wrld)))
-                      `(and ,formula1 ,formula2))
-                  formula1))
-       (hints `(("Goal" :in-theory '(exec-block-item-when-stmt
-                                     (:e block-item-kind)
-                                     not-zp-of-limit-variable
-                                     (:e block-item-stmt->get)
-                                     ,stmt-thm))))
+       (uterm (untranslate$ term? nil state))
+       (exec-formula `(equal (exec-block-item ',item
+                                              ,gin.compst-var
+                                              ,gin.fenv-var
+                                              ,gin.limit-var)
+                             (mv ,(if (type-case type :void)
+                                      nil
+                                    uterm)
+                                 ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        item-limit
+                                        t
+                                        wrld))
+       (formula (if term?
+                    (b* (((mv type-formula &)
+                          (atc-gen-term-type-formula uterm
+                                                     type
+                                                     gin.affect
+                                                     gin.inscope
+                                                     gin.prec-tags))
+                         (type-formula (atc-contextualize type-formula
+                                                          gin.context
+                                                          gin.fn
+                                                          gin.fn-guard
+                                                          nil
+                                                          nil
+                                                          nil
+                                                          nil
+                                                          wrld)))
+                      `(and ,exec-formula ,type-formula))
+                  exec-formula))
+       (hints
+        `(("Goal" :in-theory '(exec-block-item-when-stmt
+                               (:e block-item-kind)
+                               not-zp-of-limit-variable
+                               (:e block-item-stmt->get)
+                               ,stmt-thm
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -1003,7 +1163,7 @@
                             value-fix-when-valuep
                             ,valuep-when-type
                             objdesign-of-var-of-update-var
-                            read-object-of-objdesign-var-of-update-var
+                            read-object-of-objdesign-of-var-of-update-var
                             ident-fix-when-identp
                             identp-of-ident
                             equal-of-ident-and-ident
@@ -1384,11 +1544,1089 @@
            new-context
            thm-index
            names-to-avoid))
-  :prepwork ((local (in-theory (enable pseudo-termp))))
   :guard-hints
   (("Goal"
     :in-theory
-    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+    (e/d (pseudo-termp
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-block-item-struct-scalar-asg ((var symbolp)
+                                              (val-term pseudo-termp)
+                                              (tag identp)
+                                              (member-name identp)
+                                              (member-term pseudo-termp)
+                                              (member-type typep)
+                                              (struct-write-fn symbolp)
+                                              (wrapper? symbolp)
+                                              (gin stmt-ginp)
+                                              state)
+  :returns (mv erp
+               (item block-itemp)
+               (val-term* pseudo-termp :hyp (and (symbolp struct-write-fn)
+                                                 (pseudo-termp member-term)
+                                                 (symbolp var)))
+               (limit pseudo-termp)
+               (events pseudo-event-form-listp)
+               (thm-name symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
+  :short "Generate a C block item statement that consists of
+          an assignment to a scalar member of a structure."
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+       (wrld (w state))
+       ((stmt-gin gin) gin)
+       ((unless (eq wrapper? nil))
+        (reterr
+         (msg "The structure write term ~x0 ~
+               to which ~x1 is bound ~
+               has the ~x2 wrapper, which is disallowed."
+              val-term var wrapper?)))
+       ((erp (pexpr-gout struct))
+        (atc-gen-expr-pure var
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs gin.proofs)
+                           state))
+       ((unless (member-equal struct.type
+                              (list (type-struct tag)
+                                    (type-pointer (type-struct tag)))))
+        (reterr
+         (msg "The structure ~x0 of type ~x1 ~
+               does not have the expected type ~x2 or ~x3. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var
+              struct.type
+              (type-struct tag)
+              (type-pointer (type-struct tag)))))
+       (pointerp (type-case struct.type :pointer))
+       ((when (and pointerp
+                   (not (member-eq var gin.affect))))
+        (reterr
+         (msg "The structure ~x0 ~
+               is being written to by pointer, ~
+               but it is not among the variables ~x1 ~
+               currently affected."
+              var gin.affect)))
+       ((erp (pexpr-gout member))
+        (atc-gen-expr-pure member-term
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index struct.thm-index
+                            :names-to-avoid struct.names-to-avoid
+                            :proofs (and struct.thm-name t))
+                           state))
+       ((unless (equal member.type member-type))
+        (reterr
+         (msg "The structure ~x0 of type ~x1 ~
+               is being written to with ~
+               a member ~x2 of type ~x3, ~
+               instead of type ~x4 as expected. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var struct.type member-term
+              member.type member-type)))
+       (asg-mem (if pointerp
+                    (make-expr-memberp :target struct.expr
+                                       :name member-name)
+                  (make-expr-member :target struct.expr
+                                    :name member-name)))
+       (asg (make-expr-binary :op (binop-asg)
+                              :arg1 asg-mem
+                              :arg2 member.expr))
+       (stmt (stmt-expr asg))
+       (item (block-item-stmt stmt))
+       (asg-limit ''1)
+       (expr-limit `(binary-+ '1 ,asg-limit))
+       (stmt-limit `(binary-+ '1 ,expr-limit))
+       (item-limit `(binary-+ '1 ,stmt-limit))
+       ((when (eq struct-write-fn 'quote))
+        (reterr (raise "Internal error: structure writer is QUOTE.")))
+       (struct-write-term `(,struct-write-fn ,member.term ,var))
+       (varinfo (atc-get-var var gin.inscope))
+       ((unless varinfo)
+        (reterr (raise "Internal error: no information for variable ~x0." var)))
+       ((when (or (not member.thm-name)
+                  (atc-var-info->externalp varinfo))) ; <- temporary
+        (retok item
+               struct-write-term
+               item-limit
+               (append struct.events member.events)
+               nil
+               gin.inscope
+               gin.context
+               member.thm-index
+               member.names-to-avoid))
+       (new-compst (if pointerp
+                       `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                                       ,struct-write-term
+                                       ,gin.compst-var)
+                     `(update-var (ident ',(symbol-name var))
+                                  ,struct-write-term
+                                  ,gin.compst-var)))
+       (new-compst (untranslate$ new-compst nil state))
+       (asg-thm-name (pack gin.fn '-correct- member.thm-index))
+       ((mv asg-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix asg-thm-name
+                                           nil
+                                           member.names-to-avoid
+                                           wrld))
+       (thm-index (1+ member.thm-index))
+       (asg-formula `(equal (exec-expr-asg ',asg
+                                           ,gin.compst-var
+                                           ,gin.fenv-var
+                                           ,gin.limit-var)
+                            ,new-compst))
+       (asg-formula (atc-contextualize asg-formula
+                                       gin.context
+                                       gin.fn
+                                       gin.fn-guard
+                                       gin.compst-var
+                                       gin.limit-var
+                                       asg-limit
+                                       t
+                                       wrld))
+       (exec-expr-asg-thms
+        (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms gin.prec-tags))
+       (writer-return-thms
+        (atc-string-taginfo-alist-to-writer-return-thms gin.prec-tags))
+       (valuep-when-member-type-pred
+        (atc-type-to-valuep-thm member-type gin.prec-tags))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms gin.prec-tags))
+       (asg-hints
+        (if pointerp
+            `(("Goal"
+               :in-theory
+               '(,@exec-expr-asg-thms
+                 (:e expr-kind)
+                 (:e expr-binary->op)
+                 (:e expr-binary->arg1)
+                 (:e expr-binary->arg2)
+                 (:e expr-memberp->target)
+                 (:e expr-memberp->name)
+                 (:e expr-ident->get)
+                 (:e binop-kind)
+                 equal-of-const-and-ident
+                 (:e identp)
+                 (:e ident->name)
+                 (:e str-fix)
+                 not-zp-of-limit-variable
+                 read-var-to-read-object-of-objdesign-of-var
+                 ,(atc-var-info->thm varinfo)
+                 objdesign-of-var-of-const-identifier
+                 ,member.thm-name
+                 expr-valuep-of-expr-value
+                 expr-value->value-of-expr-value
+                 value-fix-when-valuep
+                 ,valuep-when-member-type-pred
+                 write-object-to-update-object
+                 write-object-okp-of-enter-scope
+                 write-object-okp-of-add-var
+                 write-object-okp-of-add-frame
+                 write-object-okp-when-valuep-of-read-object-no-syntaxp
+                 ,@valuep-thms
+                 ,@type-of-value-thms
+                 ,@writer-return-thms)))
+          `(("Goal"
+             :in-theory
+             '(,@exec-expr-asg-thms
+               (:e expr-kind)
+               (:e expr-binary->op)
+               (:e expr-binary->arg1)
+               (:e expr-binary->arg2)
+               (:e expr-member->target)
+               (:e expr-member->name)
+               (:e expr-ident->get)
+               (:e binop-kind)
+               equal-of-const-and-ident
+               (:e identp)
+               (:e ident->name)
+               (:e str-fix)
+               not-zp-of-limit-variable
+               read-var-to-read-object-of-objdesign-of-var
+               ,(atc-var-info->thm varinfo)
+               objdesign-of-var-of-const-identifier
+               ,member.thm-name
+               expr-valuep-of-expr-value
+               expr-value->value-of-expr-value
+               value-fix-when-valuep
+               ,valuep-when-member-type-pred
+               write-var-of-const-identifier
+               write-var-to-update-var
+               compustate-frames-number-of-enter-scope-not-zero
+               compustate-frames-number-of-add-var-not-zero
+               write-var-okp-of-enter-scope
+               write-var-okp-of-add-var
+               ,@type-of-value-thms
+               ,@writer-return-thms
+               ident-fix-when-identp
+               identp-of-ident
+               equal-of-ident-and-ident
+               compustate-frames-number-of-update-var
+               write-var-okp-of-update-var)))))
+       ((mv asg-event &) (evmac-generate-defthm asg-thm-name
+                                                :formula asg-formula
+                                                :hints asg-hints
+                                                :enable nil))
+       ((mv item
+            item-limit
+            item-events
+            item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-asg asg
+                                asg-limit
+                                (append struct.events
+                                        member.events
+                                        (list asg-event))
+                                asg-thm-name
+                                new-compst
+                                (change-stmt-gin
+                                 gin
+                                 :thm-index thm-index
+                                 :names-to-avoid names-to-avoid
+                                 :proofs t)
+                                state))
+       (new-context
+        (atc-context-extend gin.context
+                            (list
+                             (make-atc-premise-cvalue
+                              :var var
+                              :term struct-write-term)
+                             (make-atc-premise-compustate
+                              :var gin.compst-var
+                              :term (if pointerp
+                                        `(update-object
+                                          ,(add-suffix-to-fn var "-OBJDES")
+                                          ,var
+                                          ,gin.compst-var)
+                                      `(update-var
+                                        (ident ,(symbol-name var))
+                                        ,var
+                                        ,gin.compst-var))))))
+       (notflexarrmem-thms (atc-type-to-notflexarrmem-thms (type-struct tag)
+                                                           gin.prec-tags))
+       (value-kind-thms
+        (atc-string-taginfo-alist-to-value-kind-thms gin.prec-tags))
+       (new-inscope-rules
+        (if pointerp
+            `(objdesign-of-var-of-update-object-iff
+              read-object-of-objdesign-of-var-to-read-var
+              read-object-of-update-object-same
+              read-object-of-update-object-disjoint
+              read-var-of-update-object
+              compustate-frames-number-of-enter-scope-not-zero
+              read-var-of-enter-scope
+              compustate-frames-number-of-add-var-not-zero
+              compustate-frames-number-of-update-object
+              read-var-of-add-var
+              not-flexible-array-member-p-when-ucharp
+              not-flexible-array-member-p-when-scharp
+              not-flexible-array-member-p-when-ushortp
+              not-flexible-array-member-p-when-sshortp
+              not-flexible-array-member-p-when-uintp
+              not-flexible-array-member-p-when-sintp
+              not-flexible-array-member-p-when-ulongp
+              not-flexible-array-member-p-when-slongp
+              not-flexible-array-member-p-when-ullongp
+              not-flexible-array-member-p-when-sllongp
+              not-flexible-array-member-p-when-value-pointer
+              read-object-of-update-object-same
+              remove-flexible-array-member-when-absent
+              value-fix-when-valuep
+              valuep-when-ucharp
+              valuep-when-scharp
+              valuep-when-ushortp
+              valuep-when-sshortp
+              valuep-when-uintp
+              valuep-when-sintp
+              valuep-when-ulongp
+              valuep-when-slongp
+              valuep-when-ullongp
+              valuep-when-sllongp
+              ,@valuep-thms
+              ,@writer-return-thms
+              equal-of-ident-and-ident
+              (:e str-fix)
+              ident-fix-when-identp
+              identp-of-ident)
+          `(objdesign-of-var-of-update-var
+            read-object-of-objdesign-of-var-of-update-var
+            remove-flexible-array-member-when-absent
+            ,@notflexarrmem-thms
+            ,@value-kind-thms
+            value-fix-when-valuep
+            ,@valuep-thms
+            ,@writer-return-thms
+            equal-of-ident-and-ident
+            (:e str-fix)
+            ident-fix-when-identp
+            identp-of-ident)))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope gin.fn
+                             gin.fn-guard
+                             gin.inscope
+                             new-context
+                             gin.compst-var
+                             new-inscope-rules
+                             gin.prec-tags
+                             thm-index
+                             names-to-avoid
+                             wrld))
+       (thm-index (1+ thm-index))
+       (events (append item-events
+                       new-inscope-events)))
+    (retok item
+           struct-write-term
+           item-limit
+           events
+           item-thm-name
+           new-inscope
+           new-context
+           thm-index
+           names-to-avoid))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (e/d (pseudo-termp
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-block-item-struct-array-asg ((var symbolp)
+                                             (val-term pseudo-termp)
+                                             (tag identp)
+                                             (member-name identp)
+                                             (index-term pseudo-termp)
+                                             (elem-term pseudo-termp)
+                                             (elem-type typep)
+                                             (flexiblep booleanp)
+                                             (struct-write-fn symbolp)
+                                             (wrapper? symbolp)
+                                             (gin stmt-ginp)
+                                             state)
+  :returns (mv erp
+               (item block-itemp)
+               (val-term* pseudo-termp :hyp (and (symbolp struct-write-fn)
+                                                 (pseudo-termp index-term)
+                                                 (pseudo-termp elem-term)
+                                                 (symbolp var)))
+               (limit pseudo-termp)
+               (events pseudo-event-form-listp)
+               (thm-name symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
+  :short "Generate a C block item statement that consists of
+          an assignment to an element of an array member of a structure."
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+       ((stmt-gin gin) gin)
+       (wrld (w state))
+       ((unless (eq wrapper? nil))
+        (reterr
+         (msg "The structure write term ~x0 ~
+               to which ~x1 is bound ~
+               has the ~x2 wrapper, which is disallowed."
+              val-term var wrapper?)))
+       ((erp (pexpr-gout struct))
+        (atc-gen-expr-pure var
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs gin.proofs)
+                           state))
+       ((unless (member-equal struct.type
+                              (list (type-struct tag)
+                                    (type-pointer (type-struct tag)))))
+        (reterr
+         (msg "The structure ~x0 of type ~x1 ~
+               does not have the expected type ~x2 or ~x3. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var
+              struct.type
+              (type-struct tag)
+              (type-pointer (type-struct tag)))))
+       (pointerp (type-case struct.type :pointer))
+       ((when (and pointerp
+                   (not (member-eq var gin.affect))))
+        (reterr
+         (msg "The structure ~x0 ~
+               is being written to by pointer, ~
+               but it is not among the variables ~x1 ~
+               currently affected."
+              var gin.affect)))
+       ((erp (pexpr-gout index))
+        (atc-gen-expr-pure index-term
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index struct.thm-index
+                            :names-to-avoid struct.names-to-avoid
+                            :proofs (and struct.thm-name t))
+                           state))
+       ((unless (type-integerp index.type))
+        (reterr
+         (msg "The structure ~x0 of type ~x1 ~
+               is being written to with ~
+               an index ~x2 of type ~x3, ~
+               instead of a C integer type as expected. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var struct.type index-term index.type)))
+       ((erp (pexpr-gout elem))
+        (atc-gen-expr-pure elem-term
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index index.thm-index
+                            :names-to-avoid index.names-to-avoid
+                            :proofs (and index.thm-name t))
+                           state))
+       ((unless (equal elem.type elem-type))
+        (reterr
+         (msg "The structure ~x0 of type ~x1 ~
+               is being written to with ~
+               a member array element ~x2 of type ~x3, ~
+               instead of type ~x4 as expected.
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var struct.type elem-term elem.type elem-type)))
+       (asg-mem (if pointerp
+                    (make-expr-memberp :target struct.expr
+                                       :name member-name)
+                  (make-expr-member :target struct.expr
+                                    :name member-name)))
+       (asg (make-expr-binary
+             :op (binop-asg)
+             :arg1 (make-expr-arrsub :arr asg-mem
+                                     :sub index.expr)
+             :arg2 elem.expr))
+       (stmt (stmt-expr asg))
+       (item (block-item-stmt stmt))
+       (asg-limit ''1)
+       (expr-limit `(binary-+ '1 ,asg-limit))
+       (stmt-limit `(binary-+ '1 ,expr-limit))
+       (item-limit `(binary-+ '1 ,stmt-limit))
+       ((when (eq struct-write-fn 'quote))
+        (reterr (raise "Internal error: structure writer is QUOTE.")))
+       (struct-write-term `(,struct-write-fn ,index.term ,elem.term ,var))
+       (varinfo (atc-get-var var gin.inscope))
+       ((unless varinfo)
+        (reterr (raise "Internal error: no information for variable ~x0." var)))
+       ((when (or (not elem.thm-name)
+                  (atc-var-info->externalp varinfo))) ; <- temporary
+        (retok item
+               struct-write-term
+               item-limit
+               (append struct.events index.events elem.events)
+               nil
+               gin.inscope
+               gin.context
+               elem.thm-index
+               elem.names-to-avoid))
+       (okp-lemma-name (pack gin.fn '-asg- elem.thm-index '-okp-lemma))
+       ((mv okp-lemma-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix okp-lemma-name
+                                           nil
+                                           elem.names-to-avoid
+                                           wrld))
+       (thm-index (1+ elem.thm-index))
+       (info (atc-get-tag-info tag gin.prec-tags))
+       (struct-tag (defstruct-info->fixtype (atc-tag-info->defstruct info)))
+       (index-okp (packn-pos (list struct-tag
+                                   '-
+                                   (ident->name member-name)
+                                   '-index-okp)
+                             struct-write-fn))
+       (okp-lemma-formula
+        (if flexiblep
+            `(,index-okp ,index-term ,var)
+          `(,index-okp ,index-term)))
+       (okp-lemma-formula (atc-contextualize okp-lemma-formula
+                                             gin.context
+                                             gin.fn
+                                             gin.fn-guard
+                                             nil
+                                             nil
+                                             nil
+                                             nil
+                                             wrld))
+       (okp-lemma-hints
+        `(("Goal"
+           :in-theory '(,gin.fn-guard if* test* declar assign)
+           :use (:guard-theorem ,gin.fn))))
+       ((mv okp-lemma-event &)
+        (evmac-generate-defthm okp-lemma-name
+                               :formula okp-lemma-formula
+                               :hints okp-lemma-hints
+                               :enable nil))
+       (new-compst (if pointerp
+                       `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                                       ,struct-write-term
+                                       ,gin.compst-var)
+                     `(update-var (ident ',(symbol-name var))
+                                  ,struct-write-term
+                                  ,gin.compst-var)))
+       (new-compst (untranslate$ new-compst nil state))
+       (asg-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv asg-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         asg-thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (asg-formula `(equal (exec-expr-asg ',asg
+                                           ,gin.compst-var
+                                           ,gin.fenv-var
+                                           ,gin.limit-var)
+                            ,new-compst))
+       (asg-formula (atc-contextualize asg-formula
+                                       gin.context
+                                       gin.fn
+                                       gin.fn-guard
+                                       gin.compst-var
+                                       gin.limit-var
+                                       asg-limit
+                                       t
+                                       wrld))
+       (exec-expr-asg-thms
+        (atc-string-taginfo-alist-to-member-write-thms gin.prec-tags))
+       (valuep-when-elem-type-pred
+        (atc-type-to-valuep-thm elem.type gin.prec-tags))
+       (valuep-when-index-type-pred
+        (atc-type-to-valuep-thm index.type gin.prec-tags))
+       (value-kind-when-elem-type-pred
+        (atc-type-to-value-kind-thm elem.type gin.prec-tags))
+       (value-kind-when-index-type-pred
+        (atc-type-to-value-kind-thm index.type gin.prec-tags))
+       (index-type-pred (atc-type-to-recognizer index.type gin.prec-tags))
+       (cintegerp-when-index-type-pred (pack 'cintegerp-when- index-type-pred))
+       (valuep-thms (atc-string-taginfo-alist-to-valuep-thms gin.prec-tags))
+       (type-of-value-thms
+        (atc-string-taginfo-alist-to-type-of-value-thms gin.prec-tags))
+       (writer-return-thms
+        (atc-string-taginfo-alist-to-writer-return-thms gin.prec-tags))
+       (asg-hints
+        (if pointerp
+            `(("Goal"
+               :in-theory
+               '(,@exec-expr-asg-thms
+                 (:e expr-kind)
+                 (:e expr-binary->op)
+                 (:e expr-binary->arg1)
+                 (:e expr-binary->arg2)
+                 (:e expr-arrsub->arr)
+                 (:e expr-arrsub->sub)
+                 (:e expr-memberp->target)
+                 (:e expr-memberp->name)
+                 (:e expr-ident->get)
+                 (:e binop-kind)
+                 equal-of-const-and-ident
+                 (:e identp)
+                 (:e ident->name)
+                 (:e str-fix)
+                 not-zp-of-limit-variable
+                 read-var-to-read-object-of-objdesign-of-var
+                 ,(atc-var-info->thm varinfo)
+                 objdesign-of-var-of-const-identifier
+                 ,index.thm-name
+                 ,elem.thm-name
+                 expr-valuep-of-expr-value
+                 apconvert-expr-value-when-not-value-array
+                 ,valuep-when-elem-type-pred
+                 ,valuep-when-index-type-pred
+                 ,value-kind-when-elem-type-pred
+                 ,value-kind-when-index-type-pred
+                 expr-value->value-of-expr-value
+                 value-fix-when-valuep
+                 ,cintegerp-when-index-type-pred
+                 ,okp-lemma-name
+                 write-object-to-update-object
+                 write-object-okp-of-enter-scope
+                 write-object-okp-of-add-var
+                 write-object-okp-of-add-frame
+                 write-object-okp-when-valuep-of-read-object-no-syntaxp
+                 ,@valuep-thms
+                 ,@type-of-value-thms
+                 ,@writer-return-thms)))
+          `(("Goal"
+             :in-theory
+             '(,@exec-expr-asg-thms
+               (:e expr-kind)
+               (:e expr-binary->op)
+               (:e expr-binary->arg1)
+               (:e expr-binary->arg2)
+               (:e expr-arrsub->arr)
+               (:e expr-arrsub->sub)
+               (:e expr-member->target)
+               (:e expr-member->name)
+               (:e expr-ident->get)
+               (:e binop-kind)
+               equal-of-const-and-ident
+               (:e identp)
+               (:e ident->name)
+               (:e str-fix)
+               not-zp-of-limit-variable
+               read-var-to-read-object-of-objdesign-of-var
+               ,(atc-var-info->thm varinfo)
+               objdesign-of-var-of-const-identifier
+               ,elem.thm-name
+               expr-valuep-of-expr-value
+               apconvert-expr-value-when-not-value-array
+               value-kind-when-sintp
+               expr-value->value-of-expr-value
+               value-fix-when-valuep
+               ,valuep-when-elem-type-pred
+               ,valuep-when-index-type-pred
+               ,cintegerp-when-index-type-pred
+               ,okp-lemma-name
+               ,index.thm-name
+               write-var-of-const-identifier
+               write-var-to-update-var
+               compustate-frames-number-of-enter-scope-not-zero
+               compustate-frames-number-of-add-var-not-zero
+               write-var-okp-of-enter-scope
+               write-var-okp-of-add-var
+               ,@type-of-value-thms
+               ,@writer-return-thms
+               ident-fix-when-identp
+               identp-of-ident
+               equal-of-ident-and-ident
+               compustate-frames-number-of-update-var
+               write-var-okp-of-update-var)))))
+       ((mv asg-event &) (evmac-generate-defthm asg-thm-name
+                                                :formula asg-formula
+                                                :hints asg-hints
+                                                :enable nil))
+       ((mv item
+            item-limit
+            item-events
+            item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-asg asg
+                                asg-limit
+                                (append struct.events
+                                        index.events
+                                        elem.events
+                                        (list okp-lemma-event
+                                              asg-event))
+                                asg-thm-name
+                                new-compst
+                                (change-stmt-gin
+                                 gin
+                                 :thm-index thm-index
+                                 :names-to-avoid names-to-avoid
+                                 :proofs t)
+                                state))
+       (new-context
+        (atc-context-extend gin.context
+                            (list
+                             (make-atc-premise-cvalue
+                              :var var
+                              :term struct-write-term)
+                             (make-atc-premise-compustate
+                              :var gin.compst-var
+                              :term (if pointerp
+                                        `(update-object
+                                          ,(add-suffix-to-fn var "-OBJDES")
+                                          ,var
+                                          ,gin.compst-var)
+                                      `(update-var
+                                        (ident ,(symbol-name var))
+                                        ,var
+                                        ,gin.compst-var))))))
+       (notflexarrmem-thms (atc-type-to-notflexarrmem-thms (type-struct tag)
+                                                           gin.prec-tags))
+       (value-kind-thms
+        (atc-string-taginfo-alist-to-value-kind-thms gin.prec-tags))
+       (new-inscope-rules
+        (if pointerp
+            `(objdesign-of-var-of-update-object-iff
+              read-object-of-objdesign-of-var-to-read-var
+              read-object-of-update-object-same
+              read-object-of-update-object-disjoint
+              read-var-of-update-object
+              compustate-frames-number-of-enter-scope-not-zero
+              read-var-of-enter-scope
+              compustate-frames-number-of-add-var-not-zero
+              compustate-frames-number-of-update-object
+              read-var-of-add-var
+              not-flexible-array-member-p-when-ucharp
+              not-flexible-array-member-p-when-scharp
+              not-flexible-array-member-p-when-ushortp
+              not-flexible-array-member-p-when-sshortp
+              not-flexible-array-member-p-when-uintp
+              not-flexible-array-member-p-when-sintp
+              not-flexible-array-member-p-when-ulongp
+              not-flexible-array-member-p-when-slongp
+              not-flexible-array-member-p-when-ullongp
+              not-flexible-array-member-p-when-sllongp
+              not-flexible-array-member-p-when-value-pointer
+              read-object-of-update-object-same
+              remove-flexible-array-member-when-absent
+              value-fix-when-valuep
+              valuep-when-ucharp
+              valuep-when-scharp
+              valuep-when-ushortp
+              valuep-when-sshortp
+              valuep-when-uintp
+              valuep-when-sintp
+              valuep-when-ulongp
+              valuep-when-slongp
+              valuep-when-ullongp
+              valuep-when-sllongp
+              ,@valuep-thms
+              ,@writer-return-thms
+              equal-of-ident-and-ident
+              (:e str-fix)
+              ident-fix-when-identp
+              identp-of-ident)
+          `(objdesign-of-var-of-update-var
+            read-object-of-objdesign-of-var-of-update-var
+            remove-flexible-array-member-when-absent
+            ,@notflexarrmem-thms
+            ,@value-kind-thms
+            value-fix-when-valuep
+            ,@valuep-thms
+            ,@writer-return-thms
+            equal-of-ident-and-ident
+            (:e str-fix)
+            ident-fix-when-identp
+            identp-of-ident)))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope gin.fn
+                             gin.fn-guard
+                             gin.inscope
+                             new-context
+                             gin.compst-var
+                             new-inscope-rules
+                             gin.prec-tags
+                             thm-index
+                             names-to-avoid
+                             wrld))
+       (thm-index (1+ thm-index))
+       (events (append item-events
+                       new-inscope-events)))
+    (retok item
+           struct-write-term
+           item-limit
+           events
+           item-thm-name
+           new-inscope
+           new-context
+           thm-index
+           names-to-avoid))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (e/d (pseudo-termp
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-block-item-integer-asg ((var symbolp)
+                                        (val-term pseudo-termp)
+                                        (arg-term pseudo-termp)
+                                        (type typep)
+                                        (integer-write-fn symbolp)
+                                        (wrapper? symbolp)
+                                        (gin stmt-ginp)
+                                        state)
+  :returns (mv erp
+               (item block-itemp)
+               (val-term* pseudo-termp :hyp (symbolp integer-write-fn))
+               (limit pseudo-termp)
+               (events pseudo-event-form-listp)
+               (thm-name symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
+  :short "Generate a C block item statement that consists of
+          an assignment to a pointed integer."
+  (b* (((reterr) (irr-block-item) nil nil nil nil nil (irr-atc-context) 1 nil)
+       (wrld (w state))
+       ((stmt-gin gin) gin)
+       ((unless (eq wrapper? nil))
+        (reterr
+         (msg "The pointed integer write term ~x0 ~
+               to which ~x1 is bound ~
+               has the ~x2 wrapper, which is disallowed."
+              val-term var wrapper?)))
+       ((unless (member-eq var gin.affect))
+        (reterr
+         (msg "The pointed integer ~x0 is being written to, ~
+               but it is not among the variables ~x1 ~
+               currently affected."
+              var gin.affect)))
+       ((erp (pexpr-gout ptr))
+        (atc-gen-expr-pure var
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :proofs gin.proofs)
+                           state))
+       ((unless (equal ptr.type (type-pointer type)))
+        (reterr
+         (msg "The variable ~x0 of type ~x1 does not have ~
+               the expected type ~x2. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              var ptr.type (type-pointer type))))
+       ((erp (pexpr-gout int))
+        (atc-gen-expr-pure arg-term
+                           (make-pexpr-gin
+                            :context gin.context
+                            :inscope gin.inscope
+                            :prec-tags gin.prec-tags
+                            :fn gin.fn
+                            :fn-guard gin.fn-guard
+                            :compst-var gin.compst-var
+                            :thm-index ptr.thm-index
+                            :names-to-avoid ptr.names-to-avoid
+                            :proofs (and ptr.thm-name t))
+                           state))
+       ((unless (equal int.type type))
+        (reterr
+         (msg "The term ~x0 of type ~x1 does not have ~
+               the expected type ~x1. ~
+               This is indicative of ~
+               unreachable code under the guards, ~
+               given that the code is guard-verified."
+              arg-term int.type type)))
+       (asg (make-expr-binary
+             :op (binop-asg)
+             :arg1 (make-expr-unary
+                    :op (unop-indir)
+                    :arg ptr.expr)
+             :arg2 int.expr))
+       (stmt (stmt-expr asg))
+       (item (block-item-stmt stmt))
+       (asg-limit ''1)
+       (expr-limit `(binary-+ '1 ,asg-limit))
+       (stmt-limit `(binary-+ '1 ,expr-limit))
+       (item-limit `(binary-+ '1 ,stmt-limit))
+       ((when (eq integer-write-fn 'quote))
+        (reterr (raise "Internal error: integer writer is QUOTE.")))
+       (integer-write-term `(,integer-write-fn ,int.term))
+       (varinfo (atc-get-var var gin.inscope))
+       ((unless varinfo)
+        (reterr (raise "Internal error: no information for variable ~x0." var)))
+       ((when (or (not int.thm-name)
+                  (atc-var-info->externalp varinfo))) ; <- temporary
+        (retok item
+               integer-write-term
+               item-limit
+               (append ptr.events
+                       int.events)
+               nil
+               gin.inscope
+               gin.context
+               int.thm-index
+               int.names-to-avoid))
+       (new-compst `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                                   ,integer-write-term
+                                   ,gin.compst-var))
+       (new-compst (untranslate$ new-compst nil state))
+       (asg-thm-name (pack gin.fn '-correct- int.thm-index))
+       ((mv asg-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix asg-thm-name
+                                           nil
+                                           int.names-to-avoid
+                                           wrld))
+       (thm-index (1+ int.thm-index))
+       (asg-formula `(equal (exec-expr-asg ',asg
+                                           ,gin.compst-var
+                                           ,gin.fenv-var
+                                           ,gin.limit-var)
+                            ,new-compst))
+       (asg-formula (atc-contextualize asg-formula
+                                       gin.context
+                                       gin.fn
+                                       gin.fn-guard
+                                       gin.compst-var
+                                       gin.limit-var
+                                       asg-limit
+                                       t
+                                       wrld))
+       (type-pred (atc-type-to-recognizer type gin.prec-tags))
+       (exec-expr-asg-thm
+        (pack 'exec-expr-asg-indir-when- type-pred '-for-modular-proofs))
+       (value-kind-thm (atc-type-to-value-kind-thm type gin.prec-tags))
+       (valuep-when-type-pred (atc-type-to-valuep-thm type gin.prec-tags))
+       (type-of-value-thm (atc-type-to-type-of-value-thm type gin.prec-tags))
+       (type-pred-of-integer-write-fn (pack type-pred '-of- integer-write-fn))
+       (asg-hints
+        `(("Goal"
+           :in-theory '(,exec-expr-asg-thm
+                        (:e expr-kind)
+                        (:e expr-binary->op)
+                        (:e expr-binary->arg1)
+                        (:e expr-binary->arg2)
+                        (:e binop-kind)
+                        (:e expr-unary->op)
+                        (:e expr-unary->arg)
+                        (:e unop-kind)
+                        not-zp-of-limit-variable
+                        (:e expr-ident->get)
+                        read-var-of-const-identifier
+                        (:e identp)
+                        (:e ident->name)
+                        read-var-to-read-object-of-objdesign-of-var
+                        ,(atc-var-info->thm varinfo)
+                        ,ptr.thm-name
+                        ,int.thm-name
+                        expr-valuep-of-expr-value
+                        apconvert-expr-value-when-not-value-array
+                        ,value-kind-thm
+                        expr-value->value-of-expr-value
+                        value-fix-when-valuep
+                        ,valuep-when-type-pred
+                        write-object-to-update-object
+                        write-object-okp-of-add-var
+                        write-object-okp-of-add-frame
+                        write-object-okp-when-valuep-of-read-object-no-syntaxp
+                        ,type-of-value-thm
+                        ,type-pred-of-integer-write-fn))))
+       ((mv asg-event &) (evmac-generate-defthm asg-thm-name
+                                                :formula asg-formula
+                                                :hints asg-hints
+                                                :enable nil))
+       ((mv item
+            item-limit
+            item-events
+            item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-asg asg
+                                asg-limit
+                                (append ptr.events
+                                        int.events
+                                        (list asg-event))
+                                asg-thm-name
+                                new-compst
+                                (change-stmt-gin
+                                 gin
+                                 :thm-index thm-index
+                                 :names-to-avoid names-to-avoid
+                                 :proofs t)
+                                state))
+       (new-context
+        (atc-context-extend gin.context
+                            (list
+                             (make-atc-premise-cvalue
+                              :var var
+                              :term integer-write-term)
+                             (make-atc-premise-compustate
+                              :var gin.compst-var
+                              :term `(update-object
+                                      ,(add-suffix-to-fn var "-OBJDES")
+                                      ,var
+                                      ,gin.compst-var)))))
+       (type-pred-of-type-write (pack type-pred '-of- (type-kind type) '-write))
+       (not-flexible-array-member-p-when-type-pred
+        (pack 'not-flexible-array-member-p-when- type-pred))
+       (new-inscope-rules
+        `(objdesign-of-var-of-update-object-iff
+          read-object-of-objdesign-of-var-to-read-var
+          read-var-of-update-object
+          compustate-frames-number-of-add-var-not-zero
+          read-object-of-update-object-same
+          read-object-of-update-object-disjoint
+          object-disjointp-commutative
+          read-var-of-add-var
+          remove-flexible-array-member-when-absent
+          not-flexible-array-member-p-when-value-pointer
+          value-fix-when-valuep
+          ,valuep-when-type-pred
+          ,type-pred-of-type-write
+          ,not-flexible-array-member-p-when-type-pred
+          ident-fix-when-identp
+          identp-of-ident
+          equal-of-ident-and-ident
+          (:e str-fix)
+          read-var-of-update-object
+          compustate-frames-number-of-enter-scope-not-zero
+          read-var-of-enter-scope
+          read-var-of-update-object
+          compustate-frames-number-of-update-object))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope gin.fn
+                             gin.fn-guard
+                             gin.inscope
+                             new-context
+                             gin.compst-var
+                             new-inscope-rules
+                             gin.prec-tags
+                             thm-index
+                             names-to-avoid
+                             wrld))
+       (thm-index (1+ thm-index))
+       (events (append item-events
+                       new-inscope-events)))
+    (retok item
+           integer-write-term
+           item-limit
+           events
+           item-thm-name
+           new-inscope
+           new-context
+           thm-index
+           names-to-avoid))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (e/d (pseudo-termp
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1429,22 +2667,38 @@
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
        (thm-index (1+ gin.thm-index))
-       (formula `(equal (exec-block-item-list nil
-                                              ,gin.compst-var
-                                              ,gin.fenv-var
-                                              ,gin.limit-var)
-                        (mv nil ,gin.compst-var)))
-       (formula (atc-contextualize formula
-                                   gin.context
-                                   gin.fn
-                                   gin.fn-guard
-                                   gin.compst-var
-                                   gin.limit-var
-                                   limit
-                                   t
-                                   wrld))
+       (exec-formula `(equal (exec-block-item-list nil
+                                                   ,gin.compst-var
+                                                   ,gin.fenv-var
+                                                   ,gin.limit-var)
+                             (mv nil ,gin.compst-var)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        limit
+                                        t
+                                        wrld))
+       ((mv type-formula type-thms)
+        (atc-gen-term-type-formula (untranslate$ term nil state)
+                                   (type-void)
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (formula `(and ,exec-formula ,type-formula))
        (hints
-        '(("Goal" :in-theory '(exec-block-item-list-of-nil
+        `(("Goal" :in-theory '(exec-block-item-list-of-nil
                                not-zp-of-limit-variable
                                compustatep-of-add-frame
                                compustatep-of-enter-scope
@@ -1452,7 +2706,18 @@
                                compustatep-of-add-var
                                compustatep-of-update-var
                                compustatep-of-update-object
-                               compustatep-of-if*-when-both-compustatep))))
+                               compustatep-of-if*-when-both-compustatep
+                               ,@type-thms
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -1473,12 +2738,11 @@
 
 (define atc-gen-block-item-list-one
   ((term pseudo-termp)
+   (type typep)
    (item block-itemp)
    (item-limit pseudo-termp)
    (item-events pseudo-event-form-listp)
    (item-thm symbolp)
-   (result-term pseudo-termp)
-   (result-type typep)
    (new-compst "An untranslated term.")
    (new-context atc-contextp)
    (new-inscope atc-symbol-varinfo-alist-listp)
@@ -1527,7 +2791,7 @@
        ((when (not gin.proofs))
         (make-stmt-gout
          :items items
-         :type result-type
+         :type type
          :term term
          :context new-context
          :inscope nil
@@ -1540,33 +2804,38 @@
        (thm-index (1+ gin.thm-index))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
-       (result-uterm (untranslate$ result-term nil state))
-       (formula1 `(equal (exec-block-item-list ',items
-                                               ,gin.compst-var
-                                               ,gin.fenv-var
-                                               ,gin.limit-var)
-                         (mv ,result-uterm ,new-compst)))
-       (formula1 (atc-contextualize formula1
-                                    gin.context
-                                    gin.fn
-                                    gin.fn-guard
-                                    gin.compst-var
-                                    gin.limit-var
-                                    items-limit
-                                    t
-                                    wrld))
-       (type-pred (and result-term
-                       (atc-type-to-recognizer result-type gin.prec-tags)))
-       (formula (if result-term
-                    (b* ((formula2 `(,type-pred ,result-uterm))
-                         (formula2 (atc-contextualize formula2 gin.context
-                                                      gin.fn gin.fn-guard
-                                                      nil nil nil nil wrld)))
-                      `(and ,formula1 ,formula2))
-                  formula1))
-       (valuep-when-type-pred (and result-term
-                                   (atc-type-to-valuep-thm result-type
-                                                           gin.prec-tags)))
+       (voidp (type-case type :void))
+       (uterm (untranslate$ term nil state))
+       (exec-formula `(equal (exec-block-item-list ',items
+                                                   ,gin.compst-var
+                                                   ,gin.fenv-var
+                                                   ,gin.limit-var)
+                             (mv ,(if voidp
+                                      nil
+                                    uterm)
+                                 ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        items-limit
+                                        t
+                                        wrld))
+       ((mv type-formula &)
+        (atc-gen-term-type-formula
+         uterm type gin.affect gin.inscope gin.prec-tags))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (formula `(and ,exec-formula ,type-formula))
        (hints
         `(("Goal" :in-theory '(exec-block-item-list-when-consp
                                not-zp-of-limit-variable
@@ -1575,20 +2844,32 @@
                                value-optionp-when-valuep
                                (:e value-optionp)
                                (:e valuep)
-                               ,@(and result-term
-                                      (list valuep-when-type-pred))
+                               ,@(and (not voidp)
+                                      (list
+                                       (atc-type-to-valuep-thm type
+                                                               gin.prec-tags)))
                                ,item-thm
                                exec-block-item-list-of-nil
                                not-zp-of-limit-minus-const
                                compustatep-of-exit-scope
-                               compustatep-of-if*-when-both-compustatep))))
+                               compustatep-of-if*-when-both-compustatep
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
     (make-stmt-gout
      :items items
-     :type result-type
+     :type type
      :term term
      :context new-context
      :inscope new-inscope
@@ -1670,47 +2951,57 @@
                                                  gin.context
                                                  new-context))
        (uterm (untranslate$ term nil state))
-       (formula1 `(equal (exec-block-item-list ',all-items
-                                               ,gin.compst-var
-                                               ,gin.fenv-var
-                                               ,gin.limit-var)
-                         (mv ,(if (type-case items-type :void)
-                                  nil
-                                uterm)
-                             ,new-compst)))
-       (formula1 (atc-contextualize formula1
-                                    gin.context
-                                    gin.fn
-                                    gin.fn-guard
-                                    gin.compst-var
-                                    gin.limit-var
-                                    all-items-limit
-                                    t
-                                    wrld))
-       (formula (if (type-case items-type :void)
-                    formula1
-                  (b* ((type-pred
-                        (atc-type-to-recognizer items-type gin.prec-tags))
-                       (formula2 `(,type-pred ,uterm))
-                       (formula2 (atc-contextualize formula2
-                                                    gin.context
-                                                    gin.fn
-                                                    gin.fn-guard
-                                                    nil
-                                                    nil
-                                                    nil
-                                                    nil
-                                                    wrld)))
-                    `(and ,formula1 ,formula2))))
-       (hints `(("Goal" :in-theory '(exec-block-item-list-when-consp
-                                     not-zp-of-limit-variable
-                                     ,item-thm
-                                     mv-nth-of-cons
-                                     (:e zp)
-                                     (:e value-optionp)
-                                     not-zp-of-limit-minus-const
-                                     (:e valuep)
-                                     ,items-thm))))
+       (voidp (type-case items-type :void))
+       (exec-formula `(equal (exec-block-item-list ',all-items
+                                                   ,gin.compst-var
+                                                   ,gin.fenv-var
+                                                   ,gin.limit-var)
+                             (mv ,(if voidp
+                                      nil
+                                    uterm)
+                                 ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        all-items-limit
+                                        t
+                                        wrld))
+       ((mv type-formula &)
+        (atc-gen-term-type-formula
+         uterm items-type gin.affect gin.inscope gin.prec-tags))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (formula `(and ,exec-formula ,type-formula))
+       (hints
+        `(("Goal" :in-theory '(exec-block-item-list-when-consp
+                               not-zp-of-limit-variable
+                               ,item-thm
+                               mv-nth-of-cons
+                               (:e zp)
+                               (:e value-optionp)
+                               not-zp-of-limit-minus-const
+                               (:e valuep)
+                               ,items-thm
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        (thm-name (pack gin.fn '-correct- gin.thm-index))
        (thm-index (1+ gin.thm-index))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
@@ -1846,48 +3137,59 @@
                                                  gin.context
                                                  new-context))
        (uterm (untranslate$ term nil state))
-       (formula1 `(equal (exec-block-item-list ',items
-                                               ,gin.compst-var
-                                               ,gin.fenv-var
-                                               ,gin.limit-var)
-                         (mv ,(if (type-case type :void)
-                                  nil
-                                uterm)
-                             ,new-compst)))
-       (formula1 (atc-contextualize formula1
-                                    gin.context
-                                    gin.fn
-                                    gin.fn-guard
-                                    gin.compst-var
-                                    gin.limit-var
-                                    items-limit
-                                    t
-                                    wrld))
-       (formula (if (type-case type :void)
-                    formula1
-                  (b* ((type-pred (atc-type-to-recognizer type gin.prec-tags))
-                       (formula2 `(,type-pred ,uterm))
-                       (formula2 (atc-contextualize formula2
-                                                    gin.context
-                                                    gin.fn
-                                                    gin.fn-guard
-                                                    nil
-                                                    nil
-                                                    nil
-                                                    nil
-                                                    wrld)))
-                    `(and ,formula1 ,formula2))))
-       (hints `(("Goal" :in-theory '(,lemma-name
-                                     (:e len)
-                                     (:e take)
-                                     (:e nthcdr)
-                                     not-zp-of-limit-variable
-                                     ,items1-thm
-                                     mv-nth-of-cons
-                                     (:e zp)
-                                     (:e value-optionp)
-                                     ,items2-thm
-                                     (:e valuep)))))
+       (voidp (type-case type :void))
+       (exec-formula `(equal (exec-block-item-list ',items
+                                                   ,gin.compst-var
+                                                   ,gin.fenv-var
+                                                   ,gin.limit-var)
+                             (mv ,(if voidp
+                                      nil
+                                    uterm)
+                                 ,new-compst)))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        items-limit
+                                        t
+                                        wrld))
+       ((mv type-formula &)
+        (atc-gen-term-type-formula
+         uterm type gin.affect gin.inscope gin.prec-tags))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (formula `(and ,exec-formula ,type-formula))
+       (hints
+        `(("Goal" :in-theory '(,lemma-name
+                               (:e len)
+                               (:e take)
+                               (:e nthcdr)
+                               not-zp-of-limit-variable
+                               ,items1-thm
+                               mv-nth-of-cons
+                               (:e zp)
+                               (:e value-optionp)
+                               ,items2-thm
+                               (:e valuep)
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv event &) (evmac-generate-defthm thm-name
                                             :formula formula
                                             :hints hints
@@ -2088,12 +3390,11 @@
                                   :proofs (and stmt-thm-name t))
                                  state)))
     (retok (atc-gen-block-item-list-one expr.term
+                                        expr.type
                                         item
                                         item-limit
                                         item-events
                                         item-thm-name
-                                        expr.term
-                                        expr.type
                                         gin.compst-var
                                         gin.context
                                         nil
@@ -2102,7 +3403,8 @@
                                          :thm-index thm-index
                                          :names-to-avoid names-to-avoid
                                          :proofs (and item-thm-name t))
-                                        state))))
+                                        state)))
+  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2368,7 +3670,7 @@
           :type type
           :term term
           :context (make-atc-context :preamble nil :premises nil)
-          :inscope nil
+          :inscope gin.inscope
           :limit (pseudo-term-fncall
                   'binary-+
                   (list
@@ -2392,18 +3694,18 @@
        ((mv else-stmt-thm names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          else-stmt-thm nil names-to-avoid wrld))
-       (type-pred (and (not voidp)
-                       (atc-type-to-recognizer type gin.prec-tags)))
        (valuep-when-type-pred (and (not voidp)
                                    (atc-type-to-valuep-thm type gin.prec-tags)))
        (then-stmt-limit `(binary-+ '1 ,then-limit))
        (else-stmt-limit `(binary-+ '1 ,else-limit))
+       (then-uterm (untranslate$ then-term nil state))
+       (else-uterm (untranslate$ else-term nil state))
        (then-uterm/nil (if voidp
                            nil
-                         (untranslate$ then-term nil state)))
+                         then-uterm))
        (else-uterm/nil (if voidp
                            nil
-                         (untranslate$ else-term nil state)))
+                         else-uterm))
        (then-context-end
         (atc-context-extend then-context-end
                             (list (make-atc-premise-compustate
@@ -2420,62 +3722,68 @@
        (else-new-compst (atc-contextualize-compustate gin.compst-var
                                                       else-context-start
                                                       else-context-end))
-       (then-stmt-formula1 `(equal (exec-stmt ',then-stmt
-                                              ,gin.compst-var
-                                              ,gin.fenv-var
-                                              ,gin.limit-var)
-                                   (mv ,then-uterm/nil ,then-new-compst)))
-       (then-stmt-formula1 (atc-contextualize then-stmt-formula1
-                                              then-context-start
-                                              gin.fn
-                                              gin.fn-guard
-                                              gin.compst-var
-                                              gin.limit-var
-                                              then-stmt-limit
-                                              t
-                                              wrld))
-       (then-stmt-formula
-        (if voidp
-            then-stmt-formula1
-          (b* ((then-stmt-formula2 `(,type-pred ,then-uterm/nil))
-               (then-stmt-formula2 (atc-contextualize then-stmt-formula2
-                                                      then-context-start
-                                                      gin.fn
-                                                      gin.fn-guard
-                                                      nil
-                                                      nil
-                                                      nil
-                                                      nil
-                                                      wrld)))
-            `(and ,then-stmt-formula1 ,then-stmt-formula2))))
-       (else-stmt-formula1 `(equal (exec-stmt ',else-stmt
-                                              ,gin.compst-var
-                                              ,gin.fenv-var
-                                              ,gin.limit-var)
-                                   (mv ,else-uterm/nil ,else-new-compst)))
-       (else-stmt-formula1 (atc-contextualize else-stmt-formula1
-                                              else-context-start
-                                              gin.fn
-                                              gin.fn-guard
-                                              gin.compst-var
-                                              gin.limit-var
-                                              else-stmt-limit
-                                              t
-                                              wrld))
-       (else-stmt-formula
-        (if voidp
-            else-stmt-formula1
-          (b* ((else-stmt-formula2 `(,type-pred ,else-uterm/nil))
-               (else-stmt-formula2 (atc-contextualize else-stmt-formula2
-                                                      else-context-start
-                                                      gin.fn
-                                                      gin.fn-guard
-                                                      nil
-                                                      nil
-                                                      nil
-                                                      nil
-                                                      wrld)))
-            `(and ,else-stmt-formula1 ,else-stmt-formula2))))
+       (then-stmt-exec-formula `(equal (exec-stmt ',then-stmt
+                                                  ,gin.compst-var
+                                                  ,gin.fenv-var
+                                                  ,gin.limit-var)
+                                       (mv ,then-uterm/nil ,then-new-compst)))
+       (then-stmt-exec-formula (atc-contextualize then-stmt-exec-formula
+                                                  then-context-start
+                                                  gin.fn
+                                                  gin.fn-guard
+                                                  gin.compst-var
+                                                  gin.limit-var
+                                                  then-stmt-limit
+                                                  t
+                                                  wrld))
+       (else-stmt-exec-formula `(equal (exec-stmt ',else-stmt
+                                                  ,gin.compst-var
+                                                  ,gin.fenv-var
+                                                  ,gin.limit-var)
+                                       (mv ,else-uterm/nil ,else-new-compst)))
+       (else-stmt-exec-formula (atc-contextualize else-stmt-exec-formula
+                                                  else-context-start
+                                                  gin.fn
+                                                  gin.fn-guard
+                                                  gin.compst-var
+                                                  gin.limit-var
+                                                  else-stmt-limit
+                                                  t
+                                                  wrld))
+       ((mv then-stmt-type-formula &)
+        (atc-gen-term-type-formula then-uterm
+                                   type
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags))
+       (then-stmt-type-formula (atc-contextualize then-stmt-type-formula
+                                                  then-context-start
+                                                  gin.fn
+                                                  gin.fn-guard
+                                                  nil
+                                                  nil
+                                                  nil
+                                                  nil
+                                                  wrld))
+       ((mv else-stmt-type-formula &)
+        (atc-gen-term-type-formula else-uterm
+                                   type
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags))
+       (else-stmt-type-formula (atc-contextualize else-stmt-type-formula
+                                                  else-context-start
+                                                  gin.fn
+                                                  gin.fn-guard
+                                                  nil
+                                                  nil
+                                                  nil
+                                                  nil
+                                                  wrld))
+       (then-stmt-formula `(and ,then-stmt-exec-formula
+                                ,then-stmt-type-formula))
+       (else-stmt-formula `(and ,else-stmt-exec-formula
+                                ,else-stmt-type-formula))
        (then-stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-compound
                                (:e stmt-kind)
@@ -2495,7 +3803,17 @@
                                compustate-frames-number-of-add-var-not-zero
                                compustatep-of-add-frame
                                compustatep-of-add-var
-                               compustatep-of-enter-scope))))
+                               compustatep-of-enter-scope
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        (else-stmt-hints
         `(("Goal" :in-theory '(exec-stmt-when-compound
                                (:e stmt-kind)
@@ -2515,7 +3833,17 @@
                                compustate-frames-number-of-add-var-not-zero
                                compustatep-of-add-frame
                                compustatep-of-add-var
-                               compustatep-of-enter-scope))))
+                               compustatep-of-enter-scope
+                               uchar-array-length-of-uchar-array-write
+                               schar-array-length-of-schar-array-write
+                               ushort-array-length-of-ushort-array-write
+                               sshort-array-length-of-sshort-array-write
+                               uint-array-length-of-uint-array-write
+                               sint-array-length-of-sint-array-write
+                               ulong-array-length-of-ulong-array-write
+                               slong-array-length-of-slong-array-write
+                               ullong-array-length-of-ullong-array-write
+                               sllong-array-length-of-sllong-array-write))))
        ((mv then-stmt-event &)
         (evmac-generate-defthm then-stmt-thm
                                :formula then-stmt-formula
@@ -2532,39 +3860,41 @@
         (fresh-logical-name-with-$s-suffix if-stmt-thm nil names-to-avoid wrld))
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
-       (uterm/nil (if voidp
-                      nil
-                    (untranslate$ term nil state)))
+       (uterm (untranslate$ term nil state))
+       (uterm/nil (if voidp nil uterm))
        (test-uterm (untranslate$ test-term nil state))
        (new-compst `(if* ,test-uterm ,then-new-compst ,else-new-compst))
-       (if-stmt-formula1 `(equal (exec-stmt ',stmt
-                                            ,gin.compst-var
-                                            ,gin.fenv-var
-                                            ,gin.limit-var)
-                                 (mv ,uterm/nil ,new-compst)))
-       (if-stmt-formula1 (atc-contextualize if-stmt-formula1
-                                            gin.context
-                                            gin.fn
-                                            gin.fn-guard
-                                            gin.compst-var
-                                            gin.limit-var
-                                            if-stmt-limit
-                                            t
-                                            wrld))
-       (if-stmt-formula
-        (if voidp
-            if-stmt-formula1
-          (b* ((if-stmt-formula2 `(,type-pred ,uterm/nil))
-               (if-stmt-formula2 (atc-contextualize if-stmt-formula2
-                                                    gin.context
-                                                    gin.fn
-                                                    gin.fn-guard
-                                                    nil
-                                                    nil
-                                                    nil
-                                                    nil
-                                                    wrld)))
-            `(and ,if-stmt-formula1 ,if-stmt-formula2))))
+       (if-stmt-exec-formula `(equal (exec-stmt ',stmt
+                                                ,gin.compst-var
+                                                ,gin.fenv-var
+                                                ,gin.limit-var)
+                                     (mv ,uterm/nil ,new-compst)))
+       (if-stmt-exec-formula (atc-contextualize if-stmt-exec-formula
+                                                gin.context
+                                                gin.fn
+                                                gin.fn-guard
+                                                gin.compst-var
+                                                gin.limit-var
+                                                if-stmt-limit
+                                                t
+                                                wrld))
+       ((mv if-stmt-type-formula if-stmt-type-thms)
+        (atc-gen-term-type-formula uterm
+                                   type
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags))
+       (if-stmt-type-formula (atc-contextualize if-stmt-type-formula
+                                                gin.context
+                                                gin.fn
+                                                gin.fn-guard
+                                                nil
+                                                nil
+                                                nil
+                                                nil
+                                                wrld))
+       (if-stmt-formula `(and ,if-stmt-exec-formula
+                              ,if-stmt-type-formula))
        (test-type-pred (type-to-recognizer test-type wrld))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (value-kind-when-test-type-pred (pack 'value-kind-when- test-type-pred))
@@ -2589,7 +3919,17 @@
                                    value-fix-when-valuep
                                    ,valuep-when-test-type-pred
                                    apconvert-expr-value-when-not-value-array
-                                   ,value-kind-when-test-type-pred)))
+                                   ,value-kind-when-test-type-pred
+                                   uchar-array-length-of-uchar-array-write
+                                   schar-array-length-of-schar-array-write
+                                   ushort-array-length-of-ushort-array-write
+                                   sshort-array-length-of-sshort-array-write
+                                   uint-array-length-of-uint-array-write
+                                   sint-array-length-of-sint-array-write
+                                   ulong-array-length-of-ulong-array-write
+                                   slong-array-length-of-slong-array-write
+                                   ullong-array-length-of-ullong-array-write
+                                   sllong-array-length-of-sllong-array-write)))
           `(("Goal" :in-theory '(exec-stmt-when-if-and-true
                                  exec-stmt-when-if-and-false
                                  (:e stmt-kind)
@@ -2610,7 +3950,18 @@
                                  ,value-kind-when-test-type-pred
                                  compustatep-of-add-var
                                  compustate-frames-number-of-add-var-not-zero
-                                 exit-scope-of-enter-scope)))))
+                                 exit-scope-of-enter-scope
+                                 ,@if-stmt-type-thms
+                                 uchar-array-length-of-uchar-array-write
+                                 schar-array-length-of-schar-array-write
+                                 ushort-array-length-of-ushort-array-write
+                                 sshort-array-length-of-sshort-array-write
+                                 uint-array-length-of-uint-array-write
+                                 sint-array-length-of-sint-array-write
+                                 ulong-array-length-of-ulong-array-write
+                                 slong-array-length-of-slong-array-write
+                                 ullong-array-length-of-ullong-array-write
+                                 sllong-array-length-of-sllong-array-write)))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize
                        test-term
@@ -2664,7 +4015,7 @@
                                                else-stmt-event
                                                if-stmt-event))
                                  if-stmt-thm
-                                 (and (not voidp) term)
+                                 term
                                  type
                                  new-compst
                                  (change-stmt-gin
@@ -2706,30 +4057,330 @@
                                        thm-index
                                        names-to-avoid
                                        wrld)
-          (mv nil nil thm-index names-to-avoid)))
-       ((stmt-gout gout)
-        (atc-gen-block-item-list-one term
-                                     item
-                                     item-limit
-                                     item-events
-                                     item-thm-name
-                                     (and (not voidp) term)
-                                     type
-                                     new-compst
-                                     new-context
-                                     (and voidp new-inscope)
-                                     (change-stmt-gin
-                                      gin
-                                      :thm-index thm-index
-                                      :names-to-avoid names-to-avoid
-                                      :proofs (and item-thm-name t))
-                                     state)))
+          (mv nil nil thm-index names-to-avoid))))
     (retok
-     (change-stmt-gout gout :events (append gout.events new-inscope-events))))
+     (atc-gen-block-item-list-one term
+                                  type
+                                  item
+                                  item-limit
+                                  (append item-events
+                                          new-inscope-events)
+                                  item-thm-name
+                                  new-compst
+                                  new-context
+                                  (and voidp new-inscope)
+                                  (change-stmt-gin
+                                   gin
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs (and item-thm-name t))
+                                  state)))
   :guard-hints
   (("Goal"
     :in-theory
-    (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+    (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+         ((:e tau-system))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-cfun-call-stmt ((called-fn symbolp)
+                                (arg-terms pseudo-term-listp)
+                                (arg-types type-listp)
+                                (affect symbol-listp)
+                                (limit pseudo-termp)
+                                (called-fn-guard symbolp)
+                                (gin stmt-ginp)
+                                state)
+  :returns (mv erp (gout stmt-goutp))
+  :short "Generate a C block item statement that consists of
+          a call of a @('void') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also generate a theorem about @(tsee exec-expr-call-or-asg)
+     applied to the call expression.
+     The limit is 2 more than the function's limit:
+     it takes 1 to go from @(tsee exec-expr-call-or-asg)
+     to @(tsee exec-expr-call),
+     and another 1 to go from there to @(tsee exec-expr-pure-list).
+     Since the limit term for the function is over the function's formal,
+     we need to perform a substitution of the formals with the actuals."))
+  (b* (((reterr) (irr-stmt-gout))
+       (wrld (w state))
+       ((stmt-gin gin) gin)
+       ((when gin.loop-flag)
+        (reterr
+         (msg "A loop body must end with ~
+               a recursive call on every path, ~
+               but in the function ~x0 it ends with ~
+               a call of ~x1 on arguments ~x2 instead."
+              gin.fn called-fn arg-terms)))
+       ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
+                                          arg-types
+                                          arg-terms))
+        (reterr
+         (msg "The call of ~x0 with arguments ~x1 ~
+               does not satisfy the restrictions ~
+               on array and pointer arguments being identical to the formals."
+              called-fn arg-terms)))
+       ((unless (equal gin.affect affect))
+        (reterr
+         (msg "When generating C code for the function ~x0, ~
+               a call of the non-recursive function ~x1 ~
+               has been encountered that affects ~x2, ~
+               which differs from the variables ~x3 ~
+               being affected here."
+              gin.fn called-fn affect gin.affect)))
+       ((erp (pexprs-gout args))
+        (atc-gen-expr-pure-list arg-terms
+                                (make-pexprs-gin
+                                 :context gin.context
+                                 :inscope gin.inscope
+                                 :prec-tags gin.prec-tags
+                                 :fn gin.fn
+                                 :fn-guard gin.fn-guard
+                                 :compst-var gin.compst-var
+                                 :thm-index gin.thm-index
+                                 :names-to-avoid gin.names-to-avoid
+                                 :proofs gin.proofs)
+                                state))
+       ((unless (equal args.types arg-types))
+        (reterr
+         (msg "The function ~x0 with argument types ~x1 is applied to ~
+               expression terms ~x2 returning ~x3. ~
+               This is indicative of provably dead code, ~
+               given that the code is guard-verified."
+              called-fn arg-types arg-terms args.types)))
+       (call-expr
+        (make-expr-call :fun (make-ident :name (symbol-name called-fn))
+                        :args args.exprs))
+       ((when (eq called-fn 'quote))
+        (reterr (raise "Internal error: called function is QUOTE.")))
+       (term `(,called-fn ,@args.terms))
+       (uterm (untranslate$ term nil state))
+       (fninfo (cdr (assoc-eq called-fn gin.prec-fns)))
+       ((unless fninfo)
+        (reterr (raise "Internal error: function ~x0 has no info." called-fn)))
+       (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
+       ((when (or (not gin.proofs)
+                  (not called-fn-thm)
+                  (consp (cdr affect)) ; <- temporary
+                  (b* ((info (atc-get-var (car affect) gin.inscope)))
+                    (and info
+                         (atc-var-info->externalp info))))) ; <- temporary
+        (retok (make-stmt-gout
+                :items (list (block-item-stmt (stmt-expr call-expr)))
+                :type (type-void)
+                :term term
+                :context (make-atc-context :preamble nil :premises nil)
+                :inscope nil
+                :limit `(binary-+ '5 ,limit)
+                :events args.events
+                :thm-name nil
+                :thm-index args.thm-index
+                :names-to-avoid args.names-to-avoid)))
+       (guard-lemma-name (pack gin.fn '-call- args.thm-index '-guard-lemma))
+       ((mv guard-lemma-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix guard-lemma-name
+                                           nil
+                                           args.names-to-avoid
+                                           wrld))
+       (thm-index (1+ args.thm-index))
+       (guard-lemma-formula `(,called-fn-guard ,@args.terms))
+       (guard-lemma-formula (atc-contextualize guard-lemma-formula
+                                               gin.context
+                                               gin.fn
+                                               gin.fn-guard
+                                               nil
+                                               nil
+                                               nil
+                                               nil
+                                               wrld))
+       (guard-lemma-hints
+        `(("Goal"
+           :in-theory '(,gin.fn-guard ,called-fn-guard if* test*)
+           :use (:guard-theorem ,gin.fn))))
+       ((mv guard-lemma-event &)
+        (evmac-generate-defthm guard-lemma-name
+                               :formula guard-lemma-formula
+                               :hints guard-lemma-hints
+                               :enable nil))
+       (call-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv call-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         call-thm-name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
+       (called-formals (formals+ called-fn wrld))
+       ((unless (equal (len called-formals) (len args.terms)))
+        (reterr (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
+                       called-fn called-formals args.terms)))
+       (limit-for-actuals
+        (fsubcor-var (formals+ called-fn wrld) args.terms limit))
+       (call-limit `(binary-+ '2 ,limit-for-actuals))
+       (new-compst `(update-object ,(add-suffix-to-fn (car affect) "-OBJDES")
+                                   (,called-fn ,@args.terms)
+                                   ,gin.compst-var))
+       (exec-formula `(equal (exec-expr-call-or-asg ',call-expr
+                                                    ,gin.compst-var
+                                                    ,gin.fenv-var
+                                                    ,gin.limit-var)
+                             ,new-compst))
+       (exec-formula (atc-contextualize exec-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        gin.compst-var
+                                        gin.limit-var
+                                        call-limit
+                                        t
+                                        wrld))
+       ((mv type-formula inscope-thms)
+        (atc-gen-term-type-formula uterm
+                                   (type-void)
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (call-formula `(and ,exec-formula ,type-formula))
+       (call-hints
+        `(("Goal"
+           :in-theory
+           '(exec-expr-call-or-asg-when-call
+             exec-expr-call-open
+             exec-expr-pure-list-of-nil
+             exec-expr-pure-list-when-consp
+             ,@args.thm-names
+             ,called-fn-thm
+             ,guard-lemma-name
+             ,@inscope-thms
+             exec-fun-of-const-identifier
+             (:e identp)
+             (:e ident->name)
+             apconvert-expr-value-when-not-value-array
+             value-kind-when-ucharp
+             value-kind-when-scharp
+             value-kind-when-ushortp
+             value-kind-when-sshortp
+             value-kind-when-uintp
+             value-kind-when-sintp
+             value-kind-when-ulongp
+             value-kind-when-slongp
+             value-kind-when-ullongp
+             value-kind-when-sllongp
+             value-kind-when-uchar-arrayp
+             value-kind-when-schar-arrayp
+             value-kind-when-ushort-arrayp
+             value-kind-when-sshort-arrayp
+             value-kind-when-uint-arrayp
+             value-kind-when-sint-arrayp
+             value-kind-when-ulong-arrayp
+             value-kind-when-slong-arrayp
+             value-kind-when-ullong-arrayp
+             value-kind-when-sllong-arrayp
+             ,@(atc-string-taginfo-alist-to-value-kind-thms gin.prec-tags)
+             valuep-when-ucharp
+             valuep-when-scharp
+             valuep-when-ushortp
+             valuep-when-sshortp
+             valuep-when-uintp
+             valuep-when-sintp
+             valuep-when-ulongp
+             valuep-when-slongp
+             valuep-when-ullongp
+             valuep-when-sllongp
+             valuep-when-uchar-arrayp
+             valuep-when-schar-arrayp
+             valuep-when-ushort-arrayp
+             valuep-when-sshort-arrayp
+             valuep-when-uint-arrayp
+             valuep-when-sint-arrayp
+             valuep-when-ulong-arrayp
+             valuep-when-slong-arrayp
+             valuep-when-ullong-arrayp
+             valuep-when-sllong-arrayp
+             ,@(atc-string-taginfo-alist-to-valuep-thms gin.prec-tags)
+             type-of-value-when-ucharp
+             type-of-value-when-scharp
+             type-of-value-when-ushortp
+             type-of-value-when-sshortp
+             type-of-value-when-uintp
+             type-of-value-when-sintp
+             type-of-value-when-ulongp
+             type-of-value-when-slongp
+             type-of-value-when-ullongp
+             type-of-value-when-sllongp
+             type-of-value-when-uchar-arrayp
+             type-of-value-when-schar-arrayp
+             type-of-value-when-ushort-arrayp
+             type-of-value-when-sshort-arrayp
+             type-of-value-when-uint-arrayp
+             type-of-value-when-sint-arrayp
+             type-of-value-when-ulong-arrayp
+             type-of-value-when-slong-arrayp
+             type-of-value-when-ullong-arrayp
+             type-of-value-when-sllong-arrayp
+             ,@(atc-string-taginfo-alist-to-type-of-value-thms gin.prec-tags)
+             expr-valuep-of-expr-value
+             expr-value->value-of-expr-value
+             value-fix-when-valuep
+             (:e value-listp)
+             value-listp-of-cons
+             (:e value-optionp)
+             (:e expr-kind)
+             (:e expr-call->fun)
+             (:e expr-call->args)
+             not-zp-of-limit-variable
+             not-zp-of-limit-minus-const
+             compustatep-of-add-var
+             compustatep-of-enter-scope
+             compustatep-of-add-frame
+             mv-nth-of-cons
+             (:e zp)
+             write-object-to-update-object
+             write-object-okp-of-add-var
+             write-object-okp-of-enter-scope
+             write-object-okp-of-add-frame
+             write-object-okp-when-valuep-of-read-object-no-syntaxp
+             value-array->length-when-uchar-arrayp
+             value-array->length-when-schar-arrayp
+             value-array->length-when-ushort-arrayp
+             value-array->length-when-sshort-arrayp
+             value-array->length-when-uint-arrayp
+             value-array->length-when-sint-arrayp
+             value-array->length-when-ulong-arrayp
+             value-array->length-when-slong-arrayp
+             value-array->length-when-ullong-arrayp
+             value-array->length-when-sllong-arrayp))))
+       ((mv call-event &) (evmac-generate-defthm call-thm-name
+                                                 :formula call-formula
+                                                 :hints call-hints
+                                                 :enable nil)))
+    (retok (make-stmt-gout
+            :items (list (block-item-stmt (stmt-expr call-expr)))
+            :type (type-void)
+            :term term
+            :context (make-atc-context :preamble nil :premises nil)
+            :inscope nil
+            :limit `(binary-+ '3 ,call-limit)
+            :events (append args.events
+                            (list guard-lemma-event
+                                  call-event))
+            :thm-name nil
+            :thm-index thm-index
+            :names-to-avoid names-to-avoid)))
+  :guard-hints (("Goal" :in-theory (enable length)))
+  :prepwork
+  ((defrulel verify-guards-lemma
+     (implies (symbol-listp x)
+              (not (stringp x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3380,95 +5031,59 @@
               (atc-update-var-term-alist (list var)
                                          (list val-instance)
                                          gin.var-term-alist))
-             ((erp okp & arg-term type) (atc-check-integer-write val-term))
+             ((erp okp fn arg-term type) (atc-check-integer-write val-term))
              ((when okp)
-              (b* (((unless (eq wrapper? nil))
-                    (reterr
-                     (msg "The pointed integer write term ~x0 ~
-                           to which ~x1 is bound ~
-                           has the ~x2 wrapper, which is disallowed."
-                          arg-term var wrapper?)))
-                   ((unless (member-eq var gin.affect))
-                    (reterr
-                     (msg "The pointed integer ~x0 is being written to, ~
-                           but it is not among the variables ~x1 ~
-                           currently affected."
-                          var gin.affect)))
-                   ((erp (pexpr-gout ptr))
-                    (atc-gen-expr-pure var
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
-                                       state))
-                   ((unless (equal ptr.type (type-pointer type)))
-                    (reterr
-                     (msg "The variable ~x0 of type ~x1 does not have ~
-                           the expected type ~x2. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var ptr.type (type-pointer type))))
-                   ((erp (pexpr-gout int))
-                    (atc-gen-expr-pure arg-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index ptr.thm-index
-                                        :names-to-avoid ptr.names-to-avoid
-                                        :proofs (and ptr.thm-name t))
-                                       state))
-                   ((unless (equal int.type type))
-                    (reterr
-                     (msg "The term ~x0 of type ~x1 does not have ~
-                           the expected type ~x1. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          arg-term int.type type)))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (make-expr-unary
-                                :op (unop-indir)
-                                :arg ptr.expr)
-                         :arg2 int.expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
+              (b* (((erp asg-item
+                         asg-term
+                         asg-limit
+                         asg-events
+                         asg-thm
+                         new-inscope
+                         new-context
+                         thm-index
+                         names-to-avoid)
+                    (atc-gen-block-item-integer-asg var
+                                                    val-term
+                                                    arg-term
+                                                    type
+                                                    fn
+                                                    wrapper?
+                                                    gin
+                                                    state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
+                                   :context new-context
                                    :var-term-alist var-term-alist-body
-                                   :thm-index int.thm-index
-                                   :names-to-avoid int.names-to-avoid
-                                   :proofs nil)
+                                   :inscope new-inscope
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs (and asg-thm t))
                                   state))
-                   (limit (pseudo-term-fncall 'binary-+
-                                              (list (pseudo-term-quote 4)
-                                                    body.limit))))
-                (retok (make-stmt-gout
-                        :items (cons item body.items)
-                        :type body.type
-                        :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
-                        :limit limit
-                        :events (append ptr.events
-                                        int.events
-                                        body.events)
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid))))
+                   (term (acl2::close-lambdas
+                          `((lambda (,var) ,body.term) ,asg-term)))
+                   (items-gout
+                    (atc-gen-block-item-list-cons
+                     term
+                     asg-item
+                     asg-limit
+                     asg-events
+                     asg-thm
+                     body.items
+                     body.limit
+                     body.events
+                     body.thm-name
+                     body.type
+                     body.context
+                     body.inscope
+                     (change-stmt-gin
+                      gin
+                      :thm-index body.thm-index
+                      :names-to-avoid body.names-to-avoid
+                      :proofs (and body.thm-name t))
+                     state)))
+                (retok items-gout)))
              ((erp okp fn sub-term elem-term elem-type)
               (atc-check-array-write var val-term))
              ((when okp)
@@ -3524,240 +5139,127 @@
                       :proofs (and body.thm-name t))
                      state)))
                 (retok items-gout)))
-             ((erp okp member-term tag member-name member-type)
+             ((erp okp fn member-term tag member-name member-type)
               (atc-check-struct-write-scalar var val-term gin.prec-tags))
              ((when okp)
-              (b* (((unless (eq wrapper? nil))
-                    (reterr
-                     (msg "The structure write term ~x0 ~
-                           to which ~x1 is bound ~
-                           has the ~x2 wrapper, which is disallowed."
-                          val-term var wrapper?)))
-                   ((erp (pexpr-gout struct))
-                    (atc-gen-expr-pure var
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
-                                       state))
-                   ((erp pointerp)
-                    (cond
-                     ((equal struct.type (type-struct tag))
-                      (retok nil))
-                     ((equal struct.type (type-pointer (type-struct tag)))
-                      (retok t))
-                     (t (reterr
-                         (msg "The structure ~x0 of type ~x1 ~
-                               does not have the expected type ~x2 or ~x3. ~
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var
-                              struct.type
-                              (type-struct tag)
-                              (type-pointer (type-struct tag)))))))
-                   ((when (and pointerp
-                               (not (member-eq var gin.affect))))
-                    (reterr
-                     (msg "The structure ~x0 ~
-                           is being written to by pointer, ~
-                           but it is not among the variables ~x1 ~
-                           currently affected."
-                          var gin.affect)))
-                   ((erp (pexpr-gout member))
-                    (atc-gen-expr-pure member-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index struct.thm-index
-                                        :names-to-avoid struct.names-to-avoid
-                                        :proofs (and struct.thm-name t))
-                                       state))
-                   ((unless (equal member.type member-type))
-                    (reterr
-                     (msg "The structure ~x0 of type ~x1 ~
-                           is being written to with ~
-                           a member ~x2 of type ~x3, ~
-                           instead of type ~x4 as expected. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var struct.type member-term
-                          member.type member-type)))
-                   (asg-mem (if pointerp
-                                (make-expr-memberp :target struct.expr
-                                                   :name member-name)
-                              (make-expr-member :target struct.expr
-                                                :name member-name)))
-                   (asg (make-expr-binary :op (binop-asg)
-                                          :arg1 asg-mem
-                                          :arg2 member.expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
+              (b* (((erp asg-item
+                         asg-term
+                         asg-limit
+                         asg-events
+                         asg-thm
+                         new-inscope
+                         new-context
+                         thm-index
+                         names-to-avoid)
+                    (atc-gen-block-item-struct-scalar-asg var
+                                                          val-term
+                                                          tag
+                                                          member-name
+                                                          member-term
+                                                          member-type
+                                                          fn
+                                                          wrapper?
+                                                          gin
+                                                          state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
+                                   :context new-context
                                    :var-term-alist var-term-alist-body
-                                   :thm-index member.thm-index
-                                   :names-to-avoid member.names-to-avoid
-                                   :proofs nil)
+                                   :inscope new-inscope
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs (and asg-thm t))
                                   state))
-                   (limit (pseudo-term-fncall 'binary-+
-                                              (list (pseudo-term-quote 4)
-                                                    body.limit))))
-                (retok (make-stmt-gout
-                        :items (cons item body.items)
-                        :type body.type
-                        :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
-                        :limit limit
-                        :events (append struct.events
-                                        member.events)
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid))))
-             ((erp okp index-term elem-term tag member elem-type)
+                   (term (acl2::close-lambdas
+                          `((lambda (,var) ,body.term) ,asg-term)))
+                   (items-gout
+                    (atc-gen-block-item-list-cons
+                     term
+                     asg-item
+                     asg-limit
+                     asg-events
+                     asg-thm
+                     body.items
+                     body.limit
+                     body.events
+                     body.thm-name
+                     body.type
+                     body.context
+                     body.inscope
+                     (change-stmt-gin
+                      gin
+                      :thm-index body.thm-index
+                      :names-to-avoid body.names-to-avoid
+                      :proofs (and body.thm-name t))
+                     state)))
+                (retok items-gout)))
+             ((erp okp
+                   fn
+                   index-term
+                   elem-term
+                   tag
+                   member-name
+                   elem-type
+                   flexiblep)
               (atc-check-struct-write-array var val-term gin.prec-tags))
              ((when okp)
-              (b* (((unless (eq wrapper? nil))
-                    (reterr
-                     (msg "The structure write term ~x0 ~
-                           to which ~x1 is bound ~
-                           has the ~x2 wrapper, which is disallowed."
-                          val-term var wrapper?)))
-                   ((erp (pexpr-gout struct))
-                    (atc-gen-expr-pure var
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index gin.thm-index
-                                        :names-to-avoid gin.names-to-avoid
-                                        :proofs gin.proofs)
-                                       state))
-                   ((erp pointerp)
-                    (cond
-                     ((equal struct.type (type-struct tag))
-                      (retok nil))
-                     ((equal struct.type (type-pointer (type-struct tag)))
-                      (retok t))
-                     (t (reterr
-                         (msg "The structure ~x0 of type ~x1 ~
-                               does not have the expected type ~x2 or ~x3. ~
-                               This is indicative of ~
-                               unreachable code under the guards, ~
-                               given that the code is guard-verified."
-                              var
-                              struct.type
-                              (type-struct tag)
-                              (type-pointer (type-struct tag)))))))
-                   ((when (and pointerp
-                               (not (member-eq var gin.affect))))
-                    (reterr
-                     (msg "The structure ~x0 ~
-                           is being written to by pointer, ~
-                           but it is not among the variables ~x1 ~
-                           currently affected."
-                          var gin.affect)))
-                   ((erp (pexpr-gout index))
-                    (atc-gen-expr-pure index-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index struct.thm-index
-                                        :names-to-avoid struct.names-to-avoid
-                                        :proofs (and struct.thm-name t))
-                                       state))
-                   ((unless (type-integerp index.type))
-                    (reterr
-                     (msg "The structure ~x0 of type ~x1 ~
-                           is being written to with ~
-                           an index ~x2 of type ~x3, ~
-                           instead of a C integer type as expected. ~
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var struct.type index-term index.type)))
-                   ((erp (pexpr-gout elem))
-                    (atc-gen-expr-pure elem-term
-                                       (make-pexpr-gin
-                                        :context gin.context
-                                        :inscope gin.inscope
-                                        :prec-tags gin.prec-tags
-                                        :fn gin.fn
-                                        :fn-guard gin.fn-guard
-                                        :compst-var gin.compst-var
-                                        :thm-index index.thm-index
-                                        :names-to-avoid index.names-to-avoid
-                                        :proofs (and index.thm-name t))
-                                       state))
-                   ((unless (equal elem.type elem-type))
-                    (reterr
-                     (msg "The structure ~x0 of type ~x1 ~
-                           is being written to with ~
-                           a member array element ~x2 of type ~x3, ~
-                           instead of type ~x4 as expected.
-                           This is indicative of ~
-                           unreachable code under the guards, ~
-                           given that the code is guard-verified."
-                          var struct.type elem-term elem.type elem-type)))
-                   (asg-mem (if pointerp
-                                (make-expr-memberp :target struct.expr
-                                                   :name member)
-                              (make-expr-member :target struct.expr
-                                                :name member)))
-                   (asg (make-expr-binary
-                         :op (binop-asg)
-                         :arg1 (make-expr-arrsub :arr asg-mem
-                                                 :sub index.expr)
-                         :arg2 elem.expr))
-                   (stmt (stmt-expr asg))
-                   (item (block-item-stmt stmt))
+              (b* (((erp asg-item
+                         asg-term
+                         asg-limit
+                         asg-events
+                         asg-thm
+                         new-inscope
+                         new-context
+                         thm-index
+                         names-to-avoid)
+                    (atc-gen-block-item-struct-array-asg var
+                                                         val-term
+                                                         tag
+                                                         member-name
+                                                         index-term
+                                                         elem-term
+                                                         elem-type
+                                                         flexiblep
+                                                         fn
+                                                         wrapper?
+                                                         gin
+                                                         state))
                    ((erp (stmt-gout body))
                     (atc-gen-stmt body-term
                                   (change-stmt-gin
                                    gin
+                                   :context new-context
                                    :var-term-alist var-term-alist-body
-                                   :thm-index elem.thm-index
-                                   :names-to-avoid elem.names-to-avoid
-                                   :proofs nil)
+                                   :inscope new-inscope
+                                   :thm-index thm-index
+                                   :names-to-avoid names-to-avoid
+                                   :proofs (and asg-thm t))
                                   state))
-                   (limit (pseudo-term-fncall 'binary-+
-                                              (list (pseudo-term-quote 4)
-                                                    body.limit))))
-                (retok (make-stmt-gout
-                        :items (cons item body.items)
-                        :type body.type
-                        :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
-                        :limit limit
-                        :events (append struct.events
-                                        index.events
-                                        elem.events
-                                        body.events)
-                        :thm-name nil
-                        :thm-index body.thm-index
-                        :names-to-avoid body.names-to-avoid))))
+                   (term (acl2::close-lambdas
+                          `((lambda (,var) ,body.term) ,asg-term)))
+                   (items-gout
+                    (atc-gen-block-item-list-cons
+                     term
+                     asg-item
+                     asg-limit
+                     asg-events
+                     asg-thm
+                     body.items
+                     body.limit
+                     body.events
+                     body.thm-name
+                     body.type
+                     body.context
+                     body.inscope
+                     (change-stmt-gin
+                      gin
+                      :thm-index body.thm-index
+                      :names-to-avoid body.names-to-avoid
+                      :proofs (and body.thm-name t))
+                     state)))
+                (retok items-gout)))
              ((mv info? innermostp errorp) (atc-check-var var gin.inscope))
              ((when errorp)
               (reterr
@@ -4064,65 +5566,25 @@
                  a recursive call to the loop function occurs ~
                  not at the end of the computation on some path."
                 gin.fn))))
-       ((mv okp called-fn arg-terms in-types out-type fn-affect limit)
+       ((mv okp
+            called-fn
+            arg-terms
+            in-types
+            out-type
+            fn-affect
+            limit
+            called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
-        (b* (((when gin.loop-flag)
-              (reterr
-               (msg "A loop body must end with ~
-                     a recursive call on every path, ~
-                     but in the function ~x0 it ends with ~x1 instead."
-                    gin.fn term)))
-             ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
-                                                in-types
-                                                arg-terms))
-              (reterr
-               (msg "The call ~x0 does not satisfy the restrictions ~
-                     on array arguments being identical to the formals."
-                    term)))
-             ((unless (equal gin.affect fn-affect))
-              (reterr
-               (msg "When generating C code for the function ~x0, ~
-                     a call of the non-recursive function ~x1 ~
-                     has been encountered that affects ~x2, ~
-                     which differs from the variables ~x3 ~
-                     being affected here."
-                    gin.fn loop-fn fn-affect gin.affect)))
-             ((erp (pexprs-gout args))
-              (atc-gen-expr-pure-list arg-terms
-                                      (make-pexprs-gin
-                                       :context gin.context
-                                       :inscope gin.inscope
-                                       :prec-tags gin.prec-tags
-                                       :fn gin.fn
-                                       :fn-guard gin.fn-guard
-                                       :compst-var gin.compst-var
-                                       :thm-index gin.thm-index
-                                       :names-to-avoid gin.names-to-avoid
-                                       :proofs gin.proofs)
-                                      state))
-             ((unless (equal args.types in-types))
-              (reterr
-               (msg "The function ~x0 with input types ~x1 is applied to ~
-                     expression terms ~x2 returning ~x3. ~
-                     This is indicative of provably dead code, ~
-                     given that the code is guard-verified."
-                    called-fn in-types arg-terms args.types)))
-             (call-expr (make-expr-call :fun (make-ident
-                                              :name (symbol-name called-fn))
-                                        :args args.exprs)))
-          (retok (make-stmt-gout
-                  :items (list (block-item-stmt (stmt-expr call-expr)))
-                  :type (type-void)
-                  :term term
-                  :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil
-                  :limit `(binary-+ '5 ,limit)
-                  :events args.events
-                  :thm-name nil
-                  :thm-index args.thm-index
-                  :names-to-avoid args.names-to-avoid))))
+        (atc-gen-cfun-call-stmt called-fn
+                                arg-terms
+                                in-types
+                                fn-affect
+                                limit
+                                called-fn-guard
+                                gin
+                                state))
        ((when gin.loop-flag)
         (reterr
          (msg "A loop body must end with ~

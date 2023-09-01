@@ -79,17 +79,18 @@
   :hints (("Goal" :use (:instance not-member-equal-of-fresh-symbol-aux-same)
            :in-theory (disable not-member-equal-of-fresh-symbol-aux-same))))
 
-(local
-  (defthm not-equal-of-coerce-of-nat-to-string
-    (implies (and (not (all-digit-charsp x 10))
-                  (natp n))
-             (not (equal x (coerce (nat-to-string n) 'list))))))
+;; (local
+;;   (defthm not-equal-of-coerce-of-nat-to-string
+;;     (implies (and (not (all-digit-charsp x 10))
+;;                   (natp n))
+;;              (not (equal x (coerce (nat-to-string n) 'list))))))
 
 (local
   (defthm not-equal-of-nat-to-string
     (implies (and (not (all-digit-charsp (coerce x 'list) 10))
                   (natp n))
-             (not (equal x (nat-to-string n))))))
+             (not (equal x (nat-to-string n))))
+    :hints (("Goal" :in-theory (enable nat-to-string)))))
 
 (defthm fresh-symbol-aux-not-nil
   (implies (and base-sym

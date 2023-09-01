@@ -52,6 +52,13 @@ number theory.  It includes the following ACL2 books:
   pratt
       Vaughn Pratt's method of prime certification applied to the prime 2^255 - 19.
 
+The remaining books are motivated by the Web page http://www.cs.ru.nl/~freek/100/, 
+"Formalizing 100 Theorems":
+
+  subsets
+      The number of subsets of a set of order n is 2^n.  For 0 <= k <= n, the number
+      of subsets of order k is n!/(k!(n - k)!).
+
   girard
       An odd prime p is a sum of two squares iff (mod p 4) = 1.
 
@@ -83,9 +90,17 @@ number theory.  It includes the following ACL2 books:
       votes, respectively.  The votes are counted sequentially.  If a > b, then the
       probability that A maintains a strict lead throughout the count is (a-b)/(a+b).
 
+  subseq
+      If l is a list of distinct rationals of length greater than (a - 1)(b - 1), 
+      where a and b are positive integers, then l has either an ascending subsequence 
+      of length a or a descending subsequence of length b.
+
   birthday
       What is the probability that in a party of k people, at least 2 have the same
       birthday?
+
+  konigsberg
+      The Seven Bridges of Konigsberg
 
   triangular
       The sum of the reciprocals of the triangular numbers is 2.
@@ -95,3 +110,7 @@ number theory.  It includes the following ACL2 books:
 
   harmonic
       Divergence of the harmonic series.
+
+  div3
+      The sum of the digits in the decimal expansion of n is divisible by 3 iff n is
+      divisible by 3.

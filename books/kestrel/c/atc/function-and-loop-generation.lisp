@@ -35,6 +35,7 @@
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/lists/true-listp" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
@@ -262,10 +263,13 @@
                type)))
     (mv type defobj-pred arg))
   :guard-hints
-  (("Goal" :in-theory (enable acl2::true-listp-when-pseudo-term-listp
-                              iff-consp-when-true-listp
-                              symbolp-of-car-of-pseudo-termp
-                              pseudo-term-listp-of-cdr-of-pseudo-termp))))
+  (("Goal" :in-theory (e/d (acl2::true-listp-when-pseudo-term-listp
+                            iff-consp-when-true-listp
+                            symbolp-of-car-of-pseudo-termp
+                            pseudo-term-listp-of-cdr-of-pseudo-termp
+                            alistp-when-atc-string-objinfo-alistp-rewrite
+                            alistp-when-atc-string-taginfo-alistp-rewrite)
+                           ((:e tau-system)))))) ; for speed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1892,7 +1896,7 @@
                                       typed-formals
                                       prec-fns
                                       wrld))
-       ((mv okp & & & & affected &)
+       ((mv okp & & & & affected & &)
         (atc-check-cfun-call term nil prec-fns wrld))
        ((when okp) (retok affected))
        ((mv okp & & & affected & &)
@@ -2020,7 +2024,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-context-preamble ((typed-formals atc-symbol-varinfo-alistp)
-                                  (compst-var symbolp))
+                                  (compst-var symbolp)
+                                  (fenv-var symbolp)
+                                  (prog-const symbolp))
   :returns (terms true-listp)
   :short "Generate a context preamble from the formals of a function."
   :long
@@ -2081,7 +2087,8 @@
   (b* (((mv terms-about-single-formals
             terms-about-formal-pairs)
         (atc-gen-context-preamble-aux typed-formals compst-var)))
-    (append terms-about-single-formals
+    (append (list `(equal ,fenv-var (init-fun-env (preprocess ,prog-const))))
+            terms-about-single-formals
             terms-about-formal-pairs))
 
   :prepwork
@@ -2940,7 +2947,6 @@
                                  (affect symbol-listp)
                                  (typed-formals atc-symbol-varinfo-alistp)
                                  (context-preamble true-listp)
-                                 (prog-const symbolp)
                                  (compst-var symbolp)
                                  (fenv-var symbolp)
                                  (limit-var symbolp)
@@ -2960,6 +2966,7 @@
   :returns (mv (events pseudo-event-form-listp)
                (print-event pseudo-event-formp)
                (name symbolp :hyp (symbol-symbol-alistp fn-thms))
+               (lemma-name symbolp)
                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
   :short "Generate the correctness theorem for a C function."
   :long
@@ -2992,8 +2999,6 @@
                        nil
                      (genvar$ 'atc "RESULT" nil formals state)))
        (limit `(binary-+ '1 ,body-limit))
-       (type-pred (and result-var
-                       (atc-type-to-recognizer body-type prec-tags)))
        (affect-new (acl2::add-suffix-to-fn-lst affect "-NEW"))
        (fn-results (append (and result-var
                                 (list result-var))
@@ -3006,26 +3011,29 @@
                                          compst-var
                                          prec-objs
                                          nil))
-       (hyps `(and (compustatep ,compst-var)
-                   (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
-                   ,@context-preamble
-                   (,fn-guard ,@formals)
-                   (integerp ,limit-var)
-                   (>= ,limit-var ,limit)))
-       (concl-exec `(equal (exec-fun (ident ,(symbol-name fn))
+       (exec-hyps `(and (compustatep ,compst-var)
+                        ,@context-preamble
+                        (,fn-guard ,@formals)
+                        (integerp ,limit-var)
+                        (>= ,limit-var ,limit)))
+       (exec-concl `(equal (exec-fun (ident ,(symbol-name fn))
                                      (list ,@init-formals)
                                      ,compst-var
                                      ,fenv-var
                                      ,limit-var)
                            (mv ,result-var ,new-compst)))
-       (concl (if result-var
-                  `(and ,concl-exec
-                        (,type-pred ,result-var))
-                concl-exec))
-       (lemma-formula
-        `(implies ,hyps
-                  (b* ((,fn-binder (,fn ,@formals)))
-                    ,concl)))
+       (type-hyps `(,fn-guard ,@formals))
+       ((mv type-concl &) (atc-gen-term-type-formula `(,fn ,@formals)
+                                                     body-type
+                                                     affect
+                                                     (list typed-formals)
+                                                     prec-tags))
+       (exec-formula `(implies ,exec-hyps
+                               (b* ((,fn-binder (,fn ,@formals)))
+                                 ,exec-concl)))
+       (type-formula `(implies ,type-hyps
+                               ,type-concl))
+       (lemma-formula `(and ,exec-formula ,type-formula))
        (valuep-when-type-pred
         (and result-var
              (atc-type-to-valuep-thm body-type prec-tags)))
@@ -3071,13 +3079,12 @@
        (name (cdr (assoc-eq fn fn-thms)))
        (formula
         `(implies (and (compustatep ,compst-var)
-                       (equal ,fenv-var (init-fun-env (preprocess ,prog-const)))
                        ,@context-preamble
                        ,(untranslate$ (uguard+ fn wrld) nil state)
                        (integerp ,limit-var)
                        (>= ,limit-var ,limit))
                   (b* ((,fn-binder (,fn ,@formals)))
-                    ,concl)))
+                    ,exec-concl)))
        (hints `(("Goal"
                  :use ,lemma-name
                  :in-theory '(,fn-guard))))
@@ -3092,6 +3099,7 @@
               exported-event)
         print-event
         name
+        lemma-name
         names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3159,7 +3167,10 @@
        (compst-var (genvar$ 'atc "COMPST" nil formals state))
        (fenv-var (genvar$ 'atc "FENV" nil formals state))
        (limit-var (genvar$ 'atc "LIMIT" nil formals state))
-       (context-preamble (atc-gen-context-preamble typed-formals compst-var))
+       (context-preamble (atc-gen-context-preamble typed-formals
+                                                   compst-var
+                                                   fenv-var
+                                                   prog-const))
        ((mv fn-fun-env-thm names-to-avoid)
         (atc-gen-cfun-fun-env-thm-name fn names-to-avoid wrld))
        ((mv init-scope-expand-event
@@ -3290,6 +3301,7 @@
        ((mv fn-correct-events
             fn-correct-print-event
             fn-correct-thm
+            fn-correct-lemma-thm
             names-to-avoid)
         (if (and body.thm-name
                  (or (not affect)
@@ -3307,7 +3319,6 @@
                                      affect
                                      typed-formals
                                      context-preamble
-                                     prog-const
                                      compst-var
                                      fenv-var
                                      limit-var
@@ -3340,7 +3351,7 @@
                                           fn-fun-env-thm
                                           limit
                                           state)))
-            (mv events print-event name names-to-avoid))))
+            (mv events print-event name nil names-to-avoid))))
        (progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the proofs for ~x0..." ',fn))))
@@ -3384,15 +3395,18 @@
               :affect affect
               :result-thm fn-result-thm
               :correct-thm fn-correct-thm
+              :correct-mod-thm fn-correct-lemma-thm
               :measure-nat-thm nil
               :fun-env-thm fn-fun-env-thm
-              :limit limit)))
+              :limit limit
+              :guard fn-guard)))
     (retok fundef
            (and proofs local-events)
            (acons fn info prec-fns)
            names-to-avoid))
   :guard-hints
   (("Goal"
+    :do-not '(preprocess)
     :in-theory
     (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite
           alistp-when-atc-symbol-varinfo-alistp-rewrite
@@ -3400,7 +3414,9 @@
           true-listp-when-atc-symbol-varinfo-alist-listp-rewrite
           symbol-listp-of-strip-cars-when-atc-symbol-varinfo-alistp
           alistp-when-atc-symbol-fninfo-alistp-rewrite)
-         ((:e tau-system)))))) ; <-- for speed
+         ((:e tau-system)
+          acl2::strip-cars-when-atom
+          acl2::list-fix-when-len-zero)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4737,9 +4753,11 @@
                                :affect loop.affect
                                :result-thm fn-result-thm
                                :correct-thm fn-correct-thm
+                               :correct-mod-thm nil
                                :measure-nat-thm natp-of-measure-of-fn-thm
                                :fun-env-thm nil
-                               :limit loop.limit-all)))
+                               :limit loop.limit-all
+                               :guard nil))) ; <- not used for now
     (retok events
            (acons fn info prec-fns)
            names-to-avoid))

@@ -19,6 +19,7 @@
 (include-book "split-string-repeatedly")
 (include-book "split-string-last")
 (include-book "reverse")
+(include-book "decimal-digits")
 (include-book "parse-binary-digits")
 (include-book "parse-decimal-digits")
 (include-book "string-ends-withp")
