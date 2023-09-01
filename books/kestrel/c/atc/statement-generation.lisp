@@ -4157,7 +4157,13 @@
        ((when (eq called-fn 'quote))
         (reterr (raise "Internal error: called function is QUOTE.")))
        (term `(,called-fn ,@args.terms))
+       (uterm (untranslate$ term nil state))
+       (fninfo (cdr (assoc-eq called-fn gin.prec-fns)))
+       ((unless fninfo)
+        (reterr (raise "Internal error: function ~x0 has no info." called-fn)))
+       (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
        ((when (or (not gin.proofs)
+                  (not called-fn-thm)
                   (consp (cdr affect)) ; <- temporary
                   (b* ((info (atc-get-var (car affect) gin.inscope)))
                     (and info
@@ -4214,12 +4220,12 @@
        (new-compst `(update-object ,(add-suffix-to-fn (car affect) "-OBJDES")
                                    (,called-fn ,@args.terms)
                                    ,gin.compst-var))
-       (call-formula `(equal (exec-expr-call-or-asg ',call-expr
+       (exec-formula `(equal (exec-expr-call-or-asg ',call-expr
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
                                                     ,gin.limit-var)
                              ,new-compst))
-       (call-formula (atc-contextualize call-formula
+       (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
                                         gin.fn-guard
@@ -4228,12 +4234,135 @@
                                         call-limit
                                         t
                                         wrld))
-       (call-hints `(("Goal" :in-theory '()))) ; TODO
+       ((mv type-formula inscope-thms)
+        (atc-gen-term-type-formula uterm
+                                   (type-void)
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags))
+       (type-formula (atc-contextualize type-formula
+                                        gin.context
+                                        gin.fn
+                                        gin.fn-guard
+                                        nil
+                                        nil
+                                        nil
+                                        nil
+                                        wrld))
+       (call-formula `(and ,exec-formula ,type-formula))
+       (call-hints
+        `(("Goal"
+           :in-theory
+           '(exec-expr-call-or-asg-when-call
+             exec-expr-call-open
+             exec-expr-pure-list-of-nil
+             exec-expr-pure-list-when-consp
+             ,@args.thm-names
+             ,called-fn-thm
+             ,guard-lemma-name
+             ,@inscope-thms
+             exec-fun-of-const-identifier
+             (:e identp)
+             (:e ident->name)
+             apconvert-expr-value-when-not-value-array
+             value-kind-when-ucharp
+             value-kind-when-scharp
+             value-kind-when-ushortp
+             value-kind-when-sshortp
+             value-kind-when-uintp
+             value-kind-when-sintp
+             value-kind-when-ulongp
+             value-kind-when-slongp
+             value-kind-when-ullongp
+             value-kind-when-sllongp
+             value-kind-when-uchar-arrayp
+             value-kind-when-schar-arrayp
+             value-kind-when-ushort-arrayp
+             value-kind-when-sshort-arrayp
+             value-kind-when-uint-arrayp
+             value-kind-when-sint-arrayp
+             value-kind-when-ulong-arrayp
+             value-kind-when-slong-arrayp
+             value-kind-when-ullong-arrayp
+             value-kind-when-sllong-arrayp
+             ,@(atc-string-taginfo-alist-to-value-kind-thms gin.prec-tags)
+             valuep-when-ucharp
+             valuep-when-scharp
+             valuep-when-ushortp
+             valuep-when-sshortp
+             valuep-when-uintp
+             valuep-when-sintp
+             valuep-when-ulongp
+             valuep-when-slongp
+             valuep-when-ullongp
+             valuep-when-sllongp
+             valuep-when-uchar-arrayp
+             valuep-when-schar-arrayp
+             valuep-when-ushort-arrayp
+             valuep-when-sshort-arrayp
+             valuep-when-uint-arrayp
+             valuep-when-sint-arrayp
+             valuep-when-ulong-arrayp
+             valuep-when-slong-arrayp
+             valuep-when-ullong-arrayp
+             valuep-when-sllong-arrayp
+             ,@(atc-string-taginfo-alist-to-valuep-thms gin.prec-tags)
+             type-of-value-when-ucharp
+             type-of-value-when-scharp
+             type-of-value-when-ushortp
+             type-of-value-when-sshortp
+             type-of-value-when-uintp
+             type-of-value-when-sintp
+             type-of-value-when-ulongp
+             type-of-value-when-slongp
+             type-of-value-when-ullongp
+             type-of-value-when-sllongp
+             type-of-value-when-uchar-arrayp
+             type-of-value-when-schar-arrayp
+             type-of-value-when-ushort-arrayp
+             type-of-value-when-sshort-arrayp
+             type-of-value-when-uint-arrayp
+             type-of-value-when-sint-arrayp
+             type-of-value-when-ulong-arrayp
+             type-of-value-when-slong-arrayp
+             type-of-value-when-ullong-arrayp
+             type-of-value-when-sllong-arrayp
+             ,@(atc-string-taginfo-alist-to-type-of-value-thms gin.prec-tags)
+             expr-valuep-of-expr-value
+             expr-value->value-of-expr-value
+             value-fix-when-valuep
+             (:e value-listp)
+             value-listp-of-cons
+             (:e value-optionp)
+             (:e expr-kind)
+             (:e expr-call->fun)
+             (:e expr-call->args)
+             not-zp-of-limit-variable
+             not-zp-of-limit-minus-const
+             compustatep-of-add-var
+             compustatep-of-enter-scope
+             compustatep-of-add-frame
+             mv-nth-of-cons
+             (:e zp)
+             write-object-to-update-object
+             write-object-okp-of-add-var
+             write-object-okp-of-enter-scope
+             write-object-okp-of-add-frame
+             write-object-okp-when-valuep-of-read-object-no-syntaxp
+             value-array->length-when-uchar-arrayp
+             value-array->length-when-schar-arrayp
+             value-array->length-when-ushort-arrayp
+             value-array->length-when-sshort-arrayp
+             value-array->length-when-uint-arrayp
+             value-array->length-when-sint-arrayp
+             value-array->length-when-ulong-arrayp
+             value-array->length-when-slong-arrayp
+             value-array->length-when-ullong-arrayp
+             value-array->length-when-sllong-arrayp))))
        ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                  :formula call-formula
                                                  :hints call-hints
-                                                 :enable nil))
-       (- call-event)) ; TODO: don't ignore this
+                                                 :enable nil)))
     (retok (make-stmt-gout
             :items (list (block-item-stmt (stmt-expr call-expr)))
             :type (type-void)
@@ -4242,7 +4371,8 @@
             :inscope nil
             :limit `(binary-+ '3 ,call-limit)
             :events (append args.events
-                            (list guard-lemma-event))
+                            (list guard-lemma-event
+                                  call-event))
             :thm-name nil
             :thm-index thm-index
             :names-to-avoid names-to-avoid)))
