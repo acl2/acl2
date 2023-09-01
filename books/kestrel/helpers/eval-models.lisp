@@ -26,6 +26,8 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
+;; TODO: Make a code-only book for this tool, and use it instead?
+
 ;; TODO: removing :add-hyp gets us less the requested number of recs sometimes!
 
 (local (in-theory (disable assoc-equal natp)))
@@ -433,8 +435,8 @@
         (tabulate-resuls-for-model model result-alist 0 0 0 0 0 nil 0))
        (successful-attempt-percentage (quotient-as-percent-string successful-attempt-count attempt-count))
        (unique-successful-attempt-percentage (quotient-as-percent-string unique-successful-attempt-count attempt-count))
-       (- (cw "Results for model ~x0 (~x1 theorem attempts, ~x2 total recs):~%" model attempt-count total-recs-produced))
-       (- (cw "  Successes: ~s0% (~s1% unique)~%" successful-attempt-percentage unique-successful-attempt-percentage))
+       (model-name-string (symbol-name model)) ; all uppercase, no leading colon
+       (- (cw "For ~s0: ~s1% success (~x2/~x3, ~s4% unique), ~x5 total recs):~%" model-name-string successful-attempt-percentage successful-attempt-count attempt-count unique-successful-attempt-percentage total-recs-produced))
        ;; (- (cw "Nums of first successful recs: ~X01~%" successful-rec-nums nil))
        ;; (- (cw "Top-1 through top-10 counts: ~X01~%" (top-n-counts successful-rec-nums) nil))
        (- (cw "  Top-1 through top-~x0 percentages: [" num-recs-per-model))
