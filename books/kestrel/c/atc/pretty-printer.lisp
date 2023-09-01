@@ -991,6 +991,13 @@
   :short "Pretty-print a blank line of code."
   "~%")
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-one-line-blank ()
+  :returns (lines msg-listp)
+  :short "Pretty-print a blank line of code, as a singleton list of lines."
+  (list (pprint-line-blank)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pprint-line ((content msgp) (level natp))
@@ -1001,6 +1008,14 @@
    "The content to print is preceded by indentation
     according to the current level.")
   (msg "~s0~@1~%" (pprint-indent level) content))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define pprint-one-line ((content msgp) (level natp))
+  :returns (lines msg-listp)
+  :short "Pretty-print a (non-blank) line of code,
+          as a singleton list of lines."
+  (list (pprint-line content level)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1032,23 +1047,21 @@
   :short "Pretty-print a tag declaration."
   (tag-declon-case
    declon
-   :struct (append (list (pprint-line (msg "struct ~@0 {"
-                                           (pprint-ident declon.tag))
-                                      (lnfix level)))
+   :struct (append (pprint-one-line (msg "struct ~@0 {"
+                                         (pprint-ident declon.tag))
+                                    (lnfix level))
                    (pprint-struct-declon-list declon.members (1+ (lnfix level)))
-                   (list (pprint-line "};"
-                                      (lnfix level))))
-   :union (append (list (pprint-line (msg "union ~@0 {"
-                                          (pprint-ident declon.tag))
-                                     (lnfix level)))
+                   (pprint-one-line "};" (lnfix level)))
+   :union (append (pprint-one-line (msg "union ~@0 {"
+                                        (pprint-ident declon.tag))
+                                   (lnfix level))
                   (pprint-struct-declon-list declon.members (1+ (lnfix level)))
-                  (list (pprint-line "};"
-                                     (lnfix level))))
-   :enum (list (pprint-line (msg "enum ~@0 {,@1};"
-                                 (pprint-ident declon.tag)
-                                 (pprint-comma-sep
-                                  (pprint-ident-list declon.enumerators)))
-                            (lnfix level))))
+                  (pprint-one-line "};" (lnfix level)))
+   :enum (pprint-one-line (msg "enum ~@0 {,@1};"
+                               (pprint-ident declon.tag)
+                               (pprint-comma-sep
+                                (pprint-ident-list declon.enumerators)))
+                          (lnfix level)))
   :hooks (:fix)
   :guard-hints (("Goal" :in-theory (enable character-alistp))))
 
@@ -1110,10 +1123,10 @@
   :returns (lines msg-listp)
   :short "Pretty-print a function declaration."
   (b* (((fun-declon declon) declon))
-    (list (pprint-line (msg "~@0 ~@1;"
-                            (pprint-tyspecseq declon.tyspec)
-                            (pprint-fun-declor declon.declor))
-                       (lnfix level))))
+    (pprint-one-line (msg "~@0 ~@1;"
+                          (pprint-tyspecseq declon.tyspec)
+                          (pprint-fun-declor declon.declor))
+                     (lnfix level)))
   :guard-hints (("Goal" :in-theory (enable character-alistp)))
   :hooks (:fix))
 
@@ -1139,17 +1152,17 @@
   :returns (lines msg-listp)
   :short "Pretty-print an object declaration."
   (b* (((obj-declon declon) declon))
-    (list (pprint-line (msg "~@0~@1 ~@2~@3;"
-                            (scspecseq-case declon.scspec
-                                            :none ""
-                                            :extern "extern ")
-                            (pprint-tyspecseq declon.tyspec)
-                            (pprint-obj-declor declon.declor)
-                            (if declon.init?
-                                (msg " = ~@0"
-                                     (pprint-initer declon.init? options))
-                              ""))
-                       (lnfix level))))
+    (pprint-one-line (msg "~@0~@1 ~@2~@3;"
+                          (scspecseq-case declon.scspec
+                                          :none ""
+                                          :extern "extern ")
+                          (pprint-tyspecseq declon.tyspec)
+                          (pprint-obj-declor declon.declor)
+                          (if declon.init?
+                              (msg " = ~@0"
+                                   (pprint-initer declon.init? options))
+                            ""))
+                     (lnfix level)))
   :hooks (:fix)
   :guard-hints (("Goal" :in-theory (enable character-alistp))))
 
@@ -1190,92 +1203,84 @@
     :returns (lines msg-listp)
     (stmt-case
      stmt
-     :labeled (append (list
-                       (pprint-line (msg "~@0 {"
-                                         (pprint-label stmt.label))
-                                    level))
+     :labeled (append (pprint-one-line (msg "~@0 {"
+                                            (pprint-label stmt.label))
+                                       level)
                       (pprint-stmt stmt.body (1+ level) options)
-                      (list (pprint-line "}" level)))
+                      (pprint-one-line "}" level))
      :compound (pprint-block-item-list stmt.items level options)
-     :expr (list
-            (pprint-line (msg "~@0;"
-                              (pprint-expr stmt.get (expr-grade-top) options))
-                         level))
-     :null (list (pprint-line ";" level))
-     :if (append (list
-                  (pprint-line (msg "if (~@0) {"
-                                    (pprint-expr stmt.test
-                                                 (expr-grade-top)
-                                                 options))
-                               level))
-                 (pprint-stmt stmt.then (1+ level) options)
-                 (list (pprint-line "}" level)))
-     :ifelse (append (list
-                      (pprint-line (msg "if (~@0) {"
-                                        (pprint-expr stmt.test
-                                                     (expr-grade-top)
-                                                     options))
-                                   level))
-                     (pprint-stmt stmt.then (1+ level) options)
-                     (list (pprint-line "} else {" level))
-                     (pprint-stmt stmt.else (1+ level) options)
-                     (list (pprint-line "}" level)))
-     :switch (append (list
-                      (pprint-line (msg "switch (~@0) {"
-                                        (pprint-expr stmt.ctrl
-                                                     (expr-grade-top)
-                                                     options))
-                                   level))
-                     (pprint-stmt stmt.body (1+ level) options)
-                     (list (pprint-line "}" level)))
-     :while (append (list
-                     (pprint-line (msg "while (~@0) {"
+     :expr (pprint-one-line (msg "~@0;"
+                                 (pprint-expr stmt.get (expr-grade-top) options))
+                            level)
+     :null (pprint-one-line ";" level)
+     :if (append (pprint-one-line (msg "if (~@0) {"
                                        (pprint-expr stmt.test
                                                     (expr-grade-top)
                                                     options))
-                                  level))
+                                  level)
+                 (pprint-stmt stmt.then (1+ level) options)
+                 (pprint-one-line "}" level))
+     :ifelse (append (pprint-one-line (msg "if (~@0) {"
+                                           (pprint-expr stmt.test
+                                                        (expr-grade-top)
+                                                        options))
+                                      level)
+                     (pprint-stmt stmt.then (1+ level) options)
+                     (pprint-one-line "} else {" level)
+                     (pprint-stmt stmt.else (1+ level) options)
+                     (pprint-one-line "}" level))
+     :switch (append (pprint-one-line (msg "switch (~@0) {"
+                                           (pprint-expr stmt.ctrl
+                                                        (expr-grade-top)
+                                                        options))
+                                      level)
+                     (pprint-stmt stmt.body (1+ level) options)
+                     (pprint-one-line "}" level))
+     :while (append (pprint-one-line (msg "while (~@0) {"
+                                          (pprint-expr stmt.test
+                                                       (expr-grade-top)
+                                                       options))
+                                     level)
                     (pprint-stmt stmt.body (1+ level) options)
-                    (list (pprint-line "}" level)))
-     :dowhile (append (list (pprint-line "do {" level))
+                    (pprint-one-line "}" level))
+     :dowhile (append (pprint-one-line "do {" level)
                       (pprint-stmt stmt.body (1+ level) options)
-                      (list
-                       (pprint-line (msg "} while (~@0);"
-                                         (pprint-expr stmt.test
-                                                      (expr-grade-top)
-                                                      options))
-                                    level)))
-     :for (append (list
-                   (pprint-line (msg "for (~@0; ~@1; ~@2) {"
-                                     (if stmt.init
-                                         (pprint-expr stmt.init
-                                                      (expr-grade-top)
-                                                      options)
-                                       "")
-                                     (if stmt.test
-                                         (pprint-expr stmt.test
-                                                      (expr-grade-top)
-                                                      options)
-                                       "")
-                                     (if stmt.next
-                                         (pprint-expr stmt.next
-                                                      (expr-grade-top)
-                                                      options)
-                                       ""))
-                                level))
+                      (pprint-one-line (msg "} while (~@0);"
+                                            (pprint-expr stmt.test
+                                                         (expr-grade-top)
+                                                         options))
+                                       level))
+     :for (append (pprint-one-line (msg "for (~@0; ~@1; ~@2) {"
+                                        (if stmt.init
+                                            (pprint-expr stmt.init
+                                                         (expr-grade-top)
+                                                         options)
+                                          "")
+                                        (if stmt.test
+                                            (pprint-expr stmt.test
+                                                         (expr-grade-top)
+                                                         options)
+                                          "")
+                                        (if stmt.next
+                                            (pprint-expr stmt.next
+                                                         (expr-grade-top)
+                                                         options)
+                                          ""))
+                                   level)
                   (pprint-stmt stmt.body (1+ level) options)
-                  (list (pprint-line "}" level)))
-     :goto (list (pprint-line (msg "goto ~@0;"
-                                   (pprint-ident stmt.target))
-                              level))
-     :continue (list (pprint-line "continue;" level))
-     :break (list (pprint-line "break;" level))
-     :return (list (if stmt.value
-                       (pprint-line (msg "return ~@0;"
-                                         (pprint-expr stmt.value
-                                                      (expr-grade-top)
-                                                      options))
-                                    level)
-                     (pprint-line "return;" level))))
+                  (pprint-one-line "}" level))
+     :goto (pprint-one-line (msg "goto ~@0;"
+                                 (pprint-ident stmt.target))
+                            level)
+     :continue (pprint-one-line "continue;" level)
+     :break (pprint-one-line "break;" level)
+     :return (if stmt.value
+                 (pprint-one-line (msg "return ~@0;"
+                                       (pprint-expr stmt.value
+                                                    (expr-grade-top)
+                                                    options))
+                                  level)
+               (pprint-one-line "return;" level)))
     :measure (stmt-count stmt))
 
   (define pprint-block-item ((item block-itemp)
@@ -1313,12 +1318,12 @@
    "This is always at the top level,
     so we initialize the indentation level of the body to 1.")
   (b* (((fundef fdef) fdef))
-    (append (list (pprint-line (msg "~@0 ~@1 {"
-                                    (pprint-tyspecseq fdef.tyspec)
-                                    (pprint-fun-declor fdef.declor))
-                               0))
+    (append (pprint-one-line (msg "~@0 ~@1 {"
+                                  (pprint-tyspecseq fdef.tyspec)
+                                  (pprint-fun-declor fdef.declor))
+                             0)
             (pprint-block-item-list fdef.body 1 options)
-            (list (pprint-line "}" 0))))
+            (pprint-one-line "}" 0)))
   :guard-hints (("Goal" :in-theory (enable character-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1342,7 +1347,7 @@
   (xdoc::topstring-p
    "We print a blank line before each one.")
   (cond ((endp exts) nil)
-        (t (append (list (pprint-line-blank))
+        (t (append (pprint-one-line-blank)
                    (pprint-ext-declon (car exts) options)
                    (pprint-ext-declon-list (cdr exts) options)))))
 
