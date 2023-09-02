@@ -81,6 +81,7 @@
 (include-book "prefixp")
 (include-book "prefixp2")
 (include-book "remove-nth")
+(include-book "remove-duplicates-equal-alt")
 
 (include-book "len-at-least")
 
