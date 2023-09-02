@@ -2852,6 +2852,7 @@
                                exec-block-item-list-of-nil
                                not-zp-of-limit-minus-const
                                compustatep-of-exit-scope
+                               compustatep-of-update-object
                                compustatep-of-if*-when-both-compustatep
                                uchar-array-length-of-uchar-array-write
                                schar-array-length-of-schar-array-write
@@ -4362,23 +4363,172 @@
        ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                  :formula call-formula
                                                  :hints call-hints
-                                                 :enable nil)))
-    (retok (make-stmt-gout
-            :items (list (block-item-stmt (stmt-expr call-expr)))
-            :type (type-void)
-            :term term
-            :context (make-atc-context :preamble nil :premises nil)
-            :inscope nil
-            :limit `(binary-+ '3 ,call-limit)
-            :events (append args.events
-                            (list guard-lemma-event
-                                  call-event))
-            :thm-name nil
-            :thm-index thm-index
-            :names-to-avoid names-to-avoid)))
-  :guard-hints (("Goal" :in-theory (enable length)))
+                                                 :enable nil))
+       (stmt (stmt-expr call-expr))
+       (stmt-limit `(binary-+ '1 ,call-limit))
+       (stmt-thm-name (pack gin.fn '-correct- thm-index))
+       ((mv stmt-thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix stmt-thm-name
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (thm-index (1+ thm-index))
+       (stmt-exec-formula `(equal (exec-stmt ',stmt
+                                             ,gin.compst-var
+                                             ,gin.fenv-var
+                                             ,gin.limit-var)
+                                  (mv nil ,new-compst)))
+       (stmt-exec-formula (atc-contextualize stmt-exec-formula
+                                             gin.context
+                                             gin.fn
+                                             gin.fn-guard
+                                             gin.compst-var
+                                             gin.limit-var
+                                             stmt-limit
+                                             t
+                                             wrld))
+       ((mv stmt-type-formula &) (atc-gen-term-type-formula uterm
+                                                            (type-void)
+                                                            gin.affect
+                                                            gin.inscope
+                                                            gin.prec-tags))
+       (stmt-type-formula (atc-contextualize stmt-type-formula
+                                             gin.context
+                                             gin.fn
+                                             gin.fn-guard
+                                             nil
+                                             nil
+                                             nil
+                                             nil
+                                             wrld))
+       (stmt-formula `(and ,stmt-exec-formula ,stmt-type-formula))
+       (stmt-hints
+        `(("Goal" :in-theory '(exec-stmt-when-expr
+                               (:e stmt-kind)
+                               (:e stmt-expr->get)
+                               not-zp-of-limit-variable
+                               ,call-thm-name
+                               compustatep-of-update-object))))
+       ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
+                                                 :formula stmt-formula
+                                                 :hints stmt-hints
+                                                 :enable nil))
+       ((mv item
+            item-limit
+            item-events
+            item-thm-name
+            thm-index
+            names-to-avoid)
+        (atc-gen-block-item-stmt stmt
+                                 stmt-limit
+                                 (append args.events
+                                         (list guard-lemma-event
+                                               call-event
+                                               stmt-event))
+                                 stmt-thm-name
+                                 term
+                                 (type-void)
+                                 new-compst
+                                 (change-stmt-gin
+                                  gin
+                                  :thm-index thm-index
+                                  :names-to-avoid names-to-avoid
+                                  :proofs (and stmt-thm-name t))
+                                 state))
+       (new-context (atc-context-extend gin.context
+                                        (list (make-atc-premise-compustate
+                                               :var gin.compst-var
+                                               :term new-compst))))
+       (new-context (if (and (consp gin.affect)
+                             (not (consp (cdr gin.affect))))
+                        (b* ((var (car gin.affect)))
+                          (atc-context-extend new-context
+                                              (list (make-atc-premise-cvalue
+                                                     :var var
+                                                     :term term))))
+                      new-context))
+       (new-inscope-rules `(objdesign-of-var-of-update-object-iff
+                            read-object-of-objdesign-of-var-to-read-var
+                            read-var-of-update-object
+                            compustate-frames-number-of-add-var-not-zero
+                            read-var-of-add-var
+                            remove-flexible-array-member-when-absent
+                            not-flexible-array-member-p-when-ucharp
+                            not-flexible-array-member-p-when-scharp
+                            not-flexible-array-member-p-when-ushortp
+                            not-flexible-array-member-p-when-sshortp
+                            not-flexible-array-member-p-when-uintp
+                            not-flexible-array-member-p-when-sintp
+                            not-flexible-array-member-p-when-ulongp
+                            not-flexible-array-member-p-when-slongp
+                            not-flexible-array-member-p-when-ullongp
+                            not-flexible-array-member-p-when-sllongp
+                            not-flexible-array-member-p-when-value-pointer
+                            value-fix-when-valuep
+                            valuep-when-ucharp
+                            valuep-when-scharp
+                            valuep-when-ushortp
+                            valuep-when-sshortp
+                            valuep-when-uintp
+                            valuep-when-sintp
+                            valuep-when-ulongp
+                            valuep-when-slongp
+                            valuep-when-ullongp
+                            valuep-when-sllongp
+                            valuep-when-uchar-arrayp
+                            valuep-when-schar-arrayp
+                            valuep-when-ushort-arrayp
+                            valuep-when-sshort-arrayp
+                            valuep-when-uint-arrayp
+                            valuep-when-sint-arrayp
+                            valuep-when-ulong-arrayp
+                            valuep-when-slong-arrayp
+                            valuep-when-ullong-arrayp
+                            valuep-when-sllong-arrayp
+                            read-object-of-update-object-same
+                            read-object-of-update-object-disjoint
+                            ,called-fn-thm
+                            ,guard-lemma-name))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope gin.fn
+                             gin.fn-guard
+                             gin.inscope
+                             new-context
+                             gin.compst-var
+                             new-inscope-rules
+                             gin.prec-tags
+                             thm-index
+                             names-to-avoid
+                             wrld))
+       (thm-index (1+ thm-index))
+       (events (append item-events
+                       new-inscope-events))
+       (gout (atc-gen-block-item-list-one term
+                                          (type-void)
+                                          item
+                                          item-limit
+                                          events
+                                          item-thm-name
+                                          new-compst
+                                          new-context
+                                          new-inscope
+                                          (change-stmt-gin
+                                           gin
+                                           :thm-index thm-index
+                                           :names-to-avoid names-to-avoid
+                                           :proofs (and item-thm-name t))
+                                          state)))
+    (retok (change-stmt-gout gout :thm-name nil))) ; TODO
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (e/d (length
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite
+          alistp-when-atc-symbol-fninfo-alistp-rewrite)
+         ((:e tau-system)))))
   :prepwork
-  ((defrulel verify-guards-lemma
+  ((local (in-theory (disable mv-nth-of-cons)))
+   (defrulel verify-guards-lemma
      (implies (symbol-listp x)
               (not (stringp x))))))
 
