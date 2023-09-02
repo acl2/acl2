@@ -267,6 +267,9 @@
        (<= 0 p)
        (<= p 100)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognizes a well-formed recommendation (coming from one of the models).
 ;; todo: strengthen
 (defund recommendationp (rec)
   (declare (xargs :guard t))
@@ -427,3 +430,13 @@
   (declare (xargs :guard (and (recommendationp rec1)
                               (recommendationp rec2))))
   (> (nth 3 rec1) (nth 3 rec2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Everything must be the same except the name and confidence percent.
+(defund equivalent-recommendationsp (rec1 rec2)
+  (declare (xargs :guard (and (recommendationp rec1)
+                              (recommendationp rec2))))
+  (and (equal (nth 1 rec1) (nth 1 rec2))
+       (equal (nth 2 rec1) (nth 2 rec2))
+       (equal (nth 4 rec1) (nth 4 rec2))))

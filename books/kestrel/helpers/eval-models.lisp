@@ -26,6 +26,8 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
+;; TODO: Make a code-only book for this tool, and use it instead?
+
 ;; TODO: removing :add-hyp gets us less the requested number of recs sometimes!
 
 (local (in-theory (disable assoc-equal natp)))
@@ -433,8 +435,8 @@
         (tabulate-resuls-for-model model result-alist 0 0 0 0 0 nil 0))
        (successful-attempt-percentage (quotient-as-percent-string successful-attempt-count attempt-count))
        (unique-successful-attempt-percentage (quotient-as-percent-string unique-successful-attempt-count attempt-count))
-       (- (cw "Results for model ~x0 (~x1 theorem attempts, ~x2 total recs):~%" model attempt-count total-recs-produced))
-       (- (cw "  Successes: ~s0% (~s1% unique)~%" successful-attempt-percentage unique-successful-attempt-percentage))
+       (model-name-string (symbol-name model)) ; all uppercase, no leading colon
+       (- (cw "For ~s0: ~s1% success (~x2/~x3, ~s4% unique), ~x5 total recs):~%" model-name-string successful-attempt-percentage successful-attempt-count attempt-count unique-successful-attempt-percentage total-recs-produced))
        ;; (- (cw "Nums of first successful recs: ~X01~%" successful-rec-nums nil))
        ;; (- (cw "Top-1 through top-10 counts: ~X01~%" (top-n-counts successful-rec-nums) nil))
        (- (cw "  Top-1 through top-~x0 percentages: [" num-recs-per-model))
@@ -486,8 +488,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Returns (mv erp first-working-rec-num-or-nil state).
-(defun try-recs-in-order (recs rec-num theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)
+(defun result-cachep (cache)
+  (declare (xargs :guard t))
+  (and (alistp cache)
+       (help::recommendation-listp (strip-cars cache))
+       (boolean-listp (strip-cdrs cache))))
+
+;; Returns t, nil, or :unknown.
+(defun assoc-in-result-cache (rec cache)
+  (declare (xargs :guard (and (help::recommendationp rec)
+                              (result-cachep cache))
+                  :guard-hints (("Goal" :in-theory (enable help::recommendation-listp)))
+                  ))
+  (if (endp cache)
+      :unknown
+    (let* ((entry (first cache))
+           (entry-rec (car entry)))
+      (if (help::equivalent-recommendationsp rec entry-rec)
+          (progn$ ;(cw "Cache hit on ~x0.~%" rec)
+                  (cdr entry))
+        (assoc-in-result-cache rec (rest cache))))))
+
+;;Returns (mv erp first-working-rec-num-or-nil result-cache state).
+(defun try-recs-in-order (recs rec-num theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state)
   (declare (xargs :guard (and (help::recommendation-listp recs)
                               (posp rec-num)
                               (symbolp theorem-name)
@@ -502,7 +525,8 @@
                                   (natp step-limit))
                               (or (null time-limit)
                                   (rationalp time-limit))
-                              (help::model-namep model))
+                              (help::model-namep model)
+                              (result-cachep result-cache))
                   :mode :program ; because of help::try-recommendation
                   :stobjs state))
   (if (endp recs)
@@ -511,8 +535,26 @@
                    )
               (mv nil ; no error
                   nil ; no working rec found
+                  result-cache
                   state))
     (b* ((rec (first recs))
+         (cache-result (assoc-in-result-cache rec result-cache))
+         ((when (eq t cache-result))
+          (and (acl2::print-level-at-least-tp print)
+               (cw "Rec #~x0 is known to work, from the cache.~%" rec-num) ; todo: print the model name.
+               )
+          ;; todo: maybe print it (see below)
+          (mv nil ; no-error
+              rec-num ; this rec is known to work
+              result-cache
+              state))
+         ((when (eq nil cache-result))
+          (and (acl2::print-level-at-least-tp print)
+               (cw "Rec #~x0 is known to fail, from the cache.~%" rec-num) ; todo: print the model name.
+               )
+          ;; keep looking:
+          (try-recs-in-order (rest recs) (+ 1 rec-num) theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state))
+         ;; cache-result is :unknown:
          ((mv erp maybe-successful-rec state)
           (help::try-recommendation rec
                                     current-book-absolute-path
@@ -525,7 +567,8 @@
                                     nil ; improve-recsp (just want to know if the rec works)
                                     print
                                     state))
-         ((when erp) (mv erp nil state)))
+         ((when erp) (mv erp nil result-cache state))
+         (result-cache (acons rec (if maybe-successful-rec t nil) result-cache)))
       (if maybe-successful-rec
           (b* ((- (and (acl2::print-level-at-least-tp print)
                        (cw "Rec #~x0 worked.~%" rec-num) ; todo: print the model name.
@@ -538,14 +581,16 @@
                         state))
                (- (cw "~%")))
             (mv nil ; no-error
-                rec-num
+                rec-num ; this rec worked
+                result-cache
                 state))
-        ;; keep looking:
-        (try-recs-in-order (rest recs) (+ 1 rec-num) theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state)))))
+        ;; not successful, so keep looking:
+        (try-recs-in-order (rest recs) (+ 1 rec-num) theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state)))))
 
-;; Walks through the RECOMMENDATION-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
+
+;; Walks through the MODEL-REC-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
-(defun eval-model-recs (recommendation-alist ; maps model names to rec-lists
+(defun eval-model-recs (model-rec-alist ; maps model names to rec-lists
                         theorem-name
                         theorem-body
                         theorem-hints
@@ -555,8 +600,9 @@
                         debug
                         step-limit time-limit
                         model-results-acc
+                        result-cache
                         state)
-  (declare (xargs :guard (and (alistp recommendation-alist) ; todo: strengthen
+  (declare (xargs :guard (and (alistp model-rec-alist) ; todo: strengthen
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -569,14 +615,15 @@
                                   (natp step-limit))
                               (or (null time-limit)
                                   (rationalp time-limit))
-                              (true-listp model-results-acc))
+                              (true-listp model-results-acc)
+                              (result-cachep result-cache))
                   :stobjs state
                   :mode :program))
-  (if (endp recommendation-alist)
+  (if (endp model-rec-alist)
       (mv nil ; no error
           (reverse model-results-acc)
           state)
-    (b* ((entry (first recommendation-alist))
+    (b* ((entry (first model-rec-alist))
          (model (car entry))
          (recs (cdr entry)) ; todo: these are ordered, right?
          ;; Maybe print the recommendations:
@@ -587,85 +634,18 @@
          ((mv start-time state) (get-cpu-time state)) ; or we could use real time (here and below)
          (- (and (acl2::print-level-at-least-tp print)
                  (cw "TRYING RECOMMENDATIONS FOR ~x0:~%" model)))
-         ((mv erp first-working-rec-num-or-nil state)
-          (try-recs-in-order recs 1 theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model state))
+         ((mv erp first-working-rec-num-or-nil result-cache state)
+          (try-recs-in-order recs 1 theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state))
          ((mv end-time state) (get-cpu-time state))
          ((when erp) (mv erp nil state)))
-      (eval-model-recs (rest recommendation-alist)
-                       theorem-name
-                       theorem-body
-                       theorem-hints
-                       theorem-otf-flg
-                       current-book-absolute-path
-                       print
-                       debug
+      (eval-model-recs (rest model-rec-alist)
+                       theorem-name theorem-body theorem-hints theorem-otf-flg
+                       current-book-absolute-path print debug
                        step-limit time-limit
                        (cons (list model (len recs) first-working-rec-num-or-nil (acl2::round-to-hundredths (- end-time start-time)))
                              model-results-acc)
+                       result-cache
                        state))))
-
-;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
-(defun eval-models-on-checkpoints (checkpoint-clauses-top
-                                   checkpoint-clauses-non-top
-                                   theorem-name
-                                   theorem-body
-                                   theorem-hints
-                                   theorem-otf-flg
-                                   num-recs-per-model
-                                   current-book-absolute-path
-                                   print
-                                   model-info-alist
-                                   model-query-timeout
-                                   debug
-                                   step-limit time-limit
-                                   disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
-                                   state)
-  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses-top)
-                              (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
-                              (or (null current-book-absolute-path)
-                                  (stringp current-book-absolute-path))
-                              ;; (booleanp avoid-current-bookp)
-                              (symbolp theorem-name)
-                              ;; theorem-body is an untranslated term
-                              ;; theorem-hints
-                              (booleanp theorem-otf-flg)
-                              (natp num-recs-per-model)
-                              (acl2::print-levelp print)
-                              (help::model-info-alistp model-info-alist)
-                              (natp model-query-timeout)
-                              (booleanp debug)
-                              (or (null step-limit)
-                                  (natp step-limit))
-                              (or (null time-limit)
-                                  (rationalp time-limit))
-                              (help::rec-type-listp disallowed-rec-types))
-                  :stobjs state
-                  :mode :program))
-  (b* ( ;; Get the rec-lists for all the models:
-       ((mv erp recommendation-alist state)
-        (help::get-recs-from-models num-recs-per-model disallowed-rec-types
-                                    checkpoint-clauses-top
-                                    checkpoint-clauses-non-top
-                                    theorem-body
-                                    ;; the presumed broken-theorem:
-                                    `(defthm ,theorem-name
-                                       ,theorem-body
-                                       ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
-                                       ,@(and theorem-hints `(:hints ,theorem-hints)))
-                                    model-info-alist model-query-timeout debug print nil state))
-       ((when erp) (mv erp nil state)))
-    ;; Try all the recs and record which ones worked:
-    (eval-model-recs recommendation-alist
-                     theorem-name
-                     theorem-body
-                     theorem-hints
-                     theorem-otf-flg
-                     current-book-absolute-path
-                     print
-                     debug
-                     step-limit time-limit
-                     nil
-                     state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -871,6 +851,7 @@
        (- (cw " ~x0 top-level ~s1.~%" (len checkpoint-clauses-top) (if (= 1 (len checkpoint-clauses-top)) "checkpoint" "checkpoints")))
        (- (cw " ~x0 non-top-level ~s1.~%" (len checkpoint-clauses-non-top) (if (= 1 (len checkpoint-clauses-non-top)) "checkpoint" "checkpoints")))
        ;; Try all the models, except :add-hyp (todo: a general way to say which models change the theorem?!):
+       (disallowed-rec-types '(:add-hyp))  ;exclude :add-hyp
        (step-limit-for-tries (if (null step-limit)
                                  nil
                                (if (eq :auto step-limit)
@@ -881,24 +862,31 @@
                                (if (eq :auto time-limit)
                                    (+ 1 (* 3 elapsed-time))
                                  time-limit)))
-       ((mv erp model-results state)
-        (eval-models-on-checkpoints checkpoint-clauses-top
-                                    checkpoint-clauses-non-top
-                                    theorem-name
-                                    theorem-body
-                                    broken-theorem-hints
-                                    theorem-otf-flg
+       ;; Get recommendations from all the models:
+       ((mv erp model-rec-alist state) ; todo: should an error count against the model that caused it?
+        (help::get-recs-from-models model-info-alist
                                     num-recs-per-model
-                                    current-book-absolute-path
-                                    print
-                                    model-info-alist
-                                    model-query-timeout
-                                    debug
-                                    step-limit-for-tries
-                                    time-limit-for-tries
-                                    '(:add-hyp)
-                                    state))
+                                    disallowed-rec-types
+                                    checkpoint-clauses-top
+                                    checkpoint-clauses-non-top
+                                    theorem-body ; todo: put earlier
+                                    ;; the presumed broken-theorem:
+                                    `(defthm ,theorem-name
+                                       ,theorem-body
+                                       ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
+                                       ,@(and broken-theorem-hints `(:hints ,broken-theorem-hints)))
+                                    model-query-timeout debug print nil state))
        ((when erp) (mv erp nil nil nil rand state))
+       ;; Try all the recs and record which ones worked:
+       ((mv erp model-results state) ; each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
+        (eval-model-recs model-rec-alist
+                         theorem-name theorem-body broken-theorem-hints theorem-otf-flg
+                         current-book-absolute-path print debug
+                         step-limit-for-tries time-limit-for-tries
+                         nil ; empty acc
+                         nil ; empty result-cache
+                         state))
+       ((when erp) (mv erp nil nil nil rand state)) ; todo: should an error count against the model(s) whose rec caused it?
        (models-that-worked (models-that-worked model-results))
        (- (cw "~% For ~x0, ~x1 models worked: ~X23.~%" theorem-name (len models-that-worked) models-that-worked nil))
        (- (cw "Broken hints were: ~X01.~%" broken-theorem-hints nil)) ; todo: highlight what was removed
