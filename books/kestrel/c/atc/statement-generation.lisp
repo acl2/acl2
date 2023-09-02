@@ -4447,15 +4447,71 @@
                                                      :var var
                                                      :term term))))
                       new-context))
+       (new-inscope-rules `(objdesign-of-var-of-update-object-iff
+                            read-object-of-objdesign-of-var-to-read-var
+                            read-var-of-update-object
+                            compustate-frames-number-of-add-var-not-zero
+                            read-var-of-add-var
+                            remove-flexible-array-member-when-absent
+                            not-flexible-array-member-p-when-ucharp
+                            not-flexible-array-member-p-when-scharp
+                            not-flexible-array-member-p-when-ushortp
+                            not-flexible-array-member-p-when-sshortp
+                            not-flexible-array-member-p-when-uintp
+                            not-flexible-array-member-p-when-sintp
+                            not-flexible-array-member-p-when-ulongp
+                            not-flexible-array-member-p-when-slongp
+                            not-flexible-array-member-p-when-ullongp
+                            not-flexible-array-member-p-when-sllongp
+                            not-flexible-array-member-p-when-value-pointer
+                            value-fix-when-valuep
+                            valuep-when-ucharp
+                            valuep-when-scharp
+                            valuep-when-ushortp
+                            valuep-when-sshortp
+                            valuep-when-uintp
+                            valuep-when-sintp
+                            valuep-when-ulongp
+                            valuep-when-slongp
+                            valuep-when-ullongp
+                            valuep-when-sllongp
+                            valuep-when-uchar-arrayp
+                            valuep-when-schar-arrayp
+                            valuep-when-ushort-arrayp
+                            valuep-when-sshort-arrayp
+                            valuep-when-uint-arrayp
+                            valuep-when-sint-arrayp
+                            valuep-when-ulong-arrayp
+                            valuep-when-slong-arrayp
+                            valuep-when-ullong-arrayp
+                            valuep-when-sllong-arrayp
+                            read-object-of-update-object-same
+                            read-object-of-update-object-disjoint
+                            ,called-fn-thm
+                            ,guard-lemma-name))
+       ((mv new-inscope new-inscope-events names-to-avoid)
+        (atc-gen-new-inscope gin.fn
+                             gin.fn-guard
+                             gin.inscope
+                             new-context
+                             gin.compst-var
+                             new-inscope-rules
+                             gin.prec-tags
+                             thm-index
+                             names-to-avoid
+                             wrld))
+       (thm-index (1+ thm-index))
+       (events (append item-events
+                       new-inscope-events))
        (gout (atc-gen-block-item-list-one term
                                           (type-void)
                                           item
                                           item-limit
-                                          item-events
+                                          events
                                           item-thm-name
                                           new-compst
                                           new-context
-                                          nil ; TODO
+                                          new-inscope
                                           (change-stmt-gin
                                            gin
                                            :thm-index thm-index
@@ -4463,9 +4519,16 @@
                                            :proofs (and item-thm-name t))
                                           state)))
     (retok (change-stmt-gout gout :thm-name nil))) ; TODO
-  :guard-hints (("Goal" :in-theory (enable length)))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (e/d (length
+          acl2::true-listp-when-pseudo-event-form-listp-rewrite
+          alistp-when-atc-symbol-fninfo-alistp-rewrite)
+         ((:e tau-system)))))
   :prepwork
-  ((defrulel verify-guards-lemma
+  ((local (in-theory (disable mv-nth-of-cons)))
+   (defrulel verify-guards-lemma
      (implies (symbol-listp x)
               (not (stringp x))))))
 
