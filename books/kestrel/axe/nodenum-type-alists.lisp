@@ -16,6 +16,12 @@
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 
+;disable?  make local?
+(defthm rationalp-of-car-of-car
+  (implies (rational-listp (strip-cars alist))
+           (equal (rationalp (car (car alist)))
+                  (consp alist))))
+
 ;; Recognize alists that map from nodenums to axe-types.
 ;; TODO: Using an array might be more efficient.
 (defund nodenum-type-alistp (alist)
@@ -67,6 +73,26 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable alistp nodenum-type-alistp))))
 
+(defthm rational-listp-of-strip-cars
+  (implies (nodenum-type-alistp nodenum-type-alist)
+           (rational-listp (strip-cars nodenum-type-alist)))
+  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
+
+(defthm <=-of-0-and-maxelem-of-strip-cars-when-nodenum-type-alistp
+  (implies (and (nodenum-type-alistp alist)
+                (consp alist))
+           (<= 0 (maxelem (strip-cars alist))))
+  :rule-classes (:linear)
+  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
+
+(defthm integerp-of-maxelem-of-strip-cars-when-nodenum-type-alistp
+  (implies (and (nodenum-type-alistp alist)
+                (consp alist))
+           (integerp (maxelem (strip-cars alist))))
+  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;for sorting
 (defund insert-pair-into-nodenum-type-alist (key val alist)
   (declare (xargs :guard (and (natp key)
@@ -95,6 +121,15 @@
            (nodenum-type-alistp (insert-pair-into-nodenum-type-alist key val alist)))
   :hints (("Goal" :in-theory (enable nodenum-type-alistp insert-pair-into-nodenum-type-alist))))
 
+(defthm maxelem-of-strip-cars-of-insert-pair-into-nodenum-type-alist
+  (implies (and (rationalp key)
+                (rational-listp (strip-cars alist)))
+           (equal (maxelem (strip-cars (insert-pair-into-nodenum-type-alist key val alist)))
+                  (maxelem (cons key (strip-cars alist)))))
+  :hints (("Goal" :in-theory (enable insert-pair-into-nodenum-type-alist))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund sort-nodenum-type-alist (alist)
   (declare (xargs :guard (nodenum-type-alistp alist)
                   :verify-guards nil ;done below
@@ -115,30 +150,12 @@
          (consp alist))
   :hints (("Goal" :in-theory (enable sort-nodenum-type-alist))))
 
-(defthm rational-listp-of-strip-cars
-  (implies (nodenum-type-alistp nodenum-type-alist)
-           (rational-listp (strip-cars nodenum-type-alist)))
-  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
-
-(defthm maxelem-of-strip-cars-of-insert-pair-into-nodenum-type-alist
-  (implies (and (rationalp key)
-                (rational-listp (strip-cars alist)))
-           (equal (maxelem (strip-cars (insert-pair-into-nodenum-type-alist key val alist)))
-                  (maxelem (cons key (strip-cars alist)))))
-  :hints (("Goal" :in-theory (enable insert-pair-into-nodenum-type-alist))))
-
 (defthm rational-listp-of-strip-cars-of-sort-nodenum-type-alist
   (implies (rational-listp (strip-cars cut-nodenum-type-alist))
            (rational-listp (strip-cars (sort-nodenum-type-alist cut-nodenum-type-alist))))
   :hints (("Goal" :in-theory (enable nodenum-type-alistp
                                      sort-nodenum-type-alist
                                      insert-pair-into-nodenum-type-alist))))
-
-;disable
-(defthm rationalp-of-car-of-car
-  (implies (rational-listp (strip-cars alist))
-           (equal (rationalp (car (car alist)))
-                  (consp alist))))
 
 (defthm maxelem-of-strip-cars-of-sort-nodenum-type-alist
   (implies (rational-listp (strip-cars cut-nodenum-type-alist))
