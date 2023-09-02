@@ -4435,6 +4435,18 @@
                                   :names-to-avoid names-to-avoid
                                   :proofs (and stmt-thm-name t))
                                  state))
+       (new-context (atc-context-extend gin.context
+                                        (list (make-atc-premise-compustate
+                                               :var gin.compst-var
+                                               :term new-compst))))
+       (new-context (if (and (consp gin.affect)
+                             (not (consp (cdr gin.affect))))
+                        (b* ((var (car gin.affect)))
+                          (atc-context-extend new-context
+                                              (list (make-atc-premise-cvalue
+                                                     :var var
+                                                     :term term))))
+                      new-context))
        (gout (atc-gen-block-item-list-one term
                                           (type-void)
                                           item
@@ -4442,7 +4454,7 @@
                                           item-events
                                           item-thm-name
                                           new-compst
-                                          gin.context ; TODO
+                                          new-context
                                           nil ; TODO
                                           (change-stmt-gin
                                            gin
