@@ -2852,6 +2852,7 @@
                                exec-block-item-list-of-nil
                                not-zp-of-limit-minus-const
                                compustatep-of-exit-scope
+                               compustatep-of-update-object
                                compustatep-of-if*-when-both-compustatep
                                uchar-array-length-of-uchar-array-write
                                schar-array-length-of-schar-array-write
@@ -4415,7 +4416,7 @@
        ((mv item
             item-limit
             item-events
-            & ; item-thm-name
+            item-thm-name
             thm-index
             names-to-avoid)
         (atc-gen-block-item-stmt stmt
@@ -4433,18 +4434,23 @@
                                   :thm-index thm-index
                                   :names-to-avoid names-to-avoid
                                   :proofs (and stmt-thm-name t))
-                                 state)))
-    (retok (make-stmt-gout
-            :items (list item)
-            :type (type-void)
-            :term term
-            :context (make-atc-context :preamble nil :premises nil)
-            :inscope nil
-            :limit `(binary-+ '1 ,item-limit)
-            :events item-events
-            :thm-name nil
-            :thm-index thm-index
-            :names-to-avoid names-to-avoid)))
+                                 state))
+       (gout (atc-gen-block-item-list-one term
+                                          (type-void)
+                                          item
+                                          item-limit
+                                          item-events
+                                          item-thm-name
+                                          new-compst
+                                          gin.context ; TODO
+                                          nil ; TODO
+                                          (change-stmt-gin
+                                           gin
+                                           :thm-index thm-index
+                                           :names-to-avoid names-to-avoid
+                                           :proofs (and item-thm-name t))
+                                          state)))
+    (retok (change-stmt-gout gout :thm-name nil))) ; TODO
   :guard-hints (("Goal" :in-theory (enable length)))
   :prepwork
   ((defrulel verify-guards-lemma
