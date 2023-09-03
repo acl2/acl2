@@ -12,8 +12,6 @@
 
 (in-package "ACL2")
 
-;(include-book "std/strings/decimal" :dir :system) ; todo: reduce, for STR::PARSE-NAT-FROM-CHARLIST and str::skip-leading-digits
-;(include-book "std/strings/binary" :dir :system) ; todo: reduce, for STR::PARSE-BITS-FROM-CHARLIST and str::skip-leading-bit-digits
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/read-chars" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
@@ -30,6 +28,11 @@
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+
+(defthm all-integerp-of-strip-cars-when-nodenum-type-alistp
+  (implies (nodenum-type-alistp alist)
+           (all-integerp (strip-cars alist)))
+  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
 
 (defthm alistp-of-reverse-list
   (equal (alistp (reverse-list x))
@@ -424,10 +427,7 @@
            (<= 0 (maxelem (strip-cars cex))))
   :rule-classes (:linear))
 
-(defthm all-integerp-of-strip-cars-when-nodenum-type-alistp
-  (implies (nodenum-type-alistp alist)
-           (all-integerp (strip-cars alist)))
-  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund set-array-vals-from-counterexample (raw-counterexample nodenum array-val)
   (declare (xargs :guard (and (raw-counterexamplep raw-counterexample)
@@ -442,7 +442,7 @@
       (if (and (consp key)
                (eql (car key) nodenum)) ;;(nodenum . index)
           (set-array-vals-from-counterexample (rest raw-counterexample) nodenum (update-nth
-                                                                                 (cdr key) ;the array indx
+                                                                                 (cdr key) ;the array index
                                                                                  (cdr entry)
                                                                                  array-val))
         (set-array-vals-from-counterexample (rest raw-counterexample) nodenum array-val)))))
@@ -452,11 +452,7 @@
            (true-listp (set-array-vals-from-counterexample raw-counterexample nodenum array-val)))
   :hints (("Goal" :in-theory (enable set-array-vals-from-counterexample))))
 
-
-
-;(local (in-theory (disable LIST-TYPEP BV-ARRAY-TYPEP)))
-
-;(local (in-theory (disable bv-array-typep bv-typep BV-ARRAY-TYPE-LEN MOST-GENERAL-TYPEP)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp counterexample).  Builds an alist that assigns a value to
 ;; each nodenum in cut-nodenum-type-alist.  For arrays, harvests values of
@@ -512,8 +508,6 @@
            (alistp (mv-nth 1 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc))))
   :hints (("Goal" :in-theory (enable fixup-counterexample))))
 
-;(verify-guards fixup-counterexample :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
-
 (defthm strip-cars-of-mv-nth-1-of-fixup-counterexample
   (implies (not (mv-nth 0 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)))
            (equal (strip-cars (mv-nth 1 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)))
@@ -542,6 +536,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Recognizes a counterexample all of whose nodes are less than BOUND.
 (defund bounded-counterexamplep (cex bound)
   (declare (xargs :guard (integerp bound)))
   (and (counterexamplep cex)
