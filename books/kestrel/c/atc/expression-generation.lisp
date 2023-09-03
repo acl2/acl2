@@ -2210,46 +2210,7 @@
        we check that the term is a pure expression term,
        as described in the user documentation.
        Based on its form, we dispatch to different code,
-       after recursively processing sub-expressions.")
-     (xdoc::p
-      "If the term fits the pattern of a indirection on a pointed integer,
-       we translate it to an indirection expression
-       on the recursively generated expression for the argument.")
-     (xdoc::p
-      "If the term fits the pattern of an array read,
-       we translate it to an array subscripting expression
-       on the recursively generated expressions.
-       The type is the array's element type.")
-     (xdoc::p
-      "If the term fits the pattern of a structure scalar read,
-       we translate it to a structure member or pointer member expression
-       on the recursively generated expression.
-       The type is the member's type.")
-     (xdoc::p
-      "If the term fits the pattern of a structure array element read,
-       we translate it to an array subscripting expression
-       on the recursively generated index expression
-       and on a structure member of pointer member expression
-       on the recursively generated structure expression.
-       The type is the member element's type.")
-     (xdoc::p
-      "If the term is a call of @(tsee sint-from-boolean),
-       we call the mutually recursive ACL2 function
-       that translates the argument
-       (which must be an expression term returning a boolean)
-       to an expression, which we return.
-       The type of this expression is always @('int').")
-     (xdoc::p
-      "If the term is a @(tsee condexpr) call on an @(tsee if) call,
-       we call the mutually recursive ACL2 function on the test,
-       we call this ACL2 function on the branches,
-       and we construct a conditional expression.
-       We ensure that the two branches have the same type.")
-     (xdoc::p
-      "In all other cases, we fail with an error.
-       The term is not a pure expression term.
-       We could extend this code to provide
-       more information to the user at some point."))
+       after recursively processing sub-expressions."))
     (b* (((reterr) (irr-pexpr-gout))
          ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
@@ -2487,23 +2448,6 @@
        as described in the user documentation.
        Based on its form, we dispatch to different code,
        after recursively processing sub-expressions.")
-     (xdoc::p
-      "If the term is a call of @(tsee and) or @(tsee or),
-       we recursively translate the arguments,
-       which must be an expression term returning a boolean,
-       and we construct a logical expression
-       with the corresponding C operators.")
-     (xdoc::p
-      "If the term is a call of @('boolean-from-<type>'),
-       we call the mutually recursive function
-       that translates the argument,
-       which must be an expression term returning a C value,
-       to an expression, which we return.")
-     (xdoc::p
-      "In all other cases, we fail with an error.
-       The term is not an expression term returning a C value.
-       We could extend this code to provide
-       more information to the user at some point.")
      (xdoc::p
       "As in @(tsee atc-gen-expr-pure),
        we perform C type checks on the ACL2 terms.
