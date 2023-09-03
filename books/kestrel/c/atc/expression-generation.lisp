@@ -97,11 +97,8 @@
               applied to the expression.
               This theorem is one of the events in @('events').
               It is @('nil') if no theorem was generated,
-              because modular proof generation is not yet available
-              for some constructs;
-              eventually this will be never @('nil'),
-              when modular proof generation covers
-              all the ATC-generated code.")
+              which happens exactly when
+              the @('proofs') flag in @(tsee pexpr-gin) is @('nil').")
    (thm-index pos
               "Described in @(see atc-implementation).")
    (names-to-avoid symbol-list
@@ -2542,15 +2539,32 @@
   (xdoc::topstring
    (xdoc::p
     "This does not include the terms, which are passed as a separate input."))
-  ((context atc-contextp)
-   (inscope atc-symbol-varinfo-alist-list)
-   (prec-tags atc-string-taginfo-alist)
-   (fn symbol)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+  ((context atc-contextp
+            "Described in @(see atc-implementation).
+             It is the context just before these expressions,
+             i.e. the context in which these expressions are generated.")
+   (inscope atc-symbol-varinfo-alist-list
+            "Described in @(see atc-implementation).
+             It contains the variables in scope just before these expressions,
+             i.e. the ones in scope for these expressions.")
+   (prec-tags atc-string-taginfo-alist
+              "Described in @(see atc-implementation).")
+   (fn symbol
+       "Described in @(see atc-implementation).
+        It is the target function for which the expressions are generated.")
+   (fn-guard symbol
+             "Described in @(see atc-implementation).")
+   (compst-var symbol
+               "Described in @(see atc-implementation).")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation).")
+   (proofs bool
+           "A flag indicating whether modular proof generation
+            should continue or not.
+            This will be eliminated when modular proof generation
+            will cover all of the ATC-generated code."))
   :pred pexprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2563,13 +2577,27 @@
     "The generated expressions are @('exprs'),
      and their types are @('types'),
      in the same order."))
-  ((exprs expr-list)
-   (types type-list)
-   (terms pseudo-term-listp)
-   (events pseudo-event-form-list)
-   (thm-names symbol-list)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
+  ((exprs expr-list
+          "Expressions generated from the term.")
+   (types type-list
+          "The types returned by the expressions, in order.
+           None of these is @('void').")
+   (terms pseudo-term-listp
+          "The terms from which the expressions are generated, in order.
+          The terms are transformed by replacing @(tsee if) with @(tsee if*).")
+   (events pseudo-event-form-list
+           "All the events generated for the expressions.")
+   (thm-names symbol-list
+              "The name of the theorems about @(tsee exec-expr-pure)
+               applied to the expressions.
+               These theorems are some of the events in @('events').
+               These are all @('nil') if no theorems were generated,
+               which happens exactly when
+               the @('proofs') flag in @(tsee pexpr-gin) is @('nil').")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation)."))
   :pred pexprs-goutp)
 
 ;;;;;;;;;;
@@ -2648,19 +2676,40 @@
   (xdoc::topstring
    (xdoc::p
     "This does not include the term, which is passed as a separate input."))
-  ((context atc-contextp)
-   (var-term-alist symbol-pseudoterm-alist)
-   (inscope atc-symbol-varinfo-alist-list)
-   (fn symbol)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (fenv-var symbol)
-   (limit-var symbol)
-   (prec-fns atc-symbol-fninfo-alist)
-   (prec-tags atc-string-taginfo-alist)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+  ((context atc-contextp
+            "Described in @(see atc-implementation).
+             It is the context just before this expression,
+             i.e. the context in which this expression is generated.")
+   (var-term-alist symbol-pseudoterm-alist
+                   "Described in @(see atc-implementation).")
+   (inscope atc-symbol-varinfo-alist-list
+            "Described in @(see atc-implementation).
+             It contains the variables in scope just before this expression,
+             i.e. the ones in scope for this expression.")
+   (fn symbol
+       "Described in @(see atc-implementation).
+        It is the target function for which the expression is generated.")
+   (fn-guard symbol
+             "Described in @(see atc-implementation).")
+   (compst-var symbol
+               "Described in @(see atc-implementation).")
+   (fenv-var symbol
+             "Described in @(see atc-implementation).")
+   (limit-var symbol
+              "Described in @(see atc-implementation).")
+   (prec-fns atc-symbol-fninfo-alist
+             "Described in @(see atc-implementation).")
+   (prec-tags atc-string-taginfo-alist
+              "Described in @(see atc-implementation).")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation).")
+   (proofs bool
+           "A flag indicating whether modular proof generation
+            should continue or not.
+            This will be eliminated when modular proof generation
+            will cover all of the ATC-generated code."))
   :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2678,16 +2727,35 @@
     "The @('limit') component is the lower bound of the limit,
      i.e. the minimum limit for which
      the execution of the expression terminates."))
-  ((expr expr)
-   (type type)
-   (term pseudo-term)
-   (compst-term pseudo-term)
-   (affect symbol-list)
-   (limit pseudo-term)
-   (events pseudo-event-form-list)
-   (thm-name symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
+  ((expr expr
+         "Expression generated from the term.")
+   (type type
+         "The type returned by the expression. Never @('void').")
+   (term pseudo-term
+         "The term from which the expression is generated.
+          The term is transformed by replacing @(tsee if) with @(tsee if*).")
+   (compst-term pseudo-term
+                "A term representing the computation state
+                 after the expression.")
+   (affect symbol-list
+           "The variables affected by the expression.")
+   (limit pseudo-term
+          "Symbolic limit value
+           that suffices for @(tsee exec-block-item-list)
+           to execute the block items completely.")
+   (events pseudo-event-form-list
+           "All the events generated for the expression.")
+   (thm-name symbol
+             "The name of the theorem about @(tsee exec-expr-call-or-pure)
+              applied to the expression.
+              This theorem is one of the events in @('events').
+              It is @('nil') if no theorem was generated,
+              which happens exactly when
+              the @('proofs') flag in @(tsee pexpr-gin) is @('nil').")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation)."))
   :pred expr-goutp)
 
 ;;;;;;;;;;
