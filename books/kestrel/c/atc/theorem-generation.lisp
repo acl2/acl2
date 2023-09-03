@@ -12,7 +12,6 @@
 (in-package "C")
 
 (include-book "generation-contexts")
-(include-book "types-to-recognizers")
 (include-book "variable-tables")
 (include-book "tag-tables")
 
