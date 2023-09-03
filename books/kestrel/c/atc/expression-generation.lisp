@@ -2788,7 +2788,7 @@
                                            :proofs gin.proofs)
                            state))
        (bound '(quote 1))
-       ((when (not (and pure.thm-name t)))
+       ((when (not gin.proofs))
         (retok (make-expr-gout :expr pure.expr
                                :type pure.type
                                :term pure.term
