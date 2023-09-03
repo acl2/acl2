@@ -3896,7 +3896,7 @@
                                                 wrld))
        (if-stmt-formula `(and ,if-stmt-exec-formula
                               ,if-stmt-type-formula))
-       (test-type-pred (type-to-recognizer test-type wrld))
+       (test-type-pred (atc-type-to-recognizer test-type gin.prec-tags))
        (valuep-when-test-type-pred (pack 'valuep-when- test-type-pred))
        (value-kind-when-test-type-pred (pack 'value-kind-when- test-type-pred))
        (if-stmt-hints
