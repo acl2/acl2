@@ -2879,6 +2879,16 @@
                         write-object-okp-of-if*-val
                         type-of-value-of-if*
                         ,@formal-thm?
+                        valuep-when-ucharp
+                        valuep-when-scharp
+                        valuep-when-ushortp
+                        valuep-when-sshortp
+                        valuep-when-uintp
+                        valuep-when-sintp
+                        valuep-when-ulongp
+                        valuep-when-slongp
+                        valuep-when-ullongp
+                        valuep-when-sllongp
                         valuep-when-uchar-arrayp
                         valuep-when-schar-arrayp
                         valuep-when-ushort-arrayp
@@ -2889,6 +2899,16 @@
                         valuep-when-slong-arrayp
                         valuep-when-ullong-arrayp
                         valuep-when-sllong-arrayp
+                        type-of-value-when-ucharp
+                        type-of-value-when-scharp
+                        type-of-value-when-ushortp
+                        type-of-value-when-sshortp
+                        type-of-value-when-uintp
+                        type-of-value-when-sintp
+                        type-of-value-when-ulongp
+                        type-of-value-when-slongp
+                        type-of-value-when-ullongp
+                        type-of-value-when-sllongp
                         type-of-value-when-uchar-arrayp
                         type-of-value-when-schar-arrayp
                         type-of-value-when-ushort-arrayp
@@ -3313,8 +3333,13 @@
                           (b* ((formal (car affect))
                                (info (cdr (assoc-eq formal typed-formals))))
                             (and info
-                                 (type-case (atc-var-info->type info)
-                                            :array))))))
+                                 (or (type-case (atc-var-info->type info)
+                                                :array)
+                                     (and (type-case (atc-var-info->type info)
+                                                     :pointer)
+                                          (type-integerp
+                                           (type-pointer->to
+                                            (atc-var-info->type info))))))))))
             (atc-gen-fun-correct-thm fn
                                      fn-guard
                                      fn-def*
@@ -3362,34 +3387,40 @@
                            `((cw-event " done.~%"))))
        (print-result? (and (evmac-input-print->= print :result)
                            (list fn-correct-print-event)))
-       (local-events (append progress-start?
-                             (list fn-fun-env-event)
-                             (list fn-guard-event)
-                             fn-def*-events
-                             formals-events
-                             (list init-scope-expand-event)
-                             (list init-scope-scopep-event)
-                             (list push-init-thm-event)
-                             init-inscope-events
-                             body.events
-                             (and body.thm-name
-                                  (or (not affect)
-                                      (and (consp affect)
-                                           (not (cdr affect))
-                                           (b* ((formal (car affect))
-                                                (info
-                                                 (cdr
-                                                  (assoc-eq formal
-                                                            typed-formals))))
-                                             (and info
-                                                  (type-case
-                                                   (atc-var-info->type info)
-                                                   :array)))))
-                                  (list pop-frame-event))
-                             fn-result-events
-                             fn-correct-events
-                             progress-end?
-                             print-result?))
+       (local-events
+        (append
+         progress-start?
+         (list fn-fun-env-event)
+         (list fn-guard-event)
+         fn-def*-events
+         formals-events
+         (list init-scope-expand-event)
+         (list init-scope-scopep-event)
+         (list push-init-thm-event)
+         init-inscope-events
+         body.events
+         (and body.thm-name
+              (or (not affect)
+                  (and (consp affect)
+                       (not (cdr affect))
+                       (b* ((formal (car affect))
+                            (info
+                             (cdr
+                              (assoc-eq formal
+                                        typed-formals))))
+                         (and info
+                              (or (type-case (atc-var-info->type info)
+                                             :array)
+                                  (and (type-case (atc-var-info->type info)
+                                                  :pointer)
+                                       (type-integerp
+                                        (type-pointer->to
+                                         (atc-var-info->type info)))))))))
+              (list pop-frame-event))
+         fn-result-events
+         fn-correct-events
+         progress-end?
+         print-result?))
        (info (make-atc-fn-info
               :out-type body.type
               :in-types (atc-var-info-list->type-list

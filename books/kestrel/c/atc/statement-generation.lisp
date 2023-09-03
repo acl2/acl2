@@ -4488,7 +4488,11 @@
                             read-object-of-update-object-same
                             read-object-of-update-object-disjoint
                             ,called-fn-thm
-                            ,guard-lemma-name))
+                            ,guard-lemma-name
+                            ident-fix-when-identp
+                            identp-of-ident
+                            equal-of-ident-and-ident
+                            (:e str-fix)))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
