@@ -36,7 +36,7 @@
   (xdoc::topstring
    (xdoc::p
     "As ATC visits ACL2 terms that represent C expressions and statements,
-     and generates from the terms the C expressions and statements,
+     and generates the C expressions and statements from the terms,
      along with correctness theorems for them,
      there is a growing logical context consisting of
      conditional tests and of @(tsee let) and @(tsee mv-let) bindings.
@@ -45,7 +45,7 @@
      it is essentially synonmous of `hypotheses',
      which in ACL2 refers specifically to terms (conditions) and not bindings.
      So we use `premises' because it is not used as much in ACL2;
-     we may find a better term in the future.")
+     we may find a better nomenclature in the future.")
    (xdoc::p
     "We define data types for premises,
      and for contexts that consist of lists of premises.
@@ -69,7 +69,7 @@
      The meaning is that the variable is bound to the term.")
    (xdoc::p
     "We also include bindings of variables that hold (ACL2 models of) C values.
-     (Note that a computation state is not, and does not model, a C value.
+     (Note that a computation state is not, and does not model, a C value.)
      These also consist of a variable and a term,
      like the computation state bindings.
      However, it is useful to differentiate them in this fixtype,
