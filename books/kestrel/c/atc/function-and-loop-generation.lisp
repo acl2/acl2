@@ -2796,6 +2796,7 @@
 
 (define atc-gen-pop-frame-thm ((fn symbolp)
                                (fn-guard symbolp)
+                               (body-correct-thm symbolp)
                                (affect symbol-listp)
                                (typed-formals atc-symbol-varinfo-alistp)
                                (compst-var symbolp)
@@ -2931,7 +2932,8 @@
                         update-object-of-if*-val
                         update-object-of-read-object-same
                         update-object-of-update-object-same
-                        exit-scope-of-if*))))
+                        exit-scope-of-if*
+                        ,body-correct-thm))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -3265,6 +3267,7 @@
             names-to-avoid)
         (atc-gen-pop-frame-thm fn
                                fn-guard
+                               body.thm-name
                                affect
                                typed-formals
                                compst-var

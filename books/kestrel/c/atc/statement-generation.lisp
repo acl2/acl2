@@ -4518,7 +4518,7 @@
                                            :names-to-avoid names-to-avoid
                                            :proofs (and item-thm-name t))
                                           state)))
-    (retok (change-stmt-gout gout :thm-name nil))) ; TODO
+    (retok gout))
   :guard-hints
   (("Goal"
     :in-theory
