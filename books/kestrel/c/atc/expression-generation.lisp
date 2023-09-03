@@ -2223,8 +2223,7 @@
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-unary fn arg.term
                                 arg.expr arg.type
                                 arg.events arg.thm-name
@@ -2237,14 +2236,12 @@
                 (atc-gen-expr-pure arg1-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg1.thm-index
-                                      :names-to-avoid arg1.names-to-avoid
-                                      :proofs (and arg1.thm-name t)))
+                                      :names-to-avoid arg1.names-to-avoid))
                ((erp (pexpr-gout arg2))
                 (atc-gen-expr-pure arg2-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg2.thm-index
-                                      :names-to-avoid arg2.names-to-avoid
-                                      :proofs (and arg2.thm-name t))))
+                                      :names-to-avoid arg2.names-to-avoid)))
             (atc-gen-expr-binary fn
                                  arg1.term arg2.term
                                  arg1.expr arg2.expr
@@ -2261,8 +2258,7 @@
                 (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-conv fn arg.term
                                arg.expr arg.type
                                arg.events arg.thm-name
@@ -2273,8 +2269,7 @@
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-integer-read fn
                                        arg.term
                                        arg.expr
@@ -2294,13 +2289,11 @@
                                    (change-pexpr-gin
                                     gin
                                     :thm-index arr.thm-index
-                                    :names-to-avoid arr.names-to-avoid
-                                    :proofs (and arr.thm-name t))
+                                    :names-to-avoid arr.names-to-avoid)
                                    state))
                (gin (change-pexpr-gin gin
                                       :thm-index sub.thm-index
-                                      :names-to-avoid sub.names-to-avoid
-                                      :proofs (and sub.thm-name t))))
+                                      :names-to-avoid sub.names-to-avoid)))
             (atc-gen-expr-array-read fn
                                      arr.term
                                      arr.expr
@@ -2322,8 +2315,7 @@
                 (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-struct-read-scalar fn
                                              arg-term
                                              arg.expr
@@ -2350,8 +2342,7 @@
                (gin (change-pexpr-gin
                      gin
                      :thm-index struct.thm-index
-                     :names-to-avoid struct.names-to-avoid
-                     :proofs (and index.thm-name struct.thm-name t))))
+                     :names-to-avoid struct.names-to-avoid)))
             (atc-gen-expr-struct-read-array fn
                                             index.term
                                             index.expr
@@ -2379,8 +2370,7 @@
                                          (change-pexpr-gin
                                           gin
                                           :thm-index arg.thm-index
-                                          :names-to-avoid arg.names-to-avoid
-                                          :proofs (and arg.thm-name t))
+                                          :names-to-avoid arg.names-to-avoid)
                                          state)))
          ((erp okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
@@ -2395,8 +2385,7 @@
                                       gin
                                       :context then-context
                                       :thm-index test.thm-index
-                                      :names-to-avoid test.names-to-avoid
-                                      :proofs (and test.thm-name t))
+                                      :names-to-avoid test.names-to-avoid)
                                      state)))
                ((erp (pexpr-gout else))
                 (b* ((not-test-term `(not ,test.term))
@@ -2409,8 +2398,7 @@
                                       gin
                                       :context else-context
                                       :thm-index then.thm-index
-                                      :names-to-avoid then.names-to-avoid
-                                      :proofs (and test.thm-name t))
+                                      :names-to-avoid then.names-to-avoid)
                                      state))))
             (atc-gen-expr-cond term test.term then.term else.term
                                test.expr then.expr else.expr
@@ -2420,8 +2408,7 @@
                                (change-pexpr-gin
                                 gin
                                 :thm-index else.thm-index
-                                :names-to-avoid else.names-to-avoid
-                                :proofs (and then.thm-name else.thm-name t))
+                                :names-to-avoid else.names-to-avoid)
                                state))))
       (reterr
        (msg "When generating C code for the function ~x0, ~
@@ -2467,8 +2454,7 @@
                                     gin
                                     :context context
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid
-                                    :proofs (and arg1.thm-name t))
+                                    :names-to-avoid arg1.names-to-avoid)
                                    state)))
             (retok (atc-gen-expr-and arg1.term
                                      arg2.term
@@ -2483,8 +2469,7 @@
                                      (change-pexpr-gin
                                       gin
                                       :thm-index arg2.thm-index
-                                      :names-to-avoid arg2.names-to-avoid
-                                      :proofs (and arg2.thm-name t))
+                                      :names-to-avoid arg2.names-to-avoid)
                                      state))))
          ((mv okp arg1-term arg2-term) (fty-check-or-call term))
          ((when okp)
@@ -2499,8 +2484,7 @@
                                     gin
                                     :context context
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid
-                                    :proofs (and arg1.thm-name t))
+                                    :names-to-avoid arg1.names-to-avoid)
                                    state)))
             (retok (atc-gen-expr-or arg1.term
                                     arg2.term
@@ -2515,8 +2499,7 @@
                                     (change-pexpr-gin
                                      gin
                                      :thm-index arg2.thm-index
-                                     :names-to-avoid arg2.names-to-avoid
-                                     :proofs (and arg2.thm-name t))
+                                     :names-to-avoid arg2.names-to-avoid)
                                     state))))
          ((erp okp fn arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
@@ -2524,8 +2507,7 @@
                 (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-bool-from-type fn
                                          arg.term
                                          arg.expr
