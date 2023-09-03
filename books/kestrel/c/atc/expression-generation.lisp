@@ -78,11 +78,6 @@
 
 (fty::defprod pexpr-gout
   :short "Outputs for C pure expression generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expression is @('expr'),
-     and its type is @('type')."))
   ((expr expr
          "Expression generated from the term.")
    (type type
@@ -2571,12 +2566,6 @@
 
 (fty::defprod pexprs-gout
   :short "Outputs for C pure expression list generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expressions are @('exprs'),
-     and their types are @('types'),
-     in the same order."))
   ((exprs expr-list
           "Expressions generated from the term.")
    (types type-list
@@ -2716,17 +2705,6 @@
 
 (fty::defprod expr-gout
   :short "Outputs for C expression generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expression is @('expr'),
-     and its type is @('type').
-     The possibly updated computation state is returned as an untranslated term,
-     in @('compst-term').")
-   (xdoc::p
-    "The @('limit') component is the lower bound of the limit,
-     i.e. the minimum limit for which
-     the execution of the expression terminates."))
   ((expr expr
          "Expression generated from the term.")
    (type type
@@ -2734,14 +2712,11 @@
    (term pseudo-term
          "The term from which the expression is generated.
           The term is transformed by replacing @(tsee if) with @(tsee if*).")
-   (compst-term pseudo-term
-                "A term representing the computation state
-                 after the expression.")
    (affect symbol-list
            "The variables affected by the expression.")
    (limit pseudo-term
           "Symbolic limit value
-           that suffices for @(tsee exec-block-item-list)
+           that suffices for @(tsee exec-expr-call-or-pure)
            to execute the block items completely.")
    (events pseudo-event-form-list
            "All the events generated for the expression.")
@@ -2766,7 +2741,6 @@
   :body (make-expr-gout :expr (irr-expr)
                         :type (irr-type)
                         :term nil
-                        :compst-term nil
                         :affect nil
                         :limit nil
                         :events nil
@@ -2818,7 +2792,6 @@
         (retok (make-expr-gout :expr pure.expr
                                :type pure.type
                                :term pure.term
-                               :compst-term gin.compst-var
                                :affect nil
                                :limit bound
                                :events pure.events
@@ -2882,7 +2855,6 @@
     (retok (make-expr-gout :expr pure.expr
                            :type pure.type
                            :term pure.term
-                           :compst-term gin.compst-var
                            :limit bound
                            :events (append pure.events (list event))
                            :thm-name thm-name
@@ -2972,7 +2944,6 @@
                                   :args args.exprs)
             :type out-type
             :term term
-            :compst-term nil
             :affect affect
             :limit `(binary-+ '2 ,limit)
             :events args.events
