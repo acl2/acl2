@@ -1,6 +1,6 @@
 ; Built-Ins Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -35,10 +35,10 @@
     "The file @('document.lisp') contains code
      to generate XDOC topics for the built-in axioms and theorems,
      organized in different ways.
-     This makes it easier to the built-in axioms and theorems
+     This makes it easier to see the built-in axioms and theorems
      than looking or searching through the source code.")
    (xdoc::p
     "The file @('disable.lisp') contains code
      that can be used to disable built-in functions and rules
-     (the latter may be axioms or theorems that have rule classes).
+     (the latter are axioms or theorems that have rule classes).
      This may be useful for more controlled and efficient proofs.")))
