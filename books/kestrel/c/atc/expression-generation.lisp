@@ -46,15 +46,32 @@
   (xdoc::topstring
    (xdoc::p
     "This does not include the term, which is passed as a separate input."))
-  ((context atc-contextp)
-   (inscope atc-symbol-varinfo-alist-list)
-   (prec-tags atc-string-taginfo-alist)
-   (fn symbol)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+  ((context atc-contextp
+            "Described in @(see atc-implementation).
+             It is the context just before this expression,
+             i.e. the context in which this expression is generated.")
+   (inscope atc-symbol-varinfo-alist-list
+            "Described in @(see atc-implementation).
+             It contains the variables in scope just before this expression,
+             i.e. the ones in scope for this expression.")
+   (prec-tags atc-string-taginfo-alist
+              "Described in @(see atc-implementation).")
+   (fn symbol
+       "Described in @(see atc-implementation).
+        It is the target function for which the expression is generated.")
+   (fn-guard symbol
+             "Described in @(see atc-implementation).")
+   (compst-var symbol
+               "Described in @(see atc-implementation).")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation).")
+   (proofs bool
+           "A flag indicating whether modular proof generation
+            should continue or not.
+            This will be eliminated when modular proof generation
+            will cover all of the ATC-generated code."))
   :pred pexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -66,13 +83,29 @@
    (xdoc::p
     "The generated expression is @('expr'),
      and its type is @('type')."))
-  ((expr expr)
-   (type type)
-   (term pseudo-termp)
-   (events pseudo-event-form-list)
-   (thm-name symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
+  ((expr expr
+         "Expression generated from the term.")
+   (type type
+         "The type returned by the expression. Never @('void').")
+   (term pseudo-termp
+         "The term from which the expression is generated.
+          The term is transformed by replacing @(tsee if) with @(tsee if*).")
+   (events pseudo-event-form-list
+           "All the events generated for the expression.")
+   (thm-name symbol
+             "The name of the theorem about @(tsee exec-expr-pure)
+              applied to the expression.
+              This theorem is one of the events in @('events').
+              It is @('nil') if no theorem was generated,
+              because modular proof generation is not yet available
+              for some constructs;
+              eventually this will be never @('nil'),
+              when modular proof generation covers
+              all the ATC-generated code.")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation)."))
   :pred pexpr-goutp)
 
 ;;;;;;;;;;

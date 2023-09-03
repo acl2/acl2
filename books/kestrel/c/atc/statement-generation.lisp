@@ -421,7 +421,7 @@
               applied to the block items.
               This theorem is one of the events in @('events').
               It is @('nil') if no theorem was generated,
-              because modular proof generation does is not yet available
+              because modular proof generation is not yet available
               for some constructs;
               eventually this will be never @('nil'),
               when modular proof generation covers
