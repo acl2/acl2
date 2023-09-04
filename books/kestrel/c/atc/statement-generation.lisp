@@ -31,6 +31,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrulel posp-of-+-when-both-posp
+  (implies (and (posp x)
+                (posp y))
+           (posp (+ x y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ atc-statement-generation
   :parents (atc-event-and-code-generation)
   :short "Generation of C statements."
@@ -453,7 +460,16 @@
 (define atc-gen-expr ((term pseudo-termp)
                       (gin expr-ginp)
                       state)
-  :returns (mv erp (gout expr-goutp))
+  :returns (mv erp
+               (expr exprp)
+               (type typep)
+               (term* pseudo-termp :hyp (pseudo-termp term))
+               (affect symbol-listp)
+               (limit pseudo-termp)
+               (events pseudo-event-form-listp)
+               (thm-name symbolp)
+               (thm-index posp)
+               (names-to-avoid symbol-listp))
   :short "Generate a C expression from an ACL2 term
           that must be an expression term."
   :long
@@ -498,7 +514,7 @@
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
-  (b* (((reterr) (irr-expr-gout))
+  (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil nil 1 nil)
        ((expr-gin gin) gin)
        (wrld (w state))
        ((mv okp called-fn arg-terms in-types out-type affect limit &)
@@ -538,19 +554,16 @@
                      This is indicative of provably dead code, ~
                      given that the code is guard-verified."
                     called-fn in-types arg-terms args.types))))
-          (retok
-           (make-expr-gout
-            :expr (make-expr-call :fun (make-ident
-                                        :name (symbol-name called-fn))
-                                  :args args.exprs)
-            :type out-type
-            :term term
-            :affect affect
-            :limit `(binary-+ '2 ,limit)
-            :events args.events
-            :thm-name nil
-            :thm-index args.thm-index
-            :names-to-avoid args.names-to-avoid))))
+          (retok (make-expr-call :fun (make-ident :name (symbol-name called-fn))
+                                 :args args.exprs)
+                 out-type
+                 term
+                 affect
+                 `(binary-+ '2 ,limit)
+                 args.events
+                 nil
+                 args.thm-index
+                 args.names-to-avoid)))
        ((erp (pexpr-gout pure))
         (atc-gen-expr-pure term
                            (make-pexpr-gin :context gin.context
@@ -565,15 +578,15 @@
                            state))
        (bound '(quote 1))
        ((when (not gin.proofs))
-        (retok (make-expr-gout :expr pure.expr
-                               :type pure.type
-                               :term pure.term
-                               :affect nil
-                               :limit bound
-                               :events pure.events
-                               :thm-name nil
-                               :thm-index pure.thm-index
-                               :names-to-avoid pure.names-to-avoid)))
+        (retok pure.expr
+               pure.type
+               pure.term
+               nil
+               bound
+               pure.events
+               nil
+               pure.thm-index
+               pure.names-to-avoid))
        (thm-name (pack gin.fn '-correct- pure.thm-index))
        ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                       thm-name nil pure.names-to-avoid wrld))
@@ -628,14 +641,15 @@
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (retok (make-expr-gout :expr pure.expr
-                           :type pure.type
-                           :term pure.term
-                           :limit bound
-                           :events (append pure.events (list event))
-                           :thm-name thm-name
-                           :thm-index (1+ pure.thm-index)
-                           :names-to-avoid names-to-avoid)))
+    (retok pure.expr
+           pure.type
+           pure.term
+           nil
+           bound
+           (append pure.events (list event))
+           thm-name
+           (1+ pure.thm-index)
+           names-to-avoid))
   :prepwork ((local (in-theory (enable pseudo-termp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -951,7 +965,7 @@
                                      state)
   :returns (mv erp
                (item block-itemp)
-               (val-term* pseudo-termp)
+               (val-term* pseudo-termp :hyp (pseudo-termp val-term))
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
@@ -982,7 +996,15 @@
                must be a portable ASCII C identifier, ~
                but it is not."
               (symbol-name var) var gin.fn)))
-       ((erp (expr-gout init))
+       ((erp init.expr
+             init.type
+             init.term
+             init.affect
+             init.limit
+             init.events
+             init.thm-name
+             init.thm-index
+             init.names-to-avoid)
         (atc-gen-expr val-term
                       (make-expr-gin
                        :context gin.context
@@ -1161,7 +1183,7 @@
                                     state)
   :returns (mv erp
                (item block-itemp)
-               (val-term* pseudo-termp)
+               (val-term* pseudo-termp :hyp (pseudo-termp val-term))
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
@@ -1195,7 +1217,15 @@
         (reterr (raise "Internal error: no information for variable ~x0." var)))
        (var-info var-info?)
        (prev-type (atc-var-info->type var-info))
-       ((erp (expr-gout rhs))
+       ((erp rhs.expr
+             rhs.type
+             rhs.term
+             rhs.affect
+             rhs.limit
+             rhs.events
+             rhs.thm-name
+             rhs.thm-index
+             rhs.names-to-avoid)
         (atc-gen-expr val-term
                       (make-expr-gin
                        :context gin.context
@@ -3446,7 +3476,15 @@
   (b* (((reterr) (irr-stmt-gout))
        ((stmt-gin gin) gin)
        (wrld (w state))
-       ((erp (expr-gout expr))
+       ((erp expr.expr
+             expr.type
+             expr.term
+             expr.affect
+             expr.limit
+             expr.events
+             expr.thm-name
+             expr.thm-index
+             expr.names-to-avoid)
         (atc-gen-expr term
                       (make-expr-gin :context gin.context
                                      :var-term-alist gin.var-term-alist
@@ -3595,7 +3633,17 @@
                                          :names-to-avoid names-to-avoid
                                          :proofs (and item-thm-name t))
                                         state)))
-  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))))
+  :guard-hints
+  (("Goal"
+    :in-theory (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+                    ((:e tau-system)))))
+  :prepwork
+  ((defrulel not-consp-when-posp
+     (implies (posp x)
+              (not (consp x))))
+   (defrulel acl2-numberp-when-posp
+     (implies (posp x)
+              (acl2-numberp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5126,7 +5174,15 @@
                            an attempt is made to modify the variables ~x1, ~
                            not all of which are assignable."
                           gin.fn vars)))
-                   ((erp (expr-gout init))
+                   ((erp init.expr
+                         init.type
+                         & ; init.term
+                         init.affect
+                         init.limit
+                         init.events
+                         & ; init.thm-name
+                         init.thm-index
+                         init.names-to-avoid)
                     (atc-gen-expr val-term
                                   (make-expr-gin
                                    :context gin.context
@@ -5220,7 +5276,15 @@
                            to modify a non-assignable variable ~x1."
                           gin.fn var)))
                    (prev-type (atc-var-info->type info?))
-                   ((erp (expr-gout rhs))
+                   ((erp rhs.expr
+                         rhs.type
+                         & ; rhs.term
+                         rhs.affect
+                         rhs.limit
+                         rhs.events
+                         & ; rhs.thm-name
+                         rhs.thm-index
+                         rhs.names-to-avoid)
                     (atc-gen-expr val-term
                                   (make-expr-gin
                                    :context gin.context
