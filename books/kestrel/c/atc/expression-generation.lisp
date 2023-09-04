@@ -2750,31 +2750,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr-noncall ((term pseudo-termp)
-                              (gin expr-ginp)
-                              state)
+(define atc-gen-expr ((term pseudo-termp)
+                      (gin expr-ginp)
+                      state)
   :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
-          that is not a function call."
+          that must be an expression term."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called by @(tsee atc-gen-expr),
-     when given an expression term that is not a function call,
-     in which case it must be a pure expression term.
-     This is not the same as just @(tsee atc-gen-expr-pure),
-     because that function generates a theorem
-     involving @(tsee exec-expr-pure),
-     while this function generates a theorem
-     involving @(tsee exec-expr-call-or-pure).")
+    "At the same time,
+     we check that the term is an expression term,
+     as described in the user documentation.")
    (xdoc::p
-    "The limit bound is set to 1,
-     which suffices, in @(tsee exec-expr-call-or-pure),
-     to go from there to @(tsee exec-expr-pure),
-     which does not use any limit."))
+    "We also return the C type of the expression,
+     the affected variables,
+     and a limit that suffices for @(tsee exec-expr-call-or-pure)
+     to execute the expression completely.")
+   (xdoc::p
+    "If the term is a call of a function that precedes @('fn')
+     in the list of target functions among @('t1'), ..., @('tp'),
+     we translate it to a C function call on the translated arguments.
+     The type of the expression is the result type of the function,
+     which is looked up in the function alist passed as input:
+     we ensure that this type is not @('void').
+     A sufficient limit for @(tsee exec-fun) to execute the called function
+     is retrieved from the called function's information;
+     we add 2 to it, to take into account the decrementing of the limit
+     to go from @(tsee exec-expr-call-or-pure) to @(tsee exec-expr-call)
+     and from there to @(tsee exec-fun).")
+   (xdoc::p
+    "Otherwise, we attempt to translate the term as a pure expression term.
+     The type is the one returned by that translation.
+     As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
+     to not stop right away due to the limit being 0."))
   (b* (((reterr) (irr-expr-gout))
        ((expr-gin gin) gin)
        (wrld (w state))
+       ((mv okp called-fn arg-terms in-types out-type affect limit &)
+        (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
+       ((when okp)
+        (b* (((when (type-case out-type :void))
+              (reterr
+               (msg "A call ~x0 of the function ~x1, which returns void, ~
+                     is being used where ~
+                     an expression term returning a a non-void C type ~
+                     is expected."
+                    term called-fn)))
+             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
+                                                in-types
+                                                arg-terms))
+              (reterr
+               (msg "The call ~x0 does not satisfy the restrictions ~
+                     on array arguments being identical to the formals."
+                    term)))
+             ((erp (pexprs-gout args))
+              (atc-gen-expr-pure-list arg-terms
+                                      (make-pexprs-gin
+                                       :context gin.context
+                                       :inscope gin.inscope
+                                       :prec-tags gin.prec-tags
+                                       :fn gin.fn
+                                       :fn-guard gin.fn-guard
+                                       :compst-var gin.compst-var
+                                       :thm-index gin.thm-index
+                                       :names-to-avoid gin.names-to-avoid
+                                       :proofs gin.proofs)
+                                      state))
+             ((unless (equal args.types in-types))
+              (reterr
+               (msg "The function ~x0 with input types ~x1 ~
+                     is applied to expression terms ~x2 returning ~x3. ~
+                     This is indicative of provably dead code, ~
+                     given that the code is guard-verified."
+                    called-fn in-types arg-terms args.types))))
+          (retok
+           (make-expr-gout
+            :expr (make-expr-call :fun (make-ident
+                                        :name (symbol-name called-fn))
+                                  :args args.exprs)
+            :type out-type
+            :term term
+            :affect affect
+            :limit `(binary-+ '2 ,limit)
+            :events args.events
+            :thm-name nil
+            :thm-index args.thm-index
+            :names-to-avoid args.names-to-avoid))))
        ((erp (pexpr-gout pure))
         (atc-gen-expr-pure term
                            (make-pexpr-gin :context gin.context
@@ -2860,95 +2922,4 @@
                            :thm-name thm-name
                            :thm-index (1+ pure.thm-index)
                            :names-to-avoid names-to-avoid)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-expr ((term pseudo-termp)
-                      (gin expr-ginp)
-                      state)
-  :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
-          that must be an expression term."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "At the same time,
-     we check that the term is an expression term,
-     as described in the user documentation.")
-   (xdoc::p
-    "We also return the C type of the expression,
-     the affected variables,
-     and a limit that suffices for @(tsee exec-expr-call-or-pure)
-     to execute the expression completely.")
-   (xdoc::p
-    "If the term is a call of a function that precedes @('fn')
-     in the list of target functions among @('t1'), ..., @('tp'),
-     we translate it to a C function call on the translated arguments.
-     The type of the expression is the result type of the function,
-     which is looked up in the function alist passed as input:
-     we ensure that this type is not @('void').
-     A sufficient limit for @(tsee exec-fun) to execute the called function
-     is retrieved from the called function's information;
-     we add 2 to it, to take into account the decrementing of the limit
-     to go from @(tsee exec-expr-call-or-pure) to @(tsee exec-expr-call)
-     and from there to @(tsee exec-fun).")
-   (xdoc::p
-    "Otherwise, we attempt to translate the term as a pure expression term.
-     The type is the one returned by that translation.
-     As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
-     to not stop right away due to the limit being 0."))
-  (b* (((reterr) (irr-expr-gout))
-       ((expr-gin gin) gin)
-       ((mv okp called-fn arg-terms in-types out-type affect limit &)
-        (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
-       ((when okp)
-        (b* (((when (type-case out-type :void))
-              (reterr
-               (msg "A call ~x0 of the function ~x1, which returns void, ~
-                     is being used where ~
-                     an expression term returning a a non-void C type ~
-                     is expected."
-                    term called-fn)))
-             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
-                                                in-types
-                                                arg-terms))
-              (reterr
-               (msg "The call ~x0 does not satisfy the restrictions ~
-                     on array arguments being identical to the formals."
-                    term)))
-             ((erp (pexprs-gout args))
-              (atc-gen-expr-pure-list arg-terms
-                                      (make-pexprs-gin
-                                       :context gin.context
-                                       :inscope gin.inscope
-                                       :prec-tags gin.prec-tags
-                                       :fn gin.fn
-                                       :fn-guard gin.fn-guard
-                                       :compst-var gin.compst-var
-                                       :thm-index gin.thm-index
-                                       :names-to-avoid gin.names-to-avoid
-                                       :proofs gin.proofs)
-                                      state))
-             ((unless (equal args.types in-types))
-              (reterr
-               (msg "The function ~x0 with input types ~x1 ~
-                     is applied to expression terms ~x2 returning ~x3. ~
-                     This is indicative of provably dead code, ~
-                     given that the code is guard-verified."
-                    called-fn in-types arg-terms args.types))))
-          (retok
-           (make-expr-gout
-            :expr (make-expr-call :fun (make-ident
-                                        :name (symbol-name called-fn))
-                                  :args args.exprs)
-            :type out-type
-            :term term
-            :affect affect
-            :limit `(binary-+ '2 ,limit)
-            :events args.events
-            :thm-name nil
-            :thm-index args.thm-index
-            :names-to-avoid args.names-to-avoid)))))
-    (atc-gen-expr-noncall term gin state))
   :prepwork ((local (in-theory (enable pseudo-termp)))))
