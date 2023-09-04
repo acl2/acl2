@@ -669,7 +669,7 @@
 (defun randomly-break-hints (hints rand)
   (declare (xargs :guard (and (true-listp hints)
                               (minstd-rand0p rand))))
-  (let ((goal-hint-keyword-value-list (hint-keyword-value-list-for-goal-spec "Goal" hints)))
+  (let ((goal-hint-keyword-value-list (hint-keyword-value-list-for-goal-spec "Goal" hints))) ; todo: what if there are multiple hints on Goal (perhaps including empty ones)?
     (if (not (keyword-value-listp goal-hint-keyword-value-list))
         (prog2$ (er hard? 'randomly-break-hints "Bad hint for Goal: ~x0" hints)
                 (mv :none nil rand))
@@ -679,6 +679,8 @@
             (mv :none nil rand)
           (mv breakage-type
               (cons (cons "Goal" broken-hint-keyword-value-list)
+                    ;; TODO: Removing later hints on Goal could break a proof, if they would
+                    ;; be used after the proof is "settled down".
                     (remove-hints-for-goal-spec "Goal" hints) ; removal might not be necessary, due to shadowing
                     )
               rand))))))
