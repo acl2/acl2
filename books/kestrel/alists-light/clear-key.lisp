@@ -11,8 +11,7 @@
 
 (in-package "ACL2")
 
-;; TODO: Disable
-(defun clear-key (key alist)
+(defund clear-key (key alist)
   (declare (xargs :guard (alistp alist)))
   (if (endp alist)
       nil
