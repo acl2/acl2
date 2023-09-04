@@ -34,7 +34,9 @@
 (include-book "xdoc/names" :dir :system) ;; bozo?
 (include-book "case-conversion")
 ;(local (include-book "arithmetic"))
-
+; Matt K. mod, 9/4/2023 (see that book for explanation), to avoid failure in
+; proof of char-in-charset-p-of-whitespace-chars.
+(local (include-book "std/basic/code-char-char-code-with-force" :dir :system))
 
 (define charset-p (x)
   :parents (std/strings)
