@@ -9158,13 +9158,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :rule-classes :type-prescription)
 
 (defaxiom code-char-char-code-is-identity
-  (implies (force (characterp c))
+  (implies (characterp c)
            (equal (code-char (char-code c)) c)))
 
 (defaxiom char-code-code-char-is-identity
-  (implies (and (force (integerp n))
-                (force (<= 0 n))
-                (force (< n 256)))
+  (implies (and (integerp n)
+                (<= 0 n)
+                (< n 256))
            (equal (char-code (code-char n)) n)))
 
 #+acl2-loop-only
