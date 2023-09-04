@@ -46,33 +46,58 @@
   (xdoc::topstring
    (xdoc::p
     "This does not include the term, which is passed as a separate input."))
-  ((context atc-contextp)
-   (inscope atc-symbol-varinfo-alist-list)
-   (prec-tags atc-string-taginfo-alist)
-   (fn symbol)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+  ((context atc-contextp
+            "Described in @(see atc-implementation).
+             It is the context just before this expression,
+             i.e. the context in which this expression is generated.")
+   (inscope atc-symbol-varinfo-alist-list
+            "Described in @(see atc-implementation).
+             It contains the variables in scope just before this expression,
+             i.e. the ones in scope for this expression.")
+   (prec-tags atc-string-taginfo-alist
+              "Described in @(see atc-implementation).")
+   (fn symbol
+       "Described in @(see atc-implementation).
+        It is the target function for which the expression is generated.")
+   (fn-guard symbol
+             "Described in @(see atc-implementation).")
+   (compst-var symbol
+               "Described in @(see atc-implementation).")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation).")
+   (proofs bool
+           "A flag indicating whether modular proof generation
+            should continue or not.
+            This will be eliminated when modular proof generation
+            will cover all of the ATC-generated code."))
   :pred pexpr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexpr-gout
   :short "Outputs for C pure expression generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expression is @('expr'),
-     and its type is @('type')."))
-  ((expr expr)
-   (type type)
-   (term pseudo-termp)
-   (events pseudo-event-form-list)
-   (thm-name symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
+  ((expr expr
+         "Expression generated from the term.")
+   (type type
+         "The type returned by the expression. Never @('void').")
+   (term pseudo-termp
+         "The term from which the expression is generated.
+          The term is transformed by replacing @(tsee if) with @(tsee if*).")
+   (events pseudo-event-form-list
+           "All the events generated for the expression.")
+   (thm-name symbol
+             "The name of the theorem about @(tsee exec-expr-pure)
+              applied to the expression.
+              This theorem is one of the events in @('events').
+              It is @('nil') if no theorem was generated,
+              which happens exactly when
+              the @('proofs') flag in @(tsee pexpr-gin) is @('nil').")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation)."))
   :pred pexpr-goutp)
 
 ;;;;;;;;;;
@@ -2177,46 +2202,7 @@
        we check that the term is a pure expression term,
        as described in the user documentation.
        Based on its form, we dispatch to different code,
-       after recursively processing sub-expressions.")
-     (xdoc::p
-      "If the term fits the pattern of a indirection on a pointed integer,
-       we translate it to an indirection expression
-       on the recursively generated expression for the argument.")
-     (xdoc::p
-      "If the term fits the pattern of an array read,
-       we translate it to an array subscripting expression
-       on the recursively generated expressions.
-       The type is the array's element type.")
-     (xdoc::p
-      "If the term fits the pattern of a structure scalar read,
-       we translate it to a structure member or pointer member expression
-       on the recursively generated expression.
-       The type is the member's type.")
-     (xdoc::p
-      "If the term fits the pattern of a structure array element read,
-       we translate it to an array subscripting expression
-       on the recursively generated index expression
-       and on a structure member of pointer member expression
-       on the recursively generated structure expression.
-       The type is the member element's type.")
-     (xdoc::p
-      "If the term is a call of @(tsee sint-from-boolean),
-       we call the mutually recursive ACL2 function
-       that translates the argument
-       (which must be an expression term returning a boolean)
-       to an expression, which we return.
-       The type of this expression is always @('int').")
-     (xdoc::p
-      "If the term is a @(tsee condexpr) call on an @(tsee if) call,
-       we call the mutually recursive ACL2 function on the test,
-       we call this ACL2 function on the branches,
-       and we construct a conditional expression.
-       We ensure that the two branches have the same type.")
-     (xdoc::p
-      "In all other cases, we fail with an error.
-       The term is not a pure expression term.
-       We could extend this code to provide
-       more information to the user at some point."))
+       after recursively processing sub-expressions."))
     (b* (((reterr) (irr-pexpr-gout))
          ((pexpr-gin gin) gin)
          ((when (pseudo-term-case term :var))
@@ -2229,8 +2215,7 @@
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-unary fn arg.term
                                 arg.expr arg.type
                                 arg.events arg.thm-name
@@ -2243,14 +2228,12 @@
                 (atc-gen-expr-pure arg1-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg1.thm-index
-                                      :names-to-avoid arg1.names-to-avoid
-                                      :proofs (and arg1.thm-name t)))
+                                      :names-to-avoid arg1.names-to-avoid))
                ((erp (pexpr-gout arg2))
                 (atc-gen-expr-pure arg2-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg2.thm-index
-                                      :names-to-avoid arg2.names-to-avoid
-                                      :proofs (and arg2.thm-name t))))
+                                      :names-to-avoid arg2.names-to-avoid)))
             (atc-gen-expr-binary fn
                                  arg1.term arg2.term
                                  arg1.expr arg2.expr
@@ -2267,8 +2250,7 @@
                 (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-conv fn arg.term
                                arg.expr arg.type
                                arg.events arg.thm-name
@@ -2279,8 +2261,7 @@
           (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-integer-read fn
                                        arg.term
                                        arg.expr
@@ -2300,13 +2281,11 @@
                                    (change-pexpr-gin
                                     gin
                                     :thm-index arr.thm-index
-                                    :names-to-avoid arr.names-to-avoid
-                                    :proofs (and arr.thm-name t))
+                                    :names-to-avoid arr.names-to-avoid)
                                    state))
                (gin (change-pexpr-gin gin
                                       :thm-index sub.thm-index
-                                      :names-to-avoid sub.names-to-avoid
-                                      :proofs (and sub.thm-name t))))
+                                      :names-to-avoid sub.names-to-avoid)))
             (atc-gen-expr-array-read fn
                                      arr.term
                                      arr.expr
@@ -2328,8 +2307,7 @@
                 (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-struct-read-scalar fn
                                              arg-term
                                              arg.expr
@@ -2356,8 +2334,7 @@
                (gin (change-pexpr-gin
                      gin
                      :thm-index struct.thm-index
-                     :names-to-avoid struct.names-to-avoid
-                     :proofs (and index.thm-name struct.thm-name t))))
+                     :names-to-avoid struct.names-to-avoid)))
             (atc-gen-expr-struct-read-array fn
                                             index.term
                                             index.expr
@@ -2385,8 +2362,7 @@
                                          (change-pexpr-gin
                                           gin
                                           :thm-index arg.thm-index
-                                          :names-to-avoid arg.names-to-avoid
-                                          :proofs (and arg.thm-name t))
+                                          :names-to-avoid arg.names-to-avoid)
                                          state)))
          ((erp okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
@@ -2401,8 +2377,7 @@
                                       gin
                                       :context then-context
                                       :thm-index test.thm-index
-                                      :names-to-avoid test.names-to-avoid
-                                      :proofs (and test.thm-name t))
+                                      :names-to-avoid test.names-to-avoid)
                                      state)))
                ((erp (pexpr-gout else))
                 (b* ((not-test-term `(not ,test.term))
@@ -2415,8 +2390,7 @@
                                       gin
                                       :context else-context
                                       :thm-index then.thm-index
-                                      :names-to-avoid then.names-to-avoid
-                                      :proofs (and test.thm-name t))
+                                      :names-to-avoid then.names-to-avoid)
                                      state))))
             (atc-gen-expr-cond term test.term then.term else.term
                                test.expr then.expr else.expr
@@ -2426,8 +2400,7 @@
                                (change-pexpr-gin
                                 gin
                                 :thm-index else.thm-index
-                                :names-to-avoid else.names-to-avoid
-                                :proofs (and then.thm-name else.thm-name t))
+                                :names-to-avoid else.names-to-avoid)
                                state))))
       (reterr
        (msg "When generating C code for the function ~x0, ~
@@ -2455,23 +2428,6 @@
        Based on its form, we dispatch to different code,
        after recursively processing sub-expressions.")
      (xdoc::p
-      "If the term is a call of @(tsee and) or @(tsee or),
-       we recursively translate the arguments,
-       which must be an expression term returning a boolean,
-       and we construct a logical expression
-       with the corresponding C operators.")
-     (xdoc::p
-      "If the term is a call of @('boolean-from-<type>'),
-       we call the mutually recursive function
-       that translates the argument,
-       which must be an expression term returning a C value,
-       to an expression, which we return.")
-     (xdoc::p
-      "In all other cases, we fail with an error.
-       The term is not an expression term returning a C value.
-       We could extend this code to provide
-       more information to the user at some point.")
-     (xdoc::p
       "As in @(tsee atc-gen-expr-pure),
        we perform C type checks on the ACL2 terms.
        See  @(tsee atc-gen-expr-pure) for an explanation."))
@@ -2490,8 +2446,7 @@
                                     gin
                                     :context context
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid
-                                    :proofs (and arg1.thm-name t))
+                                    :names-to-avoid arg1.names-to-avoid)
                                    state)))
             (retok (atc-gen-expr-and arg1.term
                                      arg2.term
@@ -2506,8 +2461,7 @@
                                      (change-pexpr-gin
                                       gin
                                       :thm-index arg2.thm-index
-                                      :names-to-avoid arg2.names-to-avoid
-                                      :proofs (and arg2.thm-name t))
+                                      :names-to-avoid arg2.names-to-avoid)
                                      state))))
          ((mv okp arg1-term arg2-term) (fty-check-or-call term))
          ((when okp)
@@ -2522,8 +2476,7 @@
                                     gin
                                     :context context
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid
-                                    :proofs (and arg1.thm-name t))
+                                    :names-to-avoid arg1.names-to-avoid)
                                    state)))
             (retok (atc-gen-expr-or arg1.term
                                     arg2.term
@@ -2538,8 +2491,7 @@
                                     (change-pexpr-gin
                                      gin
                                      :thm-index arg2.thm-index
-                                     :names-to-avoid arg2.names-to-avoid
-                                     :proofs (and arg2.thm-name t))
+                                     :names-to-avoid arg2.names-to-avoid)
                                     state))))
          ((erp okp fn arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
@@ -2547,8 +2499,7 @@
                 (atc-gen-expr-pure arg-term gin state))
                (gin (change-pexpr-gin gin
                                       :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+                                      :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-bool-from-type fn
                                          arg.term
                                          arg.expr
@@ -2583,34 +2534,59 @@
   (xdoc::topstring
    (xdoc::p
     "This does not include the terms, which are passed as a separate input."))
-  ((context atc-contextp)
-   (inscope atc-symbol-varinfo-alist-list)
-   (prec-tags atc-string-taginfo-alist)
-   (fn symbol)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+  ((context atc-contextp
+            "Described in @(see atc-implementation).
+             It is the context just before these expressions,
+             i.e. the context in which these expressions are generated.")
+   (inscope atc-symbol-varinfo-alist-list
+            "Described in @(see atc-implementation).
+             It contains the variables in scope just before these expressions,
+             i.e. the ones in scope for these expressions.")
+   (prec-tags atc-string-taginfo-alist
+              "Described in @(see atc-implementation).")
+   (fn symbol
+       "Described in @(see atc-implementation).
+        It is the target function for which the expressions are generated.")
+   (fn-guard symbol
+             "Described in @(see atc-implementation).")
+   (compst-var symbol
+               "Described in @(see atc-implementation).")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation).")
+   (proofs bool
+           "A flag indicating whether modular proof generation
+            should continue or not.
+            This will be eliminated when modular proof generation
+            will cover all of the ATC-generated code."))
   :pred pexprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexprs-gout
   :short "Outputs for C pure expression list generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expressions are @('exprs'),
-     and their types are @('types'),
-     in the same order."))
-  ((exprs expr-list)
-   (types type-list)
-   (terms pseudo-term-listp)
-   (events pseudo-event-form-list)
-   (thm-names symbol-list)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
+  ((exprs expr-list
+          "Expressions generated from the term.")
+   (types type-list
+          "The types returned by the expressions, in order.
+           None of these is @('void').")
+   (terms pseudo-term-listp
+          "The terms from which the expressions are generated, in order.
+          The terms are transformed by replacing @(tsee if) with @(tsee if*).")
+   (events pseudo-event-form-list
+           "All the events generated for the expressions.")
+   (thm-names symbol-list
+              "The name of the theorems about @(tsee exec-expr-pure)
+               applied to the expressions.
+               These theorems are some of the events in @('events').
+               These are all @('nil') if no theorems were generated,
+               which happens exactly when
+               the @('proofs') flag in @(tsee pexpr-gin) is @('nil').")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation)."))
   :pred pexprs-goutp)
 
 ;;;;;;;;;;
@@ -2689,46 +2665,72 @@
   (xdoc::topstring
    (xdoc::p
     "This does not include the term, which is passed as a separate input."))
-  ((context atc-contextp)
-   (var-term-alist symbol-pseudoterm-alist)
-   (inscope atc-symbol-varinfo-alist-list)
-   (fn symbol)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (fenv-var symbol)
-   (limit-var symbol)
-   (prec-fns atc-symbol-fninfo-alist)
-   (prec-tags atc-string-taginfo-alist)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+  ((context atc-contextp
+            "Described in @(see atc-implementation).
+             It is the context just before this expression,
+             i.e. the context in which this expression is generated.")
+   (var-term-alist symbol-pseudoterm-alist
+                   "Described in @(see atc-implementation).")
+   (inscope atc-symbol-varinfo-alist-list
+            "Described in @(see atc-implementation).
+             It contains the variables in scope just before this expression,
+             i.e. the ones in scope for this expression.")
+   (fn symbol
+       "Described in @(see atc-implementation).
+        It is the target function for which the expression is generated.")
+   (fn-guard symbol
+             "Described in @(see atc-implementation).")
+   (compst-var symbol
+               "Described in @(see atc-implementation).")
+   (fenv-var symbol
+             "Described in @(see atc-implementation).")
+   (limit-var symbol
+              "Described in @(see atc-implementation).")
+   (prec-fns atc-symbol-fninfo-alist
+             "Described in @(see atc-implementation).")
+   (prec-tags atc-string-taginfo-alist
+              "Described in @(see atc-implementation).")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation).")
+   (proofs bool
+           "A flag indicating whether modular proof generation
+            should continue or not.
+            This will be eliminated when modular proof generation
+            will cover all of the ATC-generated code."))
   :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod expr-gout
   :short "Outputs for C expression generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expression is @('expr'),
-     and its type is @('type').
-     The possibly updated computation state is returned as an untranslated term,
-     in @('compst-term').")
-   (xdoc::p
-    "The @('limit') component is the lower bound of the limit,
-     i.e. the minimum limit for which
-     the execution of the expression terminates."))
-  ((expr expr)
-   (type type)
-   (term pseudo-term)
-   (compst-term pseudo-term)
-   (affect symbol-list)
-   (limit pseudo-term)
-   (events pseudo-event-form-list)
-   (thm-name symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
+  ((expr expr
+         "Expression generated from the term.")
+   (type type
+         "The type returned by the expression. Never @('void').")
+   (term pseudo-term
+         "The term from which the expression is generated.
+          The term is transformed by replacing @(tsee if) with @(tsee if*).")
+   (affect symbol-list
+           "The variables affected by the expression.")
+   (limit pseudo-term
+          "Symbolic limit value
+           that suffices for @(tsee exec-expr-call-or-pure)
+           to execute the block items completely.")
+   (events pseudo-event-form-list
+           "All the events generated for the expression.")
+   (thm-name symbol
+             "The name of the theorem about @(tsee exec-expr-call-or-pure)
+              applied to the expression.
+              This theorem is one of the events in @('events').
+              It is @('nil') if no theorem was generated,
+              which happens exactly when
+              the @('proofs') flag in @(tsee pexpr-gin) is @('nil').")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation)."))
   :pred expr-goutp)
 
 ;;;;;;;;;;
@@ -2739,7 +2741,6 @@
   :body (make-expr-gout :expr (irr-expr)
                         :type (irr-type)
                         :term nil
-                        :compst-term nil
                         :affect nil
                         :limit nil
                         :events nil
@@ -2787,11 +2788,10 @@
                                            :proofs gin.proofs)
                            state))
        (bound '(quote 1))
-       ((when (not (and pure.thm-name t)))
+       ((when (not gin.proofs))
         (retok (make-expr-gout :expr pure.expr
                                :type pure.type
                                :term pure.term
-                               :compst-term gin.compst-var
                                :affect nil
                                :limit bound
                                :events pure.events
@@ -2855,7 +2855,6 @@
     (retok (make-expr-gout :expr pure.expr
                            :type pure.type
                            :term pure.term
-                           :compst-term gin.compst-var
                            :limit bound
                            :events (append pure.events (list event))
                            :thm-name thm-name
@@ -2945,7 +2944,6 @@
                                   :args args.exprs)
             :type out-type
             :term term
-            :compst-term nil
             :affect affect
             :limit `(binary-+ '2 ,limit)
             :events args.events
