@@ -12,8 +12,6 @@
 
 (in-package "ACL2")
 
-;(include-book "std/strings/decimal" :dir :system) ; todo: reduce, for STR::PARSE-NAT-FROM-CHARLIST and str::skip-leading-digits
-;(include-book "std/strings/binary" :dir :system) ; todo: reduce, for STR::PARSE-BITS-FROM-CHARLIST and str::skip-leading-bit-digits
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/read-chars" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
@@ -30,6 +28,11 @@
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+
+(defthm all-integerp-of-strip-cars-when-nodenum-type-alistp
+  (implies (nodenum-type-alistp alist)
+           (all-integerp (strip-cars alist)))
+  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
 
 (defthm alistp-of-reverse-list
   (equal (alistp (reverse-list x))
@@ -80,14 +83,15 @@
                 (raw-counterexamplep y))
            (raw-counterexamplep (append x y))))
 
-(defthm raw-counterexamplep-of-rev
+(defthm raw-counterexamplep-of-reverse-list
   (implies (raw-counterexamplep x)
            (raw-counterexamplep (reverse-list x))))
 
+;; Is the value if not a boolean it must be a natural.
 (defthmd natp-of-lookup-equal-when-raw-counterexamplep
   (implies (and (raw-counterexamplep raw-counterexample)
-                (not (booleanp (lookup-equal nodenum raw-counterexample))))
-           (natp (lookup-equal nodenum raw-counterexample)))
+                (not (booleanp (lookup-equal key raw-counterexample))))
+           (natp (lookup-equal key raw-counterexample)))
   :hints (("Goal" :in-theory (enable raw-counterexamplep lookup-equal))))
 
 (defconst *assert-chars* (coerce "ASSERT( " 'list))
@@ -96,6 +100,7 @@
 
 (defconst *normal-node-chars* (coerce "NODE" 'list))
 
+;;move
 ;;returns (mv matchp rest-chars)
 (defund match-chars (fixed-chars chars)
   (declare (xargs :guard (and (character-listp chars)
@@ -116,9 +121,7 @@
   :hints (("Goal" :in-theory (enable match-chars))))
 
 (defthm len-of-mv-nth-1-of-match-chars
-  (implies (and (mv-nth 0 (match-chars fixed-chars chars))
-;                (<= (len fixed-chars) (len chars))
-                )
+  (implies (mv-nth 0 (match-chars fixed-chars chars))
            (equal (len (mv-nth 1 (match-chars fixed-chars chars)))
                   (- (len chars)
                      (len fixed-chars))))
@@ -126,18 +129,16 @@
 
 (defthm character-listp-of-mv-nth-1-of-match-chars
   (implies (character-listp chars)
-           (character-listp (MV-NTH 1 (match-chars fixed-chars chars))))
+           (character-listp (mv-nth 1 (match-chars fixed-chars chars))))
   :hints (("Goal" :in-theory (enable match-chars))))
 
 (defthm true-listp-of-mv-nth-1-of-match-chars
   (implies (true-listp chars)
-           (true-listp (MV-NTH 1 (match-chars fixed-chars chars))))
+           (true-listp (mv-nth 1 (match-chars fixed-chars chars))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable match-chars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ; returns (mv number remainingchars)
 ;; (defund parse-binary-number (chars)
@@ -210,6 +211,8 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable parse-boolean))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; returns (mv value chars)
 ;; parse something like " = 0b00 );" or "<=>TRUE );"
 (defund parse-equality-etc (chars all-chars)
@@ -268,6 +271,7 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable parse-equality-etc))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;returns (mv array-index-or-nil chars)
 ;;example "[0b4]"
@@ -316,6 +320,8 @@
       (natp (mv-nth 0 (maybe-parse-array-index chars all-chars))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable maybe-parse-array-index))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; returns a raw-counterexamplep or :error
 ;;examples:
@@ -375,6 +381,8 @@
 
 (verify-guards parse-counterexample)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; A counterexample pairs nodenums to values.
 (defun counterexamplep (cex)
   (declare (xargs :guard t))
@@ -419,23 +427,7 @@
            (<= 0 (maxelem (strip-cars cex))))
   :rule-classes (:linear))
 
-(defthm <=-of-0-and-maxelem-of-strip-cars-when-nodenum-type-alistp
-  (implies (and (nodenum-type-alistp alist)
-                (consp alist))
-           (<= 0 (maxelem (strip-cars alist))))
-  :rule-classes (:linear)
-  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
-
-(defthm integerp-of-maxelem-of-strip-cars-when-nodenum-type-alistp
-  (implies (and (nodenum-type-alistp alist)
-                (consp alist))
-           (integerp (maxelem (strip-cars alist))))
-  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
-
-(defthm all-integerp-of-strip-cars-when-nodenum-type-alistp
-  (implies (nodenum-type-alistp alist)
-           (all-integerp (strip-cars alist)))
-  :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund set-array-vals-from-counterexample (raw-counterexample nodenum array-val)
   (declare (xargs :guard (and (raw-counterexamplep raw-counterexample)
@@ -450,7 +442,7 @@
       (if (and (consp key)
                (eql (car key) nodenum)) ;;(nodenum . index)
           (set-array-vals-from-counterexample (rest raw-counterexample) nodenum (update-nth
-                                                                                 (cdr key) ;the array indx
+                                                                                 (cdr key) ;the array index
                                                                                  (cdr entry)
                                                                                  array-val))
         (set-array-vals-from-counterexample (rest raw-counterexample) nodenum array-val)))))
@@ -460,11 +452,7 @@
            (true-listp (set-array-vals-from-counterexample raw-counterexample nodenum array-val)))
   :hints (("Goal" :in-theory (enable set-array-vals-from-counterexample))))
 
-
-
-;(local (in-theory (disable LIST-TYPEP BV-ARRAY-TYPEP)))
-
-;(local (in-theory (disable bv-array-typep bv-typep BV-ARRAY-TYPE-LEN MOST-GENERAL-TYPEP)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp counterexample).  Builds an alist that assigns a value to
 ;; each nodenum in cut-nodenum-type-alist.  For arrays, harvests values of
@@ -520,8 +508,6 @@
            (alistp (mv-nth 1 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc))))
   :hints (("Goal" :in-theory (enable fixup-counterexample))))
 
-;(verify-guards fixup-counterexample :hints (("Goal" :in-theory (enable nodenum-type-alistp))))
-
 (defthm strip-cars-of-mv-nth-1-of-fixup-counterexample
   (implies (not (mv-nth 0 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)))
            (equal (strip-cars (mv-nth 1 (fixup-counterexample cut-nodenum-type-alist raw-counterexample acc)))
@@ -550,6 +536,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Recognizes a counterexample all of whose nodes are less than BOUND.
 (defund bounded-counterexamplep (cex bound)
   (declare (xargs :guard (integerp bound)))
   (and (counterexamplep cex)
