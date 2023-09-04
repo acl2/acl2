@@ -12,6 +12,8 @@
 
 (include-book "std/strings/charset" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
+; Matt K. mod, 9/4/2023 (see that book for explanation), to avoid a failure.
+(local (include-book "std/basic/code-char-char-code-with-force" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

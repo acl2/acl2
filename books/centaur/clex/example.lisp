@@ -32,6 +32,9 @@
 (include-book "top")
 (include-book "std/util/top" :dir :system)
 (include-book "std/strings/top" :dir :system)
+; Matt K. mod, 9/4/2023 (see that book for explanation), to avoid a failure
+; for (defcharset whitespace ...).
+(local (include-book "std/basic/code-char-char-code-with-force" :dir :system))
 
 (local (defthm characterp-of-car-when-character-listp
          (implies (character-listp x)
