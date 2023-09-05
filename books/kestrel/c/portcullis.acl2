@@ -9,4 +9,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. addition, 9/5/2023:
+; The package "C" is already defined in CMUCL Snapshot 2023-08, so we exclude CMUCL:
+; cert-param: non-cmucl
+
 (ld "package.lsp")

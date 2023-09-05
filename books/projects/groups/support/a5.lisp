@@ -1,5 +1,13 @@
 (in-package "DM")
 
+; Matt K. addition, 9/5/2023:
+; During processing of a5-rewrite below, even when preceded by (comp t),
+; CMUCL Snapshot 2023-08 fails with the error:
+; "CMUCL has run out of dynamic heap space (1530 MB)."
+; This, even though ACL2 uses the maximum possible dynamic heap space for CMUCL.
+; So we exclude CMUCL:
+; cert-param: non-cmucl
+
 (include-book "alt")
 
 (defun a5 ()
