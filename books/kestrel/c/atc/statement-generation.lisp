@@ -564,17 +564,17 @@
                  nil
                  args.thm-index
                  args.names-to-avoid)))
-       ((erp (pexpr-gout pure))
+       ((erp (expr-gout pure))
         (atc-gen-expr-pure term
-                           (make-pexpr-gin :context gin.context
-                                           :inscope gin.inscope
-                                           :prec-tags gin.prec-tags
-                                           :fn gin.fn
-                                           :fn-guard gin.fn-guard
-                                           :compst-var gin.compst-var
-                                           :thm-index gin.thm-index
-                                           :names-to-avoid gin.names-to-avoid
-                                           :proofs gin.proofs)
+                           (make-expr-gin :context gin.context
+                                          :inscope gin.inscope
+                                          :prec-tags gin.prec-tags
+                                          :fn gin.fn
+                                          :fn-guard gin.fn-guard
+                                          :compst-var gin.compst-var
+                                          :thm-index gin.thm-index
+                                          :names-to-avoid gin.names-to-avoid
+                                          :proofs gin.proofs)
                            state))
        (bound '(quote 1))
        ((when (not gin.proofs))
@@ -1428,9 +1428,9 @@
                but it is not among the variables ~x1 ~
                currently affected."
               var gin.affect)))
-       ((erp (pexpr-gout arr))
+       ((erp (expr-gout arr))
         (atc-gen-expr-pure var
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -1441,9 +1441,9 @@
                             :names-to-avoid gin.names-to-avoid
                             :proofs gin.proofs)
                            state))
-       ((erp (pexpr-gout sub))
+       ((erp (expr-gout sub))
         (atc-gen-expr-pure sub-term
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -1454,9 +1454,9 @@
                             :names-to-avoid arr.names-to-avoid
                             :proofs (and arr.thm-name t))
                            state))
-       ((erp (pexpr-gout elem))
+       ((erp (expr-gout elem))
         (atc-gen-expr-pure elem-term
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -1776,9 +1776,9 @@
                to which ~x1 is bound ~
                has the ~x2 wrapper, which is disallowed."
               val-term var wrapper?)))
-       ((erp (pexpr-gout struct))
+       ((erp (expr-gout struct))
         (atc-gen-expr-pure var
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -1811,9 +1811,9 @@
                but it is not among the variables ~x1 ~
                currently affected."
               var gin.affect)))
-       ((erp (pexpr-gout member))
+       ((erp (expr-gout member))
         (atc-gen-expr-pure member-term
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -2141,9 +2141,9 @@
                to which ~x1 is bound ~
                has the ~x2 wrapper, which is disallowed."
               val-term var wrapper?)))
-       ((erp (pexpr-gout struct))
+       ((erp (expr-gout struct))
         (atc-gen-expr-pure var
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -2176,9 +2176,9 @@
                but it is not among the variables ~x1 ~
                currently affected."
               var gin.affect)))
-       ((erp (pexpr-gout index))
+       ((erp (expr-gout index))
         (atc-gen-expr-pure index-term
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -2199,9 +2199,9 @@
                unreachable code under the guards, ~
                given that the code is guard-verified."
               var struct.type index-term index.type)))
-       ((erp (pexpr-gout elem))
+       ((erp (expr-gout elem))
         (atc-gen-expr-pure elem-term
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -2590,9 +2590,9 @@
                but it is not among the variables ~x1 ~
                currently affected."
               var gin.affect)))
-       ((erp (pexpr-gout ptr))
+       ((erp (expr-gout ptr))
         (atc-gen-expr-pure var
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -2611,9 +2611,9 @@
                unreachable code under the guards, ~
                given that the code is guard-verified."
               var ptr.type (type-pointer type))))
-       ((erp (pexpr-gout int))
+       ((erp (expr-gout int))
         (atc-gen-expr-pure arg-term
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -4957,9 +4957,9 @@
                                          then.inscope
                                          gin
                                          state)))
-             ((erp (pexpr-gout test))
+             ((erp (expr-gout test))
               (atc-gen-expr-bool test-term
-                                 (make-pexpr-gin
+                                 (make-expr-gin
                                   :context gin.context
                                   :inscope gin.inscope
                                   :prec-tags gin.prec-tags
@@ -6102,9 +6102,9 @@
               gin.fn term)))
        ((mv mbtp &) (check-mbt-call test-term))
        ((when mbtp) (atc-gen-loop-stmt then-term gin state))
-       ((erp (pexpr-gout test))
+       ((erp (expr-gout test))
         (atc-gen-expr-bool test-term
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
