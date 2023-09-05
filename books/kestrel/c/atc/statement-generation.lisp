@@ -3399,23 +3399,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-return-stmt ((term pseudo-termp)
-                             (gin stmt-ginp)
-                             (must-affect symbol-listp)
-                             state)
+(define atc-gen-return-stmt ((term pseudo-termp) (gin stmt-ginp) state)
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C return statement from an ACL2 term."
   :long
   (xdoc::topstring
    (xdoc::p
     "The term passed here as parameter is the one representing
-     the expression to be returned by the statement.
-     The @('must-affect') parameter contains the variables
-     that must be affected by the expression:
-     it is set differently in the two circumstances in @(tsee atc-gen-stmt)
-     in which this @('atc-gen-return-stmt') is called,
-     corresponding to the two possible representations of @('return') statements
-     according to the user documentation.")
+     the expression to be returned by the statement.")
    (xdoc::p
     "We generate three theorems, which build upon each other:
      one for @(tsee exec-stmt) applied to the return statement,
@@ -3455,7 +3446,7 @@
              expr.thm-index
              expr.names-to-avoid)
         (atc-gen-expr term gin state))
-       ((unless (equal expr.affect must-affect))
+       ((unless (equal expr.affect gin.affect))
         (reterr
          (msg "When generating code for the function ~x0, ~
                a term ~x1 was encountered at the end of the computation, ~
@@ -3465,10 +3456,10 @@
               gin.fn
               term
               expr.affect
-              (if (consp must-affect)
-                  (if (consp (cdr must-affect))
-                      (msg "the variables ~&0" must-affect)
-                    (msg "the variable ~x0" (car must-affect)))
+              (if (consp gin.affect)
+                  (if (consp (cdr gin.affect))
+                      (msg "the variables ~&0" gin.affect)
+                    (msg "the variable ~x0" (car gin.affect)))
                 "no variables"))))
        ((when (type-case expr.type :void))
         (reterr
@@ -5821,7 +5812,9 @@
                                    :names-to-avoid gin.names-to-avoid)))
            ((equal (cdr terms) gin.affect)
             (b* ((gin (change-stmt-gin gin :proofs nil)))
-              (atc-gen-return-stmt (car terms) gin nil state)))
+              (atc-gen-return-stmt (car terms)
+                                   (change-stmt-gin gin :affect nil)
+                                   state)))
            (t (reterr
                (msg "When generating C code for the function ~x0, ~
                      a term ~x0 has been encountered, ~
@@ -5926,7 +5919,7 @@
                a recursive call on every path, ~
                but in the function ~x0 it ends with ~x1 instead."
               gin.fn term))))
-    (atc-gen-return-stmt term gin gin.affect state))
+    (atc-gen-return-stmt term gin state))
 
   :prepwork ((local (in-theory (disable equal-of-type-pointer
                                         equal-of-type-array
