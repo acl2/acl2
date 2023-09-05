@@ -650,7 +650,7 @@
                            (i (min xsize ysize))
                            (j (max xsize ysize)))
            :in-theory (e/d ( bvplus unsigned-byte-p unsigned-byte-p-forced) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                                                      <-of-expt-and-expt
+                                                      <-of-expt-and-expt-same-base
                                                       ;;anti-bvplus
                                                       )))))
 

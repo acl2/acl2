@@ -2927,7 +2927,7 @@
                            (j (max xsize ysize)))
            :in-theory (e/d (bvplus unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                                                      EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
-                                                      <-of-expt-and-expt
+                                                      <-of-expt-and-expt-same-base
                                                       anti-bvplus)))))
 
 
@@ -2989,7 +2989,7 @@
                            (i (min xsize ysize))
                            (j (max xsize ysize)))
            :in-theory (e/d (bvlt unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                                                   <-of-expt-and-expt
+                                                   <-of-expt-and-expt-same-base
                                                    <-becomes-bvlt <-becomes-bvlt-alt
                                                    <-of-bvmult-hack ;bozo
                                                    <-of-bvplus-becomes-bvlt-arg1
@@ -5069,7 +5069,7 @@
                 )
            (< x (EXPT R I)))
   :hints (("Goal" :use (:instance EXPT-IS-INCREASING-FOR-BASE>1 (i free) (j i))
-           :in-theory (disable EXPT-IS-INCREASING-FOR-BASE>1 <-of-expt-and-expt))))
+           :in-theory (disable EXPT-IS-INCREASING-FOR-BASE>1 <-of-expt-and-expt-same-base))))
 
 
 
@@ -13176,7 +13176,7 @@
 
 ;UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP
                             ;;                                    EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                            ;;                                    <-OF-EXPT-AND-EXPT
+                            ;;                                    <-OF-EXPT-AND-EXPT-same-base
                             ;;                                    <-OF-EXPT-WHEN-FREE
                             ;;                                    PLUS-OF-TIMES-EXPT-BOUND2
                             )))))
