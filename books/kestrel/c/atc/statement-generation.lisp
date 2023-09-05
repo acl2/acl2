@@ -457,9 +457,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr ((term pseudo-termp)
-                      (gin stmt-ginp)
-                      state)
+(define atc-gen-expr ((term pseudo-termp) (gin stmt-ginp) state)
   :returns (mv erp
                (expr exprp)
                (type typep)
@@ -475,7 +473,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "It may see surprising that this function is
+    "At the same time,
+     we check that the term is an expression term,
+     as described in the user documentation.")
+   (xdoc::p
+    "It may seem surprising that this function is
      under @(see atc-statement-generation)
      instead of @(see atc-expression-generation),
      but it needs to come after @(tsee stmt-gin)
@@ -489,11 +491,8 @@
      since they are top-level expressions
      (in C terminology, they are full expressions [C:6.8/4]).")
    (xdoc::p
-    "At the same time,
-     we check that the term is an expression term,
-     as described in the user documentation.")
-   (xdoc::p
     "We also return the C type of the expression,
+     the transformed term,
      the affected variables,
      and a limit that suffices for @(tsee exec-expr-call-or-pure)
      to execute the expression completely.")
