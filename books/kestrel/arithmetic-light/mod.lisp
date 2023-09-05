@@ -845,3 +845,15 @@
            (equal (equal i1 i2)
                   t))
   :hints (("Goal" :in-theory (enable mod))))
+
+;; Enable?
+(defthmd floor-of-when-mod-known
+  (implies (and (equal k (mod i j)) ; k is a free var
+                (syntaxp (quotep k))
+                (natp k)
+                (< k j)
+                (integerp j)
+                (< 0 j)
+                (integerp i))
+           (equal (floor i j)
+                  (/ (- i k) j))))
