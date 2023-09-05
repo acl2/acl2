@@ -53,12 +53,16 @@
   (union-equal (desugar-expand-hint form1)
                (desugar-expand-hint form2)))
 
-;; TODO: Flesh this out, if needed.
 (defun incompatible-hint-settings (key1 key2)
   (declare (xargs :guard (and (keywordp key1)
-                              (keywordp key2))))
-  (and (member-eq key1 '(:use :cases :by :induct))
-       (member-eq key2 '(:use :cases :by :induct))))
+                              (keywordp key2)
+                              (not (equal key1 key2)))))
+  (and (member-eq key1 '(:use :cases :by :induct :bdd :clause-processor :or))
+       (member-eq key2 '(:use :cases :by :induct :bdd :clause-processor :or))
+       (not (or (and (eq key1 :use)
+                     (eq key2 :cases))
+                (and (eq key1 :cases)
+                     (eq key2 :use))))))
 
 (defun merge-in-theory-hints (form1 form2)
   (declare (xargs :guard t))
