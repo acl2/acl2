@@ -11,17 +11,20 @@ import sys
 
 test_dir_path = 'yaml_test/'
 
-def run_parser(bin_path, working_dir, input, timeout):
+def preprocess(working_dir, input):
+    cpp = sp.run(['g++', '-D__RAC__', '-C', '-E', '-std=c++14', '-I../../../include',
+    input, '-o', input + '.i'], capture_output=True, text=True, cwd=working_dir)
+    assert cpp.returncode == 0, 'Preprocessor failed:\n' + cpp.stderr
+
+def run_parser(bin_path, working_dir, input, timeout, env):
 
     # Remove potential old generated code.
     sp.run(['rm', '-f', input + '.ast.lsp'], cwd=working_dir)
 
-    cpp = sp.run(['g++', '-D__RAC__', '-C', '-E', '-std=c++14', '-I../../../include',
-        input, '-o', input + '.i'], capture_output=True, text=True, cwd=working_dir)
-    assert cpp.returncode == 0, 'Preprocessor failed:\n' + cpp.stderr
+    preprocess(working_dir, input)
 
-    return sp.run(['../../../' / bin_path, input, '-acl2'], capture_output=True, text=True,
-            timeout=timeout, cwd=working_dir)
+    return sp.run(['../../../' / bin_path, input, '-acl2', '-pedantic'], capture_output=True, text=True,
+        timeout=timeout, cwd=working_dir, env=env)
 
 def run_parser_raw(bin_path, working_dir, args, timeout):
     return sp.run([bin_path, *args],
@@ -34,18 +37,17 @@ def diff(ref, out):
 
     ref = ref.splitlines(keepends=True)
     out = out.splitlines(keepends=True)
-    return ''.join(unified_diff(ref, out, fromfile="ref", tofile="out"))
-
-# This will match the unicode whitespace, maybe we should only match
-# ascii's ones ?
-RE_COMBINE_WHITESPACE = re.compile(r"[ \n]+")
+    return ''.join(unified_diff(ref, out, n=1, fromfile="ref", tofile="out"))
 
 def load(path, allow_empty):
     try:
         with open(path, "r") as f:
             content = f.read()
+            content = '\n(funcdef'.join(content.split("(funcdef"))
+            content = '\n  (block'.join(content.split("(block"))
+            content = '\n    (declare'.join(content.split("(declare")) 
+            content = '\n    (assign'.join(content.split("(assign")) 
             return content
-            return RE_COMBINE_WHITESPACE.sub(" ", content) + '\n'
 
     except OSError as err:
         if allow_empty:
@@ -56,27 +58,26 @@ def load(path, allow_empty):
 
 def test(bin_path, dir_path, testcase, timeout):
 
-    # TODO compatible mode. 
-
     input = testcase.get("input", testcase.get("name") + ".cpp")
 
     out = None
     args = testcase.get("args")
+    env = testcase.get("env", {})
+
     if args is None:
-        out = run_parser(bin_path, dir_path, input, timeout)
+        out = run_parser(bin_path, dir_path, input, timeout, env)
     else:
+        file_to_preprocess = testcase.get("preprocess")
+        if file_to_preprocess:
+            preprocess(dir_path, file_to_preprocess)
         out = run_parser_raw(bin_path, dir_path, args, timeout)
 
     disabled_checks = testcase.get("disabled-checks", [])
-    if not "has_failed" in disabled_checks:
-        if testcase.get("has_failed", False):
-            assert out.returncode != 0, "expected a non zero returncode but got 0"
+    if not "should_report_error" in disabled_checks:
+        if testcase.get("should_report_error", False):
+            assert out.returncode == 1, f"expected one as returncode but got {out.returncode}"
         else:
             assert out.returncode == 0, f"expected a zero returncode but got {out.returncode}"
-
-    if not "exit_code" in disabled_checks:
-        ref = testcase.get("exit_code", 0)
-        assert out.returncode == ref, f"returncode differs:\nexpected: {ref} got: {out.returncode}"
 
     if not "stdout" in disabled_checks:
         stdout_path = testcase.get("ref_stdout", testcase.get("name") + ".ref.stdout")
@@ -92,8 +93,8 @@ def test(bin_path, dir_path, testcase, timeout):
             assert out.stderr == ref, f"stderr differs:\n{(diff(ref, out.stderr))}"
 
     # If the test should fails, don't test the output: there is none.
-    if not "generated_code" in disabled_checks and not testcase.get("has_failed", False):
-        
+    if not "generated_code" in disabled_checks and not testcase.get("should_report_error", False):
+
         ref = ""
         try:
             generated_path = testcase.get("ref_generated", testcase.get("name") + ".cpp.ref.ast.lsp")
@@ -102,7 +103,8 @@ def test(bin_path, dir_path, testcase, timeout):
             raise OSError(f"Reference `{generated_path}` not found")
 
         try:
-            out = load(dir_path + input + ".ast.lsp", allow_empty=False)
+            out_path = dir_path + testcase.get("out_generated", input + ".ast.lsp")
+            out = load(out_path, allow_empty=False)
             assert out == ref, f"generated code differs:\n{diff(ref, out)}"
         except OSError as err:
             raise AssertionError("Code not generated")
@@ -110,7 +112,7 @@ def test(bin_path, dir_path, testcase, timeout):
 
 def run_tests(bin_path, category, file, timeout, quiet, show_bugs):
 
-    dir_path = test_dir_path + category + '/' 
+    dir_path = test_dir_path + category + '/'
     with open(dir_path + file, "r") as test_file:
         content = yaml.safe_load(test_file)
 
@@ -133,7 +135,7 @@ def run_tests(bin_path, category, file, timeout, quiet, show_bugs):
                 print(f"{colored('Test description:', 'yellow')} ", descr)
             print(err)
             print('--------------------------------------------------------------------------------')
-        
+
         else:
             if testcase.get("bug", False) and show_bugs:
                 print(f"[{colored('OK', 'magenta')}] (Bug)", testcase["name"], f"(from {category})")

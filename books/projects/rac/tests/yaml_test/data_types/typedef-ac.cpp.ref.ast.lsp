@@ -1,3 +1,3 @@
 
 
-(funcdef foo () (block (return (bits 2 4 0))))
+(funcdef foo () (block (return 2)))

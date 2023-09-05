@@ -1,0 +1,17 @@
+-
+
+(FUNCDEF FOO NIL
+         (BLOCK (DECLARE A1 (SI (BITS 1 1 0) 2))
+                (DECLARE A2 (SI (BITS -4 1 0) 2))
+                (DECLARE B1 (BITS (FL (* 1 (EXPT 2 -2))) 1 0))
+                (DECLARE B2 (BITS (FL (* -2 (EXPT 2 -2))) 1 0))
+                (DECLARE C 9)
+                (DECLARE D NIL)
+                (DECLARE E 4)
+                (DECLARE F 4)
+                (DECLARE G NIL)
+                (DECLARE H '((0 . 1) (1 . 2) (2 . 3)))
+                (RETURN 0)))
+
+RESET
+
