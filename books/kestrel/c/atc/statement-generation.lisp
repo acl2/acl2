@@ -462,7 +462,6 @@
                (expr exprp)
                (type typep)
                (term* pseudo-termp :hyp (pseudo-termp term))
-               (affect symbol-listp)
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
@@ -513,7 +512,7 @@
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
-  (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil nil 1 nil)
+  (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((mv okp called-fn arg-terms in-types out-type affect limit &)
@@ -562,7 +561,6 @@
                                  :args args.exprs)
                  out-type
                  term
-                 affect
                  `(binary-+ '2 ,limit)
                  args.events
                  nil
@@ -585,7 +583,6 @@
         (retok pure.expr
                pure.type
                pure.term
-               nil
                bound
                pure.events
                nil
@@ -648,7 +645,6 @@
     (retok pure.expr
            pure.type
            pure.term
-           nil
            bound
            (append pure.events (list event))
            thm-name
@@ -1003,7 +999,6 @@
        ((erp init.expr
              init.type
              init.term
-             & ; init.affect
              init.limit
              init.events
              init.thm-name
@@ -1205,7 +1200,6 @@
        ((erp rhs.expr
              rhs.type
              rhs.term
-             & ; rhs.affect
              rhs.limit
              rhs.events
              rhs.thm-name
@@ -3436,7 +3430,6 @@
        ((erp expr.expr
              expr.type
              expr.term
-             & ; expr.affect
              expr.limit
              expr.events
              expr.thm-name
@@ -5105,7 +5098,6 @@
                    ((erp init.expr
                          init.type
                          & ; init.term
-                         & ; init.affect
                          init.limit
                          init.events
                          & ; init.thm-name
@@ -5188,7 +5180,6 @@
                    ((erp rhs.expr
                          rhs.type
                          & ; rhs.term
-                         & ; rhs.affect
                          rhs.limit
                          rhs.events
                          & ; rhs.thm-name
