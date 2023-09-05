@@ -458,7 +458,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr ((term pseudo-termp)
-                      (gin expr-ginp)
+                      (gin stmt-ginp)
                       state)
   :returns (mv erp
                (expr exprp)
@@ -478,16 +478,16 @@
     "It may see surprising that this function is
      under @(see atc-statement-generation)
      instead of @(see atc-expression-generation),
-     but there are upcoming changes to this function
-     that will require it to be in this file.
+     but it needs to come after @(tsee stmt-gin)
+     because it takes that as an input.
      Indeed, this ACL2 function is used
      for top-level or near-top-level expressions within statements,
-     and so it is not that unreasonable that
-     this function is more tightly close to statement generation functions.
-     Note also that functions to generate assignment expressions
+     and so it is not unreasonable that
+     this function is ``close'' to the statement generation functions.
+     Note that functions to generate assignment expressions
      are also under @(see atc-statement-generation),
      since they are top-level expressions
-     (in C terminology, they are full expressions [C:6.8/4].")
+     (in C terminology, they are full expressions [C:6.8/4]).")
    (xdoc::p
     "At the same time,
      we check that the term is an expression term,
@@ -515,7 +515,7 @@
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
   (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil nil 1 nil)
-       ((expr-gin gin) gin)
+       ((stmt-gin gin) gin)
        (wrld (w state))
        ((mv okp called-fn arg-terms in-types out-type affect limit &)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
@@ -1005,22 +1005,7 @@
              init.thm-name
              init.thm-index
              init.names-to-avoid)
-        (atc-gen-expr val-term
-                      (make-expr-gin
-                       :context gin.context
-                       :var-term-alist gin.var-term-alist
-                       :inscope gin.inscope
-                       :fn gin.fn
-                       :fn-guard gin.fn-guard
-                       :compst-var gin.compst-var
-                       :fenv-var gin.fenv-var
-                       :limit-var gin.limit-var
-                       :prec-fns gin.prec-fns
-                       :prec-tags gin.prec-tags
-                       :thm-index gin.thm-index
-                       :names-to-avoid gin.names-to-avoid
-                       :proofs gin.proofs)
-                      state))
+        (atc-gen-expr val-term gin state))
        ((when (or (type-case init.type :pointer)
                   (type-case init.type :array)))
         (reterr
@@ -1226,22 +1211,7 @@
              rhs.thm-name
              rhs.thm-index
              rhs.names-to-avoid)
-        (atc-gen-expr val-term
-                      (make-expr-gin
-                       :context gin.context
-                       :var-term-alist gin.var-term-alist
-                       :inscope gin.inscope
-                       :fn gin.fn
-                       :fn-guard gin.fn-guard
-                       :compst-var gin.compst-var
-                       :fenv-var gin.fenv-var
-                       :limit-var gin.limit-var
-                       :prec-fns gin.prec-fns
-                       :prec-tags gin.prec-tags
-                       :thm-index gin.thm-index
-                       :names-to-avoid gin.names-to-avoid
-                       :proofs gin.proofs)
-                      state))
+        (atc-gen-expr val-term gin state))
        ((unless (equal prev-type rhs.type))
         (reterr
          (msg "The type ~x0 of the term ~x1 ~
@@ -3485,21 +3455,7 @@
              expr.thm-name
              expr.thm-index
              expr.names-to-avoid)
-        (atc-gen-expr term
-                      (make-expr-gin :context gin.context
-                                     :var-term-alist gin.var-term-alist
-                                     :inscope gin.inscope
-                                     :fn gin.fn
-                                     :fn-guard gin.fn-guard
-                                     :compst-var gin.compst-var
-                                     :fenv-var gin.fenv-var
-                                     :limit-var gin.limit-var
-                                     :prec-fns gin.prec-fns
-                                     :prec-tags gin.prec-tags
-                                     :thm-index gin.thm-index
-                                     :names-to-avoid gin.names-to-avoid
-                                     :proofs gin.proofs)
-                      state))
+        (atc-gen-expr term gin state))
        ((unless (equal expr.affect must-affect))
         (reterr
          (msg "When generating code for the function ~x0, ~
@@ -5183,22 +5139,7 @@
                          & ; init.thm-name
                          init.thm-index
                          init.names-to-avoid)
-                    (atc-gen-expr val-term
-                                  (make-expr-gin
-                                   :context gin.context
-                                   :var-term-alist gin.var-term-alist
-                                   :inscope gin.inscope
-                                   :fn gin.fn
-                                   :fn-guard gin.fn-guard
-                                   :compst-var gin.compst-var
-                                   :fenv-var gin.fenv-var
-                                   :limit-var gin.limit-var
-                                   :prec-fns gin.prec-fns
-                                   :prec-tags gin.prec-tags
-                                   :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
-                                  state))
+                    (atc-gen-expr val-term gin state))
                    ((when (or (type-case init.type :pointer)
                               (type-case init.type :array)))
                     (reterr
@@ -5285,22 +5226,7 @@
                          & ; rhs.thm-name
                          rhs.thm-index
                          rhs.names-to-avoid)
-                    (atc-gen-expr val-term
-                                  (make-expr-gin
-                                   :context gin.context
-                                   :var-term-alist gin.var-term-alist
-                                   :inscope gin.inscope
-                                   :fn gin.fn
-                                   :fn-guard gin.fn-guard
-                                   :compst-var gin.compst-var
-                                   :fenv-var gin.fenv-var
-                                   :limit-var gin.limit-var
-                                   :prec-fns gin.prec-fns
-                                   :prec-tags gin.prec-tags
-                                   :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid
-                                   :proofs gin.proofs)
-                                  state))
+                    (atc-gen-expr val-term gin state))
                    ((unless (equal prev-type rhs.type))
                     (reterr
                      (msg "The type ~x0 of the term ~x1 ~
