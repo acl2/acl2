@@ -1845,8 +1845,7 @@
        (varinfo (atc-get-var var gin.inscope))
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
-       ((when (or (not member.thm-name)
-                  (atc-var-info->externalp varinfo))) ; <- temporary
+       ((when (not member.thm-name))
         (retok item
                struct-write-term
                item-limit
@@ -2234,8 +2233,7 @@
        (varinfo (atc-get-var var gin.inscope))
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
-       ((when (or (not elem.thm-name)
-                  (atc-var-info->externalp varinfo))) ; <- temporary
+       ((when (not elem.thm-name))
         (retok item
                struct-write-term
                item-limit
@@ -2640,8 +2638,7 @@
        (varinfo (atc-get-var var gin.inscope))
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
-       ((when (or (not int.thm-name)
-                  (atc-var-info->externalp varinfo))) ; <- temporary
+       ((when (not int.thm-name))
         (retok item
                integer-write-term
                item-limit
