@@ -526,6 +526,11 @@
                      an expression term returning a a non-void C type ~
                      is expected."
                     term called-fn)))
+             ((unless (equal affect gin.affect))
+              (reterr
+               (msg "The call ~x0 affects ~x1, ~
+                     but it should affect ~x2 instead."
+                    term gin.affect affect)))
              ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
                                                 in-types
                                                 arg-terms))
@@ -998,13 +1003,15 @@
        ((erp init.expr
              init.type
              init.term
-             init.affect
+             & ; init.affect
              init.limit
              init.events
              init.thm-name
              init.thm-index
              init.names-to-avoid)
-        (atc-gen-expr val-term gin state))
+        (atc-gen-expr val-term
+                      (change-stmt-gin gin :affect nil)
+                      state))
        ((when (or (type-case init.type :pointer)
                   (type-case init.type :array)))
         (reterr
@@ -1014,12 +1021,6 @@
                This is currently disallowed, ~
                because it would create an alias."
               gin.fn val-term init.type var)))
-       ((when (consp init.affect))
-        (reterr
-         (msg "The term ~x0 to which the variable ~x1 is bound ~
-               must not affect any variables, ~
-               but it affects ~x2 instead."
-              val-term var init.affect)))
        ((mv item
             item-limit
             item-events
@@ -1204,13 +1205,15 @@
        ((erp rhs.expr
              rhs.type
              rhs.term
-             rhs.affect
+             & ; rhs.affect
              rhs.limit
              rhs.events
              rhs.thm-name
              rhs.thm-index
              rhs.names-to-avoid)
-        (atc-gen-expr val-term gin state))
+        (atc-gen-expr val-term
+                      (change-stmt-gin gin :affect nil)
+                      state))
        ((unless (equal prev-type rhs.type))
         (reterr
          (msg "The type ~x0 of the term ~x1 ~
@@ -1219,12 +1222,6 @@
                differs from the type ~x4 ~
                of a variable with the same symbol in scope."
               rhs.type val-term var gin.fn prev-type)))
-       ((when (consp rhs.affect))
-        (reterr
-         (msg "The term ~x0 to which the variable ~x1 is bound ~
-               must not affect any variables, ~
-               but it affects ~x2 instead."
-              val-term var rhs.affect)))
        ((when (type-case rhs.type :array))
         (reterr
          (msg "The term ~x0 to which the variable ~x1 is bound ~
@@ -3439,28 +3436,13 @@
        ((erp expr.expr
              expr.type
              expr.term
-             expr.affect
+             & ; expr.affect
              expr.limit
              expr.events
              expr.thm-name
              expr.thm-index
              expr.names-to-avoid)
         (atc-gen-expr term gin state))
-       ((unless (equal expr.affect gin.affect))
-        (reterr
-         (msg "When generating code for the function ~x0, ~
-               a term ~x1 was encountered at the end of the computation, ~
-               which represents a return statement
-               whose expression affects the variables ~x2, ~
-               but ~@3 must be affected here instead."
-              gin.fn
-              term
-              expr.affect
-              (if (consp gin.affect)
-                  (if (consp (cdr gin.affect))
-                      (msg "the variables ~&0" gin.affect)
-                    (msg "the variable ~x0" (car gin.affect)))
-                "no variables"))))
        ((when (type-case expr.type :void))
         (reterr
          (raise "Internal error: return term ~x0 has type void." term)))
@@ -5123,13 +5105,15 @@
                    ((erp init.expr
                          init.type
                          & ; init.term
-                         init.affect
+                         & ; init.affect
                          init.limit
                          init.events
                          & ; init.thm-name
                          init.thm-index
                          init.names-to-avoid)
-                    (atc-gen-expr val-term gin state))
+                    (atc-gen-expr val-term
+                                  (change-stmt-gin gin :affect vars)
+                                  state))
                    ((when (or (type-case init.type :pointer)
                               (type-case init.type :array)))
                     (reterr
@@ -5139,12 +5123,6 @@
                            This is currently disallowed, ~
                            because it would create an alias."
                           gin.fn val-term init.type var)))
-                   ((unless (equal init.affect vars))
-                    (reterr
-                     (msg "The term ~x0 to which the variable ~x1 is bound ~
-                           must affect the variables ~x2, ~
-                           but it affects ~x3 instead."
-                          val-term var vars init.affect)))
                    ((erp)
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
@@ -5210,13 +5188,15 @@
                    ((erp rhs.expr
                          rhs.type
                          & ; rhs.term
-                         rhs.affect
+                         & ; rhs.affect
                          rhs.limit
                          rhs.events
                          & ; rhs.thm-name
                          rhs.thm-index
                          rhs.names-to-avoid)
-                    (atc-gen-expr val-term gin state))
+                    (atc-gen-expr val-term
+                                  (change-stmt-gin gin :affect vars)
+                                  state))
                    ((unless (equal prev-type rhs.type))
                     (reterr
                      (msg "The type ~x0 of the term ~x1 ~
@@ -5225,12 +5205,6 @@
                            differs from the type ~x4 ~
                            of a variable with the same symbol in scope."
                           rhs.type val-term var gin.fn prev-type)))
-                   ((unless (equal rhs.affect vars))
-                    (reterr
-                     (msg "The term ~x0 to which the variable ~x1 is bound ~
-                           must affect the variables ~x2, ~
-                           but it affects ~x3 instead."
-                          val-term var vars rhs.affect)))
                    ((erp)
                     (atc-ensure-formals-not-lost vars
                                                  gin.affect
