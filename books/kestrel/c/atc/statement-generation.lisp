@@ -626,6 +626,7 @@
                                      compustatep-of-add-var
                                      compustatep-of-enter-scope
                                      compustatep-of-update-var
+                                     compustatep-of-update-object
                                      compustatep-of-exit-scope
                                      compustatep-of-if*-when-both-compustatep
                                      exec-expr-call-or-pure-when-pure
@@ -916,6 +917,7 @@
                         create-var-okp-of-enter-scope
                         create-var-okp-of-add-frame
                         create-var-okp-of-update-var
+                        create-var-okp-of-update-object
                         ident-fix-when-identp
                         equal-of-ident-and-ident
                         (:e str-fix)
@@ -924,6 +926,7 @@
                         compustate-frames-number-of-enter-scope-not-zero
                         compustate-frames-number-of-add-frame-not-zero
                         compustate-frames-number-of-update-var
+                        compustate-frames-number-of-update-object
                         compustatep-of-add-var))))
        ((mv item-thm-event &) (evmac-generate-defthm item-thm-name
                                                      :formula item-formula
@@ -1845,8 +1848,7 @@
        (varinfo (atc-get-var var gin.inscope))
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
-       ((when (or (not member.thm-name)
-                  (atc-var-info->externalp varinfo))) ; <- temporary
+       ((when (not member.thm-name))
         (retok item
                struct-write-term
                item-limit
@@ -2234,8 +2236,7 @@
        (varinfo (atc-get-var var gin.inscope))
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
-       ((when (or (not elem.thm-name)
-                  (atc-var-info->externalp varinfo))) ; <- temporary
+       ((when (not elem.thm-name))
         (retok item
                struct-write-term
                item-limit
@@ -2640,8 +2641,7 @@
        (varinfo (atc-get-var var gin.inscope))
        ((unless varinfo)
         (reterr (raise "Internal error: no information for variable ~x0." var)))
-       ((when (or (not int.thm-name)
-                  (atc-var-info->externalp varinfo))) ; <- temporary
+       ((when (not int.thm-name))
         (retok item
                integer-write-term
                item-limit
@@ -5699,8 +5699,11 @@
                     gin.fn val-term xform.type)))
              (pass-updated-context-and-inscope
               (and (consp xform.term)
-                   (eq (car xform.term) 'if*)
-                   (not gin.loop-flag)))
+                   (b* ((fn (car xform.term)))
+                     (or (eq fn 'if*)
+                         (b* ((fninfo (cdr (assoc-eq fn gin.prec-fns))))
+                           (and fninfo
+                                (atc-fn-info->correct-mod-thm fninfo)))))))
              ((erp (stmt-gout body))
               (atc-gen-stmt body-term
                             (change-stmt-gin
@@ -5910,7 +5913,9 @@
              (e/d (pseudo-termp
                    length
                    true-listp-when-atc-var-info-option-listp-rewrite
-                   acl2::true-listp-when-pseudo-event-form-listp-rewrite)
+                   acl2::true-listp-when-pseudo-event-form-listp-rewrite
+                   alistp-when-atc-symbol-fninfo-alistp-rewrite
+                   symbol-alistp-when-atc-symbol-fninfo-alistp)
                   (atc-gen-stmt))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

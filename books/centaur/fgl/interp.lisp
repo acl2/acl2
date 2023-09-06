@@ -28,6 +28,14 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+; Matt K. addition, 9/5/2023:
+; During processing of (defsection fgl-interp-stack-bindings-extension ...) below,
+; CMUCL Snapshot 2023-08 fails with the error:
+; "CMUCL has run out of dynamic heap space (1530 MB)."
+; This, even though ACL2 uses the maximum possible dynamic heap space for CMUCL.
+; So we exclude CMUCL:
+; cert-param: non-cmucl
+
 (in-package "FGL")
 
 (include-book "bfr-arithmetic")
@@ -6081,8 +6089,6 @@
                (stack-bindings-extension-p
                 (fgl-major-stack-concretize (interp-st->stack new) env logicman) older))
       :hints(("Goal" :in-theory (enable stack-bindings-extension-p-transitive))))))
-
-
 
 (defsection fgl-interp-stack-bindings-extension
   (local (in-theory (enable stack$a-update-scratch-in-terms-of-push-pop)))
