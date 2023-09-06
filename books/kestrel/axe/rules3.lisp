@@ -2340,8 +2340,10 @@
            (equal (< k (slice high low x))
                   (<= (* (+ 1 k) (expt 2 low)) (bvchop (+ 1 high) x))))
   :hints (("Goal"
-           :use (:instance logtail-lessp (pos low) (i (BVCHOP (+ 1 HIGH) X)) (j (+ k 1)))
-           :in-theory (e/d (slice) (anti-slice logtail-lessp)))))
+         ;  :use (:instance logtail-lessp (pos low) (i (BVCHOP (+ 1 HIGH) X)) (j (+ k 1)))
+           :in-theory (e/d (slice) (anti-slice
+                                    ;logtail-lessp <-of-logtail-arg1
+                                    )))))
 
 (in-theory (disable BVPLUS-OF-*-ARG2 BVPLUS-WHEN-LOW-BITS-ARE-ZERO BVLT-OF-PLUS-ARG2 BVLT-OF-PLUS-ARG1))
 
@@ -12772,7 +12774,7 @@
            (equal (bvlt 25 (slice 30 n x) (slice 30 n y))
                   nil))
   :hints (("Goal" :in-theory (e/d (bvlt slice BVCHOP-OF-LOGTAIL
-                                        ) (LOGTAIL-LESSP anti-slice)))))
+                                        ) (LOGTAIL-LESSP <-of-logtail-arg2 anti-slice)))))
 
 (defthm bvmult-of-slice-when-bvchop-0
   (implies (and (equal free (bvchop 6 x))
@@ -12781,7 +12783,7 @@
            (equal (bvmult '31 '64 (slice '30 '6 x))
                   (bvchop 31 x)))
   :hints (("Goal"
-           :in-theory (e/d (bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE ))
+           :in-theory (e/d (bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))
            :use (:instance split-bv (y (bvchop 31 x))
                            (n 31)
                            (m 6)))))
@@ -12838,7 +12840,7 @@
                 (natp n))
            (bvlt 31 x y))
   :hints (("Goal" :in-theory (e/d (bvlt slice bvchop-of-logtail)
-                                  (logtail-lessp anti-slice)))))
+                                  (logtail-lessp <-of-logtail-arg2 anti-slice)))))
 
 (in-theory (disable LOGTAIL-OF-ONE-MORE)) ;add syntaxp hyp
 
