@@ -705,6 +705,11 @@
                             val
                             (frame->scopes (car (compustate->frames compst)))))
 
+  (defruled create-var-okp-of-update-object
+    (equal (create-var-okp var (update-object objdes val compst))
+           (create-var-okp var compst))
+    :enable (create-var-okp update-object top-frame))
+
   (defruled create-var-to-add-var
     (implies (and (create-var-okp var compst)
                   (> (compustate-frames-number compst) 0))
