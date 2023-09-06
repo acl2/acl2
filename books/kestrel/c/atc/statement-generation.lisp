@@ -5703,8 +5703,7 @@
                      (or (eq fn 'if*)
                          (b* ((fninfo (cdr (assoc-eq fn gin.prec-fns))))
                            (and fninfo
-                                (atc-fn-info->correct-mod-thm fninfo)))))
-                   (not gin.loop-flag)))
+                                (atc-fn-info->correct-mod-thm fninfo)))))))
              ((erp (stmt-gout body))
               (atc-gen-stmt body-term
                             (change-stmt-gin
