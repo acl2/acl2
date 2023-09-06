@@ -108,6 +108,11 @@
   :pred atc-symbol-fninfo-alistp
   ///
 
+  (defruled symbol-alistp-when-atc-symbol-fninfo-alistp
+    (implies (atc-symbol-fninfo-alistp x)
+             (symbol-alistp x))
+    :enable symbol-alistp)
+
   (defrule atc-fn-infop-of-cdr-of-assoc-equal
     (implies (and (atc-symbol-fninfo-alistp x)
                   (assoc-equal k x))

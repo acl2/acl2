@@ -40,60 +40,85 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod pexpr-gin
+(fty::defprod expr-gin
   :short "Inputs for C pure expression generation."
   :long
   (xdoc::topstring
    (xdoc::p
     "This does not include the term, which is passed as a separate input."))
-  ((context atc-contextp)
-   (inscope atc-symbol-varinfo-alist-list)
-   (prec-tags atc-string-taginfo-alist)
-   (fn symbol)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
-  :pred pexpr-ginp)
+  ((context atc-contextp
+            "Described in @(see atc-implementation).
+             It is the context just before this expression,
+             i.e. the context in which this expression is generated.")
+   (inscope atc-symbol-varinfo-alist-list
+            "Described in @(see atc-implementation).
+             It contains the variables in scope just before this expression,
+             i.e. the ones in scope for this expression.")
+   (prec-tags atc-string-taginfo-alist
+              "Described in @(see atc-implementation).")
+   (fn symbol
+       "Described in @(see atc-implementation).
+        It is the target function for which the expression is generated.")
+   (fn-guard symbol
+             "Described in @(see atc-implementation).")
+   (compst-var symbol
+               "Described in @(see atc-implementation).")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation).")
+   (proofs bool
+           "A flag indicating whether modular proof generation
+            should continue or not.
+            This will be eliminated when modular proof generation
+            will cover all of the ATC-generated code."))
+  :pred expr-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod pexpr-gout
+(fty::defprod expr-gout
   :short "Outputs for C pure expression generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expression is @('expr'),
-     and its type is @('type')."))
-  ((expr expr)
-   (type type)
-   (term pseudo-termp)
-   (events pseudo-event-form-list)
-   (thm-name symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
-  :pred pexpr-goutp)
+  ((expr expr
+         "Expression generated from the term.")
+   (type type
+         "The type returned by the expression. Never @('void').")
+   (term pseudo-termp
+         "The term from which the expression is generated.
+          The term is transformed by replacing @(tsee if) with @(tsee if*).")
+   (events pseudo-event-form-list
+           "All the events generated for the expression.")
+   (thm-name symbol
+             "The name of the theorem about @(tsee exec-expr-pure)
+              applied to the expression.
+              This theorem is one of the events in @('events').
+              It is @('nil') if no theorem was generated,
+              which happens exactly when
+              the @('proofs') flag in @(tsee expr-gin) is @('nil').")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation)."))
+  :pred expr-goutp)
 
 ;;;;;;;;;;
 
-(defirrelevant irr-pexpr-gout
+(defirrelevant irr-expr-gout
   :short "An irrelevant output for C pure expression generation."
-  :type pexpr-goutp
-  :body (make-pexpr-gout :expr (irr-expr)
-                         :type (irr-type)
-                         :term nil
-                         :events nil
-                         :thm-name nil
-                         :thm-index 1
-                         :names-to-avoid nil))
+  :type expr-goutp
+  :body (make-expr-gout :expr (irr-expr)
+                        :type (irr-type)
+                        :term nil
+                        :events nil
+                        :thm-name nil
+                        :thm-index 1
+                        :names-to-avoid nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-var ((var symbolp)
-                          (gin pexpr-ginp)
+                          (gin expr-ginp)
                           state)
-  :returns (gout pexpr-goutp)
+  :returns (gout expr-goutp)
   :short "Generate a C expression from an ACL2 variable."
   :long
   (xdoc::topstring
@@ -103,17 +128,17 @@
    (xdoc::p
     "If the variable has pointer or array type and is not an external object,
      its correctness theorem equates it to the @('-ptr') variable."))
-  (b* (((pexpr-gin gin) gin)
+  (b* (((expr-gin gin) gin)
        (info (atc-get-var var gin.inscope))
        ((when (not info))
         (raise "Internal error: the variable ~x0 in function ~x1 ~
                 has no associated information." var gin.fn)
-        (irr-pexpr-gout))
+        (irr-expr-gout))
        (type (atc-var-info->type info))
        (var-thm (atc-var-info->thm info))
        (expr (expr-ident (make-ident :name (symbol-name var))))
        ((when (not gin.proofs))
-        (make-pexpr-gout
+        (make-expr-gout
          :expr expr
          :type type
          :term var
@@ -152,13 +177,13 @@
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
-    (make-pexpr-gout :expr expr
-                     :type type
-                     :term var
-                     :events (list thm-event)
-                     :thm-name thm-name
-                     :thm-index thm-index
-                     :names-to-avoid names-to-avoid))
+    (make-expr-gout :expr expr
+                    :type type
+                    :term var
+                    :events (list thm-event)
+                    :thm-name thm-name
+                    :thm-index thm-index
+                    :names-to-avoid names-to-avoid))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -167,10 +192,10 @@
                             (const iconstp)
                             (type typep)
                             (type-base-const symbolp)
-                            (gin pexpr-ginp)
+                            (gin expr-ginp)
                             state)
   :guard (type-nonchar-integerp type)
-  :returns (gout pexpr-goutp)
+  :returns (gout expr-goutp)
   :short "Generate a C expression and theorem from an ACL2 term
           that represents an integer constant expression."
   :long
@@ -190,16 +215,16 @@
    (xdoc::p
     "The hints cover all possible integer constants,
      but we could make them more nuanced to the specifics of the constant."))
-  (b* (((pexpr-gin gin) gin)
+  (b* (((expr-gin gin) gin)
        (expr (expr-const (const-int const)))
        ((when (not gin.proofs))
-        (make-pexpr-gout :expr expr
-                         :type type
-                         :term term
-                         :events nil
-                         :thm-name nil
-                         :thm-index gin.thm-index
-                         :names-to-avoid gin.names-to-avoid))
+        (make-expr-gout :expr expr
+                        :type type
+                        :term term
+                        :events nil
+                        :thm-name nil
+                        :thm-index gin.thm-index
+                        :names-to-avoid gin.names-to-avoid))
        (hints
         (b* ((fixtype (integer-type-to-fixtype type))
              (exec-const-to-fixtype (pack 'exec-const-to- fixtype))
@@ -243,13 +268,13 @@
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
-    (make-pexpr-gout :expr expr
-                     :type type
-                     :term term
-                     :events (list thm-event)
-                     :thm-name thm-name
-                     :thm-index thm-index
-                     :names-to-avoid names-to-avoid)))
+    (make-expr-gout :expr expr
+                    :type type
+                    :term term
+                    :events (list thm-event)
+                    :thm-name thm-name
+                    :thm-index thm-index
+                    :names-to-avoid names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,11 +287,11 @@
                             (in-type typep)
                             (out-type typep)
                             (op unopp)
-                            (gin pexpr-ginp)
+                            (gin expr-ginp)
                             state)
   :guard (and (type-nonchar-integerp in-type)
               (type-nonchar-integerp out-type))
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression and theorem from an ACL2 term
           that represents a unary expression."
   :long
@@ -278,9 +303,9 @@
     "If the operation has an associated @('okp') predicate,
      we also generate a theorem saying that
      the @('okp') predicate holds under the guard."))
-  (b* (((reterr) (irr-pexpr-gout))
+  (b* (((reterr) (irr-expr-gout))
        (wrld (w state))
-       ((pexpr-gin gin) gin)
+       ((expr-gin gin) gin)
        ((unless (equal arg-type in-type))
         (reterr
          (msg "The unary operator ~x0 is applied ~
@@ -293,13 +318,13 @@
        (term `(,fn ,arg-term))
        ((when (not gin.proofs))
         (retok
-         (make-pexpr-gout :expr expr
-                          :type out-type
-                          :term term
-                          :events arg-events
-                          :thm-name nil
-                          :thm-index gin.thm-index
-                          :names-to-avoid gin.names-to-avoid)))
+         (make-expr-gout :expr expr
+                         :type out-type
+                         :term term
+                         :events arg-events
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid)))
        (fn-okp (and (unop-case op :minus)
                     (not (member-eq (type-kind in-type)
                                     '(:uint :ulong :ullong)))
@@ -386,15 +411,15 @@
                                        names-to-avoid
                                        state)))
     (retok
-     (make-pexpr-gout :expr expr
-                      :type out-type
-                      :term term
-                      :events (append arg-events
-                                      okp-lemma-event?
-                                      (list thm-event))
-                      :thm-name thm-name
-                      :thm-index thm-index
-                      :names-to-avoid names-to-avoid)))
+     (make-expr-gout :expr expr
+                     :type out-type
+                     :term term
+                     :events (append arg-events
+                                     okp-lemma-event?
+                                     (list thm-event))
+                     :thm-name thm-name
+                     :thm-index thm-index
+                     :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -414,12 +439,12 @@
                              (in-type2 typep)
                              (out-type typep)
                              (op binopp)
-                             (gin pexpr-ginp)
+                             (gin expr-ginp)
                              state)
   :guard (and (type-nonchar-integerp in-type1)
               (type-nonchar-integerp in-type2)
               (type-nonchar-integerp out-type))
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression and theorem from an ACL2 term
           that represents a binary expression."
   :long
@@ -430,9 +455,9 @@
    (xdoc::p
     "We do not yet support operations with an associated @('okp') predicate.
      We will add support for them soon."))
-  (b* (((reterr) (irr-pexpr-gout))
+  (b* (((reterr) (irr-expr-gout))
        (wrld (w state))
-       ((pexpr-gin gin) gin)
+       ((expr-gin gin) gin)
        ((unless (and (equal arg1-type in-type1)
                      (equal arg2-type in-type2)))
         (reterr
@@ -449,13 +474,13 @@
        (term `(,fn ,arg1-term ,arg2-term))
        ((when (not gin.proofs))
         (retok
-         (make-pexpr-gout :expr expr
-                          :type out-type
-                          :term term
-                          :events (append arg1-events arg2-events)
-                          :thm-name nil
-                          :thm-index gin.thm-index
-                          :names-to-avoid gin.names-to-avoid)))
+         (make-expr-gout :expr expr
+                         :type out-type
+                         :term term
+                         :events (append arg1-events arg2-events)
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid)))
        (op-name (pack (binop-kind op)))
        (fn-okp (and (or (member-eq (binop-kind op) '(:div :rem :shl :shr))
                         (and (member-eq (binop-kind op) '(:add :sub :mul))
@@ -561,16 +586,16 @@
                                        names-to-avoid
                                        state)))
     (retok
-     (make-pexpr-gout :expr expr
-                      :type out-type
-                      :term term
-                      :events (append arg1-events
-                                      arg2-events
-                                      okp-lemma-event?
-                                      (list thm-event))
-                      :thm-name thm-name
-                      :thm-index thm-index
-                      :names-to-avoid names-to-avoid)))
+     (make-expr-gout :expr expr
+                     :type out-type
+                     :term term
+                     :events (append arg1-events
+                                     arg2-events
+                                     okp-lemma-event?
+                                     (list thm-event))
+                     :thm-name thm-name
+                     :thm-index thm-index
+                     :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -584,9 +609,9 @@
                            (in-type typep)
                            (out-type typep)
                            (tyname tynamep)
-                           (gin pexpr-ginp)
+                           (gin expr-ginp)
                            state)
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents an integer conversion."
   :long
@@ -597,9 +622,9 @@
    (xdoc::p
     "For now we do not generate the theorem;
      we will add suppor for that later."))
-  (b* (((reterr) (irr-pexpr-gout))
+  (b* (((reterr) (irr-expr-gout))
        (wrld (w state))
-       ((pexpr-gin gin) gin)
+       ((expr-gin gin) gin)
        ((unless (equal arg-type in-type))
         (reterr
          (msg "The conversion from ~x0 to ~x1 is applied ~
@@ -611,7 +636,7 @@
        (expr (make-expr-cast :type tyname :arg arg-expr))
        (term `(,fn ,arg-term))
        ((when (not gin.proofs))
-        (retok (make-pexpr-gout
+        (retok (make-expr-gout
                 :expr expr
                 :type out-type
                 :term term
@@ -711,15 +736,15 @@
                                        names-to-avoid
                                        state)))
     (retok
-     (make-pexpr-gout :expr expr
-                      :type out-type
-                      :term term
-                      :events (append arg-events
-                                      okp-lemma-event?
-                                      (list thm-event))
-                      :thm-name thm-name
-                      :thm-index thm-index
-                      :names-to-avoid names-to-avoid)))
+     (make-expr-gout :expr expr
+                     :type out-type
+                     :term term
+                     :events (append arg-events
+                                     okp-lemma-event?
+                                     (list thm-event))
+                     :thm-name thm-name
+                     :thm-index thm-index
+                     :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -731,9 +756,9 @@
                                      (arg-events pseudo-event-form-listp)
                                      (arg-thm symbolp)
                                      (in-type typep)
-                                     (gin pexpr-ginp)
+                                     (gin expr-ginp)
                                      state)
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents a conversion to ACL2 boolean."
   :long
@@ -756,8 +781,8 @@
      in order to prove that @('t') or @('nil') satisfies @(tsee booleanp),
      in case the term or its negation happens to be in context
      and thus gets rewritten to @('t') or @('nil')."))
-  (b* (((reterr) (irr-pexpr-gout))
-       ((pexpr-gin gin) gin)
+  (b* (((reterr) (irr-expr-gout))
+       ((expr-gin gin) gin)
        ((unless (equal arg-type in-type))
         (reterr
          (msg "The conversion from ~x0 to boolean is applied to ~
@@ -771,13 +796,13 @@
        (type arg-type)
        ((when (not gin.proofs))
         (retok
-         (make-pexpr-gout :expr expr
-                          :type arg-type
-                          :term aterm
-                          :events arg-events
-                          :thm-name nil
-                          :thm-index gin.thm-index
-                          :names-to-avoid gin.names-to-avoid)))
+         (make-expr-gout :expr expr
+                         :type arg-type
+                         :term aterm
+                         :events arg-events
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid)))
        (cterm arg-term)
        ((unless (type-nonchar-integerp type))
         (reterr (raise "Internal error: non-integer type ~x0." type)))
@@ -809,14 +834,14 @@
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
-    (retok (make-pexpr-gout :expr expr
-                            :type type
-                            :term aterm
-                            :events (append arg-events
-                                            (list thm-event))
-                            :thm-name thm-name
-                            :thm-index thm-index
-                            :names-to-avoid names-to-avoid)))
+    (retok (make-expr-gout :expr expr
+                           :type type
+                           :term aterm
+                           :events (append arg-events
+                                           (list thm-event))
+                           :thm-name thm-name
+                           :thm-index thm-index
+                           :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -837,14 +862,14 @@
                            (test-events pseudo-event-form-listp)
                            (then-events pseudo-event-form-listp)
                            (else-events pseudo-event-form-listp)
-                           (gin pexpr-ginp)
+                           (gin expr-ginp)
                            state)
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents a ternary conditional expression."
-  (b* (((reterr) (irr-pexpr-gout))
+  (b* (((reterr) (irr-expr-gout))
        (wrld (w state))
-       ((pexpr-gin gin) gin)
+       ((expr-gin gin) gin)
        ((unless (equal then-type else-type))
         (reterr
          (msg "When generating C code for the function ~x0, ~
@@ -870,7 +895,7 @@
                              :else else-expr))
        ((when (not gin.proofs))
         (retok
-         (make-pexpr-gout
+         (make-expr-gout
           :expr expr
           :type type
           :term term
@@ -968,7 +993,7 @@
                                        gin.names-to-avoid
                                        state)))
     (retok
-     (make-pexpr-gout
+     (make-expr-gout
       :expr expr
       :type type
       :term term*
@@ -993,9 +1018,9 @@
                           (arg2-thm symbolp)
                           (arg1-events pseudo-event-form-listp)
                           (arg2-events pseudo-event-form-listp)
-                          (gin pexpr-ginp)
+                          (gin expr-ginp)
                           state)
-  :returns (gout pexpr-goutp)
+  :returns (gout expr-goutp)
   :short "Generate a C expression from an ACL2 term
           that represents a logical conjunction."
   :long
@@ -1007,7 +1032,7 @@
      the execution of the C expression:
      we wrap the term with @(tsee sint-from-boolean) for this purpsoe,
      obtaining a term that returns a C @('int') instead of an ACL2 boolean."))
-  (b* (((pexpr-gin gin) gin)
+  (b* (((expr-gin gin) gin)
        (wrld (w state))
        (term `(if* ,arg1-term ,arg2-term 'nil))
        (expr (make-expr-binary :op (binop-logand)
@@ -1015,7 +1040,7 @@
                                :arg2 arg2-expr))
        (type (type-sint))
        ((when (not gin.proofs))
-        (make-pexpr-gout
+        (make-expr-gout
          :expr expr
          :type type
          :term term
@@ -1108,7 +1133,7 @@
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
-    (make-pexpr-gout
+    (make-expr-gout
      :expr expr
      :type type
      :term term
@@ -1132,9 +1157,9 @@
                          (arg2-thm symbolp)
                          (arg1-events pseudo-event-form-listp)
                          (arg2-events pseudo-event-form-listp)
-                         (gin pexpr-ginp)
+                         (gin expr-ginp)
                          state)
-  :returns (gout pexpr-goutp)
+  :returns (gout expr-goutp)
   :short "Generate a C expressino from an ACL2 term
           that represents a logical disjunction."
   :long
@@ -1146,7 +1171,7 @@
      In particular, for the case in which the first argument is true,
      and thus suffices to determine the result without the second argument,
      we need some additional rules to resolve certain subgoals that arise."))
-  (b* (((pexpr-gin gin) gin)
+  (b* (((expr-gin gin) gin)
        (wrld (w state))
        (term `(if* ,arg1-term ,arg1-term ,arg2-term))
        (expr (make-expr-binary :op (binop-logor)
@@ -1154,7 +1179,7 @@
                                :arg2 arg2-expr))
        (type (type-sint))
        ((when (not gin.proofs))
-        (make-pexpr-gout
+        (make-expr-gout
          :expr expr
          :type type
          :term term
@@ -1252,7 +1277,7 @@
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
-    (make-pexpr-gout
+    (make-expr-gout
      :expr expr
      :type type
      :term term
@@ -1270,9 +1295,9 @@
                                      (arg-expr exprp)
                                      (arg-events pseudo-event-form-listp)
                                      (arg-thm symbolp)
-                                     (gin pexpr-ginp)
+                                     (gin expr-ginp)
                                      state)
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents a conversion from ACL2 boolean."
   :long
@@ -1293,8 +1318,8 @@
      the correctness theorem already states that
      @(tsee sint-from-boolean) applied to the argument term
      is equal to executing the expression and has the appropriate C type."))
-  (b* (((reterr) (irr-pexpr-gout))
-       ((pexpr-gin gin) gin)
+  (b* (((reterr) (irr-expr-gout))
+       ((expr-gin gin) gin)
        ((unless (and (consp arg-term)
                      (eq (car arg-term) 'if*)))
         (reterr
@@ -1306,13 +1331,13 @@
        (expr arg-expr)
        (type (type-sint))
        ((when (not gin.proofs))
-        (retok (make-pexpr-gout :expr expr
-                                :type type
-                                :term term
-                                :events arg-events
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :names-to-avoid gin.names-to-avoid)))
+        (retok (make-expr-gout :expr expr
+                               :type type
+                               :term term
+                               :events arg-events
+                               :thm-name nil
+                               :thm-index gin.thm-index
+                               :names-to-avoid gin.names-to-avoid)))
        (hints `(("Goal" :by ,arg-thm)))
        ((mv thm-event thm-name thm-index names-to-avoid)
         (atc-gen-expr-pure-correct-thm gin.fn
@@ -1330,14 +1355,14 @@
                                        gin.thm-index
                                        gin.names-to-avoid
                                        state)))
-    (retok (make-pexpr-gout :expr expr
-                            :type type
-                            :term term
-                            :events (append arg-events
-                                            (list thm-event))
-                            :thm-name thm-name
-                            :thm-index thm-index
-                            :names-to-avoid names-to-avoid)))
+    (retok (make-expr-gout :expr expr
+                           :type type
+                           :term term
+                           :events (append arg-events
+                                           (list thm-event))
+                           :thm-name thm-name
+                           :thm-index thm-index
+                           :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1349,10 +1374,10 @@
                                    (arg-events pseudo-event-form-listp)
                                    (arg-thm symbolp)
                                    (type typep)
-                                   (gin pexpr-ginp)
+                                   (gin expr-ginp)
                                    state)
   :guard (type-nonchar-integerp type)
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents an indirection of a pointer to integer."
   :long
@@ -1390,8 +1415,8 @@
      so that the indirection operator can be applied to more general arguments,
      we may need to choose the alternative approach sketched above,
      which in that case would be more uniform."))
-  (b* (((reterr) (irr-pexpr-gout))
-       ((pexpr-gin gin) gin)
+  (b* (((reterr) (irr-expr-gout))
+       ((expr-gin gin) gin)
        ((unless (equal arg-type
                        (type-pointer type)))
         (reterr
@@ -1406,13 +1431,13 @@
        (term `(,fn ,arg-term))
        ((when (not gin.proofs))
         (retok
-         (make-pexpr-gout :expr expr
-                          :type type
-                          :term term
-                          :events arg-events
-                          :thm-name nil
-                          :thm-index gin.thm-index
-                          :names-to-avoid gin.names-to-avoid)))
+         (make-expr-gout :expr expr
+                         :type type
+                         :term term
+                         :events arg-events
+                         :thm-name nil
+                         :thm-index gin.thm-index
+                         :names-to-avoid gin.names-to-avoid)))
        ((unless (symbolp arg-term))
         (reterr (raise "Interal error: indirection applied to non-variable ~x0."
                        arg-term)))
@@ -1454,14 +1479,14 @@
                                        gin.names-to-avoid
                                        state)))
     (retok
-     (make-pexpr-gout :expr expr
-                      :type type
-                      :term term
-                      :events (append arg-events
-                                      (list thm-event))
-                      :thm-name thm-name
-                      :thm-index thm-index
-                      :names-to-avoid names-to-avoid)))
+     (make-expr-gout :expr expr
+                     :type type
+                     :term term
+                     :events (append arg-events
+                                     (list thm-event))
+                     :thm-name thm-name
+                     :thm-index thm-index
+                     :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1478,10 +1503,10 @@
                                  (sub-events pseudo-event-form-listp)
                                  (sub-thm symbolp)
                                  (elem-type typep)
-                                 (gin pexpr-ginp)
+                                 (gin expr-ginp)
                                  state)
   :guard (type-nonchar-integerp elem-type)
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents an array read."
   :long
@@ -1489,9 +1514,9 @@
    (xdoc::p
     "We generate a theorem to show that the @('okp') predicate is satisfied,
      and a theorem about the expression itself."))
-  (b* (((reterr) (irr-pexpr-gout))
+  (b* (((reterr) (irr-expr-gout))
        (wrld (w state))
-       ((pexpr-gin gin) gin)
+       ((expr-gin gin) gin)
        ((unless (and (type-case arr-type :array)
                      (equal (type-array->of arr-type) elem-type)
                      (type-integerp sub-type)))
@@ -1508,7 +1533,7 @@
         (reterr (raise "Internal error: function symbol is QUOTE.")))
        (term `(,fn ,arr-term ,sub-term))
        ((when (not gin.proofs))
-        (retok (make-pexpr-gout
+        (retok (make-expr-gout
                 :expr expr
                 :type elem-type
                 :term term
@@ -1627,16 +1652,16 @@
                                        names-to-avoid
                                        state)))
     (retok
-     (make-pexpr-gout :expr expr
-                      :type elem-type
-                      :term term
-                      :events (append arr-events
-                                      sub-events
-                                      (list okp-lemma-event
-                                            thm-event))
-                      :thm-name thm-name
-                      :thm-index thm-index
-                      :names-to-avoid names-to-avoid)))
+     (make-expr-gout :expr expr
+                     :type elem-type
+                     :term term
+                     :events (append arr-events
+                                     sub-events
+                                     (list okp-lemma-event
+                                           thm-event))
+                     :thm-name thm-name
+                     :thm-index thm-index
+                     :names-to-avoid names-to-avoid)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1650,14 +1675,14 @@
                                          (tag identp)
                                          (member identp)
                                          (mem-type typep)
-                                         (gin pexpr-ginp)
+                                         (gin expr-ginp)
                                          state)
   :guard (type-nonchar-integerp mem-type)
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents a structure scalar read."
-  (b* (((reterr) (irr-pexpr-gout))
-       ((pexpr-gin gin) gin)
+  (b* (((reterr) (irr-expr-gout))
+       ((expr-gin gin) gin)
        (term `(,fn ,arg-term))
        ((unless (symbolp arg-term))
         (reterr (raise "Internal error: ~
@@ -1666,7 +1691,7 @@
     (cond ((equal arg-type (type-struct tag))
            (b* ((expr (make-expr-member :target arg-expr :name member))
                 ((when (not gin.proofs))
-                 (retok (make-pexpr-gout
+                 (retok (make-expr-gout
                          :expr expr
                          :type mem-type
                          :term term
@@ -1725,18 +1750,18 @@
                                                 gin.names-to-avoid
                                                 state)))
              (retok
-              (make-pexpr-gout :expr expr
-                               :type mem-type
-                               :term term
-                               :events (append arg-events
-                                               (list thm-event))
-                               :thm-name thm-name
-                               :thm-index thm-index
-                               :names-to-avoid names-to-avoid))))
+              (make-expr-gout :expr expr
+                              :type mem-type
+                              :term term
+                              :events (append arg-events
+                                              (list thm-event))
+                              :thm-name thm-name
+                              :thm-index thm-index
+                              :names-to-avoid names-to-avoid))))
           ((equal arg-type (type-pointer (type-struct tag)))
            (b* ((expr (make-expr-memberp :target arg-expr :name member))
                 ((when (not gin.proofs))
-                 (retok (make-pexpr-gout
+                 (retok (make-expr-gout
                          :expr expr
                          :type mem-type
                          :term term
@@ -1790,14 +1815,14 @@
                                                 gin.thm-index
                                                 gin.names-to-avoid
                                                 state)))
-             (retok (make-pexpr-gout :expr expr
-                                     :type mem-type
-                                     :term term
-                                     :events (append arg-events
-                                                     (list thm-event))
-                                     :thm-name thm-name
-                                     :thm-index thm-index
-                                     :names-to-avoid names-to-avoid))))
+             (retok (make-expr-gout :expr expr
+                                    :type mem-type
+                                    :term term
+                                    :events (append arg-events
+                                                    (list thm-event))
+                                    :thm-name thm-name
+                                    :thm-index thm-index
+                                    :names-to-avoid names-to-avoid))))
           (t (reterr
               (msg "The reading of a ~x0 structure with member ~x1 ~
                     is applied to ~
@@ -1831,13 +1856,13 @@
                                         (member identp)
                                         (elem-type typep)
                                         (flexiblep booleanp)
-                                        (gin pexpr-ginp)
+                                        (gin expr-ginp)
                                         state)
-  :returns (mv erp (gout pexpr-goutp))
+  :returns (mv erp (gout expr-goutp))
   :short "Generate a C expression from an ACL2 term
           that represents a structure array read."
-  (b* (((reterr) (irr-pexpr-gout))
-       ((pexpr-gin gin) gin)
+  (b* (((reterr) (irr-expr-gout))
+       ((expr-gin gin) gin)
        (wrld (w state))
        ((when (eq fn 'quote))
         (reterr (raise "Internal error: QUOTE function.")))
@@ -1864,7 +1889,7 @@
                                               :name member)
                                         :sub index-expr))
                 ((when (not gin.proofs))
-                 (retok (make-pexpr-gout
+                 (retok (make-expr-gout
                          :expr expr
                          :type elem-type
                          :term term
@@ -1981,23 +2006,23 @@
                                                 names-to-avoid
                                                 state)))
              (retok
-              (make-pexpr-gout :expr expr
-                               :type elem-type
-                               :term term
-                               :events (append index-events
-                                               struct-events
-                                               (list okp-lemma-event
-                                                     thm-event))
-                               :thm-name thm-name
-                               :thm-index thm-index
-                               :names-to-avoid names-to-avoid))))
+              (make-expr-gout :expr expr
+                              :type elem-type
+                              :term term
+                              :events (append index-events
+                                              struct-events
+                                              (list okp-lemma-event
+                                                    thm-event))
+                              :thm-name thm-name
+                              :thm-index thm-index
+                              :names-to-avoid names-to-avoid))))
           ((equal struct-type (type-pointer (type-struct tag)))
            (b* ((expr (make-expr-arrsub :arr (make-expr-memberp
                                               :target struct-expr
                                               :name member)
                                         :sub index-expr))
                 ((when (not gin.proofs))
-                 (retok (make-pexpr-gout
+                 (retok (make-expr-gout
                          :expr expr
                          :type elem-type
                          :term term
@@ -2112,16 +2137,16 @@
                                                 names-to-avoid
                                                 state)))
              (retok
-              (make-pexpr-gout :expr expr
-                               :type elem-type
-                               :term term
-                               :events (append index-events
-                                               struct-events
-                                               (list okp-lemma-event
-                                                     thm-event))
-                               :thm-name thm-name
-                               :thm-index thm-index
-                               :names-to-avoid names-to-avoid))))
+              (make-expr-gout :expr expr
+                              :type elem-type
+                              :term term
+                              :events (append index-events
+                                              struct-events
+                                              (list okp-lemma-event
+                                                    thm-event))
+                              :thm-name thm-name
+                              :thm-index thm-index
+                              :names-to-avoid names-to-avoid))))
           (t (reterr
               (msg "The reading of ~x0 structure with array member ~x1 ~
                     is applied to an expression term ~x2 returning ~x3, ~
@@ -2164,9 +2189,9 @@
      all the code satisfies the C static semantics."))
 
   (define atc-gen-expr-pure ((term pseudo-termp)
-                             (gin pexpr-ginp)
+                             (gin expr-ginp)
                              state)
-    :returns (mv erp (gout pexpr-goutp))
+    :returns (mv erp (gout expr-goutp))
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be a pure expression term."
@@ -2177,48 +2202,9 @@
        we check that the term is a pure expression term,
        as described in the user documentation.
        Based on its form, we dispatch to different code,
-       after recursively processing sub-expressions.")
-     (xdoc::p
-      "If the term fits the pattern of a indirection on a pointed integer,
-       we translate it to an indirection expression
-       on the recursively generated expression for the argument.")
-     (xdoc::p
-      "If the term fits the pattern of an array read,
-       we translate it to an array subscripting expression
-       on the recursively generated expressions.
-       The type is the array's element type.")
-     (xdoc::p
-      "If the term fits the pattern of a structure scalar read,
-       we translate it to a structure member or pointer member expression
-       on the recursively generated expression.
-       The type is the member's type.")
-     (xdoc::p
-      "If the term fits the pattern of a structure array element read,
-       we translate it to an array subscripting expression
-       on the recursively generated index expression
-       and on a structure member of pointer member expression
-       on the recursively generated structure expression.
-       The type is the member element's type.")
-     (xdoc::p
-      "If the term is a call of @(tsee sint-from-boolean),
-       we call the mutually recursive ACL2 function
-       that translates the argument
-       (which must be an expression term returning a boolean)
-       to an expression, which we return.
-       The type of this expression is always @('int').")
-     (xdoc::p
-      "If the term is a @(tsee condexpr) call on an @(tsee if) call,
-       we call the mutually recursive ACL2 function on the test,
-       we call this ACL2 function on the branches,
-       and we construct a conditional expression.
-       We ensure that the two branches have the same type.")
-     (xdoc::p
-      "In all other cases, we fail with an error.
-       The term is not a pure expression term.
-       We could extend this code to provide
-       more information to the user at some point."))
-    (b* (((reterr) (irr-pexpr-gout))
-         ((pexpr-gin gin) gin)
+       after recursively processing sub-expressions."))
+    (b* (((reterr) (irr-expr-gout))
+         ((expr-gin gin) gin)
          ((when (pseudo-term-case term :var))
           (retok (atc-gen-expr-var (pseudo-term-var->name term) gin state)))
          ((erp okp type-base-const type const) (atc-check-iconst term))
@@ -2226,11 +2212,10 @@
                                                 gin state)))
          ((erp okp fn arg-term in-type out-type op) (atc-check-unop term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
-               (gin (change-pexpr-gin gin
-                                      :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+          (b* (((erp (expr-gout arg)) (atc-gen-expr-pure arg-term gin state))
+               (gin (change-expr-gin gin
+                                     :thm-index arg.thm-index
+                                     :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-unary fn arg.term
                                 arg.expr arg.type
                                 arg.events arg.thm-name
@@ -2239,18 +2224,16 @@
          ((erp okp fn arg1-term arg2-term in-type1 in-type2 out-type op)
           (atc-check-binop term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg1))
+          (b* (((erp (expr-gout arg1))
                 (atc-gen-expr-pure arg1-term gin state))
-               (gin (change-pexpr-gin gin
-                                      :thm-index arg1.thm-index
-                                      :names-to-avoid arg1.names-to-avoid
-                                      :proofs (and arg1.thm-name t)))
-               ((erp (pexpr-gout arg2))
+               (gin (change-expr-gin gin
+                                     :thm-index arg1.thm-index
+                                     :names-to-avoid arg1.names-to-avoid))
+               ((erp (expr-gout arg2))
                 (atc-gen-expr-pure arg2-term gin state))
-               (gin (change-pexpr-gin gin
-                                      :thm-index arg2.thm-index
-                                      :names-to-avoid arg2.names-to-avoid
-                                      :proofs (and arg2.thm-name t))))
+               (gin (change-expr-gin gin
+                                     :thm-index arg2.thm-index
+                                     :names-to-avoid arg2.names-to-avoid)))
             (atc-gen-expr-binary fn
                                  arg1.term arg2.term
                                  arg1.expr arg2.expr
@@ -2263,12 +2246,11 @@
                                  state)))
          ((erp okp fn arg-term in-type out-type tyname) (atc-check-conv term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg))
+          (b* (((erp (expr-gout arg))
                 (atc-gen-expr-pure arg-term gin state))
-               (gin (change-pexpr-gin gin
-                                      :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+               (gin (change-expr-gin gin
+                                     :thm-index arg.thm-index
+                                     :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-conv fn arg.term
                                arg.expr arg.type
                                arg.events arg.thm-name
@@ -2276,11 +2258,10 @@
                                gin state)))
          ((erp okp fn arg-term type) (atc-check-integer-read term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg)) (atc-gen-expr-pure arg-term gin state))
-               (gin (change-pexpr-gin gin
-                                      :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+          (b* (((erp (expr-gout arg)) (atc-gen-expr-pure arg-term gin state))
+               (gin (change-expr-gin gin
+                                     :thm-index arg.thm-index
+                                     :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-integer-read fn
                                        arg.term
                                        arg.expr
@@ -2293,20 +2274,18 @@
          ((erp okp fn arr-term sub-term elem-type)
           (atc-check-array-read term))
          ((when okp)
-          (b* (((erp (pexpr-gout arr))
+          (b* (((erp (expr-gout arr))
                 (atc-gen-expr-pure arr-term gin state))
-               ((erp (pexpr-gout sub))
+               ((erp (expr-gout sub))
                 (atc-gen-expr-pure sub-term
-                                   (change-pexpr-gin
+                                   (change-expr-gin
                                     gin
                                     :thm-index arr.thm-index
-                                    :names-to-avoid arr.names-to-avoid
-                                    :proofs (and arr.thm-name t))
+                                    :names-to-avoid arr.names-to-avoid)
                                    state))
-               (gin (change-pexpr-gin gin
-                                      :thm-index sub.thm-index
-                                      :names-to-avoid sub.names-to-avoid
-                                      :proofs (and sub.thm-name t))))
+               (gin (change-expr-gin gin
+                                     :thm-index sub.thm-index
+                                     :names-to-avoid sub.names-to-avoid)))
             (atc-gen-expr-array-read fn
                                      arr.term
                                      arr.expr
@@ -2324,12 +2303,11 @@
          ((erp okp fn arg-term tag member mem-type)
           (atc-check-struct-read-scalar term gin.prec-tags))
          ((when okp)
-          (b* (((erp (pexpr-gout arg))
+          (b* (((erp (expr-gout arg))
                 (atc-gen-expr-pure arg-term gin state))
-               (gin (change-pexpr-gin gin
-                                      :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+               (gin (change-expr-gin gin
+                                     :thm-index arg.thm-index
+                                     :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-struct-read-scalar fn
                                              arg-term
                                              arg.expr
@@ -2344,20 +2322,19 @@
          ((erp okp fn index-term struct-term tag member elem-type flexiblep)
           (atc-check-struct-read-array term gin.prec-tags))
          ((when okp)
-          (b* (((erp (pexpr-gout index))
+          (b* (((erp (expr-gout index))
                 (atc-gen-expr-pure index-term gin state))
-               ((erp (pexpr-gout struct))
+               ((erp (expr-gout struct))
                 (atc-gen-expr-pure struct-term
-                                   (change-pexpr-gin
+                                   (change-expr-gin
                                     gin
                                     :thm-index index.thm-index
                                     :names-to-avoid index.names-to-avoid)
                                    state))
-               (gin (change-pexpr-gin
+               (gin (change-expr-gin
                      gin
                      :thm-index struct.thm-index
-                     :names-to-avoid struct.names-to-avoid
-                     :proofs (and index.thm-name struct.thm-name t))))
+                     :names-to-avoid struct.names-to-avoid)))
             (atc-gen-expr-struct-read-array fn
                                             index.term
                                             index.expr
@@ -2377,57 +2354,53 @@
                                             state)))
          ((erp okp arg-term) (atc-check-sint-from-boolean term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg)) (atc-gen-expr-bool arg-term gin state)))
+          (b* (((erp (expr-gout arg)) (atc-gen-expr-bool arg-term gin state)))
             (atc-gen-expr-sint-from-bool arg.term
                                          arg.expr
                                          arg.events
                                          arg.thm-name
-                                         (change-pexpr-gin
+                                         (change-expr-gin
                                           gin
                                           :thm-index arg.thm-index
-                                          :names-to-avoid arg.names-to-avoid
-                                          :proofs (and arg.thm-name t))
+                                          :names-to-avoid arg.names-to-avoid)
                                          state)))
          ((erp okp test-term then-term else-term) (atc-check-condexpr term))
          ((when okp)
-          (b* (((erp (pexpr-gout test)) (atc-gen-expr-bool test-term gin state))
-               ((erp (pexpr-gout then))
+          (b* (((erp (expr-gout test)) (atc-gen-expr-bool test-term gin state))
+               ((erp (expr-gout then))
                 (b* ((then-cond (untranslate$ test.term t state))
                      (then-premise (atc-premise-test then-cond))
                      (then-context (atc-context-extend gin.context
                                                        (list then-premise))))
                   (atc-gen-expr-pure then-term
-                                     (change-pexpr-gin
+                                     (change-expr-gin
                                       gin
                                       :context then-context
                                       :thm-index test.thm-index
-                                      :names-to-avoid test.names-to-avoid
-                                      :proofs (and test.thm-name t))
+                                      :names-to-avoid test.names-to-avoid)
                                      state)))
-               ((erp (pexpr-gout else))
+               ((erp (expr-gout else))
                 (b* ((not-test-term `(not ,test.term))
                      (else-cond (untranslate$ not-test-term nil state))
                      (else-premise (atc-premise-test else-cond))
                      (else-context (atc-context-extend gin.context
                                                        (list else-premise))))
                   (atc-gen-expr-pure else-term
-                                     (change-pexpr-gin
+                                     (change-expr-gin
                                       gin
                                       :context else-context
                                       :thm-index then.thm-index
-                                      :names-to-avoid then.names-to-avoid
-                                      :proofs (and test.thm-name t))
+                                      :names-to-avoid then.names-to-avoid)
                                      state))))
             (atc-gen-expr-cond term test.term then.term else.term
                                test.expr then.expr else.expr
                                test.type then.type else.type
                                test.thm-name then.thm-name else.thm-name
                                test.events then.events else.events
-                               (change-pexpr-gin
+                               (change-expr-gin
                                 gin
                                 :thm-index else.thm-index
-                                :names-to-avoid else.names-to-avoid
-                                :proofs (and then.thm-name else.thm-name t))
+                                :names-to-avoid else.names-to-avoid)
                                state))))
       (reterr
        (msg "When generating C code for the function ~x0, ~
@@ -2440,9 +2413,9 @@
     :measure (pseudo-term-count term))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (gin pexpr-ginp)
+                             (gin expr-ginp)
                              state)
-    :returns (mv erp (gout pexpr-goutp))
+    :returns (mv erp (gout expr-goutp))
     :parents (atc-event-and-code-generation atc-gen-expr-pure/bool)
     :short "Generate a C expression from an ACL2 term
             that must be an expression term returning a boolean."
@@ -2455,43 +2428,25 @@
        Based on its form, we dispatch to different code,
        after recursively processing sub-expressions.")
      (xdoc::p
-      "If the term is a call of @(tsee and) or @(tsee or),
-       we recursively translate the arguments,
-       which must be an expression term returning a boolean,
-       and we construct a logical expression
-       with the corresponding C operators.")
-     (xdoc::p
-      "If the term is a call of @('boolean-from-<type>'),
-       we call the mutually recursive function
-       that translates the argument,
-       which must be an expression term returning a C value,
-       to an expression, which we return.")
-     (xdoc::p
-      "In all other cases, we fail with an error.
-       The term is not an expression term returning a C value.
-       We could extend this code to provide
-       more information to the user at some point.")
-     (xdoc::p
       "As in @(tsee atc-gen-expr-pure),
        we perform C type checks on the ACL2 terms.
        See  @(tsee atc-gen-expr-pure) for an explanation."))
-    (b* (((reterr) (irr-pexpr-gout))
-         ((pexpr-gin gin) gin)
+    (b* (((reterr) (irr-expr-gout))
+         ((expr-gin gin) gin)
          ((mv okp arg1-term arg2-term) (fty-check-and-call term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg1))
+          (b* (((erp (expr-gout arg1))
                 (atc-gen-expr-bool arg1-term gin state))
                (cond (untranslate$ arg1.term t state))
                (premise (atc-premise-test cond))
                (context (atc-context-extend gin.context (list premise)))
-               ((erp (pexpr-gout arg2))
+               ((erp (expr-gout arg2))
                 (atc-gen-expr-bool arg2-term
-                                   (change-pexpr-gin
+                                   (change-expr-gin
                                     gin
                                     :context context
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid
-                                    :proofs (and arg1.thm-name t))
+                                    :names-to-avoid arg1.names-to-avoid)
                                    state)))
             (retok (atc-gen-expr-and arg1.term
                                      arg2.term
@@ -2503,27 +2458,25 @@
                                      arg2.thm-name
                                      arg1.events
                                      arg2.events
-                                     (change-pexpr-gin
+                                     (change-expr-gin
                                       gin
                                       :thm-index arg2.thm-index
-                                      :names-to-avoid arg2.names-to-avoid
-                                      :proofs (and arg2.thm-name t))
+                                      :names-to-avoid arg2.names-to-avoid)
                                      state))))
          ((mv okp arg1-term arg2-term) (fty-check-or-call term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg1))
+          (b* (((erp (expr-gout arg1))
                 (atc-gen-expr-bool arg1-term gin state))
                (cond (untranslate$ `(not ,arg1.term) t state))
                (premise (atc-premise-test cond))
                (context (atc-context-extend gin.context (list premise)))
-               ((erp (pexpr-gout arg2))
+               ((erp (expr-gout arg2))
                 (atc-gen-expr-bool arg2-term
-                                   (change-pexpr-gin
+                                   (change-expr-gin
                                     gin
                                     :context context
                                     :thm-index arg1.thm-index
-                                    :names-to-avoid arg1.names-to-avoid
-                                    :proofs (and arg1.thm-name t))
+                                    :names-to-avoid arg1.names-to-avoid)
                                    state)))
             (retok (atc-gen-expr-or arg1.term
                                     arg2.term
@@ -2535,20 +2488,18 @@
                                     arg2.thm-name
                                     arg1.events
                                     arg2.events
-                                    (change-pexpr-gin
+                                    (change-expr-gin
                                      gin
                                      :thm-index arg2.thm-index
-                                     :names-to-avoid arg2.names-to-avoid
-                                     :proofs (and arg2.thm-name t))
+                                     :names-to-avoid arg2.names-to-avoid)
                                     state))))
          ((erp okp fn arg-term in-type) (atc-check-boolean-from-type term))
          ((when okp)
-          (b* (((erp (pexpr-gout arg))
+          (b* (((erp (expr-gout arg))
                 (atc-gen-expr-pure arg-term gin state))
-               (gin (change-pexpr-gin gin
-                                      :thm-index arg.thm-index
-                                      :names-to-avoid arg.names-to-avoid
-                                      :proofs (and arg.thm-name t))))
+               (gin (change-expr-gin gin
+                                     :thm-index arg.thm-index
+                                     :names-to-avoid arg.names-to-avoid)))
             (atc-gen-expr-bool-from-type fn
                                          arg.term
                                          arg.expr
@@ -2583,34 +2534,59 @@
   (xdoc::topstring
    (xdoc::p
     "This does not include the terms, which are passed as a separate input."))
-  ((context atc-contextp)
-   (inscope atc-symbol-varinfo-alist-list)
-   (prec-tags atc-string-taginfo-alist)
-   (fn symbol)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
+  ((context atc-contextp
+            "Described in @(see atc-implementation).
+             It is the context just before these expressions,
+             i.e. the context in which these expressions are generated.")
+   (inscope atc-symbol-varinfo-alist-list
+            "Described in @(see atc-implementation).
+             It contains the variables in scope just before these expressions,
+             i.e. the ones in scope for these expressions.")
+   (prec-tags atc-string-taginfo-alist
+              "Described in @(see atc-implementation).")
+   (fn symbol
+       "Described in @(see atc-implementation).
+        It is the target function for which the expressions are generated.")
+   (fn-guard symbol
+             "Described in @(see atc-implementation).")
+   (compst-var symbol
+               "Described in @(see atc-implementation).")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation).")
+   (proofs bool
+           "A flag indicating whether modular proof generation
+            should continue or not.
+            This will be eliminated when modular proof generation
+            will cover all of the ATC-generated code."))
   :pred pexprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod pexprs-gout
   :short "Outputs for C pure expression list generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expressions are @('exprs'),
-     and their types are @('types'),
-     in the same order."))
-  ((exprs expr-list)
-   (types type-list)
-   (terms pseudo-term-listp)
-   (events pseudo-event-form-list)
-   (thm-names symbol-list)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
+  ((exprs expr-list
+          "Expressions generated from the term.")
+   (types type-list
+          "The types returned by the expressions, in order.
+           None of these is @('void').")
+   (terms pseudo-term-listp
+          "The terms from which the expressions are generated, in order.
+          The terms are transformed by replacing @(tsee if) with @(tsee if*).")
+   (events pseudo-event-form-list
+           "All the events generated for the expressions.")
+   (thm-names symbol-list
+              "The name of the theorems about @(tsee exec-expr-pure)
+               applied to the expressions.
+               These theorems are some of the events in @('events').
+               These are all @('nil') if no theorems were generated,
+               which happens exactly when
+               the @('proofs') flag in @(tsee expr-gin) is @('nil').")
+   (thm-index pos
+              "Described in @(see atc-implementation).")
+   (names-to-avoid symbol-list
+                   "Described in @(see atc-implementation)."))
   :pred pexprs-goutp)
 
 ;;;;;;;;;;
@@ -2649,9 +2625,9 @@
                                  :thm-names nil
                                  :thm-index gin.thm-index
                                  :names-to-avoid gin.names-to-avoid)))
-       ((erp (pexpr-gout first))
+       ((erp (expr-gout first))
         (atc-gen-expr-pure (car terms)
-                           (make-pexpr-gin
+                           (make-expr-gin
                             :context gin.context
                             :inscope gin.inscope
                             :prec-tags gin.prec-tags
@@ -2680,277 +2656,3 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atc-gen-expr-pure-list))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod expr-gin
-  :short "Inputs for C expression generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This does not include the term, which is passed as a separate input."))
-  ((context atc-contextp)
-   (var-term-alist symbol-pseudoterm-alist)
-   (inscope atc-symbol-varinfo-alist-list)
-   (fn symbol)
-   (fn-guard symbol)
-   (compst-var symbol)
-   (fenv-var symbol)
-   (limit-var symbol)
-   (prec-fns atc-symbol-fninfo-alist)
-   (prec-tags atc-string-taginfo-alist)
-   (thm-index pos)
-   (names-to-avoid symbol-list)
-   (proofs bool))
-  :pred expr-ginp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod expr-gout
-  :short "Outputs for C expression generation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The generated expression is @('expr'),
-     and its type is @('type').
-     The possibly updated computation state is returned as an untranslated term,
-     in @('compst-term').")
-   (xdoc::p
-    "The @('limit') component is the lower bound of the limit,
-     i.e. the minimum limit for which
-     the execution of the expression terminates."))
-  ((expr expr)
-   (type type)
-   (term pseudo-term)
-   (compst-term pseudo-term)
-   (affect symbol-list)
-   (limit pseudo-term)
-   (events pseudo-event-form-list)
-   (thm-name symbol)
-   (thm-index pos)
-   (names-to-avoid symbol-list))
-  :pred expr-goutp)
-
-;;;;;;;;;;
-
-(defirrelevant irr-expr-gout
-  :short "An irrelevant output for C expression generation."
-  :type expr-goutp
-  :body (make-expr-gout :expr (irr-expr)
-                        :type (irr-type)
-                        :term nil
-                        :compst-term nil
-                        :affect nil
-                        :limit nil
-                        :events nil
-                        :thm-name nil
-                        :thm-index 1
-                        :names-to-avoid nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-expr-noncall ((term pseudo-termp)
-                              (gin expr-ginp)
-                              state)
-  :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
-          that is not a function call."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called by @(tsee atc-gen-expr),
-     when given an expression term that is not a function call,
-     in which case it must be a pure expression term.
-     This is not the same as just @(tsee atc-gen-expr-pure),
-     because that function generates a theorem
-     involving @(tsee exec-expr-pure),
-     while this function generates a theorem
-     involving @(tsee exec-expr-call-or-pure).")
-   (xdoc::p
-    "The limit bound is set to 1,
-     which suffices, in @(tsee exec-expr-call-or-pure),
-     to go from there to @(tsee exec-expr-pure),
-     which does not use any limit."))
-  (b* (((reterr) (irr-expr-gout))
-       ((expr-gin gin) gin)
-       (wrld (w state))
-       ((erp (pexpr-gout pure))
-        (atc-gen-expr-pure term
-                           (make-pexpr-gin :context gin.context
-                                           :inscope gin.inscope
-                                           :prec-tags gin.prec-tags
-                                           :fn gin.fn
-                                           :fn-guard gin.fn-guard
-                                           :compst-var gin.compst-var
-                                           :thm-index gin.thm-index
-                                           :names-to-avoid gin.names-to-avoid
-                                           :proofs gin.proofs)
-                           state))
-       (bound '(quote 1))
-       ((when (not (and pure.thm-name t)))
-        (retok (make-expr-gout :expr pure.expr
-                               :type pure.type
-                               :term pure.term
-                               :compst-term gin.compst-var
-                               :affect nil
-                               :limit bound
-                               :events pure.events
-                               :thm-name nil
-                               :thm-index pure.thm-index
-                               :names-to-avoid pure.names-to-avoid)))
-       (thm-name (pack gin.fn '-correct- pure.thm-index))
-       ((mv thm-name names-to-avoid) (fresh-logical-name-with-$s-suffix
-                                      thm-name nil pure.names-to-avoid wrld))
-       (type-pred (atc-type-to-recognizer pure.type gin.prec-tags))
-       (valuep-when-type-pred
-        (atc-type-to-valuep-thm pure.type gin.prec-tags))
-       (value-kind-when-type-pred
-        (atc-type-to-value-kind-thm pure.type gin.prec-tags))
-       (uterm* (untranslate$ pure.term nil state))
-       (formula1 `(equal (exec-expr-call-or-pure ',pure.expr
-                                                 ,gin.compst-var
-                                                 ,gin.fenv-var
-                                                 ,gin.limit-var)
-                         (mv ,uterm* ,gin.compst-var)))
-       (formula2 `(,type-pred ,uterm*))
-       (formula1 (atc-contextualize formula1
-                                    gin.context
-                                    gin.fn
-                                    gin.fn-guard
-                                    gin.compst-var
-                                    gin.limit-var
-                                    ''1
-                                    t
-                                    wrld))
-       (formula2 (atc-contextualize formula2
-                                    gin.context
-                                    gin.fn
-                                    gin.fn-guard
-                                    nil
-                                    nil
-                                    nil
-                                    nil
-                                    wrld))
-       (formula `(and ,formula1 ,formula2))
-       (hints `(("Goal" :in-theory '(compustatep-of-add-frame
-                                     compustatep-of-add-var
-                                     compustatep-of-enter-scope
-                                     compustatep-of-update-var
-                                     compustatep-of-exit-scope
-                                     compustatep-of-if*-when-both-compustatep
-                                     exec-expr-call-or-pure-when-pure
-                                     (:e expr-kind)
-                                     not-zp-of-limit-variable
-                                     ,pure.thm-name
-                                     expr-valuep-of-expr-value
-                                     expr-value->value-of-expr-value
-                                     value-fix-when-valuep
-                                     ,valuep-when-type-pred
-                                     apconvert-expr-value-when-not-value-array
-                                     ,value-kind-when-type-pred))))
-       ((mv event &) (evmac-generate-defthm thm-name
-                                            :formula formula
-                                            :hints hints
-                                            :enable nil)))
-    (retok (make-expr-gout :expr pure.expr
-                           :type pure.type
-                           :term pure.term
-                           :compst-term gin.compst-var
-                           :limit bound
-                           :events (append pure.events (list event))
-                           :thm-name thm-name
-                           :thm-index (1+ pure.thm-index)
-                           :names-to-avoid names-to-avoid)))
-  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-expr ((term pseudo-termp)
-                      (gin expr-ginp)
-                      state)
-  :returns (mv erp (gout expr-goutp))
-  :short "Generate a C expression from an ACL2 term
-          that must be an expression term."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "At the same time,
-     we check that the term is an expression term,
-     as described in the user documentation.")
-   (xdoc::p
-    "We also return the C type of the expression,
-     the affected variables,
-     and a limit that suffices for @(tsee exec-expr-call-or-pure)
-     to execute the expression completely.")
-   (xdoc::p
-    "If the term is a call of a function that precedes @('fn')
-     in the list of target functions among @('t1'), ..., @('tp'),
-     we translate it to a C function call on the translated arguments.
-     The type of the expression is the result type of the function,
-     which is looked up in the function alist passed as input:
-     we ensure that this type is not @('void').
-     A sufficient limit for @(tsee exec-fun) to execute the called function
-     is retrieved from the called function's information;
-     we add 2 to it, to take into account the decrementing of the limit
-     to go from @(tsee exec-expr-call-or-pure) to @(tsee exec-expr-call)
-     and from there to @(tsee exec-fun).")
-   (xdoc::p
-    "Otherwise, we attempt to translate the term as a pure expression term.
-     The type is the one returned by that translation.
-     As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
-     to not stop right away due to the limit being 0."))
-  (b* (((reterr) (irr-expr-gout))
-       ((expr-gin gin) gin)
-       ((mv okp called-fn arg-terms in-types out-type affect limit &)
-        (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
-       ((when okp)
-        (b* (((when (type-case out-type :void))
-              (reterr
-               (msg "A call ~x0 of the function ~x1, which returns void, ~
-                     is being used where ~
-                     an expression term returning a a non-void C type ~
-                     is expected."
-                    term called-fn)))
-             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
-                                                in-types
-                                                arg-terms))
-              (reterr
-               (msg "The call ~x0 does not satisfy the restrictions ~
-                     on array arguments being identical to the formals."
-                    term)))
-             ((erp (pexprs-gout args))
-              (atc-gen-expr-pure-list arg-terms
-                                      (make-pexprs-gin
-                                       :context gin.context
-                                       :inscope gin.inscope
-                                       :prec-tags gin.prec-tags
-                                       :fn gin.fn
-                                       :fn-guard gin.fn-guard
-                                       :compst-var gin.compst-var
-                                       :thm-index gin.thm-index
-                                       :names-to-avoid gin.names-to-avoid
-                                       :proofs gin.proofs)
-                                      state))
-             ((unless (equal args.types in-types))
-              (reterr
-               (msg "The function ~x0 with input types ~x1 ~
-                     is applied to expression terms ~x2 returning ~x3. ~
-                     This is indicative of provably dead code, ~
-                     given that the code is guard-verified."
-                    called-fn in-types arg-terms args.types))))
-          (retok
-           (make-expr-gout
-            :expr (make-expr-call :fun (make-ident
-                                        :name (symbol-name called-fn))
-                                  :args args.exprs)
-            :type out-type
-            :term term
-            :compst-term nil
-            :affect affect
-            :limit `(binary-+ '2 ,limit)
-            :events args.events
-            :thm-name nil
-            :thm-index args.thm-index
-            :names-to-avoid args.names-to-avoid)))))
-    (atc-gen-expr-noncall term gin state))
-  :prepwork ((local (in-theory (enable pseudo-termp)))))
