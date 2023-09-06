@@ -15,7 +15,30 @@
 (include-book "kestrel/hints/combine-hints" :dir :system)
 (include-book "kestrel/hints/goal-specs" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
+(include-book "kestrel/utilities/print-to-string" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
+
+;; Returns a string
+(defun decode-removal-type (bt)
+  (declare (xargs :guard (consp bt)
+                  :mode :program))
+  (let ((type (car bt))
+        (arg (cadr bt)))
+    (case type
+      (:remove-by (concatenate 'string "Drop :by " (print-to-string arg)))
+      (:remove-cases (concatenate 'string "Drop :cases " (print-to-string arg)))
+      (:remove-induct (concatenate 'string "Drop :induct " (print-to-string arg)))
+      (:remove-nonlinearp (concatenate 'string "Drop :nonlinearp  " (print-to-string arg)))
+      (:remove-do-not (concatenate 'string "Drop :do-not " (print-to-string arg)))
+      (:remove-do-not-item (concatenate 'string "Drop :do-not item " (print-to-string arg)))
+      (:remove-expand (concatenate 'string "Drop :expand " (print-to-string arg)))
+      (:remove-expand-item (concatenate 'string "Drop :expand item " (print-to-string arg)))
+      (:remove-use (concatenate 'string "Drop :use " (print-to-string arg)))
+      (:remove-use-item (concatenate 'string "Drop :use item " (print-to-string arg)))
+      (:remove-enable-item (concatenate 'string "Drop enable of " (print-to-string arg)))
+      (:remove-disable-item (concatenate 'string "Drop disable of " (print-to-string arg)))
+      (:remove-in-theory (concatenate 'string "Drop :in-theory " (print-to-string arg)))
+      (otherwise (er hard? 'decode-removal-type "Unknown removal type: ~x0." bt)))))
 
 ;; Removes all hints from HINTS that have the given GOAL-SPEC.
 (defund remove-hints-for-goal-spec (goal-spec hints)
@@ -30,9 +53,8 @@
           (remove-hints-for-goal-spec goal-spec (rest hints))
         (cons hint (remove-hints-for-goal-spec goal-spec (rest hints)))))))
 
-;; TODO: Replace "break" in these names with "remove"?
-;; WARNING: Keep this in sync with break-hint-setting-in-nth-way.
-(defun num-ways-to-break-hint-setting (keyword val)
+;; WARNING: Keep this in sync with remove-hint-setting-in-nth-way.
+(defun num-ways-to-remove-hint-setting (keyword val)
   (declare (xargs :guard (keywordp keyword)))
   (case keyword
     (:by 1) ; can only remove the whole thing
@@ -105,14 +127,14 @@
           `(disable ,@(second args))
         `(e/d ,@args)))))
 
-;; n is 0-based and is known to be less than the number of ways to break the hint-setting.
-;; Returns (mv breakage-type result), where RESULT is a list (possibly nil) to be spliced into the hint settings, replacing the KEYWORD and VAL.
-;; WARNING: Keep this in sync with num-ways-to-break-hint-setting.
-;; WANRING: Keep this in sync with decode-breakage-type.
-(defun break-hint-setting-in-nth-way (n keyword val)
+;; n is 0-based and is known to be less than the number of ways to remove the hint-setting.
+;; Returns (mv removal-type result), where RESULT is a list (possibly nil) to be spliced into the hint settings, replacing the KEYWORD and VAL.
+;; WARNING: Keep this in sync with num-ways-to-remove-hint-setting.
+;; WANRING: Keep this in sync with decode-removal-type.
+(defun remove-hint-setting-in-nth-way (n keyword val)
   (declare (xargs :guard (and (natp n)
                               (keywordp keyword)
-                              (< n (num-ways-to-break-hint-setting keyword val)))
+                              (< n (num-ways-to-remove-hint-setting keyword val)))
                   :guard-hints (("Goal" :in-theory (enable natp)))))
   (case keyword
     (:by (mv `(:remove-by ,val) nil))                 ; can only remove the whole thing
@@ -181,36 +203,36 @@
                       (mv `(:remove-in-theory ,val)
                           nil) ; can only remove the whole thing
                       ))))
-    (otherwise (mv :error (er hard 'break-hint-setting-in-nth-way "Unhandled case")))))
+    (otherwise (mv :error (er hard 'remove-hint-setting-in-nth-way "Unhandled case")))))
 
-(defun num-ways-to-break-hint-keyword-value-list (hint-keyword-value-list)
+(defun num-ways-to-remove-from-hint-keyword-value-list (hint-keyword-value-list)
   (declare (xargs :guard (keyword-value-listp hint-keyword-value-list)))
   (if (endp hint-keyword-value-list)
       0
     (let ((keyword (car hint-keyword-value-list))
           (val (cadr hint-keyword-value-list)))
-      (+ (num-ways-to-break-hint-setting keyword val) ;; todo: generalize num-ways-to-break-hint-setting but filter here for hints the models know about.
-         (num-ways-to-break-hint-keyword-value-list (cddr hint-keyword-value-list))))))
+      (+ (num-ways-to-remove-hint-setting keyword val) ;; todo: generalize num-ways-to-remove-hint-setting but filter here for hints the models know about.
+         (num-ways-to-remove-from-hint-keyword-value-list (cddr hint-keyword-value-list))))))
 
-;; Returns (mv breakage-type hint-keyword-value-list).
+;; Returns (mv removal-type hint-keyword-value-list).
 ; n is 0-based
-(defun break-hint-keyword-value-list-in-nth-way (n hint-keyword-value-list)
+(defun remove-from-hint-keyword-value-list-in-nth-way (n hint-keyword-value-list)
   (declare (xargs :guard (and (natp n)
                               (keyword-value-listp hint-keyword-value-list)
-                              (< n (num-ways-to-break-hint-keyword-value-list hint-keyword-value-list)))
+                              (< n (num-ways-to-remove-from-hint-keyword-value-list hint-keyword-value-list)))
                   :measure (len hint-keyword-value-list)))
   (if (endp hint-keyword-value-list)
-      (mv :error (er hard? 'break-hint-keyword-value-list-in-nth-way "Ran out of hint settings!"))
+      (mv :error (er hard? 'remove-from-hint-keyword-value-list-in-nth-way "Ran out of hint settings!"))
     (let ((keyword (car hint-keyword-value-list))
           (val (cadr hint-keyword-value-list)))
-      (let ((ways (num-ways-to-break-hint-setting keyword val)))
+      (let ((ways (num-ways-to-remove-hint-setting keyword val)))
         (if (< n ways)
-            (mv-let (breakage-type result)
-              (break-hint-setting-in-nth-way n keyword val)
-              (mv breakage-type
+            (mv-let (removal-type result)
+              (remove-hint-setting-in-nth-way n keyword val)
+              (mv removal-type
                   ;; replace the old keyword and val with result (which may be empty):
                   (append result (cddr hint-keyword-value-list))))
-          (mv-let (breakage-type new-cddr)
-            (break-hint-keyword-value-list-in-nth-way (- n ways) (cddr hint-keyword-value-list))
-            (mv breakage-type
+          (mv-let (removal-type new-cddr)
+            (remove-from-hint-keyword-value-list-in-nth-way (- n ways) (cddr hint-keyword-value-list))
+            (mv removal-type
                 (cons keyword (cons val new-cddr)))))))))
