@@ -332,6 +332,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-call-endstate ((affect symbol-listp)
+                               (inscope atc-symbol-varinfo-alist-listp)
+                               (compst-var symbolp)
+                               (call "An untranslated term."))
+  :returns (term "An untranslated term.")
+  :short "Generate a term representing the ending computation state
+          after the execution of a C function call."
+  (b* (((when (endp affect)) compst-var)
+       (var (car affect))
+       (info (atc-get-var var inscope))
+       ((when (not info))
+        (raise "Internal error: variable ~x0 not found." var))
+       (type (atc-var-info->type info))
+       ((unless (or (type-case type :pointer)
+                    (type-case type :array)
+                    (atc-var-info->externalp info)))
+        (raise "Internal error:
+                affected variable ~x0 ~
+                has type ~x1 and is not an external object."
+               var type))
+       ((when (endp (cdr affect)))
+        (if (atc-var-info->externalp info)
+            `(update-static-var (ident ,(symbol-name var))
+                                ,call
+                                ,compst-var)
+          `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                          ,call
+                          ,compst-var))))
+    (atc-gen-call-endstate-aux affect inscope compst-var call 0))
+
+  :prepwork
+  ((define atc-gen-call-endstate-aux ((affect symbol-listp)
+                                      (inscope atc-symbol-varinfo-alist-listp)
+                                      (compst-var symbolp)
+                                      (call "An untranslated term.")
+                                      (index natp))
+     :returns (term "An untranslated term.")
+     :parents nil
+     (b* (((when (endp affect)) compst-var)
+          (var (car affect))
+          (info (atc-get-var var inscope))
+          ((when (not info))
+           (raise "Internal error: variable ~x0 not found." var))
+          (type (atc-var-info->type info))
+          ((unless (or (type-case type :pointer)
+                       (type-case type :array)
+                       (atc-var-info->externalp info)))
+           (raise "Internal error:
+                   affected variable ~x0 ~
+                   has type ~x1 and is not an external object."
+                  var type)))
+       (if (atc-var-info->externalp info)
+           `(update-static-var (ident ,(symbol-name var))
+                               (mv-nth ,index ,call)
+                               ,(atc-gen-call-endstate-aux (cdr affect)
+                                                           inscope
+                                                           compst-var
+                                                           call
+                                                           (1+ index)))
+         `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                         (mv-nth ,index ,call)
+                         ,(atc-gen-call-endstate-aux (cdr affect)
+                                                     inscope
+                                                     compst-var
+                                                     call
+                                                     (1+ index))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod stmt-gin
   :short "Inputs for C statement generation."
   :long
@@ -4377,9 +4446,8 @@
        (limit-for-actuals
         (fsubcor-var (formals+ called-fn wrld) args.terms limit))
        (call-limit `(binary-+ '2 ,limit-for-actuals))
-       (new-compst `(update-object ,(add-suffix-to-fn (car affect) "-OBJDES")
-                                   (,called-fn ,@args.terms)
-                                   ,gin.compst-var))
+       (new-compst
+        (atc-gen-call-endstate gin.affect gin.inscope gin.compst-var uterm))
        (exec-formula `(equal (exec-expr-call-or-asg ',call-expr
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
