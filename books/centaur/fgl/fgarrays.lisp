@@ -261,12 +261,18 @@
                (lbfr-listp (fgl-object-bfrlist ans)
                            (interp-st->logicman new-interp-st))))
 
+    (defret bfr-listp-of-<fn>-old
+      (implies (and
+                (interp-st-bfrs-ok interp-st))
+               (lbfr-listp (fgl-object-bfrlist ans)
+                           (interp-st->logicman interp-st))))
+
     (defret interp-st-get-of-<fn>
-      (implies (and (not (equal (interp-st-field-fix key) :logicman))
-                    (not (equal (interp-st-field-fix key) :stack))
-                    (not (equal (interp-st-field-fix key) :pathcond))
-                    (not (equal (interp-st-field-fix key) :constraint))
-                    (not (equal (interp-st-field-fix key) :bvar-db))
+      (implies (and ;; (not (equal (interp-st-field-fix key) :logicman))
+                ;; (not (equal (interp-st-field-fix key) :stack))
+                    ;; (not (equal (interp-st-field-fix key) :pathcond))
+                    ;; (not (equal (interp-st-field-fix key) :constraint))
+                    ;; (not (equal (interp-st-field-fix key) :bvar-db))
                     (not (equal (interp-st-field-fix key) :fgarrays))
                     (not (equal (interp-st-field-fix key) :next-fgarray)))
                (equal (interp-st-get key new-interp-st)
@@ -350,6 +356,14 @@
                     (equal (w st) (w state))
                     (interp-st-bfrs-ok interp-st))
                (equal (fgl-object-eval ans env (interp-st->logicman new-interp-st))
+                      nil)))
+
+    (defret eval-of-<fn>-old
+      (implies (and successp
+                    (fgl-ev-meta-extract-global-facts :state st)
+                    (equal (w st) (w state))
+                    (interp-st-bfrs-ok interp-st))
+               (equal (fgl-object-eval ans env (interp-st->logicman interp-st))
                       nil)))))
 
 (local (in-theory (enable fgarray-init$a)))

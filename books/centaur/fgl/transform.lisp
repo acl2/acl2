@@ -42,6 +42,7 @@
 (include-book "add-primitives")
 (include-book "def-fgl-rewrite")
 (local (include-book "std/lists/resize-list" :dir :system))
+(local (include-book "clause-processors/find-matching" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 
@@ -172,7 +173,25 @@
   :hints(("Goal" :in-theory (enable bvar-db-bfrlist bvar-db-bfrlist-aux))))
 
 
-
+(local
+ (def-updater-independence-thm interp-st-bvar-db-ok-updater-independence
+   (implies (and (equal (interp-st-get :logicman new)
+                        (interp-st-get :logicman old))
+                 (equal (interp-st-get :bvar-db new)
+                        (interp-st-get :bvar-db old)))
+            (equal (interp-st-bvar-db-ok new env)
+                   (interp-st-bvar-db-ok old env)))
+   :hints (("goal" :cases ((interp-st-bvar-db-ok new env)))
+           (and stable-under-simplificationp
+                (b* ((lit (assoc 'interp-st-bvar-db-ok clause))
+                     (prove (second lit))
+                     (assume (if (eq prove 'new) 'old 'new)))
+                  `(:expand (,lit)
+                    :use ((:instance interp-st-bvar-db-ok-necc
+                           (interp-st ,assume)
+                           (n (interp-st-bvar-db-ok-witness . ,(cdr lit)))))))))))
+                   
+   
 
 
 (local (in-theory (disable w)))
@@ -691,6 +710,45 @@
     (equal (pathcond-rewind-ok (bfrmode :aignet) (interp-st->pathcond new-interp-st))
            (pathcond-rewind-ok (bfrmode :aignet) (interp-st->pathcond interp-st))))
 
+  (local
+   (defret eval-of-<fn>-special
+     (implies (and (bind-free '((logicman . (interp-st->logicman interp-st))) (logicman))
+                   (bfr-litarr-correct-p (fgl-object-bfrlist x)
+                                         (fgl-env->bfr-vals env)
+                                         litarr logicman2 logicman))
+              (equal (fgl-object-eval new-x env logicman2)
+                     (fgl-object-eval x env logicman)))
+     :hints (("goal" :use eval-of-<fn>
+              :in-theory (disable eval-of-<fn>)))
+     :fn fgl-object-map-bfrs))
+  
+  (defret interp-st-bvar-db-ok-of-<fn>
+    (implies (and (not (interp-st-bvar-db-ok interp-st env))
+                  (bfr-mode-is :aignet (interp-st-bfr-mode))
+                  (interp-st-bfrs-ok interp-st))
+             (not (interp-st-bvar-db-ok new-interp-st env)))
+    :hints (("goal" :in-theory (disable <fn> interp-st-bvar-db-ok-necc))
+            (and stable-under-simplificationp
+                 (b* ((prove (assoc 'interp-st-bvar-db-ok clause))
+                      ((mv ?ok assume-lit)
+                       (acl2::find-matching-literal-in-clause '(not (interp-st-bvar-db-ok interp-st env))
+                                                              clause nil))
+                      (assume (second assume-lit))
+                      (assume-st (second assume)))
+                   `(:expand (,prove)
+                     :use ((:instance interp-st-bvar-db-ok-necc
+                            (interp-st ,assume-st)
+                            (n (interp-st-bvar-db-ok-witness . ,(cdr prove))))))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable <fn>
+                                      gobj-bfr-eval
+                                      interp-st-bfrs-ok-implies
+                                      ;; bfr-var
+                                      ;; bfr-eval
+                                      ;; aignet-lit->bfr
+                                      ;; logicman->bfrstate
+                                      )))))
+  
   (defret contra-of-<fn>
     (implies (and (logicman-pathcond-eval env (interp-st->pathcond interp-st)
                                           (interp-st->logicman interp-st))

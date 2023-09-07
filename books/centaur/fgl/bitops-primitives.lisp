@@ -28,6 +28,7 @@
 
 (include-book "primitives")
 (include-book "bitops")
+(include-book "centaur/sv/svex/4vec" :dir :system)
 (local (include-book "primitive-lemmas"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -51,7 +52,8 @@
    floor
    mod
    truncate
-   rem))
+   rem
+   sv::4vec))
 
 
 
@@ -95,45 +97,6 @@
                          (- b)))
          :hints(("Goal" :in-theory (enable bitp)))))
 
-(define extend-bits ((n natp) x)
-  :guard-hints (("goal" :in-theory (enable default-car)))
-  (b* (((when (zp n)) nil)
-       (first (mbe :logic (car x)
-                   :exec (and (consp x) (car x))))
-       ((when (eql n 1)) (list first))
-       ((when (or (atom x) (atom (cdr x))))
-        (cons first (extend-bits (1- n) x))))
-    (cons first (extend-bits (1- n) (cdr x))))
-  ///
-  (defthm len-of-extend-bits
-    (Equal (len (extend-bits n x)) (nfix n)))
-
-  (defthm consp-of-extend-bits
-    (Equal (consp (extend-bits n x))
-           (posp n)))
-
-  (defthm bools->int-of-extend-bits
-    (equal (bools->int (extend-bits n x))
-           (if (zp n)
-               0
-             (logext n (bools->int x))))
-    :hints(("Goal" :in-theory (enable bools->int bitops::logext**))))
-
-  
-  (local (defthm gobj-bfr-list-eval-under-iff
-           (iff (gobj-bfr-list-eval x env)
-                (consp x))
-           :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))
-
-  (defthm gobj-bfr-list-eval-of-extend-bits
-    (equal (gobj-bfr-list-eval (extend-bits n x) env)
-           (extend-bits n (gobj-bfr-list-eval x env)))
-    :hints(("Goal" :in-theory (enable gobj-bfr-list-eval))))
-
-  (defthm member-of-extend-bits
-    (implies (and (not (member v x))
-                  v)
-             (not (member v (extend-bits n x))))))
 
 (local (defthm bools->int-of-repeat
          (equal (bools->int (acl2::repeat n x))
@@ -225,29 +188,7 @@
 ;;                        FGL::FGL-LOGTAIL$INLINE-PRIMITIVE)
 ;; (FGL::ADD-FGL-PRIMITIVE LOGAPP FGL::FGL-LOGAPP-PRIMITIVE)
 
-(define s-append (lsb-bits (msb-bits true-listp))
-  (if (atom lsb-bits)
-      (if (atom msb-bits) '(nil)
-        (mbe :logic (true-list-fix msb-bits)
-             :exec msb-bits))
-    (scons (car lsb-bits) (s-append (cdr lsb-bits) msb-bits)))
-  ///
-  (defthm eval-of-s-append
-    (equal (bools->int (gobj-bfr-list-eval (s-append lsb-bits msb-bits) env))
-           (logapp (len lsb-bits)
-                   (bools->int (gobj-bfr-list-eval lsb-bits env))
-                   (bools->int (gobj-bfr-list-eval msb-bits env))))
-    :hints(("Goal" :in-theory (enable len)
-            :induct (s-append lsb-bits msb-bits)
-            :expand ((gobj-bfr-list-eval lsb-bits env)))
-           (and stable-under-simplificationp
-                '(:in-theory (e/d* (s-endp scdr))))))
 
-  (defthm member-of-s-append
-    (implies (and (not (member v msb-bits))
-                  (not (member v lsb-bits))
-                  v)
-             (not (member v (s-append lsb-bits msb-bits))))))
                            
 
 
@@ -452,8 +393,16 @@
          :hints(("Goal" :in-theory (enable gobj-syntactic-booleanp)))
          :rule-classes :type-prescription))
 
+(local (defthmd g-concrete->val-type-when-not-syntactic-cons
+         (implies (and (not (gobj-syntactic-consp x))
+                       (fgl-object-case x :g-concrete))
+                  (not (consp (g-concrete->val x))))
+         :hints(("Goal" :in-theory (enable gobj-syntactic-consp)))
+         :rule-classes :type-prescription))
+
 (local (in-theory (enable g-concrete->val-type-when-not-syntactic-boolean
-                          g-concrete->val-type-when-not-syntactic-integer)))
+                          g-concrete->val-type-when-not-syntactic-integer
+                          g-concrete->val-type-when-not-syntactic-cons)))
 
 (local (in-theory (disable acl2::member-equal-append
                            acl2::member-of-append
@@ -463,43 +412,389 @@
 ;; (local (in-theory (enable gobj-bfr-eval)))
 (local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
 
-(def-fgl-primitive equal (x y)
-  (b* (((when (equal x y)) (mv t t interp-st))
+(define fgl-nice-4vec-call-p ((x fgl-object-p))
+  (fgl-object-case x
+    :g-apply (and (eq x.fn 'sv::4vec)
+                  (eql (len x.args) 2)
+                  (gobj-syntactic-integerp (first x.args))
+                  (gobj-syntactic-integerp (second x.args)))
+    :otherwise nil))
+
+(define fgl-equal-int/4vec ((x fgl-object-p)
+                            (y fgl-object-p)
+                            &optional (logicman 'logicman))
+  :guard (and (gobj-syntactic-integerp x)
+              (fgl-nice-4vec-call-p y)
+              (lbfr-listp (fgl-object-bfrlist x))
+              (lbfr-listp (fgl-object-bfrlist y)))
+  :returns (mv ans new-logicman)
+  :verify-guards nil
+  (b* ((xbits (gobj-syntactic-integer->bits x))
+       ((g-apply y))
+       ((mv ans1 logicman)
+        (bfr-=-ss xbits
+                  (gobj-syntactic-integer->bits (first y.args))
+                  logicman))
+       ((mv ans2 logicman)
+        (bfr-=-ss xbits
+                  (gobj-syntactic-integer->bits (second y.args))
+                  logicman)))
+    (bfr-and ans1 ans2 logicman))
+  ///
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+  (defret logicman-extension-of-<fn>
+    (logicman-extension-plus new-logicman logicman))
+
+  (local (in-theory (enable fgl-nice-4vec-call-p)))
+  
+  (defret bfr-p-of-<fn>
+    (implies (and (lbfr-listp (fgl-object-bfrlist x))
+                  (lbfr-listp (fgl-object-bfrlist y))
+                  (gobj-syntactic-integerp x)
+                  (fgl-nice-4vec-call-p y))
+             (lbfr-p ans new-logicman)))
+  ;; (local (defthm equal-atom-when-syntactic-consp
+  ;;          (implies (and (gobj-syntactic-consp x)
+  ;;                        (atom y))
+  ;;                   (not (equal y (fgl-object-eval x env))))
+  ;;          :hints(("Goal" :in-theory (enable fgl-object-eval
+  ;;                                            gobj-syntactic-consp)))))
+
+  
+  (verify-guards fgl-equal-int/4vec-fn)
+
+  (local (in-theory (enable sv::4vec-p-when-integerp)))
+
+  (local (defthm 4vec->lower-when-integerp
+           (implies (integerp x)
+                    (equal (sv::4vec->lower x) x))
+           :hints(("Goal" :in-theory (enable sv::4vec->lower sv::4vec-fix)))))
+
+  (local (defthm 4vec->upper-when-integerp
+           (implies (integerp x)
+                    (equal (sv::4vec->upper x) x))
+           :hints(("Goal" :in-theory (enable sv::4vec->upper sv::4vec-fix)))))
+  
+  (defret eval-of-<fn>
+    (implies (and ok
+                  (lbfr-listp (fgl-object-bfrlist x))
+                  (lbfr-listp (fgl-object-bfrlist y))
+                  (gobj-syntactic-integerp x)
+                  (fgl-nice-4vec-call-p y)
+                  (FGL-EV-META-EXTRACT-GLOBAL-FACTS :STATE ST)
+                  (bitops-formula-checks st))
+             (equal (gobj-bfr-eval ans env new-logicman)
+                    (equal (fgl-object-eval x env logicman)
+                           (fgl-object-eval y env logicman))))))
+
+
+
+(define fgl-equal-4vec/4vec ((x fgl-object-p)
+                             (y fgl-object-p)
+                             &optional (logicman 'logicman))
+  :guard (and (fgl-nice-4vec-call-p x)
+              (fgl-nice-4vec-call-p y)
+              (lbfr-listp (fgl-object-bfrlist x))
+              (lbfr-listp (fgl-object-bfrlist y)))
+  :returns (mv ans new-logicman)
+  :verify-guards nil
+  (b* (((g-apply x))
+       ((g-apply y))
+       ((mv ans1 logicman)
+        (bfr-=-ss (gobj-syntactic-integer->bits (first x.args))
+                  (gobj-syntactic-integer->bits (first y.args))
+                  logicman))
+       ((mv ans2 logicman)
+        (bfr-=-ss (gobj-syntactic-integer->bits (second x.args))
+                  (gobj-syntactic-integer->bits (second y.args))
+                  logicman)))
+    (bfr-and ans1 ans2 logicman))
+  ///
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+  (defret logicman-extension-of-<fn>
+    (logicman-extension-plus new-logicman logicman))
+
+  (local (in-theory (enable fgl-nice-4vec-call-p)))
+  
+  (defret bfr-p-of-<fn>
+    (implies (and (lbfr-listp (fgl-object-bfrlist x))
+                  (lbfr-listp (fgl-object-bfrlist y))
+                  (fgl-nice-4vec-call-p x)
+                  (fgl-nice-4vec-call-p y))
+             (lbfr-p ans new-logicman)))
+  ;; (local (defthm equal-atom-when-syntactic-consp
+  ;;          (implies (and (gobj-syntactic-consp x)
+  ;;                        (atom y))
+  ;;                   (not (equal y (fgl-object-eval x env))))
+  ;;          :hints(("Goal" :in-theory (enable fgl-object-eval
+  ;;                                            gobj-syntactic-consp)))))
+
+  
+  (verify-guards fgl-equal-4vec/4vec-fn)
+
+  (local (in-theory (enable sv::4vec-p-when-integerp)))
+
+  (local (defthm 4vec->lower-when-integerp
+           (implies (integerp x)
+                    (equal (sv::4vec->lower x) x))
+           :hints(("Goal" :in-theory (enable sv::4vec->lower sv::4vec-fix)))))
+
+  (local (defthm 4vec->upper-when-integerp
+           (implies (integerp x)
+                    (equal (sv::4vec->upper x) x))
+           :hints(("Goal" :in-theory (enable sv::4vec->upper sv::4vec-fix)))))
+  
+  (defret eval-of-<fn>
+    (implies (and ok
+                  (lbfr-listp (fgl-object-bfrlist x))
+                  (lbfr-listp (fgl-object-bfrlist y))
+                  (fgl-nice-4vec-call-p x)
+                  (fgl-nice-4vec-call-p y)
+                  (FGL-EV-META-EXTRACT-GLOBAL-FACTS :STATE ST)
+                  (bitops-formula-checks st))
+             (equal (gobj-bfr-eval ans env new-logicman)
+                    (equal (fgl-object-eval x env logicman)
+                           (fgl-object-eval y env logicman))))))
+
+
+(define fgl-equal-const/4vec (x
+                              (y fgl-object-p)
+                              &optional (logicman 'logicman))
+  :guard (and (fgl-nice-4vec-call-p y)
+              (lbfr-listp (fgl-object-bfrlist y)))
+  :returns (mv ans new-logicman)
+  :verify-guards nil
+  (b* (((unless (sv::4vec-p x)) (mv nil logicman))
+       ((g-apply y))
+       ((mv ans1 logicman)
+        (bfr-=-ss (int->bools (sv::4vec->upper x))
+                  (gobj-syntactic-integer->bits (first y.args))
+                  logicman))
+       ((mv ans2 logicman)
+        (bfr-=-ss (int->bools (sv::4vec->lower x))
+                  (gobj-syntactic-integer->bits (second y.args))
+                  logicman)))
+    (bfr-and ans1 ans2 logicman))
+  ///
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+  (defret logicman-extension-of-<fn>
+    (logicman-extension-plus new-logicman logicman))
+
+  (local (in-theory (enable fgl-nice-4vec-call-p)))
+  
+  (defret bfr-p-of-<fn>
+    (implies (and (lbfr-listp (fgl-object-bfrlist y))
+                  (fgl-nice-4vec-call-p y))
+             (lbfr-p ans new-logicman)))
+  ;; (local (defthm equal-atom-when-syntactic-consp
+  ;;          (implies (and (gobj-syntactic-consp x)
+  ;;                        (atom y))
+  ;;                   (not (equal y (fgl-object-eval x env))))
+  ;;          :hints(("Goal" :in-theory (enable fgl-object-eval
+  ;;                                            gobj-syntactic-consp)))))
+
+  
+  (verify-guards fgl-equal-const/4vec-fn)
+
+  (local (in-theory (enable sv::4vec-p-when-integerp)))
+
+  (local (defthm 4vec->lower-when-integerp
+           (implies (integerp x)
+                    (equal (sv::4vec->lower x) x))
+           :hints(("Goal" :in-theory (enable sv::4vec->lower sv::4vec-fix)))))
+
+  (local (defthm 4vec->upper-when-integerp
+           (implies (integerp x)
+                    (equal (sv::4vec->upper x) x))
+           :hints(("Goal" :in-theory (enable sv::4vec->upper sv::4vec-fix)))))
+  
+  (defret eval-of-<fn>
+    (implies (and ok
+                  (lbfr-listp (fgl-object-bfrlist y))
+                  (fgl-nice-4vec-call-p y)
+                  (FGL-EV-META-EXTRACT-GLOBAL-FACTS :STATE ST)
+                  (bitops-formula-checks st))
+             (equal (gobj-bfr-eval ans env new-logicman)
+                    (equal x (fgl-object-eval y env logicman))))))
+
+
+
+(define fgl-equal-aux ((x fgl-object-p)
+                       (y fgl-object-p)
+                       logicman)
+  :guard (and (lbfr-listp (fgl-object-bfrlist x))
+              (lbfr-listp (fgl-object-bfrlist y)))
+  :returns (mv ok ans new-logicman)
+  :verify-guards nil
+  :measure (+ (fgl-object-count x)
+              (fgl-object-count y))
+  :prepwork ((local (defthm fgl-object-count-of-syntactic-list->car
+                      (implies (gobj-syntactic-consp x)
+                               (<= (fgl-object-count (gobj-syntactic-list->car x))
+                                   (fgl-object-count x)))
+                      :hints(("Goal" :in-theory (enable gobj-syntactic-consp
+                                                        gobj-syntactic-list->car
+                                                        fgl-object-count)))
+                      :rule-classes :linear))
+             (local (defthm fgl-object-count-of-syntactic-list->car-strong
+                      (implies (and (gobj-syntactic-consp x)
+                                    (not (fgl-object-case x :g-concrete)))
+                               (< (fgl-object-count (gobj-syntactic-list->car x))
+                                  (fgl-object-count x)))
+                      :hints(("Goal" :in-theory (enable gobj-syntactic-consp
+                                                        gobj-syntactic-list->car
+                                                        fgl-object-count)))
+                      :rule-classes :linear))
+             (local (defthm fgl-object-count-of-syntactic-list->cdr
+                      (implies (gobj-syntactic-consp x)
+                               (<= (fgl-object-count (gobj-syntactic-list->cdr x))
+                                   (fgl-object-count x)))
+                      :hints(("Goal" :in-theory (enable gobj-syntactic-consp
+                                                        gobj-syntactic-list->cdr
+                                                        fgl-object-count)))
+                      :rule-classes :linear))
+             (local (defthm fgl-object-count-of-syntactic-list->cdr-strong
+                      (implies (and (gobj-syntactic-consp x)
+                                    (not (fgl-object-case x :g-concrete)))
+                               (< (fgl-object-count (gobj-syntactic-list->cdr x))
+                                  (fgl-object-count x)))
+                      :hints(("Goal" :in-theory (enable gobj-syntactic-consp
+                                                        gobj-syntactic-list->cdr
+                                                        fgl-object-count)))
+                      :rule-classes :linear)))
+
+  (b* (((when (fgl-object-equiv x y)) (mv t t logicman))
        ((when (and (fgl-object-case x :g-concrete)
                    (fgl-object-case y :g-concrete)))
-        (mv t nil interp-st))
+        (mv t nil logicman))
        ((when (gobj-syntactic-integerp x))
         (cond ((gobj-syntactic-integerp y)
-               (stobj-let ((logicman (interp-st->logicman interp-st)))
-                          (ans logicman)
-                          (bfr-=-ss (gobj-syntactic-integer->bits x)
-                                    (gobj-syntactic-integer->bits y)
-                                    logicman)
-                          (mv t (mk-g-boolean ans) interp-st)))
+               (b* (((mv ans logicman)
+                     (bfr-=-ss (gobj-syntactic-integer->bits x)
+                               (gobj-syntactic-integer->bits y)
+                               logicman)))
+                 (mv t ans logicman)))
+              ((fgl-nice-4vec-call-p y)
+               (b* (((mv ans logicman)
+                     (fgl-equal-int/4vec x y)))
+                 (mv t ans logicman)))
               ((fgl-object-case y '(:g-boolean :g-concrete :g-cons))
-               (mv t nil interp-st))
-              (t (mv nil nil interp-st))))
+               (mv t nil logicman))
+              (t (mv nil nil logicman))))
        ((when (gobj-syntactic-booleanp x))
         (cond ((gobj-syntactic-booleanp y)
-               (stobj-let ((logicman (interp-st->logicman interp-st)))
-                          (ans logicman)
-                          (bfr-iff (gobj-syntactic-boolean->bool x)
-                                   (gobj-syntactic-boolean->bool y)
-                                   logicman)
-                          (mv t (mk-g-boolean ans) interp-st)))
+               (b* (((mv ans logicman)
+                     (bfr-iff (gobj-syntactic-boolean->bool x)
+                              (gobj-syntactic-boolean->bool y)
+                              logicman)))
+                 (mv t ans logicman)))
               ((fgl-object-case y '(:g-integer :g-concrete :g-cons))
-               (mv t nil interp-st))
-              (t (mv nil nil interp-st))))
+               (mv t nil logicman))
+              (t (mv nil nil logicman))))
+       ((when (gobj-syntactic-consp x))
+        (cond ((gobj-syntactic-consp y)
+               (b* (((mv ok1 ans1 logicman)
+                     (fgl-equal-aux (gobj-syntactic-list->car x)
+                                    (gobj-syntactic-list->car y)
+                                    logicman))
+                    ((when (and ok1 (eq ans1 nil)))
+                     (mv t nil logicman))
+                    ((mv ok2 ans2 logicman)
+                     (fgl-equal-aux (gobj-syntactic-list->cdr x)
+                                    (gobj-syntactic-list->cdr y)
+                                    logicman))
+                    ((when (and ok2 (eq ans2 nil)))
+                     (mv t nil logicman))
+                    ((unless (and ok1 ok2))
+                     (mv nil nil logicman))
+                    ((mv ans logicman) (bfr-and ans1 ans2 logicman)))
+                 (mv t ans logicman)))
+              ((fgl-object-case y '(:g-boolean :g-integer :g-concrete))
+               (mv t nil logicman))
+              (t (mv nil nil logicman))))
+       ((when (fgl-nice-4vec-call-p x))
+        (cond ((gobj-syntactic-integerp y)
+               (b* (((mv ans logicman) (fgl-equal-int/4vec y x)))
+                 (mv t ans logicman)))
+              ((fgl-nice-4vec-call-p y)
+               (b* (((mv ans logicman) (fgl-equal-4vec/4vec y x)))
+                 (mv t ans logicman)))
+              ((fgl-object-case y :g-concrete)
+               (b* (((mv ans logicman) (fgl-equal-const/4vec (g-concrete->val y) x)))
+                 (mv t ans logicman)))
+              (t (mv (fgl-object-case y :g-boolean) nil logicman))))
        ((when (gobj-syntactic-integerp y))
         (mv (fgl-object-case x '(:g-boolean :g-concrete :g-cons))
-            nil interp-st))
+            nil logicman))
        ((when (gobj-syntactic-booleanp y))
         (mv (fgl-object-case x '(:g-integer :g-concrete :g-cons))
-            nil interp-st)))
+            nil logicman))
+       ((when (gobj-syntactic-consp y))
+        (mv (fgl-object-case x '(:g-boolean :g-integer :g-concrete)) nil logicman))
+       ((when (fgl-nice-4vec-call-p y))
+        (cond ((fgl-object-case x :g-concrete)
+               (b* (((mv ans logicman) (fgl-equal-const/4vec (g-concrete->val x) y)))
+                 (mv t ans logicman)))
+              (t (mv (fgl-object-case x :g-boolean) nil logicman)))))
     ;; BOZO add support for recursive primitives and add CONS case
-    (mv nil nil interp-st)))
+    (mv nil nil logicman))
+  ///
+  (defret logicman-extension-of-<fn>
+    (logicman-extension-plus new-logicman logicman))
+
+  (defret bfr-p-of-<fn>
+    (implies (and (lbfr-listp (fgl-object-bfrlist x))
+                  (lbfr-listp (fgl-object-bfrlist y)))
+             (lbfr-p ans new-logicman)))
+
+  (verify-guards fgl-equal-aux)
+
+  ;; (local (defthm equal-atom-when-syntactic-consp
+  ;;          (implies (and (gobj-syntactic-consp x)
+  ;;                        (atom y))
+  ;;                   (not (equal y (fgl-object-eval x env))))
+  ;;          :hints(("Goal" :in-theory (enable fgl-object-eval
+  ;;                                            gobj-syntactic-consp)))))
+
+  
+  (local (in-theory (enable fgl-object-eval-when-gobj-syntactic-consp)))
+
+
+  (local (defthm equal-boolean-when-fgl-nice-4vec-call
+           (implies (and (fgl-nice-4vec-call-p y)
+                         (FGL-EV-META-EXTRACT-GLOBAL-FACTS :STATE ST)
+                         (bitops-formula-checks st)
+                         (booleanp x))
+                    (not (equal x (fgl-object-eval y env))))
+           :hints(("Goal" :in-theory (enable fgl-nice-4vec-call-p)))))
+  
+  (defret eval-of-<fn>
+    (implies (and ok
+                  (lbfr-listp (fgl-object-bfrlist x))
+                  (lbfr-listp (fgl-object-bfrlist y))
+                  (FGL-EV-META-EXTRACT-GLOBAL-FACTS :STATE ST)
+                  (bitops-formula-checks st))
+             (equal (gobj-bfr-eval ans env new-logicman)
+                    (equal (fgl-object-eval x env logicman)
+                           (fgl-object-eval y env logicman))))
+    :hints (("goal" :induct <call>
+             :expand (<call>)
+             :do-not-induct t))))
+
+
+
+(def-fgl-primitive equal (x y)
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (ok ans logicman)
+             (fgl-equal-aux x y logicman)
+             (mv ok (mk-g-boolean ans) interp-st))
+  :formula-check bitops-formula-checks)
 
 (local (in-theory (disable g-concrete->val-type-when-not-syntactic-boolean
+                           g-concrete->val-type-when-not-syntactic-cons
                            g-concrete->val-type-when-not-syntactic-integer)))
        ;; ((when (gobj-syntactic-consp x))
        ;;  (cond ((gobj-syntactic-consp y)
