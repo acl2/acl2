@@ -332,6 +332,112 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-call-result-and-endstate
+  ((type typep "Return type of the C function.")
+   (affect symbol-listp "Variables affected by the C function.")
+   (inscope atc-symbol-varinfo-alist-listp)
+   (compst-var symbolp)
+   (call "An untranslated term."))
+  :returns (mv (result "An untranslated term.")
+               (new-compst "An untranslated term."))
+  :short "Generate a term representing the result value
+          and a term representing the ending computation state
+          of the execution of a C function call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If no variables are affected,
+     the computation state is unchanged,
+     and the call is the result.
+     (In this case the type is not @('void'),
+     but this is not an explicitly checked invariant in this code.)")
+   (xdoc::p
+    "Otherwise, if exactly one variable is affected,
+     and additionally the function is @('void'),
+     we return @('nil') as the result term,
+     while the new computation state is obtained
+     by updating the affected object with the call.")
+   (xdoc::p
+    "Otherwise, there are two cases.
+     If the function is void, we return @('nil') as result term,
+     and as new computation state we return the nest of object updates
+     for all the @(tsee mv-nth) components of the call, starting with index 0.
+     If the function is not void,
+     we return the @(tsee mv-nth) of index 0 of the call as result term,
+     and as new computation state the nest of object updates
+     with the @(tsee mv-nth) components starting with index 1.
+     In either case, the nest is calculated by an auxiliary function."))
+  (b* (((when (endp affect)) (mv call compst-var))
+       ((when (and (endp (cdr affect))
+                   (type-case type :void)))
+        (b* ((var (car affect))
+             (info (atc-get-var var inscope))
+             ((when (not info))
+              (raise "Internal error: variable ~x0 not found." var)
+              (mv nil nil))
+             (type (atc-var-info->type info))
+             ((unless (or (type-case type :pointer)
+                          (type-case type :array)
+                          (atc-var-info->externalp info)))
+              (raise "Internal error:
+                      affected variable ~x0 ~
+                      has type ~x1 and is not an external object."
+                     var type)
+              (mv nil nil))
+             (new-compst
+              (if (atc-var-info->externalp info)
+                  `(update-static-var (ident ,(symbol-name var))
+                                      ,call
+                                      ,compst-var)
+                `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                                ,call
+                                ,compst-var))))
+          (mv nil new-compst))))
+    (if (type-case type :void)
+        (mv nil
+            (atc-gen-call-endstate affect inscope compst-var call 0))
+      (mv `(mv-nth 0 ,call)
+          (atc-gen-call-endstate affect inscope compst-var call 1))))
+
+  :prepwork
+  ((define atc-gen-call-endstate ((affect symbol-listp)
+                                  (inscope atc-symbol-varinfo-alist-listp)
+                                  (compst-var symbolp)
+                                  (call "An untranslated term.")
+                                  (index natp))
+     :returns (term "An untranslated term.")
+     :parents nil
+     (b* (((when (endp affect)) compst-var)
+          (var (car affect))
+          (info (atc-get-var var inscope))
+          ((when (not info))
+           (raise "Internal error: variable ~x0 not found." var))
+          (type (atc-var-info->type info))
+          ((unless (or (type-case type :pointer)
+                       (type-case type :array)
+                       (atc-var-info->externalp info)))
+           (raise "Internal error:
+                   affected variable ~x0 ~
+                   has type ~x1 and is not an external object."
+                  var type)))
+       (if (atc-var-info->externalp info)
+           `(update-static-var (ident ,(symbol-name var))
+                               (mv-nth ,index ,call)
+                               ,(atc-gen-call-endstate (cdr affect)
+                                                       inscope
+                                                       compst-var
+                                                       call
+                                                       (1+ index)))
+         `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                         (mv-nth ,index ,call)
+                         ,(atc-gen-call-endstate (cdr affect)
+                                                 inscope
+                                                 compst-var
+                                                 call
+                                                 (1+ index))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod stmt-gin
   :short "Inputs for C statement generation."
   :long
@@ -515,8 +621,15 @@
   (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
-       ((mv okp called-fn arg-terms in-types out-type affect limit &)
-        (atc-check-cfun-call term gin.var-term-alist gin.prec-fns (w state)))
+       ((mv okp
+            called-fn
+            arg-terms
+            in-types
+            out-type
+            affect
+            limit
+            called-fn-guard)
+        (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when okp)
         (b* (((when (type-case out-type :void))
               (reterr
@@ -556,16 +669,66 @@
                      is applied to expression terms ~x2 returning ~x3. ~
                      This is indicative of provably dead code, ~
                      given that the code is guard-verified."
-                    called-fn in-types arg-terms args.types))))
-          (retok (make-expr-call :fun (make-ident :name (symbol-name called-fn))
-                                 :args args.exprs)
+                    called-fn in-types arg-terms args.types)))
+             (expr (make-expr-call
+                    :fun (make-ident :name (symbol-name called-fn))
+                    :args args.exprs))
+             ((when (eq called-fn 'quote))
+              (reterr (raise "Internal error: called function is QUOTE.")))
+             (term `(,called-fn ,@args.terms))
+             ;; (uterm (untranslate$ term nil state))
+             (fninfo (cdr (assoc-eq called-fn gin.prec-fns)))
+             ((unless fninfo)
+              (reterr (raise "Internal error: function ~x0 has no info."
+                             called-fn)))
+             (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
+             ((when (or (not gin.proofs)
+                        (not called-fn-thm)
+                        (consp affect))) ; <- temporary
+              (retok expr
+                     out-type
+                     term
+                     `(binary-+ '2 ,limit)
+                     args.events
+                     nil
+                     args.thm-index
+                     args.names-to-avoid))
+             (guard-lemma-name
+              (pack gin.fn '-call- args.thm-index '-guard-lemma))
+             ((mv guard-lemma-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix guard-lemma-name
+                                                 nil
+                                                 args.names-to-avoid
+                                                 wrld))
+             (thm-index (1+ args.thm-index))
+             (guard-lemma-formula `(,called-fn-guard ,@args.terms))
+             (guard-lemma-formula (atc-contextualize guard-lemma-formula
+                                                     gin.context
+                                                     gin.fn
+                                                     gin.fn-guard
+                                                     nil
+                                                     nil
+                                                     nil
+                                                     nil
+                                                     wrld))
+             (guard-lemma-hints
+              `(("Goal"
+                 :in-theory '(,gin.fn-guard ,called-fn-guard if* test*)
+                 :use (:guard-theorem ,gin.fn))))
+             ((mv guard-lemma-event &)
+              (evmac-generate-defthm guard-lemma-name
+                                     :formula guard-lemma-formula
+                                     :hints guard-lemma-hints
+                                     :enable nil)))
+          (retok expr
                  out-type
                  term
                  `(binary-+ '2 ,limit)
-                 args.events
+                 (append args.events
+                         (list guard-lemma-event))
                  nil
-                 args.thm-index
-                 args.names-to-avoid)))
+                 thm-index
+                 names-to-avoid)))
        ((erp (expr-gout pure))
         (atc-gen-expr-pure term
                            (make-expr-gin :context gin.context
@@ -4377,9 +4540,12 @@
        (limit-for-actuals
         (fsubcor-var (formals+ called-fn wrld) args.terms limit))
        (call-limit `(binary-+ '2 ,limit-for-actuals))
-       (new-compst `(update-object ,(add-suffix-to-fn (car affect) "-OBJDES")
-                                   (,called-fn ,@args.terms)
-                                   ,gin.compst-var))
+       ((mv & new-compst)
+        (atc-gen-call-result-and-endstate (type-void)
+                                          gin.affect
+                                          gin.inscope
+                                          gin.compst-var
+                                          uterm))
        (exec-formula `(equal (exec-expr-call-or-asg ',call-expr
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
