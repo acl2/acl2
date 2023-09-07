@@ -1422,7 +1422,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
        (call (gate-reduce-fn template level swap))
        ((unless call)
         (gate-reduce-collect (cdr alist) level)))
-    (cons call (gate-reduce-collect (cdr alist) level))))
+    (add-to-set-equal call (gate-reduce-collect (cdr alist) level))))
 
 (define gate-reduce-level2-bindings (calls choicep)
   :mode :program
