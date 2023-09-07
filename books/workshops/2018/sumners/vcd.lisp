@@ -239,7 +239,7 @@
 (define vcd-make-svar ((scope vcd-scope-lst-p))
   :returns (rslt sv::svar-p)
   (hons-copy (sv::make-svar :name (vcd-svar-name scope)
-                            :delay 0 :nonblocking nil)))
+                            :delay 0)))
 
 (define vcd$-make-svar (vcd$)
   :returns (rslt sv::svar-p)
@@ -716,7 +716,7 @@
 
 (define mk-svar (x &key ((d natp) '0))
   :returns (x sv::svar-p)
-  (sv::make-svar :name x :delay d :nonblocking nil))
+  (sv::make-svar :name x :delay d))
 
 (defconst *svar-top* (mk-svar "top"))
 

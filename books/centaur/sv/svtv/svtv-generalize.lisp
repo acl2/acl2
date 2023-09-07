@@ -721,8 +721,8 @@
              (:type-prescription svex-env-<<=)
              svtv-spec->initst-alist-of-svtv-data-obj->spec
              svtv-spec->in-alists-of-svtv-data-obj->spec
-             override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
-             svexlist-check-overridetriples-of-<data>
+             override-transparency-of-svtv-data-obj->spec-with-smart-check
+             base-fsm-override-smart-check-of-<data>
              <data>-generalize-override-syntax-check
              <specname>
              svtv-spec->fsm-of-svtv-data-obj->spec
@@ -762,8 +762,8 @@
              (:type-prescription svex-env-<<=)
              svtv-spec->initst-alist-of-svtv-data-obj->spec
              svtv-spec->in-alists-of-svtv-data-obj->spec
-             override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
-             svexlist-check-overridetriples-of-<data>
+             override-transparency-of-svtv-data-obj->spec-with-smart-check
+             base-fsm-override-smart-check-of-<data>
              <data>-generalize-override-syntax-check
              <specname>
              svtv-spec->fsm-of-svtv-data-obj->spec
