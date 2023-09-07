@@ -1069,9 +1069,10 @@
                                                                       nil
                                                                       nil namemap)
                                                ref-env))
-           :hints(("Goal" :in-theory (enable svar-overridekeys-envs-ok
+           :hints(("Goal" :in-theory (e/d (svar-overridekeys-envs-ok
                                              svtv-fsm-phase-inputs
-                                             SVTV-FSM-ENV-INVERSEMAP)))))
+                                             SVTV-FSM-ENV-INVERSEMAP)
+                                          (SVARLIST-CHANGE-OVERRIDE-WHEN-OVERRIDE-P))))))
 
   (defthm overridekeys-envs-ok-of-svtv-fsm-phase-inputs-no-tests
     (implies (and (SVEX-ENV-<<= (SVEX-ENV-EXTRACT (SVEX-ALIST-VARS in-alist)
@@ -1118,9 +1119,10 @@
                                                           (svex-alist-eval test-alist spec-env)
                                                           namemap)
                                    (nth phase ref-envs)))
-    :hints (("goal" :in-theory (enable svar-overridekeys-envs-ok
+    :hints (("goal" :in-theory (e/d (svar-overridekeys-envs-ok
                                        svtv-fsm-phase-inputs
                                        svtv-fsm-env-inversemap)
+                                    (SVARLIST-CHANGE-OVERRIDE-WHEN-OVERRIDE-P))
              :do-not-induct t)))
 
   (defret <fn>-implies-overridekeys-envs-ok

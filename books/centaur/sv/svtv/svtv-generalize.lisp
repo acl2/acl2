@@ -583,25 +583,69 @@
                                            (svtv-assigns-override-vars)
                                            (svarlist-change-override)))))))
 
+     ;; (:@ :triplecheck
+     ;;  (local (defthm svexlist-check-overridetriples-of-<data>
+     ;;           (b* (((svtv-data-obj x) (<data>))
+     ;;                ((base-fsm x.phase-fsm))
+     ;;                (overridekeys (<name>-overridekeys))
+     ;;                (triples (svar->svex-override-triplelist
+     ;;                          (svarlist-to-override-triples overridekeys)
+     ;;                          x.phase-fsm.values)))
+     ;;             (and (not (svexlist-check-overridetriples (svex-alist-vals x.phase-fsm.values) triples))
+     ;;                  (not (svexlist-check-overridetriples (svex-alist-vals x.phase-fsm.nextstate) triples))))
+     ;;           :hints (("goal" :in-theory '((<data>)
+     ;;                                        (svex-alist-vals)
+     ;;                                        (svtv-data-obj->phase-fsm)
+     ;;                                        (<name>-overridekeys)
+     ;;                                        (svar->svex-override-triplelist)
+     ;;                                        (svarlist-to-override-triples)
+     ;;                                        (base-fsm->values)
+     ;;                                        (base-fsm->nextstate)
+     ;;                                        (svexlist-check-overridetriples)))))))
+
      (:@ :triplecheck
-      (local (defthm svexlist-check-overridetriples-of-<data>
+      (:@ :fgl-semantic-triplecheck
+       
+       (local (fgl::disable-definition sv::svex-env-fix$inline))
+       (local (fgl::disable-definition sv::svex-env-lookup))
+
+       (:@ :default-aignet-transforms
+        (local (defun tmp-svtv-generalize-fgl-transforms-config ()
+                 (declare (xargs :guard t
+                                 :guard-hints (("goal" :in-theory (executable-counterpart-theory :here)))))
+                #!aignet
+                (list (change-fraig-config *fraig-default-config*
+                                           :random-seed-name nil
+                                           :ctrex-queue-limit 64
+                                           :sim-words 2
+                                           :initial-sim-words 1
+                                           :initial-sim-rounds 1
+                                           :ctrex-force-resim t
+                                           :ipasir-limit 100
+                                           :miters-only t
+                                           :ipasir-recycle-count 40000
+                                           ))))
+        (local (defattach fgl::fgl-aignet-transforms-config
+                 tmp-svtv-generalize-fgl-transforms-config)))
+
+       
+       (local (fgl::def-fgl-thm base-fsm-override-smart-check-on-env-of-<data>
+                (b* (((svtv-data-obj x) (<data>))
+                     (overridekeys (<name>-overridekeys)))
+                  (base-fsm-override-smart-check-on-env x.phase-fsm overridekeys env)))))
+      
+      (local (defthm base-fsm-override-smart-check-of-<data>
                (b* (((svtv-data-obj x) (<data>))
-                    ((base-fsm x.phase-fsm))
-                    (overridekeys (<name>-overridekeys))
-                    (triples (svar->svex-override-triplelist
-                              (svarlist-to-override-triples overridekeys)
-                              x.phase-fsm.values)))
-                 (and (not (svexlist-check-overridetriples (svex-alist-vals x.phase-fsm.values) triples))
-                      (not (svexlist-check-overridetriples (svex-alist-vals x.phase-fsm.nextstate) triples))))
-               :hints (("goal" :in-theory '((<data>)
-                                            (svex-alist-vals)
-                                            (svtv-data-obj->phase-fsm)
-                                            (<name>-overridekeys)
-                                            (svar->svex-override-triplelist)
-                                            (svarlist-to-override-triples)
-                                            (base-fsm->values)
-                                            (base-fsm->nextstate)
-                                            (svexlist-check-overridetriples)))))))
+                    (overridekeys (<name>-overridekeys)))
+                 (base-fsm-override-smart-check x.phase-fsm overridekeys))
+               (:@ :fgl-semantic-triplecheck
+                :hints(("Goal" :in-theory '(base-fsm-override-smart-check-in-terms-of-badguy
+                                            base-fsm-override-smart-check-on-env-of-<data>))))
+               (:@ (not :fgl-semantic-triplecheck)
+                :hints (("goal" :in-theory '((<data>)
+                                             (<name>-overridekeys)
+                                             (svtv-data-obj->phase-fsm)
+                                             (base-fsm-override-smart-check))))))))
 
      (:@ :triplecheck
         
@@ -634,8 +678,8 @@
             (:type-prescription svex-env-<<=)
             svtv-spec->initst-alist-of-svtv-data-obj->spec
             svtv-spec->in-alists-of-svtv-data-obj->spec
-            override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
-            svexlist-check-overridetriples-of-<data>
+            override-transparency-of-svtv-data-obj->spec-with-smart-check
+            base-fsm-override-smart-check-of-<data>
             <data>-generalize-override-syntax-check
             <specname>
             svtv-spec->fsm-of-svtv-data-obj->spec
@@ -1080,6 +1124,8 @@
 (defun def-svtv-refinement-fn (svtv-name
                                data-name
                                ideal
+                               fgl-semantic-check
+                               omit-default-aignet-transforms
                                svtv-spec
                                pkg-sym)
   (declare (xargs :mode :program))
@@ -1094,23 +1140,31 @@
                         :features (append (if ideal
                                               '(:ideal)
                                             '(:triplecheck))
-                                          (and svtv-spec '(:svtv-spec)))
+                                          (and fgl-semantic-check
+                                               '(:fgl-semantic-triplecheck))
+                                          (and svtv-spec '(:svtv-spec))
+                                          (and (not omit-default-aignet-transforms)
+                                               '(:default-aignet-transforms)))
                         :pkg-sym (or pkg-sym ideal svtv-name)))
 
 (defmacro def-svtv-refinement (svtv-name data-name
-                                         &key ideal svtv-spec pkg-sym)
+                                         &key ideal fgl-semantic-check
+                                         omit-default-aignet-transforms
+                                         svtv-spec pkg-sym)
   `(make-event
-    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal ',svtv-spec ',pkg-sym)))
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal ',fgl-semantic-check
+      ',omit-default-aignet-transforms
+      ',svtv-spec ',pkg-sym)))
 
 
 
 (defmacro def-svtv-ideal (ideal-name svtv-name data-name &key pkg-sym svtv-spec)
   `(make-event
-    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal-name ',svtv-spec ',pkg-sym)))
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal-name nil nil ',svtv-spec ',pkg-sym)))
 
 (defmacro def-svtv-override-thms (name export &key pkg-sym svtv-spec)
   `(make-event
-    (def-svtv-refinement-fn ',name ',export ',nil ',svtv-spec ',pkg-sym)))
+    (def-svtv-refinement-fn ',name ',export nil nil nil ',svtv-spec ',pkg-sym)))
 
 
 ;;; For each decomposition proof, we'll have a fixed set of signals overridden

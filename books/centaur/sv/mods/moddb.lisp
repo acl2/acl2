@@ -6584,11 +6584,11 @@ checked to see if it is a valid bitselect and returned as a separate value."
     :guard (and (< modidx (moddb->nmods moddb))
                 (svar-addr-p x))
     :returns (mv errmsg (xx svar-p))
-    (b* ((addr (svar->address x))
+    (b* ((x (svar-addr-fix x))
+         (addr (svar->address x))
          ((address addr))
          ((unless (eql 0 addr.scope))
-          (mv nil (change-svar x :name (change-address addr :index nil)
-                               :override-test nil :override-val nil)))
+          (mv nil (change-svar x :name (change-address addr :index nil))))
          (idx (moddb-path->wireidx addr.path modidx moddb))
          ((unless idx)
           (mv (msg "Did not find wire: ~x0 in module ~s1~%"
@@ -6597,13 +6597,18 @@ checked to see if it is a valid bitselect and returned as a separate value."
                               (name)
                               (elab-mod->name elab-mod)
                               name))
-              (change-svar x :name (change-address addr :index nil)
-                           :override-test nil :override-val nil))))
-      (mv nil (change-svar x  :name (change-address addr :index idx)
-                           :override-test nil :override-val nil)))
+              (change-svar x :name (change-address addr :index nil)))))
+      (mv nil (change-svar x  :name (change-address addr :index idx))))
     ///
     (deffixequiv svar-named->indexed)
 
+    (local (defthm svar-addr-p-of-change-name
+             (implies (and (address-p name)
+                           (svar-addr-p x))
+                      (svar-addr-p (change-svar x :name name)))
+             :hints(("Goal" :in-theory (enable svar-addr-p)))))
+
+    
     (defthm svar-named->indexed-idxaddr-ok
       (b* (((mv ?err newx) (svar-named->indexed x modidx moddb)))
         (implies (and (moddb-ok moddb)
@@ -6611,8 +6616,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
                  (svar-idxaddr-okp newx
                                    (moddb-mod-totalwires
                                     modidx moddb))))
-      :hints(("Goal" :in-theory (enable svar-idxaddr-okp svar-index svar->address
-                                        svar-addr-p)))))
+      :hints(("Goal" :in-theory (enable svar-idxaddr-okp svar-index svar->address)))))
 
 
   (defines svex-named->indexed
