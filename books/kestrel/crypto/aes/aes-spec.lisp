@@ -33,26 +33,29 @@
 (local (in-theory (enable acl2::integerp-of-nth-when-bv-arrayp
                           acl2::<=-of-0-and-nth-when-bv-arrayp)))
 
-(defthm nonneg-of-nth-when-all-unsigned-byte-p
-  (implies (and (acl2::all-unsigned-byte-p size list)
-                (natp n)
-                (< n (len list)))
-           (<= 0 (nth n list)))
-  :hints (("Goal" :in-theory (enable nth))))
+(local
+ (defthm nonneg-of-nth-when-all-unsigned-byte-p
+   (implies (and (acl2::all-unsigned-byte-p size list)
+                 (natp n)
+                 (< n (len list)))
+            (<= 0 (nth n list)))
+   :hints (("Goal" :in-theory (enable nth)))))
 
-(defthm <-of-256-when-all-unsigned-byte-p
-  (implies (and (acl2::all-unsigned-byte-p 8 list)
-                (natp n)
-                (< n (len list)))
-           (< (nth n list) 256))
-  :hints (("Goal" :in-theory (enable nth acl2::all-unsigned-byte-p))))
+(local
+ (defthm <-of-256-when-all-unsigned-byte-p
+   (implies (and (acl2::all-unsigned-byte-p 8 list)
+                 (natp n)
+                 (< n (len list)))
+            (< (nth n list) 256))
+   :hints (("Goal" :in-theory (enable nth acl2::all-unsigned-byte-p)))))
 
-(defthm unsigned-byte-p-of-nth-when-all-unsigned-byte-p
+(local
+ (defthm unsigned-byte-p-of-nth-when-all-unsigned-byte-p
   (implies (and (acl2::all-unsigned-byte-p size list)
                 (natp n)
                 (< n (len list)))
            (unsigned-byte-p size (nth n list)))
-  :hints (("Goal" :in-theory (enable nth))))
+  :hints (("Goal" :in-theory (enable nth)))))
 
 (defthm 2d-bv-arrayp-of-reverse-list
   (implies (acl2::2d-bv-arrayp width numrows numcols array)

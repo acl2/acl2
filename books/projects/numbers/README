@@ -52,15 +52,15 @@ number theory.  It includes the following ACL2 books:
   pratt
       Vaughn Pratt's method of prime certification applied to the prime 2^255 - 19.
 
+The remaining books are motivated by the Web page http://www.cs.ru.nl/~freek/100/, 
+"Formalizing 100 Theorems":
+
+  subsets
+      The number of subsets of a set of order n is 2^n.  For 0 <= k <= n, the number
+      of subsets of order k is n!/(k!(n - k)!).
+
   girard
       An odd prime p is a sum of two squares iff (mod p 4) = 1.
-
-  partitions
-      A partition of a positive integer n is a list of positive integers that sum 
-      to n.  Two partitions are equivalent if one is a permutation of the other.  
-      Euler's partition theorem: The number of equivalence classes of partitions of
-      n consisting of odd integers is equal to the number of equivalence classes of 
-      partitions of n consisting of distinct integers.
 
   sum4squares
       Every natural number is a sum of 4 squares.
@@ -78,11 +78,29 @@ number theory.  It includes the following ACL2 books:
       c^2.  In fact, for every Pythagorean triple a, b, c, there exist m and n that 
       satisfy these relations, possibly with a and b interchanged.
 
+  partitions
+      A partition of a positive integer n is a list of positive integers that sum 
+      to n.  Two partitions are equivalent if one is a permutation of the other.  
+      Euler's partition theorem: The number of equivalence classes of partitions of
+      n consisting of odd integers is equal to the number of equivalence classes of 
+      partitions of n consisting of distinct integers.
 
   ballot
       Bertrand's ballot theorem:  In an election, Candidates A and B receive a and b 
       votes, respectively.  The votes are counted sequentially.  If a > b, then the
       probability that A maintains a strict lead throughout the count is (a-b)/(a+b).
+
+  subseq
+      If l is a list of distinct rationals of length greater than (a - 1)(b - 1), 
+      where a and b are positive integers, then l has either an ascending subsequence 
+      of length a or a descending subsequence of length b.
+
+  birthday
+      What is the probability that in a party of k people, at least 2 have the same
+      birthday?
+
+  konigsberg
+      The Seven Bridges of Konigsberg
 
   triangular
       The sum of the reciprocals of the triangular numbers is 2.
@@ -92,3 +110,7 @@ number theory.  It includes the following ACL2 books:
 
   harmonic
       Divergence of the harmonic series.
+
+  div3
+      The sum of the digits in the decimal expansion of n is divisible by 3 iff n is
+      divisible by 3.

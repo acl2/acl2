@@ -23,6 +23,14 @@
 (local (include-book "minus"))
 (local (include-book "nonnegative-integer-quotient"))
 
+(defthm floor-of-expt-2-and-2
+  (implies (integerp n)
+           (equal (floor (expt 2 n) 2)
+                  (if (posp n)
+                      (expt 2 (+ -1 n))
+                    0)))
+  :hints (("Goal" :in-theory (e/d (expt) ()))))
+
 (defthm floor-of-expt-and-2
   (implies (posp n)
            (equal (floor (expt 2 n) 2)

@@ -9158,13 +9158,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :rule-classes :type-prescription)
 
 (defaxiom code-char-char-code-is-identity
-  (implies (force (characterp c))
+  (implies (characterp c)
            (equal (code-char (char-code c)) c)))
 
 (defaxiom char-code-code-char-is-identity
-  (implies (and (force (integerp n))
-                (force (<= 0 n))
-                (force (< n 256)))
+  (implies (and (integerp n)
+                (<= 0 n)
+                (< n 256))
            (equal (char-code (code-char n)) n)))
 
 #+acl2-loop-only
@@ -9894,8 +9894,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro verify-guards (&whole event-form name &key hints otf-flg guard-debug
-                                (guard-simplify 't))
+(defmacro verify-guards (&whole event-form name
+                                &key
+                                (hints 'nil hints-p)
+                                (guard-debug 'nil guard-debug-p)
+                                (guard-simplify 't guard-simplify-p)
+                                otf-flg)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -9906,10 +9910,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
  (list 'verify-guards-fn
        (list 'quote name)
        'state
-       (list 'quote hints)
+       (list 'quote hints) (list 'quote hints-p)
        (list 'quote otf-flg)
-       (list 'quote guard-debug)
-       (list 'quote guard-simplify)
+       (list 'quote guard-debug) (list 'quote guard-debug-p)
+       (list 'quote guard-simplify) (list 'quote guard-simplify-p)
        (list 'quote event-form)))
 
 (defmacro verify-guards+ (name &rest rest)

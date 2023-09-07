@@ -12,7 +12,6 @@
 (in-package "C")
 
 (include-book "tag-tables")
-(include-book "types-to-recognizers")
 
 (include-book "symbolic-execution-rules/syntaxp")
 

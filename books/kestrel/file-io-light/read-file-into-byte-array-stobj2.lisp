@@ -48,7 +48,7 @@
 (defund read-file-into-byte-array-stobj2 (filename byte-array-stobj state)
   (declare (xargs :guard (stringp filename)
                   :stobjs (byte-array-stobj state)))
-  ;; Get the file lenght so we know how big to make the array (or I suppose we
+  ;; Get the file length so we know how big to make the array (or I suppose we
   ;; could resize the array when needed):
   (mv-let (file-length state)
     (file-length$ filename state)

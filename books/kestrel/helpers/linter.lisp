@@ -90,6 +90,7 @@
 (include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (include-book "kestrel/world-light/fn-primitivep" :dir :system)
+(include-book "kestrel/world-light/defs-in-world" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
@@ -666,8 +667,7 @@
                      (cw "~%   Ground term: ~x0." term))))))))))
 
  (defun lint-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
-   (declare (xargs :guard (and (true-listp terms)
-                               (pseudo-term-listp terms))
+   (declare (xargs :guard (pseudo-term-listp terms)
                    :stobjs state))
    (if (endp terms)
        nil

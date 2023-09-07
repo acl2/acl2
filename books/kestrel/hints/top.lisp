@@ -17,3 +17,9 @@
 
 ;; Not including these tests in top:
 ;; (include-book "renaming-tests")
+
+;; Custom hints:
+(include-book "casesx")
+
+;; Not including these tests in top:
+;; (include-book "casesx-tests")

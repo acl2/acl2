@@ -19,6 +19,19 @@
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 
+;dup
+;; This version keeps the first of each set of duplicates.
+(defund remove-duplicates-equal-alt (x)
+  (declare (xargs :guard (true-listp x)))
+  (if (endp x)
+      nil
+    (let ((item (first x)))
+      (cons item
+            (remove-duplicates-equal-alt
+             (if (member-equal item (rest x))
+                 (remove-equal item (rest x))
+               (rest x)))))))
+
 (mutual-recursion
  ;; Extends ACC with hint-lists from the EVENT.
  ;; TODO: Many of the structured constructs here can no longer appear, due to how we are getting defthm events from the world
@@ -45,9 +58,8 @@
                  (if (not res)
                      acc
                    (let ((hints (cadr res)))
-                     (if (member-equal hints acc) ; todo: also look for equivalent hints?
-                         acc
-                       (cons hints acc))))))))))))
+                     ;; later, we deal with duplicates (todo: also look for equivalent hints)?
+                     (cons hints acc)))))))))))
 
  ;; Extends ACC with hint-lists from the EVENTS.  Hint lists from earlier EVENTS end up deeper in the result,
  ;; which seems good because more recent events are likely to be more relevant (todo: but what about dups).
@@ -81,36 +93,29 @@
                                           )
                                 acc))))
 
-;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have lower numbers.
-;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
-(defund make-recs-from-history-events (num-recs
-                                       events ; oldest first
-                                       )
-  (declare (xargs :guard (natp num-recs)
-                  :verify-guards nil ;todo
-                  ))
-  (make-exact-hint-recs (acl2::firstn num-recs (hint-lists-from-history-events events nil)) ; newest first
-                        "history"
-                        1 ; start numbering at 1
-                        3 ; confidence-percent (quite high)
-                        nil))
 
 ;; Returns (mv erp recs state).
 ;; TODO: Try to merge these in with the existing theorem-hints.  Or rely on try-add-enable-hint to do that?  But these are :exact-hints.
+;; Extracts hints from events in the command history.  In the result, hints for more recent events come first and have lower numbers.
+;; The result should contain no exact duplicates, but the recs (which are all of type :exact-hints) might effectively duplicate other recommendations.
 (defun make-recs-from-history (num-recs print state)
   (declare (xargs :guard (natp num-recs)
-                  :mode :program
+;                  :mode :program
+                  :verify-guards nil ; because of top-level-defthms-in-world
                   :stobjs state))
   (b* ((- (and (acl2::print-level-at-least-tp print)
-               (cw "Making ~x0 :history recommendations: " ; the line is ended below when we print the time
+               (cw "Making ~x0 :history recommendations: "
                    num-recs)))
-       (print-timep (acl2::print-level-at-least-tp print))
-       ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (events ;;(acl2::get-command-sequence-fn 1 :max state)
-        (acl2::top-level-defthms-in-world (w state)))
-       (recs (make-recs-from-history-events num-recs events))
-       ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-       (- (and print-timep (prog2$ (acl2::print-to-hundredths (- done-time start-time))
-                                   (cw "s~%") ; s = seconds
-                                   ))))
+       (rev-events ;;(acl2::get-command-sequence-fn 1 :max state)
+        (acl2::top-level-defthms-in-world (w state)) ; newest first (todo: change that?)
+        )
+       (events (reverse rev-events)) ; oldest first
+       (hint-lists (hint-lists-from-history-events events nil)) ; newest first
+       (hint-lists (remove-duplicates-equal-alt hint-lists)) ; todo: remove equivalent but non-identical dupes
+       (hint-lists (acl2::firstn num-recs hint-lists))
+       (recs (make-exact-hint-recs hint-lists
+                                   "history"
+                                   1 ; start numbering at 1
+                                   3 ; confidence-percent (quite high) ; todo: have this decrease as we look further back
+                                   nil)))
     (mv nil recs state)))

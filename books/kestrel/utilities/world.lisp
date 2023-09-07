@@ -18,6 +18,7 @@
 
 (include-book "legal-variable-listp")
 (include-book "kestrel/world-light/fn-definedp" :dir :system)
+(include-book "kestrel/world-light/world-triplep" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 ;; TODO: Change some of these to just take wrld instead of state.
@@ -376,53 +377,7 @@
              (defthm-body (first names) wrld))
          (ensure-all-theoremsp (rest names) wrld))))
 
-;; Recognize a triple of the form (symb prop . val).
-(defund world-triplep (trip)
-  (declare (xargs :guard t))
-  (and (consp trip)
-       (symbolp (car trip))
-       (consp (cdr trip))
-       (symbolp (cadr trip))))
-
-;; Returns (mv defun-names defthm-names).  In the result, older defuns/defthms come first.
-(defund defuns-and-defthms-in-world (world
-                                     triple-to-stop-at ; may be nil
-                                     whole-world defuns-acc defthms-acc)
-  (declare (xargs :guard (and (plist-worldp world)
-                              (plist-worldp whole-world)
-                              (or (null triple-to-stop-at)
-                                  (world-triplep triple-to-stop-at))
-                              (true-listp defuns-acc)
-                              (true-listp defthms-acc))))
-  (if (endp world)
-      (mv defuns-acc defthms-acc)
-    (let ((triple (first world)))
-      (if (equal triple triple-to-stop-at)
-          (mv defuns-acc defthms-acc)
-        (let ((symb (car triple))
-              (prop (cadr triple)))
-          (if (and (eq prop 'unnormalized-body)
-                   (let ((still-definedp (fgetprop symb 'unnormalized-body nil whole-world))) ;todo: hack: make sure the function is still defined (why does this sometimes fail?)
-                     (if (not still-definedp)
-                         (prog2$ (cw "Note: ~x0 seems to no longer be defined." symb)
-                                 nil)
-                       t)))
-              (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world (cons symb defuns-acc) defthms-acc)
-            (if (eq prop 'theorem)
-                (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc (cons symb defthms-acc))
-              (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc defthms-acc))))))))
-
-(defthm symbol-listp-of-mv-nth-0-of-defuns-and-defthms-in-world
-  (implies (and (plist-worldp world)
-                (symbol-listp defuns-acc))
-           (symbol-listp (mv-nth 0 (defuns-and-defthms-in-world world triple-to-stop-at whole-world defuns-acc defthms-acc))))
-  :hints (("Goal" :in-theory (enable defuns-and-defthms-in-world))))
-
-(defthm symbol-listp-of-mv-nth-1-of-defuns-and-defthms-in-world
-  (implies (and (plist-worldp world)
-                (symbol-listp defthms-acc))
-           (symbol-listp (mv-nth 1 (defuns-and-defthms-in-world world triple-to-stop-at whole-world defuns-acc defthms-acc))))
-  :hints (("Goal" :in-theory (enable defuns-and-defthms-in-world))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Extracts the triples that represent defthms in WORLD.  If
 ;; MAYBE-TRIPLE-TO-STOP-AT is nil, or is not a triple in WORLD, all of the

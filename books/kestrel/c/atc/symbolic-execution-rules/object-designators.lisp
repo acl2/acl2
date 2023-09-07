@@ -159,7 +159,7 @@
              read-var-of-enter-scope
              objdesign-of-var-of-enter-scope-iff))
 
-  (defruled read-object-of-objdesign-var-of-update-var
+  (defruled read-object-of-objdesign-of-var-of-update-var
     (implies (objdesign-of-var var (update-var var2 val compst))
              (equal (read-object
                      (objdesign-of-var var (update-var var2 val compst))
@@ -171,6 +171,13 @@
     :enable (read-object-of-objdesign-of-var-to-read-var
              read-var-of-update-var
              objdesign-of-var-of-update-var))
+
+  (defruled objdesign-of-var-of-update-object-iff
+    (iff (objdesign-of-var var (update-object objdes val compst))
+         (objdesign-of-var var compst))
+    :enable (objdesign-of-var
+             update-object
+             top-frame))
 
   (defruled objdesign-of-var-of-update-object
     (equal (objdesign-of-var var (update-object objdes val compst))
@@ -186,6 +193,12 @@
                     (read-object objdes compst)))
     :enable (read-object
              update-object))
+
+  (defruled objdesign-of-var-of-if*-when-both-objdesign-of-var
+    (implies (and (objdesign-of-var var b)
+                  (objdesign-of-var var c))
+             (objdesign-of-var var (if* a b c)))
+    :enable if*)
 
   (defval *atc-object-designator-rules*
     '(objdesign-of-var-when-static

@@ -1,0 +1,14 @@
+This directory is for machine learning based on the ACL2 community
+books (i.e., the ACL2 regression suite).
+
+Directory structure:
+
+gather/
+  ACL2 tools for generating *__acl2data.out files from ACL2 books, in
+  particular, those in the community books
+
+postprocess/
+  Tools for postprocessing the *__acl2data.out files
+
+training/
+  Directories for various models

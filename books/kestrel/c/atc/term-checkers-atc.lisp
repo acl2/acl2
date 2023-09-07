@@ -548,6 +548,7 @@
                                        (prec-tags atc-string-taginfo-alistp))
   :returns (mv erp
                (yes/no booleanp)
+               (fn symbolp)
                (mem pseudo-termp)
                (tag identp)
                (member identp)
@@ -579,8 +580,8 @@
     "Similarly to @(tsee atc-check-struct-read-scalar),
      we consult the @('prec-tags') alist,
      which must contain the C structure type associated to the writer."))
-  (b* (((reterr) nil nil (irr-ident) (irr-ident) (irr-type))
-       ((acl2::fun (no)) (retok nil nil (irr-ident) (irr-ident) (irr-type)))
+  (b* (((reterr) nil nil nil (irr-ident) (irr-ident) (irr-type))
+       ((acl2::fun (no)) (retok nil nil nil (irr-ident) (irr-ident) (irr-type)))
        ((mv okp fn args) (fty-check-fn-call val))
        ((unless okp) (no))
        ((mv okp struct tag write member) (atc-check-symbol-4part fn))
@@ -609,7 +610,7 @@
        ((unless (equal (second args) var))
         (reterr (raise "Internal error: ~x0 is not applied to the variable ~x1."
                        fn var))))
-    (retok t mem tag member mem-type))
+    (retok t fn mem tag member mem-type))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-write-scalar
@@ -625,11 +626,13 @@
                                       (prec-tags atc-string-taginfo-alistp))
   :returns (mv erp
                (yes/no booleanp)
+               (fn symbolp)
                (index pseudo-termp)
                (elem pseudo-termp)
                (tag identp)
                (member identp)
-               (elem-type typep))
+               (elem-type typep)
+               (flexiblep booleanp))
   :short "Check if a @(tsee let) binding may represent a structure write
           of an element of an array member."
   :long
@@ -662,8 +665,9 @@
     "Similarly to @(tsee atc-check-struct-read-array),
      we consult the @('prec-tags') alist,
      which must contain the C structure type associated to the writer."))
-  (b* (((reterr) nil nil nil (irr-ident) (irr-ident) (irr-type))
-       ((acl2::fun (no)) (retok nil nil nil (irr-ident) (irr-ident) (irr-type)))
+  (b* (((reterr) nil nil nil nil (irr-ident) (irr-ident) (irr-type) nil)
+       ((acl2::fun (no))
+        (retok nil nil nil nil (irr-ident) (irr-ident) (irr-type) nil))
        ((mv okp fn args) (fty-check-fn-call val))
        ((unless okp) (no))
        ((mv okp struct tag write member element) (atc-check-symbol-5part fn))
@@ -690,6 +694,7 @@
        ((unless (type-case mem-type :array))
         (reterr (raise "Internal error: type of ~x0 is not array." member)))
        (elem-type (type-array->of mem-type))
+       (flexiblep (not (type-array->size mem-type)))
        ((unless (list-lenp 3 args))
         (reterr (raise "Internal error: ~x0 not applied to 3 arguments." fn)))
        (index (first args))
@@ -697,7 +702,7 @@
        ((unless (equal (third args) var))
         (reterr (raise "Internal error: ~x0 is not applied to the variable ~x1."
                        fn var))))
-    (retok t index mem tag member elem-type))
+    (retok t fn index mem tag member elem-type flexiblep))
   ///
 
   (defret pseudo-term-count-of-atc-check-struct-write-array-index
@@ -724,7 +729,8 @@
                (in-types type-listp)
                (out-type typep)
                (affect symbol-listp)
-               (limit pseudo-termp))
+               (limit pseudo-termp)
+               (fn-guard symbolp))
   :short "Check if a term may represent a call to a C function."
   :long
   (xdoc::topstring
@@ -743,7 +749,7 @@
      in order to obtain the real arguments of the call
      from the point of view of the top level of
      where this call term occurs."))
-  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil nil))
+  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil nil nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((when (irecursivep+ term.fn wrld)) (no))
@@ -755,8 +761,9 @@
        (affect (atc-fn-info->affect info))
        ((when (null out-type)) (no))
        (limit (atc-fn-info->limit info))
-       (limit (fty-fsublis-var var-term-alist limit)))
-    (mv t term.fn term.args in-types out-type affect limit))
+       (limit (fty-fsublis-var var-term-alist limit))
+       (fn-guard (atc-fn-info->guard info)))
+    (mv t term.fn term.args in-types out-type affect limit fn-guard))
   ///
 
   (defret pseudo-term-count-of-atc-check-cfun-call
@@ -782,7 +789,7 @@
      the argument for a formal of pointer or array type
      must be identical to the formal.
      This is because these arguments and formals
-     represent arrays and pointers to structures,
+     represent arrays and pointers,
      and thus they must be passed around exactly by their name,
      similarly to stobjs in ACL2.
      This code checks the condition."))

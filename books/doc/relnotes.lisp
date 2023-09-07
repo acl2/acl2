@@ -130,6 +130,16 @@
      direct products, the Fundamental Theorem of Finite Abelian Groups,
      symmetric groups, group actions, the Sylow theorems, and simple groups.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Machine Learning Library")
+
+   (xdoc::p
+    "Added support and testing for generation of *__acl2data.out files for
+     machine learning.  The idea is to break proofs systematically and record
+     resulting information, including checkpoints.  See
+     @('kestrel/acl2data/README') and @('kestrel/acl2data/gather/README').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -409,6 +419,9 @@
      of the built-in @(tsee guard-theorem-no-simplify).
      See the documentation for details,
      including functional differences with @(tsee guard-theorem-no-simplify).")
+
+   (xdoc::p
+    "Theorems about the built-in @(tsee fsubcor-var) have been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

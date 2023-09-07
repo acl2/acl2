@@ -7949,8 +7949,7 @@
          true-list and ~x0 is not."
         instructions)))
 
-(defun translate-instructions (name instructions ctx wrld state)
-  (declare (ignore name wrld))
+(defun translate-instructions (instructions ctx state)
   (if (eq instructions t)
       (value t)
     (er-progn (chk-primitive-instruction-listp instructions ctx state)
@@ -8947,9 +8946,7 @@
                      (er-let* ((instrs (if assumep
                                            (value nil)
                                          (translate-instructions
-                                          (cons "Corollary of " name)
-                                          (cadr alist)
-                                          ctx wrld state))))
+                                          (cadr alist) ctx state))))
                        (value instrs)))))
                   (:OTF-FLG
                    (value (cadr alist)))
@@ -10701,7 +10698,7 @@
                       (list :enabled   (and (enabled-runep rune ens wrld) t))
                       (list :pattern   (untranslate pattern nil wrld)
                             pattern)
-                      (list :condition (untranslate condition t wrld)
+                      (list :condition (untranslate (conjoin condition) t wrld)
                             condition)
                       (list :scheme    (untranslate scheme nil wrld)
                             scheme))
@@ -12058,8 +12055,8 @@
                                              'include-book-with-locals)
                                          (eq ld-skip-proofsp 'initialize-acl2))
                                      (value nil)
-                                   (translate-instructions name instructions
-                                                           ctx wrld1 state)))
+                                   (translate-instructions instructions ctx
+                                                           state)))
 
 ; Observe that we do not translate the hints if ld-skip-proofsp is non-nil.
 ; Once upon a time we translated the hints unless ld-skip-proofsp was
@@ -12068,27 +12065,27 @@
 ; was not defined when it was first used in axioms.lisp.  This choice is
 ; a little unsettling because it means
 
-                   (hints (if (or (eq ld-skip-proofsp 'include-book)
-                                  (eq ld-skip-proofsp 'include-book-with-locals)
-                                  (eq ld-skip-proofsp 'initialize-acl2))
-                              (value nil)
-                            (translate-hints+ name
-                                              hints
+                   (thints (if (or (eq ld-skip-proofsp 'include-book)
+                                   (eq ld-skip-proofsp 'include-book-with-locals)
+                                   (eq ld-skip-proofsp 'initialize-acl2))
+                               (value nil)
+                             (translate-hints+ name
+                                               hints
 
 ; If there are :instructions, then default hints are to be ignored; otherwise
 ; the error just below will prevent :instructions in the presence of default
 ; hints.
 
-                                              (and (null instructions)
-                                                   (default-hints wrld1))
-                                              ctx wrld1 state)))
+                                               (and (null instructions)
+                                                    (default-hints wrld1))
+                                               ctx wrld1 state)))
                    (ttree2 (cond (instructions
                                   (er-progn
-                                   (cond (hints (er soft ctx
-                                                    "It is not permitted to ~
-                                                     supply both ~
-                                                     :INSTRUCTIONS and :HINTS ~
-                                                     to DEFTHM."))
+                                   (cond (thints (er soft ctx
+                                                     "It is not permitted to ~
+                                                      supply both ~
+                                                      :INSTRUCTIONS and ~
+                                                      :HINTS to DEFTHM."))
                                          (t (value nil)))
                                    #+:non-standard-analysis
                                    (if std-p
@@ -12108,7 +12105,7 @@
                                            (make-pspv ens wrld1 state
                                                       :displayed-goal term
                                                       :otf-flg otf-flg)
-                                           hints ens wrld1 ctx state))))
+                                           thints ens wrld1 ctx state))))
                    (ttree3 (cond (ld-skip-proofsp (value nil))
                                  (t (prove-corollaries name tterm0 classes
                                                        ens wrld1 ctx
@@ -12162,11 +12159,15 @@
      event-form
      #+:non-standard-analysis std-p)))
 
-(defun thm-fn (term state hints otf-flg event-form)
+(defun thm-fn (term state instructions hints otf-flg event-form)
   (let ((event-form (or event-form
                         `(thm ,term
-                              ,@(and hints `(:hints ,hints))
-                              ,@(and otf-flg `(:otf-flg ,otf-flg))))))
+                              ,@(and instructions
+                                     `(:instructions ,instructions))
+                              ,@(and hints
+                                     `(:hints ,hints))
+                              ,@(and otf-flg
+                                     `(:otf-flg ,otf-flg))))))
     (er-progn
      (with-ctx-summarized
       "( THM ...)"
@@ -12177,17 +12178,33 @@
        (t
         (let ((wrld (w state))
               (ens (ens state)))
-          (er-let* ((hints (translate-hints+ 'thm
-                                             hints
-                                             (default-hints wrld)
-                                             ctx wrld state)))
+          (er-let* ((instructions (translate-instructions instructions ctx
+                                                          state))
+                    (thints (translate-hints+ 'thm
+                                              hints
+                                              (default-hints wrld)
+                                              ctx wrld state)))
             (er-let* ((tterm (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-                      (ttree (prove tterm
-                                    (make-pspv ens wrld state
-                                               :displayed-goal term
-                                               :otf-flg otf-flg)
-                                    hints ens wrld ctx state)))
+                      (ttree
+                       (cond
+                        ((and instructions thints)
+                         (er soft ctx
+                             "It is not permitted to supply both ~
+                              :INSTRUCTIONS and :HINTS to THM."))
+                        (instructions
+                         (proof-builder nil ; name
+                                        term
+                                        tterm
+                                        nil ; classes
+                                        instructions
+                                        wrld state))
+                        (t
+                         (prove tterm
+                                (make-pspv ens wrld state
+                                           :displayed-goal term
+                                           :otf-flg otf-flg)
+                                thints ens wrld ctx state)))))
 
               (pprogn
 ; Set accumulated-ttree to the ttree returned by prove, as is done in
@@ -12206,7 +12223,7 @@
              (value :invisible)))))
 
 (defmacro thm (&whole event-form
-                      term &key hints otf-flg)
+                      term &key instructions hints otf-flg)
 
 ; We started using make-event here in January, 2019.  Instead of defining
 ; thm-fn above and generating a call of it below, we could presumably generate
@@ -12220,6 +12237,7 @@
      (make-event (er-progn (with-output :stack :pop
                              (thm-fn ',term
                                      state
+                                     ',instructions
                                      ',hints
                                      ',otf-flg
                                      ',event-form))

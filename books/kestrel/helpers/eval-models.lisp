@@ -16,6 +16,7 @@
 (include-book "kestrel/utilities/split-path" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
 (include-book "kestrel/axe/merge-sort-less-than" :dir :system) ; todo: move
+(include-book "kestrel/strings-light/strip-suffix-from-string" :dir :system)
 (local (include-book "kestrel/axe/merge-sort-less-than-rules" :dir :system)) ; todo: move
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -25,20 +26,22 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
+;; TODO: Make a code-only book for this tool, and use it instead?
+
 ;; TODO: removing :add-hyp gets us less the requested number of recs sometimes!
 
 (local (in-theory (disable assoc-equal natp)))
 
 (local (in-theory (enable rationalp-when-natp acl2-numberp-when-natp integerp-when-natp <=-of-0-when-0-natp)))
 
-;; An indicator for a test, of the form (book-name theorem-name breakage-type).
+;; An indicator for a test, of the form (book-name theorem-name removal-type).
 (defun test-infop (x)
   (declare (xargs :guard t))
   (and (true-listp x)
        (= 3 (len x))
        (stringp (first x))     ; book-name
        (symbolp (second x))    ; theorem-name
-       (keywordp (third x)) ; breakage-type
+       (keywordp (third x)) ; removal-type
        ))
 
 ;; The result of a model on a test, including the model name, the total number
@@ -135,6 +138,19 @@
             (iff (model-resultp (car x))
                  (consp x)))
    :hints (("Goal" :in-theory (enable model-result-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun models-that-worked (model-results)
+  (declare (xargs :guard (model-result-listp model-results)))
+  (if (endp model-results)
+      nil
+    (let* ((model-result (first model-results))
+           (model-name (first model-result))
+           (first-working-rec-num-or-nil (third model-result)))
+      (if first-working-rec-num-or-nil
+          (cons model-name (models-that-worked (rest model-results)))
+        (models-that-worked (rest model-results))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,8 +435,8 @@
         (tabulate-resuls-for-model model result-alist 0 0 0 0 0 nil 0))
        (successful-attempt-percentage (quotient-as-percent-string successful-attempt-count attempt-count))
        (unique-successful-attempt-percentage (quotient-as-percent-string unique-successful-attempt-count attempt-count))
-       (- (cw "Results for model ~x0 (~x1 theorem attempts, ~x2 total recs):~%" model attempt-count total-recs-produced))
-       (- (cw "  Successes: ~s0% (~s1% unique)~%" successful-attempt-percentage unique-successful-attempt-percentage))
+       (model-name-string (symbol-name model)) ; all uppercase, no leading colon
+       (- (cw "For ~s0: ~s1% success (~x2/~x3, ~s4% unique), ~x5 total recs):~%" model-name-string successful-attempt-percentage successful-attempt-count attempt-count unique-successful-attempt-percentage total-recs-produced))
        ;; (- (cw "Nums of first successful recs: ~X01~%" successful-rec-nums nil))
        ;; (- (cw "Top-1 through top-10 counts: ~X01~%" (top-n-counts successful-rec-nums) nil))
        (- (cw "  Top-1 through top-~x0 percentages: [" num-recs-per-model))
@@ -432,7 +448,7 @@
     successful-attempt-percentage))
 
 ;; Prints result and computes a success percentage alist.
-;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;; RESULT-ALIST is a map from (book-name, theorem-name, removal-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 (defun show-model-evaluations-aux (models result-alist num-recs-per-model)
   (if (endp models)
       nil
@@ -449,10 +465,10 @@
     (let* ((pair (first alist))
            (model (car pair))
            (percent-string (cdr pair)))
-      (prog2$ (cw "~s0: ~s1%~%" (symbol-to-left-padded-string-of-length model 20) percent-string) ;todo: align better
+      (prog2$ (cw "~s0: ~s1%~%" (symbol-to-left-padded-string-of-length model 30) percent-string) ;todo: align better
               (show-success-percentages (rest alist))))))
 
-;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;; RESULT-ALIST is a map from (book-name, theorem-name, removal-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 (defun show-model-evaluations (models result-alist num-recs-per-model)
   (b* ((alist (show-model-evaluations-aux models result-alist num-recs-per-model)) ; prints a lot
        (- (cw "~%Current top-~x0 success percentages:~%" num-recs-per-model))
@@ -472,11 +488,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Returns (mv erp first-working-rec-num-or-nil state).
-(defun try-recs-in-order (recs rec-num checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state)
+(defun result-cachep (cache)
+  (declare (xargs :guard t))
+  (and (alistp cache)
+       (help::recommendation-listp (strip-cars cache))
+       (boolean-listp (strip-cdrs cache))))
+
+;; Returns t, nil, or :unknown.
+(defun assoc-in-result-cache (rec cache)
+  (declare (xargs :guard (and (help::recommendationp rec)
+                              (result-cachep cache))
+                  :guard-hints (("Goal" :in-theory (enable help::recommendation-listp)))
+                  ))
+  (if (endp cache)
+      :unknown
+    (let* ((entry (first cache))
+           (entry-rec (car entry)))
+      (if (help::equivalent-recommendationsp rec entry-rec)
+          (progn$ ;(cw "Cache hit on ~x0.~%" rec)
+                  (cdr entry))
+        (assoc-in-result-cache rec (rest cache))))))
+
+;;Returns (mv erp first-working-rec-num-or-nil result-cache state).
+(defun try-recs-in-order (recs rec-num theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state)
   (declare (xargs :guard (and (help::recommendation-listp recs)
                               (posp rec-num)
-                              (acl2::pseudo-term-list-listp checkpoint-clauses)
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -488,17 +524,37 @@
                               (or (null step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
-                                  (rationalp time-limit)))
+                                  (rationalp time-limit))
+                              (help::model-namep model)
+                              (result-cachep result-cache))
                   :mode :program ; because of help::try-recommendation
                   :stobjs state))
   (if (endp recs)
       (prog2$ (and (acl2::print-level-at-least-tp print)
-                   (cw "No working rec found.~%") ; todo: print the model name.
+                   (cw "No working rec found for ~x0.~%" model)
                    )
               (mv nil ; no error
                   nil ; no working rec found
+                  result-cache
                   state))
     (b* ((rec (first recs))
+         (cache-result (assoc-in-result-cache rec result-cache))
+         ((when (eq t cache-result))
+          (and (acl2::print-level-at-least-tp print)
+               (cw "Rec #~x0 is known to work, from the cache.~%" rec-num) ; todo: print the model name.
+               )
+          ;; todo: maybe print it (see below)
+          (mv nil ; no-error
+              rec-num ; this rec is known to work
+              result-cache
+              state))
+         ((when (eq nil cache-result))
+          (and (acl2::print-level-at-least-tp print)
+               (cw "Rec #~x0 is known to fail, from the cache.~%" rec-num) ; todo: print the model name.
+               )
+          ;; keep looking:
+          (try-recs-in-order (rest recs) (+ 1 rec-num) theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state))
+         ;; cache-result is :unknown:
          ((mv erp maybe-successful-rec state)
           (help::try-recommendation rec
                                     current-book-absolute-path
@@ -511,7 +567,8 @@
                                     nil ; improve-recsp (just want to know if the rec works)
                                     print
                                     state))
-         ((when erp) (mv erp nil state)))
+         ((when erp) (mv erp nil result-cache state))
+         (result-cache (acons rec (if maybe-successful-rec t nil) result-cache)))
       (if maybe-successful-rec
           (b* ((- (and (acl2::print-level-at-least-tp print)
                        (cw "Rec #~x0 worked.~%" rec-num) ; todo: print the model name.
@@ -521,29 +578,31 @@
                                (- (help::show-successful-recommendation maybe-successful-rec))
                                (state (acl2::unwiden-margins state)))
                             state)
-                        state)))
+                        state))
+               (- (cw "~%")))
             (mv nil ; no-error
-                rec-num
+                rec-num ; this rec worked
+                result-cache
                 state))
-        ;; keep looking:
-        (try-recs-in-order (rest recs) (+ 1 rec-num) checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state)))))
+        ;; not successful, so keep looking:
+        (try-recs-in-order (rest recs) (+ 1 rec-num) theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state)))))
 
-;; Walks through the RECOMMENDATION-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
+
+;; Walks through the MODEL-REC-ALIST, evaluating, for each model, how many recs must be tried to find one that works, and how long that takes.
 ;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
-(defun eval-models-on-checkpoints-aux (recommendation-alist
-                                       checkpoint-clauses
-                                       theorem-name
-                                       theorem-body
-                                       theorem-hints
-                                       theorem-otf-flg
-                                       current-book-absolute-path
-                                       print
-                                       debug
-                                       step-limit time-limit
-                                       model-results-acc
-                                       state)
-  (declare (xargs :guard (and (alistp recommendation-alist) ; todo: strengthen
-                              (acl2::pseudo-term-list-listp checkpoint-clauses)
+(defun eval-model-recs (model-rec-alist ; maps model names to rec-lists
+                        theorem-name
+                        theorem-body
+                        theorem-hints
+                        theorem-otf-flg
+                        current-book-absolute-path
+                        print
+                        debug
+                        step-limit time-limit
+                        model-results-acc
+                        result-cache
+                        state)
+  (declare (xargs :guard (and (alistp model-rec-alist) ; todo: strengthen
                               (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
                               ;; theorem-hints
@@ -556,14 +615,15 @@
                                   (natp step-limit))
                               (or (null time-limit)
                                   (rationalp time-limit))
-                              (true-listp model-results-acc))
+                              (true-listp model-results-acc)
+                              (result-cachep result-cache))
                   :stobjs state
                   :mode :program))
-  (if (endp recommendation-alist)
+  (if (endp model-rec-alist)
       (mv nil ; no error
           (reverse model-results-acc)
           state)
-    (b* ((entry (first recommendation-alist))
+    (b* ((entry (first model-rec-alist))
          (model (car entry))
          (recs (cdr entry)) ; todo: these are ordered, right?
          ;; Maybe print the recommendations:
@@ -572,114 +632,55 @@
                             (help::show-recommendations recs state))
                   state))
          ((mv start-time state) (get-cpu-time state)) ; or we could use real time (here and below)
-         ((mv erp first-working-rec-num-or-nil state)
-          (try-recs-in-order recs 1 checkpoint-clauses theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit state))
+         (- (and (acl2::print-level-at-least-tp print)
+                 (cw "TRYING RECOMMENDATIONS FOR ~x0:~%" model)))
+         ((mv erp first-working-rec-num-or-nil result-cache state)
+          (try-recs-in-order recs 1 theorem-name theorem-body theorem-hints theorem-otf-flg current-book-absolute-path print debug step-limit time-limit model result-cache state))
          ((mv end-time state) (get-cpu-time state))
          ((when erp) (mv erp nil state)))
-      (eval-models-on-checkpoints-aux (rest recommendation-alist)
-                                      checkpoint-clauses
-                                      theorem-name
-                                      theorem-body
-                                      theorem-hints
-                                      theorem-otf-flg
-                                      current-book-absolute-path
-                                      print
-                                      debug
-                                      step-limit time-limit
-                                      (cons (list model (len recs) first-working-rec-num-or-nil (acl2::round-to-hundredths (- end-time start-time)))
-                                            model-results-acc)
-                                      state))))
-
-;; Returns (mv erp model-results state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
-(defun eval-models-on-checkpoints (checkpoint-clauses
-                                   theorem-name
-                                   theorem-body
-                                   theorem-hints
-                                   theorem-otf-flg
-                                   num-recs-per-model
-                                   current-book-absolute-path
-                                   print
-                                   model-info-alist
-                                   timeout
-                                   debug
-                                   step-limit time-limit
-                                   disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
-                                   state)
-  (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses)
-                              (or (null current-book-absolute-path)
-                                  (stringp current-book-absolute-path))
-                              ;; (booleanp avoid-current-bookp)
-                              (symbolp theorem-name)
-                              ;; theorem-body is an untranslated term
-                              ;; theorem-hints
-                              (booleanp theorem-otf-flg)
-                              (natp num-recs-per-model)
-                              (acl2::print-levelp print)
-                              (help::model-info-alistp model-info-alist)
-                              (natp timeout)
-                              (booleanp debug)
-                              (or (null step-limit)
-                                  (natp step-limit))
-                              (or (null time-limit)
-                                  (rationalp time-limit))
-                              (help::rec-type-listp disallowed-rec-types))
-                  :stobjs state
-                  :mode :program))
-  (b* ( ;; Get the rec-lists for all the models:
-       ((mv erp recommendation-alist state)
-        (help::get-recs-from-models num-recs-per-model disallowed-rec-types checkpoint-clauses theorem-body
-                                    ;; the presumed broken-theorem:
-                                    `(defthm ,theorem-name
-                                       ,theorem-body
-                                       ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
-                                       ,@(and theorem-hints `(:hints ,theorem-hints)))
-                                    model-info-alist timeout debug print nil state))
-       ((when erp) (mv erp nil state)))
-    (eval-models-on-checkpoints-aux recommendation-alist
-                                    checkpoint-clauses
-                                    theorem-name
-                                    theorem-body
-                                    theorem-hints
-                                    theorem-otf-flg
-                                    current-book-absolute-path
-                                    print
-                                    debug
-                                    step-limit time-limit
-                                    nil
-                                    state)))
+      (eval-model-recs (rest model-rec-alist)
+                       theorem-name theorem-body theorem-hints theorem-otf-flg
+                       current-book-absolute-path print debug
+                       step-limit time-limit
+                       (cons (list model (len recs) first-working-rec-num-or-nil (acl2::round-to-hundredths (- end-time start-time)))
+                             model-results-acc)
+                       result-cache
+                       state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (enable natp))) ;todo
 
 
-;; Returns (mv breakage-type hint-keyword-value-list rand).
+;; Returns (mv removal-type hint-keyword-value-list rand).
 (defun randomly-break-hint-keyword-value-list (hint-keyword-value-list rand)
   (declare (xargs :guard (and (keyword-value-listp hint-keyword-value-list)
                               (minstd-rand0p rand))))
-  (let* ((total-ways (num-ways-to-break-hint-keyword-value-list hint-keyword-value-list)))
+  (let* ((total-ways (num-ways-to-remove-from-hint-keyword-value-list hint-keyword-value-list)))
     (if (not (posp total-ways))
         (mv :none nil rand)
       (let* ((breakage-num (mod rand total-ways))
              (rand (minstd-rand0-next rand)))
-        (mv-let (breakage-type hint-keyword-value-list)
-          (break-hint-keyword-value-list-in-nth-way breakage-num hint-keyword-value-list)
-          (mv breakage-type hint-keyword-value-list rand))))))
+        (mv-let (removal-type hint-keyword-value-list)
+          (remove-from-hint-keyword-value-list-in-nth-way breakage-num hint-keyword-value-list)
+          (mv removal-type hint-keyword-value-list rand))))))
 
-;; Returns (mv breakage-type hints rand).
+;; Returns (mv removal-type hints rand).
 (defun randomly-break-hints (hints rand)
   (declare (xargs :guard (and (true-listp hints)
                               (minstd-rand0p rand))))
-  (let ((goal-hint-keyword-value-list (hint-keyword-value-list-for-goal-spec "Goal" hints)))
+  (let ((goal-hint-keyword-value-list (hint-keyword-value-list-for-goal-spec "Goal" hints))) ; todo: what if there are multiple hints on Goal (perhaps including empty ones)?
     (if (not (keyword-value-listp goal-hint-keyword-value-list))
         (prog2$ (er hard? 'randomly-break-hints "Bad hint for Goal: ~x0" hints)
                 (mv :none nil rand))
-      (mv-let (breakage-type broken-hint-keyword-value-list rand)
+      (mv-let (removal-type broken-hint-keyword-value-list rand)
         (randomly-break-hint-keyword-value-list goal-hint-keyword-value-list rand)
-        (if (eq :none breakage-type)
+        (if (eq :none removal-type)
             (mv :none nil rand)
-          (mv breakage-type
+          (mv removal-type
               (cons (cons "Goal" broken-hint-keyword-value-list)
+                    ;; TODO: Removing later hints on Goal could break a proof, if they would
+                    ;; be used after the proof is "settled down".
                     (remove-hints-for-goal-spec "Goal" hints) ; removal might not be necessary, due to shadowing
                     )
               rand))))))
@@ -694,208 +695,14 @@
       (if (not (true-listp theorem-hints))
           (er hard? 'breakable-eventp "Bad hints in ~x0: ~x1." (cadr event) theorem-hints)
         (if (null theorem-hints)
-            (prog2$ (cw "Skipping ~x0 since it has no hints to remove.~%" (cadr event))
+            (prog2$ (cw "Skipping ~x0: no hints.~%" (cadr event))
                     nil)
           (if (and (eq breakage-plan :goal-partial)
                    (null (hint-keyword-value-list-for-goal-spec "Goal" theorem-hints)))
               ;; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints):
-              (prog2$ (cw "Skipping ~x0 since it has no hints on Goal.~%" (cadr event))
+              (prog2$ (cw "Skipping ~x0: no hints on Goal.~%" (cadr event))
                       nil)
             t))))))
-
-;; Determines whether the Proof Advice tool can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
-;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
-;; Here, trivialp means "no model was needed".
-(defun eval-models-and-submit-defthm-event (defthm num-recs-per-model current-book-absolute-path print debug step-limit time-limit
-                                             model-info-alist
-                                             timeout
-                                             breakage-plan ; :all means remove all hints, :goal-partial means remove part of the "Goal" hint -- todo: add more options
-                                             rand state)
-  (declare (xargs :guard (and (natp num-recs-per-model)
-                              (or (null current-book-absolute-path)
-                                  (stringp current-book-absolute-path))
-                              (acl2::print-levelp print)
-                              (booleanp debug)
-                              (or (null step-limit)
-                                  (natp step-limit))
-                              (or (null time-limit)
-                                  (rationalp time-limit))
-                              (help::model-info-alistp model-info-alist)
-                              (natp timeout)
-                              (member-eq breakage-plan '(:all :goal-partial)))
-                  :mode :program
-                  :stobjs state))
-  (b* (;; (defthm-variant (car defthm)) ; defthm or defthmd, etc.
-       (theorem-name (cadr defthm))
-       (theorem-body (caddr defthm))
-       (theorem-otf-flg (cadr (assoc-keyword :otf-flg (cdddr defthm))))
-       ;; (rule-classes-result (assoc-keyword :rule-classes (cdddr defthm)))
-       ;; (rule-classes (if rule-classes-result
-       ;;                   (cadr rule-classes-result)
-       ;;                 ;; this really means don't put in any :rule-classes arg at all:
-       ;;                 '(:rewrite)))
-       ;; (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
-       (theorem-hints (cadr (assoc-keyword :hints (cdddr defthm))))
-       ((when (not (breakable-eventp defthm breakage-plan)))
-        (mv nil ; no error
-            :not-attempted ; no breakage of hints possible
-            t
-            nil rand state))
-
-       ;; ((when (null theorem-hints))
-       ;;  (cw "Skipping ~x0 since it has no hints to remove.~%" theorem-name)
-       ;;  (mv nil ; no error
-       ;;      :not-attempted ; no breakage of hints possible
-       ;;      t ; there were no hints (and we assume it proves without them)
-       ;;      nil rand state))
-
-       ;; ((when (and (eq breakage-plan :goal-partial)
-       ;;             (null (hint-keyword-value-list-for-goal-spec "Goal" theorem-hints))))
-       ;;  (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
-       ;;  (mv nil ; no error
-       ;;      :not-attempted ; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints)
-       ;;      t ; there were no Goal hints for us to try removing
-       ;;      nil rand state))
-
-       ;; Break the hints:
-       ((mv breakage-type broken-theorem-hints rand)
-        (if (eq breakage-plan :goal-partial)
-            (b* ((- (cw "Removing part of the Goal hint.~%"))
-                 ;; (- (cw "rand is ~x0.~%" rand))
-                 ((mv breakage-type broken-theorem-hints rand) (randomly-break-hints theorem-hints rand))
-                 (rand (minstd-rand0-next rand)))
-              (mv breakage-type broken-theorem-hints rand))
-          ;; breakage-plan must be :all:
-          (prog2$ (cw "Removing all the :hints.~%")
-                  (mv :all nil rand))))
-
-       ((when (eq :none breakage-type))
-        (cw "NOTE: No way to break hints: ~x0.~%" theorem-hints)
-        (mv nil ; no error
-            :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
-            t ; we found no way to break the hints, for some reason (maybe only an empty enable, or something like that)
-            nil rand state))
-       (- (cw "(ADVICE: ~x0: " theorem-name))
-       ((mv erp provedp & checkpoint-clauses state)
-        (help::try-proof-and-get-checkpoint-clauses theorem-name
-                                                    theorem-body
-                                                    (acl2::translate-term theorem-body 'eval-models-and-submit-defthm-event (w state))
-                                                    broken-theorem-hints
-                                                    theorem-otf-flg ; or use nil ?
-                                                    step-limit time-limit
-                                                    t ; suppress-trivial-warningp
-                                                    state))
-       ((when erp) (mv erp nil nil nil rand state)))
-    (if provedp
-        (b* ((- (cw "Trivial: Broken hints worked for ~x0)~%" theorem-name)) ;todo: tabulate these
-             ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-              (submit-event `(skip-proofs ,defthm) print nil state))
-             ((when erp) (mv erp nil nil nil rand state)))
-          (mv nil ; no error
-              breakage-type
-              t   ; theorem was trivial (no hints needed)
-              nil
-              rand
-              state))
-      ;; Breaking the hints did break the theorem, yielding checkpoints:
-      (b* (((mv erp model-results state)
-            (eval-models-on-checkpoints checkpoint-clauses
-                                        theorem-name
-                                        theorem-body
-                                        broken-theorem-hints
-                                        theorem-otf-flg
-                                        num-recs-per-model
-                                        current-book-absolute-path
-                                        print
-                                        model-info-alist
-                                        timeout
-                                        debug
-                                        step-limit time-limit
-                                        '(:add-hyp)
-                                        state))
-           ((when erp) (mv erp nil nil nil rand state))
-           ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-            (submit-event `(skip-proofs ,defthm) print nil state))
-           ((when erp) (mv erp nil nil nil rand state))
-           (- (cw ")~%")) ; todo: print which model(s) worked
-           )
-        (mv nil ; no error
-            breakage-type
-            nil ; not trivial
-            model-results
-            rand
-            state)))))
-
-;; Returns (mv erp result-alist rand state), where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
-;throws an error if any event fails
-(defun submit-events-and-eval-models (events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist timeout breakage-plan result-alist-acc rand state)
-  (declare (xargs :guard (and (true-listp events)
-                              (or (eq :all theorems-to-try)
-                                  (symbol-listp theorems-to-try))
-                              (natp num-recs-per-model)
-                              (or (null current-book-absolute-path)
-                                  (stringp current-book-absolute-path))
-                              (acl2::print-levelp print)
-                              (booleanp debug)
-                              (or (null step-limit)
-                                  (natp step-limit))
-                              (or (null time-limit)
-                                  (rationalp time-limit))
-                              (help::model-info-alistp model-info-alist)
-                              (natp timeout)
-                              (member-eq breakage-plan '(:all :goal-partial))
-                              (alistp result-alist-acc))
-                  :mode :program
-                  :stobjs state))
-  (if (endp events)
-      (mv nil ; no error
-          result-alist-acc
-          rand
-          state)
-    (let ((event (first events)))
-      (if (advice-eventp event theorems-to-try)
-          ;; It's a theorem for which we are to try advice:
-          (b* ( ;; Try to prove it using advice:
-               ((mv erp breakage-type trivialp model-results rand state)
-                (eval-models-and-submit-defthm-event event num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist timeout breakage-plan rand state))
-               (- (and erp (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)))) ; todo: Print the error like a msg when appropriate.
-            (if erp
-                ;; If there is an error, the result is meaningless.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
-                (b* (((mv erp state)
-                      (submit-event `(skip-proofs ,event) print nil state))
-                     ((when erp)
-                      (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
-                      (mv erp nil rand state)))
-                  (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist timeout breakage-plan result-alist-acc rand state))
-              (if trivialp
-                  ;; If the theorem is trivial, no useful information is returned.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
-                  (b* (((mv erp state)
-                        (submit-event `(skip-proofs ,event) print nil state))
-                       ((when erp)
-                        (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
-                        (mv erp nil rand state)))
-                    (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist timeout breakage-plan result-alist-acc rand state))
-                ;; No error, so count the result:
-                (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist timeout breakage-plan
-                                               (acons (list current-book-absolute-path ; todo: use a relative path?
-                                                            (cadr event) ; theorem-name
-                                                            breakage-type)
-                                                      model-results
-                                                      result-alist-acc)
-                                               rand
-                                               state))))
-        ;; Not something for which we will try advice, so submit it and continue:
-        (b* (((mv erp state)
-              ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
-              (submit-event `(skip-proofs ,event) print nil state))
-             ;; FIXME: Anything that tries to read from a file will give an error since the current dir won't be right.
-             ((when erp)
-              (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
-              (mv erp nil rand state))
-             (- (and (acl2::print-level-at-least-tp print) (cw "~x0~%" (shorten-event event)))))
-          (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist timeout breakage-plan result-alist-acc rand state))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a list of defthm/defthmd names.
 (defun breakable-theorems-to-try (events theorems-to-try breakage-plan acc)
@@ -917,15 +724,274 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Determines which models can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
+;; Returns (mv erp removal-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
+;; Here, trivialp means "no model was needed".
+;; ttodo: think about trivialp vs :not-attempted.
+(defun eval-models-and-submit-defthm-event (defthm
+                                            num-recs-per-model
+                                            current-book-absolute-path
+                                            print debug step-limit time-limit
+                                            model-info-alist
+                                            model-query-timeout
+                                            breakage-plan ; :all means remove all hints, :goal-partial means remove part of the "Goal" hint -- todo: add more options
+                                            rand state)
+  (declare (xargs :guard (and (natp num-recs-per-model)
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (acl2::print-levelp print)
+                              (booleanp debug)
+                              (or (null step-limit)
+                                  (eq :auto step-limit)
+                                  (natp step-limit))
+                              (or (null time-limit)
+                                  (eq :auto time-limit)
+                                  (rationalp time-limit))
+                              (help::model-info-alistp model-info-alist)
+                              (natp model-query-timeout)
+                              (member-eq breakage-plan '(:all :goal-partial)))
+                  :mode :program
+                  :stobjs state))
+  (b* (;; (defthm-variant (car defthm)) ; defthm or defthmd, etc.
+       (theorem-name (cadr defthm))
+       (theorem-body (caddr defthm))
+       (theorem-otf-flg (cadr (assoc-keyword :otf-flg (cdddr defthm))))
+       ;; (rule-classes-result (assoc-keyword :rule-classes (cdddr defthm)))
+       ;; (rule-classes (if rule-classes-result
+       ;;                   (cadr rule-classes-result)
+       ;;                 ;; this really means don't put in any :rule-classes arg at all:
+       ;;                 '(:rewrite)))
+       ;; (hints-presentp (if (assoc-keyword :hints (cdddr defthm)) t nil))
+       (theorem-hints (cadr (assoc-keyword :hints (cdddr defthm))))
+       (- (cw "~%(Working on ~x0~%" theorem-name)) ; paren is closed on various exit branches below.
+       ((when (null theorem-hints)) ; todo: this cannot happen?
+        (prog2$ (cw " Skip: ~x0 has no hints to remove.)~%" theorem-name)
+                (mv nil            ; no error
+                    :not-attempted ; no breakage of hints possible
+                    t ; trivialp (there were no hints, and we assume it proves without them))
+                    nil rand state)))
+       ((when (not (breakable-eventp defthm breakage-plan)))
+        (prog2$ (cw "Skip: ~x0 is not breakable by ~x1.)~%" theorem-name breakage-plan)
+                (mv nil    ; no error
+                    :not-attempted ; no breakage of hints possible
+                    t
+                    nil rand state)))
+       ;; ((when (and (eq breakage-plan :goal-partial)
+       ;;             (null (hint-keyword-value-list-for-goal-spec "Goal" theorem-hints))))
+       ;;  (cw "Skipping ~x0 since it has no hints on Goal.~%" theorem-name)
+       ;;  (mv nil ; no error
+       ;;      :not-attempted ; no breakage of hints possible, given the breakage-plan (TODO: consider plans to break subgoal hints or computed hints)
+       ;;      t ; there were no Goal hints for us to try removing
+       ;;      nil rand state))
+
+       ;; Break the hints:
+       ((mv removal-type broken-theorem-hints rand)
+        (if (eq breakage-plan :goal-partial)
+            (b* ((- (cw " Removing part of the Goal hint.~%"))
+                 ;; (- (cw "rand is ~x0.~%" rand))
+                 ((mv removal-type broken-theorem-hints rand) (randomly-break-hints theorem-hints rand))
+                 (rand (minstd-rand0-next rand)))
+              (mv removal-type broken-theorem-hints rand))
+          ;; breakage-plan must be :all:
+          (prog2$ (cw " Removing all the :hints.~%")
+                  (mv :all nil rand))))
+       ((when (eq :none removal-type))
+        (cw " Skip: No way to break hints: ~x0).~%" theorem-hints)
+        (mv nil ; no error
+            :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
+            t ; we found no way to break the hints, for some reason (maybe only an empty enable, or something like that)
+            nil rand state))
+       (- (cw "Breaking by: ~x0.~%" removal-type))
+       ;; Record time and steps for the working proof (we expect the proof to always work):
+       ((mv erp provedp elapsed-time prover-steps-counted state)
+        ;; todo: should we do it twice, to get a more accurate time? (on the other hand,
+        ;; maybe this is fair, as GC may also occur while we are trying a rec,
+        ;; causing us to lose).
+        (prove$-nice-with-time-and-steps theorem-body
+                                         theorem-hints
+                                         nil ;instructions -- todo skip if these are present (maybe it will have no hints, so we do)
+                                         theorem-otf-flg ;todo: think about this
+                                         nil ; no time-limit
+                                         nil ; no step-limit
+                                         state))
+       ((when (or erp
+                  (not provedp)))
+        (cw " ERROR: Failed to prove original theorem!: ~x0).~%" theorem-name)
+        (mv nil ; we suppress the error, so we can continue
+            :not-attempted
+            t ;todo: think about this
+            nil rand state))
+       ;; Try the proof with the broken hints (usually will fail, yielding checkpoints):
+       ;; TODO: Skip if this hit a limit?
+       ((mv erp provedp & checkpoint-clauses-top checkpoint-clauses-non-top state)
+        (help::try-proof-and-get-checkpoint-clauses theorem-name
+                                                    theorem-body
+                                                    (acl2::translate-term theorem-body 'eval-models-and-submit-defthm-event (w state))
+                                                    broken-theorem-hints
+                                                    theorem-otf-flg ; or use nil ?
+                                                    ;; We have to use some limits here, to avoid runaway proofs, but we hope that
+                                                    ;; these limits will rarely apply (they might mess up the checkpoints?):
+                                                    ;; todo: are the 10000 and the 5 comparable?
+                                                    (+ 100000 (* 10 prover-steps-counted))
+                                                    (+ 1 (* 10 elapsed-time))
+                                                    t ; suppress-trivial-warningp
+                                                    state))
+       ((when erp) (prog2$ (cw " ERROR: ~x0.)~%" erp)
+                           (mv erp nil nil nil rand state)))
+       ((when provedp)
+        (b* ((- (cw " Skip: Broken hints worked for ~x0)~%" theorem-name)) ;todo: tabulate these
+             ((mv erp state) ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
+              (submit-event `(skip-proofs ,defthm) nil nil state))
+             ((when erp) (mv erp nil nil nil rand state)))
+          (mv nil ; no error
+              removal-type
+              t   ; theorem was trivial (no hints needed)
+              nil
+              rand
+              state)))
+       ;; Breaking the hints did break the theorem, yielding checkpoints:
+       (- (cw " ~x0 top-level ~s1.~%" (len checkpoint-clauses-top) (if (= 1 (len checkpoint-clauses-top)) "checkpoint" "checkpoints")))
+       (- (cw " ~x0 non-top-level ~s1.~%" (len checkpoint-clauses-non-top) (if (= 1 (len checkpoint-clauses-non-top)) "checkpoint" "checkpoints")))
+       ;; Try all the models, except :add-hyp (todo: a general way to say which models change the theorem?!):
+       (disallowed-rec-types '(:add-hyp))  ;exclude :add-hyp
+       (step-limit-for-tries (if (null step-limit)
+                                 nil
+                               (if (eq :auto step-limit)
+                                   (+ 100000 (* 3 prover-steps-counted))
+                                 step-limit)))
+       (time-limit-for-tries (if (null time-limit)
+                                 nil
+                               (if (eq :auto time-limit)
+                                   (+ 1 (* 3 elapsed-time))
+                                 time-limit)))
+       ;; Get recommendations from all the models:
+       ((mv erp model-rec-alist state) ; todo: should an error count against the model that caused it?
+        (help::get-recs-from-models model-info-alist
+                                    num-recs-per-model
+                                    disallowed-rec-types
+                                    checkpoint-clauses-top
+                                    checkpoint-clauses-non-top
+                                    theorem-body ; todo: put earlier
+                                    ;; the presumed broken-theorem:
+                                    `(defthm ,theorem-name
+                                       ,theorem-body
+                                       ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
+                                       ,@(and broken-theorem-hints `(:hints ,broken-theorem-hints)))
+                                    model-query-timeout debug print nil state))
+       ((when erp) (mv erp nil nil nil rand state))
+       ;; Try all the recs and record which ones worked:
+       ((mv erp model-results state) ; each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
+        (eval-model-recs model-rec-alist
+                         theorem-name theorem-body broken-theorem-hints theorem-otf-flg
+                         current-book-absolute-path print debug
+                         step-limit-for-tries time-limit-for-tries
+                         nil ; empty acc
+                         nil ; empty result-cache
+                         state))
+       ((when erp) (mv erp nil nil nil rand state)) ; todo: should an error count against the model(s) whose rec caused it?
+       (models-that-worked (models-that-worked model-results))
+       (- (cw "~% For ~x0, ~x1 models worked: ~X23.~%" theorem-name (len models-that-worked) models-that-worked nil))
+       (- (cw "Broken hints were: ~X01.~%" broken-theorem-hints nil)) ; todo: highlight what was removed
+       (- (cw "Actual hints were: ~X01.~%" theorem-hints nil))
+           ;; Submit the event, so we can process further events (we use
+           ;; skip-proofs for speed, but see the attachment to
+           ;; always-do-proofs-during-make-event-expansion below):
+       ((mv erp state)
+        (submit-event `(skip-proofs ,defthm) nil nil state))
+       ((when erp) (mv erp nil nil nil rand state))
+       (- (cw ")~%")))
+    (mv nil ; no error
+        removal-type
+        nil ; not trivial
+        model-results
+        rand
+        state)))
+
+;; Returns (mv erp result-alist rand state), where RESULT-ALIST is a map from (book-name, theorem-name, removal-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;throws an error if any event fails
+(defun submit-events-and-eval-models (events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan result-alist-acc rand state)
+  (declare (xargs :guard (and (true-listp events)
+                              (or (eq :all theorems-to-try)
+                                  (symbol-listp theorems-to-try))
+                              (natp num-recs-per-model)
+                              (or (null current-book-absolute-path)
+                                  (stringp current-book-absolute-path))
+                              (acl2::print-levelp print)
+                              (booleanp debug)
+                              (or (null step-limit)
+                                  (eq :auto step-limit)
+                                  (natp step-limit))
+                              (or (null time-limit)
+                                  (eq :auto time-limit)
+                                  (rationalp time-limit))
+                              (help::model-info-alistp model-info-alist)
+                              (natp model-query-timeout)
+                              (member-eq breakage-plan '(:all :goal-partial))
+                              (alistp result-alist-acc))
+                  :mode :program
+                  :stobjs state))
+  (if (endp events)
+      (mv nil ; no error
+          result-alist-acc
+          rand
+          state)
+    (let ((event (first events)))
+      (if (advice-eventp event theorems-to-try)
+          ;; It's a theorem for which we are to try advice:
+          (b* ( ;; Try to prove it using advice:
+               ((mv erp removal-type trivialp model-results rand state)
+                (eval-models-and-submit-defthm-event event num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan rand state))
+               (- (and erp (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)))) ; todo: Print the error like a msg when appropriate.
+            (if erp
+                ;; If there is an error, the result is meaningless.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
+                (b* (((mv erp state)
+                      (submit-event `(skip-proofs ,event) nil nil state))
+                     ((when erp)
+                      (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
+                      (mv erp nil rand state)))
+                  (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan result-alist-acc rand state))
+              (if trivialp
+                  ;; If the theorem is trivial, no useful information is returned.  Now, to continue with this book, we need to get the event submitted, so we do it with skip-proofs:
+                  (b* (((mv erp state)
+                        (submit-event `(skip-proofs ,event) nil nil state))
+                       ((when erp)
+                        (er hard? 'submit-events-and-eval-models "ERROR (~x0) with event ~X12 (trying to submit with skip-proofs after error trying to use advice).~%" erp event nil)
+                        (mv erp nil rand state)))
+                    (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan result-alist-acc rand state))
+                ;; No error, so count the result:
+                (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan
+                                               (acons (list current-book-absolute-path ; todo: use a relative path?
+                                                            (cadr event) ; theorem-name
+                                                            removal-type)
+                                                      model-results
+                                                      result-alist-acc)
+                                               rand
+                                               state))))
+        ;; Not something for which we will try advice, so submit it and continue:
+        (b* (((mv erp state)
+              ;; We use skip-proofs for speed (but see the attachment to always-do-proofs-during-make-event-expansion below):
+              (submit-event `(skip-proofs ,event) nil nil state))
+             ;; FIXME: Anything that tries to read from a file will give an error since the current dir won't be right.
+             ((when erp)
+              (cw "ERROR (~x0) with event ~X12.~%" erp event nil)
+              (mv erp nil rand state))
+             (- (and (acl2::print-level-at-least-tp print) (cw "~x0~%" (shorten-event event)))))
+          (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan result-alist-acc rand state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems indicated by THEOREMS-TO-TRY.
-;; Returns (mv erp result-alist+rand state), where RESULT-ALIST+RAND is a cons of RESULT-ALIST and RAND, and where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;; Returns (mv erp result-alist+rand state), where RESULT-ALIST+RAND is a cons of RESULT-ALIST and RAND, and where RESULT-ALIST is a map from (book-name, theorem-name, removal-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;; Since this returns an error triple, it can be wrapped in revert-world.
+;; Example: (eval-models-on-book "expt.lisp" :all 10 t nil 10000 5 (help::make-model-info-alist :all (w state)) 10000 :all 1 state)
 (defun eval-models-on-book (filename ; the book, with .lisp extension, we should have already checked that it exists
                             theorems-to-try
                             num-recs-per-model
                             print
                             debug step-limit time-limit
-                            model-info-alist timeout breakage-plan
+                            model-info-alist
+                            model-query-timeout
+                            breakage-plan
                             rand
                             state)
   (declare (xargs :guard (and (stringp filename)
@@ -935,11 +1001,13 @@
                               (acl2::print-levelp print)
                               (booleanp debug)
                               (or (null step-limit)
+                                  (eq :auto step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
+                                  (eq :auto time-limit)
                                   (rationalp time-limit))
                               (help::model-info-alistp model-info-alist)
-                              (natp timeout)
+                              (natp model-query-timeout)
                               (member-eq breakage-plan '(:all :goal-partial)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
@@ -980,7 +1048,7 @@
        ((when erp) (mv erp (cons nil rand) state))
        ;; Submit all the events, trying advice for each defthm in breakable-theorems-to-try:
        ((mv erp result-alist rand state)
-        (submit-events-and-eval-models events breakable-theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist timeout breakage-plan nil rand state))
+        (submit-events-and-eval-models events breakable-theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan nil rand state))
        ((when erp) ; I suppose we could return partial results from this book instead
         (cw "Error: ~x0.~%" erp)
         (mv erp (cons nil rand) state))
@@ -1003,29 +1071,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Walks through the BOOK-TO-THEOREMS-ALIST, obtaining and evaluating advice for (some or no theorems in) each book.
-;; Returns (mv erp event state).
-(defun eval-models-on-books-fn-aux (book-to-theorems-alist
-                                    base-dir
-                                    num-recs-per-model
-                                    print
-                                    debug step-limit time-limit
-                                    model-info-alist timeout breakage-plan
-                                    done-book-count
-                                    total-book-count
-                                    result-alist-acc ; a result-alist
-                                    rand
-                                    state)
+;; Returns (mv erp state).
+(defun eval-models-on-books (book-to-theorems-alist
+                             base-dir
+                             num-recs-per-model
+                             print
+                             debug step-limit time-limit
+                             model-info-alist model-query-timeout breakage-plan
+                             done-book-count
+                             total-book-count
+                             result-alist-acc ; a result-alist
+                             rand
+                             state)
   (declare (xargs :guard (and (alistp book-to-theorems-alist)
                               (stringp base-dir)
                               (natp num-recs-per-model)
                               (acl2::print-levelp print)
                               (booleanp debug)
                               (or (null step-limit)
+                                  (eq :auto step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
+                                  (eq :auto time-limit)
                                   (rationalp time-limit))
                               (help::model-info-alistp model-info-alist)
-                              (natp timeout)
+                              (natp model-query-timeout)
                               (member-eq breakage-plan '(:all :goal-partial))
                               (alistp result-alist-acc)
                               (natp done-book-count)
@@ -1036,7 +1106,7 @@
       (progn$ (cw "~%======================================================================~%")
               (cw "~%OVERALL RESULTS (~x0 total theorems):~%" (len result-alist-acc))
               (show-model-evaluations (strip-cars model-info-alist) result-alist-acc num-recs-per-model)
-              (mv nil '(value-triple :invisible) state))
+              (mv nil state))
     (b* ((- (cw "~%======================================================================~%"))
          (- (cw "Processing book #~x0 of ~x1.~%" (+ 1 done-book-count) total-book-count))
          (entry (first book-to-theorems-alist))
@@ -1048,7 +1118,7 @@
                                              num-recs-per-model
                                              print
                                              debug step-limit time-limit
-                                             model-info-alist timeout breakage-plan
+                                             model-info-alist model-query-timeout breakage-plan
                                              rand
                                              state)))
          (result-alist-for-book (car result-alist-for-book+rand))
@@ -1065,14 +1135,15 @@
          ;;            (cw "NO HINTS NEEDED : ~x0~%" trivial-count)
          ;;            (cw "ERROR           : ~x0~%~%" error-count)))
          )
-      (eval-models-on-books-fn-aux (rest book-to-theorems-alist)
-                                   base-dir num-recs-per-model print debug step-limit time-limit model-info-alist timeout breakage-plan done-book-count total-book-count
-                                   result-alist-acc
-                                   rand
-                                   state))))
+      (eval-models-on-books (rest book-to-theorems-alist)
+                            base-dir num-recs-per-model print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan done-book-count total-book-count
+                            result-alist-acc
+                            rand
+                            state))))
 
+;; Evaluate all of the MODELS on some or all of the TESTS.  This groups the tests by book for efficiency.
 ;; Returns (mv erp event state).
-(defun eval-models-on-books-fn (tests base-dir num-recs-per-model excluded-prefixes seed print debug step-limit time-limit timeout breakage-plan models num-tests state)
+(defun eval-models-on-tests-fn (tests base-dir num-recs-per-model excluded-prefixes seed print debug step-limit time-limit model-query-timeout breakage-plan models num-tests state)
   (declare (xargs :guard (and (alistp tests)
                               (string-listp (strip-cars tests))
                               (symbol-listp (strip-cdrs tests))
@@ -1084,12 +1155,15 @@
                               (acl2::print-levelp print)
                               (booleanp debug)
                               (or (null step-limit)
+                                  (eq :auto step-limit)
                                   (natp step-limit))
                               (or (null time-limit)
+                                  (eq :auto time-limit)
                                   (rationalp time-limit))
-                              (natp timeout)
+                              (natp model-query-timeout)
                               (member-eq breakage-plan '(:all :goal-partial))
                               (or (eq :all models)
+                                  (eq :non-ml models)
                                   (help::model-namep models) ; special case for a single model
                                   (help::model-namesp models))
                               (or (eq :all num-tests)
@@ -1098,6 +1172,13 @@
                   :stobjs state))
   (b* ( ;; Elaborate options:
        (model-info-alist (help::make-model-info-alist models (w state)))
+       ;; make it an absolute path (better way to do this?):
+       (base-dir (canonical-pathname base-dir t state))
+       ((when (not base-dir))
+        (er hard? 'eval-models-on-tests-fn "ERROR: Dir ~x0 not found." base-dir)
+        (mv t nil state))
+       (base-dir (strip-suffix-from-string "/" base-dir))
+       (- (cw "base-dir is ~s0.~%" base-dir))
        ;; Initialize the source of randomness:
        ((mv rand state)
         (if (eq :random seed)
@@ -1111,7 +1192,7 @@
        ((when (and (not (eq :all num-tests))
                    (> num-tests len-tests)))
         (mv :not-enough-tests nil state))
-       ;; Choose which
+       ;; Choose which tests to use:
        (tests (if (eq :all num-tests)
                   (prog2$ (cw "Using all ~x0 tests.~%" len-tests)
                           tests)
@@ -1124,10 +1205,14 @@
        ;; Randomize book order:
        (book-to-theorems-alist (shuffle-list2 book-to-theorems-alist rand))
        (rand (minstd-rand0-next rand))
-       (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist))))
-    (eval-models-on-books-fn-aux book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit model-info-alist timeout breakage-plan 0
-                                 (len book-to-theorems-alist)
-                                 nil rand state)))
+       (- (cw "(Processing ~x0 tests in ~x1 books.)~%" num-tests (len book-to-theorems-alist)))
+       (state (acl2::widen-margins state))
+       ((mv erp state)
+        (eval-models-on-books book-to-theorems-alist base-dir num-recs-per-model print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan 0
+                              (len book-to-theorems-alist)
+                              nil rand state))
+       (state (acl2::unwiden-margins state)))
+    (mv erp '(value-triple :invisible) state)))
 
 ;; TODO: Record the kinds of recs that work (note that names may get combined with /)?
 ;; TODO: Record the sources of recs that work (note that names may get combined with /)?
@@ -1136,18 +1221,18 @@
 ;; TODO: Determine which models solve problems on which most or all other models fail.
 ;; TODO: Delete only parts of hints, like Matt's tool does.
 ;; Rec names should not include slash or digits?
-(defmacro eval-models-on-books (tests ; pairs of the form (book-name . theorem-name) where book-names are relative to BASE-DIR and have the .lisp extension
+(defmacro eval-models-on-tests (tests ; pairs of the form (book-name . theorem-name) where book-names are relative to BASE-DIR and have the .lisp extension
                                 base-dir               ; no trailing slash
                                 &key
                                 (excluded-prefixes 'nil) ; relative to BASE-DIR
                                 (seed ':random)
-                                (timeout '40) ; for both connection timeout and read timeout
+                                (model-query-timeout '40) ; for both connection timeout and read timeout
                                 (breakage-plan ':goal-partial)
                                 (models ':all)    ; which ML models to use
                                 (num-tests ':all) ; how many books to evaluate (TODO: Better to chose a random subset of theorems, rather than books?)
                                 (print 'nil)
                                 (debug 'nil)
-                                (step-limit '10000)
-                                (time-limit '5)
+                                (step-limit ':auto)
+                                (time-limit ':auto)
                                 (num-recs-per-model '20))
-  `(make-event (eval-models-on-books-fn ,tests ,base-dir ,num-recs-per-model ,excluded-prefixes ,seed ,print ,debug ,step-limit ,time-limit ,timeout ,breakage-plan ,models ,num-tests state)))
+  `(make-event (eval-models-on-tests-fn ,tests ,base-dir ,num-recs-per-model ,excluded-prefixes ,seed ,print ,debug ,step-limit ,time-limit ,model-query-timeout ,breakage-plan ,models ,num-tests state)))

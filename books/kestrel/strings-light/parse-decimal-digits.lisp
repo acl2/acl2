@@ -18,7 +18,8 @@
 ;; Convert a decimal digit char to a numeric value
 (defund decimal-digit-char-value (char)
   (declare (xargs :guard (and (characterp char)
-                              (digit-char-p char))))
+                              (digit-char-p char) ; todo: restrict to decimal digits
+                              )))
   (- (char-code char)
      (mbe :logic (char-code #\0)
           :exec 48)))

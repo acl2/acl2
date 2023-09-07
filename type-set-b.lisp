@@ -1561,8 +1561,17 @@
 (defun useless-runes-filename (full-book-string)
   (dot-sys-filename full-book-string "@useless-runes.lsp"))
 
-(defun event-data-filename (full-book-string)
-  (dot-sys-filename full-book-string "@event-data.lsp"))
+(defun event-data-filename (file tmp-p)
+
+; This definition is based on the definition of expansion-filename.
+
+  (let ((len (length file)))
+    (assert$ (equal (subseq file (- len 5) len) ".lisp")
+             (concatenate 'string
+                          (subseq file 0 (- len 5))
+                          (if tmp-p
+                              "@event-data.lsp.temp"
+                            "@event-data.lsp")))))
 
 (defun active-useless-runes-filename (state)
 

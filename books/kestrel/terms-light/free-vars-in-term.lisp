@@ -34,8 +34,7 @@
          (free-vars-in-terms (fargs term))))))
 
  (defund free-vars-in-terms (terms)
-   (declare (xargs :guard (and (true-listp terms)
-                               (pseudo-term-listp terms))))
+   (declare (xargs :guard (pseudo-term-listp terms)))
    (if (endp terms)
        nil
      (union-eq (free-vars-in-term (first terms))

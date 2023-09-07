@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;See also the rule no-duplicatesp-equal-of-remove-duplicates-equal.
+
 (local (include-book "member-equal"))
 (local (include-book "intersection-equal"))
 
