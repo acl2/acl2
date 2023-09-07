@@ -33,3 +33,8 @@
            (equal (remove-nth n list)
                   (true-list-fix list)))
   :hints (("Goal" :in-theory (enable remove-nth))))
+
+(defthm true-listp-of-remove-nth
+  (implies (true-listp list)
+           (true-listp (remove-nth n list)))
+  :hints (("Goal" :in-theory (enable remove-nth))))

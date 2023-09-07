@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -54,8 +54,7 @@
      ", referenced as `[JVMS]' in the documentation of this library.
       Chapters and sections are referenced
       by appending their designations separated by colon,
-      e.g.
-      `[JVMS:5.5]' references Section 5.5 of [JVMS].")
+      e.g. `[JVMS:5.5]' references Section 5.5 of [JVMS].")
     (xdoc::li
      "The "
      (xdoc::a :href "https://docs.oracle.com/en/java/javase/14/docs/api"
