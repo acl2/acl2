@@ -604,7 +604,7 @@
      ;;                                        (svexlist-check-overridetriples)))))))
 
      (:@ :triplecheck
-      (:@ :fgl-semantic-triplecheck
+      (:@ :fgl-semantic-check
        
        (local (fgl::disable-definition sv::svex-env-fix$inline))
        (local (fgl::disable-definition sv::svex-env-lookup))
@@ -638,10 +638,10 @@
                (b* (((svtv-data-obj x) (<data>))
                     (overridekeys (<name>-overridekeys)))
                  (base-fsm-override-smart-check x.phase-fsm overridekeys))
-               (:@ :fgl-semantic-triplecheck
+               (:@ :fgl-semantic-check
                 :hints(("Goal" :in-theory '(base-fsm-override-smart-check-in-terms-of-badguy
                                             base-fsm-override-smart-check-on-env-of-<data>))))
-               (:@ (not :fgl-semantic-triplecheck)
+               (:@ (not :fgl-semantic-check)
                 :hints (("goal" :in-theory '((<data>)
                                              (<name>-overridekeys)
                                              (svtv-data-obj->phase-fsm)
@@ -1141,7 +1141,7 @@
                                               '(:ideal)
                                             '(:triplecheck))
                                           (and fgl-semantic-check
-                                               '(:fgl-semantic-triplecheck))
+                                               '(:fgl-semantic-check))
                                           (and svtv-spec '(:svtv-spec))
                                           (and (not omit-default-aignet-transforms)
                                                '(:default-aignet-transforms)))
@@ -2347,7 +2347,7 @@ of the partial-products-value of our multiplier design:</p>
  })
 
 <p>This theorem, along with a couple of other simpler facts that allow the
-generalization of the input environment would be sufficient to let us
+generalization of the input environment, would be sufficient to let us
 generalize @('multiplier-pp-sum-correct-override') to
 @('multiplier-pp-sum-correct-gen').</p>
 
@@ -2372,15 +2372,22 @@ to prove it for all designs.  However, it is actually a fairly deep property of
 the design object, and as we'll see, depending how we compose the design
 together it may or may not be true.</p>
 
-<p>We have two underlying methods for ensuring that this property holds.  One
-is a syntactic check, which has the advantage that it proves this property for
-the SVTV we're used to working with; however, this will not work with all
-designs, particularly ones with latch-based logic.  The other, which uses an
-uncomputed idealized version of the SVTV, will work on any design but does the
-proof composition on the idealized version of the SVTV even though the
-lower-level proofs by symbolic simulation are done on the usual SVTV.  This can
-be a disadvantage because we don't then know whether the properties shown by
-composition are true of the SVTV. See @(see
+<p>We have two underlying methods for ensuring that this property holds. The
+first method method proves this property of the actual SVTV we're used to
+working with. This uses a syntactic check, which is fast and reliable but may
+fail on designs with apparent combinational loops, such as designs with
+latch-based logic or signals that feed into their own clock gates.  If the
+syntactic check fails, an equivalence check using <see topic='@(url
+fgl::fgl)'>FGL</see> may also be used; performance of this check is uncertain
+but seems to usually work in practice.</p>
+
+<p>The second method does not prove the overrides-transparent condition of the
+actual SVTV, but instead proves it of an uncomputed idealized version of the
+SVTV.  This method doesn't require a syntactic check or equivalence check and
+will work on any design.  However, proofs by composition will then be about the
+idealized SVTV, even though the lower-level proofs by symbolic simulation are
+done on the usual SVTV.  This can be a disadvantage because we don't then know
+whether the properties shown by composition are true of the SVTV. See @(see
 svtv-decomposition-choosing-a-method) for more on this topic.</p>
 
 <p>The syntactic check method works by checking the expressions that make up
@@ -2459,9 +2466,9 @@ design based on the approximate composition -- in particular, using @(see
 defsvtv$).</li>
 
 <li>Check that the approximate composition satisfies the syntactic check
-described above regarding override muxes. Use this to prove the
-overrides-correct property of the SVTV.  This can be done using
-@('def-svtv-refinement').</li>
+described above regarding override muxes, or fall back on the FGL equivalence
+check to prove override transparency if the syntactic check fails.  This can be
+done using @('def-svtv-refinement').</li>
 
 <li>To prove composition-friendly facts about the SVTV, first prove a lemma
 with overrides along with the overrides-correct
@@ -2554,14 +2561,15 @@ idealized SVTV-spec based on a fixpoint composition (without needing the
 syntactic check).</p>
 
 <p>The main advantage of the ideal-based method is that the syntactic check of
-the other method might not pass on your design.  If it does, you can do your
-decomposition proofs using the syntax check method, and subsequently if needed
-you can always define an ideal later; any theorems already proved about the
-SVTV are true of it as well.  However, it's also possible that the syntactic
-check will work on some set of overrides but fail if more override signals are
-added because some new signal to be overridden is involved in an apparent
-combinational loop. This is mainly of concern if there is latch-based logic in
-the design, but can come up in other situations.</p>
+the other method might not pass on your design, and the FGL equivalence
+check-based fallback method might be too expensive.  If these checks pass, you
+can do your decomposition proofs using the syntax check method, and
+subsequently if needed you can always define an ideal later; any theorems
+already proved about the SVTV are true of it as well.  However, it's also
+possible that the syntactic check will work on some set of overrides but fail
+if more override signals are added because some new signal to be overridden is
+involved in an apparent combinational loop. This is mainly of concern if there
+is latch-based logic in the design, but can come up in other situations.</p>
 
 <p>The disadvantage of the ideal-based method is that what you've proved about
 the ideal isn't always provable about the computed SVTV.  Generally we only
@@ -2944,6 +2952,8 @@ defining that SVTV.</p>
 @({
  (def-svtv-refinement svtv-name data-name
          ;; optional:
+         :fgl-semantic-check t
+         :omit-default-aignet-transforms t
          :ideal idealname
          :svtv-spec specname
          :pkg-sym pkg-sym)
@@ -2970,10 +2980,32 @@ override-transparency property on its own) and
 SVTV).</p>
 
 <p>If not, then the syntactic check method is used to prove the
-override-transparency property of the given SVTV itself. The main theorem,
-showing that it satisfies the override-transparency property, is
-@('svtvname-refines-svtvname').  If the @(':svtv-spec') argument is given, this
-also defines a function (with the given name) with the same behavior as the
-original SVTV and adds another refinement theorem,
+override-transparency property of the given SVTV itself. If the
+@(':fgl-semantic-check') keyword argument is set, then if any overrides fail
+the syntactic check for the override transparency property, an FGL proof will
+be attempted to show the same property using equivalence checking -- see below.
+The main theorem, showing that it satisfies the override-transparency
+property, is @('svtvname-refines-svtvname').  If the @(':svtv-spec') argument
+is given, this also defines a function (with the given name) with the same
+behavior as the original SVTV and adds another refinement theorem,
 @('specname-refines-svtvname').</p>
+
+<p>The FGL proof of override transparency, attempted only when
+@(':fgl-semantic-check') is set and some overrides fail the syntactic check,
+requires the \"centaur/fgl/top\" book to be included.  Additionally, by default
+a special <see topic='@(url aignet::aignet)'>AIGNET</see> simplification
+routine is used in the equivalence check.  This can be overridden with
+@(':omit-default-aignet-transforms'), but if not, the
+\"centaur/aignet/transforms\" and \"centaur/ipasir/ipasir-backend\" books must
+also be loaded.  The latter requires an <see topic='@(url
+ipasir::ipasir)'>IPASIR</see> shared library to be available and the
+IPASIR_SHARED_LIBRARY environment variable set accordingly; see @(see
+ipasir::building-an-ipasir-solver-library) for how to get one. In summary, the
+following include-books are usually needed when using the FGL semantic
+check:</p>
+@({
+ (include-book \"centaur/fgl/top\" :dir :system)
+ (include-book \"centaur/aignet/transforms\" :dir :system)
+ (include-book \"centaur/ipasir/ipasir-backend\" :dir :system)
+ })
 ")
