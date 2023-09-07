@@ -3828,13 +3828,13 @@
        (max-wins (if (eq :auto max-wins) (get-advice-option! :max-wins wrld) max-wins))
        ;; Get most recent failed theorem:
        (most-recent-failed-theorem (acl2::most-recent-failed-command acl2::*theorem-event-types* state))
-       ((mv theorem-name theorem-body theorem-hints theorem-otf-flg)
+       ((mv theorem-name theorem-body theorem-hints theorem-otf-flg) ; todo: hints won't be right for rule/defrule
         (if (member-eq (car most-recent-failed-theorem) '(thm acl2::rule))
             (mv :thm ; no name
                 (cadr most-recent-failed-theorem)
                 (cadr (assoc-keyword :hints (cddr most-recent-failed-theorem)))
                 (cadr (assoc-keyword :otf-flg (cddr most-recent-failed-theorem))))
-          ;; Must be a defthm, etc:
+          ;; Must be a defthm, defrule, etc:
           (mv (cadr most-recent-failed-theorem)
               (caddr most-recent-failed-theorem)
               (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
