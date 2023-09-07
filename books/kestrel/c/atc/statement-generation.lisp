@@ -332,42 +332,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-call-endstate ((affect symbol-listp)
-                               (inscope atc-symbol-varinfo-alist-listp)
-                               (compst-var symbolp)
-                               (call "An untranslated term."))
-  :returns (term "An untranslated term.")
-  :short "Generate a term representing the ending computation state
-          after the execution of a C function call."
-  (b* (((when (endp affect)) compst-var)
-       (var (car affect))
-       (info (atc-get-var var inscope))
-       ((when (not info))
-        (raise "Internal error: variable ~x0 not found." var))
-       (type (atc-var-info->type info))
-       ((unless (or (type-case type :pointer)
-                    (type-case type :array)
-                    (atc-var-info->externalp info)))
-        (raise "Internal error:
-                affected variable ~x0 ~
-                has type ~x1 and is not an external object."
-               var type))
-       ((when (endp (cdr affect)))
-        (if (atc-var-info->externalp info)
-            `(update-static-var (ident ,(symbol-name var))
+(define atc-gen-call-result-and-endstate
+  ((type typep "Return type of the C function.")
+   (affect symbol-listp "Variables affected by the C function.")
+   (inscope atc-symbol-varinfo-alist-listp)
+   (compst-var symbolp)
+   (call "An untranslated term."))
+  :returns (mv (result "An untranslated term.")
+               (new-compst "An untranslated term."))
+  :short "Generate a term representing the result value
+          and a term representing the ending computation state
+          of the execution of a C function call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If no variables are affected,
+     the computation state is unchanged,
+     and the call is the result.
+     (In this case the type is not @('void'),
+     but this is not an explicitly checked invariant in this code.)")
+   (xdoc::p
+    "Otherwise, if exactly one variable is affected,
+     and additionally the function is @('void'),
+     we return @('nil') as the result term,
+     while the new computation state is obtained
+     by updating the affected object with the call.")
+   (xdoc::p
+    "Otherwise, there are two cases.
+     If the function is void, we return @('nil') as result term,
+     and as new computation state we return the nest of object updates
+     for all the @(tsee mv-nth) components of the call, starting with index 0.
+     If the function is not void,
+     we return the @(tsee mv-nth) of index 0 of the call as result term,
+     and as new computation state the nest of object updates
+     with the @(tsee mv-nth) components starting with index 1.
+     In either case, the nest is calculated by an auxiliary function."))
+  (b* (((when (endp affect)) (mv call compst-var))
+       ((when (and (endp (cdr affect))
+                   (type-case type :void)))
+        (b* ((var (car affect))
+             (info (atc-get-var var inscope))
+             ((when (not info))
+              (raise "Internal error: variable ~x0 not found." var)
+              (mv nil nil))
+             (type (atc-var-info->type info))
+             ((unless (or (type-case type :pointer)
+                          (type-case type :array)
+                          (atc-var-info->externalp info)))
+              (raise "Internal error:
+                      affected variable ~x0 ~
+                      has type ~x1 and is not an external object."
+                     var type)
+              (mv nil nil))
+             (new-compst
+              (if (atc-var-info->externalp info)
+                  `(update-static-var (ident ,(symbol-name var))
+                                      ,call
+                                      ,compst-var)
+                `(update-object ,(add-suffix-to-fn var "-OBJDES")
                                 ,call
-                                ,compst-var)
-          `(update-object ,(add-suffix-to-fn var "-OBJDES")
-                          ,call
-                          ,compst-var))))
-    (atc-gen-call-endstate-aux affect inscope compst-var call 0))
+                                ,compst-var))))
+          (mv nil new-compst))))
+    (if (type-case type :void)
+        (mv nil
+            (atc-gen-call-endstate affect inscope compst-var call 0))
+      (mv `(mv-nth 0 ,call)
+          (atc-gen-call-endstate affect inscope compst-var call 1))))
 
   :prepwork
-  ((define atc-gen-call-endstate-aux ((affect symbol-listp)
-                                      (inscope atc-symbol-varinfo-alist-listp)
-                                      (compst-var symbolp)
-                                      (call "An untranslated term.")
-                                      (index natp))
+  ((define atc-gen-call-endstate ((affect symbol-listp)
+                                  (inscope atc-symbol-varinfo-alist-listp)
+                                  (compst-var symbolp)
+                                  (call "An untranslated term.")
+                                  (index natp))
      :returns (term "An untranslated term.")
      :parents nil
      (b* (((when (endp affect)) compst-var)
@@ -386,18 +423,18 @@
        (if (atc-var-info->externalp info)
            `(update-static-var (ident ,(symbol-name var))
                                (mv-nth ,index ,call)
-                               ,(atc-gen-call-endstate-aux (cdr affect)
-                                                           inscope
-                                                           compst-var
-                                                           call
-                                                           (1+ index)))
+                               ,(atc-gen-call-endstate (cdr affect)
+                                                       inscope
+                                                       compst-var
+                                                       call
+                                                       (1+ index)))
          `(update-object ,(add-suffix-to-fn var "-OBJDES")
                          (mv-nth ,index ,call)
-                         ,(atc-gen-call-endstate-aux (cdr affect)
-                                                     inscope
-                                                     compst-var
-                                                     call
-                                                     (1+ index))))))))
+                         ,(atc-gen-call-endstate (cdr affect)
+                                                 inscope
+                                                 compst-var
+                                                 call
+                                                 (1+ index))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4446,8 +4483,12 @@
        (limit-for-actuals
         (fsubcor-var (formals+ called-fn wrld) args.terms limit))
        (call-limit `(binary-+ '2 ,limit-for-actuals))
-       (new-compst
-        (atc-gen-call-endstate gin.affect gin.inscope gin.compst-var uterm))
+       ((mv & new-compst)
+        (atc-gen-call-result-and-endstate (type-void)
+                                          gin.affect
+                                          gin.inscope
+                                          gin.compst-var
+                                          uterm))
        (exec-formula `(equal (exec-expr-call-or-asg ',call-expr
                                                     ,gin.compst-var
                                                     ,gin.fenv-var
