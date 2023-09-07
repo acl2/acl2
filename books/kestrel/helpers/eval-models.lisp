@@ -34,14 +34,14 @@
 
 (local (in-theory (enable rationalp-when-natp acl2-numberp-when-natp integerp-when-natp <=-of-0-when-0-natp)))
 
-;; An indicator for a test, of the form (book-name theorem-name breakage-type).
+;; An indicator for a test, of the form (book-name theorem-name removal-type).
 (defun test-infop (x)
   (declare (xargs :guard t))
   (and (true-listp x)
        (= 3 (len x))
        (stringp (first x))     ; book-name
        (symbolp (second x))    ; theorem-name
-       (keywordp (third x)) ; breakage-type
+       (keywordp (third x)) ; removal-type
        ))
 
 ;; The result of a model on a test, including the model name, the total number
@@ -448,7 +448,7 @@
     successful-attempt-percentage))
 
 ;; Prints result and computes a success percentage alist.
-;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;; RESULT-ALIST is a map from (book-name, theorem-name, removal-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 (defun show-model-evaluations-aux (models result-alist num-recs-per-model)
   (if (endp models)
       nil
@@ -468,7 +468,7 @@
       (prog2$ (cw "~s0: ~s1%~%" (symbol-to-left-padded-string-of-length model 30) percent-string) ;todo: align better
               (show-success-percentages (rest alist))))))
 
-;; RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;; RESULT-ALIST is a map from (book-name, theorem-name, removal-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 (defun show-model-evaluations (models result-alist num-recs-per-model)
   (b* ((alist (show-model-evaluations-aux models result-alist num-recs-per-model)) ; prints a lot
        (- (cw "~%Current top-~x0 success percentages:~%" num-recs-per-model))
@@ -652,33 +652,35 @@
 (local (in-theory (enable natp))) ;todo
 
 
-;; Returns (mv breakage-type hint-keyword-value-list rand).
+;; Returns (mv removal-type hint-keyword-value-list rand).
 (defun randomly-break-hint-keyword-value-list (hint-keyword-value-list rand)
   (declare (xargs :guard (and (keyword-value-listp hint-keyword-value-list)
                               (minstd-rand0p rand))))
-  (let* ((total-ways (num-ways-to-break-hint-keyword-value-list hint-keyword-value-list)))
+  (let* ((total-ways (num-ways-to-remove-from-hint-keyword-value-list hint-keyword-value-list)))
     (if (not (posp total-ways))
         (mv :none nil rand)
       (let* ((breakage-num (mod rand total-ways))
              (rand (minstd-rand0-next rand)))
-        (mv-let (breakage-type hint-keyword-value-list)
-          (break-hint-keyword-value-list-in-nth-way breakage-num hint-keyword-value-list)
-          (mv breakage-type hint-keyword-value-list rand))))))
+        (mv-let (removal-type hint-keyword-value-list)
+          (remove-from-hint-keyword-value-list-in-nth-way breakage-num hint-keyword-value-list)
+          (mv removal-type hint-keyword-value-list rand))))))
 
-;; Returns (mv breakage-type hints rand).
+;; Returns (mv removal-type hints rand).
 (defun randomly-break-hints (hints rand)
   (declare (xargs :guard (and (true-listp hints)
                               (minstd-rand0p rand))))
-  (let ((goal-hint-keyword-value-list (hint-keyword-value-list-for-goal-spec "Goal" hints)))
+  (let ((goal-hint-keyword-value-list (hint-keyword-value-list-for-goal-spec "Goal" hints))) ; todo: what if there are multiple hints on Goal (perhaps including empty ones)?
     (if (not (keyword-value-listp goal-hint-keyword-value-list))
         (prog2$ (er hard? 'randomly-break-hints "Bad hint for Goal: ~x0" hints)
                 (mv :none nil rand))
-      (mv-let (breakage-type broken-hint-keyword-value-list rand)
+      (mv-let (removal-type broken-hint-keyword-value-list rand)
         (randomly-break-hint-keyword-value-list goal-hint-keyword-value-list rand)
-        (if (eq :none breakage-type)
+        (if (eq :none removal-type)
             (mv :none nil rand)
-          (mv breakage-type
+          (mv removal-type
               (cons (cons "Goal" broken-hint-keyword-value-list)
+                    ;; TODO: Removing later hints on Goal could break a proof, if they would
+                    ;; be used after the proof is "settled down".
                     (remove-hints-for-goal-spec "Goal" hints) ; removal might not be necessary, due to shadowing
                     )
               rand))))))
@@ -723,7 +725,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Determines which models can find advice for the given DEFTHM.  Either way, this also submits DEFTHM.
-;; Returns (mv erp breakage-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
+;; Returns (mv erp removal-type trivialp model-results rand state), where each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).
 ;; Here, trivialp means "no model was needed".
 ;; ttodo: think about trivialp vs :not-attempted.
 (defun eval-models-and-submit-defthm-event (defthm
@@ -783,23 +785,23 @@
        ;;      nil rand state))
 
        ;; Break the hints:
-       ((mv breakage-type broken-theorem-hints rand)
+       ((mv removal-type broken-theorem-hints rand)
         (if (eq breakage-plan :goal-partial)
             (b* ((- (cw " Removing part of the Goal hint.~%"))
                  ;; (- (cw "rand is ~x0.~%" rand))
-                 ((mv breakage-type broken-theorem-hints rand) (randomly-break-hints theorem-hints rand))
+                 ((mv removal-type broken-theorem-hints rand) (randomly-break-hints theorem-hints rand))
                  (rand (minstd-rand0-next rand)))
-              (mv breakage-type broken-theorem-hints rand))
+              (mv removal-type broken-theorem-hints rand))
           ;; breakage-plan must be :all:
           (prog2$ (cw " Removing all the :hints.~%")
                   (mv :all nil rand))))
-       ((when (eq :none breakage-type))
+       ((when (eq :none removal-type))
         (cw " Skip: No way to break hints: ~x0).~%" theorem-hints)
         (mv nil ; no error
             :not-attempted ; no breakage of hints possible (unless we consider breaking subgoal hints or computed hints)
             t ; we found no way to break the hints, for some reason (maybe only an empty enable, or something like that)
             nil rand state))
-       (- (cw "Breaking by: ~x0.~%" breakage-type))
+       (- (cw "Breaking by: ~x0.~%" removal-type))
        ;; Record time and steps for the working proof (we expect the proof to always work):
        ((mv erp provedp elapsed-time prover-steps-counted state)
         ;; todo: should we do it twice, to get a more accurate time? (on the other hand,
@@ -842,7 +844,7 @@
               (submit-event `(skip-proofs ,defthm) nil nil state))
              ((when erp) (mv erp nil nil nil rand state)))
           (mv nil ; no error
-              breakage-type
+              removal-type
               t   ; theorem was trivial (no hints needed)
               nil
               rand
@@ -899,13 +901,13 @@
        ((when erp) (mv erp nil nil nil rand state))
        (- (cw ")~%")))
     (mv nil ; no error
-        breakage-type
+        removal-type
         nil ; not trivial
         model-results
         rand
         state)))
 
-;; Returns (mv erp result-alist rand state), where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;; Returns (mv erp result-alist rand state), where RESULT-ALIST is a map from (book-name, theorem-name, removal-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;throws an error if any event fails
 (defun submit-events-and-eval-models (events theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan result-alist-acc rand state)
   (declare (xargs :guard (and (true-listp events)
@@ -937,7 +939,7 @@
       (if (advice-eventp event theorems-to-try)
           ;; It's a theorem for which we are to try advice:
           (b* ( ;; Try to prove it using advice:
-               ((mv erp breakage-type trivialp model-results rand state)
+               ((mv erp removal-type trivialp model-results rand state)
                 (eval-models-and-submit-defthm-event event num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan rand state))
                (- (and erp (cw "ERROR (~x0) with advice attempt for event ~X12 (continuing...).~%" erp event nil)))) ; todo: Print the error like a msg when appropriate.
             (if erp
@@ -960,7 +962,7 @@
                 (submit-events-and-eval-models (rest events) theorems-to-try num-recs-per-model current-book-absolute-path print debug step-limit time-limit model-info-alist model-query-timeout breakage-plan
                                                (acons (list current-book-absolute-path ; todo: use a relative path?
                                                             (cadr event) ; theorem-name
-                                                            breakage-type)
+                                                            removal-type)
                                                       model-results
                                                       result-alist-acc)
                                                rand
@@ -979,7 +981,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems indicated by THEOREMS-TO-TRY.
-;; Returns (mv erp result-alist+rand state), where RESULT-ALIST+RAND is a cons of RESULT-ALIST and RAND, and where RESULT-ALIST is a map from (book-name, theorem-name, breakage-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
+;; Returns (mv erp result-alist+rand state), where RESULT-ALIST+RAND is a cons of RESULT-ALIST and RAND, and where RESULT-ALIST is a map from (book-name, theorem-name, removal-type) to lists of (model, total-num-recs, first-working-rec-num-or-nil, time-to-find-first-working-rec).
 ;; Since this returns an error triple, it can be wrapped in revert-world.
 ;; Example: (eval-models-on-book "expt.lisp" :all 10 t nil 10000 5 (help::make-model-info-alist :all (w state)) 10000 :all 1 state)
 (defun eval-models-on-book (filename ; the book, with .lisp extension, we should have already checked that it exists
