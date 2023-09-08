@@ -38,7 +38,7 @@
                         compst)))
     :enable exec-expr-call-or-pure)
 
-  (defruled exec-expr-call-of-pure-when-call
+  (defruled exec-expr-call-or-pure-when-call
     (implies (and (syntaxp (quotep e))
                   (equal (expr-kind e) :call)
                   (not (zp limit)))
@@ -52,7 +52,7 @@
 
   (defval *atc-exec-expr-call-or-pure-rules*
     '(exec-expr-call-or-pure-when-pure
-      exec-expr-call-of-pure-when-call
+      exec-expr-call-or-pure-when-call
       (:e expr-kind)
       (:e expr-call->fun)
       (:e expr-call->args))))
