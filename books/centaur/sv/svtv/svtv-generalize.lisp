@@ -608,26 +608,32 @@
        
        (local (fgl::disable-definition sv::svex-env-fix$inline))
        (local (fgl::disable-definition sv::svex-env-lookup))
-
+       (local (memoize 'svex-mask-alist-p))
+       
        (:@ :default-aignet-transforms
         (local (defun tmp-svtv-generalize-fgl-transforms-config ()
                  (declare (xargs :guard t
                                  :guard-hints (("goal" :in-theory (executable-counterpart-theory :here)))))
-                #!aignet
-                (list (change-fraig-config *fraig-default-config*
-                                           :random-seed-name nil
-                                           :ctrex-queue-limit 64
-                                           :sim-words 2
-                                           :initial-sim-words 1
-                                           :initial-sim-rounds 1
-                                           :ctrex-force-resim t
-                                           :ipasir-limit 100
-                                           :miters-only t
-                                           :ipasir-recycle-count 40000
-                                           ))))
+                 #!aignet
+                 (list (change-fraig-config *fraig-default-config*
+                                            :random-seed-name nil
+                                            :ctrex-queue-limit 64
+                                            :sim-words 2
+                                            :initial-sim-words 1
+                                            :initial-sim-rounds 1
+                                            :ctrex-force-resim t
+                                            :ipasir-limit 100
+                                            :miters-only t
+                                            :ipasir-recycle-count 40000
+                                            ))))
         (local (defattach fgl::fgl-aignet-transforms-config
-                 tmp-svtv-generalize-fgl-transforms-config)))
+                 tmp-svtv-generalize-fgl-transforms-config))
 
+        (local (define tmp-svtv-generalize-monolithic-sat-with-transforms ()
+                 :guard-hints (("goal" :in-theory '((booleanp))))
+                 (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
+        (local (defattach fgl::fgl-toplevel-sat-check-config tmp-svtv-generalize-monolithic-sat-with-transforms)))
+       
        
        (local (fgl::def-fgl-thm base-fsm-override-smart-check-on-env-of-<data>
                 (b* (((svtv-data-obj x) (<data>))
