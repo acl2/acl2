@@ -2795,6 +2795,19 @@ initial override theorem.  The @(':enable') option typically must be used to
 provide additional rules for the final theorem to show that the lemma implies
 the outputs are integers.</li>
 
+<li>@(':integerp-separate') says to prove @('integerp') of each output in a second
+lemma, not the initial override theorem.</li>
+
+<li>@(':integerp-defthm') defaults to @('defthm') but can be set to (e.g.)
+@('fgl::def-fgl-thm') to choose a different method of proving the integerp
+lemma, when @(':integerp-separate') is set.</li>
+
+<li>@(':integerp-args') gives a list of arguments for the event proving the
+integerp lemma, when @(':integerp-separate') is set).  If none are given, the
+default is to provide a hint using an instance of the override lemma and
+disabling it, since commonly the override lemma itself implies all the outputs
+are integers.</li>
+
 <li>@(':final-defthm') defaults to @('defthm') but can be set to a different
 macro to change how the final generalized theorem is proved</li>
 
@@ -2809,6 +2822,9 @@ hypotheses for each input and override variable.</li>
 <li>@(':run-before-concl') gives a term that is placed in the override lemma
 within @('(progn$ run-before-concl concl)'), perhaps to do some extra printing
 in case of a counterexample.</li>
+
+<li>@(':integerp-run-before-concl') gives a term to add to the integerp lemma
+when @(':integerp-separate') is set, similar to @(':run-before-concl').</li>
 
 <li>@(':pkg-sym') defaults to the theorem name, and picks the package that
 various symbols are generated in.</li>
