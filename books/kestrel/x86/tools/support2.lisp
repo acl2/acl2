@@ -941,6 +941,7 @@
                                                     acl2::slice-of-+ ;looped
                                                     acl2::bvcat-of-+-high)) )))
 
+;rename, or drop
 (defthm bvuminus-of-+
   (implies (and (integerp x)
                 (integerp y))
@@ -948,14 +949,16 @@
                   (bvuminus '48 (bvplus 48 x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthmd bvminus-of-+-arg2
-  (implies (and (integerp y)
-                (integerp z))
-           (equal (bvminus size x (+ y z))
-                  (bvminus size x (bvplus size y z))))
+;move
+;dup
+(defthmd bvminus-of-+-arg3
+  (implies (and (integerp y1)
+                (integerp y2))
+           (equal (bvminus size x (+ y1 y2))
+                  (bvminus size x (bvplus size y1 y2))))
   :hints (("Goal" :in-theory (enable bvminus bvplus))))
 
-(theory-invariant (incompatible (:rewrite bvminus-of-+-arg2) (:rewrite acl2::bvchop-of-sum-cases)))
+(theory-invariant (incompatible (:rewrite bvminus-of-+-arg3) (:rewrite acl2::bvchop-of-sum-cases)))
 
 (defthm bvminus-of-bvplus-same-arg2
   (equal (bvminus size k (bvplus size j k))
@@ -968,7 +971,7 @@
                 (<= (+ (len vals1) (len vals2)) (expt 2 48)))
            (equal (write-bytes ad (append vals1 vals2) x86)
                   (write-bytes ad vals1 (write-bytes (+ ad (len vals1)) vals2 x86))))
-  :hints (("Goal" :in-theory (enable append bvminus-of-+-arg2))))
+  :hints (("Goal" :in-theory (enable append bvminus-of-+-arg3))))
 
 (defthm bvminus-of-+-same-arg2
   (implies (and (integerp x)
