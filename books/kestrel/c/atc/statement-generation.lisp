@@ -676,7 +676,7 @@
              ((when (eq called-fn 'quote))
               (reterr (raise "Internal error: called function is QUOTE.")))
              (term `(,called-fn ,@args.terms))
-             ;; (uterm (untranslate$ term nil state))
+             (uterm (untranslate$ term nil state))
              (fninfo (cdr (assoc-eq called-fn gin.prec-fns)))
              ((unless fninfo)
               (reterr (raise "Internal error: function ~x0 has no info."
@@ -719,14 +719,118 @@
               (evmac-generate-defthm guard-lemma-name
                                      :formula guard-lemma-formula
                                      :hints guard-lemma-hints
-                                     :enable nil)))
+                                     :enable nil))
+             (call-thm-name (pack gin.fn '-correct- thm-index))
+             ((mv call-thm-name names-to-avoid)
+              (fresh-logical-name-with-$s-suffix
+               call-thm-name nil names-to-avoid wrld))
+             (thm-index (1+ thm-index))
+             (called-formals (formals+ called-fn wrld))
+             ((unless (equal (len called-formals) (len args.terms)))
+              (reterr
+               (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
+                      called-fn called-formals args.terms)))
+             (limit-for-actuals
+              (fsubcor-var (formals+ called-fn wrld) args.terms limit))
+             (call-limit `(binary-+ '2 ,limit-for-actuals))
+             ((mv result new-compst)
+              (atc-gen-call-result-and-endstate out-type
+                                                gin.affect
+                                                gin.inscope
+                                                gin.compst-var
+                                                uterm))
+             (exec-formula `(equal (exec-expr-call-or-pure ',expr
+                                                           ,gin.compst-var
+                                                           ,gin.fenv-var
+                                                           ,gin.limit-var)
+                                   (mv ,result ,new-compst)))
+             (exec-formula (atc-contextualize exec-formula
+                                              gin.context
+                                              gin.fn
+                                              gin.fn-guard
+                                              gin.compst-var
+                                              gin.limit-var
+                                              call-limit
+                                              t
+                                              wrld))
+             ((mv type-formula &)
+              (atc-gen-term-type-formula uterm
+                                         out-type
+                                         gin.affect
+                                         gin.inscope
+                                         gin.prec-tags))
+             (type-formula (atc-contextualize type-formula
+                                              gin.context
+                                              gin.fn
+                                              gin.fn-guard
+                                              nil
+                                              nil
+                                              nil
+                                              nil
+                                              wrld))
+             (call-formula `(and ,exec-formula ,type-formula))
+             (call-hints
+              `(("Goal"
+                 :in-theory
+                 '(exec-expr-call-of-pure-when-call
+                   exec-expr-call-open
+                   exec-expr-pure-list-of-nil
+                   exec-expr-pure-list-when-consp
+                   ,@args.thm-names
+                   ,called-fn-thm
+                   ,guard-lemma-name
+                   ,@(atc-symbol-varinfo-alist-list-to-thms gin.inscope)
+                   exec-fun-of-const-identifier
+                   (:e identp)
+                   (:e ident->name)
+                   (:e expr-kind)
+                   (:e expr-call->fun)
+                   (:e expr-call->args)
+                   not-zp-of-limit-variable
+                   not-zp-of-limit-minus-const
+                   expr-valuep-of-expr-value
+                   expr-value->value-of-expr-value
+                   value-listp-of-cons
+                   (:e value-listp)
+                   apconvert-expr-value-when-not-value-array
+                   value-kind-when-ucharp
+                   value-kind-when-scharp
+                   value-kind-when-ushortp
+                   value-kind-when-sshortp
+                   value-kind-when-uintp
+                   value-kind-when-sintp
+                   value-kind-when-ulongp
+                   value-kind-when-slongp
+                   value-kind-when-ullongp
+                   value-kind-when-sllongp
+                   ,@(atc-string-taginfo-alist-to-value-kind-thms gin.prec-tags)
+                   value-fix-when-valuep
+                   valuep-when-ucharp
+                   valuep-when-scharp
+                   valuep-when-ushortp
+                   valuep-when-sshortp
+                   valuep-when-uintp
+                   valuep-when-sintp
+                   valuep-when-ulongp
+                   valuep-when-slongp
+                   valuep-when-ullongp
+                   valuep-when-sllongp
+                   ,@(atc-string-taginfo-alist-to-valuep-thms gin.prec-tags)
+                   compustatep-of-add-var
+                   compustatep-of-enter-scope
+                   compustatep-of-add-frame))))
+             ((mv call-event &) (evmac-generate-defthm call-thm-name
+                                                       :formula call-formula
+                                                       :hints call-hints
+                                                       :enable nil)))
           (retok expr
                  out-type
                  term
                  `(binary-+ '2 ,limit)
                  (append args.events
-                         (list guard-lemma-event))
-                 nil
+                         (list guard-lemma-event
+                               call-event))
+                 nil ; TODO: call-thm-name
                  thm-index
                  names-to-avoid)))
        ((erp (expr-gout pure))
@@ -814,7 +918,16 @@
            thm-name
            (1+ pure.thm-index)
            names-to-avoid))
-  :prepwork ((local (in-theory (enable pseudo-termp)))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (e/d (length
+          alistp-when-atc-symbol-fninfo-alistp-rewrite)
+         ((:e tau-system)))))
+  :prepwork ((local (in-theory (enable pseudo-termp)))
+             (defrulel verify-guards-lemma
+               (implies (symbol-listp x)
+                        (not (stringp x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
