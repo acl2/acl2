@@ -772,7 +772,7 @@
              (call-hints
               `(("Goal"
                  :in-theory
-                 '(exec-expr-call-of-pure-when-call
+                 '(exec-expr-call-or-pure-when-call
                    exec-expr-call-open
                    exec-expr-pure-list-of-nil
                    exec-expr-pure-list-when-consp
