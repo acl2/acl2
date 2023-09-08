@@ -59,12 +59,11 @@
   :hints (("Goal" :in-theory (enable bounded-integer-alistp assoc-equal))))
 
 (defthm bounded-integer-alistp-of-cons
-  (implies (natp n)
-           (equal (bounded-integer-alistp (cons item array) n)
-                  (and (bounded-integer-alistp array n)
-                       (or (eq :header (car item))
-                           (and (natp (car item))
-                                (< (car item) n))))))
+  (equal (bounded-integer-alistp (cons item array) n)
+         (and (bounded-integer-alistp array n)
+              (or (eq :header (car item))
+                  (and (natp (car item))
+                       (< (car item) n)))))
   :hints (("Goal" :in-theory (enable bounded-integer-alistp))))
 
 (defthm bounded-integer-alistp-of-nil

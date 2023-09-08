@@ -757,6 +757,8 @@
 
             x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
             x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
+            x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
+
             x86isa::canonical-address-listp-of-cons
             x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
             x86isa::member-p-of-create-canonical-address-list-same
@@ -816,7 +818,7 @@
             x86isa::true-listp-create-canonical-address-list
             x86isa::len-of-create-canonical-address-list
 ;            len-of-byte-ify ;can we drop the integerp hyp?
-            x86isa::rb-returns-x86-app-view ;targets mv-nth 2 of rb
+
 
 
             x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
@@ -936,7 +938,7 @@
             x86isa::mv-nth-1-rb-xw-rgf
 ;xr-rgf-mv-nth-2-rb
 ;xr-app-view-mv-nth-2-rb
-            x86isa::rb-returns-x86-app-view
+
 ;signed-byte-p-when-between-canonical-addresses
 ;            x86isa::x86p-of-set-flag-undefined-eric ;x86p-of-set-flag-undefined ;drop?
 ;            x86isa::alignment-checking-enabled-p-and-set-flag-undefined ;drop?
