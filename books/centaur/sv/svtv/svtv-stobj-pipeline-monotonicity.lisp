@@ -30,6 +30,7 @@
 (include-book "../svex/compose-theory-monotonicity")
 (local (include-book "../svex/alist-thms"))
 (local (include-book "std/lists/sets" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :System))
 (local (std::add-default-post-define-hook :fix))
 #||
 (include-book
@@ -266,13 +267,24 @@
                                     svarlist-change-override
                                     svarlist-override-p))))
 
+(local (defthmd loghead-0-when-loghead-0
+         (implies (and (equal (loghead n x) 0)
+                       (< (nfix m) (nfix n)))
+                  (equal (equal (loghead m x) 0)
+                         t))
+         :hints (("goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))))
+
 (defthm svarlist-override-p-when-svarlist-addr-p
     (implies (svarlist-addr-p x)
              (svarlist-override-p x nil))
     :hints(("Goal" :in-theory (enable svarlist-override-p
                                       svarlist-addr-p
                                       svar-override-p
-                                      svar-addr-p))))
+                                      svar-addr-p
+                                      svar->override-val
+                                      svar->override-test
+                                      loghead-0-when-loghead-0))))
 
          
 

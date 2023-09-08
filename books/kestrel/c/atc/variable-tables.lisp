@@ -310,3 +310,27 @@
                                (symbol-name-lst (strip-cars scope))))
            (mv nil nil t)))
        (atc-check-var-aux var (cdr inscope) nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-varinfo-alist-to-thms ((scope atc-symbol-varinfo-alistp))
+  :returns (thms symbol-listp)
+  :short "Names of all the theorems in a scope of a variable table."
+  (b* (((when (endp scope)) nil)
+       ((cons & info) (car scope))
+       (thm (atc-var-info->thm info))
+       (more-thms (atc-symbol-varinfo-alist-to-thms (cdr scope))))
+    (cons thm more-thms)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbol-varinfo-alist-list-to-thms
+  ((inscope atc-symbol-varinfo-alist-listp))
+  :returns (thms symbol-listp)
+  :short "Names of all the theorems in a variable table."
+  (b* (((when (endp inscope)) nil)
+       (scope (car inscope))
+       (thms (atc-symbol-varinfo-alist-to-thms scope))
+       (more-thms (atc-symbol-varinfo-alist-list-to-thms (cdr inscope))))
+    (append thms more-thms))
+  :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))

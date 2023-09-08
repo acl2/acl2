@@ -123,7 +123,7 @@
            (find-bind-in-pairs (cdr apairs) var))))
 
 (define get-q-bind (name (mod sv::module-p))
-  (b* ((svar (sv::make-svar :name (cons name "q") :delay 0 :nonblocking nil)))
+  (b* ((svar (sv::make-svar :name (cons name "q") :delay 0)))
     (find-bind-in-pairs (sv::module->aliaspairs mod) svar)))
 
 (define find-var-hier-subs (name (mod sv::module-p) (alst sv::modalist-p))

@@ -640,16 +640,27 @@
 
 
 
+(local (in-theory (disable bitops::logapp-of-i-0)))
+
+(local (defthm equal-logapp
+         (equal (equal (logapp n x y) z)
+                (and (integerp z)
+                     (equal (loghead n x) (loghead n z))
+                     (equal (ifix y) (logtail n z))))
+         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                            bitops::ihsext-recursive-redefs)))))
 
 (local (defthmd self-equal-change-override
          (equal (equal (svar-fix x) (svar-change-override x type))
                 (svar-override-p x type))
-         :hints(("Goal" :in-theory (enable svar-override-p svar-change-override)))))
+         :hints(("Goal" :in-theory (enable svar-override-p svar-change-override
+                                           svar-overridetype-fix-possibilities)))))
 
 (local (defthmd svar-override-p-when-equal-change-override
          (implies (equal (svar-fix x) (svar-change-override y type))
                   (svar-override-p x type))
-         :hints(("Goal" :in-theory (enable svar-override-p svar-change-override)))))
+         :hints(("Goal" :in-theory (enable svar-override-p svar-change-override
+                                           svar-overridetype-fix-possibilities)))))
 
 
 
@@ -828,12 +839,22 @@
              :do-not-induct t)))))
 
 
+(local (defthmd loghead-is-0-when-loghead-equal-0
+         (implies (and (equal (loghead n x) 0)
+                       (< (nfix m) (nfix n)))
+                  (equal (loghead m x) 0))
+         :hints (("goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))))
+
 (defthm svar-nonoverride-p-when-svar-addr-p
   (implies (svar-addr-p x)
            (and (svar-override-p x nil)
                 (implies (not (svar-overridetype-equiv type nil))
                          (not (svar-override-p x type)))))
-  :hints(("Goal" :in-theory (enable svar-addr-p svar-override-p))))
+  :hints(("Goal" :in-theory (enable svar-addr-p
+                                    svar-override-p
+                                    loghead-is-0-when-loghead-equal-0
+                                    svar-overridetype-fix-possibilities))))
 
 (defthm svarlist-nonoverride-p-when-svarlist-addr-p
   (implies (svarlist-addr-p x)
