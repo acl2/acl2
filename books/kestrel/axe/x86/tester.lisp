@@ -14,11 +14,11 @@
 ;; See also the Formal Unit Tester for Java.
 
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
-(include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
 (include-book "kestrel/axe/tactic-prover" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
+(include-book "unroll-x86-code")
 (include-book "tester-rules")
 (include-book "rule-lists")
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
