@@ -1,7 +1,7 @@
 ; Rule lists used for x86 reasoning
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1302,6 +1302,9 @@
           (linear-memory-rules)
           '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs
+            ;; this is sometimes needed in 64-bit mode (e.g., when a stack
+            ;; protection value is read via the FS segment register):
+            x86isa::rme-size-when-64-bit-modep-fs/gs
             x86isa::wme-size-when-64-bit-modep-and-not-fs/gs ; puts in wml-size
             x86isa::rime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
