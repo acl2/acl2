@@ -1069,6 +1069,7 @@
                                                   :valvar (svar-change-override test :val)
                                                   :valexpr (or (svex-lookup (svar-change-override test nil) values) (svex-x)))))
            :hints(("Goal" :in-theory (enable svex-override-triplelist-lookup
+                                             svar->svex-override-triple
                                              svar->svex-override-triplelist
                                              svarlist-to-override-triples
                                              svarlist-member-nonoverride
@@ -1084,6 +1085,7 @@
                                                   :valvar val
                                                   :valexpr (or (svex-lookup (svar-change-override val nil) values) (svex-x)))))
            :hints(("Goal" :in-theory (enable svex-override-triplelist-lookup-valvar
+                                             svar->svex-override-triple
                                              svar->svex-override-triplelist
                                              svarlist-to-override-triples
                                              svarlist-member-nonoverride
@@ -1483,6 +1485,7 @@
             (svar->svex-override-triplelist x values)
             override-env prev-env))
     :hints(("Goal" :in-theory (enable svex-override-triplelist-env-ok
+                                      svar->svex-override-triple
                                       svar->svex-override-triplelist))))
 
   (local (in-theory (enable svex-env-boundp-iff-member-alist-keys)))

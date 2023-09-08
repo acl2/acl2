@@ -52,6 +52,7 @@
    lemma-defthm
    lemma-args
    no-lemmas
+   no-integerp
    hints
    free-env-var-1
    free-env-var-2
@@ -124,7 +125,6 @@
             ',(car input-vars)
             ,(svtv-equiv-thm-suffix-index-to-var (car input-vars) pkg-sym index))
           (svtv-equiv-thm-input-vars-to-alist (cdr input-vars) pkg-sym index))))
-
 
 
 (progn
@@ -289,11 +289,12 @@
                      (<outputs-2>
                       . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-2 x.pkg-sym 2)) ;;;;
                      (<integerp-concls>
-                      . ,(svtv-genthm-integerp-conclusions-aux (append
-                                                                (svtv-equiv-thm-suffix-index-to-vars
-                                                                 x.output-vars-1 x.pkg-sym 1)
-                                                                (svtv-equiv-thm-suffix-index-to-vars
-                                                                 x.output-vars-2 x.pkg-sym 2))))
+                      . ,(and (not x.no-integerp)
+                              (svtv-genthm-integerp-conclusions-aux (append
+                                                                     (svtv-equiv-thm-suffix-index-to-vars
+                                                                      x.output-vars-1 x.pkg-sym 1)
+                                                                     (svtv-equiv-thm-suffix-index-to-vars
+                                                                      x.output-vars-2 x.pkg-sym 2)))))
                      (<args> . ,x.lemma-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :pkg-sym x.pkg-sym)))
@@ -303,7 +304,6 @@
        ((list name term) (car input-var-bindings)))
     (cons `(equal ,(svtv-equiv-thm-suffix-index-to-var name pkg-sym index) ,term)
           (svtv-equiv-thm-input-binding-hyp-termlist (cdr input-var-bindings) pkg-sym index))))
-
 
 (defun svtv-equiv-mono-lemma (x i)
   (b* (((svtv-equiv-thm-data x))
@@ -325,9 +325,9 @@
                                     (lemma-run (svtv-run (<svtv>)
                                                          <fixed-env>
                                                          #|(append <input-bindings>
-                                                                 <input-vars>
-                                                                 <override-tests>
-                                                                 <override-vals>)|#)))
+                                                         <input-vars>
+                                                         <override-tests>
+                                                         <override-vals>)|#)))
                                  (svex-env-<<= lemma-run run))))
                     :hints (("goal" :use ((:instance <svtv>-overrides-correct
                                                      (spec-env <env>)
@@ -343,9 +343,9 @@
                                                            ((svassocs <outputs-other>) run-other))
                                                         <fixed-env>
                                                         #|(append <input-bindings>
-                                                                <input-vars>
-                                                                <override-tests>
-                                                                <override-vals>)|#))))
+                                                        <input-vars>
+                                                        <override-tests>
+                                                        <override-vals>)|#))))
                              :in-theory '((:CONGRUENCE CONS-4VEC-EQUIV-CONGRUENCE-ON-V-UNDER-SVEX-ENV-EQUIV)
                                           (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1)
                                           (:DEFINITION 4VEC-EQUIV$INLINE)
@@ -423,7 +423,7 @@
                      x.triples-val-1 x.triples-name-1)
                   ;; <override-vals-1>
                   (list . ,(svtv-equiv-thm-input-vars-to-alist x.override-vars-1 x.pkg-sym 1)))))
-           
+
            (<env> . env-1)
            (<env-other> . env-2)
            (<svtv> . ,x.svtv-1)
@@ -458,7 +458,7 @@
          (<svtv-other> . ,x.svtv-1)
          (<outputs-list-other> . ,x.output-vars-1)
          (<triples> . ,x.triples-name-2)
-         
+
          ;; (<input-bindings> . (list ,@(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings-2)
          ;;                           ,@(svtv-genthm-input-var-bindings-alist-termlist x.override-var-bindings-2)))
          ;; (<input-vars> . (list . ,(svtv-equiv-thm-input-vars-to-alist x.input-vars-2 x.pkg-sym 2)))
@@ -483,9 +483,9 @@
                                                x.input-vars-2 x.pkg-sym 2))
 
            (<outputs-other> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs
-                                           (append x.output-vars-2 x.override-vars-2)
-                                           x.pkg-sym 2))
-           
+                                (append x.output-vars-2 x.override-vars-2)
+                                x.pkg-sym 2))
+
            (<input-binding-hyp> .  ,(svtv-equiv-thm-input-binding-hyp-termlist
                                      (append x.input-var-bindings-1 x.override-var-bindings-1)
                                      x.pkg-sym 1))
@@ -560,18 +560,19 @@
                                               ;; :include '<outputs-list-2>
                                               ))
                              ((svassocs <outputs-2>) run-2)))
-                      (implies (and <hyp>
+                      (implies (and ;;<integerp-concls>
+                                    <hyp>
                                     <input-binding-hyp>
                                     (:@ :free-env-var-1
-                                     (sv::svtv-override-triplemaplist-envs-match
-                                      (<triples-1>) sv::env-1 nil))
+                                        (sv::svtv-override-triplemaplist-envs-match
+                                         (<triples-1>) sv::env-1 nil))
                                     (:@ :free-env-var-2
-                                     (sv::svtv-override-triplemaplist-envs-match
-                                      (<triples-2>) sv::env-2 nil)))
+                                        (sv::svtv-override-triplemaplist-envs-match
+                                         (<triples-2>) sv::env-2 nil)))
                                <concl>))
                     :hints (:@ :no-lemmas <hints>)
                     (:@ (not :no-lemmas)
-                        (("goal" 
+                        (("goal"
                           :in-theory (e/d** ((:ruleset sv::svtv-generalized-thm-rules)
                                              svarlist-p-of-<svtv-1>-input-vars
                                              svarlist-p-of-<svtv-2>-input-vars
@@ -591,42 +592,42 @@
                                              (:TYPE-PRESCRIPTION SVEX-ENV-LOOKUP)
                                              <enable>))
                           :use ((:instance <name>-equiv-lemma
-                                 (:@ :free-env-var-1
-                                  <override-var-instantiation-1>
-                                  <input-var-instantiation-1>)
-                                 (:@ :free-env-var-2
-                                  <override-var-instantiation-2>
-                                  <input-var-instantiation-2>))
+                                           (:@ :free-env-var-1
+                                               <override-var-instantiation-1>
+                                               <input-var-instantiation-1>)
+                                           (:@ :free-env-var-2
+                                               <override-var-instantiation-2>
+                                               <input-var-instantiation-2>))
                                 (:@ :free-env-var-1
-                                 (:instance <svtv-1>-refines-<svtv-1>
-                                  (spec-pipe-env env-1)
-                                  (pipe-env (b* (((svassocs <input-var-svassocs-1>) env-1)
-                                                 (run-1 (svtv-run (<svtv-1>) env-1))
-                                                 ((svassocs <override-svassocs-1> <outputs-1>) run-1))
-                                              <env-1>))))
+                                    (:instance <svtv-1>-refines-<svtv-1>
+                                               (spec-pipe-env env-1)
+                                               (pipe-env (b* (((svassocs <input-var-svassocs-1>) env-1)
+                                                              (run-1 (svtv-run (<svtv-1>) env-1))
+                                                              ((svassocs <override-svassocs-1> <outputs-1>) run-1))
+                                                           <env-1>))))
                                 (:@ :free-env-var-2
-                                 (:instance <svtv-2>-refines-<svtv-2>
-                                  (spec-pipe-env env-2)
-                                  (pipe-env
-                                   (b* ((:@ :free-env-var-1
-                                         ((svassocs <input-var-svassocs-1>) env-1)
-                                         (run-1 (svtv-run (<svtv-1>) env-1))
-                                         ((svassocs <override-svassocs-1> <outputs-1>) run-1))
-                                        (:@ (not :free-env-var-1)
-                                         (run-1 (svtv-run (<svtv-1>)
-                                                          <env-1>
-                                                          #|(append <input-bindings-1>
-                                                          <input-vars-1> ; ; ;
-                                                          <override-tests-1> ; ; ;
-                                                          <override-vals-1>)|#
-                                                          ;; :include '<outputs-list-1>
-                                                          ))
-                                         ((svassocs <outputs-1>) run-1))
-                                        ((svassocs <input-var-svassocs-2>) env-2)
-                                        (run-2 (svtv-run (<svtv-2>) env-2))
-                                        ((svassocs <override-svassocs-2> <outputs-2>) run-2))
-                                     <env-2>)))))))
-                         ))))
+                                    (:instance <svtv-2>-refines-<svtv-2>
+                                               (spec-pipe-env env-2)
+                                               (pipe-env
+                                                (b* ((:@ :free-env-var-1
+                                                         ((svassocs <input-var-svassocs-1>) env-1)
+                                                         (run-1 (svtv-run (<svtv-1>) env-1))
+                                                         ((svassocs <override-svassocs-1> <outputs-1>) run-1))
+                                                     (:@ (not :free-env-var-1)
+                                                         (run-1 (svtv-run (<svtv-1>)
+                                                                          <env-1>
+                                                                          #|(append <input-bindings-1>
+                                                                          <input-vars-1> ; ; ;
+                                                                          <override-tests-1> ; ; ;
+                                                                          <override-vals-1>)|#
+                                                                          ;; :include '<outputs-list-1>
+                                                                          ))
+                                                         ((svassocs <outputs-1>) run-1))
+                                                     ((svassocs <input-var-svassocs-2>) env-2)
+                                                     (run-2 (svtv-run (<svtv-2>) env-2))
+                                                     ((svassocs <override-svassocs-2> <outputs-2>) run-2))
+                                                  <env-2>)))))))
+                        ))))
     (acl2::template-subst
      template
      :atom-alist
@@ -637,7 +638,6 @@
        (<triples-1> . ,x.triples-name-1)
        (<triples-2> . ,x.triples-name-2)
        (<hints> . ,x.hints)
-
 
        (<env-1>
         . ,(svtv-equiv-thm-normalize-fixed-env
@@ -723,7 +723,16 @@
 
        (<outputs-1> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-1 x.pkg-sym 1))
        (<outputs-2> . ,(svtv-equiv-thm-suffix-index-to-vars-for-svassocs x.output-vars-2 x.pkg-sym 2))
-       (<enable> . ,x.enable))
+       (<enable> . ,x.enable)
+       #|(<integerp-concl-hyps>
+        . ,(and (equal x.no-integerp :in-hyps)
+                (svtv-genthm-integerp-conclusions-aux (append
+                                                       (svtv-equiv-thm-suffix-index-to-vars
+                                                        x.output-vars-1 x.pkg-sym 1)
+                                                       (svtv-equiv-thm-suffix-index-to-vars
+                                                        x.output-vars-2 x.pkg-sym 2)))))|#
+
+       )
      :str-alist `(("<NAME>" . ,(symbol-name x.name))
                   ("<SVTV-1>" . ,(symbol-name x.svtv-1))
                   ("<SVTV-2>" . ,(symbol-name x.svtv-2)))
@@ -864,6 +873,7 @@
          override-var-bindings-2
          enable
          unsigned-byte-hyps
+         no-integerp
          (hyp 't)
          concl
          (lemma-defthm 'fgl::def-fgl-thm)
@@ -915,6 +925,42 @@
                         ,hyp))
               hyp))
 
+       (input-vars-1 (if (equal input-vars-1 :all)
+                         (b* ((all-ins (svtv->ins svtv-val-1))
+                              (triplelist (svtv-override-triplemaplist-to-triplelist triplemaps-val-1))
+                              (conditional-triples (svtv-override-triplelist-keep-conditional triplelist))
+                              (ovr-controls (svexlist-collect-vars (svtv-override-triplelist->tests conditional-triples)))
+                              (conditional-ovr-signals (svexlist-collect-vars (svtv-override-triplelist->vals conditional-triples)))
+                              ;; Conditional overrides/override tests should not be treated as input vars.
+                              ;; Unconditional overrides should be treated as inputs UNLESS they're explicitly listed in the override-vars/override-var-bindings.
+                              (ovr-signals (append override-vars-1
+                                                   (alist-keys override-var-bindings-1)
+                                                   conditional-ovr-signals))
+                              (all-ins (acl2::hons-set-diff all-ins
+                                                            (append ovr-controls ovr-signals
+                                                                    (alist-keys input-var-bindings-1))))
+                              (all-ins (remove-duplicates-equal all-ins)))
+                           all-ins)
+                       input-vars-1))
+
+       (input-vars-2 (if (equal input-vars-2 :all)
+                         (b* ((all-ins (svtv->ins svtv-val-2))
+                              (triplelist (svtv-override-triplemaplist-to-triplelist triplemaps-val-2))
+                              (conditional-triples (svtv-override-triplelist-keep-conditional triplelist))
+                              (ovr-controls (svexlist-collect-vars (svtv-override-triplelist->tests conditional-triples)))
+                              (conditional-ovr-signals (svexlist-collect-vars (svtv-override-triplelist->vals conditional-triples)))
+                              ;; Conditional overrides/override tests should not be treated as input vars.
+                              ;; Unconditional overrides should be treated as inputs UNLESS they're explicitly listed in the override-vars/override-var-bindings.
+                              (ovr-signals (append override-vars-2
+                                                   (alist-keys override-var-bindings-2)
+                                                   conditional-ovr-signals))
+                              (all-ins (acl2::hons-set-diff all-ins
+                                                            (append ovr-controls ovr-signals
+                                                                    (alist-keys input-var-bindings-2))))
+                              (all-ins (remove-duplicates-equal all-ins)))
+                           all-ins)
+                       input-vars-2))
+
        )
     (svtv-equiv-thm-events
      (make-svtv-equiv-thm-data
@@ -944,6 +990,7 @@
       :free-env-var-1 free-env-var-1
       :free-env-var-2 free-env-var-2
       :no-lemmas no-lemmas
+      :no-integerp no-integerp
       :pkg-sym pkg-sym)
      state)))
 

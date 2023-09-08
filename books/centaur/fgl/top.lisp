@@ -34,6 +34,7 @@
 (include-book "bitops-primitives")
 (include-book "check-primitives")
 (include-book "svex")
+(include-book "svex-primitives")
 (include-book "member-equal")
 (include-book "member-int-list")
 (include-book "enums")

@@ -41,6 +41,7 @@
 ;; (include-book "centaur/vl/transforms/always/util" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system)
                            nfix natp)))
@@ -248,7 +249,7 @@ because... (BOZO)</p>
                                               svexlist-set-nonblocking)))))
     (b* ((x (svex-fix x)))
       (svex-case x
-        :var (change-svex-var x :name (change-svar x.name :nonblocking t))
+        :var (change-svex-var x :name (change-svar x.name :bits (logior #x100 (svar->bits x.name))))
         :quote x
         :call (change-svex-call x :args (svexlist-set-nonblocking x.args)))))
 
@@ -279,7 +280,8 @@ because... (BOZO)</p>
                                               svexlist-unset-nonblocking)))))
     (b* ((x (svex-fix x)))
       (svex-case x
-        :var (change-svex-var x :name (change-svar x.name :nonblocking nil))
+        :var (change-svex-var x :name (change-svar x.name
+                                                   :bits (logandc1 #x100 (svar->bits x.name))))
         :quote x
         :call (change-svex-call x :args (svexlist-unset-nonblocking x.args)))))
 
@@ -1898,6 +1900,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 (local (defthm integer-length-when-posp
          (implies (posp x)
                   (posp (integer-length x)))
+         :hints(("Goal" :in-theory (enable integer-length)))
          :rule-classes :type-prescription))
 
 #!sv
@@ -2233,7 +2236,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((x (svex-alist-fix x)))
     (if (atom x)
         nil
-      (cons (cons (change-svar (caar x) :nonblocking nil)
+      (cons (cons (change-svar (caar x)
+                               :bits (logandc1 #x100 (svar->bits (caar x))))
                   (svex-unset-nonblocking (cdar x)))
             (svex-alist-unset-nonblocking (cdr x))))))
 
@@ -2276,7 +2280,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((x (4vmask-alist-fix x)))
     (if (atom x)
         nil
-      (cons (cons (change-svar (caar x) :nonblocking nil)
+      (cons (cons (change-svar (caar x) :bits (logandc1 #x100 (svar->bits (caar x))))
                   (cdar x))
             (4vmask-alist-unset-nonblocking (cdr x))))))
   

@@ -309,58 +309,6 @@
               (member-equal v (svarlist-fix x))))))
 
 
-(define svar-override-okp ((x svar-p))
-  (or (svar-override-p x :test)
-      (svar-override-p x :val)
-      (svar-override-p x nil))
-  ///
-  (defthm svar-override-okp-when-svar-override-p
-    (implies (svar-override-p x type)
-             (svar-override-okp x))
-    :hints(("Goal" :in-theory (enable svar-override-p))))
-  (defthm svar-override-okp-of-svar-change-override
-    (svar-override-okp (svar-change-override x type))))
-
-(define svarlist-override-okp ((x svarlist-p))
-  (if (atom x)
-      t
-    (and (svar-override-okp (car x))
-         (svarlist-override-okp (cdr x))))
-  ///
-  (defthm svarlist-override-okp-of-append
-    (iff (svarlist-override-okp (append x y))
-         (and (svarlist-override-okp x)
-              (svarlist-override-okp y))))
-
-  (defthm svarlist-override-okp-when-svarlist-override-p
-    (implies (svarlist-override-p x type)
-             (svarlist-override-okp x))
-    :hints(("Goal" :in-theory (enable svarlist-override-p))))
-
-  (defthm svarlist-override-okp-of-svarlist-change-override
-    (svarlist-override-okp (svarlist-change-override x type))
-    :hints(("Goal" :in-theory (enable svarlist-change-override)))))
-
-
-(define svarlist-override-okp-badguy ((x svarlist-p))
-  :returns (badguy)
-  (if (atom x)
-      nil
-    (if (svar-override-okp (car x))
-        (svarlist-override-okp-badguy (cdr x))
-      (svar-fix (car x))))
-  ///
-  (defretd svarlist-override-okp-iff-badguy
-    (iff (svarlist-override-okp x)
-         (or (not (member-equal badguy (svarlist-fix x)))
-             (svar-override-okp badguy)))
-    :hints(("Goal" :in-theory (enable svarlist-override-okp svarlist-fix))))
-
-  (defretd svarlist-override-okp-by-badguy
-    (implies (or (not (member-equal badguy (svarlist-fix x)))
-                 (svar-override-okp badguy))
-             (svarlist-override-okp x))
-    :hints(("Goal" :in-theory (enable svarlist-override-okp-iff-badguy)))))
 
 
 
