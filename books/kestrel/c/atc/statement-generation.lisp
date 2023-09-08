@@ -16,7 +16,6 @@
 
 (include-book "kestrel/std/system/close-lambdas" :dir :system)
 
-(local (include-book "kestrel/std/system/fsubcor-var" :dir :system))
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -730,9 +729,7 @@
               (reterr
                (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                       called-fn called-formals args.terms)))
-             (limit-for-actuals
-              (fsubcor-var (formals+ called-fn wrld) args.terms limit))
-             (call-limit `(binary-+ '2 ,limit-for-actuals))
+             (call-limit `(binary-+ '2 ,limit))
              ((mv result new-compst)
               (atc-gen-call-result-and-endstate out-type
                                                 gin.affect
@@ -4650,9 +4647,7 @@
        ((unless (equal (len called-formals) (len args.terms)))
         (reterr (raise "Internal error: ~x0 has formals ~x1 but actuals ~x2."
                        called-fn called-formals args.terms)))
-       (limit-for-actuals
-        (fsubcor-var (formals+ called-fn wrld) args.terms limit))
-       (call-limit `(binary-+ '2 ,limit-for-actuals))
+       (call-limit `(binary-+ '2 ,limit))
        ((mv & new-compst)
         (atc-gen-call-result-and-endstate (type-void)
                                           gin.affect
