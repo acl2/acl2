@@ -1,7 +1,7 @@
 ; Support for using Axe to reason about x86 code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,8 @@
 (in-package "X")
 
 ;; These are axe-specific supporting rules (they use axe-syntaxp or axe-bind-free)
+
+;; TODO: Factor out non-Axe-specific stuff
 
 ;; TODO: Make sure there are non-axe versions of all of these.
 
