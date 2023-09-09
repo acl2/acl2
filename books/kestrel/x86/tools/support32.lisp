@@ -17,7 +17,6 @@
 (include-book "register-readers-and-writers")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
-(include-book "kestrel/axe/known-booleans" :dir :system) ;todo?
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (local (include-book "kestrel/bv/logior-b" :dir :system))
@@ -298,8 +297,6 @@
       (equal 1 (x86isa::code-segment-descriptor-attributesbits->d (seg-hidden-attri seg-reg x86)))
     (equal 1 (x86isa::data-segment-descriptor-attributesbits->d/b (seg-hidden-attri seg-reg x86)))))
 
-(acl2::add-known-boolean segment-is-32-bitsp)
-
 (defthm segment-is-32-bitsp-intro-code
   (equal (x86isa::code-segment-descriptor-attributesbits->d (xr :seg-hidden-attr *cs* x86))
          (if (segment-is-32-bitsp *cs* x86)
@@ -575,8 +572,6 @@
   (implies (well-formed-32-bit-segmentp seg-reg x86)
            (not (< (xr :seg-visible seg-reg x86) 4))))
 
-(acl2::add-known-boolean well-formed-32-bit-segmentp)
-
 ;;;
 ;;; code-segment-readable-bit
 ;;;
@@ -759,9 +754,6 @@
 ;;                            (X86ISA::SEG-HIDDEN-LIMITI-IS-N32P
 ;;                             X86ISA::SEG-HIDDEN-BASEI-IS-N64P
 ;;                             X86ISA::SEG-HIDDEN-ATTRI-IS-N16P)))))
-
-(acl2::add-known-boolean code-segment-well-formedp)
-(acl2::add-known-boolean code-segment-assumptions32-for-code)
 
 ;; incrementing the eip returns no error:
 (defthm not-mv-nth-0-of-add-to-*ip
@@ -1601,8 +1593,6 @@
   (and (<= (segment-min-eff-addr32 seg-reg x86) eff-addr)
        (<= (+ -1 n eff-addr) (segment-max-eff-addr32 seg-reg x86))))
 
-(acl2::add-known-boolean eff-addrs-okp)
-
 (defthm eff-addrs-okp-of-1
   (equal (eff-addrs-okp 1 eff-addr seg-reg x86)
          (eff-addr-okp eff-addr seg-reg x86)))
@@ -1933,8 +1923,6 @@
                 (x86p x86))
            (eff-addrs-okp n eff-addr *cs* x86))
   :hints (("Goal" :in-theory (enable code-segment-assumptions32-for-code))))
-
-(acl2::add-known-boolean eff-addr-okp)
 
 (acl2::def-constant-opener seg-regp)
 (acl2::def-constant-opener INTEGER-RANGE-P)
@@ -2906,8 +2894,6 @@
   (implies (code-and-stack-segments-separate x86)
            (segments-separate *cs* *ss* x86))
   :hints (("Goal" :in-theory (enable code-and-stack-segments-separate))))
-
-(acl2::add-known-boolean segments-separate)
 
 (defthm not-mv-nth-0-of-rme-size$inline
   (implies (and (eff-addrs-okp nbytes eff-addr seg-reg x86)
@@ -4437,8 +4423,6 @@
   :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-edx)))))
 
 (in-theory (disable set-eip)) ;move up
-
-(acl2::add-known-boolean acl2::bitp)
 
 ;;hyp phrased in terms of sep-eff-addr-ranges
 (defthmd write-to-segment-of-write-byte-to-segment-2
