@@ -248,17 +248,6 @@
            :in-theory (e/d (write write-byte)
                            (acl2::bvplus-recollapse)))))
 
-(defthm acl2::slice-of-logtail-gen
-  (implies (and (integerp acl2::high)
-                (natp acl2::low)
-                (natp n))
-           (equal (slice acl2::high acl2::low (logtail n x))
-                  (if (natp acl2::high)
-                      (slice (+ acl2::high n)
-                             (+ acl2::low n)
-                             x)
-                    0))))
-
 (defthm read-of-write-within
   (implies (and (<= ad2 ad1) ;gen
                 (< ad1 (+ n ad2))
@@ -444,17 +433,7 @@
            :in-theory (e/d (ash acl2::slice logtail ifix ACL2::FLOOR-OF-/)
                            (acl2::bvchop-of-logtail-becomes-slice)))))
 
-
-(defthm slice-of-expt-same-as-low
-  (implies (and (natp low)
-                (natp high))
-           (equal (slice high low (expt 2 low))
-                  (if (<= low high)
-                      1
-                    0)))
-  :hints (("Goal" :in-theory (e/d (slice)
-                                  (acl2::bvchop-of-logtail-becomes-slice)))))
-
+;move
 (defthm slice-of-minus-of-expt-same-as-low
   (implies (and (natp k)
                 (natp high))
@@ -463,7 +442,6 @@
                       (+ -1 (expt 2 (- (+ 1 high) k)))
                     0)))
   :hints (("Goal" :in-theory (enable acl2::slice-of-minus))))
-
 
 (defthm floor-lemma
   (IMPLIES (AND (< N 0)
@@ -602,6 +580,7 @@
   (equal (write-bytes base-addr vals x86)
          (write (len vals) base-addr (acl2::packbv (len vals) 8 (acl2::reverse-list vals)) x86))
   :hints (("Goal" :in-theory (e/d (;list::cdr-append
+                                   write-bytes
                                    write-byte)
                                   (;ACL2::LEN-CONS-META-RULE
                                    ;;ACL2::TAKE-OF-CONS
@@ -853,7 +832,7 @@
                 (integerp k+1))
            (equal (write-byte k+1 byte1 (write-byte k byte2 x86))
                   (write-bytes k (list byte2 byte1) x86)))
-  :hints (("Goal" :in-theory (enable write-byte bvminus acl2::bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (enable write-byte write-bytes bvminus acl2::bvchop-of-sum-cases))))
 
 (defthm equal-of-bvchop-and-bvplus-same
   (implies (natp size)
@@ -874,7 +853,7 @@
                 (integerp k+1))
            (equal (write-byte k byte1 (write-byte k+1 byte2 x86))
                   (write-bytes k (list byte1 byte2) x86)))
-  :hints (("Goal" :in-theory (enable WRITE-BYTE bvminus acl2::bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (enable write-byte write-bytes bvminus acl2::bvchop-of-sum-cases))))
 
 (in-theory (disable acl2::bvplus-recollapse))
 
@@ -924,7 +903,8 @@
   (implies (and (equal addr1 (bvplus 48 addr2 (len vals2)))
                 (integerp addr2))
            (equal (write-bytes addr1 vals1 (write-bytes addr2 vals2 x86))
-                  (write-bytes addr2 (append vals2 vals1) x86))))
+                  (write-bytes addr2 (append vals2 vals1) x86)))
+  :hints (("Goal" :in-theory (enable write-bytes))))
 
 (defthm write-bytes-of-write-bytes-disjoint
   (implies (and (syntaxp (acl2::smaller-termp addr1 addr2))
@@ -936,7 +916,7 @@
                   (write-bytes addr1 vals1 (write-bytes addr2 vals2 x86))))
   :hints (("Goal"
            :induct (WRITE-BYTES ADDR1 VALS1 X86)
-           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus)
+           :in-theory (e/d (write-bytes bvplus acl2::bvchop-of-sum-cases bvuminus bvminus)
                            (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
                                                     acl2::slice-of-+ ;looped
                                                     acl2::bvcat-of-+-high)) )))
@@ -960,18 +940,12 @@
 
 (theory-invariant (incompatible (:rewrite bvminus-of-+-arg3) (:rewrite acl2::bvchop-of-sum-cases)))
 
-(defthm bvminus-of-bvplus-same-arg2
-  (equal (bvminus size k (bvplus size j k))
-         (bvuminus size j))
-  :hints (("Goal" :in-theory (e/d (bvplus bvuminus acl2::bvchop-of-sum-cases bvminus) (;BVPLUS-OF-MINUS-1
-                                                                               )))))
-
 (defthm write-bytes-of-append
   (implies (and (integerp ad)
                 (<= (+ (len vals1) (len vals2)) (expt 2 48)))
            (equal (write-bytes ad (append vals1 vals2) x86)
                   (write-bytes ad vals1 (write-bytes (+ ad (len vals1)) vals2 x86))))
-  :hints (("Goal" :in-theory (enable append bvminus-of-+-arg3))))
+  :hints (("Goal" :in-theory (enable write-bytes append bvminus-of-+-arg3))))
 
 (defthm bvminus-of-+-same-arg2
   (implies (and (integerp x)
@@ -988,8 +962,6 @@
                   (bvuminus size y)))
   :hints (("Goal" :in-theory (e/d (bvplus bvuminus acl2::bvchop-of-sum-cases bvminus) ( ;bvplus-of-minus-1
                                                                                         )))))
-(in-theory (disable WRITE-BYTES))
-
 ;; outer write is at lower addresses
 (defthmd write-bytes-of-write-bytes-adjacent-2
   (implies (and (equal addr1 (bvplus 48 addr2 (len vals2)))
@@ -1185,6 +1157,7 @@
                                    (byte byte)))
            :in-theory (disable write-byte-of-bvchop-arg1))))
 
+;todo: nested induction
 (defthm write-bytes-of-write-byte-same-gen
   (implies (and (< (bvminus 48 ad2 ad1) (len bytes))
                 (integerp ad1)
@@ -1212,7 +1185,8 @@
            (equal (write-bytes ad1 bytes (write-byte ad2 byte x86))
                   (if (< (bvminus 48 ad2 ad1) (len bytes))
                       (write-bytes ad1 bytes x86)
-                    (write-byte ad2 byte (write-bytes ad1 bytes x86))))))
+                    (write-byte ad2 byte (write-bytes ad1 bytes x86)))))
+  :hints (("Goal" :in-theory (enable write-bytes))))
 
 
 (defun-nx double-write-bytes-induct-two-ads-two-lists (ad1 ad2 vals1 vals2 x86)

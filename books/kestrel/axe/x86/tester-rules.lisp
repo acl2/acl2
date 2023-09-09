@@ -12,6 +12,8 @@
 
 ;; STATUS: IN-PROGRESS
 
+;; TODO: Organize this material
+
 ;; TODO: Don't even attempt a run if no match is found in the symbol table for the function name?
 
 ;; TODO: Somehow distinguish between a run failing to finish and a query failing with a cex -- for now, we just use must-fail.
@@ -45,8 +47,6 @@
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 ;(local (include-book "kestrel/alists-light/alistp" :dir :system))
-
-(acl2::add-known-boolean CANONICAL-ADDRESS-P$INLINE) ; needed?
 
 (acl2::def-constant-opener acl2::bool-fix$inline)
 
@@ -723,8 +723,6 @@
   (equal (SF-SPEC64$INLINE (BVCHOP '64 x))
          (SF-SPEC64$INLINE x))
   :hints (("Goal" :in-theory (enable SF-SPEC64))))
-
-(acl2::add-known-boolean JNL-CONDITION) ;todo: more
 
 (defthm of-spec64-of-logext-64
   (equal (of-spec64 (logext 64 x))
@@ -1715,13 +1713,6 @@
            (equal (bvcat (+ 32 (- amt)) val amt 0)
                   (acl2::bvshl 32 val amt)))
   :hints (("Goal" :in-theory (enable acl2::bvshl))))
-
-;; mostly to suppress messages (but does this slow down anything?):
-;; todo: have this print :redundant when it is
-(acl2::add-known-boolean canonical-address-p$inline)
-(acl2::add-known-boolean separate)
-(acl2::add-known-boolean x86p)
-(acl2::add-known-boolean alignment-checking-enabled-p)
 
 (defthm X86ISA::RFLAGSBITS->PF-of-if
   (equal (X86ISA::RFLAGSBITS->PF (if test x1 x2))

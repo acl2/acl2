@@ -1556,7 +1556,7 @@
 ;;; write-bytes
 ;;;
 
-(defun write-bytes (base-addr bytes x86)
+(defund write-bytes (base-addr bytes x86)
   (declare (xargs :stobjs x86
                   :guard (and (acl2::all-unsigned-byte-p 8 bytes)
                               (true-listp bytes)
@@ -1570,7 +1570,8 @@
 
 (defthm write-bytes-of-nil
   (equal (write-bytes base-addr nil x86)
-         x86))
+         x86)
+  :hints (("Goal" :in-theory (enable write-bytes))))
 
 (defthm xr-of-write-bytes
   (implies (not (equal :mem fld))
@@ -1585,20 +1586,24 @@
 
 (defthm 64-bit-modep-of-write-bytes
   (equal (64-bit-modep (write-bytes base-addr vals x86))
-         (64-bit-modep x86)))
+         (64-bit-modep x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
 
 (defthm app-view-of-write-bytes
   (equal (app-view (write-bytes base-addr vals x86))
-         (app-view x86)))
+         (app-view x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
 
 (defthm alignment-checking-enabled-p-of-write-bytes
   (equal (alignment-checking-enabled-p (write-bytes base-addr vals x86))
-         (alignment-checking-enabled-p x86)))
+         (alignment-checking-enabled-p x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
 
 (defthm write-bytes-of-xw-irrel
   (implies (not (equal :mem fld))
            (equal (write-bytes addr values (xw fld index val x86))
-                  (xw fld index val (write-bytes addr values x86)))))
+                  (xw fld index val (write-bytes addr values x86))))
+  :hints (("Goal" :in-theory (enable write-bytes))))
 
 (defthm set-flag-of-write-bytes
   (equal (set-flag flg val (write-bytes addr values x86))
@@ -1608,14 +1613,14 @@
 (defthm get-flag-of-write-bytes
   (equal (get-flag flg (write-bytes addr values x86))
          (get-flag flg x86))
-  :hints (("Goal" :in-theory (enable set-flag wb))))
+  :hints (("Goal" :in-theory (enable write-bytes))))
 
 ;todo turn only writes of >1 byte into write-bytes..
 (defthm write-bytes-when-length-is-1
   (implies (equal 1 (len bytes))
            (equal (write-bytes addr bytes x86)
                   (write-byte addr (first bytes) x86)))
-  :hints (("Goal" :in-theory (e/d () ()))))
+  :hints (("Goal" :in-theory (enable write-bytes))))
 
 ;;;
 ;;; read-bytes

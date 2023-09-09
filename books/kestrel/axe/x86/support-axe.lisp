@@ -1,7 +1,7 @@
 ; Support for using Axe to reason about x86 code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,10 +13,14 @@
 
 ;; These are axe-specific supporting rules (they use axe-syntaxp or axe-bind-free)
 
+;; TODO: Factor out non-Axe-specific stuff
+
 ;; TODO: Make sure there are non-axe versions of all of these.
 
-(include-book "support")
-(include-book "assumptions64") ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
+(include-book "kestrel/x86/tools/support" :dir :system)
+(include-book "kestrel/x86/tools/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
+(include-book "kestrel/x86/tools/assumptions32" :dir :system) ; for return-address-okp
+(include-book "kestrel/x86/tools/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
@@ -24,6 +28,9 @@
 ;(include-book "rule-lists")
 
 ;; Register a bunch of x86-related functions as known booleans:
+
+;; mostly to suppress messages (but does this slow down anything?):
+;; todo: have this print :redundant when it is
 (acl2::add-known-boolean canonical-address-p$inline)
 (acl2::add-known-boolean canonical-address-listp)
 (acl2::add-known-boolean disjoint-p)
@@ -35,6 +42,22 @@
 (acl2::add-known-boolean no-duplicates-p)
 (acl2::add-known-boolean member-p)
 (acl2::add-known-boolean separate)
+
+(acl2::add-known-boolean separate)
+(acl2::add-known-boolean x86p)
+(acl2::add-known-boolean alignment-checking-enabled-p)
+
+(acl2::add-known-boolean jnl-condition) ;todo: more
+
+(acl2::add-known-boolean segment-is-32-bitsp)
+(acl2::add-known-boolean well-formed-32-bit-segmentp)
+(acl2::add-known-boolean code-segment-well-formedp)
+(acl2::add-known-boolean code-segment-assumptions32-for-code)
+(acl2::add-known-boolean eff-addrs-okp)
+(acl2::add-known-boolean eff-addr-okp)
+(acl2::add-known-boolean segments-separate)
+(acl2::add-known-boolean acl2::bitp)
+(acl2::add-known-boolean return-address-okp)
 
 (defthmd part-install-width-low-becomes-bvcat-axe
   (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize)) ;todo better message if we forget the package on dag-array (or make it a keyword?)

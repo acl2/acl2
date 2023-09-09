@@ -1409,7 +1409,8 @@
                                (:e stmt-expr->get)
                                ,expr-thm-name
                                compustatep-of-update-var
-                               compustatep-of-update-object))))
+                               compustatep-of-update-object
+                               compustatep-of-update-static-var))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -1514,8 +1515,7 @@
        (expr-limit `(binary-+ '1 ,asg-limit))
        (stmt-limit `(binary-+ '1 ,expr-limit))
        (item-limit `(binary-+ '1 ,stmt-limit))
-       ((when (or (not rhs.thm-name)
-                  (atc-var-info->externalp var-info))) ; <- temporary
+       ((when (not rhs.thm-name))
         (retok item
                rhs.term
                item-limit
@@ -1525,9 +1525,14 @@
                gin.context
                rhs.thm-index
                rhs.names-to-avoid))
-       (new-compst `(update-var (ident ',(symbol-name var))
+       (new-compst
+        (if (atc-var-info->externalp var-info)
+            `(update-static-var (ident ',(symbol-name var))
                                 ,rhs.term
-                                ,gin.compst-var))
+                                ,gin.compst-var)
+          `(update-var (ident ',(symbol-name var))
+                       ,rhs.term
+                       ,gin.compst-var)))
        (new-compst (untranslate$ new-compst nil state))
        (asg-thm-name (pack gin.fn '-correct- rhs.thm-index))
        ((mv asg-thm-name names-to-avoid)
@@ -1582,7 +1587,20 @@
                         identp-of-ident
                         equal-of-ident-and-ident
                         (:e str-fix)
-                        ,type-of-value-when-type))))
+                        ,type-of-value-when-type
+                        write-var-to-write-static-var
+                        var-autop-of-add-frame
+                        var-autop-of-enter-scope
+                        var-autop-of-add-var
+                        var-autop-of-update-var
+                        var-autop-of-update-static-var
+                        var-autop-of-update-object
+                        write-static-var-to-update-static-var
+                        write-static-var-okp-of-add-var
+                        write-static-var-okp-of-enter-scope
+                        write-static-var-okp-of-add-frame
+                        write-static-var-okp-when-valuep-of-read-static-var
+                        read-object-of-objdesign-static))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -1601,29 +1619,44 @@
                                  :proofs (and asg-thm-name t))
                                 state))
        (new-context
-        (atc-context-extend gin.context
-                            (list
-                             (make-atc-premise-cvalue
-                              :var var
-                              :term rhs.term)
-                             (make-atc-premise-compustate
-                              :var gin.compst-var
-                              :term `(update-var (ident ,(symbol-name var))
-                                                 ,var
-                                                 ,gin.compst-var)))))
+        (atc-context-extend
+         gin.context
+         (list
+          (make-atc-premise-cvalue
+           :var var
+           :term rhs.term)
+          (make-atc-premise-compustate
+           :var gin.compst-var
+           :term (if (atc-var-info->externalp var-info)
+                     `(update-static-var (ident ,(symbol-name var))
+                                         ,var
+                                         ,gin.compst-var)
+                   `(update-var (ident ,(symbol-name var))
+                                ,var
+                                ,gin.compst-var))))))
        (notflexarrmem-thms
         (atc-type-to-notflexarrmem-thms rhs.type gin.prec-tags))
-       (new-inscope-rules `(,rhs.thm-name
-                            remove-flexible-array-member-when-absent
-                            ,@notflexarrmem-thms
-                            value-fix-when-valuep
-                            ,valuep-when-type
-                            objdesign-of-var-of-update-var
-                            read-object-of-objdesign-of-var-of-update-var
-                            ident-fix-when-identp
-                            identp-of-ident
-                            equal-of-ident-and-ident
-                            (:e str-fix)))
+       (new-inscope-rules
+        `(,rhs.thm-name
+          remove-flexible-array-member-when-absent
+          ,@notflexarrmem-thms
+          value-fix-when-valuep
+          ,valuep-when-type
+          objdesign-of-var-of-update-var
+          read-object-of-objdesign-of-var-of-update-var
+          ident-fix-when-identp
+          identp-of-ident
+          equal-of-ident-and-ident
+          (:e str-fix)
+          objdesign-of-var-of-update-static-var-iff
+          read-object-of-objdesign-of-var-of-update-static-var-different
+          read-object-of-objdesign-of-var-of-update-static-var-same
+          var-autop-of-add-frame
+          var-autop-of-enter-scope
+          var-autop-of-add-var
+          var-autop-of-update-var
+          var-autop-of-update-static-var
+          var-autop-of-update-object))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -3159,6 +3192,7 @@
                                compustatep-of-add-var
                                compustatep-of-update-var
                                compustatep-of-update-object
+                               compustatep-of-update-static-var
                                compustatep-of-if*-when-both-compustatep
                                ,@type-thms
                                uchar-array-length-of-uchar-array-write

@@ -34,8 +34,6 @@
 (include-book "assumptions32")
 (include-book "assumptions64")
 
-(include-book "support-axe")
-
 (include-book "run-until-return")
 (include-book "support")
 

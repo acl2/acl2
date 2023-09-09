@@ -50,8 +50,6 @@
          (not (return-address-okp x86)))
   :hints (("Goal" :in-theory (enable return-address-okp))))
 
-(acl2::add-known-boolean return-address-okp)
-
 ;;todo: add more checking
 (defun gen-section-assumptions-pe-32 (entry base-of-code)
   (declare (xargs :guard (consp entry)

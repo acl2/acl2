@@ -18,13 +18,14 @@
 ;; state assumptions (since they can mention X and Y).  We use the
 ;; second approach here for now.
 
-(include-book "kestrel/x86/tools/support-axe" :dir :system)
+(include-book "support-axe")
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/tools/conditions" :dir :system)
 (include-book "kestrel/x86/tools/assumptions32" :dir :system)
 (include-book "kestrel/x86/tools/assumptions64" :dir :system)
 (include-book "kestrel/x86/tools/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/tools/write-over-write-rules" :dir :system)
+(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
@@ -313,6 +314,7 @@
                            (append (lifter-rules32)
                                    (lifter-rules32-new) ; todo, may first need to implement standard-assumptions-mach-o-32
                                    )
+                         ;; todo: add lifter-rules64-new here
                          (lifter-rules64))))
        (rules (append extra-rules lifter-rules))
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules rules)))
@@ -363,7 +365,7 @@
 ;; Returns (mv erp event state)
 (defun def-unrolled-fn (lifted-name
                         target
-                        parsed-executable
+                        executable
                         assumptions
                         suppress-assumptions
                         stack-slots
@@ -389,7 +391,7 @@
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
-                              ;; parsed-executable
+                              ;; executable
                               ;; assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
@@ -420,6 +422,15 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       ((mv erp parsed-executable state)
+        (if (stringp executable)
+            ;; it's a filename, so parse the file:
+            (acl2::parse-executable executable state)
+          ;; it's already a parsed-executable:
+          (mv nil executable state)))
+       ((when erp)
+        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
@@ -536,7 +547,7 @@
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
 (defmacro def-unrolled (&whole whole-form
                                lifted-name ;name to use for the generated function and constant (the latter surrounded by stars)
-                               parsed-executable ; for example, a defconst created by defconst-x86
+                               executable ; a string (filename), or (for example) a defconst created by defconst-x86
                                &key
                                (target ':entry-point) ;; where to start lifting (see lifter-targetp)
                                (assumptions 'nil) ;extra assumptions in addition to the standard-assumptions (todo: rename to :extra-assumptions)
@@ -565,7 +576,7 @@
     (def-unrolled-fn
       ',lifted-name
       ,target
-      ,parsed-executable
+      ,executable ; gets evaluated
       ,assumptions
       ',suppress-assumptions
       ',stack-slots
