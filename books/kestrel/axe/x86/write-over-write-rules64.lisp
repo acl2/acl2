@@ -1,4 +1,4 @@
-; "Write over write" rules for our x86 state writers
+; "Write over write" rules for our x86-64 state writers
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
 ;
@@ -10,12 +10,11 @@
 
 (in-package "X")
 
-;(include-book "support32")
 (include-book "register-readers-and-writers64")
 (include-book "kestrel/x86/tools/flags" :dir :system)
 (include-book "kestrel/x86/tools/read-and-write" :dir :system)
 
-;; Push write-byte inward
+;; These push write-byte inward:
 (defthm write-byte-of-set-rip (equal (write-byte base-addr byte (set-rip rip x86)) (set-rip rip (write-byte base-addr byte x86))) :hints (("Goal" :in-theory (enable write-byte))))
 (defthm write-byte-of-set-rax (equal (write-byte base-addr byte (set-rax rax x86)) (set-rax rax (write-byte base-addr byte x86))) :hints (("Goal" :in-theory (enable write-byte set-rax))))
 (defthm write-byte-of-set-rbx (equal (write-byte base-addr byte (set-rbx rbx x86)) (set-rbx rbx (write-byte base-addr byte x86))) :hints (("Goal" :in-theory (enable write-byte set-rbx))))
@@ -36,6 +35,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; These push write inward:
 (defthm write-of-set-rip (equal (write n base-addr val (set-rip rip x86)) (set-rip rip (write n base-addr val x86))) :hints (("Goal" :in-theory (enable write))))
 (defthm write-of-set-rax (equal (write n base-addr val (set-rax rax x86)) (set-rax rax (write n base-addr val x86))) :hints (("Goal" :in-theory (enable write set-rax))))
 (defthm write-of-set-rbx (equal (write n base-addr val (set-rbx rbx x86)) (set-rbx rbx (write n base-addr val x86))) :hints (("Goal" :in-theory (enable write set-rbx))))
@@ -56,6 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; These push set-flag inward:
 (defthm set-flag-of-set-rip (equal (set-flag flag fval (set-rip rip x86)) (set-rip rip (set-flag flag fval x86))) :hints (("Goal" :in-theory (enable set-flag))))
 (defthm set-flag-of-set-rax (equal (set-flag flag fval (set-rax rax x86)) (set-rax rax (set-flag flag fval x86))) :hints (("Goal" :in-theory (enable set-flag))))
 (defthm set-flag-of-set-rbx (equal (set-flag flag fval (set-rbx rbx x86)) (set-rbx rbx (set-flag flag fval x86))) :hints (("Goal" :in-theory (enable set-flag))))
@@ -76,6 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; These pull set-rip outward:
 (defthm set-rax-of-set-rip (equal (set-rax rax (set-rip rip x86)) (set-rip rip (set-rax rax x86))) :hints (("Goal" :in-theory (enable set-rip))))
 (defthm set-rbx-of-set-rip (equal (set-rbx rbx (set-rip rip x86)) (set-rip rip (set-rbx rbx x86))) :hints (("Goal" :in-theory (enable set-rip))))
 (defthm set-rcx-of-set-rip (equal (set-rcx rcx (set-rip rip x86)) (set-rip rip (set-rcx rcx x86))) :hints (("Goal" :in-theory (enable set-rip))))
@@ -95,6 +97,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; These push set-undef inward:
 (defthm set-undef-of-set-rip (equal (set-undef undef (set-rip rip x86)) (set-rip rip (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm set-undef-of-set-rax (equal (set-undef undef (set-rax rax x86)) (set-rax rax (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-rax))))
 (defthm set-undef-of-set-rbx (equal (set-undef undef (set-rbx rbx x86)) (set-rbx rbx (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-rbx))))
