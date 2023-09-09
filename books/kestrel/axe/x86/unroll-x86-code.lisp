@@ -19,6 +19,7 @@
 ;; second approach here for now.
 
 (include-book "support-axe")
+(include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/tools/conditions" :dir :system)
 (include-book "kestrel/x86/tools/assumptions32" :dir :system)

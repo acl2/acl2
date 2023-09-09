@@ -46,10 +46,14 @@
             x86isa::gpr-adc-spec-4$inline
             x86isa::gpr-adc-spec-8$inline
 
-            x86isa::gpr-sub-spec-1$inline
-            x86isa::gpr-sub-spec-2$inline
-            x86isa::gpr-sub-spec-4$inline
-            x86isa::gpr-sub-spec-8$inline
+            ;; x86isa::gpr-sub-spec-1$inline
+            ;; x86isa::gpr-sub-spec-2$inline
+            ;; x86isa::gpr-sub-spec-4$inline
+            ;; x86isa::gpr-sub-spec-8$inline
+            x86isa::gpr-sub-spec-1-alt-def
+            x86isa::gpr-sub-spec-2-alt-def
+            x86isa::gpr-sub-spec-4-alt-def
+            x86isa::gpr-sub-spec-8-alt-def
 
             x86isa::gpr-xor-spec-1$inline
             x86isa::gpr-xor-spec-2$inline
@@ -428,6 +432,101 @@
     ;x86isa::bitp-of-sf-spec32 ;todo: more like this
     x86isa::unsigned-byte-p-1-of-sf-spec32 ;todo: more like this
     x86isa::unsigned-byte-p-1-of-sub-af-spec32
+
+    ;; todo: now we turn bitp into unsigned-byte-p, so these won't fire:
+    x86isa::bitp-of-cf-spec-8
+    x86isa::bitp-of-cf-spec-16
+    x86isa::bitp-of-cf-spec-32
+    x86isa::bitp-of-cf-spec-64
+    x86isa::bitp-of-of-spec-8
+    x86isa::bitp-of-of-spec-16
+    x86isa::bitp-of-of-spec-32
+    x86isa::bitp-of-of-spec-64
+    x86isa::bitp-of-pf-spec-8
+    x86isa::bitp-of-pf-spec-16
+    x86isa::bitp-of-pf-spec-32
+    x86isa::bitp-of-pf-spec-64
+    x86isa::bitp-of-sf-spec-8
+    x86isa::bitp-of-sf-spec-16
+    x86isa::bitp-of-sf-spec-32
+    x86isa::bitp-of-sf-spec-64
+    x86isa::bitp-of-zf-spec
+    x86isa::bitp-of-add-af-spec8
+    x86isa::bitp-of-add-af-spec16
+    x86isa::bitp-of-add-af-spec32
+    x86isa::bitp-of-add-af-spec64
+    x86isa::bitp-of-sub-cf-spec8
+    x86isa::bitp-of-sub-cf-spec16
+    x86isa::bitp-of-sub-cf-spec32
+    x86isa::bitp-of-sub-cf-spec64
+    x86isa::bitp-of-sub-of-spec8
+    x86isa::bitp-of-sub-of-spec16
+    x86isa::bitp-of-sub-of-spec32
+    x86isa::bitp-of-sub-of-spec64
+    x86isa::bitp-of-sub-pf-spec8
+    x86isa::bitp-of-sub-pf-spec16
+    x86isa::bitp-of-sub-pf-spec32
+    x86isa::bitp-of-sub-pf-spec64
+    x86isa::bitp-of-sub-sf-spec8
+    x86isa::bitp-of-sub-sf-spec16
+    x86isa::bitp-of-sub-sf-spec32
+    x86isa::bitp-of-sub-sf-spec64
+    x86isa::bitp-of-sub-zf-spec8
+    x86isa::bitp-of-sub-zf-spec16
+    x86isa::bitp-of-sub-zf-spec32
+    x86isa::bitp-of-sub-zf-spec64
+
+;x86isa::bitp-of-add-af-spec64 ;; todo: add these
+    x86isa::unsigned-byte-p-of-sub-cf-spec8
+    x86isa::unsigned-byte-p-of-sub-cf-spec16
+    x86isa::unsigned-byte-p-of-sub-cf-spec32 ;bitp becomes unsigned-byte-p 1 ?
+    x86isa::unsigned-byte-p-of-sub-cf-spec64 ;bitp becomes unsigned-byte-p 1 ?
+
+    x86isa::unsigned-byte-p-of-sub-of-spec8
+    x86isa::unsigned-byte-p-of-sub-of-spec16
+    x86isa::unsigned-byte-p-of-sub-of-spec32
+    x86isa::unsigned-byte-p-of-sub-of-spec64
+
+    x86isa::unsigned-byte-p-of-sub-pf-spec8
+    x86isa::unsigned-byte-p-of-sub-pf-spec16
+    x86isa::unsigned-byte-p-of-sub-pf-spec32
+    x86isa::unsigned-byte-p-of-sub-pf-spec64
+
+    x86isa::unsigned-byte-p-of-sub-sf-spec8
+    x86isa::unsigned-byte-p-of-sub-sf-spec16
+    x86isa::unsigned-byte-p-of-sub-sf-spec32
+    x86isa::unsigned-byte-p-of-sub-sf-spec64
+
+    x86isa::unsigned-byte-p-of-sub-zf-spec8
+    x86isa::unsigned-byte-p-of-sub-zf-spec16
+    x86isa::unsigned-byte-p-of-sub-zf-spec32
+    x86isa::unsigned-byte-p-of-sub-zf-spec64
+
+    x86isa::integerp-of-sub-cf-spec8
+    x86isa::integerp-of-sub-cf-spec16
+    x86isa::integerp-of-sub-cf-spec32
+    x86isa::integerp-of-sub-cf-spec64
+
+    x86isa::integerp-of-sub-of-spec8
+    x86isa::integerp-of-sub-of-spec16
+    x86isa::integerp-of-sub-of-spec32
+    x86isa::integerp-of-sub-of-spec64
+
+    x86isa::integerp-of-sub-pf-spec8
+    x86isa::integerp-of-sub-pf-spec16
+    x86isa::integerp-of-sub-pf-spec32
+    x86isa::integerp-of-sub-pf-spec64
+
+    x86isa::integerp-of-sub-sf-spec8
+    x86isa::integerp-of-sub-sf-spec16
+    x86isa::integerp-of-sub-sf-spec32
+    x86isa::integerp-of-sub-sf-spec64
+
+    x86isa::integerp-of-sub-zf-spec8
+    x86isa::integerp-of-sub-zf-spec16
+    x86isa::integerp-of-sub-zf-spec32
+    x86isa::integerp-of-sub-zf-spec64
+
 
     ;;todo: not x86-specific
     acl2::integerp-of-logext
@@ -1011,6 +1110,51 @@
             read-in-terms-of-nth-and-pos-eric-4-bytes
             read-in-terms-of-nth-and-pos-eric-8-bytes
 
+            ;; nice rules: fixme: add the rest!
+            jle-condition-of-sub-zf-spec8-and-sub-sf-spec8-and-sub-of-spec8
+            jle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
+            jle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
+            jle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
+            jnle-condition-of-sub-zf-spec8-and-sub-sf-spec8-and-sub-of-spec8
+            jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
+            jnle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
+            jnle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
+            jb-condition-of-sub-cf-spec8
+            jb-condition-of-sub-cf-spec16
+            jb-condition-of-sub-cf-spec32
+            jb-condition-of-sub-cf-spec64
+            jnb-condition-8
+            jnb-condition-16
+            jnb-condition-32
+            jnb-condition-64
+            jz-condition-of-zf-spec
+            jz-condition-of-sub-zf-spec8
+            jz-condition-of-sub-zf-spec16
+            jz-condition-of-sub-zf-spec32
+            jz-condition-of-sub-zf-spec64
+            jnz-condition-of-zf-spec
+            jnz-condition-of-sub-zf-spec8
+            jnz-condition-of-sub-zf-spec16
+            jnz-condition-of-sub-zf-spec32
+            jnz-condition-of-sub-zf-spec64
+            jl-condition-of-sub-sf-spec8-and-sub-of-spec8
+            jl-condition-of-sub-sf-spec16-and-sub-of-spec16
+            jl-condition-of-sub-sf-spec32-and-sub-of-spec32
+            jl-condition-of-sub-sf-spec64-and-sub-of-spec64
+            jnl-condition-of-sub-sf-spec8-and-sub-of-spec8-same
+            jnl-condition-of-sub-sf-spec16-and-sub-of-spec16-same
+            jnl-condition-of-sub-sf-spec32-and-sub-of-spec32-same
+            jnl-condition-of-sub-sf-spec64-and-sub-of-spec64-same
+            jbe-condition-of-sub-cf-spec8-and-sub-zf-spec8
+            jbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
+            jbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
+            jbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
+            jnbe-condition-of-sub-cf-spec8-and-sub-zf-spec8
+            jnbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
+            jnbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
+            jnbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
+
+            ;; can we get rid of these?:
             jle-condition-rewrite-1
             jle-condition-rewrite-2
             jle-condition-rewrite-3

@@ -39,6 +39,7 @@
 ;; TODO: Switch to using a simpler rewriter, that doesn't depend on skip-proofs
 
 (include-book "misc/defp" :dir :system)
+(include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "support-axe")
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
