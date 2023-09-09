@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,9 +23,10 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
-(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
+(local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
+(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop, for sub1-logcdr-induction-1
 
 (defthm bvmult-tighten
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
@@ -93,8 +94,9 @@
                   (* (expt 2 n) (floor a (expt 2 n)))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand (logand a (- (expt 2 n)))
-           :in-theory (e/d (logand* logcdr ;fl
-                                    expt-of-+ mod-expt-split)
+           :in-theory (e/d (logand*
+                            logcdr ;fl
+                            expt-of-+ mod-expt-split)
                            (MOD-OF-EXPT-OF-2-CONSTANT-VERSION ;why?
                             ))
            :induct (sub1-logcdr-induction-1 n a))))
@@ -650,7 +652,7 @@
                            (i (min xsize ysize))
                            (j (max xsize ysize)))
            :in-theory (e/d ( bvplus unsigned-byte-p unsigned-byte-p-forced) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                                                      <-of-expt-and-expt
+                                                      <-of-expt-and-expt-same-base
                                                       ;;anti-bvplus
                                                       )))))
 

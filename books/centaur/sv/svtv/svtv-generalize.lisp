@@ -608,26 +608,32 @@
        
        (local (fgl::disable-definition sv::svex-env-fix$inline))
        (local (fgl::disable-definition sv::svex-env-lookup))
-
+       (local (memoize 'svex-mask-alist-p))
+       
        (:@ :default-aignet-transforms
         (local (defun tmp-svtv-generalize-fgl-transforms-config ()
                  (declare (xargs :guard t
                                  :guard-hints (("goal" :in-theory (executable-counterpart-theory :here)))))
-                #!aignet
-                (list (change-fraig-config *fraig-default-config*
-                                           :random-seed-name nil
-                                           :ctrex-queue-limit 64
-                                           :sim-words 2
-                                           :initial-sim-words 1
-                                           :initial-sim-rounds 1
-                                           :ctrex-force-resim t
-                                           :ipasir-limit 100
-                                           :miters-only t
-                                           :ipasir-recycle-count 40000
-                                           ))))
+                 #!aignet
+                 (list (change-fraig-config *fraig-default-config*
+                                            :random-seed-name nil
+                                            :ctrex-queue-limit 64
+                                            :sim-words 2
+                                            :initial-sim-words 1
+                                            :initial-sim-rounds 1
+                                            :ctrex-force-resim t
+                                            :ipasir-limit 100
+                                            :miters-only t
+                                            :ipasir-recycle-count 40000
+                                            ))))
         (local (defattach fgl::fgl-aignet-transforms-config
-                 tmp-svtv-generalize-fgl-transforms-config)))
+                 tmp-svtv-generalize-fgl-transforms-config))
 
+        (local (define tmp-svtv-generalize-monolithic-sat-with-transforms ()
+                 :guard-hints (("goal" :in-theory '((booleanp))))
+                 (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
+        (local (defattach fgl::fgl-toplevel-sat-check-config tmp-svtv-generalize-monolithic-sat-with-transforms)))
+       
        
        (local (fgl::def-fgl-thm base-fsm-override-smart-check-on-env-of-<data>
                 (b* (((svtv-data-obj x) (<data>))
@@ -2789,6 +2795,19 @@ initial override theorem.  The @(':enable') option typically must be used to
 provide additional rules for the final theorem to show that the lemma implies
 the outputs are integers.</li>
 
+<li>@(':integerp-separate') says to prove @('integerp') of each output in a second
+lemma, not the initial override theorem.</li>
+
+<li>@(':integerp-defthm') defaults to @('defthm') but can be set to (e.g.)
+@('fgl::def-fgl-thm') to choose a different method of proving the integerp
+lemma, when @(':integerp-separate') is set.</li>
+
+<li>@(':integerp-args') gives a list of arguments for the event proving the
+integerp lemma, when @(':integerp-separate') is set).  If none are given, the
+default is to provide a hint using an instance of the override lemma and
+disabling it, since commonly the override lemma itself implies all the outputs
+are integers.</li>
+
 <li>@(':final-defthm') defaults to @('defthm') but can be set to a different
 macro to change how the final generalized theorem is proved</li>
 
@@ -2803,6 +2822,9 @@ hypotheses for each input and override variable.</li>
 <li>@(':run-before-concl') gives a term that is placed in the override lemma
 within @('(progn$ run-before-concl concl)'), perhaps to do some extra printing
 in case of a counterexample.</li>
+
+<li>@(':integerp-run-before-concl') gives a term to add to the integerp lemma
+when @(':integerp-separate') is set, similar to @(':run-before-concl').</li>
 
 <li>@(':pkg-sym') defaults to the theorem name, and picks the package that
 various symbols are generated in.</li>
