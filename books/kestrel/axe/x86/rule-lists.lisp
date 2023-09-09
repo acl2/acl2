@@ -1151,20 +1151,7 @@
             bvle
             ACL2::INTEGERP-OF-BVPLUS ;todo: more
             ACL2::INTEGERP-OF-BVCHOP
-            jb-condition-of-sub-cf-spec8
-            jb-condition-of-sub-cf-spec16
-            jb-condition-of-sub-cf-spec32
-            jb-condition-of-sub-cf-spec64
-            jnb-condition-8
-            jnb-condition-16
-            jnb-condition-32
-            jnb-condition-64
-            jl-condition-of-sub-sf-spec32-and-sub-of-spec32
-            jl-condition-of-sub-sf-spec64-and-sub-of-spec64
             jnl-condition-rewrite-32 ; todo
-            jnl-condition-of-sub-sf-spec16-and-sub-of-spec16-same
-            jnl-condition-of-sub-sf-spec32-and-sub-of-spec32-same
-            jnl-condition-of-sub-sf-spec64-and-sub-of-spec64-same
             js-condition-of-sub-sf-spec8
             js-condition-of-sub-sf-spec16
             js-condition-of-sub-sf-spec32
@@ -1173,19 +1160,9 @@
             jns-condition-of-sub-sf-spec16
             jns-condition-of-sub-sf-spec32
             jns-condition-of-sub-sf-spec64
-            jz-condition-of-zf-spec
-            jz-condition-of-sub-zf-spec8
-            jz-condition-of-sub-zf-spec16
-            jz-condition-of-sub-zf-spec32
-            jz-condition-of-sub-zf-spec64
             ;;if-of-jz-condition-and-1-and-0
             ;;if-of-jnz-condition-and-1-and-0
             ;;jz-condition-of-if-of-1-and-0
-            jnz-condition-of-ZF-SPEC
-            jnz-condition-of-sub-zf-spec8
-            jnz-condition-of-sub-zf-spec16
-            jnz-condition-of-sub-zf-spec32
-            jnz-condition-of-sub-zf-spec64
             ;drop some of these?
             jz-condition-of-bvif-1-0-1
             jz-condition-of-bvif-1-1-0
@@ -1200,19 +1177,6 @@
             jnbe-condition-of-bvif-1-arg1
             jnbe-condition-of-bvif-1-arg2
 
-
-                        ;; TODO: More sizes?:
-            jbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
-            jbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
-            jnbe-condition-of-sub-cf-spec8-and-sub-zf-spec8
-            jnbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
-            jnbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
-            jnbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
-            jle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
-            jle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
-            jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
-            jnle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
-            jnle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
             ;jnbe-condition-of-BOOL->BIT-of-<-of-bvchop-and-ZF-SPEC-of-bvplus-of-bvuminus
             ;zf-spec$inline     ; needed for unsigned_add_associates -- but does this ruin rules about jle-condition? zf-spec seems to be used in more things that just the conditional branches?
 
@@ -1224,99 +1188,6 @@
             x86isa::GPR-SUB-SPEC-2-alt-def
             x86isa::GPR-SUB-SPEC-4-alt-def
             x86isa::GPR-SUB-SPEC-8-alt-def
-            ;; todo: now we turn bitp into unsigned-byte-p, so these won't fire:
-            x86isa::bitp-of-cf-spec-8
-            x86isa::bitp-of-cf-spec-16
-            x86isa::bitp-of-cf-spec-32
-            x86isa::bitp-of-cf-spec-64
-            x86isa::bitp-of-of-spec-8
-            x86isa::bitp-of-of-spec-16
-            x86isa::bitp-of-of-spec-32
-            x86isa::bitp-of-of-spec-64
-            x86isa::bitp-of-pf-spec-8
-            x86isa::bitp-of-pf-spec-16
-            x86isa::bitp-of-pf-spec-32
-            x86isa::bitp-of-pf-spec-64
-            x86isa::bitp-of-sf-spec-8
-            x86isa::bitp-of-sf-spec-16
-            x86isa::bitp-of-sf-spec-32
-            x86isa::bitp-of-sf-spec-64
-            x86isa::bitp-of-zf-spec
-            x86isa::bitp-of-add-af-spec8
-            x86isa::bitp-of-add-af-spec16
-            x86isa::bitp-of-add-af-spec32
-            x86isa::bitp-of-add-af-spec64
-            x86isa::bitp-of-sub-cf-spec8
-            x86isa::bitp-of-sub-cf-spec16
-            x86isa::bitp-of-sub-cf-spec32
-            x86isa::bitp-of-sub-cf-spec64
-            x86isa::bitp-of-sub-of-spec8
-            x86isa::bitp-of-sub-of-spec16
-            x86isa::bitp-of-sub-of-spec32
-            x86isa::bitp-of-sub-of-spec64
-            x86isa::bitp-of-sub-pf-spec8
-            x86isa::bitp-of-sub-pf-spec16
-            x86isa::bitp-of-sub-pf-spec32
-            x86isa::bitp-of-sub-pf-spec64
-            x86isa::bitp-of-sub-sf-spec8
-            x86isa::bitp-of-sub-sf-spec16
-            x86isa::bitp-of-sub-sf-spec32
-            x86isa::bitp-of-sub-sf-spec64
-            x86isa::bitp-of-sub-zf-spec8
-            x86isa::bitp-of-sub-zf-spec16
-            x86isa::bitp-of-sub-zf-spec32
-            x86isa::bitp-of-sub-zf-spec64
-
-;x86isa::bitp-of-add-af-spec64 ;; todo: add these
-            x86isa::unsigned-byte-p-of-sub-cf-spec8
-            x86isa::unsigned-byte-p-of-sub-cf-spec16
-            x86isa::unsigned-byte-p-of-sub-cf-spec32 ;bitp becomes unsigned-byte-p 1 ?
-            x86isa::unsigned-byte-p-of-sub-cf-spec64 ;bitp becomes unsigned-byte-p 1 ?
-
-            x86isa::unsigned-byte-p-of-sub-of-spec8
-            x86isa::unsigned-byte-p-of-sub-of-spec16
-            x86isa::unsigned-byte-p-of-sub-of-spec32
-            x86isa::unsigned-byte-p-of-sub-of-spec64
-
-            x86isa::unsigned-byte-p-of-sub-pf-spec8
-            x86isa::unsigned-byte-p-of-sub-pf-spec16
-            x86isa::unsigned-byte-p-of-sub-pf-spec32
-            x86isa::unsigned-byte-p-of-sub-pf-spec64
-
-            x86isa::unsigned-byte-p-of-sub-sf-spec8
-            x86isa::unsigned-byte-p-of-sub-sf-spec16
-            x86isa::unsigned-byte-p-of-sub-sf-spec32
-            x86isa::unsigned-byte-p-of-sub-sf-spec64
-
-            x86isa::unsigned-byte-p-of-sub-zf-spec8
-            x86isa::unsigned-byte-p-of-sub-zf-spec16
-            x86isa::unsigned-byte-p-of-sub-zf-spec32
-            x86isa::unsigned-byte-p-of-sub-zf-spec64
-
-            x86isa::integerp-of-sub-cf-spec8
-            x86isa::integerp-of-sub-cf-spec16
-            x86isa::integerp-of-sub-cf-spec32
-            x86isa::integerp-of-sub-cf-spec64
-
-            x86isa::integerp-of-sub-of-spec8
-            x86isa::integerp-of-sub-of-spec16
-            x86isa::integerp-of-sub-of-spec32
-            x86isa::integerp-of-sub-of-spec64
-
-            x86isa::integerp-of-sub-pf-spec8
-            x86isa::integerp-of-sub-pf-spec16
-            x86isa::integerp-of-sub-pf-spec32
-            x86isa::integerp-of-sub-pf-spec64
-
-            x86isa::integerp-of-sub-sf-spec8
-            x86isa::integerp-of-sub-sf-spec16
-            x86isa::integerp-of-sub-sf-spec32
-            x86isa::integerp-of-sub-sf-spec64
-
-            x86isa::integerp-of-sub-zf-spec8
-            x86isa::integerp-of-sub-zf-spec16
-            x86isa::integerp-of-sub-zf-spec32
-            x86isa::integerp-of-sub-zf-spec64
 
             bvchop-of-sub-zf-spec32
             equal-of-sub-zf-spec32-and-1
