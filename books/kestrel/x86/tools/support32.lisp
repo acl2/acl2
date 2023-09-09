@@ -3251,6 +3251,11 @@
            (equal (xr fld index (set-eip eip x86))
                   (xr fld index x86))))
 
+(defthm xr-of-set-eip-same
+  (equal (xr :rip nil (set-eip eip x86))
+         (logext 48 eip))
+  :hints (("Goal" :in-theory (enable set-eip))))
+
 (defthm segment-is-32-bitsp-of-set-eip
   (equal (segment-is-32-bitsp seg-reg (set-eip eip x86))
          (segment-is-32-bitsp seg-reg x86))

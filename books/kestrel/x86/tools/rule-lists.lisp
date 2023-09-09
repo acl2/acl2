@@ -1260,7 +1260,6 @@
             segment-base-and-bounds-of-set-esp
             segment-base-and-bounds-of-set-ebp
 
-
             segment-base-and-bounds-of-write-to-segment
             segment-base-and-bounds-of-write-byte-to-segment
             x86isa::segment-base-and-bounds-of-xw
@@ -1385,6 +1384,7 @@
     xw-becomes-set-eip
     xw-of-set-eip-irrel
     xr-of-set-eip-irrel
+    xr-of-set-eip-same ; or turn xr into eip or get-eip?
     set-eip-of-set-eip
     ;; bring eip to the front:
     set-eax-of-set-eip
@@ -1787,7 +1787,7 @@
     write-byte-to-segment-of-set-eax
     write-byte-to-segment-of-set-ebx
     write-byte-to-segment-of-set-ecx
-    write-byte-to-segment-of-set-edx
+    write-byte-to-segment-of-set-edx ;todo: more?
     write-byte-to-segment-of-set-esp
     write-byte-to-segment-of-set-ebp
 
