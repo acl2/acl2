@@ -2879,7 +2879,6 @@
              write-object-to-update-object
              write-object-okp-when-valuep-of-read-object-no-syntaxp
              write-object-okp-of-if*-val
-             type-of-value-of-if*
              ,@formal-thm?
              valuep-when-ucharp
              valuep-when-scharp
@@ -2956,7 +2955,17 @@
              update-object-of-if*-val
              update-object-of-read-object-same
              update-object-of-update-object-same
+             update-static-var-of-add-var
+             update-static-var-of-add-frame
+             compustatep-of-update-static-var
+             write-static-var-to-update-static-var
+             write-static-var-okp-when-valuep-of-read-static-var
+             read-object-of-objdesign-static
              exit-scope-of-if*
+             write-static-var-to-update-static-var
+             update-static-var-of-enter-scope
+             compustatep-of-add-frame
+             update-static-var-of-if*-val
              ,body-correct-thm))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
