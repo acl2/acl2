@@ -330,10 +330,7 @@
      read-of-xw-irrel
      read-of-set-flag
      x86p-of-write
-     64-bit-modep-of-write
-     program-at-of-write
      set-flag-of-write
-     alignment-checking-enabled-p-of-write
      read-of-write-disjoint2
      write-of-write-same
      read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
