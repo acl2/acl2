@@ -3129,7 +3129,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
         (mv (msg "Negative mask: ~x0~%" (svar-fix (car vars)))
             acc (lnfix nextvar) (nthcdr count vars)))
        (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
-       (4vec (4vec-fix (svex-env-lookup (svar-fix (car vars)) env)))
+       (4vec (svex-env-lookup (svar-fix (car vars)) env))
        (env-part
         (4vmask-to-a4vec-env mask boolmask 4vec nextvar))
        (nextvar (+ (lnfix nextvar)

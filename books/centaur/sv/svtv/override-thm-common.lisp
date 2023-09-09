@@ -150,6 +150,10 @@
    lemma-args
    lemma-use-ideal
    lemma-use-svtv-spec
+   integerp-separate
+   integerp-defthm
+   integerp-args
+   integerp-run-before-concl
    no-lemmas
    no-integerp
    final-defthm
@@ -234,41 +238,72 @@
 (defun svtv-genthm-initial-override-lemma (x)
   (declare (Xargs :mode :program))
   (b* (((svtv-generalized-thm x))
-       (template '(<defthm> <name>-override-lemma
-                   (implies <hyp>
-                            (b* ((env (append <input-bindings>
-                                              <input-vars>
-                                              <override-tests>
-                                              <override-bindings>
-                                              <override-vals>
-                                              <override-xes>))
-                                 (run (:@ (and (not :use-ideal)
-                                               (not :use-svtv-spec))
-                                       (svtv-run (<svtv>)
-                                                 env
-                                                 :include
-                                                 '<outputs-list>))
-                                      (:@ (or :use-ideal :use-svtv-spec)
-                                       (svex-env-reduce '<outputs-list>
-                                                        (svtv-spec-run ((:@ :use-ideal <ideal>)
-                                                                        (:@ :use-svtv-spec <svtv-spec>))
-                                                                       env))))
-                                 ((svassocs <outputs>) run))
-                              (progn$
-                               <run-before-concl>
-                               (and (:@ (not :no-integerp)
-                                     (or (and <integerp-concls>)
+       (template '(progn
+                    (<defthm> <name>-override-lemma
+                              (implies <hyp>
+                                       (b* ((env (append <input-bindings>
+                                                         <input-vars>
+                                                         <override-tests>
+                                                         <override-bindings>
+                                                         <override-vals>
+                                                         <override-xes>))
+                                            (run (:@ (and (not :use-ideal)
+                                                          (not :use-svtv-spec))
+                                                  (svtv-run (<svtv>)
+                                                            env
+                                                            :include
+                                                            '<outputs-list>))
+                                                 (:@ (or :use-ideal :use-svtv-spec)
+                                                  (svex-env-reduce '<outputs-list>
+                                                                   (svtv-spec-run ((:@ :use-ideal <ideal>)
+                                                                                   (:@ :use-svtv-spec <svtv-spec>))
+                                                                                  env))))
+                                            ((svassocs <outputs>) run))
                                          (progn$
-                                          (cw "*** Failed: Some output variables contained Xes/Zs:~%")
-                                          (svtv-print-alist-readable
-                                           (svex-env-extract-non-2vecs
-                                            '<outputs-list> run))
-                                          nil)))
-                                    <concl>))))
-                   <args>)))
+                                          <run-before-concl>
+                                          (and (:@ (and (not :no-integerp) (not :integerp-separate))
+                                                (or (and <integerp-concls>)
+                                                    (progn$
+                                                     (cw "*** Failed: Some output variables contained Xes/Zs:~%")
+                                                     (svtv-print-alist-readable
+                                                      (svex-env-extract-non-2vecs
+                                                       '<outputs-list> run))
+                                                     nil)))
+                                               <concl>))))
+                              <args>)
+                    (:@ :integerp-separate
+                     (<integerp-defthm> <name>-integerp-lemma
+                                        (implies <hyp>
+                                                 (b* ((env (append <input-bindings>
+                                                                   <input-vars>
+                                                                   <override-tests>
+                                                                   <override-bindings>
+                                                                   <override-vals>
+                                                                   <override-xes>))
+                                                      (run (:@ (and (not :use-ideal)
+                                                                    (not :use-svtv-spec))
+                                                            (svtv-run (<svtv>)
+                                                                      env
+                                                                      :include
+                                                                      '<outputs-list>))
+                                                           (:@ (or :use-ideal :use-svtv-spec)
+                                                            (svex-env-reduce '<outputs-list>
+                                                                             (svtv-spec-run ((:@ :use-ideal <ideal>)
+                                                                                             (:@ :use-svtv-spec <svtv-spec>))
+                                                                                            env))))
+                                                      ((svassocs <outputs>) run))
+                                                   (progn$
+                                                    <integerp-run-before-concl>
+                                                    (and <integerp-concls>))))
+                                        (:@ :default-integerp-args
+                                         :hints (("goal" :use <name>-override-lemma
+                                                  :in-theory (disable <name>-override-lemma))))
+                                        (:@ (:not :default-integerp-args)
+                                         <integerp-args>))))))
     (acl2::template-subst
      template
      :atom-alist `((<defthm> . ,x.lemma-defthm)
+                   (<integerp-defthm> . ,x.integerp-defthm)
                    (<hyp> . ,(svtv-genthm-conjoin-hyps x.lemma-hyp x.hyp))
                    (<svtv> . ,x.svtv)
                    (<svtv-spec> . ,x.svtv-spec)
@@ -292,13 +327,17 @@
                                                             :initial-element (4vec-x))))
                    (<outputs-list> . ,x.output-vars))
      :splice-alist `((<run-before-concl> . ,(and x.run-before-concl (list x.run-before-concl)))
+                     (<integerp-run-before-concl> . ,(and x.integerp-run-before-concl (list x.integerp-run-before-concl)))
                      (<outputs> . ,x.output-vars)
                      (<integerp-concls> . ,(if x.no-integerp nil (svtv-genthm-integerp-conclusions x)))
-                     (<args> . ,x.lemma-args))
+                     (<args> . ,x.lemma-args)
+                     (<integerp-args> . ,x.integerp-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :features (append (and x.lemma-use-ideal '(:use-ideal))
                        (and x.lemma-use-svtv-spec '(:use-svtv-spec))
-                       (and x.no-integerp '(:no-integerp)))
+                       (and x.no-integerp '(:no-integerp))
+                       (and x.integerp-separate '(:integerp-separate))
+                       (and (eq x.integerp-args :default) '(:default-integerp-args)))
      :pkg-sym x.pkg-sym)))
 
 
@@ -508,7 +547,12 @@
                                    (:instance <name>-override-lemma
                                     <spec-override-var-instantiation>
                                     <override-var-instantiation>
-                                    <input-var-instantiation>))
+                                    <input-var-instantiation>)
+                                   (:@ :integerp-separate
+                                    (:instance <name>-integerp-lemma
+                                    <spec-override-var-instantiation>
+                                    <override-var-instantiation>
+                                    <input-var-instantiation>)))
                       :in-theory (acl2::e/d**
                                   (;; (:EXECUTABLE-COUNTERPART <SVTV>-TRIPLEMAPLIST)
                                    (:REWRITE SVARLIST-P-OF-<SVTV>-INPUT-VARS)
@@ -586,7 +630,8 @@
                        (and x.ideal '(:use-ideal))
                        (and x.svtv-spec '(:use-svtv-spec))
                        (and x.lemma-use-ideal '(:lemma-use-ideal))
-                       (and x.lemma-use-svtv-spec '(:lemma-use-svtv-spec)))
+                       (and x.lemma-use-svtv-spec '(:lemma-use-svtv-spec))
+                       (and x.integerp-separate '(:integerp-separate)))
      :pkg-sym x.pkg-sym)))
 
 
@@ -661,6 +706,10 @@
          lemma-use-svtv-spec
          no-lemmas
          no-integerp
+         integerp-separate
+         (integerp-defthm 'defthm)
+         (integerp-args ':default)
+         integerp-run-before-concl
          hints
          (final-defthm 'defthm)
          final-args
@@ -778,6 +827,10 @@
        :triple-val-alist triple-val-alist
        :no-lemmas no-lemmas
        :no-integerp no-integerp
+       :integerp-separate integerp-separate
+       :integerp-defthm integerp-defthm
+       :integerp-args integerp-args
+       :integerp-run-before-concl integerp-run-before-concl
        :final-defthm final-defthm
        :final-args final-args
        :rule-classes rule-classes

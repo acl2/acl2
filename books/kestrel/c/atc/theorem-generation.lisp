@@ -731,7 +731,21 @@
                            sllong-arrayp-of-sllong-array-write
                            compustatep-of-update-object
                            ,@value-kind-thms
-                           ,@writer-return-thms))))
+                           ,@writer-return-thms
+                           update-static-var-of-enter-scope
+                           compustatep-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustate-frames-number-of-add-frame-not-zero
+                           objdesign-of-var-of-update-static-var-iff
+                           update-static-var-of-add-frame
+                           read-var-of-add-frame
+                           read-static-var-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustatep-of-add-frame
+                           objdesign-of-var-of-add-frame-when-read-object-static
+                           read-object-of-objdesign-static
+                           (:t objdesign-static)
+                           read-static-var-of-add-frame))))
           (else-hints
            `(("Goal"
               :in-theory '(,else-var-thm
@@ -781,7 +795,21 @@
                            sllong-arrayp-of-sllong-array-write
                            compustatep-of-update-object
                            ,@value-kind-thms
-                           ,@writer-return-thms))))
+                           ,@writer-return-thms
+                           update-static-var-of-enter-scope
+                           compustatep-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustate-frames-number-of-add-frame-not-zero
+                           objdesign-of-var-of-update-static-var-iff
+                           update-static-var-of-add-frame
+                           read-var-of-add-frame
+                           read-static-var-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustatep-of-add-frame
+                           objdesign-of-var-of-add-frame-when-read-object-static
+                           read-object-of-objdesign-static
+                           (:t objdesign-static)
+                           read-static-var-of-add-frame))))
           (instructions
            `((casesplit ,(atc-contextualize
                           test-term
