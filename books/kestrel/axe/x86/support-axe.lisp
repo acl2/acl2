@@ -17,8 +17,8 @@
 
 ;; TODO: Make sure there are non-axe versions of all of these.
 
-(include-book "support")
-(include-book "assumptions64") ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
+(include-book "kestrel/x86/tools/support" :dir :system)
+(include-book "kestrel/x86/tools/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)

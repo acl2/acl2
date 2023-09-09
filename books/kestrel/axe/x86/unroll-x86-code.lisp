@@ -18,7 +18,7 @@
 ;; state assumptions (since they can mention X and Y).  We use the
 ;; second approach here for now.
 
-(include-book "kestrel/x86/tools/support-axe" :dir :system)
+(include-book "support-axe")
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/tools/conditions" :dir :system)
 (include-book "kestrel/x86/tools/assumptions32" :dir :system)
