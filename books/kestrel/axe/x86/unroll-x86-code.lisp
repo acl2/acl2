@@ -313,6 +313,7 @@
                            (append (lifter-rules32)
                                    (lifter-rules32-new) ; todo, may first need to implement standard-assumptions-mach-o-32
                                    )
+                         ;; todo: add lifter-rules64-new here
                          (lifter-rules64))))
        (rules (append extra-rules lifter-rules))
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules rules)))
