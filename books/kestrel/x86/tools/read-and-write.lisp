@@ -175,6 +175,11 @@
   (unsigned-byte-p 8 (read-byte addr x86))
   :hints (("Goal" :in-theory (enable read-byte))))
 
+(defthm <=-of-read-byte-linear
+  (<= (read-byte addr x86) 255)
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable read-byte))))
+
 (defthm natp-of-read-byte
   (natp (read-byte addr x86))
   :rule-classes :type-prescription
@@ -256,6 +261,7 @@
 ;;
 
 ;; Read an N-byte chunk starting at ADDR (in little endian fashion).
+;todo: disable?
 (defun read (n addr x86)
   (declare (xargs :stobjs x86
                   :guard (and (natp n)
@@ -279,6 +285,12 @@
            (equal (unsigned-byte-p size (read n base-addr x86))
                   (natp size)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
+
+(defthm <=-of-read-linear
+  (implies (natp size)
+           (<= (read size addr x86) (+ -1 (expt 2 (* 8 size)))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable read))))
 
 ;enable?
 (defthmd read-of-1-becomes-read-byte
