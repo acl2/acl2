@@ -448,6 +448,7 @@
        (result-dag-vars (acl2::dag-vars result-dag))
        (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
        (defconst-form `(defconst ,defconst-name ',result-dag))
+       ;; TODO: Consider the order of these (seems arbitrary?  maybe sort them)
        (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))

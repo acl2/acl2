@@ -355,7 +355,8 @@
            (<= (slice high low x) (slice high low y)))
   :hints (("Goal" :cases ((<= low high))
            :in-theory (e/d (slice ;bvchop
-                            ) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                            ) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                               <-of-logtail-arg2)))))
 
 (defthm slice-of-expt
   (implies (and (< high size) ;gen?
