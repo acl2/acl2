@@ -19,8 +19,6 @@
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
-(include-book "projects/x86isa/portcullis/sharp-dot-constants" :dir :system)
-(include-book "kestrel/bv/bvchop-def" :dir :system)
 (include-book "kestrel/x86/tools/support-x86" :dir :system) ; todo: reduce, for integerp-of-xr...
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "readers-and-writers64") ; drop?
