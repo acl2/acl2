@@ -1,7 +1,7 @@
 ; Rules about memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,10 @@
 ;; RB-1, RML-size, and RML-<xx> where <xx> is 08/16/32/48/64/80/128.
 
 (include-book "projects/x86isa/machine/linear-memory" :dir :system)
+(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; todo: use byte-listp instead below?
+(include-book "kestrel/bv/bvcat" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 
 (in-theory (disable rb rb-1 rml-size))
@@ -168,3 +171,65 @@
            (equal (mv-nth 2 (rml-size nbytes addr r-x x86))
                   x86))
   :hints (("Goal" :in-theory (enable rml-size))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Material on combine-bytes is here because it is defined in projects/x86isa/machine/linear-memory.lisp
+
+;; (defthm byte-listp-becomes-all-unsigned-byte-p
+;;   (equal (byte-listp bytes)
+;;          (and (acl2::all-unsigned-byte-p 8 bytes)
+;;               (true-listp bytes)))
+;;   :hints (("Goal" :in-theory (enable acl2::all-unsigned-byte-p byte-listp))))
+
+(defun combine-bytes-n-induct (bytes n)
+  (if (endp bytes)
+      (list bytes n)
+      (combine-bytes-n-induct (cdr bytes) (+ -8 n))))
+
+(defthm unsigned-byte-p-of-combine-bytes-better
+  (implies (and (acl2::all-unsigned-byte-p 8 bytes)
+                (natp n)
+                (>= n (* 8 (len bytes))))
+           (unsigned-byte-p n (combine-bytes bytes)))
+  :hints (("Goal" :induct (combine-bytes-n-induct bytes n)
+           :in-theory (e/d (combine-bytes)
+                           (x86isa::natp-combine-bytes ;bad (forcing)
+                            )))))
+
+;not true.  gross!
+;; (DEFTHM NATP-COMBINE-BYTES-better
+;;   (NATP (COMBINE-BYTES BYTES))
+;;   :RULE-CLASSES :TYPE-PRESCRIPTION
+;;   :hints (("Goal" :in-theory (e/d (COMBINE-BYTES) ( NATP-COMBINE-BYTES)))))
+
+;; (DEFTHM ACL2::UNSIGNED-BYTE-P-LOGIOR-better
+;;   (IMPLIES (AND ;(FORCE (INTEGERP I))
+;;                 (FORCE (INTEGERP J)))
+;;            (EQUAL (UNSIGNED-BYTE-P ACL2::SIZE (LOGIOR I J))
+;;                   (AND (UNSIGNED-BYTE-P ACL2::SIZE I)
+;;                        (UNSIGNED-BYTE-P ACL2::SIZE J))))
+;;   :hints (("Goal"
+;;            :use (:instance ACL2::UNSIGNED-BYTE-P-LOGIOR (i (ifix i)))
+;;            :in-theory (e/d (LOGIOR ifix) ( ACL2::UNSIGNED-BYTE-P-LOGIOR
+;;                                              ACL2::LOGNOT-OF-LOGAND))))
+;; )
+
+;also uses better bvops
+(defthmd combine-bytes-unroll-better
+  (implies (and (not (endp bytes))
+                (true-listp bytes) ;todo drop
+                (acl2::all-unsigned-byte-p 8 bytes))
+           (equal (combine-bytes bytes)
+                  (acl2::bvcat (* 8 (- (len bytes) 1))
+                               (combine-bytes (cdr bytes))
+                               8
+                               (car bytes)
+                               )))
+  :hints (("Goal" :induct (COMBINE-BYTES BYTES)
+           :expand (COMBINE-BYTES BYTES)
+           :in-theory (e/d (COMBINE-BYTES
+                            (:induction combine-bytes)
+                            ACL2::SLICE-TOO-HIGH-IS-0-NEW)
+                           (;ACL2::UNSIGNED-BYTE-P-LOGIOR ;caused forcing
+                            )))))
