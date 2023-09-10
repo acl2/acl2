@@ -58,16 +58,15 @@
 (acl2::ensure-rules-known (lifter-rules64))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 
+;; move to lifter-support?
+(defconst *executable-types32* '(:pe-32 :mach-o-32 :elf-32))
+(defconst *executable-types64* '(:pe-64 :mach-o-64 :elf-64))
+(defconst *executable-types* (append *executable-types32* *executable-types64*))
+
 ;; The type of an x86 executable
-;; TODO: Add support for ELF
 (defun executable-typep (type)
   (declare (xargs :guard t))
-  (member-eq type '(:pe-32
-                    :pe-64
-                    :mach-o-32
-                    :mach-o-64
-                    :elf-32
-                    :elf-64)))
+  (member-eq type *executable-types*))
 
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
 (deftheory 32-bit-reg-rules
@@ -303,27 +302,26 @@
                                                                           parsed-executable
                                                                           stack-slots)
                                           assumptions)
+                                ;;todo: add support for :elf-32
                                 (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
                                         assumptions))))))))
        (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
        (- (and print (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
-       (lifter-rules (if (eq executable-type :pe-32)
+       (lifter-rules (if (member-eq executable-type *executable-types32*)
                          (append (lifter-rules32)
                                  (lifter-rules32-new))
-                       (if (eq executable-type :mach-o-32)
-                           (append (lifter-rules32)
-                                   (lifter-rules32-new) ; todo, may first need to implement standard-assumptions-mach-o-32
-                                   )
-                         ;; todo: add lifter-rules64-new here
-                         (lifter-rules64))))
+                       ;; todo: add lifter-rules64-new here
+                       (lifter-rules64)))
        (rules (append extra-rules lifter-rules))
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules rules)))
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
        (rules (set-difference-eq rules remove-rules))
        (rules-to-monitor (if (eq :debug monitor)
-                             (debug-rules32)
+                             (if (member-eq executable-type *executable-types32*)
+                                 (debug-rules32)
+                               (debug-rules64))
                            monitor))
        ;; Next, we simplify the assumptions.  This allows us to state the
        ;; theorem about a lifted routine concisely, using an assumption
