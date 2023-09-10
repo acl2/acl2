@@ -12,8 +12,8 @@
 
 (include-book "register-readers-and-writers64")
 (include-book "projects/x86isa/machine/modes" :dir :system)
-(include-book "kestrel/x86/flags" :dir :system)
-(include-book "kestrel/x86/read-and-write" :dir :system)
+(include-book "flags")
+(include-book "read-and-write")
 
 ;; TODO: Make sure we have the complete set of these rules
 

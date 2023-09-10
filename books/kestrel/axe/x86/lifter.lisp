@@ -40,16 +40,18 @@
 
 ;; TODO: Consider updating this to use the new normal forms, at least for 64-bit mode
 
-(include-book "readers-and-writers64")
-(include-book "read-over-write-rules64")
-(include-book "write-over-write-rules64")
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
+(include-book "kestrel/x86/support" :dir :system)
 (include-book "support-axe")
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
+(include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/rule-lists" :dir :system)
+(include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/assumptions" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system)
@@ -354,6 +356,8 @@
      )
 ;(x86isa::lifter-rules)
    ))
+
+;; some of these (e.g., about non-loop symbolic execution functions) may not be needed:
 
 (acl2::ensure-rules-known (lifter-rules2))
 

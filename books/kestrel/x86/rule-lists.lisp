@@ -593,7 +593,7 @@
    x86isa::if-of-one-byte-opcode-execute-of-if-arg5 ;do we need this?
    x86isa::<-of-if-arg2                              ;could be dangerous
    x86isa::logext-of-if-arg2
-   x86isa::run-until-rsp-greater-than-of-if-arg2 ;careful, this can cause splits:
+   run-until-rsp-greater-than-of-if-arg2 ;careful, this can cause splits:
    ))
 
 (defun simple-opener-rules ()

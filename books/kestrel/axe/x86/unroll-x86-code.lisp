@@ -19,18 +19,20 @@
 ;; second approach here for now.
 
 (include-book "support-axe")
-(include-book "readers-and-writers64")
-(include-book "read-over-write-rules64")
-(include-book "write-over-write-rules64")
+(include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)
+(include-book "kestrel/x86/support" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/rule-lists" :dir :system)
+(include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST

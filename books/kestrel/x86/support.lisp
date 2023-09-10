@@ -18,23 +18,23 @@
 ;(include-book "projects/x86isa/tools/execution/top" :dir :system) ;todo don't even use init-x86-state?
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
-(include-book "kestrel/x86/parsers/mach-o-tools" :dir :system)
+;(include-book "kestrel/x86/parsers/mach-o-tools" :dir :system)
 (include-book "kestrel/bv/rules10" :dir :system)
-(include-book "bitops")
+;(include-book "bitops")
 ;(include-book "kestrel/x86/linear-memory" :dir :system)
-(include-book "kestrel/utilities/defconst-computed" :dir :system)
+;(include-book "kestrel/utilities/defconst-computed" :dir :system)
 (include-book "kestrel/axe/rules2" :dir :system) ;drop?
 ;(include-book "kestrel/axe/bv-rules-axe" :dir :system)
 ;(include-book "kestrel/axe/rules1" :dir :system)
 ;(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
-(include-book "run-until-return")
+;(include-book "run-until-return")
 (include-book "kestrel/bv/rules3" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/axe/util2" :dir :system) ;for make-cons-nest
-(include-book "support0")
-(include-book "support32")
+;(include-book "support0")
+(include-book "support32") ; drop?
 ;(include-book "assumptions")
-(include-book "read-and-write")
+;(include-book "read-and-write")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
@@ -66,9 +66,9 @@
   :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p ;acl2::mod-=-0
                                      ))))
 
-;; Just a wrapper that is in the x86isa package instead of the ACL2 package.
-(defmacro defconst-computed (name form)
-  `(acl2::defconst-computed ,name ,form))
+;; ;; Just a wrapper that is in the x86isa package instead of the ACL2 package.
+;; (defmacro defconst-computed (name form)
+;;   `(acl2::defconst-computed ,name ,form))
 
 ;nonsensical
 ;; (defthm nth-of-mv-nth-1-of-rb-1
@@ -258,7 +258,7 @@
                                       natp
                                       ) (ACL2::BVCAT-EQUAL-REWRITE-ALT
                                          ACL2::BVCAT-EQUAL-REWRITE
-                                         X::MV-NTH-1-OF-RB-1-BECOMES-READ
+                                         ;X::MV-NTH-1-OF-RB-1-BECOMES-READ
                                          ACL2::BVSHL-REWRITE-WITH-BVCHOP ;looped
                                          )))))
 
@@ -1051,11 +1051,11 @@
                             get-prefixes)
                            (acl2::unsigned-byte-p-from-bounds
                             ;acl2::bvchop-identity
-                            x86isa::part-install-width-low-becomes-bvcat-32
+                            ;x86isa::part-install-width-low-becomes-bvcat-32
                             ;for speed:
                             CANONICAL-ADDRESS-P-BETWEEN
-                            x86isa::PART-SELECT-WIDTH-LOW-BECOMES-SLICE
-                            x86isa::SLICE-OF-PART-INSTALL-WIDTH-LOW
+                            ;x86isa::PART-SELECT-WIDTH-LOW-BECOMES-SLICE
+                            ;x86isa::SLICE-OF-PART-INSTALL-WIDTH-LOW
                             MV-NTH-OF-IF
                             x86isa::GET-PREFIXES-OPENER-LEMMA-NO-PREFIX-BYTE
                             )))))
@@ -1074,10 +1074,10 @@
                             add-to-*ip)
                                   (acl2::unsigned-byte-p-from-bounds
                                    ;acl2::bvchop-identity
-                                   x86isa::part-install-width-low-becomes-bvcat-32
+                                   ;x86isa::part-install-width-low-becomes-bvcat-32
                                    combine-bytes-when-singleton ;for speed
                                    x86isa::get-prefixes-opener-lemma-no-prefix-byte ;for speed
-                                   x86isa::part-select-width-low-becomes-slice ;for speed
+                                   ;x86isa::part-select-width-low-becomes-slice ;for speed
                                    ACL2::ZP-OPEN
                                    MV-NTH-OF-IF
                                    )))))
@@ -1308,12 +1308,6 @@
                          (quotep x2)))
            (equal (logext size (IF test x1 x2))
                   (if test (logext size x1) (logext size x2)))))
-
-(defthm run-until-rsp-greater-than-of-if-arg2
-  (equal (x::run-until-rsp-greater-than target-rsp (if test x86a x86b))
-         (if test
-             (x::run-until-rsp-greater-than target-rsp x86a)
-           (x::run-until-rsp-greater-than target-rsp x86b))))
 
 ;; Add aliases in the X86ISA package of some common utilities:
 
@@ -2209,7 +2203,8 @@
                 (not (equal flag :ac)))
            (equal (alignment-checking-enabled-p (x::set-flag flag val x86))
                   (alignment-checking-enabled-p x86)))
-  :hints (("Goal" :in-theory (enable x::set-flag
+  :hints (("Goal" :in-theory (enable alignment-checking-enabled-p
+                                     x::set-flag
                                      x86isa::rflagsBits->ac
                                      x86isa::!rflagsBits->cf
                                      x86isa::!rflagsBits->pf
@@ -2227,7 +2222,10 @@
                                      x86isa::!rflagsBits->ac
                                      x86isa::!rflagsBits->vif
                                      x86isa::!rflagsBits->vip
-                                     x86isa::!rflagsBits->id))))
+                                     x86isa::!rflagsBits->id
+                                     segment-selectorbits->rpl
+                                     cr0bits->am
+                                     2bits-fix))))
 
 ;; goes to set-flag instead of exposing details of the flags
 (defthm write-user-rflags-rewrite
@@ -2267,11 +2265,6 @@
            (equal (program-at prog-addr x86isa::bytes (x::set-flag flag val x86))
                   (program-at prog-addr x86isa::bytes x86)))
   :hints (("Goal" :in-theory (enable x::set-flag program-at))))
-
-(defthm !rflags-of-write
-  (equal (x86isa::!rflags rflags (x::write n base-addr val x86))
-         (x::write n base-addr val (x86isa::!rflags rflags x86)))
-  :hints (("Goal" :in-theory (enable x86isa::!rflags))))
 
 ;apparently the AC flag affects alignment checking
 (defthm alignment-checking-enabled-p-of-xw-irrel

@@ -1,7 +1,7 @@
 ; The run-until-return function for x86
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,6 +28,8 @@
   (> (rgfi *rsp* x86)
      val))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; What should we do about faults?
 ;; TODO: How to get defpun to work with a stobj?
 (defpun run-until-rsp-greater-than (target-rsp x86)
@@ -35,11 +37,6 @@
   (if (rsp-greater-than target-rsp x86)
       x86
     (run-until-rsp-greater-than target-rsp (x86-fetch-decode-execute x86))))
-
-;; TODO: Try to use defun here (but may need a stobj declare on run-until-rsp-greater-than)
-(defund-nx run-until-return (x86)
-  (declare (xargs :stobjs x86))
-  (run-until-rsp-greater-than (xr :rgf *rsp* x86) x86))
 
 (defthm run-until-rsp-greater-than-base
   (implies (rsp-greater-than target-rsp x86)
@@ -50,3 +47,16 @@
   (implies (not (rsp-greater-than target-rsp x86))
            (equal (run-until-rsp-greater-than target-rsp x86)
                   (run-until-rsp-greater-than target-rsp (x86-fetch-decode-execute x86)))))
+
+(defthm run-until-rsp-greater-than-of-if-arg2
+  (equal (x::run-until-rsp-greater-than target-rsp (if test x86a x86b))
+         (if test
+             (x::run-until-rsp-greater-than target-rsp x86a)
+           (x::run-until-rsp-greater-than target-rsp x86b))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Try to use defun here (but may need a stobj declare on run-until-rsp-greater-than)
+(defund-nx run-until-return (x86)
+  (declare (xargs :stobjs x86))
+  (run-until-rsp-greater-than (xr :rgf *rsp* x86) x86))

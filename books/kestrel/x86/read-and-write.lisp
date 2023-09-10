@@ -1845,3 +1845,9 @@
          (write n 0 val x86))
   :hints (("Goal" :use (:instance write-of-bvchop-48 (addr 281474976710656))
            :in-theory (disable write-of-bvchop-48))))
+
+;; todo: switch package
+(defthm x86isa::!rflags-of-write
+  (equal (x86isa::!rflags rflags (x::write n base-addr val x86))
+         (x::write n base-addr val (x86isa::!rflags rflags x86)))
+  :hints (("Goal" :in-theory (enable x86isa::!rflags))))
