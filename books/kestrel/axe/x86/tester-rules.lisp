@@ -30,11 +30,12 @@
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system) ; todo?
-(include-book "kestrel/x86/support" :dir :system) ; todo?
-(include-book "kestrel/x86/x86-changes" :dir :system)
+(include-book "kestrel/x86/read-and-write" :dir :system)
+;(include-book "kestrel/x86/support" :dir :system) ; todo?
+;(include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "register-readers-and-writers64")
-(include-book "read-over-write-rules64")
-(include-book "write-over-write-rules64")
+;(include-book "read-over-write-rules64")
+;(include-book "write-over-write-rules64")
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -398,7 +399,7 @@
   (implies (unsigned-byte-p 32 x)
            (not (bvlt 64 4294967295 x))))
 
-(in-theory (disable X86ISA::INTEGERP-WHEN-CANONICAL-ADDRESS-P-CHEAP)) ;todo
+;(in-theory (disable X86ISA::INTEGERP-WHEN-CANONICAL-ADDRESS-P-CHEAP)) ;todo
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1105,7 +1106,7 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (disable acl2::<-of-*-of-/-arg1))))
 
-(in-theory (disable X86ISA::<-WHEN-CANONICAL-ADDRESS-P-IMPOSSIBLE X86ISA::<-WHEN-CANONICAL-ADDRESS-P)) ;todo bad
+;(in-theory (disable X86ISA::<-WHEN-CANONICAL-ADDRESS-P-IMPOSSIBLE X86ISA::<-WHEN-CANONICAL-ADDRESS-P)) ;todo bad
 
 (defthm acl2::logext-of-truncate
   (implies (and (signed-byte-p acl2::size acl2::i)
@@ -1438,7 +1439,9 @@
   :hints (("Goal" :in-theory (e/d (acl2::equal-of-logext-and-logext bvmult)
                                   (ACL2::SLICE-OF-* ;looped
                                    acl2::getbit-of-* ; looped
-                                   X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
+                                   ;X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P
+                                   ;BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P
+                                   ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                                    )))))
 
 ;; ;arises in array indexing
@@ -1739,8 +1742,9 @@
            (equal (equal k (bvchop size x))
                   (and (unsigned-byte-p size k)
                        (equal (logext size k) x))))
-  :hints (("Goal" :use (:instance acl2::logext-of-bvchop-same
-                                  (acl2::size size)))))
+  :hints (("Goal" :in-theory (enable signed-byte-p)
+           :use (:instance acl2::logext-of-bvchop-same
+                           (acl2::size size)))))
 
 (defthmd equal-of-bvchop-when-signed-byte-p
   (implies (and ;; (syntaxp (quotep k))
@@ -1748,7 +1752,8 @@
            (equal (equal k (bvchop size x))
                   (and (unsigned-byte-p size k)
                        (equal (logext size k) x))))
-  :hints (("Goal" :use (:instance acl2::logext-of-bvchop-same
+  :hints (("Goal" :in-theory (enable signed-byte-p)
+           :use (:instance acl2::logext-of-bvchop-same
                                   (acl2::size size)))))
 
 
