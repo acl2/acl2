@@ -305,9 +305,10 @@
     when
     ///
 
-    ;; APT stuff:
+    ;; APT transformations (sometimes used to verify listed code):
     def
     wrap-output
+    rename-params
     flatten-params
     drop-irrelevant-params
     tailrec
