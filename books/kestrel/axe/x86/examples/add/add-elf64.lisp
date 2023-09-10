@@ -36,6 +36,4 @@
 ;; and RSI.
 (defthm add-elf64-correct
   (equal (rax (add-elf64 x86))
-         (acl2::bvplus 32
-                       (rdi x86)
-                       (rsi x86))))
+         (bvplus 32 (rdi x86) (rsi x86))))
