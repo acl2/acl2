@@ -1,6 +1,6 @@
-; Portcullis commands and cert-flags for rule-lists.lisp
+; Portcullis commands and cert params for this dir
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2022 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -8,6 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "../portcullis")
+(INCLUDE-BOOK "kestrel/x86/portcullis" :DIR :SYSTEM)
 
-; cert-flags: ? T :TTAGS :ALL
+; cert-flags: ? T :SKIP-PROOFS-OKP T :TTAGS :ALL

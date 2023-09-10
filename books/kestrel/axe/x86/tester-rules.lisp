@@ -29,8 +29,8 @@
 ;(include-book "kestrel/axe/tactic-prover" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)
-(include-book "kestrel/x86/tools/conditions" :dir :system) ; todo?
-(include-book "kestrel/x86/tools/support" :dir :system) ; todo?
+(include-book "kestrel/x86/conditions" :dir :system) ; todo?
+(include-book "kestrel/x86/support" :dir :system) ; todo?
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "register-readers-and-writers64")
 (include-book "read-over-write-rules64")

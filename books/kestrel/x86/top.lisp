@@ -13,3 +13,26 @@
 (include-book "portcullis")
 (include-book "parsers/top")
 (include-book "tools/top")
+
+(include-book "bitops")
+(include-book "linear-memory")
+(include-book "register-readers-and-writers")
+(include-book "flags")
+(include-book "conditions")
+
+(include-book "support-x86")
+(include-book "support32")
+(include-book "read-over-write-rules")
+(include-book "write-over-write-rules")
+(include-book "read-and-write")
+(include-book "support0")
+(include-book "support2")
+
+(include-book "assumptions")
+(include-book "assumptions32")
+(include-book "assumptions64")
+
+(include-book "run-until-return")
+(include-book "support")
+
+(include-book "rule-lists")

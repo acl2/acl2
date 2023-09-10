@@ -13,7 +13,7 @@
 
 (include-book "assumptions")
 (include-book "read-and-write")
-(include-book "../parsers/parsed-executable-tools")
+(include-book "parsers/parsed-executable-tools")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (defun bytes-loaded-at-address-64 (bytes addr x86)
