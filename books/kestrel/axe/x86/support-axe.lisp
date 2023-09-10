@@ -17,8 +17,8 @@
 
 ;; TODO: Make sure there are non-axe versions of all of these.
 
-(include-book "kestrel/x86/support" :dir :system)
 (include-book "kestrel/x86/bitops" :dir :system) ; needed for part-install-width-low-becomes-bvcat-axe
+;(include-book "kestrel/x86/support" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
