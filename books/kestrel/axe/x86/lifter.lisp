@@ -45,6 +45,7 @@
 (include-book "write-over-write-rules64")
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
+(include-book "kestrel/x86/support" :dir :system)
 (include-book "support-axe")
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)

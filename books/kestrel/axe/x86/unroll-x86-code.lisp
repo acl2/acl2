@@ -25,6 +25,7 @@
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)
+(include-book "kestrel/x86/support" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules" :dir :system)
