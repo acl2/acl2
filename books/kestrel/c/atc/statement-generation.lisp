@@ -4501,7 +4501,7 @@
                           (atc-context-extend new-context
                                               (list (make-atc-premise-cvalue
                                                      :var var
-                                                     :term term))))
+                                                     :term uterm))))
                       new-context))
        ((mv new-inscope new-inscope-events thm-index names-to-avoid)
         (if (and (consp gin.affect)
