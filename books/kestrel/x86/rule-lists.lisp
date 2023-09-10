@@ -818,7 +818,8 @@
 
             ms x86isa::ms$a                            ;expose the call to xr
             fault x86isa::fault$a                         ;expose the call to xr
-            x86isa::rip x86isa::rip$a                           ;expose the call to xr
+            ;x86isa::rip
+            ;x86isa::rip$a                           ;expose the call to xr
 ;            app-view$inline         ;expose the call to xr
 
             the-check
@@ -1328,7 +1329,9 @@
 
 (defun lifter-rules32 ()
   (append (lifter-rules-common)
-          '(;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple-32
+          '(x86isa::rip ; todo: think about this
+            x86isa::rip$a ; todo: think about this
+            ;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-3-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple-32
@@ -1999,7 +2002,8 @@
 (defun lifter-rules64-new ()
   (declare (xargs :guard t))
   '(;; Rules about RIP/SET-RIP:
-    xw-becomes-set-rip
+    xr-becomes-rip ; introduces rip
+    xw-becomes-set-rip ; introduces set-rip
     xw-of-set-rip-irrel
     xr-of-set-rip-irrel
     set-rip-of-set-rip

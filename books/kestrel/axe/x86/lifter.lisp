@@ -38,6 +38,9 @@
 
 ;; TODO: Switch to using a simpler rewriter, that doesn't depend on skip-proofs
 
+(include-book "readers-and-writers64")
+(include-book "read-over-write-rules64")
+(include-book "write-over-write-rules64")
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "support-axe")
@@ -352,6 +355,7 @@
 
 (acl2::ensure-rules-known (lifter-rules32))
 (acl2::ensure-rules-known (lifter-rules64))
+(acl2::ensure-rules-known (lifter-rules64-new))
 
 ;; Eventually we may add these rules about read to lifter-rules2.
 (defun invariant-preservation-rules ()
@@ -2169,7 +2173,10 @@
                         (doublets-to-alist measures)))
        (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32))
                          (lifter-rules32)
-                       (lifter-rules64)))
+                       (append (lifter-rules64)
+                               '(x86isa::rip x86isa::rip$a) ; todo
+                               ;(lifter-rules64-new); todo
+                               )))
        ((mv erp dag events
             ;; & ;;rules
             & ;;next-loop-num

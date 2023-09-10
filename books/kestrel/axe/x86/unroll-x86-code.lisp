@@ -19,6 +19,9 @@
 ;; second approach here for now.
 
 (include-book "support-axe")
+(include-book "readers-and-writers64")
+(include-book "read-over-write-rules64")
+(include-book "write-over-write-rules64")
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)
@@ -56,6 +59,7 @@
 (acl2::ensure-rules-known (lifter-rules32))
 (acl2::ensure-rules-known (lifter-rules32-new))
 (acl2::ensure-rules-known (lifter-rules64))
+(acl2::ensure-rules-known (lifter-rules64-new))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 
 ;; move to lifter-support?
@@ -311,15 +315,16 @@
        (lifter-rules (if (member-eq executable-type *executable-types32*)
                          (append (lifter-rules32)
                                  (lifter-rules32-new))
-                       ;; todo: add lifter-rules64-new here
-                       (lifter-rules64)))
+                       (append (lifter-rules64)
+                               (lifter-rules64-new))))
        (rules (append extra-rules lifter-rules))
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules rules)))
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
        (rules (set-difference-eq rules remove-rules))
+       (32-bitp (member-eq executable-type *executable-types32*))
        (rules-to-monitor (if (eq :debug monitor)
-                             (if (member-eq executable-type *executable-types32*)
+                             (if 32-bitp
                                  (debug-rules32)
                                (debug-rules64))
                            monitor))
@@ -329,7 +334,12 @@
        ;; attempted.  We need to assume some assumptions when simplifying the
        ;; others, because opening things like read64 involves testing
        ;; canonical-addressp (which we know from other assumptions is true):
-       (assumption-rules (append extra-assumption-rules (assumption-simplification-rules)))
+       (assumption-rules (append extra-assumption-rules
+                                 (assumption-simplification-rules)
+                                 (if 32-bitp
+                                     nil
+                                   ;; needed to match the normal forms used during lifting:
+                                   (lifter-rules64-new))))
        ((mv erp rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil nil state))
