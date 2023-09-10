@@ -121,7 +121,7 @@
     :enable (objdesign-of-var-aux
              var-in-scopes-p))
 
-  (defruled objdesign-of-var-of-update-var
+  (defruled objdesign-of-var-of-update-var-iff
     (iff (objdesign-of-var var (update-var var2 val compst))
          (or (equal (ident-fix var)
                     (ident-fix var2))
@@ -178,7 +178,7 @@
                       (read-object (objdesign-of-var var compst) compst))))
     :enable (read-object-of-objdesign-of-var-to-read-var
              read-var-of-update-var
-             objdesign-of-var-of-update-var))
+             objdesign-of-var-of-update-var-iff))
 
   (defruled objdesign-of-var-of-update-object-iff
     (iff (objdesign-of-var var (update-object objdes val compst))

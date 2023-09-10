@@ -1642,7 +1642,7 @@
           ,@notflexarrmem-thms
           value-fix-when-valuep
           ,valuep-when-type
-          objdesign-of-var-of-update-var
+          objdesign-of-var-of-update-var-iff
           read-object-of-objdesign-of-var-of-update-var
           ident-fix-when-identp
           identp-of-ident
@@ -2359,7 +2359,7 @@
               (:e str-fix)
               ident-fix-when-identp
               identp-of-ident)
-          `(objdesign-of-var-of-update-var
+          `(objdesign-of-var-of-update-var-iff
             read-object-of-objdesign-of-var-of-update-var
             remove-flexible-array-member-when-absent
             ,@notflexarrmem-thms
@@ -2808,7 +2808,7 @@
               (:e str-fix)
               ident-fix-when-identp
               identp-of-ident)
-          `(objdesign-of-var-of-update-var
+          `(objdesign-of-var-of-update-var-iff
             read-object-of-objdesign-of-var-of-update-var
             remove-flexible-array-member-when-absent
             ,@notflexarrmem-thms
