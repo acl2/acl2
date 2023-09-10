@@ -1608,6 +1608,7 @@
            (equal (write n addr val3 (write n2 addr2 val2 (write n addr val1 x86)))
                   (write n addr val3 (write n2 addr2 val2 x86))))
   :hints (("Goal" :expand (write n2 addr2 val2 (write n addr val1 x86))
+           :in-theory (enable write)
            :do-not '(generalize eliminate-destructors)
            :induct (write n2 addr2 val2 x86))))
 
@@ -1702,7 +1703,7 @@
            (equal (read 1 addr (write 4 addr val x86))
                   (bvchop 8 val)))
   :hints (("Goal" :expand (write 4 addr val x86)
-           :in-theory (enable write))))
+           :in-theory (enable read write))))
 
 ;; (thm
 ;;  (implies (and (syntaxp (and (quotep offset1)
@@ -1833,7 +1834,7 @@
            (equal (read 1 addr1 (write n addr2 val x86))
                   (read 1 addr1 x86)))
   :hints (("Goal" :induct (write n addr2 val x86)
-           :in-theory (enable bvminus bvlt acl2::bvchop-of-sum-cases))))
+           :in-theory (enable read write bvminus bvlt acl2::bvchop-of-sum-cases))))
 
 ;; todo: gen the 1?
 (defthm read-of-write-included-1
@@ -1846,7 +1847,7 @@
                          (* 8 (bvminus 48 addr1 addr2))
                          val)))
   :hints (("Goal" :induct (write n addr2 val x86)
-           :in-theory (enable bvminus bvlt acl2::bvchop-of-sum-cases))))
+           :in-theory (enable read write bvminus bvlt acl2::bvchop-of-sum-cases))))
 
 ;; todo: gen the 1?
 (defthm read-of-write-1-both

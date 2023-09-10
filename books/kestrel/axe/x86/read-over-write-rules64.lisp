@@ -833,7 +833,7 @@
 
   (local (in-theory (disable ea-to-la$inline)))
 
-  (defthm mv-nth-0-of-rme-size-of-set-rip (implies (app-view x86) (equal (mv-nth 0 (x86isa::rme-size p n e s r c (set-rip rip x86))) (mv-nth 0 (x86isa::rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable))))
+  (defthm mv-nth-0-of-rme-size-of-set-rip (implies (app-view x86) (equal (mv-nth 0 (x86isa::rme-size p n e s r c (set-rip rip x86))) (mv-nth 0 (x86isa::rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rip))))
   (defthm mv-nth-0-of-rme-size-of-set-rax (implies (app-view x86) (equal (mv-nth 0 (x86isa::rme-size p n e s r c (set-rax val x86))) (mv-nth 0 (x86isa::rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rax))))
   (defthm mv-nth-0-of-rme-size-of-set-rbx (implies (app-view x86) (equal (mv-nth 0 (x86isa::rme-size p n e s r c (set-rbx val x86))) (mv-nth 0 (x86isa::rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rbx))))
   (defthm mv-nth-0-of-rme-size-of-set-rcx (implies (app-view x86) (equal (mv-nth 0 (x86isa::rme-size p n e s r c (set-rcx val x86))) (mv-nth 0 (x86isa::rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rcx))))
