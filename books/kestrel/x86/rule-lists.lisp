@@ -1978,8 +1978,8 @@
           (write-rules)
           (read-byte-rules)
           (linear-memory-rules)
-          '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs
+          '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs ; puts in rml-size
             ;; this is sometimes needed in 64-bit mode (e.g., when a stack
             ;; protection value is read via the FS segment register):
             x86isa::rme-size-when-64-bit-modep-fs/gs
@@ -3034,9 +3034,20 @@
 ;; ;;             code-segment-assumptions32-of-write-to-segment-of-ss
 ;;             )
 
-(defun debug-rules32 ()
+(defun debug-rules-common ()
+  (declare (xargs :guard t))
   '(run-until-rsp-greater-than-opener
     not-mv-nth-0-of-wme-size ;gets rid of error branch
     mv-nth-1-of-wme-size     ;introduces write-to-segment
-    not-mv-nth-0-of-add-to-*sp-gen
-    mv-nth-1-of-add-to-*sp-gen))
+    ))
+
+(defun debug-rules32 ()
+  (append (debug-rules-common)
+          '(not-mv-nth-0-of-add-to-*sp-gen
+            mv-nth-1-of-add-to-*sp-gen)))
+
+(defun debug-rules64 ()
+  (append (debug-rules-common)
+          ;; todo: flesh out:
+          '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs)))
