@@ -52,12 +52,21 @@ number theory.  It includes the following ACL2 books:
   pratt
       Vaughn Pratt's method of prime certification applied to the prime 2^255 - 19.
 
+  binomial
+      Ruben Gamboa's formalization of the binomial theorem mported into the DM package
+      (also see "books/arithmetic/binomial.lisp").
+
+
 The remaining books are motivated by the Web page http://www.cs.ru.nl/~freek/100/, 
 "Formalizing 100 Theorems":
 
   subsets
       The number of subsets of a set of order n is 2^n.  For 0 <= k <= n, the number
-      of subsets of order k is n!/(k!(n - k)!).
+      of subsets of order k is the binomial coefficient (choose n k) = n!/(k!(n - k)!).
+
+  sylvester
+      The inclusion-exclusion principle, a formula for the order of the union of a 
+      list of sets.
 
   girard
       An odd prime p is a sum of two squares iff (mod p 4) = 1.
