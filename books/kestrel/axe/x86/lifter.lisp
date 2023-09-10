@@ -2097,7 +2097,7 @@
                            remove-rules
                            produce-theorem
                            ;;output
-                           user-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.)
+                           user-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.) -- todo, why not over just 'x86'?
                            non-executable
                            ;;restrict-theory
                            rules-to-monitor
@@ -2259,12 +2259,12 @@
                            (remove-rules 'nil)
                            (produce-theorem 't) ;todo: not used.
                            ;;output
-                           (assumptions 'nil) ;TODO: Translate these
+                           (assumptions 'nil)
                            (non-executable 'nil)
                            ;;restrict-theory
                            (monitor 'nil)
                            (print 't)
-                           (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets)
+                           (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
                            )
   `(make-event (lift-subroutine-fn ',lifted-name
                                    ',subroutine-name
@@ -2276,7 +2276,7 @@
                                    ,remove-rules
                                    ',produce-theorem
                                    ;;output
-                                   ,assumptions ;TODO: Translate these
+                                   ,assumptions
                                    ',non-executable
                                    ;;restrict-theory
                                    ,monitor
