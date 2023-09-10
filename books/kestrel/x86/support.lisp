@@ -236,6 +236,7 @@
                   (acl2::bvchop width (* (expt 2 shift-amount) x))))
   :hints (("Goal" :in-theory (enable acl2::bvshl acl2::bvcat))))
 
+;slow?
 (defthmd rb-split
   (implies (and (posp n)
                 (APP-VIEW X86)
@@ -429,7 +430,7 @@
   (implies (canonical-address-p x)
            (integerp x)))
 
-(defthm integerp-when-canonical-address-p-cheap
+(defthmd integerp-when-canonical-address-p-cheap
   (implies (and (canonical-address-p free)
                 (equal free x))
            (integerp x)))
@@ -764,7 +765,7 @@
 
 
 ;add one for the upper bound as well?
-(defthm <-when-canonical-address-p
+(defthmd <-when-canonical-address-p
   (implies (and (syntaxp (quotep k))
                 (< k (- (expt 2 47)))
                 (canonical-address-p x))
@@ -922,7 +923,7 @@
 ;;                               ))))
 
 ;looped with the between lemma?
-(defthm <-when-canonical-address-p-impossible
+(defthmd <-when-canonical-address-p-impossible
   (implies (and (syntaxp (quotep k))
                 (< k (- (expt 2 47)))
                 (canonical-address-p x))
