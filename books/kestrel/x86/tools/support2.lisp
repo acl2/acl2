@@ -125,44 +125,6 @@
 ;this case seems safe to handle:
 ; (SLICE '10 '7 (BVCAT '3 x '8 y))
 
-(defthm read-1-of-write-4-same
-  (implies (and (natp read-ad)
-                (< read-ad (bvplus 48 4 write-ad))
-                (<= write-ad read-ad)
-                (app-view x86) ;drop
-                (canonical-address-p read-ad)
-                ;; (canonical-address-p write-ad)
-                (canonical-address-p (+ 3 write-ad))
-                (natp write-ad)
-                (< write-ad 5000000000) ;fixme
-                (X86P X86))
-           (equal (read 1 read-ad (write 4 write-ad val x86))
-                  (let ((byte-num (- read-ad write-ad)))
-                    (slice (+ 7 (* 8 byte-num))
-                           (* 8 byte-num)
-                           val))))
-  :hints (("Goal"
-           :in-theory (e/d ( ;memi
-                            bvplus
-                            CANONICAL-ADDRESS-P
-                            SIGNED-BYTE-P
-                            ;;READ-BYTE
-                            write
-                            acl2::bvchop-of-logtail-becomes-slice
-                            )
-                           ( ;read
-                            ACL2::BVPLUS-RECOLLAPSE
-                            write !memi
-                            ACL2::SLICE-OF-+ ;looped
-                            ))
-           :expand ((:free (x) (WRITE 3 (+ 1 WRITE-AD)
-                                      (LOGTAIL 8 VAL) x))
-                    (:free (ad val x86) (WRITE 1 ad val x86))
-                    (WRITE 4 WRITE-AD VAL X86)
-                    (:free (x) (WRITE 2 (+ 2 WRITE-AD)
-                                      (LOGTAIL 16 VAL) x))
-                    ))))
-
 ;; (defthmd xw-of-set-flag
 ;;   (implies (not (equal x86isa::field :rflags))
 ;;            (equal (xw x86isa::field x86isa::index value (set-flag x86isa::flg x86isa::val x86))
@@ -172,98 +134,7 @@
 
 ;todo: why are cons nests arising during rewriting?
 
-(defthm write-of-write-combine-constants-1
-  (implies (and (syntaxp (quotep val1))
-                (syntaxp (quotep val2))
-                (equal (bvchop 48 ad1)
-                       (+ n2 ad2))
-                (natp n1)
-                (natp n2)
-                (integerp ad1)
-                (integerp ad2)
-                )
-           (equal (write n1 ad1 val1 (write n2 ad2 val2 x86))
-                  (write (+ n1 n2)
-                         ad2
-                         (bvcat (* 8 n1) val1
-                                (* 8 n2) val2)
-                         x86)))
-  :hints (("Goal" :in-theory (enable acl2::bvcat-of-logtail-low)
-           :expand ((WRITE (+ N1 N2)
-                           AD2 (BVCAT (* 8 N1) VAL1 (* 8 N2) VAL2)
-                           X86)))))
 
-(defthm xr-of-write-too-low-alt
-  (implies (and (< (bvchop 48 addr1) (bvchop 48 addr2))
-                (natp n)
-                (<= (+ n addr2) (expt 2 48)) ;gen?
-                (unsigned-byte-p 48 addr1)
-                (unsigned-byte-p 48 addr2))
-           (equal (xr :mem addr1 (write n addr2 val x86))
-                  (xr :mem addr1 x86)))
-  :hints (("Goal" :in-theory (enable write write-byte))))
-
-(defthm xr-of-write-too-high-alt
-  (implies (and (< (+ n addr2) addr1)
-                (natp n)
-;                (< (+ n addr2) (expt 2 48)) ;gen?
-                (unsigned-byte-p 48 addr1)
-                (unsigned-byte-p 48 addr2))
-           (equal (xr :mem addr1 (write n addr2 val x86))
-                  (xr :mem addr1 x86)))
-  :hints (("Goal" :in-theory (enable write write-byte))))
-
-(defthm xr-of-write-irrel
-  (implies (and (<= n (bvchop 48 (- addr1 addr2)))
-                (natp n)
-                (integerp addr1)
-                (integerp addr2))
-           (equal (xr :mem addr1 (write n addr2 val x86))
-                  (xr :mem addr1 x86)))
-  :hints (("Goal" :induct (write n addr2 val x86)
-           :in-theory (e/d (write write-byte canonical-address-p bvplus acl2::bvchop-of-sum-cases)
-                           (acl2::bvplus-recollapse)))))
-
-(defthm memi-of-write-irrel
-  (implies (and (<= n (bvchop 48 (- addr1 addr2)))
-                (integerp addr1)
-                (integerp addr2)
-                (natp n))
-           (equal (memi addr1 (write n addr2 val x86))
-                  (memi addr1 x86)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (write memi separate)
-                           (acl2::bvplus-recollapse)))))
-
-(defthm memi-of-write-same
-  (implies (and (<= n (expt 2 48))
-                (unsigned-byte-p 48 addr)
-                (posp n)
-                )
-           (equal (memi addr (write n addr val x86))
-                  (bvchop 8 val)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (write n addr val x86)
-           :expand (write 1 addr val x86)
-           :in-theory (e/d (write write-byte)
-                           (acl2::bvplus-recollapse)))))
-
-(defthm read-of-write-within
-  (implies (and (<= ad2 ad1) ;gen
-                (< ad1 (+ n ad2))
-                (unsigned-byte-p 48 ad1)
-                (unsigned-byte-p 48 ad2)
-                (< (+ ad2 n) (expt 2 48)) ;gen
-                (posp n)
-                )
-           (equal (read 1 ad1 (write n ad2 val x86))
-                  (slice (+ 7 (* 8 (- ad1 ad2)))
-                         (* 8 (- ad1 ad2))
-                         val)))
-  :hints (("Subgoal *1/8" :cases ((equal ad1 ad2)))
-          ("Goal"   ;:expand ((WRITE N AD1 VAL X86))
-           :in-theory (e/d (posp read-byte write-byte)
-                           ()))))
 
 ;; no loop stopper
 ;; (defthm set-flag-set-flag-different-concrete-indices-better
@@ -614,11 +485,6 @@
 ;;                                 (LOGTAIL 8 VAL)
 ;;                                 X86))))
 
-(defthm write-of-281474976710656
-  (equal (write n 281474976710656 val x86)
-         (write n 0 val x86))
-  :hints (("Goal" :use (:instance write-of-bvchop-48 (addr 281474976710656))
-           :in-theory (disable write-of-bvchop-48))))
 
 ;; (thm
 ;;  (implies (and ;(< addr1 281474976710655)
