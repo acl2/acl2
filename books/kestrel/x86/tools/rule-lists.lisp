@@ -1111,6 +1111,30 @@
             read-in-terms-of-nth-and-pos-eric-8-bytes
 
             ;; nice rules: fixme: add the rest!
+            jb-condition-of-sub-cf-spec8
+            jb-condition-of-sub-cf-spec16
+            jb-condition-of-sub-cf-spec32
+            jb-condition-of-sub-cf-spec64
+            jnb-condition-of-sub-cf-spec8
+            jnb-condition-of-sub-cf-spec16
+            jnb-condition-of-sub-cf-spec32
+            jnb-condition-of-sub-cf-spec64
+            jbe-condition-of-sub-cf-spec8-and-sub-zf-spec8
+            jbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
+            jbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
+            jbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
+            jnbe-condition-of-sub-cf-spec8-and-sub-zf-spec8
+            jnbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
+            jnbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
+            jnbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
+            jl-condition-of-sub-sf-spec8-and-sub-of-spec8
+            jl-condition-of-sub-sf-spec16-and-sub-of-spec16
+            jl-condition-of-sub-sf-spec32-and-sub-of-spec32
+            jl-condition-of-sub-sf-spec64-and-sub-of-spec64
+            jnl-condition-of-sub-sf-spec8-and-sub-of-spec8-same
+            jnl-condition-of-sub-sf-spec16-and-sub-of-spec16-same
+            jnl-condition-of-sub-sf-spec32-and-sub-of-spec32-same
+            jnl-condition-of-sub-sf-spec64-and-sub-of-spec64-same
             jle-condition-of-sub-zf-spec8-and-sub-sf-spec8-and-sub-of-spec8
             jle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
             jle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
@@ -1119,14 +1143,6 @@
             jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
             jnle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
             jnle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
-            jb-condition-of-sub-cf-spec8
-            jb-condition-of-sub-cf-spec16
-            jb-condition-of-sub-cf-spec32
-            jb-condition-of-sub-cf-spec64
-            jnb-condition-8
-            jnb-condition-16
-            jnb-condition-32
-            jnb-condition-64
             jz-condition-of-zf-spec
             jz-condition-of-sub-zf-spec8
             jz-condition-of-sub-zf-spec16
@@ -1137,36 +1153,20 @@
             jnz-condition-of-sub-zf-spec16
             jnz-condition-of-sub-zf-spec32
             jnz-condition-of-sub-zf-spec64
-            jl-condition-of-sub-sf-spec8-and-sub-of-spec8
-            jl-condition-of-sub-sf-spec16-and-sub-of-spec16
-            jl-condition-of-sub-sf-spec32-and-sub-of-spec32
-            jl-condition-of-sub-sf-spec64-and-sub-of-spec64
-            jnl-condition-of-sub-sf-spec8-and-sub-of-spec8-same
-            jnl-condition-of-sub-sf-spec16-and-sub-of-spec16-same
-            jnl-condition-of-sub-sf-spec32-and-sub-of-spec32-same
-            jnl-condition-of-sub-sf-spec64-and-sub-of-spec64-same
-            jbe-condition-of-sub-cf-spec8-and-sub-zf-spec8
-            jbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
-            jbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
-            jbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
-            jnbe-condition-of-sub-cf-spec8-and-sub-zf-spec8
-            jnbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
-            jnbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
-            jnbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
 
             ;; can we get rid of these?:
-            jle-condition-rewrite-1
-            jle-condition-rewrite-2
-            jle-condition-rewrite-3
-            jnle-condition-rewrite
-            jnle-condition-rewrite-2
-            jnle-condition-rewrite-2-alt
-            jnle-condition-rewrite-3-32
-            jnl-condition-rewrite-1
-            jnl-condition-rewrite-1-32
-            jnl-condition-rewrite-1-32-constant-version
-            jnle-condition-rewrite-3
-            jnz-condition-rule-2
+            ;; jle-condition-rewrite-1
+            ;; jle-condition-rewrite-2
+            ;; jle-condition-rewrite-3
+            ;; jnle-condition-rewrite
+            ;; jnle-condition-rewrite-2
+            ;; jnle-condition-rewrite-2-alt
+            ;; jnle-condition-rewrite-3-32
+            ;; jnl-condition-rewrite-1
+            ;; jnl-condition-rewrite-1-32
+            ;; jnl-condition-rewrite-1-32-constant-version
+            ;; jnle-condition-rewrite-3
+            ;; jnz-condition-rule-2
 
             x86isa::memory-byte-accesses-are-always-aligned
             x86isa::address-aligned-p-of-8-and-nil

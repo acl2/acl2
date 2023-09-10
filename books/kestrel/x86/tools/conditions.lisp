@@ -914,9 +914,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;rename
 ;nice
-(defthm jnb-condition-8
+(defthm jnb-condition-of-SUB-CF-SPEC8
   (implies (and (unsigned-byte-p 8 dst)
                 (unsigned-byte-p 8 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC8 dst src))
@@ -926,9 +925,8 @@
                                    bvlt bvplus acl2::bvchop-of-sum-cases)
                                   (acl2::bvplus-recollapse)))))
 
-;rename
 ;nice
-(defthm jnb-condition-16
+(defthm jnb-condition-of-SUB-CF-SPEC16
   (implies (and (unsigned-byte-p 16 dst)
                 (unsigned-byte-p 16 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC16 dst src))
@@ -938,9 +936,8 @@
                                    bvlt bvplus acl2::bvchop-of-sum-cases)
                                   (acl2::bvplus-recollapse)))))
 
-;rename
 ;nice
-(defthm jnb-condition-32
+(defthm jnb-condition-of-SUB-CF-SPEC32
   (implies (and (unsigned-byte-p 32 dst)
                 (unsigned-byte-p 32 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC32 dst src))
@@ -950,9 +947,8 @@
                                    bvlt bvplus acl2::bvchop-of-sum-cases)
                                   (acl2::bvplus-recollapse)))))
 
-;rename
 ;nice
-(defthm jnb-condition-64
+(defthm jnb-condition-of-SUB-CF-SPEC64
   (implies (and (unsigned-byte-p 64 dst)
                 (unsigned-byte-p 64 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC64 dst src))
@@ -1409,3 +1405,23 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move up?
+(local (in-theory (disable acl2::<-of-logext-false ; disables for speed
+                           acl2::backchain-signed-byte-p-to-unsigned-byte-p ;same as acl2::signed-byte-p-when-unsigned-byte-p ?
+                           acl2::signed-byte-p-when-unsigned-byte-p
+                           acl2::logext-when-non-negative-becomes-bvchop)))
+
+;; todo: nicer form?
+(defthm jo-condition-of-sub-of-spec8
+  (implies (and (unsigned-byte-p 8 dst)
+                (unsigned-byte-p 8 src))
+           (equal (jo-condition (x86isa::sub-of-spec8 dst src))
+                  (not (signed-byte-p 8 (- (logext 8 dst) (logext 8 src))))))
+  :hints (("Goal" :in-theory (enable jo-condition x86isa::sub-of-spec8 x86isa::of-spec8))))
+
+;; todo: add jo rules for other sizes.
+
+;; todo: add jno, js, jns, jp, and jno rules
