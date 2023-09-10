@@ -1,7 +1,7 @@
 ; A lifter for x86 code, based on Axe, that can handle (some) code with loops
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -42,6 +42,7 @@
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "support-axe")
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
+(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/rule-lists" :dir :system)
 (include-book "kestrel/x86/assumptions" :dir :system)
@@ -2089,7 +2090,7 @@
 ;; Returns (mv erp event state)
 (defun lift-subroutine-fn (lifted-name
                            subroutine-name
-                           parsed-executable
+                           executable
                            stack-slots-needed
                            subroutine-length ;todo: drop this (would need to support :all for the segment-pcs?)
                            loop-alist
@@ -2133,6 +2134,15 @@
                 (mv (erp-t) nil state)))
 
        ;; Generate assumptions for lifting:
+       ((mv erp parsed-executable state)
+        (if (stringp executable)
+            ;; it's a filename, so parse the file:
+            (acl2::parse-executable executable state)
+          ;; it's already a parsed-executable:
+          (mv nil executable state)))
+       ((when erp)
+        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (user-assumptions (acl2::translate-terms user-assumptions 'lift-subroutine-fn (w state)))
        ;; assumptions (these get simplified below to put them into normal form):
@@ -2250,7 +2260,7 @@
                            whole-form
                            lifted-name ;the name to use for the function created by the lifter
                            subroutine-name
-                           parsed-executable
+                           executable ; a string (filename), or (for example) a defconst created by defconst-x86
                            stack-slots-needed
                            subroutine-length
                            loop-alist ;offsets (from start of method) of loops, paired with offset lists for their bodies
@@ -2268,7 +2278,7 @@
                            )
   `(make-event (lift-subroutine-fn ',lifted-name
                                    ',subroutine-name
-                                   ,parsed-executable
+                                   ,executable
                                    ',stack-slots-needed
                                    ',subroutine-length
                                    ',loop-alist
