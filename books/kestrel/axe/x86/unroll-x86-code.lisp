@@ -19,9 +19,9 @@
 ;; second approach here for now.
 
 (include-book "support-axe")
-(include-book "readers-and-writers64")
-(include-book "read-over-write-rules64")
-(include-book "write-over-write-rules64")
+(include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)

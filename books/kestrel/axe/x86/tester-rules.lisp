@@ -33,7 +33,7 @@
 (include-book "kestrel/x86/read-and-write" :dir :system)
 ;(include-book "kestrel/x86/support" :dir :system) ; todo?
 ;(include-book "kestrel/x86/x86-changes" :dir :system)
-(include-book "register-readers-and-writers64")
+(include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
 ;(include-book "read-over-write-rules64")
 ;(include-book "write-over-write-rules64")
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))

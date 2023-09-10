@@ -11,8 +11,8 @@
 (in-package "X")
 
 (include-book "register-readers-and-writers64")
-(include-book "kestrel/x86/flags" :dir :system)
-(include-book "kestrel/x86/read-and-write" :dir :system)
+(include-book "flags")
+(include-book "read-and-write")
 
 ;; These push write-byte inward:
 (defthm write-byte-of-set-rip (equal (write-byte base-addr byte (set-rip rip x86)) (set-rip rip (write-byte base-addr byte x86))) :hints (("Goal" :in-theory (enable write-byte))))

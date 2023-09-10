@@ -8,6 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "kestrel/x86/portcullis" :dir :system)
+(include-book "portcullis")
 
 ; cert-flags: ? T :TTAGS :ALL
