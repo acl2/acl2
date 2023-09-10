@@ -430,7 +430,8 @@
 (defthmd write-becomes-write-bytes
   (equal (write n base-addr val x86)
          (write-bytes base-addr (reverse (acl2::unpackbv n 8 val)) x86))
-  :hints (("Goal" :in-theory (e/d (;list::cdr-append
+  :hints (("Goal" :in-theory (e/d (write
+                                   ;;list::cdr-append
                                    write-byte)
                                   (;ACL2::LEN-CONS-META-RULE
                                    ;;ACL2::TAKE-OF-CONS
@@ -514,7 +515,7 @@
                     (write 1 addr1 val x86)
                     (write n 0 val x86))
            :induct (write n addr2 val x86)
-           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus write-byte)
+           :in-theory (e/d (write bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus write-byte)
                            (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm read-of-write-disjoint-gen
@@ -530,7 +531,7 @@
   :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (read n1 addr1 x86)
-           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus
+           :in-theory (e/d (read write bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus
                                    read-byte ; todo
                                    )
                            (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
@@ -565,7 +566,7 @@
   :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (read n1 addr1 x86)
-           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus ;read-byte
+           :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus ;read-byte
                                    )
                            (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
                                                     ACL2::SLICE-OF-+ ;looped
@@ -628,7 +629,7 @@
   :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (read n1 addr1 x86)
-           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus read-byte)
+           :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus read-byte)
                            (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
                                                     ACL2::SLICE-OF-+ ;looped
                                                     ACL2::BVCAT-OF-+-HIGH
@@ -638,7 +639,7 @@
   (implies (integerp addr)
            (equal (read 1 addr (write-byte addr byte x86))
                   (bvchop 8 byte)))
-  :hints (("Goal" :in-theory (enable read-byte))))
+  :hints (("Goal" :in-theory (enable read read-byte))))
 
 ;; (thm
 ;;  (implies (and (equal 1 (len vals2))
