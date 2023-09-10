@@ -429,9 +429,6 @@ bit arbitrary but generally leads to nice lemmas.</p>"
   :split-types t
   :inline t
   :enabled t
-  (declare (xargs :guard (and (integerp pos)
-                              (>= pos 0)
-                              (integerp i))))
   (mbe :logic (ifloor i (expt2 pos))
        :exec (ash i (- (the unsigned-byte pos)))))
 
