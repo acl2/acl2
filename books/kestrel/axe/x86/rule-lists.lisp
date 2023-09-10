@@ -925,7 +925,8 @@
     xr-becomes-undef))
 
 ;; these are used both for lifting and proving
-(defconst *extra-rules*
+(defun extra-rules ()
+  (declare (xargs :guard t))
   (append '(acl2::bvchop-of-*
             acl2::integerp-of-expt
             acl2::integerp-of-*                 ; for array index calcs
@@ -1100,9 +1101,10 @@
           (acl2::boolean-rules-safe)
           (acl2::type-rules)))
 
-(defconst *extra-lifting-rules*
+(defun extra-lifting-rules ()
+  (declare (xargs :guard t))
   (append (lifter-rules64-new)
-          *extra-rules*
+          (extra-rules)
           '(X86ISA::WX32$inline ; more?
             X86ISA::WZ32$inline ; more?
             <-of-fp-to-rat ; do we want this?
@@ -1407,7 +1409,8 @@
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
 
-(defconst *proof-rules*
+(defun proof-rules ()
+  (declare (xargs :guard t))
   (append '(myif-of-sub-zf-spec32-arg2
             myif-of-sub-zf-spec32-arg3
             ACL2::INTEGERP-OF-BVPLUS ;todo: more
@@ -1472,7 +1475,7 @@
             jnp-condition
             jz-condition
             jnz-condition)
-          *extra-rules*
+          (extra-rules)
           (lifter-rules64-new) ; overkill?
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying

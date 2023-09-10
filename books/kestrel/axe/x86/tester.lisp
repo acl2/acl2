@@ -336,7 +336,7 @@
                     ) ; push back to def-unrolled
                   extra-rules
                   extra-lift-rules
-                  *extra-lifting-rules*)
+                  (extra-lifting-rules))
           ;; remove-rules:
           (append
            '(                        ;; x86isa::gpr-sub-spec-1
@@ -439,7 +439,7 @@
                                    t       ; call-stp-when-pruning
                                    t ; counterexamplep
                                    nil ; print-cex-as-signedp
-                                   (set-difference-eq (append *proof-rules* extra-rules extra-proof-rules)
+                                   (set-difference-eq (append (proof-rules) extra-rules extra-proof-rules)
                                                       (append remove-rules
                                                               remove-proof-rules
                                                               ;; these can introduce boolor:
