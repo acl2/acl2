@@ -69,7 +69,10 @@
 
 ;; Note that RIP is built in the x86 model.
 
-;; Do we ever need a rule to introduce RIP?
+;; Introduces rip.
+(defthmd xr-becomes-rip
+  (equal (xr :rip nil x86)
+         (rip x86)))
 
 (defund set-rip (rip x86)
   (declare (xargs :stobjs x86
