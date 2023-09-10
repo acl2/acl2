@@ -50,6 +50,7 @@
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "kestrel/x86/rule-lists" :dir :system)
+(include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/assumptions" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system)
@@ -354,6 +355,8 @@
      )
 ;(x86isa::lifter-rules)
    ))
+
+;; some of these (e.g., about non-loop symbolic execution functions) may not be needed:
 
 (acl2::ensure-rules-known (lifter-rules2))
 
