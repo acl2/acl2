@@ -306,14 +306,15 @@
     ///
 
     ;; APT transformations (sometimes used to verify listed code):
-    def
     wrap-output
+    extract-output
     rename-params
     flatten-params
     drop-irrelevant-params
     tailrec
     make-tail-rec-bv-up
     make-tail-rec-bv-up2
+    def ; handy APT utility
 
     ;; utilities:
     call-of
