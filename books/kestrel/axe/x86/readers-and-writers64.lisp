@@ -71,7 +71,7 @@
 
 ;; Do we ever need a rule to introduce RIP?
 
-(defun set-rip (rip x86)
+(defund set-rip (rip x86)
   (declare (xargs :stobjs x86
                   :guard (signed-byte-p 48 rip))) ;todo: tighten?
   (x86isa::!rip rip x86))
@@ -79,29 +79,34 @@
 ;; Introduces set-rip.
 (defthmd xw-becomes-set-rip
   (equal (xw :rip nil rip x86)
-         (set-rip rip x86)))
+         (set-rip rip x86))
+  :hints (("Goal" :in-theory (enable set-rip))))
 
 ;; A read-of-write rule
 (defthm rip-of-set-rip
   (equal (rip (set-rip rip x86))
-         (logext 48 rip)))
+         (logext 48 rip))
+  :hints (("Goal" :in-theory (enable set-rip))))
 
 ;needed?
 (defthm xr-of-set-rip-irrel
   (implies (not (equal fld :rip))
            (equal (xr fld index (set-rip rip x86))
-                  (xr fld index x86))))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable set-rip))))
 
 ;needed?
 (defthm xw-of-set-rip-irrel
   (implies (not (equal fld :rip))
            (equal (xw fld index val (set-rip rip x86))
-                  (set-rip rip (xw fld index val x86)))))
+                  (set-rip rip (xw fld index val x86))))
+  :hints (("Goal" :in-theory (enable set-rip))))
 
 ;; A write-of-write rule
 (defthm set-rip-of-set-rip
   (equal (set-rip rip1 (set-rip rip2 x86))
-         (set-rip rip1 x86)))
+         (set-rip rip1 x86))
+  :hints (("Goal" :in-theory (enable set-rip))))
 
 ;needed?
 ;slow?
