@@ -29,6 +29,9 @@
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
 
+(local (in-theory (disable ;(:linear x86isa::n08p-xr-mem)
+                           acl2::unsigned-byte-p-from-bounds))) ; for speed
+
 ;;
 ;; library additions
 ;;
