@@ -13,7 +13,7 @@
 
 (include-book "assumptions")
 (include-book "support32")
-(include-book "../parsers/parsed-executable-tools")
+(include-book "parsers/parsed-executable-tools")
 
 ;; TODO: Add assumptions about segments
 (defun standard-state-assumption-32 (x86)

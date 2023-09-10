@@ -13,7 +13,7 @@
 
 (include-book "projects/x86isa/machine/instructions/conditional" :dir :system)
 (include-book "flags") ;for get-flag
-(include-book "../rflags-spec-sub")
+(include-book "rflags-spec-sub")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-strengthen
 (include-book "kestrel/bv/defs" :dir :system) ;for bvplus, etc.
