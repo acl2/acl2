@@ -191,7 +191,7 @@
     x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
     ;; Flags:
-    x86isa::x86p-of-set-flag
+    x86p-of-set-flag
     get-flag-of-xw
     xr-of-set-flag
     set-flag-of-xw
@@ -687,6 +687,27 @@
     x86isa::two-byte-opcode-modr/m-p$inline-constant-opener
     ))
 
+(defun get-prefixes-openers ()
+  (declare (xargs :guard t ))
+  '(x86isa::get-prefixes-base-1
+    x86isa::get-prefixes-base-2
+    x86isa::get-prefixes-base-3
+    x86isa::get-prefixes-base-4
+    x86isa::get-prefixes-base-5
+    x86isa::get-prefixes-base-6
+    x86isa::get-prefixes-base-7
+    x86isa::get-prefixes-base-8
+    x86isa::get-prefixes-unroll-1
+    x86isa::get-prefixes-unroll-2
+    x86isa::get-prefixes-unroll-3
+    x86isa::get-prefixes-unroll-4
+    ;; x86isa::get-prefixes-opener-lemma-no-prefix-byte
+    ;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple
+    ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple
+    ;; x86isa::get-prefixes-opener-lemma-group-3-prefix-simple
+    ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
+    ))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 (defun lifter-rules-common ()
   (append (acl2::base-rules)
@@ -703,6 +724,7 @@
           (state-rules)
           (if-rules)
           (decoding-and-dispatch-rules)
+          (get-prefixes-openers)
           (x86-type-rules)
           (x86-bv-rules)
           (acl2::array-reduction-rules)
@@ -837,25 +859,6 @@
             x86isa::get-prefixes-does-not-modify-x86-state-in-app-view-new ;targets mv-nth-3-of-get-prefixes
             x86isa::mv-nth-0-of-get-prefixes-of-xw-of-irrel
             x86isa::mv-nth-1-of-get-prefixes-of-xw-of-irrel
-            ;; get-prefixes openers:
-            X86ISA::GET-PREFIXES-BASE-1
-            X86ISA::GET-PREFIXES-BASE-2
-            X86ISA::GET-PREFIXES-BASE-3
-            X86ISA::GET-PREFIXES-BASE-4
-            X86ISA::GET-PREFIXES-BASE-5
-            X86ISA::GET-PREFIXES-BASE-6
-            X86ISA::GET-PREFIXES-BASE-7
-            X86ISA::GET-PREFIXES-BASE-8
-            X86ISA::GET-PREFIXES-UNROLL-1
-            X86ISA::GET-PREFIXES-UNROLL-2
-            X86ISA::GET-PREFIXES-UNROLL-3
-            X86ISA::GET-PREFIXES-UNROLL-4
-            ;; x86isa::get-prefixes-opener-lemma-no-prefix-byte
-            ;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple
-            ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple
-            ;; x86isa::get-prefixes-opener-lemma-group-3-prefix-simple
-            ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
-
 
             x86isa::mv-nth-of-cons ;mv-nth ;or do mv-nth of cons.  rules like rb-in-terms-of-nth-and-pos-eric target mv-nth
 
@@ -3061,6 +3064,7 @@
 
 (defun debug-rules64 ()
   (append (debug-rules-common)
-          ;; todo: flesh out:
+          (get-prefixes-openers)
+          ;; todo: flesh out this list:
           '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs)))
