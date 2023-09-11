@@ -532,7 +532,16 @@
     acl2::integerp-of-logext
     acl2::integerp-of--))
 
+(defund bv-intro-rules ()
+  (declare (xargs :guard t))
+  '(acl2::logxor-becomes-bvxor-axe ;todo: more like this!
+    ))
+
+;todo: classify these
 (defun x86-bv-rules ()
+  (declare (xargs :guard t))
+  (append
+   (bv-intro-rules)
   '(acl2::bvlt-of-0-arg3 ;todo: more like this?
     ACL2::LOGHEAD-BECOMES-BVCHOP
     acl2::logext-of-bvplus-64 ;somewhat unusual
@@ -553,7 +562,7 @@
     acl2::bvuminus-of-logext
     acl2::bvchop-of-if-when-constants
     acl2::bvplus-recollapse ;rename
-    ))
+    )))
 
 ;not used?
 (defun canonical-address-rules ()

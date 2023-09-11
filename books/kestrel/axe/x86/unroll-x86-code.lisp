@@ -148,7 +148,7 @@
          ;;                       (cw ")~%"))))
          (dag dag-or-quote)
          ;; Prune the DAG quickly but possibly imprecisely:
-         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag state))
+         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag t state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep
@@ -157,7 +157,7 @@
          ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
          ((mv erp dag state)
-          (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
+          (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion.
                                            dag
                                            ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
                                            ;; to be helpful when pruning, and user assumptions seem like they should be applied by the

@@ -92,6 +92,8 @@
                                                     (acons (car entry) leaf-count alist)
                                                   alist))))))
 
+;; Does not look for MYIF or BVIF or anything like that, only IF.
+;; TODO: Optimize by using a result array?
 (defund count-top-level-if-branches-in-dag (dag)
   (declare (xargs :guard (pseudo-dagp dag)))
   (count-top-level-if-branches-in-rev-dag (reverse-list dag) nil))
