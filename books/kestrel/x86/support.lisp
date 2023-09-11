@@ -2193,11 +2193,6 @@
          (64-bit-modep x86))
   :hints (("Goal" :in-theory (enable x::set-flag))))
 
-(defthm x86p-of-set-flag
-  (implies (x86p x86)
-           (x86p (x::set-flag flag val x86)))
-  :hints (("Goal" :in-theory (enable x::set-flag))))
-
 (defthm alignment-checking-enabled-p-of-set-flag
   (implies (and (member-equal flag x::*flags*) ;drop?
                 (not (equal flag :ac)))
