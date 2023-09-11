@@ -13,6 +13,7 @@
 
 (include-book "logtail-def")
 (local (include-book "../library-wrappers/ihs-logops-lemmas"))
+(local (include-book "../utilities/equal-of-booleans"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/times-and-divide"))
@@ -325,3 +326,28 @@
                   x))
   :hints (("Goal" :in-theory (e/d (logtail)
                                   ()))))
+
+(defthm <-of-logtail-arg1
+  (implies (and (integerp i)
+                (natp pos)
+                (integerp j) ; needed?
+                )
+           (equal (< (logtail pos i) j)
+                  (< i (* j (expt 2 pos)))))
+  :hints (("Goal" :in-theory (enable logtail))))
+
+(defthm <-of-logtail-arg2
+  (implies (and (integerp i)
+                (natp pos)
+                (integerp j) ; needed?
+                )
+           (equal (< j (logtail pos i))
+                  (<= (* (+ 1 j) (expt 2 pos)) i)))
+  :hints (("Goal" :in-theory (enable logtail))))
+
+(defthm <=-of-*-of-expt-and-logtail-linear
+  (implies (and (integerp i)
+                (natp pos))
+           (<= (* (expt 2 pos) (logtail pos i)) i))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable logtail))))

@@ -28,20 +28,10 @@
 (include-book "kestrel/utilities/runes" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
+(include-book "kestrel/utilities/print-to-string" :dir :system)
 (include-book "kestrel/hints/combine-hints" :dir :system)
 
-;; move these:
-
-;; todo: make this lowercase?
-(defun print-to-string (item)
-  (declare (xargs :mode :program))
-  (mv-let (col string)
-    (fmt1-to-string "~X01" (acons #\0 item (acons #\1 nil nil)) 0
-                    :fmt-control-alist
-                    `((fmt-soft-right-margin . 10000)
-                      (fmt-hard-right-margin . 10000)))
-    (declare (ignore col))
-    string))
+;; move these?
 
 (verify-termination get-event-data-1)
 ;(verify-guards get-event-data-1) ; todo: needs a guard, perhaps (and (symbolp key) (symbol-alistp event-data)).

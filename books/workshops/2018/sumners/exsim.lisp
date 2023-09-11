@@ -283,7 +283,7 @@
          (mv done rslt))
         (t
          (mv done (acons! (sv::make-svar :name (exs-remove-pref (sv::svar->name var) pref)
-                                         :delay 0 :nonblocking nil)
+                                         :delay 0)
                           val rslt)))))
 
 (define exs-map-chg ((chg acl2::val-chgs-p) clk reset pref (rslt exs-vmap-p) &key (done 'nil))
@@ -327,11 +327,9 @@
   (b* ((chgs (acl2::vcd$-val-chg-lst vcd$))
        (pref (exs$-vcd-prefix exs$))
        (clk (sv::make-svar :name (append! pref "clk") ;; BOZO (exs$-clock-name exs$))
-                           :delay 0
-                           :nonblocking nil))
+                           :delay 0))
        (reset (sv::make-svar :name (append! pref "reset") ;; BOZO (exs$-reset-name exs$))
-                             :delay 0
-                             :nonblocking nil)))
+                             :delay 0)))
     (exs-vmaplist-fix (exs-map-chgs chgs clk reset pref))))
 
 (define exs-timestamps ((x acl2::vcd-val-chgs-p) &key ((rslt string-listp) 'nil))

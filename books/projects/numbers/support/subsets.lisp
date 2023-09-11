@@ -45,6 +45,17 @@
 	   (dlistp s))
   :hints (("Goal" :induct (subsets-induct s l))))
 
+(local (defun len-subset-bound-induct (s l)
+  (if (consp l)
+      (list (len-subset-bound-induct (cdr s) (cdr l))
+            (len-subset-bound-induct s (cdr l)))
+    (list s l))))
+
+(defthmd len-subset-bound
+  (implies (member-equal s (subsets l))
+	   (<= (len s) (len l)))
+  :hints (("Goal" :induct (len-subset-bound-induct s l))))
+
 (local (defthm dlistp-conses
   (implies (dlistp l)
 	   (dlistp (conses x l)))))
@@ -58,6 +69,85 @@
 				(:instance sublistp-subset (s (common-member (SUBSETS (CDR L))
                                                                              (CONSES (CAR L) (SUBSETS (CDR L)))))
 							   (l (cdr l)))))))
+
+(defthm member-append
+  (iff (member-equal x (append l m))
+       (or (member-equal x l)
+	   (member-equal x m))))
+
+(defthm member-conses
+  (iff (member-equal p (conses k l))
+	   (and (consp p)
+		(equal (car p) k)
+		(member-equal (cdr p) l))))
+
+(local (defthm member-nil-subsets
+  (member-equal () (subsets l))))
+
+(local (defun subset-subset-1-induct (x s l)
+  (declare (xargs :measure (+ (len s) (len l))))
+  (if (and (consp s) (consp l))
+      (list (subset-subset-1-induct x (cdr s) l)
+            (subset-subset-1-induct x s (cdr l))
+            (subset-subset-1-induct (cdr x) (cdr s) (cdr l)))
+    (list x s l))))
+
+(local (defthmd subset-subset-1
+  (implies (and (dlistp l)
+                (member-equal s (subsets l))
+                (member-equal x (subsets s)))
+	   (member-equal x (subsets l)))
+  :hints (("Goal" :induct (subset-subset-1-induct x s l))
+          ("Subgoal *1/1" :cases ((member-equal x (subsets (cdr s))))))))
+
+(local (defthm consp-subset
+  (implies (and (member-equal x (subsets l))
+                x)
+	   (consp x))))
+
+(local (defun subset-subset-2-induct (x s l)
+  (if (consp l)
+      (list (subset-subset-2-induct x s (cdr l))
+            (subset-subset-2-induct x (cdr s) (cdr l))
+            (subset-subset-2-induct (cdr x) (cdr s) (cdr l)))
+    (list x s l))))
+
+(local (defthmd subset-subset-2-1
+  (implies (and (consp s) (sublistp x s) (not (member-equal (car s) x)))
+           (sublistp x (cdr s)))))
+	   
+(local (defthmd subset-subset-2-2
+  (implies (and (dlistp l)
+                (member-equal x (subsets l))
+		(sublistp x s)
+		(consp s)
+                (equal (car x) (car s)))
+           (sublistp (cdr x) (cdr s)))
+  :hints (("Goal" :in-theory (disable dlistp-subset)
+                  :use ((:instance subset-subset-2-1 (x (cdr x)))
+                        (:instance dlistp-subset (s x)))))))
+
+(local (defthmd subset-subset-2
+  (implies (and (dlistp l)
+                (member-equal s (subsets l))
+                (member-equal x (subsets l))
+		(sublistp x s))
+	   (member-equal x (subsets s)))
+  :hints (("Goal" :induct (subset-subset-2-induct x s l))
+          ("Subgoal *1/1" :cases ((member-equal x (subsets (cdr l)))))
+	  ("Subgoal *1/1.2" :use (subset-subset-2-2))
+	  ("Subgoal *1/1.1" :cases ((member-equal s (subsets (cdr l)))))
+	  ("Subgoal *1/1.1.2" :in-theory (disable sublistp-subset)
+	                      :use (subset-subset-2-1
+	                            (:instance sublistp-subset (s x) (l (cdr l))))))))
+
+(defthmd subset-subset
+  (implies (and (dlistp l)
+                (member-equal s (subsets l)))
+	   (iff (member-equal x (subsets s))
+	        (and (member-equal x (subsets l))
+		     (sublistp x s))))
+  :hints (("Goal" :use (subset-subset-1 subset-subset-2))))
 
 (local (defthmd true-listp-subset
   (implies (member-equal s (subsets l))
@@ -189,6 +279,22 @@
        (and (member-equal x (subsets l))
             (equal (len x) k)))
   :hints (("Goal" :in-theory (enable subsets-of-order))))
+
+(defthmd no-subsets-of-order>len
+  (implies (and (natp k) (> k (len l)))
+           (equal (subsets-of-order k l)
+	          ()))
+  :hints (("Goal" :in-theory (disable member-subsets-of-order)
+                  :use ((:instance member-subsets-of-order (x (car (subsets-of-order k l))))
+                        (:instance len-subset-bound (s (car (subsets-of-order k l))))))))
+
+(defthmd no-subsets-of-order>len
+  (implies (and (natp k) (> k (len l)))
+           (equal (subsets-of-order k l)
+	          ()))
+  :hints (("Goal" :in-theory (disable member-subsets-of-order)
+                  :use ((:instance member-subsets-of-order (x (car (subsets-of-order k l))))
+                        (:instance len-subset-bound (s (car (subsets-of-order k l))))))))
 
 ;; (subsets-of-order k l) is a dlist, and therefore, (len (subsets-of-order k l))
 ;; is the number of subsets of l of order k:
@@ -421,7 +527,7 @@
             (len-subsets-of-order-induct (cdr l) (1- k)))
     (list l k))))
 
-(defthm len-subsets-of-order
+(local (defthmd len-subsets-of-order-1
   (implies (and (dlistp l) (natp k) (<= k (len l)))
 	   (equal (len (subsets-of-order k l))
 		  (/ (fact (len l))
@@ -429,5 +535,18 @@
   :hints (("Goal" :induct (len-subsets-of-order-induct l k))
           ("Subgoal *1/1" :cases ((= k 0) (= k (len l)))
 	                  :use (subsets-of-order-0 subsets-of-order-len subsets-of-order-reduce subsets-of-order-plus))
-	  ("Subgoal *1/1.3" :in-theory (theory 'minimal-theory) :use (hack))))
+	  ("Subgoal *1/1.3" :in-theory (theory 'minimal-theory) :use (hack)))))
+
+(defund choose (n k)
+  (if (and (integerp k) (integerp n) (<= 0 k) (<= k n))
+      (/ (fact n)
+	 (* (fact k) (fact (- n k))))
+    0))
+
+(defthm len-subsets-of-order
+  (implies (and (dlistp l) (natp k))
+	   (equal (len (subsets-of-order k l))
+		  (choose (len l) k)))
+  :hints (("Goal" :in-theory (enable choose)
+                  :use (len-subsets-of-order-1 no-subsets-of-order>len))))
 	  

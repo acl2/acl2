@@ -23,6 +23,10 @@
   (implies (and (dlistp l) (member-equal s (subsets l)))
 	   (sublistp s l)))
 
+(defthmd len-subset-bound
+  (implies (member-equal s (subsets l))
+	   (<= (len s) (len l))))
+
 (defthm dlistp-subset
   (implies (and (dlistp l) (member-equal s (subsets l)))
 	   (dlistp s)))
@@ -31,6 +35,16 @@
 
 (defthm dlistp-subsets
   (implies (dlistp l) (dlistp (subsets l))))
+
+;; If s is a subset of l, then the subsets of s are the subsets of l that are
+;; sublists of s:
+
+(defthmd subset-subset
+  (implies (and (dlistp l)
+                (member-equal s (subsets l)))
+	   (iff (member-equal x (subsets s))
+	        (and (member-equal x (subsets l))
+		     (sublistp x s)))))
 
 ;; No member of l is a permutation of another, i.e., distinct members of l
 ;; represent distinct subsets:
@@ -86,6 +100,11 @@
        (and (member-equal x (subsets l))
             (equal (len x) k))))
 
+(defthmd no-subsets-of-order>len
+  (implies (and (natp k) (> k (len l)))
+           (equal (subsets-of-order k l)
+	          ())))
+
 ;; (subsets-of-order k l) is a dlist, and therefore, (len (subsets-of-order k l))
 ;; is the number of subsets of l of order k:
 
@@ -93,7 +112,15 @@
   (implies (dlistp l)
 	   (dlistp (subsets-of-order k l))))
 
-;; We shall prove by induction that (len (subsets-of-order k l)) = n!/(k!(n - k)!).
+;; We shall prove by induction that (len (subsets-of-order k l)) is the binomial
+;; coefficient, (choose n k) = n!/(k!(n - k)!):
+
+(defund choose (n k)
+  (if (and (integerp k) (integerp n) (<= 0 k) (<= k n))
+      (/ (fact n)
+	 (* (fact k) (fact (- n k))))
+    0))
+
 ;; To this end, we split (subsets-of-order k l) into 2 sublists, consisting of the
 ;; subsets that contain (car l) and the subsets that do not contain (car l):
 
@@ -148,11 +175,10 @@
 ;;   (len (subsets-of-order k l)) = (n-1)!/((k-1)!(n-k)!) + (n-1)!/(k!(n-k+1)!)
 ;;                                = (k(n-1)!)/(k!(n-k)!) + ((n-k)(n- 1)!)/(k!(n-k)!)
 ;;                                = ((k+n-k)(n-1)!)/(k!(n-k)!)
-;;                                = n!/(k!(n-k)!).
+;;                                = n!/(k!(n-k)!)
+;;                                = (choose (len l) k).
 
 (defthm len-subsets-of-order
-  (implies (and (dlistp l) (natp k) (<= k (len l)))
+  (implies (and (dlistp l) (natp k))
 	   (equal (len (subsets-of-order k l))
-		  (/ (fact (len l))
-		     (* (fact k) (fact (- (len l) k)))))))
-	  
+		  (choose (len l) k))))

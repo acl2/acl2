@@ -266,9 +266,8 @@
            (equal (expt 2 i)
                   (+ (expt 2 (+ -1 i))
                      (expt 2 (+ -1 i)))))
-  :hints (("Goal" :in-theory (enable expt-of-+
-                              )))
-  :rule-classes :linear)
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt-of-+))))
 
 ;gen the 1
 (defthm <-of-1-and-expt
@@ -313,6 +312,7 @@
            (< (expt r i) 1))
   :hints (("Goal" :in-theory (enable expt)))))
 
+;; Disabled because we have <-of-expt-and-expt.
 (defthmd expt-monotone-strong
   (implies (and (< i j)
                 (< 1 r) ; this case
@@ -383,7 +383,7 @@
                             (<-of-1-and-expt-gen))))))
 
 ;todo: rename vars
-(defthm <-of-expt-and-expt
+(defthm <-of-expt-and-expt-same-base
   (implies (and (< 0 r) ; todo: handle 0?
                 (rationalp r)
                 (integerp i)
@@ -396,7 +396,7 @@
                       ;; usual case:
                       (< i j))))))
 
-(defthm <-of-expt-and-expt-linear
+(defthm <-of-expt-and-expt-same-base-linear
   (implies (and (< i1 i2)
                 ;; prevent huge expt computations:
                 (syntaxp (and (not (and (quotep r)
@@ -410,6 +410,23 @@
                 (integerp i1)
                 (integerp i2))
            (< (expt r i1) (expt r i2)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt-monotone-strong))))
+
+(defthm <=-of-expt-and-expt-same-base-linear
+  (implies (and (<= i1 i2)
+                ;; prevent huge expt computations:
+                (syntaxp (and (not (and (quotep r)
+                                        (quotep i1)
+                                        (< 1000 (unquote i1))))
+                              (not (and (quotep r)
+                                        (quotep i2)
+                                        (< 1000 (unquote i2))))))
+                (<= 1 r)
+                (rationalp r)
+                (integerp i1)
+                (integerp i2))
+           (<= (expt r i1) (expt r i2)))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable expt-monotone-strong))))
 
@@ -477,8 +494,6 @@
    :hints (("Goal" :nonlinearp t))))
 
 ;; TODO: Make some of these non-local?
-
-
 
 (local
  (defthmd <-of-expt-and-1-linear
@@ -795,8 +810,7 @@
                 (< 0 r1)
                 (rationalp r2)
                 (< 0 r2)
-                (integerp i)
-                )
+                (integerp i))
            (< (expt r2 i) (expt r1 i)))
   :rule-classes :linear
   :hints (("Goal" :cases ((equal 0 r1)))))
@@ -854,7 +868,7 @@
    :hints (("Goal" :use ((:instance <-of-expt-and-expt-small-base)
                          (:instance <-of-expt-and-expt-small-base (i1 i2) (i2 i1)))
             :in-theory (e/d (zip) (<-of-expt-and-expt-small-base
-                                   <-of-expt-and-expt))))))
+                                   <-of-expt-and-expt-same-base))))))
 
 (local
  (defthm equal-of-expt-and-expt-same-base-large-base

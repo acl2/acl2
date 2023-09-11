@@ -1,6 +1,6 @@
 ; Cryptographic Library
 ;
-; Copyright (C) 2019-2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019-2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,6 +27,7 @@
 (include-book "blake/top")
 (include-book "salsa/salsa20")
 (include-book "aes/aes-spec")
+(include-book "tea/tea-rules")
 
 (include-book "attachments/top")
 

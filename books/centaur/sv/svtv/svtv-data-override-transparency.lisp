@@ -27,7 +27,7 @@
 
 (include-book "svtv-data-obj-spec")
 (include-book "svtv-idealize-defs")
-(include-book "../svex/override")
+(include-book "fsm-override-smart-check")
 (include-book "svtv-generalize-defs")
 (include-book "override-envlist-defs")
 (include-book "std/util/defredundant" :dir :system)
@@ -174,7 +174,7 @@
                      
    
 
-  (defthm override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
+  (defthm override-transparency-of-svtv-data-obj->spec-with-smart-check
     (b* (((svtv-spec spec) (svtv-data-obj->spec x))
          ((svtv-data-obj x))
          ((flatnorm-res x.flatnorm))
@@ -183,10 +183,11 @@
          (override-mux-keys (svtv-assigns-override-vars x.flatnorm.assigns
                                                         (phase-fsm-config->override-config x.phase-fsm-setup)))
          (params (svarlist-change-override override-mux-keys :test))
-         ((base-fsm spec.fsm))
-         (overridetriples (svar->svex-override-triplelist
-                           (svarlist-to-override-triples overridekeys)
-                           spec.fsm.values)))
+         ;; ((base-fsm spec.fsm))
+         ;; (overridetriples (svar->svex-override-triplelist
+         ;;                   (svarlist-to-override-triples overridekeys)
+         ;;                   spec.fsm.values))
+         )
       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                     x.flatten-validp
                     x.flatnorm-validp
@@ -194,9 +195,10 @@
                     (flatnorm-setup->monotonify x.flatnorm-setup)
 
                     (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
+                    (base-fsm-override-smart-check spec.fsm overridekeys)
 
-                    (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.values) overridetriples))
-                    (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.nextstate) overridetriples))
+                    ;; (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.values) overridetriples))
+                    ;; (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.nextstate) overridetriples))
                     
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
                     (svex-env-<<= (svex-env-reduce (append (svex-alist-vars spec.initst-alist)
@@ -207,8 +209,13 @@
                     (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
                (svex-env-<<= impl-run spec-run)))
     :hints(("Goal" :in-theory (e/d (svtv-data-obj->spec
-                                    base-fsm-overridekey-transparent-p)
-                                   (design->ideal-fsm-overridekey-transparent))
+                                    base-fsm-overridekey-transparent-p
+                                    )
+                                   (design->ideal-fsm-overridekey-transparent
+                                    base-fsm-overridekey-transparent-p-when-base-fsm-override-smart-check))
+            :use ((:instance base-fsm-overridekey-transparent-p-when-base-fsm-override-smart-check
+                   (keys overridekeys)
+                   (x (svtv-data-obj->phase-fsm x))))
             ;; :use ((:instance design->ideal-fsm-overridekey-transparent
             ;;        (x (svtv-data-obj->design x))
             ;;        (config (svtv-data-obj->phase-fsm-setup x))))

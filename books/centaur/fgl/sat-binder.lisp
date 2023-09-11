@@ -420,7 +420,11 @@
                          (ext eval-alist)))
                   :in-theory (disable fgl-ev-context-equiv-forall-extensions-necc)))))
 
+(local (defcong logicman-equiv equal (logicman-extension-p new old) 1
+         :hints(("Goal" :in-theory (enable logicman-extension-p)))))
 
+(local (defcong logicman-equiv equal (logicman-extension-p new old) 2
+         :hints(("Goal" :in-theory (enable logicman-extension-p)))))
 
 
 (def-fgl-binder-meta sat-check-raw-binder
@@ -470,6 +474,13 @@
                              a
                            (mv-nth (1- n) b))))
          :hints(("Goal" :in-theory (enable mv-nth)))))
+
+
+(local (defthm logicman-extension-of-interp-st-sat-check
+         ;; need this to happen immediately without reliance on congruence
+         (logicman-extension-p (interp-st->logicman
+                                (mv-nth 1 (interp-st-sat-check params bfr interp-st state)))
+                               (interp-st->logicman interp-st))))
 
 (def-fgl-binder-meta sat-check-with-witness-raw-binder
   (if (and (eq (pseudo-fnsym-fix fn) 'sat-check-with-witness-raw)

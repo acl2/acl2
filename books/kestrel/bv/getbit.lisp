@@ -606,3 +606,11 @@
   (equal (equal (getbit 0 x) x)
          (unsigned-byte-p 1 x))
   :hints (("Goal" :in-theory (enable getbit-identity))))
+
+(defthmd mod-of-2-becomes-getbit-0
+  (implies (integerp x)
+           (equal (mod x 2)
+                  (getbit 0 x)))
+  :hints (("Goal" :in-theory (e/d (getbit bvchop)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))

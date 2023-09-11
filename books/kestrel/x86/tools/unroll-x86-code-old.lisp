@@ -27,9 +27,9 @@
 ;; See also lifter-axe.lisp, for the Axe-based version of this lifter (which is
 ;; what we mostly use).
 
-(include-book "support")
+(include-book "../support")
 (include-book "lifter-support")
-(include-book "assumptions")
+(include-book "../assumptions")
 (include-book "symsim")
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/runes" :dir :system)

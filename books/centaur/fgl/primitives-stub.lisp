@@ -176,6 +176,106 @@
              (equal (interp-st-scratch-isomorphic new x)
                     (interp-st-scratch-isomorphic old x)))))
 
+
+;; BOZO maybe doesn't belong here
+(Defsection interp-st-bvar-db-ok
+  (defun-sk interp-st-bvar-db-ok (interp-st env)
+    (forall n
+            (b* ((bvar-db (interp-st->bvar-db interp-st))
+                 (logicman (interp-st->logicman interp-st)))
+              (implies (and (<= (base-bvar$a bvar-db) (nfix n))
+                            (< (nfix n) (next-bvar$a bvar-db)))
+                       (iff* (fgl-object-eval (get-bvar->term$a n bvar-db) env logicman)
+                             (gobj-bfr-eval (bfr-var n) env logicman)))))
+    :rewrite :direct)
+
+  (in-theory (disable interp-st-bvar-db-ok))
+
+  (local (defthm bfr-listp-of-append-when-each
+           (implies (And (bfr-listp a)
+                         (bfr-listp b))
+                    (bfr-listp (append a b)))))
+
+  ;; (local (in-theory (disable not-member-of-append)))
+
+  (local (defthmd fgl-object-bfrlist-of-get-bvar->term$a-aux
+           (implies (and (not (member v (bvar-db-bfrlist-aux m bvar-db)))
+                         (< (nfix n) (nfix m))
+                         (<= (base-bvar$a bvar-db) (nfix n)))
+                    (not (member v (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+           :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
+
+  (local (defthm fgl-object-bfrlist-of-get-bvar->term$a
+           (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
+                         (<= (base-bvar$a bvar-db) (nfix n))
+                         (< (nfix n) (next-bvar$a bvar-db)))
+                    (not (member v (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+           :hints (("goal" :in-theory (enable bvar-db-bfrlist)
+                    :use ((:instance fgl-object-bfrlist-of-get-bvar->term$a-aux
+                           (m (next-bvar$a bvar-db))))))))
+
+  (local (defthm bfr-listp-of-bvar-db-bfrlist-when-equal
+           (implies (and (equal bvar-db (interp-st->bvar-db interp-st))
+                         (interp-st-bfrs-ok interp-st))
+                    (bfr-listp (bvar-db-bfrlist bvar-db)
+                               (logicman->bfrstate (interp-st->logicman interp-st))))))
+
+  (local (in-theory (enable bfr-listp-when-not-member-witness)))
+  
+  (def-updater-independence-thm interp-st-bvar-db-ok-of-interp-st-logicman-extension
+    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
+                  (interp-st-bfrs-ok old)
+                  (equal (interp-st->bvar-db new) (interp-st->bvar-db old)))
+             (iff (interp-st-bvar-db-ok new env)
+                  (interp-st-bvar-db-ok old env)))
+    :hints ((and stable-under-simplificationp
+                 (let* ((lit (assoc 'interp-st-bvar-db-ok clause))
+                        (other (if (eq (cadr lit) 'new) 'old 'new)))
+                   `(:expand (,lit)
+                     :use ((:instance interp-st-bvar-db-ok-necc
+                            (interp-st ,other)
+                            (n (interp-st-bvar-db-ok-witness . ,(cdr lit)))))
+                     :in-theory (e/d (bfr-varname-p)
+                                     (interp-st-bvar-db-ok-necc)))))))
+  
+  (defcong logicman-equiv equal (bfr-var n logicman) 2
+    :hints(("Goal" :in-theory (enable bfr-var))))
+
+  (local (std::make-returnspec-config :hints-sub-returnnames t))
+  
+  (defret interp-st-bvar-db-ok-of-interp-st-add-term-bvar
+    (implies (and (not (interp-st-bvar-db-ok interp-st env))
+                  (interp-st-bfrs-ok interp-st))
+             (not (interp-st-bvar-db-ok new-interp-st env)))
+    :hints(("Goal" :in-theory (e/d (interp-st-add-term-bvar
+                                    interp-st-bfrs-ok-implies
+                                    bfr-varname-p)
+                                   (interp-st-bvar-db-ok-necc))
+            :expand ((interp-st-bvar-db-ok interp-st env))
+            :use ((:instance interp-st-bvar-db-ok-necc
+                   (interp-st new-interp-st)
+                   (n (interp-st-bvar-db-ok-witness interp-st env))))
+            :cases ((bfr-varname-p (interp-st-bvar-db-ok-witness interp-st env)
+                                   (interp-st->logicman interp-st)))))
+    ;; :otf-flg t
+    :fn interp-st-add-term-bvar)
+
+  (defret interp-st-bvar-db-ok-of-interp-st-add-term-bvar-unique
+    (implies (and (not (interp-st-bvar-db-ok interp-st env))
+                  (interp-st-bfrs-ok interp-st))
+             (not (interp-st-bvar-db-ok new-interp-st env)))
+    :hints(("Goal" :in-theory (e/d (interp-st-add-term-bvar-unique bfr-varname-p)
+                                   (interp-st-bvar-db-ok-necc))
+            :expand ((interp-st-bvar-db-ok interp-st env))
+            :use ((:instance interp-st-bvar-db-ok-necc
+                   (interp-st new-interp-st)
+                   (n (interp-st-bvar-db-ok-witness interp-st env))))
+            :cases ((bfr-varname-p (interp-st-bvar-db-ok-witness interp-st env)
+                                   (interp-st->logicman interp-st)))))
+    :otf-flg t
+    :fn interp-st-add-term-bvar-unique))
+
+
 (defconst *fgl-meta-primitive-and-binder-rule-thms*
   '((defret interp-st->reclimit-of-<fn>
       (equal (interp-st->reclimit new-interp-st)
@@ -207,8 +307,9 @@
              (logicman->mode (interp-st->logicman interp-st))))
 
     (defret bfr-nvars-of-<fn>
-      (equal (bfr-nvars (interp-st->logicman new-interp-st))
-             (bfr-nvars (interp-st->logicman interp-st))))
+      (>= (bfr-nvars (interp-st->logicman new-interp-st))
+          (bfr-nvars (interp-st->logicman interp-st)))
+      :rule-classes :linear)
 
     (defret pathcond-enabledp-of-<fn>
       (iff (nth *pathcond-enabledp* (interp-st->pathcond new-interp-st))
@@ -258,8 +359,9 @@
                        (interp-st->logicman interp-st)))))
 
     (defret next-bvar-of-<fn>
-      (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
-             (next-bvar$a (interp-st->bvar-db interp-st))))
+      (>= (next-bvar$a (interp-st->bvar-db new-interp-st))
+          (next-bvar$a (interp-st->bvar-db interp-st)))
+      :rule-classes :linear)
 
     (defret base-bvar-of-<fn>
       (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
@@ -280,6 +382,12 @@
                       (fgl-object-eval (get-bvar->term$a n bvar-db)
                                        env
                                        (interp-st->logicman interp-st))))))
+
+    (defret interp-st-bvar-db-ok-of-<fn>
+      (implies (and (interp-st-bfrs-ok interp-st)
+                    (interp-st-bfr-listp (fgl-objectlist-bfrlist args) interp-st))
+               (implies (not (interp-st-bvar-db-ok interp-st env))
+                        (not (interp-st-bvar-db-ok new-interp-st env)))))
 
     (defret major-stack-concretize-of-<fn>
       (implies (interp-st-bfrs-ok interp-st)
@@ -362,7 +470,8 @@
                                                              (interp-st->logicman interp-st))
                                      (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                              (interp-st->pathcond interp-st)
-                                                             (interp-st->logicman interp-st)))
+                                                             (interp-st->logicman interp-st))
+                                     (interp-st-bvar-db-ok new-interp-st env))
                                 (equal (fgl-ev-context-fix contexts
                                                            (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
                                        (fgl-ev-context-fix contexts
@@ -433,7 +542,8 @@
                                      (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                              (interp-st->pathcond interp-st)
                                                              (interp-st->logicman interp-st))
-                                     (pseudo-fnsym-p origfn))
+                                     (pseudo-fnsym-p origfn)
+                                     (interp-st-bvar-db-ok new-interp-st env))
                                 (fgl-ev-context-equiv-forall-extensions
                                  contexts
                                  (fgl-ev (cons origfn (kwote-lst
@@ -515,6 +625,7 @@
                                    (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                                            (interp-st->pathcond interp-st)
                                                            (interp-st->logicman interp-st))
+                                   (interp-st-bvar-db-ok new-interp-st env)
                                    (fgl-ev-context-equiv-forall-extensions
                                     rhs-contexts
                                     rhs-val
@@ -1065,7 +1176,8 @@
                                           (interp-st->logicman interp-st))
                   (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->pathcond interp-st)
-                                          (interp-st->logicman interp-st)))
+                                          (interp-st->logicman interp-st))
+                  (interp-st-bvar-db-ok new-interp-st env))
              (equal (fgl-ev-context-fix contexts
                                         (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
                     (fgl-ev-context-fix contexts
@@ -1139,7 +1251,8 @@
                   (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->pathcond interp-st)
                                           (interp-st->logicman interp-st))
-                  (pseudo-fnsym-p origfn))
+                  (pseudo-fnsym-p origfn)
+                  (interp-st-bvar-db-ok new-interp-st env))
              (fgl-ev-context-equiv-forall-extensions
               contexts
               (fgl-ev (cons origfn (kwote-lst
@@ -1223,7 +1336,8 @@
                    rhs-val
                    rhs eval-alist)
                   (eval-alist-extension-p eval-alist (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
-                  (pseudo-fnsym-p origfn))
+                  (pseudo-fnsym-p origfn)
+                  (interp-st-bvar-db-ok new-interp-st env))
              (equal (fgl-ev-context-fix contexts (fgl-ev (cons origfn
                                                                (cons (pseudo-term-quote rhs-val)
                                                                      (kwote-lst

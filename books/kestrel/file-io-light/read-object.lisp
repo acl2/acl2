@@ -16,9 +16,6 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-; Matt K. mod for conversion of eviscerate-top to logic mode:
-(local (in-theory (enable iprint-oracle-updates)))
-
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-object))
 
@@ -29,6 +26,26 @@
                        (open-input-channels
                         member-equal
                         open-input-channel-p1))))
+
+;move
+(local
+  (defthm open-input-channels-of-iprint-oracle-updates
+    (equal (open-input-channels (iprint-oracle-updates state))
+           (open-input-channels state))
+    :hints (("Goal" :in-theory (e/d (iprint-oracle-updates)
+                                    (;; for speed:
+                                     nfix))))))
+
+;move
+(local
+  (defthm state-p1-of-iprint-oracle-updates
+    (implies (state-p1 state)
+             (state-p1 (iprint-oracle-updates state)))
+    :hints (("Goal" :in-theory (e/d (iprint-oracle-updates)
+                                    (;; for speed:
+                                     array1p
+                                     iprint-last-index*
+                                     nfix))))))
 
 (local
  (defthmd assoc-equal-when-not-symbolp-and-open-channels-p

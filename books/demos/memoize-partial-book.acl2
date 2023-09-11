@@ -1,3 +1,8 @@
+; The run (fib-st 100 st) causes an error in CMUCL (Snapshot 2023-08) that I
+; (Matt) haven't been able to debug yet.  So I'm excluding CMUCL here, at least
+; for now.
+; cert_param: (non-cmucl)
+
 (include-book "tools/run-script" :dir :system)
 ; There is no need to see proofs for this test.
 ; We also turn off event output since guard objligations

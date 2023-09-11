@@ -274,6 +274,7 @@
     make-axe-rules!
     result-array-stobj
     dag-to-term
+    dag-info
     make-term-into-dag
     ;; simplify-terms-using-each-other
     make-cons-nest
@@ -305,14 +306,16 @@
     when
     ///
 
-    ;; APT stuff:
-    def
+    ;; APT transformations (sometimes used to verify listed code):
     wrap-output
+    extract-output
+    rename-params
     flatten-params
     drop-irrelevant-params
     tailrec
     make-tail-rec-bv-up
     make-tail-rec-bv-up2
+    def ; handy APT utility
 
     ;; utilities:
     call-of

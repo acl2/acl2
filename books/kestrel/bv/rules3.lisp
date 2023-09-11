@@ -21,12 +21,11 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
-(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
 (defthm lessthan-256-backchain
   (implies (and (unsigned-byte-p 8 x))
@@ -56,7 +55,7 @@
   :hints (("Goal"
            :use (:instance split-bv (n newsize) (m newsize2))
            :in-theory (e/d (BVCAT LOGAPP bvchop)
-                           (mod-=-0
+                           (;mod-=-0
                             NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))))
 
 (defthm plus-bvcat-with-0-alt
@@ -170,12 +169,13 @@
                 (EQUAL 1 (BVCHOP 1 X)))
            (equal (+ 1 (* 2 (floor x 2)))
                   x))
-  :hints (("Goal" :in-theory (e/d (bvchop mod) (BVCHOP-1-BECOMES-GETBIT
-                                                 MOD-OF-EXPT-OF-2
-                                                 mod-of-expt-of-2-constant-version
+  :hints (("Goal" :in-theory (e/d (bvchop mod)
+                                  (BVCHOP-1-BECOMES-GETBIT
+                                   MOD-OF-EXPT-OF-2
+                                   mod-of-expt-of-2-constant-version
                                                  ;;MOD-RECOLLAPSE-LEMMA2
                                                  ;;MOD-RECOLLAPSE-LEMMA
-                                                 )))))
+                                   )))))
 
 (defthmd split-when-low-bit-0
   (implies (and (INTEGERP X)
@@ -191,12 +191,15 @@
                                                  )))))
 
 (defthm split-when-low-bit-1-hack
-  (implies (and (INTEGERP X)
+  (implies (and (integerp x)
                 (integerp y)
-                (EQUAL 1 (BVCHOP 1 X)))
-           (equal (+ Y (* 2 Y (FLOOR X 2)))
+                (equal 1 (bvchop 1 x)))
+           (equal (+ y (* 2 y (floor x 2)))
                   (* x y)))
-  :hints (("Goal" :use (:instance split-when-low-bit-1))))
+  :hints (("Goal" :use (:instance split-when-low-bit-1)
+           :in-theory (e/d (getbit bvchop floor-of-when-mod-known)
+                           (slice-becomes-getbit
+                            bvchop-1-becomes-getbit)))))
 
 (defthm split-when-low-bit-0-hack
   (implies (and (INTEGERP X)
@@ -205,7 +208,8 @@
            (equal (* 2 Y (FLOOR X 2))
                   (* x y)))
   :hints (("Goal" :use (:instance split-when-low-bit-0)
-           :in-theory (disable BVCHOP-1-BECOMES-GETBIT))))
+           :in-theory (e/d (floor-of-when-mod-known)
+                           (bvchop-1-becomes-getbit)))))
 
 (defthmd blast-bvmult-into-bvplus
   (implies (and (natp n)
@@ -294,6 +298,7 @@
                        (logtail 1 y)))))
   :hints (("Goal" :in-theory (enable logtail floor-of-sum))))
 
+;todo: very slow
 (defthmd blast-bvplus
   (implies (posp n)
            (equal (bvplus n x y)
@@ -559,7 +564,7 @@
                                           (j 2))
            :expand (logand x (- (expt 2 n)))
            :in-theory (e/d (expt-of-+ ;fl
-                            mod-=-0
+                            ;mod-=-0
                             mod-expt-split)
                            (MOD-OF-EXPT-OF-2
                             mod-of-expt-of-2-constant-version
@@ -771,7 +776,8 @@
            (equal (< (logext 32 x) 64)
                   (or (equal 1 (getbit 31 x))
                       (< (bvchop 31 x) 64))))
-  :hints (("Goal" :in-theory (e/d (logext LOGAPP-0) (TIMES-4-BECOMES-LOGAPP)))))
+  :hints (("Goal" :in-theory (e/d (logext ;LOGAPP-0
+                                          ) (TIMES-4-BECOMES-LOGAPP)))))
 
 (defthm <-bvchop-31-x-64
   (implies (and (< x 64)
@@ -788,7 +794,9 @@
            (equal (< (logext 8 x) 64)
                   (or (equal 1 (getbit 7 x))
                       (< (bvchop 7 x) 64))))
-  :hints (("Goal" :in-theory (e/d (logext LOGAPP-0) (TIMES-4-BECOMES-LOGAPP)))))
+  :hints (("Goal" :in-theory (e/d (logext ;LOGAPP-0
+                                   )
+                                  (TIMES-4-BECOMES-LOGAPP)))))
 
 
 
@@ -1910,7 +1918,7 @@
                 (NATP YSIZE)
                 (<= XSIZE YSIZE))
            (< (+ X Y) (EXPT 2 (+ 1 YSIZE))))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 <-OF-EXPT-AND-EXPT))
+  :hints (("Goal" :in-theory (e/d (unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 <-OF-EXPT-AND-EXPT-same-base))
            :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i (min xsize ysize)) (j (max xsize ysize))))))
 
 (defthm sum-bound2
@@ -1920,7 +1928,7 @@
                  (NATP YSIZE)
                  (<= XSIZE YSIZE))
             (< (+ X Y) (* 2 (EXPT 2 YSIZE))))
-   :hints (("Goal" :in-theory (e/d (unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 <-OF-EXPT-AND-EXPT))
+   :hints (("Goal" :in-theory (e/d (unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 <-OF-EXPT-AND-EXPT-same-base))
             :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i (min xsize ysize)) (j (max xsize ysize))))))
 
 (defthm sum-bound-lemma
@@ -2295,7 +2303,7 @@
                 (NATP M)
                 (<= N M))
            (<= (EXPT 2 N) (* 2 (EXPT 2 M))))
-  :hints (("Goal" :use (:instance <-OF-EXPT-AND-EXPT (r 2)
+  :hints (("Goal" :use (:instance <-OF-EXPT-AND-EXPT-same-base (r 2)
                                   (i (+ 1 m))
                                   (j n)))))
 

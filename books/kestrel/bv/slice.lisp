@@ -1,7 +1,7 @@
 ; BV Library: slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -355,7 +355,8 @@
            (<= (slice high low x) (slice high low y)))
   :hints (("Goal" :cases ((<= low high))
            :in-theory (e/d (slice ;bvchop
-                            ) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                            ) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                               <-of-logtail-arg2)))))
 
 (defthm slice-of-expt
   (implies (and (< high size) ;gen?
@@ -724,3 +725,25 @@
                 (natp high))
            (unsigned-byte-p n (slice high low x)))
   :hints (("Goal" :in-theory (e/d (slice) ()))))
+
+; todo: replace the other?
+(defthm slice-of-logtail-gen
+  (implies (and (integerp high)
+                (natp low)
+                (natp n))
+           (equal (slice high low (logtail n x))
+                  (if (natp high)
+                      (slice (+ high n)
+                             (+ low n)
+                             x)
+                    0))))
+
+(defthm slice-of-expt-same-as-low
+  (implies (and (natp low)
+                (natp high))
+           (equal (slice high low (expt 2 low))
+                  (if (<= low high)
+                      1
+                    0)))
+  :hints (("Goal" :in-theory (e/d (slice)
+                                  (acl2::bvchop-of-logtail-becomes-slice)))))

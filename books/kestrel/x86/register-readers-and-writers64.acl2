@@ -1,0 +1,13 @@
+; Portcullis commands and cert flags for register-readers-and-writers64.lisp
+;
+; Copyright (C) 2023 Kestrel Technology, LLC
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "portcullis")
+
+; cert-flags: ? T :TTAGS :ALL

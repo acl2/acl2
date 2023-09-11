@@ -42,7 +42,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Gets the hint-keyword-value-list (e.g., (:use XXX :in-theory YYY)) for the
-;; given goal-spec (e.g., "Goal").
+;; given GOAL-SPEC (e.g., "Goal").  Ignores empty hints even if they have the
+;; given GOAL-SPEC.
 (defund hint-keyword-value-list-for-goal-spec (goal-spec hints)
   (declare (xargs :guard (and (stringp goal-spec)
                               (standard-string-p goal-spec)
@@ -51,5 +52,9 @@
       nil
     (let ((hint (first hints)))
       (if (hint-has-goal-specp hint goal-spec)
-          (cdr hint) ; everything but the goal-spec
+          (let ((keyword-value-list (cdr hint))) ; everything but the goal-spec
+            (if (consp keyword-value-list)
+                keyword-value-list
+              ;; skip empty hint and keep looking:
+              (hint-keyword-value-list-for-goal-spec goal-spec (rest hints))))
         (hint-keyword-value-list-for-goal-spec goal-spec (rest hints))))))

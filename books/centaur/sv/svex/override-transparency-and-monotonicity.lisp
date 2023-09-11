@@ -182,6 +182,26 @@
                      (svar-fix x)))
      :hints(("Goal" :in-theory (enable equal-of-svar-change-override))))
 
+   
+   (local (defthm equal-of-logtail-when-loghead
+            (implies (equal (loghead n x)
+                            (loghead n y))
+                     (equal (equal (logtail n x) (logtail n y))
+                            (equal (ifix x) (ifix y))))
+            :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)
+                    :induct t)
+                   (and stable-under-simplificationp
+                        '(:use ((:instance bitops::equal-logcons-strong
+                                 (a (logcar x)) (b (logcdr x)) (i (ifix y)))))))))
+
+   (local (defthm equal-of-ash-same
+         (implies (natp n)
+                  (equal (equal (ash x n) (ash y n))
+                         (equal (ifix x) (ifix y))))
+         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                           bitops::ihsext-recursive-redefs)))))
+   
    (defthmd svar-equiv-when-equal-svar-change-override
      (implies (and (svar-override-p x type)
                    (svar-override-p var type))
@@ -189,7 +209,9 @@
                             (svar-change-override var nil))
                      (svar-equiv x var)))
      :hints(("Goal" :in-theory (enable svar-override-p svar-change-override
-                                       svar-fix-redef))))))
+                                       svar-fix-redef
+                                       svar->override-test
+                                       svar->override-val))))))
 
 
 (define svar-overridekeys-env-keys ((x svar-p)

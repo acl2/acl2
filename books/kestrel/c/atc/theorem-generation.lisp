@@ -12,7 +12,6 @@
 (in-package "C")
 
 (include-book "generation-contexts")
-(include-book "types-to-recognizers")
 (include-book "variable-tables")
 (include-book "tag-tables")
 
@@ -69,7 +68,7 @@
    (xdoc::p
     "The function @('fn') that the expression is part of is passed as input.")
    (xdoc::p
-    "As theorem name, we just combine
+    "As theorem name, we combine
      @('fn') with @('correct') and with the theorem index.
      The name just needs to be unique locally to the call to ATC,
      so we expect that generally no @('$') signs will need to be added
@@ -83,36 +82,40 @@
      but sometimes they differ,
      e.g. when @('term1') is a @('-ptr') variable
      while @('term2') is the same variable without @('-ptr').
+     The input @('objdes') is a term that denotes an object designator,
+     or @('nil') if no object designator is applicable:
+     this is the object designator that the expression denotes, if any.
      The terms are untranslated, to make them more readable,
      in particular to eliminate quotes before numbers.
      Terms, expression, and type are passed as inputs.
      The theorem is contextualized,
      and further conditioned by the satisfaction of the guard of @('fn').")
    (xdoc::p
-    "The hints to prove the theorem are passed as input,
+    "The hints or instructions to prove the theorem are passed as input,
      because they depend on the specifics of the expression."))
   (b* ((wrld (w state))
        (name (pack fn '-correct- thm-index))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
        (type-pred (atc-type-to-recognizer type prec-tags))
        (uterm1 (untranslate$ term1 nil state))
        (uterm2 (untranslate$ term2 nil state))
        (uobjdes (untranslate$ objdes nil state))
-       (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
-                         (expr-value ,uterm1 ,uobjdes)))
-       (formula1 (atc-contextualize formula1 context fn fn-guard
-                                    compst-var nil nil t wrld))
-       (formula2 `(,type-pred ,uterm2))
-       (formula2 (atc-contextualize formula2 context fn fn-guard
-                                    nil nil nil nil wrld))
-       (formula `(and ,formula1 ,formula2))
+       (exec-formula `(equal (exec-expr-pure ',expr ,compst-var)
+                             (expr-value ,uterm1 ,uobjdes)))
+       (exec-formula (atc-contextualize exec-formula context fn fn-guard
+                                        compst-var nil nil t wrld))
+       (type-formula `(,type-pred ,uterm2))
+       (type-formula (atc-contextualize type-formula context fn fn-guard
+                                        nil nil nil nil wrld))
+       (formula `(and ,exec-formula ,type-formula))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
                                             :instructions instructions
                                             :enable nil)))
-    (mv event name (1+ thm-index) names-to-avoid)))
+    (mv event name thm-index names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -176,27 +179,28 @@
        (name (pack fn '-correct- thm-index))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
+       (thm-index (1+ thm-index))
        (type-pred (atc-type-to-recognizer type prec-tags))
        (uaterm (untranslate$ aterm nil state))
        (ucterm (untranslate$ cterm nil state))
        (uobjdes (untranslate$ objdes nil state))
-       (formula1 `(equal (exec-expr-pure ',expr ,compst-var)
-                         (expr-value ,ucterm ,uobjdes)))
-       (formula1 (atc-contextualize formula1 context fn fn-guard
-                                    compst-var nil nil t wrld))
-       (formula2 `(and (,type-pred ,ucterm)
-                       (equal (test-value ,ucterm)
-                              ,uaterm)
-                       (booleanp ,uaterm)))
-       (formula2 (atc-contextualize formula2 context fn fn-guard
-                                    nil nil nil nil wrld))
-       (formula `(and ,formula1 ,formula2))
+       (exec-formula `(equal (exec-expr-pure ',expr ,compst-var)
+                             (expr-value ,ucterm ,uobjdes)))
+       (exec-formula (atc-contextualize exec-formula context fn fn-guard
+                                        compst-var nil nil t wrld))
+       (type-formula `(and (,type-pred ,ucterm)
+                           (equal (test-value ,ucterm)
+                                  ,uaterm)
+                           (booleanp ,uaterm)))
+       (type-formula (atc-contextualize type-formula context fn fn-guard
+                                        nil nil nil nil wrld))
+       (formula `(and ,exec-formula ,type-formula))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
                                             :instructions instructions
                                             :enable nil)))
-    (mv event name (1+ thm-index) names-to-avoid)))
+    (mv event name thm-index names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -254,9 +258,7 @@
    (xdoc::p
     "Since the generated theorem names involve the names of the variables,
      which are always distinct in a symbol table generated by ATC,
-     we use the same theorem index for all the theorems.
-     The updated theorem index, returned by this ACL2 function,
-     is just one more than the input theorem index."))
+     we use the same theorem index for all the theorems."))
   (b* (((when (endp inscope)) (mv nil nil names-to-avoid))
        (scope (car inscope))
        ((mv new-scope events names-to-avoid)
@@ -366,7 +368,8 @@
   (xdoc::topstring
    (xdoc::p
     "The context is updated with a @(tsee let) binding for the computation state
-     that updates it via @(tsee enter-scope).
+     that updates it via @(tsee enter-scope);
+     we return the updated context.
      We use @(tsee atc-gen-new-inscope) to generate most of the new symbol table
      and then we add a new empty scope to it.")
    (xdoc::p
@@ -430,10 +433,13 @@
   (xdoc::topstring
    (xdoc::p
     "The context is updated with a @(tsee let) binding for the variable
-     followed by a @(tsee let) binding for the computation state.
+     followed by a @(tsee let) binding for the computation state;
+     we return the updated context.
      We use @(tsee atc-gen-new-inscope) to generate most of the new symbol table
      and then we add the new variable (to the innermost scope),
-     along with a theorem for the new variable."))
+     along with a theorem for the new variable.
+     The term to which the variable is bound is passed as argument here,
+     along with its associated theorem, which we use in the generated hints."))
   (b* ((var-premise (make-atc-premise-cvalue :var var :term term))
        (cs-premise-term `(add-var (ident ,(symbol-name var)) ,var ,compst-var))
        (cs-premise (make-atc-premise-compustate :var compst-var
@@ -533,19 +539,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also return an updated context,
-     according to the conditional statement.")
-   (xdoc::p
     "The @('inscope') and @('context') inputs are
      the ones just before the conditional statement.
-     The @('new-context') input is the context
-     at the end of the conditional,
-     while @('then-new-compst') and @('else-new-compst') are the contexts
-     at the end of the branches.
-     We also need the variable tables
-     at the end of the `then' and `else' block items,
-     which are in the inputs @('then-inscope') and  @('else-inscope'):
-     we take the theorems for each variable from there.")
+     The @('then-inscope'),
+     @('else-inscope'),
+     @('then-new-compst'), and
+     @('else-new-compst') inputs are
+     the ones just after each branch.
+     The @('new-context') and @('new-compst') inputs are
+     the ones at the end of the conditional.")
    (xdoc::p
     "We generate proof builder instructions,
      in order to deal with the case split of the @(tsee if)
@@ -729,7 +731,21 @@
                            sllong-arrayp-of-sllong-array-write
                            compustatep-of-update-object
                            ,@value-kind-thms
-                           ,@writer-return-thms))))
+                           ,@writer-return-thms
+                           update-static-var-of-enter-scope
+                           compustatep-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustate-frames-number-of-add-frame-not-zero
+                           objdesign-of-var-of-update-static-var-iff
+                           update-static-var-of-add-frame
+                           read-var-of-add-frame
+                           read-static-var-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustatep-of-add-frame
+                           objdesign-of-var-of-add-frame-when-read-object-static
+                           read-object-of-objdesign-static
+                           (:t objdesign-static)
+                           read-static-var-of-add-frame))))
           (else-hints
            `(("Goal"
               :in-theory '(,else-var-thm
@@ -779,7 +795,21 @@
                            sllong-arrayp-of-sllong-array-write
                            compustatep-of-update-object
                            ,@value-kind-thms
-                           ,@writer-return-thms))))
+                           ,@writer-return-thms
+                           update-static-var-of-enter-scope
+                           compustatep-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustate-frames-number-of-add-frame-not-zero
+                           objdesign-of-var-of-update-static-var-iff
+                           update-static-var-of-add-frame
+                           read-var-of-add-frame
+                           read-static-var-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustatep-of-add-frame
+                           objdesign-of-var-of-add-frame-when-read-object-static
+                           read-object-of-objdesign-static
+                           (:t objdesign-static)
+                           read-static-var-of-add-frame))))
           (instructions
            `((casesplit ,(atc-contextualize
                           test-term

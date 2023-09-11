@@ -79,7 +79,7 @@
                                    (x x))
                    :in-theory (e/d (bvcat slice equal-of-logtail-and-0)
                                    (bvchop-of-logtail-becomes-slice
-                                    LOGTAIL-LESSP
+                                    <-of-logtail-arg1 LOGTAIL-LESSP
                                     unsigned-byte-p-of-+-when-<-of-logtail-and-expt))))))
 
  (local (defthm bvcat-equal-rewrite-bk

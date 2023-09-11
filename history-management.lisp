@@ -14689,8 +14689,17 @@
              arg))))
 
 (defun@par translate-induct-hint (arg ctx wrld state)
-  (cond ((eq arg nil) (value@par nil))
-        (t (translate@par arg t t t ctx wrld state))))
+  (cond
+   ((eq arg t)
+    (value@par *t*))
+   ((or (atom arg)
+        (and (consp arg)
+             (eq (car arg) 'quote)))
+    (er@par soft ctx
+      "It is illegal to supply an atom, other than ~x0, or a quoted constant ~
+       as the value of an :induct hint.  The hint :INDUCT ~x1 is thus illegal."
+      t arg))
+   (t (translate@par arg t t t ctx wrld state))))
 
 ; known-stobjs = t (stobjs-out = t)
 
