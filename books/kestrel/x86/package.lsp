@@ -274,6 +274,7 @@
     make-axe-rules!
     result-array-stobj
     dag-to-term
+    dag-info
     make-term-into-dag
     ;; simplify-terms-using-each-other
     make-cons-nest
