@@ -225,13 +225,13 @@
 ;; Returns (mv erp dag-or-quotep state).
 ;; Smashes the arrays named 'dag-array, 'temp-dag-array, and 'context-array.
 ;; todo: may need multiple passes, but watch for loops!
-;; TODO: Don't bother pruning if there are no IFs.
 (defund prune-dag-approximately (dag
                                  ;; assumptions
                                  ;; rules ; todo: add support for this
                                  ;; interpreted-fns
                                  ;; monitored-rules
                                  ;;call-stp
+                                 check-fnsp ; whether to check for prunable functions
                                  state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) 2147483646)
@@ -241,10 +241,15 @@
                               ;; (symbol-listp monitored-rules)
                               ;; (or (booleanp call-stp)
                               ;;     (natp call-stp))
+                              (booleanp check-fnsp)
                               (ilks-plist-worldp (w state)))
                   :verify-guards nil ; todo
                   :stobjs state))
-  (b* ((- (cw "(Pruning DAG with approximate contexts:~%"))
+  (b* ((prunep (if check-fnsp (dag-fns-include-any dag '(if myif boolif bvif)) t))
+       ((when (not prunep))
+        (cw "(Note: No pruning to do.)~%")
+        (mv nil dag state))
+       (- (cw "(Pruning DAG with approximate contexts:~%"))
        (context-array (make-full-context-array-for-dag dag))
        (dag-array (make-into-array 'dag-array dag))
        (dag-len (+ 1 (top-nodenum-of-dag dag)))
@@ -282,10 +287,19 @@
                               (ilks-plist-worldp (w state)))
                   :verify-guards nil ; todo
                   :stobjs state))
-  (let ((prune-branchesp (if (booleanp prune-branches)
-                             prune-branches
-                           ;; prune-branches is a natp (a limit on the size):
-                           (dag-or-quotep-size-less-thanp dag prune-branches))))
-    (if prune-branchesp
-        (prune-dag-approximately dag state)
-      (mv (erp-nil) dag state))))
+  (b* (((when (not prune-branches))
+        ;; don't even print anything in this case, as we've been told not to prune
+        (mv nil dag state))
+       ((when (not (dag-fns-include-any dag '(if myif boolif bvif))))
+        (cw "(Note: No pruning to do.)~%")
+        (mv nil dag state))
+       ((when (and (natp prune-branches) ; it's a limit on the size
+                   ;; todo: allow this to fail fast:
+                   (not (dag-or-quotep-size-less-thanp dag prune-branches))))
+        ;; todo: don't recompute the size here:
+        (cw "(Note: Not pruning with approximate contexts since DAG size (~x0) exceeds ~x1.)~%" (dag-or-quotep-size-fast dag) prune-branches)
+        (mv nil dag state)))
+    ;; prune-branches is either t or is a size limit and the dag is small enough, so we prune:
+    (prune-dag-approximately dag
+                             nil ; we already know there are prunable ops
+                             state)))
