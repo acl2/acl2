@@ -528,24 +528,29 @@
                          ,function-body-untranslated)))
             (mv (erp-nil) (list defun)))))
        ((when erp) (mv erp nil state))
+       (produce-theorem (and produce-theorem
+                             (if (not produce-function)
+                                 ;; todo: do something better in this case?
+                                 (prog2$ (cw "NOTE: Suppressing theorem because :produce-function is nil.~%")
+                                         nil)
+                               t)))
        (defthms ; either nil or a singleton list
-         (if (not produce-theorem)
-             nil
-           (let* ((defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
-                             (implies (and ,@assumptions)
-                                      (equal (run-until-return x86)
-                                             (,lifted-name ,@fn-formals)))
-                             :hints ,(if restrict-theory
-                                         `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
-                                                                )))
-                                       `(("Goal" :in-theory (enable ,@rules-used
-                                                                    ;; ,@assumption-rules-used ; todo consider this
-                                                                    ))))
-                             :otf-flg t))
-                  (defthm (if prove-theorem
-                              defthm
-                            `(skip-proofs ,defthm))))
-             (list defthm))))
+         (and produce-theorem
+              (let* ((defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
+                                (implies (and ,@assumptions)
+                                         (equal (run-until-return x86)
+                                                (,lifted-name ,@fn-formals)))
+                                :hints ,(if restrict-theory
+                                            `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
+                                                                   )))
+                                          `(("Goal" :in-theory (enable ,@rules-used
+                                                                       ;; ,@assumption-rules-used ; todo consider this
+                                                                       ))))
+                                :otf-flg t))
+                     (defthm (if prove-theorem
+                                 defthm
+                               `(skip-proofs ,defthm))))
+                (list defthm))))
        (event `(progn ,defconst-form
                       ,@defuns
                       ,@defthms))
