@@ -18,24 +18,15 @@
 
 ;; TODO: Somehow distinguish between a run failing to finish and a query failing with a cex -- for now, we just use must-fail.
 
-;(include-book "kestrel/axe/equivalence-checker" :dir :system) ;has skip-proofs
 (include-book "kestrel/axe/bv-rules-axe" :dir :system) ;for trim-does-nothing-dag
-(include-book "kestrel/bv/bvcount" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system) ;for INTEGERP-OF-LEFTROTATE32
-;(include-book "kestrel/bv/rules" :dir :system) ; for the stuff in core-rules-bv
 (include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/axe/rules1" :dir :system)
 (include-book "kestrel/axe/axe-rules-mixed" :dir :system)
-;(include-book "kestrel/axe/tactic-prover" :dir :system)
-(include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (include-book "kestrel/x86/read-and-write" :dir :system)
-;(include-book "kestrel/x86/support" :dir :system) ; todo?
-;(include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
-;(include-book "read-over-write-rules64")
-;(include-book "write-over-write-rules64")
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
