@@ -226,33 +226,7 @@
             bvle
             ACL2::INTEGERP-OF-BVPLUS ;todo: more
             ACL2::INTEGERP-OF-BVCHOP
-            jnl-condition-rewrite-32 ; todo
-            js-condition-of-sub-sf-spec8
-            js-condition-of-sub-sf-spec16
-            js-condition-of-sub-sf-spec32
-            js-condition-of-sub-sf-spec64
-            jns-condition-of-sub-sf-spec8
-            jns-condition-of-sub-sf-spec16
-            jns-condition-of-sub-sf-spec32
-            jns-condition-of-sub-sf-spec64
-            ;;if-of-jz-condition-and-1-and-0
-            ;;if-of-jnz-condition-and-1-and-0
-            ;;jz-condition-of-if-of-1-and-0
-            ;drop some of these?
-            jz-condition-of-bvif-1-0-1
-            jz-condition-of-bvif-1-1-0
-            jnz-condition-of-bvif-1-0-1
-            jnz-condition-of-bvif-1-1-0
-            jp-condition-of-bvif-1-0-1
-            jp-condition-of-bvif-1-1-0
-            jnp-condition-of-bvif-1-0-1
-            jnp-condition-of-bvif-1-1-0
-            jbe-condition-of-bvif-1-arg1
-            jbe-condition-of-bvif-1-arg2
-            jnbe-condition-of-bvif-1-arg1
-            jnbe-condition-of-bvif-1-arg2
 
-            ;jnbe-condition-of-BOOL->BIT-of-<-of-bvchop-and-ZF-SPEC-of-bvplus-of-bvuminus
             ;zf-spec$inline     ; needed for unsigned_add_associates -- but does this ruin rules about jle-condition? zf-spec seems to be used in more things that just the conditional branches?
 
             ;x86isa::sub-zf-spec32-same ; this can mess up the condition rules...
