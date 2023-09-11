@@ -656,6 +656,11 @@
          (app-view x86))
   :hints (("Goal" :in-theory (enable set-flag))))
 
+(defthm x86p-of-set-flag
+  (implies (x86p x86)
+           (x86p (set-flag flag val x86)))
+  :hints (("Goal" :in-theory (enable set-flag))))
+
 (defthm xr-rflags-of-set-flag-af
   (equal (xr :rflags nil (set-flag :af val x86))
          (x86isa::!rflagsbits->af$inline val (xr :rflags nil x86)))

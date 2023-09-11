@@ -188,6 +188,20 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable read-byte))))
 
+;; maybe just needed for Axe
+(defthmd <-of-read-byte-and-constant
+  (implies (and (syntaxp (quotep k))
+                (< 255 k) ; gets computed
+                )
+           (< (read-byte addr x86) k)))
+
+;; maybe just needed for Axe
+(defthmd <-of-consytant-and-read-byte
+  (implies (and (syntaxp (quotep k))
+                (<= 255 k) ; gets computed
+                )
+           (not (< k (read-byte addr x86)))))
+
 (defthm read-byte-of-xw-irrel
   (implies (not (equal fld :mem))
            (equal (read-byte base-addr (xw fld index val x86))
@@ -293,6 +307,24 @@
            (<= (read size addr x86) (+ -1 (expt 2 (* 8 size)))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable read))))
+
+;; maybe just needed for Axe
+(defthmd <-of-read-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (natp size)
+                (< (+ -1 (expt 2 (* 8 size))) k) ; gets computed
+                )
+           (< (read size addr x86) k)))
+
+;; maybe just needed for Axe
+(defthmd <-of-consytant-and-read
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (natp size)
+                (<= (+ -1 (expt 2 (* 8 size))) k) ; gets computed
+                )
+           (not (< k (read size addr x86)))))
 
 ;enable?
 (defthmd read-of-1-becomes-read-byte
