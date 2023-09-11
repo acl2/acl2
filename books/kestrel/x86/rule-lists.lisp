@@ -163,6 +163,8 @@
     read-of-logext-48
     read-when-equal-of-read
     read-when-equal-of-read-alt
+    <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
+    <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     ))
 
 (defun write-rules ()
@@ -3167,4 +3169,7 @@
           (get-prefixes-openers)
           ;; todo: flesh out this list:
           '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs)))
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs
+            ;; could consider things like these:
+            ;; READ-OF-WRITE-DISJOINT2
+            )))

@@ -41,16 +41,6 @@
                            ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                            )))
 
-;todo: dup
-(defthm segment-base-and-bounds-of-set-flag
-  (equal (segment-base-and-bounds proc-mode seg-reg (x::set-flag flg val x86))
-         (segment-base-and-bounds proc-mode seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (segment-base-and-bounds
-                                   x::set-flag)
-                                  (;; x86isa::seg-hidden-basei-is-n64p
-                                   ;; x86isa::seg-hidden-limiti-is-n32p
-                                   ;; x86isa::seg-hidden-attri-is-n16p
-                                   )))))
 
 (defthm mv-nth-0-of-ia32e-la-to-pa-of-set-flag
   (implies (and ;(not (equal :ac flag))
@@ -397,13 +387,13 @@
   (implies (app-view x86)
            (equal (mv-nth 0 (x86isa::rme08 proc-mode eff-addr seg-reg rx (set-flag flag val x86)))
                   (mv-nth 0 (x86isa::rme08 proc-mode eff-addr seg-reg rx x86))))
-  :hints (("Goal" :in-theory (enable x86isa::rme08 rb))))
+  :hints (("Goal" :in-theory (enable set-flag x86isa::rme08 rb))))
 
 (defthm mv-nth-1-of-rme08-of-set-flag
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme08 proc-mode eff-addr seg-reg rx (set-flag flag val x86)))
                   (mv-nth 1 (x86isa::rme08 proc-mode eff-addr seg-reg rx x86))))
-  :hints (("Goal" :in-theory (enable x86isa::rme08 rb))))
+  :hints (("Goal" :in-theory (enable set-flag x86isa::rme08 rb))))
 
 ;; (defthm mv-nth-0-of-get-prefixes-of-set-flag
 ;;   (implies (app-view x86)

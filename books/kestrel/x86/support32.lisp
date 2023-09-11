@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-(include-book "support-x86")
+(include-book "support-x86") ; drop?
 (include-book "linear-memory")
 (include-book "flags" )
 (include-book "register-readers-and-writers")
@@ -47,16 +47,6 @@
                            bitops::signed-byte-p-of-ash-split
                            ;; acl2::signed-byte-p-logops
                            )))
-
-(defthm segment-base-and-bounds-of-set-flag
-  (equal (segment-base-and-bounds proc-mode seg-reg (x::set-flag flg val x86))
-         (segment-base-and-bounds proc-mode seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (segment-base-and-bounds
-                                   x::set-flag)
-                                  (;; x86isa::seg-hidden-basei-is-n64p
-                                   ;; x86isa::seg-hidden-limiti-is-n32p
-                                   ;; x86isa::seg-hidden-attri-is-n16p
-                                   )))))
 
 (defthm data-segment-descriptor-attributesbits->w-of-bvchop
   (equal (x86isa::data-segment-descriptor-attributesbits->w (bvchop 16 attr))
@@ -2130,7 +2120,8 @@
 
 (defthm ea-to-la-of-set-flag
   (equal (ea-to-la proc-mode eff-addr seg-reg nbytes (set-flag flg val x86))
-         (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
+         (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+  :hints (("Goal" :in-theory (enable set-flag))))
 
 ;; (defthm read-of-ea-to-la-becomes-read-from-segment
 ;;   (implies (and (eff-addrs-okp n eff-addr seg-reg x86-2)
