@@ -18,6 +18,8 @@
 (include-book "dag-size-fast")
 (include-book "make-term-into-dag-simple")
 
+(local (in-theory (disable mv-nth myquotep)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
@@ -82,8 +84,6 @@
     (prune-dag-precisely-with-rule-alist dag assumptions rule-alist
                                          (make-interpreted-function-alist interpreted-fns (w state))
                                          monitored-rules call-stp state)))
-
-(local (in-theory (disable mv-nth myquotep)))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-precisely
   (implies (and (not (mv-nth 0 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp state))) ;; no error
