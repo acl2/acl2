@@ -122,23 +122,6 @@
             acl2::if-becomes-bvif-1-axe
             ;; acl2::boolif-of-t-and-nil-when-booleanp
             slice-of-bvand-of-constant
-            integerp-of-rax
-            integerp-of-rbx
-            integerp-of-rcx
-            integerp-of-rdx
-            integerp-of-rsi
-            integerp-of-rdi
-            integerp-of-r8
-            integerp-of-r9
-            integerp-of-r10
-            integerp-of-r11
-            integerp-of-r12
-            integerp-of-r13
-            integerp-of-r14
-            integerp-of-r15
-            integerp-of-rsp
-            integerp-of-rbp
-            fix-of-rsp
             acl2::myif-becomes-boolif-axe ; since STP translation supports disjuncts that are calls to boolif but not if.
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt

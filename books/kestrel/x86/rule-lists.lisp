@@ -2922,7 +2922,26 @@
     undef-of-!rflags ; why is !rflags not going away?
 
     xw-becomes-set-undef
-    xr-becomes-undef))
+    xr-becomes-undef
+
+    integerp-of-rax
+    integerp-of-rbx
+    integerp-of-rcx
+    integerp-of-rdx
+    integerp-of-rsi
+    integerp-of-rdi
+    integerp-of-r8
+    integerp-of-r9
+    integerp-of-r10
+    integerp-of-r11
+    integerp-of-r12
+    integerp-of-r13
+    integerp-of-r14
+    integerp-of-r15
+    integerp-of-rsp
+    integerp-of-rbp
+    fix-of-rsp
+    ))
 
 ;; Try this rule first
 (table axe-rule-priorities-table 'read-of-write-disjoint -1)
