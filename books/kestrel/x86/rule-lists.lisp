@@ -372,7 +372,7 @@
 ;    x86isa::get-flag-wb-in-app-view
     x86isa::xr-ms-mv-nth-1-wb ;new  (see also xr-wb-in-app-view)
 
-    ACL2::BFIX-WHEN-BITP
+    ACL2::BFIX-WHEN-BITP ; move? or drop if we go to unsigned-byte-p
     x86isa::unsigned-byte-p-of-bfix
     ACL2::BITP-BECOMES-UNSIGNED-BYTE-P
     ))
@@ -476,7 +476,6 @@
     x86isa::bitp-of-sub-zf-spec32
     x86isa::bitp-of-sub-zf-spec64
 
-;x86isa::bitp-of-add-af-spec64 ;; todo: add these
     x86isa::unsigned-byte-p-of-sub-cf-spec8
     x86isa::unsigned-byte-p-of-sub-cf-spec16
     x86isa::unsigned-byte-p-of-sub-cf-spec32 ;bitp becomes unsigned-byte-p 1 ?
