@@ -294,6 +294,23 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable read))))
 
+;; maybe just needed for Axe?
+(defthmd <-of-read-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (natp size)
+                (< (+ -1 (expt 2 (* 8 size))) k) ; gets computed
+                )
+           (< (read size addr x86) k)))
+
+(defthmd <-of-consytant-and-read
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (natp size)
+                (<= (+ -1 (expt 2 (* 8 size))) k) ; gets computed
+                )
+           (not (< k (read size addr x86)))))
+
 ;enable?
 (defthmd read-of-1-becomes-read-byte
   (equal (read 1 addr x86)
