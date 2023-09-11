@@ -2900,9 +2900,6 @@
 
     rsp-of-if
 
-    integerp-of-rsp
-    fix-of-rsp
-
     rax-of-!rflags
     rbx-of-!rflags
     rcx-of-!rflags
@@ -2940,8 +2937,23 @@
     integerp-of-r15
     integerp-of-rsp
     integerp-of-rbp
+
+    fix-of-rax
+    fix-of-rbx
+    fix-of-rcx
+    fix-of-rdx
+    fix-of-rsi
+    fix-of-rdi
+    fix-of-r8
+    fix-of-r9
+    fix-of-r10
+    fix-of-r11
+    fix-of-r12
+    fix-of-r13
+    fix-of-r14
+    fix-of-r15
     fix-of-rsp
-    ))
+    fix-of-rbp))
 
 ;; Try this rule first
 (table axe-rule-priorities-table 'read-of-write-disjoint -1)
