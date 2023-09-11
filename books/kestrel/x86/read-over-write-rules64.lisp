@@ -1,6 +1,6 @@
 ; "Read over write" rules for our x86 state readers and writers
 ;
-; Copyright (C) 2016-2022 Kestrel Technology, LLC
+; Copyright (C) 2016-2023 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 
 ;; TODO: Make sure we have the complete set of these rules
 
-;; The readers are: the 16 register readers, rip, get-flag, ctri, undef, read, (todo: read-byte?) (todo: rflags?)
+;; The readers are: the 16 register readers, rip, get-flag, ctri, undef, read, (todo: read-byte?) (todo: rflags?), msri
 
 ;; The predicates are: x86p, alignment-checking-enabled-p, 64-bit-modep, app-view
 

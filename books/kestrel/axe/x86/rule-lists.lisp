@@ -437,45 +437,6 @@
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
             x86isa::!prefixes->seg$inline-constant-opener
-            msri-of-set-rip
-            msri-of-set-rax
-            msri-of-set-rbx
-            msri-of-set-rcx
-            msri-of-set-rdx
-            msri-of-set-rsi
-            msri-of-set-rdi
-            msri-of-set-r8
-            msri-of-set-r9
-            msri-of-set-r10
-            msri-of-set-r11
-            msri-of-set-r12
-            msri-of-set-r13
-            msri-of-set-r14
-            msri-of-set-r15
-            msri-of-set-rsp
-            msri-of-set-rbp
-            msri-of-set-undef
-            msri-of-write
-            msri-of-set-flag
-            ;; These help make failures more clear:
-            mv-nth-0-of-rme-size-of-set-rip
-            mv-nth-0-of-rme-size-of-set-rax
-            mv-nth-0-of-rme-size-of-set-rbx
-            mv-nth-0-of-rme-size-of-set-rcx
-            mv-nth-0-of-rme-size-of-set-rdx
-            mv-nth-0-of-rme-size-of-set-rsi
-            mv-nth-0-of-rme-size-of-set-rdi
-            mv-nth-0-of-rme-size-of-set-r8
-            mv-nth-0-of-rme-size-of-set-r9
-            mv-nth-0-of-rme-size-of-set-r10
-            mv-nth-0-of-rme-size-of-set-r11
-            mv-nth-0-of-rme-size-of-set-r12
-            mv-nth-0-of-rme-size-of-set-r13
-            mv-nth-0-of-rme-size-of-set-r14
-            mv-nth-0-of-rme-size-of-set-r15
-            mv-nth-0-of-rme-size-of-set-rsp
-            mv-nth-0-of-rme-size-of-set-rbp
-            mv-nth-0-of-rme-size-of-set-undef
             read-of-2 ; splits into 2 reads
             )
           (acl2::core-rules-bv) ; trying
