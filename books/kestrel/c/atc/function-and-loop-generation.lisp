@@ -3139,6 +3139,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-typed-formals-to-extobjs ((typed-formals atc-symbol-varinfo-alistp))
+  :returns (extobjs symbol-listp :hyp (atc-symbol-varinfo-alistp typed-formals))
+  :short "List of the formals of a function that represent external objects."
+  (b* (((when (endp typed-formals)) nil)
+       ((cons formal info) (car typed-formals)))
+    (if (atc-var-info->externalp info)
+        (cons formal (atc-typed-formals-to-extobjs (cdr typed-formals)))
+      (atc-typed-formals-to-extobjs (cdr typed-formals)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
                         (prec-tags atc-string-taginfo-alistp)
@@ -3418,7 +3429,7 @@
                          (strip-cdrs typed-formals))
               :loop? nil
               :affect affect
-              :extobjs nil ; TODO
+              :extobjs (atc-typed-formals-to-extobjs typed-formals)
               :result-thm fn-result-thm
               :correct-thm fn-correct-thm
               :correct-mod-thm fn-correct-lemma-thm
