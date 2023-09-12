@@ -372,7 +372,7 @@
 ;    x86isa::get-flag-wb-in-app-view
     x86isa::xr-ms-mv-nth-1-wb ;new  (see also xr-wb-in-app-view)
 
-    ACL2::BFIX-WHEN-BITP
+    ACL2::BFIX-WHEN-BITP ; move? or drop if we go to unsigned-byte-p
     x86isa::unsigned-byte-p-of-bfix
     ACL2::BITP-BECOMES-UNSIGNED-BYTE-P
     ))
@@ -476,7 +476,6 @@
     x86isa::bitp-of-sub-zf-spec32
     x86isa::bitp-of-sub-zf-spec64
 
-;x86isa::bitp-of-add-af-spec64 ;; todo: add these
     x86isa::unsigned-byte-p-of-sub-cf-spec8
     x86isa::unsigned-byte-p-of-sub-cf-spec16
     x86isa::unsigned-byte-p-of-sub-cf-spec32 ;bitp becomes unsigned-byte-p 1 ?
@@ -1166,6 +1165,32 @@
             jnz-condition-of-sub-zf-spec16
             jnz-condition-of-sub-zf-spec32
             jnz-condition-of-sub-zf-spec64
+            js-condition-of-sub-sf-spec8
+            js-condition-of-sub-sf-spec16
+            js-condition-of-sub-sf-spec32
+            js-condition-of-sub-sf-spec64
+            jns-condition-of-sub-sf-spec8
+            jns-condition-of-sub-sf-spec16
+            jns-condition-of-sub-sf-spec32
+            jns-condition-of-sub-sf-spec64
+            ;;if-of-jz-condition-and-1-and-0
+            ;;if-of-jnz-condition-and-1-and-0
+            ;;jz-condition-of-if-of-1-and-0
+            ;;jnbe-condition-of-BOOL->BIT-of-<-of-bvchop-and-ZF-SPEC-of-bvplus-of-bvuminus
+
+            ;todo: drop some of these?
+            jz-condition-of-bvif-1-0-1
+            jz-condition-of-bvif-1-1-0
+            jnz-condition-of-bvif-1-0-1
+            jnz-condition-of-bvif-1-1-0
+            jp-condition-of-bvif-1-0-1
+            jp-condition-of-bvif-1-1-0
+            jnp-condition-of-bvif-1-0-1
+            jnp-condition-of-bvif-1-1-0
+            jbe-condition-of-bvif-1-arg1
+            jbe-condition-of-bvif-1-arg2
+            jnbe-condition-of-bvif-1-arg1
+            jnbe-condition-of-bvif-1-arg2
 
             ;; can we get rid of these?:
             ;; jle-condition-rewrite-1
@@ -2900,9 +2925,6 @@
 
     rsp-of-if
 
-    integerp-of-rsp
-    fix-of-rsp
-
     rax-of-!rflags
     rbx-of-!rflags
     rcx-of-!rflags
@@ -2922,7 +2944,84 @@
     undef-of-!rflags ; why is !rflags not going away?
 
     xw-becomes-set-undef
-    xr-becomes-undef))
+    xr-becomes-undef
+
+    integerp-of-rax
+    integerp-of-rbx
+    integerp-of-rcx
+    integerp-of-rdx
+    integerp-of-rsi
+    integerp-of-rdi
+    integerp-of-r8
+    integerp-of-r9
+    integerp-of-r10
+    integerp-of-r11
+    integerp-of-r12
+    integerp-of-r13
+    integerp-of-r14
+    integerp-of-r15
+    integerp-of-rsp
+    integerp-of-rbp
+
+    fix-of-rax
+    fix-of-rbx
+    fix-of-rcx
+    fix-of-rdx
+    fix-of-rsi
+    fix-of-rdi
+    fix-of-r8
+    fix-of-r9
+    fix-of-r10
+    fix-of-r11
+    fix-of-r12
+    fix-of-r13
+    fix-of-r14
+    fix-of-r15
+    fix-of-rsp
+    fix-of-rbp
+
+    msri-of-set-rip
+    msri-of-set-rax
+    msri-of-set-rbx
+    msri-of-set-rcx
+    msri-of-set-rdx
+    msri-of-set-rsi
+    msri-of-set-rdi
+    msri-of-set-r8
+    msri-of-set-r9
+    msri-of-set-r10
+    msri-of-set-r11
+    msri-of-set-r12
+    msri-of-set-r13
+    msri-of-set-r14
+    msri-of-set-r15
+    msri-of-set-rsp
+    msri-of-set-rbp
+    msri-of-set-undef
+    msri-of-write
+    msri-of-set-flag
+
+    ;; These help make failures more clear, by dropping irrelevant
+    ;; state writes inside rme-size:
+    mv-nth-0-of-rme-size-of-set-rip
+    mv-nth-0-of-rme-size-of-set-rax
+    mv-nth-0-of-rme-size-of-set-rbx
+    mv-nth-0-of-rme-size-of-set-rcx
+    mv-nth-0-of-rme-size-of-set-rdx
+    mv-nth-0-of-rme-size-of-set-rsi
+    mv-nth-0-of-rme-size-of-set-rdi
+    mv-nth-0-of-rme-size-of-set-r8
+    mv-nth-0-of-rme-size-of-set-r9
+    mv-nth-0-of-rme-size-of-set-r10
+    mv-nth-0-of-rme-size-of-set-r11
+    mv-nth-0-of-rme-size-of-set-r12
+    mv-nth-0-of-rme-size-of-set-r13
+    mv-nth-0-of-rme-size-of-set-r14
+    mv-nth-0-of-rme-size-of-set-r15
+    mv-nth-0-of-rme-size-of-set-rsp
+    mv-nth-0-of-rme-size-of-set-rbp
+    mv-nth-0-of-rme-size-of-set-undef
+    ))
 
 ;; Try this rule first
 (table axe-rule-priorities-table 'read-of-write-disjoint -1)

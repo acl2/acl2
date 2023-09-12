@@ -946,8 +946,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Add more
-(defthm fix-of-rsp
-  (equal (fix (rsp x86))
-         (rsp x86))
-  :hints (("Goal" :in-theory (enable rsp))))
+(defthm fix-of-rax (equal (fix (rax x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
+(defthm fix-of-rbx (equal (fix (rbx x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
+(defthm fix-of-rcx (equal (fix (rcx x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
+(defthm fix-of-rdx (equal (fix (rdx x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
+(defthm fix-of-rsi (equal (fix (rsi x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
+(defthm fix-of-rdi (equal (fix (rdi x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
+(defthm fix-of-r8 (equal (fix (r8 x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
+(defthm fix-of-r9 (equal (fix (r9 x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
+(defthm fix-of-r10 (equal (fix (r10 x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
+(defthm fix-of-r11 (equal (fix (r11 x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
+(defthm fix-of-r12 (equal (fix (r12 x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
+(defthm fix-of-r13 (equal (fix (r13 x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
+(defthm fix-of-r14 (equal (fix (r14 x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
+(defthm fix-of-r15 (equal (fix (r15 x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
+(defthm fix-of-rsp (equal (fix (rsp x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
+(defthm fix-of-rbp (equal (fix (rbp x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))

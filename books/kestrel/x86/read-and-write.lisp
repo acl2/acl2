@@ -196,7 +196,7 @@
            (< (read-byte addr x86) k)))
 
 ;; maybe just needed for Axe
-(defthmd <-of-consytant-and-read-byte
+(defthmd <-of-constant-and-read-byte
   (implies (and (syntaxp (quotep k))
                 (<= 255 k) ; gets computed
                 )
@@ -318,7 +318,7 @@
            (< (read size addr x86) k)))
 
 ;; maybe just needed for Axe
-(defthmd <-of-consytant-and-read
+(defthmd <-of-constant-and-read
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (natp size)
