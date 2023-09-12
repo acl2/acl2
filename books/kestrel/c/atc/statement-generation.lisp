@@ -437,6 +437,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-remove-extobj-args ((args pseudo-term-listp)
+                                (prec-objs atc-string-objinfo-alistp))
+  :returns (filtered-args pseudo-term-listp :hyp (pseudo-term-listp args))
+  :short "Remove from a list of argument terms
+          the ones that are external objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "While ACL2 functions have explicit arguments for external objects,
+     the corresponding C functions do not, because they access them directly.
+     Thus, when generating code for C function calls,
+     we do no need to translate to C
+     the ACL2 function arguments that are external objects.
+     Those arguments are removed using this code."))
+  (b* (((when (endp args)) nil)
+       (arg (car args)))
+    (if (and (symbolp arg)
+             (assoc-equal (symbol-name arg) prec-objs))
+        (atc-remove-extobj-args (cdr args) prec-objs)
+      (cons arg (atc-remove-extobj-args (cdr args) prec-objs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod stmt-gin
   :short "Inputs for C statement generation."
   :long
@@ -650,7 +673,8 @@
                      on array arguments being identical to the formals."
                     term)))
              ((erp (pexprs-gout args))
-              (atc-gen-expr-pure-list arg-terms
+              (atc-gen-expr-pure-list (atc-remove-extobj-args arg-terms
+                                                              gin.prec-objs)
                                       (make-pexprs-gin
                                        :context gin.context
                                        :inscope gin.inscope
@@ -1372,10 +1396,12 @@
         `(("Goal" :in-theory '(exec-expr-call-or-asg-when-asg
                                (:e expr-kind)
                                not-zp-of-limit-variable
+                               compustatep-of-add-frame
                                compustatep-of-add-var
                                compustatep-of-enter-scope
                                compustatep-of-update-var
                                compustatep-of-update-object
+                               compustatep-of-update-static-var
                                ,asg-thm-name))))
        ((mv expr-event &) (evmac-generate-defthm expr-thm-name
                                                  :formula expr-formula
@@ -1813,8 +1839,7 @@
        ((when (eq array-write-fn 'quote))
         (reterr (raise "Internal error: array writer is QUOTE.")))
        (array-write-term `(,array-write-fn ,var ,sub.term ,elem.term))
-       ((when (or (not elem.thm-name)
-                  (atc-var-info->externalp varinfo))) ; <- temporary
+       ((when (not elem.thm-name))
         (retok item
                array-write-term
                item-limit
@@ -1852,9 +1877,14 @@
                                :formula okp-lemma-formula
                                :hints okp-lemma-hints
                                :enable nil))
-       (new-compst `(update-object ,(add-suffix-to-fn var "-OBJDES")
-                                   ,array-write-term
-                                   ,gin.compst-var))
+       (new-compst
+        (if (atc-var-info->externalp varinfo)
+            `(update-static-var (ident ',(symbol-name var))
+                                ,array-write-term
+                                ,gin.compst-var)
+          `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                          ,array-write-term
+                          ,gin.compst-var)))
        (new-compst (untranslate$ new-compst nil state))
        (asg-thm-name (pack gin.fn '-correct- thm-index))
        ((mv asg-thm-name names-to-avoid)
@@ -1898,6 +1928,10 @@
         (atc-type-to-type-of-value-thm arr.type gin.prec-tags))
        (value-array->length-when-elem-fixtype-arrayp
         (pack 'value-array->length-when- elem-fixtype '-arrayp))
+       (apconvert-expr-value-when-elem-fixtype-arrayp
+        (pack 'apconvert-expr-value-when- elem-fixtype '-arrayp))
+       (return-type-of-type-elem-fixtype
+        (pack 'return-type-of-type- elem-fixtype))
        (asg-hints
         `(("Goal"
            :in-theory
@@ -1931,7 +1965,37 @@
              ,elem-fixtype-arrayp-of-elem-fixtype-array-write
              ,type-of-value-when-elem-fixtype-arrayp
              ,value-array->length-when-elem-fixtype-arrayp
-             ,elem-fixtype-array-length-of-elem-fixtype-array-write))))
+             ,elem-fixtype-array-length-of-elem-fixtype-array-write
+             ,apconvert-expr-value-when-elem-fixtype-arrayp
+             objdesign-optionp-of-objdesign-of-var
+             objdesignp-when-objdesign-optionp
+             return-type-of-value-pointer
+             value-pointer-validp-of-value-pointer
+             return-type-of-pointer-valid
+             value-pointer->reftype-of-value-pointer
+             type-fix-when-typep
+             ,return-type-of-type-elem-fixtype
+             value-pointer->designator-of-value-pointer
+             pointer-valid->get-of-pointer-valid
+             objdesign-fix-when-objdesignp
+             write-object-of-objdesign-of-var-to-write-var
+             write-var-to-write-static-var
+             var-autop-of-add-frame
+             var-autop-of-enter-scope
+             var-autop-of-add-var
+             var-autop-of-update-var
+             var-autop-of-update-static-var
+             var-autop-of-update-object
+             write-static-var-to-update-static-var
+             write-static-var-okp-of-add-var
+             write-static-var-okp-of-enter-scope
+             write-static-var-okp-of-add-frame
+             write-static-var-okp-when-valuep-of-read-static-var
+             read-object-of-objdesign-static
+             ident-fix-when-identp
+             identp-of-ident
+             equal-of-ident-and-ident
+             (:e str-fix)))))
        ((mv asg-event &) (evmac-generate-defthm asg-thm-name
                                                 :formula asg-formula
                                                 :hints asg-hints
@@ -1958,58 +2022,82 @@
                                  :proofs (and asg-thm-name t))
                                 state))
        (new-context
-        (atc-context-extend gin.context
-                            (list
-                             (make-atc-premise-cvalue
-                              :var var
-                              :term array-write-term)
-                             (make-atc-premise-compustate
-                              :var gin.compst-var
-                              :term `(update-object
-                                      ,(add-suffix-to-fn var "-OBJDES")
-                                      ,var
-                                      ,gin.compst-var)))))
-       (new-inscope-rules `(objdesign-of-var-of-update-object
-                            objdesign-of-var-of-enter-scope-iff
-                            objdesign-of-var-of-add-var-iff
-                            read-object-auto/static-of-update-object-alloc
-                            read-object-of-update-object-same
-                            read-object-of-update-object-disjoint
-                            read-object-of-objdesign-of-var-of-add-var
-                            read-object-of-objdesign-of-var-of-enter-scope
-                            objdesign-kind-of-objdesign-of-var
-                            compustate-frames-number-of-add-var-not-zero
-                            compustate-frames-number-of-enter-scope-not-zero
-                            object-disjointp-commutative
-                            value-fix-when-valuep
-                            remove-flexible-array-member-when-absent
-                            not-flexible-array-member-p-when-ucharp
-                            not-flexible-array-member-p-when-scharp
-                            not-flexible-array-member-p-when-ushortp
-                            not-flexible-array-member-p-when-sshortp
-                            not-flexible-array-member-p-when-uintp
-                            not-flexible-array-member-p-when-sintp
-                            not-flexible-array-member-p-when-ulongp
-                            not-flexible-array-member-p-when-slongp
-                            not-flexible-array-member-p-when-ullongp
-                            not-flexible-array-member-p-when-sllongp
-                            not-flexible-array-member-p-when-value-pointer
-                            valuep-when-ucharp
-                            valuep-when-scharp
-                            valuep-when-ushortp
-                            valuep-when-sshortp
-                            valuep-when-uintp
-                            valuep-when-sintp
-                            valuep-when-ulongp
-                            valuep-when-slongp
-                            valuep-when-ullongp
-                            valuep-when-sllongp
-                            ,valuep-when-arr-type-pred
-                            ,elem-fixtype-arrayp-of-elem-fixtype-array-write
-                            ident-fix-when-identp
-                            identp-of-ident
-                            equal-of-ident-and-ident
-                            (:e str-fix)))
+        (atc-context-extend
+         gin.context
+         (list
+          (make-atc-premise-cvalue
+           :var var
+           :term array-write-term)
+          (make-atc-premise-compustate
+           :var gin.compst-var
+           :term (if (atc-var-info->externalp varinfo)
+                     `(update-static-var (ident ,(symbol-name var))
+                                         ,var
+                                         ,gin.compst-var)
+                   `(update-object ,(add-suffix-to-fn var "-OBJDES")
+                                   ,var
+                                   ,gin.compst-var))))))
+       (new-inscope-rules
+        `(objdesign-of-var-of-update-object
+          objdesign-of-var-of-enter-scope-iff
+          objdesign-of-var-of-add-var-iff
+          read-object-auto/static-of-update-object-alloc
+          read-object-of-update-object-same
+          read-object-of-update-object-disjoint
+          read-object-of-objdesign-of-var-of-add-var
+          read-object-of-objdesign-of-var-of-enter-scope
+          objdesign-kind-of-objdesign-of-var
+          compustate-frames-number-of-add-var-not-zero
+          compustate-frames-number-of-enter-scope-not-zero
+          object-disjointp-commutative
+          value-fix-when-valuep
+          remove-flexible-array-member-when-absent
+          not-flexible-array-member-p-when-ucharp
+          not-flexible-array-member-p-when-scharp
+          not-flexible-array-member-p-when-ushortp
+          not-flexible-array-member-p-when-sshortp
+          not-flexible-array-member-p-when-uintp
+          not-flexible-array-member-p-when-sintp
+          not-flexible-array-member-p-when-ulongp
+          not-flexible-array-member-p-when-slongp
+          not-flexible-array-member-p-when-ullongp
+          not-flexible-array-member-p-when-sllongp
+          not-flexible-array-member-p-when-uchar-arrayp
+          not-flexible-array-member-p-when-schar-arrayp
+          not-flexible-array-member-p-when-ushort-arrayp
+          not-flexible-array-member-p-when-sshort-arrayp
+          not-flexible-array-member-p-when-uint-arrayp
+          not-flexible-array-member-p-when-sint-arrayp
+          not-flexible-array-member-p-when-ulong-arrayp
+          not-flexible-array-member-p-when-slong-arrayp
+          not-flexible-array-member-p-when-ullong-arrayp
+          not-flexible-array-member-p-when-sllong-arrayp
+          not-flexible-array-member-p-when-value-pointer
+          valuep-when-ucharp
+          valuep-when-scharp
+          valuep-when-ushortp
+          valuep-when-sshortp
+          valuep-when-uintp
+          valuep-when-sintp
+          valuep-when-ulongp
+          valuep-when-slongp
+          valuep-when-ullongp
+          valuep-when-sllongp
+          ,valuep-when-arr-type-pred
+          ,elem-fixtype-arrayp-of-elem-fixtype-array-write
+          ident-fix-when-identp
+          identp-of-ident
+          equal-of-ident-and-ident
+          (:e str-fix)
+          objdesign-of-var-of-update-static-var-iff
+          read-object-of-objdesign-of-var-of-update-static-var-different
+          read-object-of-objdesign-of-var-of-update-static-var-same
+          var-autop-of-add-frame
+          var-autop-of-enter-scope
+          var-autop-of-add-var
+          var-autop-of-update-var
+          var-autop-of-update-static-var
+          var-autop-of-update-object))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -4599,7 +4687,8 @@
                being affected here."
               gin.fn called-fn affect gin.affect)))
        ((erp (pexprs-gout args))
-        (atc-gen-expr-pure-list arg-terms
+        (atc-gen-expr-pure-list (atc-remove-extobj-args arg-terms
+                                                        gin.prec-objs)
                                 (make-pexprs-gin
                                  :context gin.context
                                  :inscope gin.inscope

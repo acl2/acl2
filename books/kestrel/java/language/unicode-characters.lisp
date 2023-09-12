@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -153,9 +153,9 @@
   :extension ascii-list
 
   (defrule iso8851-listp-when-ascii-listp
-    (implies (iso8851-listp x)
-             (unicode-listp x))
-    :enable (iso8851-listp unicode-listp)))
+    (implies (ascii-listp x)
+             (iso8851-listp x))
+    :enable (ascii-listp iso8851-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

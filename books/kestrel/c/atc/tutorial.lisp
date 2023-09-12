@@ -200,8 +200,7 @@
      to the ACL2 code that represents it.
      In other words, it computes the same things as the ACL2 code.
      This is expressed via a "
-    (xdoc::seetopic "dynamic-semantics"
-                    "formal dynamic semantics of C")
+    (xdoc::seetopic "dynamic-semantics" "formal dynamic semantics of C")
     ".")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
