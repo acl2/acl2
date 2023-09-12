@@ -19,10 +19,13 @@
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
+(include-book "kestrel/bv/rules10" :dir :system) ; drop or make local
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/bv/arith" :dir :system))
+(local (include-book "kestrel/bv/signed-byte-p" :dir :system)) ; so we can disable below
+(local (include-book "kestrel/bv/rules" :dir :system)) ; so we can disable below
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, for floor-mod-elim
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
@@ -3075,7 +3078,7 @@
                             ;acl2::bvcat-equal-rewrite-alt
                             acl2::bvcat-equal-rewrite
                             ;rvm08-becomes-read-byte
-                            acl2::slice-of-+
+                            ;acl2::slice-of-+
                             acl2::bvplus-recollapse)))))
 
 (defthm mv-nth-1-of-rme08-becomes-read-from-segment

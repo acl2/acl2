@@ -27,6 +27,7 @@
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (include-book "kestrel/x86/read-and-write" :dir :system)
 (include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))

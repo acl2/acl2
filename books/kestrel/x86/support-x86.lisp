@@ -1,7 +1,7 @@
 ; Supporting material for x86 code proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,17 +19,17 @@
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
 (include-book "kestrel/utilities/defopeners" :dir :system)
-(include-book "kestrel/utilities/def-constant-opener" :dir :system)
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+(include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-weaken
 (include-book "kestrel/bv/defs-arith" :dir :system) ;for bvplus
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system))
 (include-book "kestrel/bv/slice-def" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;for bvashr
-(include-book "kestrel/bv/rules10" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
-;(include-book "flags")
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
+(local (include-book "kestrel/bv/rules10" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/arith" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, to deal with truncate
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -500,7 +500,7 @@
 (defthm bvchop-upper-bound-strong
   (implies (natp n)
            (<= (acl2::bvchop n x) (+ -1 (expt 2 n))))
-  :rule-classes (:rewrite :linear)
+  :rule-classes (:rewrite)
   :hints (("Goal" :in-theory (enable acl2::bvchop))))
 
 (defthm bvplus-of-*-of-256
@@ -655,9 +655,6 @@
   (equal (mv-nth 2 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
          (acl2::sbvrem 64 x 2))
   :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate acl2::sbvrem))))
-
-
-
 
 ;tons of calls of byte-listp were getting memoized, whereas we can just run
 ;all-unsigned-byte-p.
