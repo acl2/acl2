@@ -600,7 +600,7 @@ automatically reduce proof goals such as:</p>
 
 <p>The mechanism for doing this is somewhat elaborate: the rewrite rule
 replaces the @('(subset X Y)') with @('(subset-trigger X Y)').  This trigger is
-recognized by a computed hint, which then suggest proving the theorem via
+recognized by a computed hint, which then suggests proving the theorem via
 functional instantiation of @(see all-by-membership).</p>
 
 <p>The pick-a-point method is often a good way to prove subset relations.  On
