@@ -437,6 +437,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-remove-extobj-args ((args pseudo-term-listp)
+                                (prec-objs atc-string-objinfo-alistp))
+  :returns (filtered-args pseudo-term-listp :hyp (pseudo-term-listp args))
+  :short "Remove from a list of argument terms
+          the ones that are external objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "While ACL2 functions have explicit arguments for external objects,
+     the corresponding C functions do not, because they access them directly.
+     Thus, when generating code for C function calls,
+     we do no need to translate to C
+     the ACL2 function arguments that are external objects.
+     Those arguments are removed using this code."))
+  (b* (((when (endp args)) nil)
+       (arg (car args)))
+    (if (and (symbolp arg)
+             (assoc-equal (symbol-name arg) prec-objs))
+        (atc-remove-extobj-args (cdr args) prec-objs)
+      (cons arg (atc-remove-extobj-args (cdr args) prec-objs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod stmt-gin
   :short "Inputs for C statement generation."
   :long
@@ -650,7 +673,8 @@
                      on array arguments being identical to the formals."
                     term)))
              ((erp (pexprs-gout args))
-              (atc-gen-expr-pure-list arg-terms
+              (atc-gen-expr-pure-list (atc-remove-extobj-args arg-terms
+                                                              gin.prec-objs)
                                       (make-pexprs-gin
                                        :context gin.context
                                        :inscope gin.inscope
@@ -4663,7 +4687,8 @@
                being affected here."
               gin.fn called-fn affect gin.affect)))
        ((erp (pexprs-gout args))
-        (atc-gen-expr-pure-list arg-terms
+        (atc-gen-expr-pure-list (atc-remove-extobj-args arg-terms
+                                                        gin.prec-objs)
                                 (make-pexprs-gin
                                  :context gin.context
                                  :inscope gin.inscope
