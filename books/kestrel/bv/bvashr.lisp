@@ -17,7 +17,7 @@
 
 ;; NOTE: Currently, the shift amount must be less than the width.
 ;; TODO: Result may may be wrong if we shift all the way out! consider: (acl2::bvashr 32 -1 32)
-(defun bvashr (width x shift-amount)
+(defund bvashr (width x shift-amount)
   (declare (type (integer 0 *) shift-amount)
            (type integer x)
            (type integer width)
@@ -43,7 +43,7 @@
                   (slice (+ -1 n shift-amount)
                          shift-amount
                          x)))
-  :hints (("Goal" :in-theory (enable bvsx))))
+  :hints (("Goal" :in-theory (enable bvashr bvsx))))
 
 (defthmd bvashr-rewrite-for-constant-shift-amount
   (implies (and (syntaxp (quotep shift-amount))
@@ -62,7 +62,7 @@
 (defthm unsigned-byte-p-of-bvashr
   (equal (unsigned-byte-p size (bvashr size x amt))
          (natp size))
-  :hints (("Goal" :in-theory (enable bvshr))))
+  :hints (("Goal" :in-theory (enable bvashr bvshr))))
 
 (defthm bvashr-of-bvchop
   (implies (and (natp width)

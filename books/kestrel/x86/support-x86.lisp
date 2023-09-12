@@ -992,7 +992,8 @@
            (MV RESULT OUTPUT-RFLAGS
                UNDEFINED-FLAGS)))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (;acl2::bvsx
+  :hints (("Goal" :in-theory (e/d (acl2::bvashr
+                                   ;;acl2::bvsx
                                    SAR-SPEC-32 ACL2::BVSHR
                                    ;;ACL2::LOGEXT-CASES
                                    acl2::bvchop-of-logtail-becomes-slice
@@ -1132,7 +1133,7 @@
            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
   :otf-flg t
   :hints (("Goal" :expand ()
-           :in-theory (e/d ( ;acl2::bvsx
+           :in-theory (e/d (acl2::bvashr ;acl2::bvsx
                             SAR-SPEC-64 ACL2::BVSHR
                                         ;;ACL2::LOGEXT-CASES
                             acl2::bvchop-of-logtail-becomes-slice
