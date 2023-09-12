@@ -32,7 +32,6 @@
 ;(include-book "support0")
 (include-book "support32") ; drop? needed to prove rb-in-terms-of-nth-and-pos-eric-gen -- why?
 ;(include-book "assumptions")
-;(include-book "read-and-write")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop

@@ -18,11 +18,16 @@
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
+(include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)
 (include-book "unroll-x86-code")
 (include-book "tester-rules")
 (include-book "rule-lists")
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+
+(acl2::ensure-rules-known (extra-rules))
+(acl2::ensure-rules-known (extra-lifting-rules))
+(acl2::ensure-rules-known (proof-rules))
 
 ;; TODO: Parens in output may not be balanced?
 ;; todo: allow :monitor to be :debug?
