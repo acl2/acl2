@@ -3418,6 +3418,7 @@
                          (strip-cdrs typed-formals))
               :loop? nil
               :affect affect
+              :extobjs nil ; TODO
               :result-thm fn-result-thm
               :correct-thm fn-correct-thm
               :correct-mod-thm fn-correct-lemma-thm
@@ -4776,6 +4777,7 @@
                                           (strip-cdrs typed-formals))
                                :loop? loop.stmt
                                :affect loop.affect
+                               :extobjs nil ; TODO
                                :result-thm fn-result-thm
                                :correct-thm fn-correct-thm
                                :correct-mod-thm nil
