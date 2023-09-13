@@ -155,7 +155,7 @@
     :rule-classes (:rewrite :forward-chaining)
     :enable (set::setp << lexorder))
 
-  (defrule alistp-when-mapp
+  (defruled alistp-when-mapp
     (implies (mapp x)
              (alistp x))
     :rule-classes (:rewrite :forward-chaining))
@@ -214,7 +214,7 @@
              (< (+ (acl2-count (car (car map)))
                    (acl2-count (cdr (car map))))
                 (acl2-count map)))
-    :hints (("Goal" :in-theory (enable mfix))))
+    :hints (("Goal" :in-theory (enable mfix alistp-when-mapp))))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -248,28 +248,28 @@
              (< (acl2-count (mv-nth 0 (head map)))
                 (acl2-count map)))
     :rule-classes (:rewrite :linear)
-    :enable (empty mfix))
+    :enable (empty mfix alistp-when-mapp))
 
   (defrule head-value-count
     (implies (not (empty map))
              (< (acl2-count (mv-nth 1 (head map)))
                 (acl2-count map)))
     :rule-classes (:rewrite :linear)
-    :enable (empty mfix))
+    :enable (empty mfix alistp-when-mapp))
 
   (defrule head-key-count-built-in
     (implies (not (empty map))
              (o< (acl2-count (mv-nth 0 (head map)))
                  (acl2-count map)))
     :rule-classes :built-in-clause
-    :enable (empty mfix))
+    :enable (empty mfix alistp-when-mapp))
 
   (defrule head-value-count-built-in
     (implies (not (empty map))
              (o< (acl2-count (mv-nth 1 (head map)))
                  (acl2-count map)))
     :rule-classes :built-in-clause
-    :enable (empty mfix)))
+    :enable (empty mfix alistp-when-mapp)))
 
 (define head-key ((map mapp))
   :guard (not (empty map))
@@ -297,7 +297,7 @@
   (xdoc::topstring-p
    "This is similar to @(tsee set::tail) for osets.")
   (cdr (mfix map))
-  :guard-hints (("Goal" :in-theory (enable empty)))
+  :guard-hints (("Goal" :in-theory (enable empty alistp-when-mapp)))
   ///
 
   (defrule tail-when-empty
@@ -604,7 +604,12 @@
     (implies (not (empty map))
              (< (acl2-count (in key map))
                 (acl2-count map)))
-    :enable (mv-nth head empty mfix consp-car-when-non-empty-mapp))
+    :enable (mv-nth
+             head
+             empty
+             mfix
+             consp-car-when-non-empty-mapp
+             alistp-when-mapp))
 
   (defrule in-of-update
     (equal (in key1 (update key val map))
