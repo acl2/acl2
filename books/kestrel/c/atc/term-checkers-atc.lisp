@@ -776,19 +776,19 @@
        (limit (atc-fn-info->limit info))
        (limit (fty-fsublis-var var-term-alist limit))
        (fn-guard (atc-fn-info->guard info))
-       ((erp) (atc-check-cfun-call-aux term.fn
-                                       (formals+ term.fn wrld)
-                                       term.args
-                                       in-types
-                                       extobjs)))
+       ((erp) (atc-check-cfun-call-args term.fn
+                                        (formals+ term.fn wrld)
+                                        term.args
+                                        in-types
+                                        extobjs)))
     (retok t term.fn term.args in-types out-type affect limit fn-guard))
 
   :prepwork
-  ((define atc-check-cfun-call-aux ((fn symbolp)
-                                    (formals symbol-listp)
-                                    (actuals pseudo-term-listp)
-                                    (in-types type-listp)
-                                    (extobjs symbol-listp))
+  ((define atc-check-cfun-call-args ((fn symbolp)
+                                     (formals symbol-listp)
+                                     (actuals pseudo-term-listp)
+                                     (in-types type-listp)
+                                     (extobjs symbol-listp))
      :returns erp
      :parents nil
      (b* (((reterr))
@@ -809,11 +809,11 @@
           ((when (and (not (type-case in-type :pointer))
                       (not (type-case in-type :array))
                       (not (member-eq formal extobjs))))
-           (atc-check-cfun-call-aux fn
-                                    (cdr formals)
-                                    (cdr actuals)
-                                    (cdr in-types)
-                                    extobjs))
+           (atc-check-cfun-call-args fn
+                                     (cdr formals)
+                                     (cdr actuals)
+                                     (cdr in-types)
+                                     extobjs))
           ((unless (eq formal actual))
            (reterr
             (msg "Since the formal parameter ~x0 of ~x1 ~
@@ -823,11 +823,11 @@
                   identical to the formal parameters, ~
                   but it is ~x2 instead."
                  formal fn actual))))
-       (atc-check-cfun-call-aux fn
-                                (cdr formals)
-                                (cdr actuals)
-                                (cdr in-types)
-                                extobjs))))
+       (atc-check-cfun-call-args fn
+                                 (cdr formals)
+                                 (cdr actuals)
+                                 (cdr in-types)
+                                 extobjs))))
 
   ///
 
