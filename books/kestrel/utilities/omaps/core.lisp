@@ -15,6 +15,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
+
 (local (include-book "misc/total-order" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
 (local (include-book "tools/rulesets" :dir :system))
