@@ -18,14 +18,18 @@
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
+(include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "unroll-x86-code")
 (include-book "tester-rules")
 (include-book "rule-lists")
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
+(acl2::ensure-rules-known (extra-rules))
+(acl2::ensure-rules-known (extra-lifting-rules))
+(acl2::ensure-rules-known (proof-rules))
+
 ;; TODO: Parens in output may not be balanced?
-;; todo: allow :monitor to be :debug?
 
 ;; TODO: move this stuff to mach-o-tools.lisp:
 
@@ -231,7 +235,7 @@
                            assumptions ; untranslated terms
                            extra-rules extra-lift-rules extra-proof-rules
                            remove-rules remove-lift-rules remove-proof-rules
-                           print monitor debug
+                           print monitor
                            step-limit step-increment
                            prune tactics
                            max-conflicts  ;a number of conflicts, or nil for no max
@@ -245,8 +249,8 @@
                               (symbol-listp remove-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
-                              (symbol-listp monitor)
-                              (booleanp debug)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
                               (or (eq nil prune)
@@ -259,9 +263,7 @@
                                   (eq :auto stack-slots))
                               (booleanp position-independentp))
                   :mode :program ; because of apply-tactic-prover and def-unrolled-fn-core
-                  :stobjs state)
-           (ignore debug) ; todo
-           )
+                  :stobjs state))
   (b* ((stack-slots (if (eq :auto stack-slots) 100 stack-slots))
        ;; Translate the assumptions supplied by the user:
        (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
@@ -304,6 +306,9 @@
                       ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable)
                       ))
        (target function-name-string)
+       (32-bitp (member-eq executable-type *executable-types32*))
+       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
        ((mv erp result-dag-or-quotep & & state)
         (def-unrolled-fn-core
@@ -387,7 +392,7 @@
           step-limit
           step-increment
           t ; memoizep
-          monitor
+          rules-to-monitor
           print
           10 ; print-base
           state))
@@ -454,7 +459,7 @@
 ;bvlt-reduce-when-not-equal-one-less
 ;boolif-of-bvlt-strengthen-to-equal
                                              )
-                                           monitor)
+                                           rules-to-monitor)
                                    t ;normalize-xors
                                    :bit ; type (means try to prove that the DAG is 1)
                                    state
@@ -485,7 +490,7 @@
                          assumptions
                          extra-rules extra-lift-rules extra-proof-rules
                          remove-rules remove-lift-rules remove-proof-rules
-                         print monitor debug
+                         print monitor
                          step-limit step-increment
                          prune tactics
                          max-conflicts stack-slots
@@ -499,8 +504,8 @@
                               (symbol-listp remove-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
-                              (symbol-listp monitor)
-                              (booleanp debug)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
                               (or (eq nil prune)
@@ -538,7 +543,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-lift-rules remove-proof-rules
-                            print monitor debug step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
+                            print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ~x0s.~%" elapsed))
        (result-ok (if (eq :any expected-result)
@@ -567,7 +572,6 @@
                          (remove-proof-rules 'nil)
                          (print 'nil)
                          (monitor 'nil)
-                         (debug 'nil)
                          (step-limit '1000000)
                          (step-increment '100)
                          (prune '10000)             ; t, nil, or a max size
@@ -588,7 +592,7 @@
                                              ,remove-proof-rules ; gets evaluated
                                              ',print
                                              ,monitor ; gets evaluated
-                                             ',debug ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',stack-slots ',position-independent ',expected-result state)))
+                                             ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',stack-slots ',position-independent ',expected-result state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -598,7 +602,7 @@
                               assumptions-alist
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
-                              print monitor debug step-limit step-increment prune
+                              print monitor step-limit step-increment prune
                               tactics max-conflicts
                               stack-slots
                               position-independentp
@@ -615,8 +619,8 @@
                               (symbol-listp remove-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
-                              (symbol-listp monitor)
-                              (booleanp debug)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
                               (or (eq nil prune)
@@ -641,7 +645,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
-                              print monitor debug step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
+                              print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -652,7 +656,7 @@
       (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
                              extra-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-lift-rules remove-proof-rules
-                             print monitor debug step-limit step-increment prune
+                             print monitor step-limit step-increment prune
                              tactics max-conflicts stack-slots position-independentp
                              expected-failures
                              (acons function-name (list result expected-result elapsed) result-alist)
@@ -749,7 +753,7 @@
                           assumptions
                           extra-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-lift-rules remove-proof-rules
-                          print monitor debug step-limit step-increment prune
+                          print monitor step-limit step-increment prune
                           tactics max-conflicts stack-slots position-independent
                           expected-failures
                           exclude
@@ -763,8 +767,8 @@
                               (symbol-listp remove-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
-                              (symbol-listp monitor)
-                              (booleanp debug)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
                               (or (eq nil prune)
@@ -846,7 +850,7 @@
                                assumption-alist
                                extra-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-lift-rules remove-proof-rules
-                               print monitor debug step-limit step-increment prune
+                               print monitor step-limit step-increment prune
                                tactics max-conflicts stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
@@ -874,7 +878,6 @@
                           (remove-proof-rules 'nil)
                           (print 'nil)
                           (monitor 'nil)
-                          (debug 'nil)
                           (step-limit '1000000)
                           (step-increment '100)
                           (prune '10000)             ; t, nil, or a max size
@@ -897,7 +900,7 @@
                                               ,remove-proof-rules ; gets evaluated
                                               ',print
                                               ,monitor ; gets evaluated
-                                              ',debug ',step-limit ',step-increment ',prune
+                                              ',step-limit ',step-increment ',prune
                                               ',tactics ',max-conflicts ',stack-slots ',position-independent
                                               ',expected-failures
                                               nil ; no need for excludes (just don't list the functions you don't want to test)
@@ -915,7 +918,6 @@
                      (remove-proof-rules 'nil)
                      (print 'nil)
                      (monitor 'nil)
-                     (debug 'nil)
                      (step-limit '1000000)
                      (step-increment '100)
                      (prune '10000)             ; t, nil, or a max size
@@ -938,7 +940,7 @@
                                               ,remove-proof-rules ; gets evaluated
                                               ',print
                                               ,monitor ; gets evaluated
-                                              ',debug ',step-limit ',step-increment ',prune
+                                              ',step-limit ',step-increment ',prune
                                               ',tactics ',max-conflicts ',stack-slots ',position-independent
                                               ',expected-failures
                                               ',exclude

@@ -23,6 +23,7 @@
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "readers-and-writers64") ; drop?
 (local (include-book "kestrel/bv/logext" :dir :system))
+(local (include-book "kestrel/bv/signed-byte-p" :dir :system))
 
 (in-theory (disable xw logext))
 
