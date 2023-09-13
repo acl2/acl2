@@ -1896,7 +1896,7 @@
                                       typed-formals
                                       prec-fns
                                       wrld))
-       ((mv okp & & & & affected & &)
+       ((erp okp & & & & affected & & &)
         (atc-check-cfun-call term nil prec-fns wrld))
        ((when okp) (retok affected))
        ((mv okp & & & affected & &)
@@ -3139,6 +3139,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-typed-formals-to-extobjs ((typed-formals atc-symbol-varinfo-alistp))
+  :returns (extobjs symbol-listp :hyp (atc-symbol-varinfo-alistp typed-formals))
+  :short "List of the formals of a function that represent external objects."
+  (b* (((when (endp typed-formals)) nil)
+       ((cons formal info) (car typed-formals)))
+    (if (atc-var-info->externalp info)
+        (cons formal (atc-typed-formals-to-extobjs (cdr typed-formals)))
+      (atc-typed-formals-to-extobjs (cdr typed-formals)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-fundef ((fn symbolp)
                         (prec-fns atc-symbol-fninfo-alistp)
                         (prec-tags atc-string-taginfo-alistp)
@@ -3418,6 +3429,7 @@
                          (strip-cdrs typed-formals))
               :loop? nil
               :affect affect
+              :extobjs (atc-typed-formals-to-extobjs typed-formals)
               :result-thm fn-result-thm
               :correct-thm fn-correct-thm
               :correct-mod-thm fn-correct-lemma-thm
@@ -4776,6 +4788,7 @@
                                           (strip-cdrs typed-formals))
                                :loop? loop.stmt
                                :affect loop.affect
+                               :extobjs nil ; TODO
                                :result-thm fn-result-thm
                                :correct-thm fn-correct-thm
                                :correct-mod-thm nil
