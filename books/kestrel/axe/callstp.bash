@@ -62,6 +62,9 @@ elif [[ $ACL2_STP_VARIETY == "1" ]] ; then
     ${STP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
 elif [[ $ACL2_STP_VARIETY == "2" ]] ; then
     # Use dashes in max conflicts option:
+    ${STP} ${COUNTEREXAMPLE_ARGS} --max-num-confl $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
+elif [[ $ACL2_STP_VARIETY == "3" ]] ; then
+    # Use dashes in max conflicts option:
     # For the latest STP, this may be needed (or maybe either dashes or underscores are ok, if the boost library is new enough):
     # echo "CALLING ${STP} (variety 2)"
     # For the obscure options here, see:
