@@ -1,7 +1,7 @@
 ; Making Axe rules and rule-alists from formulas
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1001,10 +1001,10 @@
 (defund make-axe-rule (lhs rhs rule-symbol hyps extra-hyps print wrld)
   (declare (xargs :guard (and (axe-rule-lhsp lhs)
                               (pseudo-termp rhs)
+                              (symbolp rule-symbol)
                               (pseudo-term-listp hyps) ;; from the theorem, unprocessed
                               (axe-rule-hyp-listp extra-hyps) ;; already processed, don't bind any vars, for stopping loops
                               (all-axe-syntaxp-hypsp extra-hyps)
-                              (symbolp rule-symbol)
                               (plist-worldp wrld))))
   (b* ((- (and print (cw "(Making Axe rule: ~x0.)~%" rule-symbol)))
        (lhs-vars (free-vars-in-term lhs))
@@ -1348,7 +1348,7 @@
 ;;; make-axe-rules-from-theorem
 ;;;
 
-;; Returns (mv erp axe-rules).
+;; Returns (mv erp axe-rules).  If the conclusion is a conjunction, we get multiple rules.
 (defund make-axe-rules-from-theorem (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
   (declare (xargs :guard (and (pseudo-termp theorem-body)
                               (symbolp rule-symbol)
