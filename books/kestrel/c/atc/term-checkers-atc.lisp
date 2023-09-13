@@ -732,6 +732,7 @@
                (in-types type-listp)
                (out-type typep)
                (affect symbol-listp)
+               (extobjs symbol-listp)
                (limit pseudo-termp)
                (fn-guard symbolp))
   :short "Check if a term may represent a call to a C function,
@@ -743,6 +744,7 @@
      the called function along with the arguments.
      We also return the input and output types of the function,
      the variables affected by the function,
+     the formals of the function that represent external objects,
      the limit sufficient to execute the function,
      and the local function that encapsulates the function's guard.")
    (xdoc::p
@@ -760,8 +762,8 @@
      in order to obtain the real arguments of the call
      from the point of view of the top level of
      where this call term occurs."))
-  (b* (((reterr) nil nil nil nil (irr-type) nil nil nil)
-       ((acl2::fun (no)) (retok nil nil nil nil (irr-type) nil nil nil))
+  (b* (((reterr) nil nil nil nil (irr-type) nil nil nil nil)
+       ((acl2::fun (no)) (retok nil nil nil nil (irr-type) nil nil nil nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((when (irecursivep+ term.fn wrld)) (no))
@@ -781,7 +783,7 @@
                                         term.args
                                         in-types
                                         extobjs)))
-    (retok t term.fn term.args in-types out-type affect limit fn-guard))
+    (retok t term.fn term.args in-types out-type affect extobjs limit fn-guard))
 
   :prepwork
   ((define atc-check-cfun-call-args ((fn symbolp)

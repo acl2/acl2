@@ -1896,7 +1896,7 @@
                                       typed-formals
                                       prec-fns
                                       wrld))
-       ((erp okp & & & & affected & &)
+       ((erp okp & & & & affected & & &)
         (atc-check-cfun-call term nil prec-fns wrld))
        ((when okp) (retok affected))
        ((mv okp & & & affected & &)

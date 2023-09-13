@@ -649,6 +649,7 @@
              in-types
              out-type
              affect
+             & ; extobjs
              limit
              called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
@@ -6250,6 +6251,7 @@
              in-types
              out-type
              fn-affect
+             & ; extobjs
              limit
              called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
