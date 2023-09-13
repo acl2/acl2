@@ -1558,11 +1558,15 @@
                   t))
   :hints (("Goal" :in-theory (enable read))))
 
-(defthm read-of-logext-48
-  (implies (integerp addr)
-           (equal (read n (logext 48 addr) x86)
+(defthm read-of-logext
+  (implies (and (<= 48 size)
+                (integerp size)
+                (integerp addr) ;drop?
+                )
+           (equal (read n (logext size addr) x86)
                   (read n addr x86)))
-  :hints (("Goal" :in-theory (e/d (equal-of-read-and-read-helper) (read)))))
+  :hints (("Goal" :cases ((integerp addr))
+           :in-theory (enable equal-of-read-and-read-helper))))
 
 ;todo handle reading 4 bytes when they are written individually
 

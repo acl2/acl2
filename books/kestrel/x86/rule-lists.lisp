@@ -160,7 +160,7 @@
     read-of-xw-irrel
     read-of-set-flag
     read-in-terms-of-nth-and-pos-eric ; read-when-program-at
-    read-of-logext-48
+    read-of-logext
     read-when-equal-of-read
     read-when-equal-of-read-alt
     <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
@@ -709,6 +709,20 @@
     ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
     ))
 
+(defun segment-base-and-bounds-rules ()
+  '(segment-base-and-bounds-of-set-rip
+    segment-base-and-bounds-of-set-rsp
+    segment-base-and-bounds-of-set-rbp
+    segment-base-and-bounds-of-set-rax
+    segment-base-and-bounds-of-set-rdx
+    segment-base-and-bounds-of-set-rsi
+    segment-base-and-bounds-of-set-rdi
+    segment-base-and-bounds-of-set-flag
+    segment-base-and-bounds-of-set-undef
+    segment-base-and-bounds-of-write-byte
+    segment-base-and-bounds-of-write
+    ))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 (defun lifter-rules-common ()
   (append (acl2::base-rules)
@@ -732,6 +746,7 @@
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
           '(ACL2::BOOLOR-OF-NON-NIL)
+          (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           ;;(acl2::core-rules-bv) ;acl2::not-equal-max-int-when-<= not defined
           '(
             ;; Reading/writing registers (or parts of registers).  We leave
