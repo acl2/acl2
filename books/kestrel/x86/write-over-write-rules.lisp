@@ -30,7 +30,7 @@
 (defthm set-flag-of-write-byte-to-segment
   (equal (set-flag flag fval (write-byte-to-segment eff-addr seg-reg val x86))
          (write-byte-to-segment eff-addr seg-reg val (set-flag flag fval x86)))
-  :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-flag))))
 
 (defthm set-flag-of-write-to-segment
   (equal (set-flag flag fval (write-to-segment n eff-addr seg-reg val x86))

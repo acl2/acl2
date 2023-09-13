@@ -852,3 +852,65 @@
   (defthm mv-nth-0-of-rme-size-of-set-rbp (implies (app-view x86) (equal (mv-nth 0 (x86isa::rme-size p n e s r c (set-rbp val x86))) (mv-nth 0 (x86isa::rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rbp))))
   (defthm mv-nth-0-of-rme-size-of-set-undef (implies (app-view x86) (equal (mv-nth 0 (x86isa::rme-size p n e s r c (set-undef val x86))) (mv-nth 0 (x86isa::rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-undef))))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defthm segment-base-and-bounds-of-set-rip
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-rip rip x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-rip))))
+
+(defthm segment-base-and-bounds-of-set-rsp
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-rsp rsp x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-rsp))))
+
+(defthm segment-base-and-bounds-of-set-rbp
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-rbp rbp x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-rbp))))
+
+(defthm segment-base-and-bounds-of-set-rax
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-rax rax x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-rax))))
+
+(defthm segment-base-and-bounds-of-set-rdx
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-rdx rdx x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-rdx))))
+
+;todo: more!
+
+(defthm segment-base-and-bounds-of-set-rsi
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-rsi rsi x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-rsi))))
+
+(defthm segment-base-and-bounds-of-set-rdi
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-rdi rdi x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-rdi))))
+
+;todo: not 64-bit-specific?
+(defthm segment-base-and-bounds-of-set-flag
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-flag flg val x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-flag))))
+
+;slow!
+(defthm segment-base-and-bounds-of-set-undef
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-undef undef x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-undef))))
+
+(defthm segment-base-and-bounds-of-write-byte
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (write-byte base-addr byte x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthm segment-base-and-bounds-of-write
+  (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (write n base-addr val x86))
+         (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable write))))
