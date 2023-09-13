@@ -665,13 +665,6 @@
                (msg "The call ~x0 affects ~x1, ~
                      but it should affect ~x2 instead."
                     term gin.affect affect)))
-             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
-                                                in-types
-                                                arg-terms))
-              (reterr
-               (msg "The call ~x0 does not satisfy the restrictions ~
-                     on array arguments being identical to the formals."
-                    term)))
              ((erp (pexprs-gout args))
               (atc-gen-expr-pure-list (atc-remove-extobj-args arg-terms
                                                               gin.prec-objs)
@@ -4670,14 +4663,6 @@
                but in the function ~x0 it ends with ~
                a call of ~x1 on arguments ~x2 instead."
               gin.fn called-fn arg-terms)))
-       ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
-                                          arg-types
-                                          arg-terms))
-        (reterr
-         (msg "The call of ~x0 with arguments ~x1 ~
-               does not satisfy the restrictions ~
-               on array and pointer arguments being identical to the formals."
-              called-fn arg-terms)))
        ((unless (equal gin.affect affect))
         (reterr
          (msg "When generating C code for the function ~x0, ~

@@ -839,45 +839,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-cfun-call-args ((formals symbol-listp)
-                                  (in-types type-listp)
-                                  (args pseudo-term-listp))
-  :returns (yes/no booleanp)
-  :short "Check the arguments of a call to a C function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called after @(tsee atc-check-cfun-call),
-     if the latter is successful.
-     As stated in the user documentation of ATC,
-     calls of non-recursive target functions must satisfy the property that
-     the argument for a formal of pointer or array type
-     must be identical to the formal.
-     This is because these arguments and formals
-     represent arrays and pointers,
-     and thus they must be passed around exactly by their name,
-     similarly to stobjs in ACL2.
-     This code checks the condition."))
-  (b* (((when (endp formals))
-        (cond ((consp in-types)
-               (raise "Internal error: extra types ~x0." in-types))
-              ((consp args)
-               (raise "Internal error: extra arguments ~x0." args))
-              (t t)))
-       ((when (or (endp in-types)
-                  (endp args)))
-        (raise "Internal error: extra formals ~x0." formals))
-       (formal (car formals))
-       (in-type (car in-types))
-       (arg (car args))
-       ((when (and (not (type-case in-type :pointer))
-                   (not (type-case in-type :array))))
-        (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args)))
-       ((unless (eq formal arg)) nil))
-    (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-loop-call ((term pseudo-termp)
                              (var-term-alist symbol-pseudoterm-alistp)
                              (prec-fns atc-symbol-fninfo-alistp))
