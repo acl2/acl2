@@ -4164,18 +4164,21 @@
 ; Tests for this have been incorporated into community book
 ; books/make-event/embedded-defaxioms.lisp.
 
+(defconst *destructure-expansion-wrappers*
+  '(local skip-proofs
+          with-cbd
+          with-current-package
+          with-guard-checking-event
+          with-output
+          with-prover-step-limit
+          with-prover-time-limit))
+
 (defun destructure-expansion (form)
 
 ; WARNING: Keep this in sync with chk-embedded-event-form and elide-locals-rec.
 
   (declare (xargs :guard (true-listp form)))
-  (cond ((member-eq (car form) '(local skip-proofs
-                                       with-cbd
-                                       with-current-package
-                                       with-guard-checking-event
-                                       with-output
-                                       with-prover-step-limit
-                                       with-prover-time-limit))
+  (cond ((member-eq (car form) *destructure-expansion-wrappers*)
          (mv-let (wrappers base-form)
                  (destructure-expansion (car (last form)))
                  (mv (cons (butlast form 1) wrappers)
@@ -33128,6 +33131,138 @@
      :event-type (if save-event-data
                      'make-event-save-event-data
                    'make-event))))
+
+(defun trans*-fn1 (iter transp quiet make-event-p form ctx wrld state)
+
+; This function performs one iteration of trans*, returning an error triple
+; whose value, in the non-error case, is (cons flg val), where val is the
+; result of expanding or translating, and flg is t in the case of expanding,
+; else nil.  The error case includes the case that form is not a call of
+; make-event or a macro and transp is nil.  The non-error result is printed if
+; and only if quiet is non-nil.  The caller is responsible for deciding whether
+; to continue iterating.
+
+  (cond
+   ((and (consp form)
+         (member-eq (car form) *destructure-expansion-wrappers*))
+    (pprogn
+     (cond
+      (quiet state)
+      (t (fms "Iteration ~x0 is dropping the ~x1 wrapper:~|~x2~|----------~|"
+              (list (cons #\0 iter)
+                    (cons #\1 (car form))
+                    (cons #\2 (car (last form))))
+              *standard-co* state nil)))
+     (value (cons t (car (last form))))))
+   (t
+    (let* ((make-event-case (and make-event-p
+                                 (consp form)
+                                 (eq (car form) 'make-event)
+                                 (consp (cdr form))
+                                 (keyword-value-listp (cddr form))))
+           (macrop (and (not make-event-case) ; optmimzation
+                        (consp form)
+                        (symbolp (car form))
+                        (getpropc (car form) 'macro-body))))
+      (er-let* ((next
+                 (cond
+                  (make-event-case
+                   (er-let* ((expansion0/new-kpa/new-ttags-seen
+                              (revert-world-on-error
+                               (protected-eval (cadr form)
+                                               (cadr (assoc-eq :on-behalf-of
+                                                               (cddr form)))
+                                               ctx state t))))
+                     (value (car expansion0/new-kpa/new-ttags-seen))))
+                  (macrop (macroexpand1 form ctx state))
+                  (transp (translate form
+                                     t   ; stobjs-out
+                                     nil ; logic-modep [don't care]
+                                     t   ; known-stobjs
+                                     ctx wrld state))
+                  (t (silent-error state)))))
+        (pprogn
+         (cond
+          (quiet state)
+          (t (fms "Iteration ~x0 produces (by ~#1~[expansion~/make-event ~
+                   expansion~/translation~]):~|~x2~|----------~|"
+                  (list (cons #\0 iter)
+                        (cons #\1 (if macrop 0 (if make-event-case 1 2)))
+                        (cons #\2 next))
+                  *standard-co* state nil)))
+         (value (cons (or make-event-case macrop) next))))))))
+
+(defun trans*-fn-iter (iter bound transp quiet make-event-p names-fal
+                            form
+                            ctx wrld state)
+  (declare (xargs :guard (and (posp iter)
+                              (or (eq bound t)
+                                  (posp bound)))))
+  (cond
+   ((or (and (not (eq bound t))
+             (> iter bound))
+        (and (consp form)
+             (not (and make-event-p
+                       (eq (car form) 'make-event)))
+             (not (member-eq (car form) *destructure-expansion-wrappers*))
+             (hons-get (car form) names-fal)))
+    (value (if quiet form :invisible)))
+   (t (mv-let (erp flg/next state)
+        (trans*-fn1 iter transp quiet make-event-p form ctx wrld state)
+        (let ((flg (car flg/next))
+              (next (cdr flg/next)))
+          (cond
+           (erp (value (if quiet form :invisible)))
+           ((and (eq (car form) 'make-event)
+                 (and (consp next)
+                      (eq (car next) :or)))
+            (value (if quiet next :invisible)))
+           ((not flg)
+            (value (if quiet next :invisible)))
+           (t (trans*-fn-iter (1+ iter) bound transp quiet make-event-p names-fal
+                              next
+                              ctx wrld state))))))))
+
+(defun trans*-fn (bound form make-event-p ctx state)
+  (mv-let (reps0 quiet)
+    (cond ((consp bound)
+           (cond ((cdr bound)
+                  (mv :error nil))
+                 (t (mv (car bound) t))))
+          (t (mv bound nil)))
+    (mv-let (reps transp)
+      (cond ((integerp reps0)
+             (cond ((< reps0 0)
+                    (mv (- reps0) nil))
+                   ((> reps0 0)
+                    (mv reps0 t))
+                   (t (mv :error nil))))
+            ((eq reps0 nil)
+             (mv t nil))
+            ((eq reps0 t)
+             (mv t t))
+            (t (mv :error nil)))
+      (cond ((eq reps :error)
+             (er soft ctx
+                 "Illegal first argument for trans*, ~x0.  See :DOC trans*."
+                 bound))
+            ((and (consp form)
+                  (not (and make-event-p
+                            (eq (car form) 'make-event)))
+                  (not (member-eq (car form) *destructure-expansion-wrappers*))
+                  (hons-get (car form) *syms-not-callable-in-code-fal*))
+             (er soft ctx
+                 "Nothing to do: The input form is already the final result."))
+            (t (trans*-fn-iter 1 reps transp quiet make-event-p
+                               *syms-not-callable-in-code-fal*
+                               form
+                               ctx (w state) state))))))
+
+(defmacro trans* (bound form)
+  `(trans*-fn ,bound ,form t 'trans* state))
+
+(defmacro trans*- (bound form)
+  `(trans*-fn ,bound ,form nil 'trans*- state))
 
 (defun get-check-invariant-risk (state)
   (let ((pair (assoc-eq :check-invariant-risk

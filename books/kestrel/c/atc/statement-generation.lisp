@@ -437,9 +437,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-remove-extobj-args ((args pseudo-term-listp)
-                                (prec-objs atc-string-objinfo-alistp))
-  :returns (filtered-args pseudo-term-listp :hyp (pseudo-term-listp args))
+(define atc-remove-extobj-args ((args expr-listp)
+                                (formals symbol-listp)
+                                (extobjs symbol-listp))
+  :returns (filtered-args expr-listp :hyp (expr-listp args))
   :short "Remove from a list of argument terms
           the ones that are external objects."
   :long
@@ -448,15 +449,19 @@
     "While ACL2 functions have explicit arguments for external objects,
      the corresponding C functions do not, because they access them directly.
      Thus, when generating code for C function calls,
-     we do no need to translate to C
-     the ACL2 function arguments that are external objects.
+     we must omit the ACL2 function arguments that are external objects.
      Those arguments are removed using this code."))
-  (b* (((when (endp args)) nil)
-       (arg (car args)))
-    (if (and (symbolp arg)
-             (assoc-equal (symbol-name arg) prec-objs))
-        (atc-remove-extobj-args (cdr args) prec-objs)
-      (cons arg (atc-remove-extobj-args (cdr args) prec-objs)))))
+  (b* (((when (endp args))
+        (b* (((unless (endp formals))
+              (raise "Internal error: extra formals ~x0." formals)))
+          nil))
+       ((unless (consp formals))
+        (raise "Internal error: extra arguments ~x0." args))
+       (arg (car args))
+       (formal (car formals)))
+    (if (member-eq formal extobjs)
+        (atc-remove-extobj-args (cdr args) (cdr formals) extobjs)
+      (cons arg (atc-remove-extobj-args (cdr args) (cdr formals) extobjs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -643,14 +648,15 @@
   (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
-       ((mv okp
-            called-fn
-            arg-terms
-            in-types
-            out-type
-            affect
-            limit
-            called-fn-guard)
+       ((erp okp
+             called-fn
+             arg-terms
+             in-types
+             out-type
+             affect
+             extobjs
+             limit
+             called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when okp)
         (b* (((when (type-case out-type :void))
@@ -665,16 +671,8 @@
                (msg "The call ~x0 affects ~x1, ~
                      but it should affect ~x2 instead."
                     term gin.affect affect)))
-             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
-                                                in-types
-                                                arg-terms))
-              (reterr
-               (msg "The call ~x0 does not satisfy the restrictions ~
-                     on array arguments being identical to the formals."
-                    term)))
              ((erp (pexprs-gout args))
-              (atc-gen-expr-pure-list (atc-remove-extobj-args arg-terms
-                                                              gin.prec-objs)
+              (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
                                        :context gin.context
                                        :inscope gin.inscope
@@ -693,9 +691,12 @@
                      This is indicative of provably dead code, ~
                      given that the code is guard-verified."
                     called-fn in-types arg-terms args.types)))
+             (call-args (atc-remove-extobj-args args.exprs
+                                                (formals+ called-fn wrld)
+                                                extobjs))
              (expr (make-expr-call
                     :fun (make-ident :name (symbol-name called-fn))
-                    :args args.exprs))
+                    :args call-args))
              ((when (eq called-fn 'quote))
               (reterr (raise "Internal error: called function is QUOTE.")))
              (term `(,called-fn ,@args.terms))
@@ -4642,6 +4643,7 @@
                                 (arg-terms pseudo-term-listp)
                                 (arg-types type-listp)
                                 (affect symbol-listp)
+                                (extobjs symbol-listp)
                                 (limit pseudo-termp)
                                 (called-fn-guard symbolp)
                                 (gin stmt-ginp)
@@ -4670,14 +4672,6 @@
                but in the function ~x0 it ends with ~
                a call of ~x1 on arguments ~x2 instead."
               gin.fn called-fn arg-terms)))
-       ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
-                                          arg-types
-                                          arg-terms))
-        (reterr
-         (msg "The call of ~x0 with arguments ~x1 ~
-               does not satisfy the restrictions ~
-               on array and pointer arguments being identical to the formals."
-              called-fn arg-terms)))
        ((unless (equal gin.affect affect))
         (reterr
          (msg "When generating C code for the function ~x0, ~
@@ -4687,8 +4681,7 @@
                being affected here."
               gin.fn called-fn affect gin.affect)))
        ((erp (pexprs-gout args))
-        (atc-gen-expr-pure-list (atc-remove-extobj-args arg-terms
-                                                        gin.prec-objs)
+        (atc-gen-expr-pure-list arg-terms
                                 (make-pexprs-gin
                                  :context gin.context
                                  :inscope gin.inscope
@@ -4707,9 +4700,12 @@
                This is indicative of provably dead code, ~
                given that the code is guard-verified."
               called-fn arg-types arg-terms args.types)))
+       (call-args (atc-remove-extobj-args args.exprs
+                                          (formals+ called-fn wrld)
+                                          extobjs))
        (call-expr
         (make-expr-call :fun (make-ident :name (symbol-name called-fn))
-                        :args args.exprs))
+                        :args call-args))
        ((when (eq called-fn 'quote))
         (reterr (raise "Internal error: called function is QUOTE.")))
        (term `(,called-fn ,@args.terms))
@@ -6259,14 +6255,15 @@
                  a recursive call to the loop function occurs ~
                  not at the end of the computation on some path."
                 gin.fn))))
-       ((mv okp
-            called-fn
-            arg-terms
-            in-types
-            out-type
-            fn-affect
-            limit
-            called-fn-guard)
+       ((erp okp
+             called-fn
+             arg-terms
+             in-types
+             out-type
+             fn-affect
+             extobjs
+             limit
+             called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
@@ -6274,6 +6271,7 @@
                                 arg-terms
                                 in-types
                                 fn-affect
+                                extobjs
                                 limit
                                 called-fn-guard
                                 gin
