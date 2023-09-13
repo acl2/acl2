@@ -151,6 +151,7 @@
     read-byte-when-program-at
     read-byte-of-set-flag
     read-byte-of-write-byte
+    read-byte-of-logext
     ))
 
 (defun read-rules ()
