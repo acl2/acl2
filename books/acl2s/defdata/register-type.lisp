@@ -179,6 +179,11 @@ data last modified: [2014-08-06]
 ; Note that we return 'infinite instead of t if the domain
 ; size is determined to be infinite.
 
+#|
+
+Removed error checking which was causing problems for
+mutually recursive definitions.
+
 (defun defdata-domain-size-fn (type wrld)
   (declare (xargs :guard (and (symbolp type) (plist-worldp wrld))
                   :verify-guards nil))
@@ -186,8 +191,23 @@ data last modified: [2014-08-06]
        (atbl (table-alist 'type-alias-table wrld))
        (ttype (type-of-type type tbl atbl))
        ((unless ttype)
-          (er hard 'domain-size
-              "~%The given type, ~x0, is not a known type or alias type." type))
+        (er hard 'domain-size
+            "~%The given type, ~x0, is not a known type or alias type." type))
+       (type-info (assoc ttype tbl))
+       (domain (cdr (assoc :domain-size (cdr type-info)))))
+    (if (natp domain)
+        domain
+      'infinite)))
+|#
+
+; If we have a mutually recursive definition and can't figure out the
+; size, just assume infinite.
+(defun defdata-domain-size-fn (type wrld)
+  (declare (xargs :guard (and (symbolp type) (plist-worldp wrld))
+                  :verify-guards nil))
+  (b* ((tbl (table-alist 'type-metadata-table wrld))
+       (atbl (table-alist 'type-alias-table wrld))
+       (ttype (type-of-type type tbl atbl))
        (type-info (assoc ttype tbl))
        (domain (cdr (assoc :domain-size (cdr type-info)))))
     (if (natp domain)
