@@ -643,14 +643,14 @@
   (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
-       ((mv okp
-            called-fn
-            arg-terms
-            in-types
-            out-type
-            affect
-            limit
-            called-fn-guard)
+       ((erp okp
+             called-fn
+             arg-terms
+             in-types
+             out-type
+             affect
+             limit
+             called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when okp)
         (b* (((when (type-case out-type :void))
@@ -6259,14 +6259,14 @@
                  a recursive call to the loop function occurs ~
                  not at the end of the computation on some path."
                 gin.fn))))
-       ((mv okp
-            called-fn
-            arg-terms
-            in-types
-            out-type
-            fn-affect
-            limit
-            called-fn-guard)
+       ((erp okp
+             called-fn
+             arg-terms
+             in-types
+             out-type
+             fn-affect
+             limit
+             called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
