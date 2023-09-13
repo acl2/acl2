@@ -149,7 +149,7 @@
                   (mapp (cdr x))))))
   ///
 
-  (defrule setp-when-mapp
+  (defruled setp-when-mapp
     (implies (mapp x)
              (set::setp x))
     :rule-classes (:rewrite :forward-chaining)
