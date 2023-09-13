@@ -18,6 +18,12 @@
 
 (in-package "ACL2")
 
+; Matt K. addition to support acl2-devel inclusion in books/system/fmt.lisp:
+; This could be conditioned on #+acl2-devel but it's redundant otherwise, so
+; I won't bother with that condition:
+(verify-termination observation1-cw
+  (declare (xargs :verify-guards t)))
+
 (defun nonlinearp-default-hint (stable-under-simplificationp hist pspv)
   (cond (stable-under-simplificationp
          (if (not (access rewrite-constant
