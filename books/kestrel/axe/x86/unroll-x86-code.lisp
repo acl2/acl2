@@ -99,6 +99,20 @@
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
 
+;move?
+;; Returns a symbol-list.
+(defund maybe-add-debug-rules (debug-rules monitor)
+  (declare (xargs :guard (and (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (symbol-listp debug-rules))))
+  (if (eq :debug monitor)
+      debug-rules
+    (if (member-eq :debug monitor)
+        ;; replace :debug in the list with all the debug-rules:
+        (union-eq debug-rules (remove-eq :debug monitor))
+      ;; no special treatment:
+      monitor)))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
@@ -326,11 +340,8 @@
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
        (rules (set-difference-eq rules remove-rules))
        (32-bitp (member-eq executable-type *executable-types32*))
-       (rules-to-monitor (if (eq :debug monitor)
-                             (if 32-bitp
-                                 (debug-rules32)
-                               (debug-rules64))
-                           monitor))
+       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Next, we simplify the assumptions.  This allows us to state the
        ;; theorem about a lifted routine concisely, using an assumption
        ;; function that opens to a large conjunction before lifting is

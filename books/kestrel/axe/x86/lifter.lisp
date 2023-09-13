@@ -36,6 +36,8 @@
 
 ;; TODO: add an option to enforce a rewrite step limit in the lifter, for debugging?  May require a change to the rewriter.
 
+;; TODO: Allow the :monitor option to be or include :debug, as we do for other tools.
+
 ;; TODO: Switch to using a simpler rewriter, that doesn't depend on skip-proofs
 
 ;; TODO: Consider updating this to use the new normal forms, at least for 64-bit mode
