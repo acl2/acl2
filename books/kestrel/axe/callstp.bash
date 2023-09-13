@@ -62,9 +62,17 @@ elif [[ $ACL2_STP_VARIETY == "1" ]] ; then
     ${STP} ${COUNTEREXAMPLE_ARGS} --max_num_confl $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
 elif [[ $ACL2_STP_VARIETY == "2" ]] ; then
     # Use dashes in max conflicts option:
+    ${STP} ${COUNTEREXAMPLE_ARGS} --max-num-confl $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
+elif [[ $ACL2_STP_VARIETY == "3" ]] ; then
+    # Use dashes in max conflicts option:
     # For the latest STP, this may be needed (or maybe either dashes or underscores are ok, if the boost library is new enough):
     # echo "CALLING ${STP} (variety 2)"
-    ${STP} ${COUNTEREXAMPLE_ARGS} --max-num-confl $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
+    # For the obscure options here, see:
+    # https://github.com/stp/stp/issues/463
+    # and
+    # https://github.com/stp/stp/commit/d29b19d4b8cf42df49789cf0a3b6c493c823e559
+    # These seemed to be the values of the options in an older STP that worked better.  I haven't explored whether each one matters.
+    ${STP} ${COUNTEREXAMPLE_ARGS} --size-reducing-fixed-point-limit 1000000 --merge-same 1 --bb.conjoin-constant 1 --bb.mult-variant 13 --max-num-confl $MAX_CONFLICTS -r ${MULT_OPTIONS} ${INPUT_FILE} > ${OUTPUT_FILE}
 else
     echo "Unsupported STP variety: ${ACL2_STP_VARIETY}.  Exiting."
     exit 1

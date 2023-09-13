@@ -160,9 +160,11 @@
     read-of-xw-irrel
     read-of-set-flag
     read-in-terms-of-nth-and-pos-eric ; read-when-program-at
-    read-of-logext-48
+    read-of-logext
     read-when-equal-of-read
     read-when-equal-of-read-alt
+    <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
+    <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     ))
 
 (defun write-rules ()
@@ -658,7 +660,7 @@
     x86isa::add-af-spec32$inline-constant-opener
     x86isa::sub-af-spec32$inline-constant-opener
 
-    acl2::bool->bit$inline-base
+    acl2::bool->bit$inline-constant-opener
 ;    byte-ify-base
 ;    x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
 ;    x86isa::byte-listp-base-1
@@ -707,6 +709,20 @@
     ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
     ))
 
+(defun segment-base-and-bounds-rules ()
+  '(segment-base-and-bounds-of-set-rip
+    segment-base-and-bounds-of-set-rsp
+    segment-base-and-bounds-of-set-rbp
+    segment-base-and-bounds-of-set-rax
+    segment-base-and-bounds-of-set-rdx
+    segment-base-and-bounds-of-set-rsi
+    segment-base-and-bounds-of-set-rdi
+    segment-base-and-bounds-of-set-flag
+    segment-base-and-bounds-of-set-undef
+    segment-base-and-bounds-of-write-byte
+    segment-base-and-bounds-of-write
+    ))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 (defun lifter-rules-common ()
   (append (acl2::base-rules)
@@ -730,6 +746,7 @@
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
           '(ACL2::BOOLOR-OF-NON-NIL)
+          (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           ;;(acl2::core-rules-bv) ;acl2::not-equal-max-int-when-<= not defined
           '(
             ;; Reading/writing registers (or parts of registers).  We leave
@@ -954,8 +971,8 @@
             acl2::slice-of-logext
             x86isa::alignment-checking-enabled-p-and-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
-            logand-becomes-bvand-axe-arg1
-            logand-becomes-bvand-axe-arg2
+            logand-becomes-bvand-axe-arg1-axe
+            logand-becomes-bvand-axe-arg2-axe
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
             acl2::fix-when-acl2-numberp
@@ -3166,4 +3183,7 @@
           (get-prefixes-openers)
           ;; todo: flesh out this list:
           '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs)))
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs
+            ;; could consider things like these:
+            ;; READ-OF-WRITE-DISJOINT2
+            )))

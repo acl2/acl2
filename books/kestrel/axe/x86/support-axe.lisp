@@ -11,9 +11,10 @@
 
 (in-package "X")
 
-;; These are axe-specific supporting rules (they use axe-syntaxp or axe-bind-free)
+;; This book contains supproting material that is axe-specific (e.g., rules
+;; that use axe-syntaxp or axe-bind-free).
 
-;; TODO: Factor out non-Axe-specific stuff
+;; TODO: Factor out any non-Axe-specific stuff
 
 ;; TODO: Make sure there are non-axe versions of all of these.
 
@@ -85,7 +86,7 @@
                   (acl2::slice (+ -1 xsize) (- n) x)))
   :hints (("Goal" :use (:instance acl2::ash-negative-becomes-slice (acl2::x x) (acl2::n n) (acl2::xsize xsize)))))
 
-(defthmd logand-becomes-bvand-axe-arg1
+(defthmd logand-becomes-bvand-axe-arg1-axe
   (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
                 (unsigned-byte-p xsize x)
                 (natp y))
@@ -94,7 +95,7 @@
   :hints (("Goal" :use (:instance acl2::LOGAND-BECOMES-BVAND (size xsize) (acl2::y y))
            :in-theory (disable acl2::LOGAND-BECOMES-BVAND))))
 
-(defthmd logand-becomes-bvand-axe-arg2
+(defthmd logand-becomes-bvand-axe-arg2-axe
   (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
                 (unsigned-byte-p xsize x)
                 (natp y))
@@ -112,6 +113,7 @@
                   (acl2::bvor (max xsize ysize) x y)))
   :hints (("Goal" :in-theory (enable acl2::bvor))))
 
+;todo: move
 (defthm not-member-p-canonical-address-listp-when-disjoint-p-alt
   (implies (and (disjoint-p (create-canonical-address-list m addr) ;this hyp is commuted
                             (create-canonical-address-list n prog-addr))
@@ -132,7 +134,7 @@
 
 (acl2::defopeners x86isa::64-bit-mode-two-byte-opcode-modr/m-p
                   :hyps ((syntaxp (quotep x86isa::opcode))
-                         (unsigned-byte-p '8 x86isa::opcode))) ;todo: allo an unquoted 8 here
+                         (unsigned-byte-p '8 x86isa::opcode))) ;todo: allow an unquoted 8 here
 
 ;why did this cause loops?
 (defthm canonical-address-listp-of-cdr
@@ -151,7 +153,10 @@
 (acl2::def-constant-opener nonnegative-integer-quotient)
 (acl2::def-constant-opener evenp)
 
-;; Flags:
+;; Flag-related functions (these seem safe to execute without tha requiring
+;; more rules; for example, we expect jle-condition to always be called on flag
+;; functions with the same arguments (dst and src), so either all the args to
+;; jle-condition get evaluated or none of them do).
 
 (acl2::def-constant-opener x86isa::zf-spec$inline)
 
@@ -190,12 +195,11 @@
 (acl2::def-constant-opener x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
 (acl2::def-constant-opener x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
 
-
-(acl2::defopeners acl2::bool->bit$inline :hyps ((syntaxp (quotep x))))
+(acl2::def-constant-opener acl2::bool->bit$inline)
 
 ;(acl2::defopeners byte-ify :hyps ((syntaxp (and (quotep n) (quotep val)))))
 
-(acl2::defopeners BYTE-LISTP :hyps ((syntaxp (quotep x))))
+(acl2::def-constant-opener byte-listp)
 
 ;;not sure yet whether we should open sub-af-spec32
 (defthm sub-af-spec32-same
@@ -203,20 +207,21 @@
          0)
   :hints (("Goal" :in-theory (enable SUB-AF-SPEC32))))
 
-(acl2::defopeners ACL2::GET-SYMBOL-ENTRY-MACH-O)
+(acl2::defopeners acl2::get-symbol-entry-mach-o)
 
-(acl2::defopeners ACL2::GET-ALL-SECTIONS-FROM-MACH-O-LOAD-COMMANDS)
+(acl2::defopeners acl2::get-all-sections-from-mach-o-load-commands)
 
-(acl2::defopeners ACL2::GET-SECTION-NUMBER-MACH-O-AUX)
+(acl2::defopeners acl2::get-section-number-mach-o-aux)
 
-(acl2::defopeners ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX)
+(acl2::defopeners addresses-of-subsequent-stack-slots-aux)
 
-(acl2::defopeners acl2::GET-PE-SECTION-aux)
+(acl2::defopeners acl2::get-pe-section-aux)
 
-(acl2::defopeners acl2::LOOKUP-PE-SYMBOL)
+(acl2::defopeners acl2::lookup-pe-symbol)
 
-(defthm canonical-address-p-of-0
-   (canonical-address-p$inline '0))
+;; only needed for Axe -- use a constant opener instead?
+(defthmd canonical-address-p-of-0
+   (canonical-address-p$inline 0))
 
 ;; ;todo
 ;; (thm
