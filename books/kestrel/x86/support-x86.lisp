@@ -384,6 +384,13 @@
            (equal (unsigned-byte-p size (xr :mem i x86))
                   (natp size))))
 
+(defthm integerp-of-xr-mem
+  (implies (x86p x86)
+           (integerp (xr :mem acl2::i x86)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :use (:instance x86isa::unsigned-byte-p-of-xr-of-mem (size 8))
+           :in-theory (disable x86isa::unsigned-byte-p-of-xr-of-mem))))
+
 (defthm unsigned-byte-p-of-memi
   (implies (and (<= 8 size)
                 (x86p x86))

@@ -11,7 +11,9 @@
 
 (in-package "X")
 
-(include-book "support-x86") ; drop?
+(include-book "projects/x86isa/machine/segmentation" :dir :system)
+(include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::read-*ip
+(include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
 (include-book "linear-memory")
 (include-book "flags" )
 (include-book "register-readers-and-writers")
@@ -105,14 +107,6 @@
   :hints (("Goal" :in-theory (enable bvplus))))
 
 ;(local (in-theory (disable X86ISA::MEMI-IS-N08P))) ;does forcing
-
-;move
-(defthm integerp-of-xr-mem
-  (implies (x86p x86)
-           (integerp (xr :mem acl2::i x86)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :use (:instance x86isa::unsigned-byte-p-of-xr-of-mem (size 8))
-           :in-theory (disable x86isa::unsigned-byte-p-of-xr-of-mem))))
 
 ;;;
 ;;; seg-regp
@@ -707,7 +701,7 @@
                 (x86p x86) ;drop?
                 )
            (not (mv-nth 0 (ea-to-la *compatibility-mode* eff-addr *cs* 1 x86))))
-  :hints (("Goal" :in-theory (e/d (code-segment-assumptions32-for-code
+  :hints (("Goal" :in-theory (e/d (ea-to-la code-segment-assumptions32-for-code
                                    segment-base-and-bounds) ()))))
 
 ;; ;; Under suitable assumptions, we turn rme08 into a call of read-byte-from-segment, which is a much simpler function
@@ -1755,11 +1749,20 @@
            (equal (mv-nth 1 (x86isa::rme08 *compatibility-mode* eff-addr *ss* r-x x86))
                   (read-byte-from-segment eff-addr *ss* x86)))
   :hints (("Goal"
+           :expand ((rb 1
+                        (+ -4294967296
+                           eff-addr (xr :seg-hidden-base 2 x86))
+                        r-x x86)
+                    (rb-1 1
+                          (mv-nth 1 (ea-to-la 1 eff-addr 2 1 x86))
+                          r-x x86))
            :in-theory (e/d (x86isa::rme08 segment-base-and-bounds rb rb-1 rvm08 n48 read-byte-from-segment unsigned-byte-p
+                                          rml08
                                           bvuminus
                                           bvplus
                                           BVMINUS
                                           acl2::bvchop-of-sum-cases
+                                          ea-to-la
                                           )
                            (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                             ACL2::BVPLUS-RECOLLAPSE)))))
@@ -1954,15 +1957,18 @@
 
 ;; I wonder if this fact would let us drop come checks from the model
 (defthm canonical-address-p-of-mv-nth-1-of-ea-to-la-of-cs
-  (canonical-address-p (mv-nth 1 (ea-to-la *compatibility-mode* eff-addr *cs* nbytes x86))))
+  (canonical-address-p (mv-nth 1 (ea-to-la *compatibility-mode* eff-addr *cs* nbytes x86)))
+  :hints (("Goal" :in-theory (enable ea-to-la))))
 
 ;; I wonder if this fact would let us drop come checks from the model
 (defthm canonical-address-p-of-mv-nth-1-of-ea-to-la-of-ss
-  (canonical-address-p (mv-nth 1 (ea-to-la *compatibility-mode* eff-addr *ss* nbytes x86))))
+  (canonical-address-p (mv-nth 1 (ea-to-la *compatibility-mode* eff-addr *ss* nbytes x86)))
+  :hints (("Goal" :in-theory (enable ea-to-la))))
 
 (defthm fix-of-mv-nth-1-of-ea-to-la
   (equal (fix (mv-nth '1 (ea-to-la$inline proc-mode eff-addr seg-reg nbytes x86)))
-         (mv-nth '1 (ea-to-la$inline proc-mode eff-addr seg-reg nbytes x86))))
+         (mv-nth '1 (ea-to-la$inline proc-mode eff-addr seg-reg nbytes x86)))
+  :hints (("Goal" :in-theory (enable ea-to-la))))
 
 ;; (defthm read-of-ea-to-la-becomes-read-byte-from-segment
 ;;   (implies (and (eff-addrs-okp nbytes eff-addr seg-reg x86)
@@ -1993,7 +1999,7 @@
                 (x86p x86))
            (iff (mv-nth 0 (ea-to-la *compatibility-mode* eff-addr seg-reg nbytes x86))
                 (not (eff-addrs-okp nbytes eff-addr seg-reg x86))))
-  :hints (("Goal" :in-theory (enable segment-max-eff-addr32 segment-base-and-bounds segment-min-eff-addr32))))
+  :hints (("Goal" :in-theory (enable ea-to-la segment-max-eff-addr32 segment-base-and-bounds segment-min-eff-addr32))))
 
 (defthm integerp-of-if
   (equal (integerp (if test tp ep))
@@ -2004,7 +2010,7 @@
   (implies (and (signed-byte-p 33 k) ;gen?
                 )
            (canonical-address-p (+ k (mv-nth 1 (ea-to-la *compatibility-mode* eff-addr *ss* nbytes x86)))))
-  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P CANONICAL-ADDRESS-P))))
+  :hints (("Goal" :in-theory (enable ea-to-la SIGNED-BYTE-P CANONICAL-ADDRESS-P))))
 
 (defthm 32-bit-segment-size-of-set-flag
   (equal (32-bit-segment-size seg-reg (set-flag flg val x86))
@@ -2915,6 +2921,9 @@
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32
                                      rb
+                                     ;rb-1
+                                     ;x86isa::rml-size
+                                     ea-to-la
                                      (:e expt)
                                      canonical-address-p
                                      SIGNED-BYTE-P))))
@@ -3047,7 +3056,8 @@
            :do-not '(generalize eliminate-destructors)
            :induct
            (read-from-segment n eff-addr seg-reg x86)
-           :in-theory (e/d (x86isa::rme-size$inline
+           :in-theory (e/d (ea-to-la
+                            x86isa::rme-size$inline
                             read-byte-from-segment
                             bvplus
                             acl2::bvchop-of-sum-cases
@@ -3094,7 +3104,9 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::rme08 *compatibility-mode* eff-addr seg-reg r-x x86))
                   (read-from-segment 1 eff-addr seg-reg x86)))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme08
+  :hints (("Goal" :in-theory (e/d (ea-to-la
+                                   x86isa::rme08
+                                   rml08
                                    read-byte-from-segment
                                    bvplus
                                    acl2::bvchop-of-sum-cases
@@ -3159,6 +3171,7 @@
                                   (+ EFF-ADDR (xr :seg-hidden-base seg-reg X86))
                                   R-X X86))
            :in-theory (e/d (x86isa::rme16
+                            x86isa::rml16
 ;read-byte
                             read-byte-from-segment
                             bvplus

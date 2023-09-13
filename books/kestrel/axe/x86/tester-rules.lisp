@@ -625,10 +625,9 @@
                   1))
   :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
 
-
-;for axe
-(defthm integerp-of-ctri
-  (integerp (X86ISA::CTRI ACL2::I X86)))
+;; probably only needed for axe
+(defthmd integerp-of-ctri
+  (integerp (x86isa::ctri acl2::i x86)))
 
 (defthm cr0bits->ts-of-bvchop
   (implies (and (< 3 n)

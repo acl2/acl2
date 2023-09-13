@@ -18,7 +18,7 @@
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
-(include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)
+(include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "unroll-x86-code")
 (include-book "tester-rules")
 (include-book "rule-lists")

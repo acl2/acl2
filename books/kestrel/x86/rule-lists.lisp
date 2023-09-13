@@ -660,7 +660,7 @@
     x86isa::add-af-spec32$inline-constant-opener
     x86isa::sub-af-spec32$inline-constant-opener
 
-    acl2::bool->bit$inline-base
+    acl2::bool->bit$inline-constant-opener
 ;    byte-ify-base
 ;    x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
 ;    x86isa::byte-listp-base-1
@@ -956,8 +956,8 @@
             acl2::slice-of-logext
             x86isa::alignment-checking-enabled-p-and-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
-            logand-becomes-bvand-axe-arg1
-            logand-becomes-bvand-axe-arg2
+            logand-becomes-bvand-axe-arg1-axe
+            logand-becomes-bvand-axe-arg2-axe
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
             acl2::fix-when-acl2-numberp
