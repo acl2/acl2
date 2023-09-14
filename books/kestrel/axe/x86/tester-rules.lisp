@@ -368,6 +368,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; this value is whether it overflows
 (defthm mv-nth-0-of-div-spec-8
   (equal (mv-nth 0 (X86ISA::DIV-SPEC-8 dst src))
          (if (bvlt 16
@@ -384,6 +385,7 @@
                                    bvlt)
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
+;; this value is the quotient
 (defthm mv-nth-1-of-div-spec-8
   (equal (mv-nth 1 (X86ISA::DIV-SPEC-8 dst src))
          (if (bvlt 16
@@ -397,6 +399,7 @@
                                    bvlt)
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
+;; this value is the remainder
 (defthm mv-nth-2-of-div-spec-8
   (equal (mv-nth 2 (X86ISA::DIV-SPEC-8 dst src))
          (if (bvlt 16
@@ -412,6 +415,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; this value is whether it overflows
 (defthm mv-nth-0-of-div-spec-16
   (equal (mv-nth 0 (X86ISA::DIV-SPEC-16 dst src))
          (if (bvlt 64
@@ -428,6 +432,7 @@
                                    bvlt)
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
+;; this value is the quotient
 (defthm mv-nth-1-of-div-spec-16
   (equal (mv-nth 1 (X86ISA::DIV-SPEC-16 dst src))
          (if (bvlt 32
@@ -441,6 +446,7 @@
                                    bvlt)
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
+;; this value is the remainder
 (defthm mv-nth-2-of-div-spec-16
   (equal (mv-nth 2 (X86ISA::DIV-SPEC-16 dst src))
          (if (bvlt 32
@@ -456,6 +462,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; this value is whether it overflows
 (defthm mv-nth-0-of-div-spec-32
   (equal (mv-nth 0 (X86ISA::DIV-SPEC-32 dst src))
          (if (bvlt 64
@@ -472,6 +479,7 @@
                                    bvlt)
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
+;; this value is the quotient
 (defthm mv-nth-1-of-div-spec-32
   (equal (mv-nth 1 (X86ISA::DIV-SPEC-32 dst src))
          (if (bvlt 64
@@ -485,6 +493,7 @@
                                    bvlt)
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
+;; this value is the remainder
 (defthm mv-nth-2-of-div-spec-32
   (equal (mv-nth 2 (X86ISA::DIV-SPEC-32 dst src))
          (if (bvlt 64
@@ -498,7 +507,9 @@
                                    bvlt)
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; this value is whether it overflows
 (defthm mv-nth-0-of-div-spec-64
   (equal (mv-nth 0 (X86ISA::DIV-SPEC-64 dst src))
          (if (bvlt 128
@@ -515,6 +526,7 @@
                                    bvlt)
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
+;; this value is the quotient
 (defthm mv-nth-1-of-div-spec-64
   (equal (mv-nth 1 (X86ISA::DIV-SPEC-64 dst src))
          (if (bvlt 128
@@ -528,6 +540,7 @@
                                    bvlt)
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
+;; this value is the remainder
 (defthm mv-nth-2-of-div-spec-64
   (equal (mv-nth 2 (X86ISA::DIV-SPEC-64 dst src))
          (if (bvlt 128
