@@ -94,7 +94,20 @@
             x86isa::sar-spec$inline
             x86isa::sar-spec-32-nice ;x86isa::sar-spec-32
             x86isa::sar-spec-64-nice ;x86isa::sar-spec-32
-            )
+
+            ;; These recharacterize divide in terms of bvops:
+            x86isa::mv-nth-0-of-div-spec-8
+            x86isa::mv-nth-1-of-div-spec-8
+            x86isa::mv-nth-2-of-div-spec-8
+            x86isa::mv-nth-0-of-div-spec-16
+            x86isa::mv-nth-1-of-div-spec-16
+            x86isa::mv-nth-2-of-div-spec-16
+            x86isa::mv-nth-0-of-div-spec-32
+            x86isa::mv-nth-1-of-div-spec-32
+            x86isa::mv-nth-2-of-div-spec-32
+            x86isa::mv-nth-0-of-div-spec-64
+            x86isa::mv-nth-1-of-div-spec-64
+            x86isa::mv-nth-2-of-div-spec-64)
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules2 ()

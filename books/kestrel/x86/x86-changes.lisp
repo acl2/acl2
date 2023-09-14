@@ -1,6 +1,6 @@
 ; Some changes to the open-source x86 model
 ;
-; Copyright (C) 2022 Kestrel Technology, LLC
+; Copyright (C) 2022-2023 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,16 +14,21 @@
 (include-book "projects/x86isa/machine/instructions/sub-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/shifts-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/or-spec" :dir :system)
+(include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvlt" :dir :system)
+(include-book "kestrel/bv/bvdiv" :dir :system)
+(include-book "kestrel/bv/bvmod" :dir :system)
 ;(include-book "kestrel/bv/sbvlt" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
 ;(local (include-book "kestrel/bv/rules" :dir :system))
@@ -2517,3 +2522,193 @@
                                    zf-spec
                                    logext)
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this value is whether it overflows
+(defthm mv-nth-0-of-div-spec-8
+  (equal (mv-nth 0 (X86ISA::DIV-SPEC-8 dst src))
+         (if (acl2::bvlt 16
+                   (+ -1 (expt 2 8))
+                   (acl2::bvdiv 16 DST (ACL2::BVCHOP 8 SRC)))
+             (LIST (CONS 'X86ISA::QUOTIENT
+                         (acl2::bvdiv 16 dst (acl2::bvchop 8 src)))
+                   (CONS 'X86ISA::REMAINDER
+                         (acl2::bvmod 16 dst (acl2::bvchop 8 src))))
+           nil))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-8
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;; this value is the quotient
+(defthm mv-nth-1-of-div-spec-8
+  (equal (mv-nth 1 (X86ISA::DIV-SPEC-8 dst src))
+         (if (acl2::bvlt 16
+                   (+ -1 (expt 2 8))
+                   (acl2::bvdiv 16 DST (ACL2::BVCHOP 8 SRC)))
+             0
+           (acl2::bvdiv 16 dst (acl2::bvchop 8 src))))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-8
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;; this value is the remainder
+(defthm mv-nth-2-of-div-spec-8
+  (equal (mv-nth 2 (X86ISA::DIV-SPEC-8 dst src))
+         (if (acl2::bvlt 16
+                   (+ -1 (expt 2 8))
+                   (acl2::bvdiv 16 DST (ACL2::BVCHOP 8 SRC)))
+             0
+           (acl2::bvmod 16 dst (acl2::bvchop 8 src))))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-8
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this value is whether it overflows
+(defthm mv-nth-0-of-div-spec-16
+  (equal (mv-nth 0 (X86ISA::DIV-SPEC-16 dst src))
+         (if (acl2::bvlt 64
+                   (+ -1 (expt 2 16))
+                   (acl2::bvdiv 32 DST (ACL2::BVCHOP 16 SRC)))
+             (LIST (CONS 'X86ISA::QUOTIENT
+                         (acl2::bvdiv 32 dst (acl2::bvchop 16 src)))
+                   (CONS 'X86ISA::REMAINDER
+                         (acl2::bvmod 32 dst (acl2::bvchop 16 src))))
+           nil))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-16
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;; this value is the quotient
+(defthm mv-nth-1-of-div-spec-16
+  (equal (mv-nth 1 (X86ISA::DIV-SPEC-16 dst src))
+         (if (acl2::bvlt 32
+                   (+ -1 (expt 2 16))
+                   (acl2::bvdiv 32 DST (ACL2::BVCHOP 16 SRC)))
+             0
+           (acl2::bvdiv 32 dst (acl2::bvchop 16 src))))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-16
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;; this value is the remainder
+(defthm mv-nth-2-of-div-spec-16
+  (equal (mv-nth 2 (X86ISA::DIV-SPEC-16 dst src))
+         (if (acl2::bvlt 32
+                   (+ -1 (expt 2 16))
+                   (acl2::bvdiv 32 DST (ACL2::BVCHOP 16 SRC)))
+             0
+           (acl2::bvmod 32 dst (acl2::bvchop 16 src))))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-16
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this value is whether it overflows
+(defthm mv-nth-0-of-div-spec-32
+  (equal (mv-nth 0 (X86ISA::DIV-SPEC-32 dst src))
+         (if (acl2::bvlt 64
+                   (+ -1 (expt 2 32))
+                   (acl2::bvdiv 64 DST (ACL2::BVCHOP 32 SRC)))
+             (LIST (CONS 'X86ISA::QUOTIENT
+                         (acl2::bvdiv 64 dst (acl2::bvchop 32 src)))
+                   (CONS 'X86ISA::REMAINDER
+                         (acl2::bvmod 64 dst (acl2::bvchop 32 src))))
+           nil))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-32
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;; this value is the quotient
+(defthm mv-nth-1-of-div-spec-32
+  (equal (mv-nth 1 (X86ISA::DIV-SPEC-32 dst src))
+         (if (acl2::bvlt 64
+                   (+ -1 (expt 2 32))
+                   (acl2::bvdiv 64 DST (ACL2::BVCHOP 32 SRC)))
+             0
+           (acl2::bvdiv 64 dst (acl2::bvchop 32 src))))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-32
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;; this value is the remainder
+(defthm mv-nth-2-of-div-spec-32
+  (equal (mv-nth 2 (X86ISA::DIV-SPEC-32 dst src))
+         (if (acl2::bvlt 64
+                   (+ -1 (expt 2 32))
+                   (acl2::bvdiv 64 DST (ACL2::BVCHOP 32 SRC)))
+             0
+           (acl2::bvmod 64 dst (acl2::bvchop 32 src))))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-32
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this value is whether it overflows
+(defthm mv-nth-0-of-div-spec-64
+  (equal (mv-nth 0 (X86ISA::DIV-SPEC-64 dst src))
+         (if (acl2::bvlt 128
+                   (+ -1 (expt 2 64))
+                   (acl2::bvdiv 128 DST (ACL2::BVCHOP 64 SRC)))
+             (LIST (CONS 'X86ISA::QUOTIENT
+                         (acl2::bvdiv 128 dst (acl2::bvchop 64 src)))
+                   (CONS 'X86ISA::REMAINDER
+                         (acl2::bvmod 128 dst (acl2::bvchop 64 src))))
+           nil))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-64
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;; this value is the quotient
+(defthm mv-nth-1-of-div-spec-64
+  (equal (mv-nth 1 (X86ISA::DIV-SPEC-64 dst src))
+         (if (acl2::bvlt 128
+                   (+ -1 (expt 2 64))
+                   (acl2::bvdiv 128 DST (ACL2::BVCHOP 64 SRC)))
+             0
+           (acl2::bvdiv 128 dst (acl2::bvchop 64 src))))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-64
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;; this value is the remainder
+(defthm mv-nth-2-of-div-spec-64
+  (equal (mv-nth 2 (X86ISA::DIV-SPEC-64 dst src))
+         (if (acl2::bvlt 128
+                   (+ -1 (expt 2 64))
+                   (acl2::bvdiv 128 DST (ACL2::BVCHOP 64 SRC)))
+             0
+           (acl2::bvmod 128 dst (acl2::bvchop 64 src))))
+  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-64
+                                   acl2::bvdiv
+                                   acl2::bvmod
+                                   acl2::bvlt)
+                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
