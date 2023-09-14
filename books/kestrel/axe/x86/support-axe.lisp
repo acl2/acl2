@@ -197,6 +197,8 @@
 
 (acl2::def-constant-opener acl2::bool->bit$inline)
 
+(acl2::def-constant-opener canonical-address-p$inline)
+
 ;(acl2::defopeners byte-ify :hyps ((syntaxp (and (quotep n) (quotep val)))))
 
 (acl2::def-constant-opener byte-listp)
@@ -218,10 +220,6 @@
 (acl2::defopeners acl2::get-pe-section-aux)
 
 (acl2::defopeners acl2::lookup-pe-symbol)
-
-;; only needed for Axe -- use a constant opener instead?
-(defthmd canonical-address-p-of-0
-   (canonical-address-p$inline 0))
 
 ;; ;todo
 ;; (thm

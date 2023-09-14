@@ -1370,7 +1370,7 @@
      ms X86ISA::ms$A
      fault X86ISA::fault$A
      rgfi X86ISA::RGFI$A ;expose xr
-     canonical-address-p-of-0
+     x86isa::canonical-address-p$inline-constant-opener
      addresses-of-subsequent-stack-slots
      ;; addresses-of-subsequent-stack-slots-aux-base
      ;; addresses-of-subsequent-stack-slots-aux-unroll
