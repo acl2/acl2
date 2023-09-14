@@ -3050,10 +3050,13 @@
 
 ;; Returns (mv erp recs state).
 (defun get-recs-from-ml-model (model
-                               num-recs disallowed-rec-types
+                               num-recs
+                               disallowed-rec-types
                                checkpoint-clauses-top
                                ;; checkpoint-clauses-non-top ; todo: use these too
-                               broken-theorem model-info timeout debug print state)
+                               broken-theorem
+                               model-info ; the URL, etc.
+                               timeout debug print state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
                               (rec-type-listp disallowed-rec-types)
