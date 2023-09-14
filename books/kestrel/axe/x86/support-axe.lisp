@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-;; This book contains supproting material that is axe-specific (e.g., rules
+;; This book contains supproting material that is Axe-specific (e.g., rules
 ;; that use axe-syntaxp or axe-bind-free).
 
 ;; TODO: Factor out any non-Axe-specific stuff
@@ -202,12 +202,6 @@
 ;(acl2::defopeners byte-ify :hyps ((syntaxp (and (quotep n) (quotep val)))))
 
 (acl2::def-constant-opener byte-listp)
-
-;;not sure yet whether we should open sub-af-spec32
-(defthm sub-af-spec32-same
-  (equal (sub-af-spec32 x x)
-         0)
-  :hints (("Goal" :in-theory (enable SUB-AF-SPEC32))))
 
 (acl2::defopeners acl2::get-symbol-entry-mach-o)
 

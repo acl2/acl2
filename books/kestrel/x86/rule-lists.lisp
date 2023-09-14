@@ -831,7 +831,7 @@
 ;            x86isa::xr-set-flag ;this is the -diff rule
 
             ;; Flags:
-            sub-af-spec32-same ; rewrites to 0, so perhaps worth including this rule
+            x86isa::sub-af-spec32-same ; rewrites to 0, so perhaps worth including this rule
 
             ;; todo: organize these:
 
