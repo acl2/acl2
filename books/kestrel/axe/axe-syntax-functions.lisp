@@ -1,7 +1,7 @@
 ; General-purpose syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,6 +25,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
+;; quotep gets converted this this
 (defund-inline axe-quotep (item)
   (declare (xargs :guard (dargp item)))
   (consp item) ;; means that it is a quotep, not a nodenum
@@ -38,29 +39,9 @@
 
 ;;TODO: Change these to never compare nodenums (can cause simplification to loop if things keep getting commuted due to different nodenums?)
 
-;move these?
-
-;; (defun arg1-safe (fn expr)
-;;   (declare (xargs :guard (true-listp expr))) ;think about this
-;;   (if (equal fn (ffn-symb expr))
-;;       (farg1 expr)
-;;     (hard-error 'arg1-safe "Found an unexpected expr: ~x0.  We expected one that started with ~x1" (acons #\0 expr (acons #\1 fn nil)))))
-
-;; (defun arg2-safe (fn expr)
-;;   (declare (xargs :guard (true-listp expr))) ;think about this
-;;   (if (equal fn (ffn-symb expr))
-;;       (farg2 expr)
-;;     (hard-error 'arg2-safe "Found an unexpected expr: ~x0.  We expected one that started with ~x1" (acons #\0 expr (acons #\1 fn nil)))))
-
-;; (defun arg3-safe (fn expr)
-;;   (declare (xargs :guard (true-listp expr))) ;think about this
-;;   (if (equal fn (ffn-symb expr))
-;;       (farg3 expr)
-;;     (hard-error 'arg3-safe "Found an unexpected expr: ~x0.  We expected one that started with ~x1" (acons #\0 expr (acons #\1 fn nil)))))
-
-
 ; Check whether x is 'heavier' than y.  Helps us decide when to reorder terms
 ; (e.g., to put 'light terms first).  x and y are either quoteps or nodenums.
+;; todo: rename heavier-darg?
 (defund heavier-dag-term (x y)
   (declare (xargs :guard (and (dargp x)
                               (dargp y))))
@@ -129,8 +110,6 @@
             nil
           ;;compare the nodenums - yuck?!  i've seen loops where this put in a gross term for a nice term
           (< y x))))))
-
-;(skip- proofs (verify-guards should-reverse-equality))
 
 (defund syntactic-call-of (quoted-fn nodenum-or-quotep dag-array)
   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
