@@ -1067,6 +1067,7 @@
 
 (local (in-theory (disable read-stack-dword-intro)))
 
+;move?
 (defthm read-stack-dword-of-write-to-segment-diff-segments
   (implies (and (segments-separate *ss* seg-reg2 x86)
                 (eff-addrs-okp 4 eff-addr1 *ss* x86)
