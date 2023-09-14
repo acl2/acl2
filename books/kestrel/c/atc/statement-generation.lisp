@@ -3429,6 +3429,7 @@
                                not-zp-of-limit-minus-const
                                compustatep-of-exit-scope
                                compustatep-of-update-object
+                               compustatep-of-update-static-var
                                compustatep-of-if*-when-both-compustatep
                                uchar-array-length-of-uchar-array-write
                                schar-array-length-of-schar-array-write
@@ -4716,10 +4717,7 @@
        (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
        ((when (or (not gin.proofs)
                   (not called-fn-thm)
-                  (consp (cdr affect)) ; <- temporary
-                  (b* ((info (atc-get-var (car affect) gin.inscope)))
-                    (and info
-                         (atc-var-info->externalp info))))) ; <- temporary
+                  (consp (cdr affect)))) ; <- temporary
         (retok (make-stmt-gout
                 :items (list (block-item-stmt (stmt-expr call-expr)))
                 :type (type-void)
@@ -4911,7 +4909,20 @@
              value-array->length-when-ulong-arrayp
              value-array->length-when-slong-arrayp
              value-array->length-when-ullong-arrayp
-             value-array->length-when-sllong-arrayp))))
+             value-array->length-when-sllong-arrayp
+             read-object-of-objdesign-static-to-objdesign-of-var
+             read-object-of-objdesign-static
+             var-autop-of-add-frame
+             var-autop-of-enter-scope
+             var-autop-of-add-var
+             var-autop-of-update-var
+             var-autop-of-update-static-var
+             var-autop-of-update-object
+             write-static-var-to-update-static-var
+             write-static-var-okp-of-add-var
+             write-static-var-okp-of-enter-scope
+             write-static-var-okp-of-add-frame
+             write-static-var-okp-when-valuep-of-read-static-var))))
        ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                  :formula call-formula
                                                  :hints call-hints
@@ -4960,7 +4971,9 @@
                                (:e stmt-expr->get)
                                not-zp-of-limit-variable
                                ,call-thm-name
-                               compustatep-of-update-object))))
+                               compustatep-of-update-var
+                               compustatep-of-update-object
+                               compustatep-of-update-static-var))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -5016,6 +5029,16 @@
           not-flexible-array-member-p-when-slongp
           not-flexible-array-member-p-when-ullongp
           not-flexible-array-member-p-when-sllongp
+          not-flexible-array-member-p-when-uchar-arrayp
+          not-flexible-array-member-p-when-schar-arrayp
+          not-flexible-array-member-p-when-ushort-arrayp
+          not-flexible-array-member-p-when-sshort-arrayp
+          not-flexible-array-member-p-when-uint-arrayp
+          not-flexible-array-member-p-when-sint-arrayp
+          not-flexible-array-member-p-when-ulong-arrayp
+          not-flexible-array-member-p-when-slong-arrayp
+          not-flexible-array-member-p-when-ullong-arrayp
+          not-flexible-array-member-p-when-sllong-arrayp
           not-flexible-array-member-p-when-value-pointer
           value-fix-when-valuep
           valuep-when-ucharp
@@ -5046,7 +5069,17 @@
           ident-fix-when-identp
           identp-of-ident
           equal-of-ident-and-ident
-          (:e str-fix)))
+          (:e str-fix)
+          objdesign-of-var-of-update-static-var-iff
+          read-object-of-objdesign-static
+          read-var-to-read-static-var
+          read-static-var-of-update-static-var
+          var-autop-of-add-frame
+          var-autop-of-enter-scope
+          var-autop-of-add-var
+          var-autop-of-update-var
+          var-autop-of-update-static-var
+          var-autop-of-update-object))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
