@@ -14,6 +14,7 @@
 (include-book "projects/x86isa/machine/modes" :dir :system)
 (include-book "flags")
 (include-book "read-and-write")
+(include-book "support") ;todo: remove (factor out non-32-bit read-over-write stuff like mv-nth-0-of-get-prefixes-of-xw-of-irrel)
 
 ;; TODO: Make sure we have the complete set of these rules
 
@@ -855,7 +856,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 (defthm segment-base-and-bounds-of-set-rip
   (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (set-rip rip x86))
          (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
@@ -914,3 +914,79 @@
   (equal (x86isa::segment-base-and-bounds proc-mode seg-reg (write n base-addr val x86))
          (x86isa::segment-base-and-bounds proc-mode seg-reg x86))
   :hints (("Goal" :in-theory (enable write))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: more like this!
+(defthm mv-nth-0-of-get-prefixes-of-set-rip
+  (equal (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rip rip x86)))
+         (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rip))))
+
+(defthm mv-nth-0-of-get-prefixes-of-set-rax
+  (equal (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rax rax x86)))
+         (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rax))))
+
+(defthm mv-nth-0-of-get-prefixes-of-set-rdx
+  (equal (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rdx rdx x86)))
+         (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rdx))))
+
+(defthm mv-nth-0-of-get-prefixes-of-set-rsi
+  (equal (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rsi rsi x86)))
+         (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rsi))))
+
+(defthm mv-nth-0-of-get-prefixes-of-set-rdi
+  (equal (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rdi rdi x86)))
+         (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rdi))))
+
+(defthm mv-nth-0-of-get-prefixes-of-set-rsp
+  (equal (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rsp rsp x86)))
+         (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rsp))))
+
+(defthm mv-nth-0-of-get-prefixes-of-set-rbp
+  (equal (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rbp rbp x86)))
+         (mv-nth 0 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rbp))))
+
+;;;
+
+;todo: more like this!
+(defthm mv-nth-1-of-get-prefixes-of-set-rip
+  (equal (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rip rip x86)))
+         (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rip))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rax
+  (equal (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rax rax x86)))
+         (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rax))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rdx
+  (equal (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rdx rdx x86)))
+         (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rdx))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rsi
+  (equal (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rsi rsi x86)))
+         (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rsi))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rdi
+  (equal (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rdi rdi x86)))
+         (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rdi))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rsp
+  (equal (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rsp rsp x86)))
+         (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rsp))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rbp
+  (equal (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rbp rbp x86)))
+         (mv-nth 1 (x86isa::get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rbp))))
