@@ -3139,7 +3139,7 @@
                              disallowed-rec-types
                              checkpoint-clauses-top
                              checkpoint-clauses-non-top
-                             theorem-body ; an untranslated-term (todo: translate outside this function?)
+                             translated-theorem-body
                              broken-theorem ; a thm or defthm form
                              timeout
                              debug
@@ -3162,12 +3162,13 @@
     (b* ((entry (first model-info-alist))
          (model (car entry))
          (model-info (cdr entry))
-         (translated-theorem-body (acl2::translate-term theorem-body 'get-recs-from-models (w state))) ; todo: just do once, outside this loop
          (print-timep (acl2::print-level-at-least-tp print))
+         ;; Record the start time (if we will need it):
          ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
          ;; Dispatch to the model:
          ((mv erp recs state)
           (case model
+            ;; TODO: Make the dispatch to heursitics generic, so we don't have to mention them all here:
             (:enable-fns-body
              ;; Make recs that try enabling each function symbol (todo: should we also look at the checkpoints?):
              (if (member-eq :add-enable-hint disallowed-rec-types)
@@ -3232,7 +3233,7 @@
          ;; Remove any recs that are disallowed (todo: drop this now? or print something here?):
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
       (get-recs-from-models (rest model-info-alist)
-                            num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem
+                            num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top translated-theorem-body broken-theorem
                             timeout debug print
                             ;; Associate this model with its recs in the result:
                             (acons model recs acc)
@@ -3383,7 +3384,9 @@
                   :mode :program))
   (b* ((state (acl2::widen-margins state))
        ((mv erp model-rec-alist state)
-        (get-recs-from-models model-info-alist num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body broken-theorem timeout debug print nil state))
+        (get-recs-from-models model-info-alist num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top
+                              (acl2::translate-term theorem-body 'best-rec-for-checkpoints (w state))
+                              broken-theorem timeout debug print nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs model-rec-alist))
@@ -3988,7 +3991,8 @@
   (b* ( ;; Get all the recs to try:
        ((mv erp model-rec-alist state)
         (get-recs-from-models model-info-alist
-                              num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top theorem-body
+                              num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top
+                              (acl2::translate-term theorem-body 'all-successful-actions-for-checkpoints (w state))
                               ;; the presumed broken-theorem:
                               `(defthm fake-theorem-name ; todo: use the real name?
                                  ,theorem-body

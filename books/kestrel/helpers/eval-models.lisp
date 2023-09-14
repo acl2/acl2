@@ -871,7 +871,8 @@
                                     disallowed-rec-types
                                     checkpoint-clauses-top
                                     checkpoint-clauses-non-top
-                                    theorem-body ; todo: put earlier
+                                    (acl2::translate-term theorem-body 'eval-models-and-submit-defthm-event (w state))
+                                    ;; todo: put earlier -- huh?
                                     ;; the presumed broken-theorem:
                                     `(defthm ,theorem-name
                                        ,theorem-body
