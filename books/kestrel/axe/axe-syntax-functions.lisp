@@ -436,10 +436,3 @@
               (or (eq 'myif (car expr))
                   ;(eq 'bvif (car expr))
                   )))))
-
-;just call not-syntactic-call-of?
-(defund not-is-a-myif (arg dag-array)
-  (declare (xargs :guard (or (myquotep arg)
-                             (and (natp arg)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 arg))))))
-  (not (is-a-myif arg dag-array)))

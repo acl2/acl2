@@ -20,7 +20,6 @@
                                      heavier-dag-term
                                      ;; bv-term-syntaxp
                                      is-a-myif
-                                     not-is-a-myif ;drop?
                                      syntactic-booleanp
                                      syntactic-call-of
                                      syntactic-constantp
