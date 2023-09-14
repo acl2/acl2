@@ -227,6 +227,79 @@
     (mv (ceiling (- now start-real-time) 1)
         state)))
 
+
+;; TODO: Print OK if expected, otherwise ERROR
+(defund print-test-summary-aux (result-alist)
+  (declare (xargs :guard (alistp result-alist)))
+  (if (endp result-alist)
+      nil
+    (prog2$
+     (let* ((entry (first result-alist))
+            (name (car entry)) ; a string
+            (val (cdr entry)))
+       (if (not (and (stringp name)
+                     (= 3 (len val))))
+           (er hard? 'print-test-summary-aux "Bad entry in result-alist: ~x0." entry)
+         (let* ((result (first val)) ; either :pass or :fail
+                (expected-result (second val)) ; :pass or :fail or :any
+                (elapsed (third val))
+                (result-string (if (eq :pass result) "pass" "fail"))
+                (numspaces (nfix (- 40 (len (coerce name 'list)))))
+                )
+           (if (equal result expected-result)
+               (cw "Test ~s0:~_1 OK (~s2) ~c3s.~%" name numspaces result-string (cons elapsed 4))
+             (if (eq :any expected-result)
+                 ;; In this case, we don't know whether the test is supposed to pass:
+                 (cw "Test ~s0:~_1 ?? (~s2) ~c3s.~%" name numspaces result-string (cons elapsed 4))
+               (cw "Test ~s0:~_1 ERROR (~s2, but we expected ~s3). ~c4s~%" name numspaces result-string (if (eq :pass expected-result) "pass" "fail") (cons elapsed 4)))))))
+     (print-test-summary-aux (rest result-alist)))))
+
+(defund print-test-summary (result-alist executable-form)
+  (declare (xargs :guard (alistp result-alist)))
+  (progn$ (cw"~%========================================~%")
+          (if (or (symbolp executable-form)
+                  (stringp executable-form))
+              (let ((executable-name (if (stringp executable-form)
+                                         executable-form
+                                       (if (acl2::starts-and-ends-with-starsp executable-form)
+                                           (acl2::strip-stars-from-name executable-form)
+                                         executable-form))))
+                (cw "SUMMARY OF RESULTS for ~x0:~%" executable-name))
+            (cw "SUMMARY OF RESULTS:~%"))
+          (print-test-summary-aux result-alist)
+          (cw"========================================~%")))
+
+(defun any-result-unexpectedp (result-alist)
+  (declare (xargs :guard (alistp result-alist)))
+  (if (endp result-alist)
+      nil
+    (let* ((entry (first result-alist))
+           ;; (name (car entry)) ; a string
+           (val (cdr entry)))
+      (if (not (and ;; (stringp name)
+                (= 3 (len val))))
+          (er hard? 'any-result-unexpectedp "Bad entry in result-alist: ~x0." entry)
+        (let* ((result (first val))           ; either :pass or :fail
+               (expected-result (second val))  ; :pass or :fail or :any
+               (expectedp (or (eq :any expected-result)
+                              (equal result expected-result))))
+          (or (not expectedp)
+              (any-result-unexpectedp (rest result-alist))))))))
+
+;; Filter the STRINGS, keeping only those that start with PREFIX
+(defun acl2::strings-starting-with (prefix strings)
+  (declare (xargs :guard (and (string-listp strings)
+                              (stringp prefix))))
+  (if (endp strings)
+      nil
+    (let ((string (first strings)))
+      (if (acl2::string-starts-withp string prefix)
+          (cons string
+                (acl2::strings-starting-with prefix (rest strings)))
+        (acl2::strings-starting-with prefix (rest strings))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns an (mv erp passedp time state).
 ;; TODO: Add redundancy checking
 (defun test-function-core (function-name-string
@@ -482,6 +555,8 @@
                     elapsed
                     state))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp event state).
 ;;If the test passes, EVENT is just (value-triple :invisible).  throws an error if the test failed.
 (defun test-function-fn (function-name-string
@@ -662,88 +737,6 @@
                              (acons function-name (list result expected-result elapsed) result-alist)
                              state))))
 
-;; (defun shorten-string (str numchars)
-;;   (declare (xargs :guard (and (stringp str)
-;;                               (natp numchars))
-;;                   :guard-debug t
-;;                   ))
-;;   (let ((chars (coerce str 'list)))
-;;     (coerce (take (min numchars (len chars)) chars) 'string)))
-
-;; (defun shorten-symbol (sym numchars)
-;;   (declare (xargs :guard (and (symbolp sym)
-;;                               (natp numchars))))
-;;   (intern-in-package-of-symbol (shorten-string (symbol-name sym) numchars) sym))
-
-;; TODO: Print OK if expected, otherwise ERROR
-(defund print-test-summary-aux (result-alist)
-  (declare (xargs :guard (alistp result-alist)))
-  (if (endp result-alist)
-      nil
-    (prog2$
-     (let* ((entry (first result-alist))
-            (name (car entry)) ; a string
-            (val (cdr entry)))
-       (if (not (and (stringp name)
-                     (= 3 (len val))))
-           (er hard? 'print-test-summary-aux "Bad entry in result-alist: ~x0." entry)
-         (let* ((result (first val)) ; either :pass or :fail
-                (expected-result (second val)) ; :pass or :fail or :any
-                (elapsed (third val))
-                (result-string (if (eq :pass result) "pass" "fail"))
-                (numspaces (nfix (- 40 (len (coerce name 'list)))))
-                )
-           (if (equal result expected-result)
-               (cw "Test ~s0:~_1 OK (~s2) ~c3s.~%" name numspaces result-string (cons elapsed 4))
-             (if (eq :any expected-result)
-                 ;; In this case, we don't know whether the test is supposed to pass:
-                 (cw "Test ~s0:~_1 ?? (~s2) ~c3s.~%" name numspaces result-string (cons elapsed 4))
-               (cw "Test ~s0:~_1 ERROR (~s2, but we expected ~s3). ~c4s~%" name numspaces result-string (if (eq :pass expected-result) "pass" "fail") (cons elapsed 4)))))))
-     (print-test-summary-aux (rest result-alist)))))
-
-(defund print-test-summary (result-alist executable-form)
-  (declare (xargs :guard (alistp result-alist)))
-  (progn$ (cw"~%========================================~%")
-          (if (or (symbolp executable-form)
-                  (stringp executable-form))
-              (let ((executable-name (if (stringp executable-form)
-                                         executable-form
-                                       (if (acl2::starts-and-ends-with-starsp executable-form)
-                                           (acl2::strip-stars-from-name executable-form)
-                                         executable-form))))
-                (cw "SUMMARY OF RESULTS for ~x0:~%" executable-name))
-            (cw "SUMMARY OF RESULTS:~%"))
-          (print-test-summary-aux result-alist)
-          (cw"========================================~%")))
-
-(defun any-result-unexpectedp (result-alist)
-  (declare (xargs :guard (alistp result-alist)))
-  (if (endp result-alist)
-      nil
-    (let* ((entry (first result-alist))
-           ;; (name (car entry)) ; a string
-           (val (cdr entry)))
-      (if (not (and ;; (stringp name)
-                (= 3 (len val))))
-          (er hard? 'any-result-unexpectedp "Bad entry in result-alist: ~x0." entry)
-        (let* ((result (first val))           ; either :pass or :fail
-               (expected-result (second val))  ; :pass or :fail or :any
-               (expectedp (or (eq :any expected-result)
-                              (equal result expected-result))))
-          (or (not expectedp)
-              (any-result-unexpectedp (rest result-alist))))))))
-
-;; Filter the STRINGS, keeping only those that start with PREFIX
-(defun acl2::strings-starting-with (prefix strings)
-  (declare (xargs :guard (and (string-listp strings)
-                              (stringp prefix))))
-  (if (endp strings)
-      nil
-    (let ((string (first strings)))
-      (if (acl2::string-starts-withp string prefix)
-          (cons string
-                (acl2::strings-starting-with prefix (rest strings)))
-        (acl2::strings-starting-with prefix (rest strings))))))
 
 ;; Returns (mv erp event state) an event (a progn containing an event for each test).
 ;; TODO: Return an error if any test is not as expected, but not until the end.
@@ -905,6 +898,8 @@
                                               ',expected-failures
                                               nil ; no need for excludes (just don't list the functions you don't want to test)
                                               state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tests all the functions in the file
 (defmacro test-file (executable ; a string or a parsed executable

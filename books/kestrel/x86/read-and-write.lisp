@@ -1544,9 +1544,11 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-read-byte-simple)
            :in-theory (disable unsigned-byte-p-of-read-byte-simple))))
 
-(defthm read-byte-of-logext-48
-  (equal (read-byte (logext 48 addr) x86)
-         (read-byte addr x86))
+(defthm read-byte-of-logext
+  (implies (and (<= 48 size)
+                (integerp size))
+           (equal (read-byte (logext size addr) x86)
+                  (read-byte addr x86)))
   :hints (("Goal" :in-theory (enable read-byte))))
 
 (defthmd equal-of-read-and-read-helper
