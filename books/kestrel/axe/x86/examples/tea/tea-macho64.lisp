@@ -45,7 +45,6 @@
 ;; Produces the DAG *tea*.
 (def-unrolled tea
   "tea.macho64"
-  :print nil ; todo: this is not respected
   :stack-slots 8
   :target "_encrypt"
   ;; todo: have the tool translate the items in the tuple:
