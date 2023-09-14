@@ -257,19 +257,6 @@
             XR-OF-IF ;restrict?
             ACL2::SLICE-OUT-OF-ORDER
             X86ISA::DIV-SPEC$inline ; just a dispatch on the size
-            ;; todo: more like this?:
-            mv-nth-0-of-div-spec-8
-            mv-nth-1-of-div-spec-8
-            mv-nth-2-of-div-spec-8
-            mv-nth-0-of-div-spec-16
-            mv-nth-1-of-div-spec-16
-            mv-nth-2-of-div-spec-16
-            mv-nth-0-of-div-spec-32
-            mv-nth-1-of-div-spec-32
-            mv-nth-2-of-div-spec-32
-            mv-nth-0-of-div-spec-64
-            mv-nth-1-of-div-spec-64
-            mv-nth-2-of-div-spec-64
             ACL2::BVCAT-OF-0-arg2
             bvmod-tighten-64-32
             bvdiv-tighten-64-32
