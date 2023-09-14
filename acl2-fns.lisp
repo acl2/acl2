@@ -1300,8 +1300,14 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defvar *inside-sharp-u-read* nil)
 
+(defvar *old-sharp-dot-read*
+  (get-dispatch-macro-character #\# #\.))
+
 (defun sharp-dot-read (stream char n)
-  (declare (ignore char n))
+  (when (not (and (boundp 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
+                  (symbol-value 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)))
+    (return-from sharp-dot-read
+                 (funcall *old-sharp-dot-read* stream char n)))
   (let ((whitespace-chars '(#\Backspace #\Tab #\Newline #\Linefeed #\Page
                             #\Return #\Space)))
     (when (member (peek-char nil stream nil nil t)

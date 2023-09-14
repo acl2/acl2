@@ -295,7 +295,7 @@
 (include-book "../brr-near-missp")
 
 #+acl2-devel
-(include-book "../eviscerate-top")
+(include-book "../error1")
 
 #+acl2-devel
 (verify-termination apply$-prim) ; and guards

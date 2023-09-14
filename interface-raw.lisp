@@ -969,7 +969,7 @@
            (>= x 0)
            (< x 256))
       (code-char x)
-    (gv code-char (x) (code-char 0))))
+    (gv code-char (x) *null-char*)))
 
 (defun-*1* complex (x y)
   (complex (the rational (if (rationalp x) x (gv complex (x y) 0)))
@@ -7465,7 +7465,8 @@
          ((defun defund defn defproxy defun-nx defun-one-output defstub
             defmacro defmacro-untouchable defabbrev
             defun@par defmacro-last defun-overrides
-            defun-with-guard-check defun-sk defdeprecate)
+            defun-with-guard-check defun-sk defdeprecate
+            defun-inline defund-inline defun-notinline defund-notinline)
           (our-update-ht (cadr form) form ht when-pass-2-p))
          (save-def
           (note-fns-in-form (cadr form) ht when-pass-2-p))
@@ -8223,15 +8224,15 @@
   (cond
    ((null trips)
     (cond ((null acc) nil)
-          (t (er hard 'check-none-ideal
-                 "The following are :ideal mode functions that are not ~
-                  non-executable.  We rely in oneify-cltl-code on the absence ~
-                  of such functions in the boot-strap world (see the comment ~
-                  on check-none-ideal there); moreover, we want system ~
-                  functions to execute efficiently, which might not be the ~
-                  case for an :ideal mode function.  These functions should ~
-                  have their guards verified: ~&0."
-                 (remove-duplicates-eq acc)))))
+          (t (error
+              "The following are :ideal mode functions that are not ~%~
+               non-executable.  We rely in oneify-cltl-code on the absence ~%~
+               of such functions in the boot-strap world (see the comment ~%~
+               on check-none-ideal there); moreover, we want system ~%~
+               functions to execute efficiently, which might not be the ~%~
+               case for an :ideal mode function.  Functions in the ~%~
+               following list should have their guards verified: ~s."
+              (remove-duplicates-eq acc)))))
    (t
     (let* ((trip (car trips))
            (fn (and (eq (car trip) 'event-landmark)

@@ -152,6 +152,13 @@
            (c::assign (c::sub-uint-uint |global_0| (c::uint-dec-const 1)))))
       |global_0|)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |k_caller| (|global_0|)
+  (declare (xargs :guard (object-|global_0|-p |global_0|)))
+  (let ((|global_0| (|k| |global_0|)))
+    |global_0|))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |arr|
@@ -168,5 +175,6 @@
         |global_0|
         |j|
         |k|
+        |k_caller|
         :file-name "ext-objs"
         :header t)

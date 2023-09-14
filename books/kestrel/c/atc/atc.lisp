@@ -223,7 +223,8 @@
   :short "Event expansion of @(tsee atc)."
   (b* (((mv erp event state)
         (atc-process-inputs-and-gen-everything args call state))
-       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+       ((when erp)
+        (er-soft+ ctx t '(_) "~@0" erp)))
     (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
