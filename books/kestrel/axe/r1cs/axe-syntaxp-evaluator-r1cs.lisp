@@ -21,7 +21,6 @@
                                     var-less-than-unquoted-keyp
                                     var-not-less-than-unquoted-keyp
                                     ;; same stuff as in the "basic" version:
-                                    not-quotep ;drop?
                                     heavier-dag-term
                                     ;; bv-term-syntaxp
                                     is-a-myif

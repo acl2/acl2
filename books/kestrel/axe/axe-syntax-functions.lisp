@@ -31,12 +31,6 @@
   (consp item) ;; means that it is a quotep, not a nodenum
   )
 
-;; might be better to check not consp, if we know the thing is a dag-item
-;todo: deprecate now that things can be negated
-(defun not-quotep (item)
-  (declare (xargs :guard (dargp item)))
-  (not (quotep item)))
-
 ;;TODO: Change these to never compare nodenums (can cause simplification to loop if things keep getting commuted due to different nodenums?)
 
 ; Check whether x is 'heavier' than y.  Helps us decide when to reorder terms
