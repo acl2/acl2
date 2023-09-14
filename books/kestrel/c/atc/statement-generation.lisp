@@ -3013,7 +3013,7 @@
        ((unless (equal int.type type))
         (reterr
          (msg "The term ~x0 of type ~x1 does not have ~
-               the expected type ~x1. ~
+               the expected type ~x2. ~
                This is indicative of ~
                unreachable code under the guards, ~
                given that the code is guard-verified."
@@ -3159,9 +3159,28 @@
           object-disjointp-commutative
           read-var-of-add-var
           remove-flexible-array-member-when-absent
+          not-flexible-array-member-p-when-ucharp
+          not-flexible-array-member-p-when-scharp
+          not-flexible-array-member-p-when-ushortp
+          not-flexible-array-member-p-when-sshortp
+          not-flexible-array-member-p-when-uintp
+          not-flexible-array-member-p-when-sintp
+          not-flexible-array-member-p-when-ulongp
+          not-flexible-array-member-p-when-slongp
+          not-flexible-array-member-p-when-ullongp
+          not-flexible-array-member-p-when-sllongp
           not-flexible-array-member-p-when-value-pointer
           value-fix-when-valuep
-          ,valuep-when-type-pred
+          valuep-when-ucharp
+          valuep-when-scharp
+          valuep-when-ushortp
+          valuep-when-sshortp
+          valuep-when-uintp
+          valuep-when-sintp
+          valuep-when-ulongp
+          valuep-when-slongp
+          valuep-when-ullongp
+          valuep-when-sllongp
           ,type-pred-of-type-write
           ,not-flexible-array-member-p-when-type-pred
           ident-fix-when-identp
@@ -3293,7 +3312,9 @@
                                ulong-array-length-of-ulong-array-write
                                slong-array-length-of-slong-array-write
                                ullong-array-length-of-ullong-array-write
-                               sllong-array-length-of-sllong-array-write))))
+                               sllong-array-length-of-sllong-array-write
+                               mv-nth-of-cons
+                               (:e zp)))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -6188,8 +6209,7 @@
               (reterr
                (msg "A loop body must end with ~
                      a recursive call on every path, ~
-                     but in the function ~x0 ~
-                     it ends with ~x1 instead."
+                     but in the function ~x0 it ends with ~x1 instead."
                     gin.fn term))))
           (cond
            ((equal terms gin.affect)
