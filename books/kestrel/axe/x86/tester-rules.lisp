@@ -23,10 +23,11 @@
 (include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/axe/rules1" :dir :system)
 (include-book "kestrel/axe/axe-rules-mixed" :dir :system)
-(include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (include-book "kestrel/x86/read-and-write" :dir :system)
 (include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -40,7 +41,7 @@
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 ;(local (include-book "kestrel/alists-light/alistp" :dir :system))
 
-(acl2::def-constant-opener acl2::bool-fix$inline)
+(acl2::def-constant-opener acl2::bool-fix$inline) ; or build into axe?
 
 (defthm /-bound-when-non-negative-and-integer
   (implies (and (natp i)
@@ -624,10 +625,9 @@
                   1))
   :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
 
-
-;for axe
-(defthm integerp-of-ctri
-  (integerp (X86ISA::CTRI ACL2::I X86)))
+;; probably only needed for axe
+(defthmd integerp-of-ctri
+  (integerp (x86isa::ctri acl2::i x86)))
 
 (defthm cr0bits->ts-of-bvchop
   (implies (and (< 3 n)
@@ -781,9 +781,7 @@
   (equal (ALIGNMENT-CHECKING-ENABLED-P (if test x86 x86_2))
          (if test (ALIGNMENT-CHECKING-ENABLED-P x86) (ALIGNMENT-CHECKING-ENABLED-P x86_2))))
 
-(defthm read-of-if
-  (equal (read n addr (if test x86 x86_2))
-         (if test (read n addr x86) (read n addr x86_2))))
+
 
 (defthm sse-daz-of-nil
   (equal (X86ISA::SSE-DAZ kind exp frac nil)
@@ -1287,9 +1285,6 @@
            (canonical-address-p (+ k (bvmult 64 4 index))))
   :hints (("Goal" :in-theory (enable bvmult canonical-address-p signed-byte-p))))
 
-
-
-
 (defthm BV-ARRAY-READ-of-*-arg3
   (implies (and (syntaxp (quotep len))
                 (natp len)
@@ -1499,35 +1494,11 @@
 ;;                                    (val3 val4)))
 ;;            :in-theory (disable write-of-write-of-write-same write))))
 
-(defthm read-byte-of-write-disjoint
-  (implies (and (or (<= (+ n2 addr2) addr1)
-                    (<= (+ 1 addr1) addr2))
-                (canonical-address-p addr1)
-                (canonical-address-p addr2)
-                (implies (posp n2)
-                         (canonical-address-p (+ -1 n2 addr2)))
-                (natp n2))
-           (equal (read-byte addr1 (write n2 addr2 val x86))
-                  (read-byte addr1 x86)))
-  :hints (("Goal" :use (:instance read-of-write-disjoint
-                                  (n1 1))
-           :in-theory (e/d (read) (read-of-write-disjoint write)))))
-
 (defthm bvminus-of-+-of-1-same
   (implies (integerp x)
            (equal (bvminus size x (+ 1 x))
                   (bvchop size -1)))
   :hints (("Goal" :in-theory (enable bvminus))))
-
-;; todo: read should go to read-byte?
-;; todo: gen
-(defthm read-of-write-1-4
-  (implies (and (canonical-address-p addr)
-                (canonical-address-p (+ 3 addr)))
-           (equal (read 1 addr (write 4 addr val x86))
-                  (bvchop 8 val)))
-  :hints (("Goal" :expand (write 4 addr val x86)
-           :in-theory (enable read write))))
 
 ;; (thm
 ;;  (implies (and (syntaxp (and (quotep offset1)
@@ -1651,17 +1622,8 @@
 ;;                            distributivity
 ;;                            )))))
 
-;; todo: gen the 1?
-(defthm read-of-write-irrel-1
-  (implies (and (not (bvlt 48 (bvminus 48 addr1 addr2) n))
-                (integerp addr1)
-                (integerp addr2)
-                (unsigned-byte-p 48 n))
-           (equal (read 1 addr1 (write n addr2 val x86))
-                  (read 1 addr1 x86)))
-  :hints (("Goal" :induct (write n addr2 val x86)
-           :in-theory (enable read write bvminus bvlt acl2::bvchop-of-sum-cases))))
 
+;move
 ;; todo: gen the 1?
 (defthm read-of-write-included-1
   (implies (and (bvlt 48 (bvminus 48 addr1 addr2) n)
@@ -1874,15 +1836,6 @@
                   (bool-to-bit bool))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Splits into individual reads, which then get resolved
-;; TODO: Instead, resolve a read of 2 bytes when we have an appropriate program-at claim
-(defthm read-of-2
-  (equal (read '2 addr x86)
-         (bvcat 8 (read 1 (+ 1 addr) x86)
-                8 (read 1 addr x86)))
-  :hints (("Goal" :in-theory (enable read))))
-
 
 (defthm equal-of-bvif-safe2 ; todo: replace the other
   (implies (syntaxp (and (quotep x)

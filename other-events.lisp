@@ -14488,23 +14488,28 @@
                                      ch state)))
              (t (princ$ ";;; Note: There are no declaim forms to print." ch state)))
 
+; The following would cause a guard violation if using fms with channel ch,
+; since the file-type of the channel ch is :object, not :character.  This issue
+; was ignored (perhaps not noticed) until work undertaken in July and August,
+; 2023, that upgraded the symbol-class of fms! to be :common-lisp-compliant.
+; With that change, books/system/check-system-guards.lisp failed to certify
+; because of that guard violation.  However, there was already a princ$ call
+; further below under #-acl2-loop-only, so following that precedent, we use
+; format here conditioned by #-acl2-loop-only.  Some day we may install a more
+; principle change.
+
+       #-acl2-loop-only
+       (progn (format
+               (get-output-stream-from-channel ch)
+               "~%;;; Printing ~s portcullis command~a followed by ~
+                book contents,~%;;; with make-event expansions."
+               (length portcullis-cmds)
+               (if (cdr portcullis-cmds) "s" ""))
+              state)
+
 ; We print a single progn for all top-level events in order to get maximum
 ; sharing with compact printing.
 
-       (mv-let
-        (erp val state)
-        (state-global-let*
-         ((fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
-          (fmt-soft-right-margin 10000 set-fmt-soft-right-margin))
-         (pprogn
-          (fms ";;; Printing ~x0 portcullis command~#1~[~/s~] followed by ~
-                book contents,~%;;; with make-event expansions."
-               (list (cons #\0 (length portcullis-cmds))
-                     (cons #\1 portcullis-cmds))
-               ch state nil)
-          (value nil)))
-        (declare (ignore erp val))
-        state)
        (print-object$ (cons 'progn
                             (append portcullis-cmds
                                     (subst-by-position expansion-alist
@@ -14514,7 +14519,8 @@
        (newline ch state)
        #-acl2-loop-only
        (progn (when new-fns-exec
-                (princ$ ";;; *1* function definitions to compile:" ch state)
+                (princ ";;; *1* function definitions to compile:"
+                       (get-output-stream-from-channel ch))
 
 ; No newline is needed here, as compile-uncompiled-*1*-defuns uses
 ; print-object$, which starts by printing a newline.
@@ -31867,107 +31873,6 @@
                   (ext-anc-attachments-valid-p-1 (siblings f wrld)
                                                  alist
                                                  wrld))))))))
-
-; Start definitions related to defun-inline.
-
-; (defconst *inline-suffix* "$INLINE") ; moved above ec-call1-raw
-(defconst *inline-suffix-len-minus-1* (1- (length *inline-suffix*)))
-(defconst *notinline-suffix* "$NOTINLINE")
-(defconst *notinline-suffix-len-minus-1* (1- (length *notinline-suffix*)))
-(defconst *non-stobj-var-root* (coerce (symbol-name 'non-stobj-var) 'list))
-
-(defun defun-inline-form (name formals lst defun-type suffix)
-
-; Defun-type is DEFUN or DEFUND; suffix is *inline-suffix* or
-; *notinline-suffix*.
-
-  (declare (xargs :mode :program
-                  :guard (and (symbolp name)
-                              (symbol-listp formals)
-                              lst
-                              (<= (number-of-strings (butlast lst 1))
-                                  1)
-                              (or (eq defun-type 'defun)
-                                  (eq defun-type 'defund))
-                              (or (equal suffix *inline-suffix*)
-                                  (equal suffix *notinline-suffix*)))))
-  (let* ((name$inline (add-suffix name suffix))
-         (dcls-and-strings (butlast lst 1))
-         (strings (get-string dcls-and-strings))
-         (dcls (remove-strings dcls-and-strings))
-         (body (car (last lst)))
-         (macro-formals formals))
-    `(progn (defmacro ,name ,macro-formals
-              ,@strings
-              (list ',name$inline ,@macro-formals))
-            (add-macro-fn ,name ,name$inline)
-            (,defun-type ,name$inline ,formals ,@dcls ,body))))
-
-(defmacro defun-inline (name formals &rest lst)
-
-; Here is an explanation for why we insist on specific suffices for inlined and
-; notinlined functions, following up on remark (2) in :doc defun-inline.
-
-; We insist on a specific suffix for inlined functions, *inline-suffix*,
-; because Common Lisp provides no way to undo (declaim (inline foo)).  To see
-; why such undoing is relevant, suppose that (defun-inline foo (x) ...) simply
-; expanded to:
-
-;   (progn (declaim (inline foo))
-;          (defun foo ...))
-
-; Now consider this example:
-
-;   (encapsulate
-;     ()
-;     (local (defun-inline foo (x) x))
-;     ...)
-;
-;   (defun foo (x) (cons x x))
-
-; When that encapsulate runs, the form (declaim (inline foo)) would be
-; generated.  Since there is no way to undo that declaim before starting the
-; second pass of the encapsulate, the global (final) definition of foo would
-; also be an inline definition, perhaps contrary to intent.  A similar problem
-; occurs if (defun-inline foo ...) is in a locally included book.
-
-; (One might ask: why not undo the (declaim (inline foo)) with (declaim
-; (notinline foo))?  That also seems unacceptable, because perhaps it would be
-; advantageous for the Lisp compiler to inline some definitions of foo and not
-; others.  We would really like something like (declaim
-; (back-to-no-claims-about-inline foo)), but that's not available.)
-
-; By insisting on a syntactic naming convention for inlined functions --
-; namely, their names end in *inline-suffix* (i.e., in "$INLINE") -- we
-; avoid this undoing problem.  That is: we don't mind that we can't undo
-; the declaim, because every function of that name will be inlined.
-
-; Implementor hint for "(5) Obscure Remark" in :DOC defun-inline: Search for
-; ";;; Declaim forms:" in write-expansion-file, and notice the printing just
-; below it of a readtime conditional for the host Lisp, so that declaim forms
-; are restricted to that Lisp.  This mechanism was probably put into place so
-; that declaiming for GCL didn't result in declaiming for Allegro CL, or
-; something along those lines.
-
-  (defun-inline-form name formals lst 'defun *inline-suffix*))
-
-(defmacro defund-inline (name formals &rest lst)
-
-; Warning: Keep this in sync with defun-inline.
-
-  (defun-inline-form name formals lst 'defund *inline-suffix*))
-
-(defmacro defun-notinline (name formals &rest lst)
-
-; Warning: Keep this in sync with defund-notinline.
-
-  (defun-inline-form name formals lst 'defun *notinline-suffix*))
-
-(defmacro defund-notinline (name formals &rest lst)
-
-; Warning: Keep this in sync with defun-inline.
-
-  (defun-inline-form name formals lst 'defund *notinline-suffix*))
 
 (defun regenerate-tau-database-fn0 (user-auto-modep auto-modep ens trips
                                                      ctx wrld state)

@@ -18,23 +18,13 @@
 ;(include-book "projects/x86isa/tools/execution/top" :dir :system) ;todo don't even use init-x86-state?
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
-;(include-book "kestrel/x86/parsers/mach-o-tools" :dir :system)
-(include-book "kestrel/bv/rules10" :dir :system)
-;(include-book "bitops")
-;(include-book "kestrel/x86/linear-memory" :dir :system)
-;(include-book "kestrel/utilities/defconst-computed" :dir :system)
+;(local (include-book "kestrel/bv/rules10" :dir :system))
 (include-book "kestrel/axe/rules2" :dir :system) ;drop?
-;(include-book "kestrel/axe/bv-rules-axe" :dir :system)
-;(include-book "kestrel/axe/rules1" :dir :system)
-;(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
-;(include-book "run-until-return")
 (include-book "kestrel/bv/rules3" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/axe/util2" :dir :system) ;for make-cons-nest
-;(include-book "support0")
-(include-book "support32") ; drop?
-;(include-book "assumptions")
-;(include-book "read-and-write")
+(include-book "support32") ; drop? needed to prove rb-in-terms-of-nth-and-pos-eric-gen -- why?
+(include-book "support-x86") ; why?
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
