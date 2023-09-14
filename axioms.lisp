@@ -2471,9 +2471,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
  (declare (xargs :mode :logic :guard t))
  (not (consp x)))
 
-; We use this in the *1* code for coerce.
+(defconst *null-char*
+  (code-char 0))
 
 (defun make-character-list (x)
+
+; We use this in the *1* code for coerce.
+
   (declare (xargs :guard t))
   (cond ((atom x) nil)
         ((characterp (car x))
@@ -2483,7 +2487,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; There's nothing special about (code-char 0), but at least it will look
 ; strange when people come across it.
 
-         (cons (code-char 0) (make-character-list (cdr x))))))
+         (cons *null-char* (make-character-list (cdr x))))))
 
 (defun eqlable-alistp (x)
   (declare (xargs :guard t))
@@ -5097,7 +5101,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (#\z . #\Z)))))
     (cond (pair (cdr pair))
           ((characterp x) x)
-          (t (code-char 0)))))
+          (t *null-char*))))
 
 #+acl2-loop-only
 (defun char-downcase (x)
@@ -5137,7 +5141,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (#\Z . #\z)))))
       (cond (pair (cdr pair))
             ((characterp x) x)
-            (t (code-char 0)))))
+            (t *null-char*))))
 
 (defthm lower-case-p-char-downcase
   (implies (upper-case-p x)
@@ -19505,7 +19509,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (<= (* 4 (1+ iprint-hard-bound))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
                  *maximum-positive-32-bit-integer*)
-             (iprint-falp iprint-fal))
+             (iprint-falp iprint-fal)
+
+; The following condition is probably not logically necessary.  However, it
+; does actually hold, and it makes some proofs easier since compress1 is the
+; identity for such arrays.
+
+             (equal (array-order (header 'iprint-ar iprint-ar))
+                    nil))
         (pprogn (f-put-global 'iprint-ar iprint-ar state)
                 (f-put-global 'iprint-hard-bound iprint-hard-bound state)
                 (f-put-global 'iprint-soft-bound iprint-soft-bound state)
@@ -21663,8 +21674,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-site-evisc-tuple
     set-evisc-tuple-lst
     set-evisc-tuple-fn1
-    set-iprint-ar
-    init-iprint-fal update-iprint-fal-rec update-iprint-fal init-iprint-fal+
+    set-iprint-ar init-iprint-fal init-iprint-fal+
     set-brr-evisc-tuple1
     semi-initialize-brr-status
 
@@ -24310,7 +24320,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (>= x 0)
                   (< x 256))
              (code-char x)
-           (code-char 0)))
+           *null-char*))
   :rule-classes nil)
 
 (defthm default-code-char
@@ -24319,7 +24329,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           (>= x 0)
                           (< x 256))))
            (equal (code-char x)
-                  (code-char 0)))
+                  *null-char*))
   :hints (("Goal" :use completion-of-code-char)))
 
 ;; Historical Comment from Ruben Gamboa:
@@ -29305,3 +29315,270 @@ Lisp definition."
            (equal (acl2-count x)
                   (+ 1 (acl2-count (car x)) (acl2-count (cdr x)))))
   :rule-classes :linear)
+
+; -----------------------------------------------------------------
+
+; (defconst *inline-suffix* "$INLINE") ; moved above ec-call1-raw
+(defconst *inline-suffix-len-minus-1* (1- (length *inline-suffix*)))
+(defconst *notinline-suffix* "$NOTINLINE")
+(defconst *notinline-suffix-len-minus-1* (1- (length *notinline-suffix*)))
+
+(defun number-of-strings (l)
+  (declare (xargs :guard (true-listp l)))
+  (cond ((endp l) 0)
+        ((stringp (car l))
+         (1+ (number-of-strings (cdr l))))
+        (t (number-of-strings (cdr l)))))
+
+(defun get-string (l)
+  (declare (xargs :guard (true-listp l)))
+  (cond ((endp l) nil)
+        ((stringp (car l)) (list (car l)))
+        (t (get-string (cdr l)))))
+
+(defun remove-strings (l)
+  (declare (xargs :guard (true-listp l)))
+  (cond ((endp l) nil)
+        ((stringp (car l))
+         (remove-strings (cdr l)))
+        (t (cons (car l) (remove-strings (cdr l))))))
+
+(defun defun-inline-form (name formals lst defun-type suffix)
+
+; Defun-type is DEFUN or DEFUND; suffix is *inline-suffix* or
+; *notinline-suffix*.
+
+  (declare (xargs :guard (and (symbolp name)
+                              (symbol-listp formals)
+                              (true-listp lst)
+                              lst
+                              (<= (number-of-strings (butlast lst 1))
+                                  1)
+                              (or (eq defun-type 'defun)
+                                  (eq defun-type 'defund))
+                              (or (equal suffix *inline-suffix*)
+                                  (equal suffix *notinline-suffix*)))))
+  (let* ((name$inline (add-suffix name suffix))
+         (dcls-and-strings (butlast lst 1))
+         (strings (get-string dcls-and-strings))
+         (dcls (remove-strings dcls-and-strings))
+         (body (car (last lst)))
+         (macro-formals formals))
+    `(progn (defmacro ,name ,macro-formals
+              ,@strings
+              (list ',name$inline ,@macro-formals))
+            (add-macro-fn ,name ,name$inline)
+            (,defun-type ,name$inline ,formals ,@dcls ,body))))
+
+(defmacro defun-inline (name formals &rest lst)
+
+; Here is an explanation for why we insist on specific suffices for inlined and
+; notinlined functions, following up on remark (2) in :doc defun-inline.
+
+; We insist on a specific suffix for inlined functions, *inline-suffix*,
+; because Common Lisp provides no way to undo (declaim (inline foo)).  To see
+; why such undoing is relevant, suppose that (defun-inline foo (x) ...) simply
+; expanded to:
+
+;   (progn (declaim (inline foo))
+;          (defun foo ...))
+
+; Now consider this example:
+
+;   (encapsulate
+;     ()
+;     (local (defun-inline foo (x) x))
+;     ...)
+;
+;   (defun foo (x) (cons x x))
+
+; When that encapsulate runs, the form (declaim (inline foo)) would be
+; generated.  Since there is no way to undo that declaim before starting the
+; second pass of the encapsulate, the global (final) definition of foo would
+; also be an inline definition, perhaps contrary to intent.  A similar problem
+; occurs if (defun-inline foo ...) is in a locally included book.
+
+; (One might ask: why not undo the (declaim (inline foo)) with (declaim
+; (notinline foo))?  That also seems unacceptable, because perhaps it would be
+; advantageous for the Lisp compiler to inline some definitions of foo and not
+; others.  We would really like something like (declaim
+; (back-to-no-claims-about-inline foo)), but that's not available.)
+
+; By insisting on a syntactic naming convention for inlined functions --
+; namely, their names end in *inline-suffix* (i.e., in "$INLINE") -- we
+; avoid this undoing problem.  That is: we don't mind that we can't undo
+; the declaim, because every function of that name will be inlined.
+
+; Implementor hint for "(5) Obscure Remark" in :DOC defun-inline: Search for
+; ";;; Declaim forms:" in write-expansion-file, and notice the printing just
+; below it of a readtime conditional for the host Lisp, so that declaim forms
+; are restricted to that Lisp.  This mechanism was probably put into place so
+; that declaiming for GCL didn't result in declaiming for Allegro CL, or
+; something along those lines.
+
+  (defun-inline-form name formals lst 'defun *inline-suffix*))
+
+(defmacro defund-inline (name formals &rest lst)
+
+; Warning: Keep this in sync with defun-inline.
+
+  (defun-inline-form name formals lst 'defund *inline-suffix*))
+
+(defmacro defun-notinline (name formals &rest lst)
+
+; Warning: Keep this in sync with defund-notinline.
+
+  (defun-inline-form name formals lst 'defun *notinline-suffix*))
+
+(defmacro defund-notinline (name formals &rest lst)
+
+; Warning: Keep this in sync with defun-inline.
+
+  (defun-inline-form name formals lst 'defund *notinline-suffix*))
+
+; -----------------------------------------------------------------
+
+; The constants and utilities below were introduced in support of the
+; conversion of fmt and related functions to be :common-lisp-compliant.  We
+; defer the definition of functions supporting +f! etc. to basis-a.lisp because
+; they use the #. notation on constants below.
+
+(defconst *fixnat-bits* 29)
+
+(defconst *fixnat-type* `(unsigned-byte ,*fixnat-bits*))
+
+(defun fixnat-guard (val)
+  (declare (xargs :guard t))
+  (unsigned-byte-p *fixnat-bits* val))
+
+(defmacro the-fixnat (n)
+  (list 'the *fixnat-type* n))
+
+(defconst *fixnat-bits+1* (+ 1 *fixnat-bits*))
+(defconst *fixnat-bits+2* (+ 2 *fixnat-bits*))
+
+(defconst *fixnum-type* `(signed-byte ,(1+ *fixnat-bits*)))
+
+(defun fixnum-guard (val)
+  (declare (xargs :guard t))
+  (and (integerp val)
+       (<= (- -1 (fixnum-bound)) val)
+       (<= val (fixnum-bound))))
+
+; Next, we introduce two flavors of ``small'' fixnum arithmetic.
+
+; When dealing with types, ``small'' means a little fixnum.  In fact, they are
+; sufficiently small that we can add five of them and still stay within fixnum
+; arithmetic.  We extend this notion of small fixnum to allow us to also talk
+; about small natural fixnums, to which we give the name small-nats.
+
+(defconst *fixnum-bits* 30)
+(defconst *small-bits* 27)
+(defconst *small-nat-bits* (- *small-bits* 1))
+(defconst *small-type* `(signed-byte ,*small-bits*))
+(defconst *small-nat-type* `(unsigned-byte ,*small-nat-bits*))
+(defconst *small-lo* (- (expt 2 *small-nat-bits*)))
+(defconst *small-hi* (- (expt 2 *small-nat-bits*) 1))
+
+(defun small-nat-guard (val)
+  (declare (xargs :guard t))
+  (and (natp val)
+       (<= val *small-hi*)))
+
+(defmacro the-small (flg x)
+
+; (the-small nil x) declares x to be (possibly negative) small fixnum.
+; (the-small t x) declares x to be a non-negative small fixnum.  To keep it
+; straight in your head, think of nil meaning negative and t meaning positive.
+
+  (declare (xargs :guard (or (eq flg t) (eq flg nil))))
+  `(the ,(if flg
+             *small-nat-type*
+             *small-type*)
+        ,x))
+
+(defun-inline round-to-small (flg x)
+
+; (round-to-small nil x) coerces x to be a (possibly negative) small fixnum.
+; (round-to-small t x) coerces x to be a non-negative small fixnum.  To keep it 
+; straight in your head, think of nil meaning negative and t meaning positive.
+
+  (declare (type (signed-byte 30) x)) ; fixnum
+  (let ((lo (if flg 0 *small-lo*)))
+    (if (integerp x)
+        (if (< x lo)
+            lo
+            (if (< *small-hi* x)
+                *small-hi*
+                x))
+        0)))
+
+(defun make-the-smalls (args)
+  (declare (xargs :guard (true-listp args)))
+  (cond ((endp args) nil)
+        (t (cons `(the-small nil ,(car args))
+                 (make-the-smalls (cdr args))))))
+
+(defmacro +g (&rest args)
+  (declare (xargs :guard (< (len args) 6)))
+  `(round-to-small nil
+          (the-fixnum
+           (+ ,@(make-the-smalls args)))))
+
+(defmacro +g! (&rest args)
+  (declare (xargs :guard (< (len args) 6)))
+  `(round-to-small t
+          (the-fixnum
+           (+ ,@(make-the-smalls args)))))
+
+(defmacro -g (x &optional y)
+  (if y
+      `(round-to-small nil
+                       (the-fixnum (- ,@(make-the-smalls (list x y)))))
+      `(round-to-small nil
+                       (the-fixnum (- ,@(make-the-smalls (list x)))))))
+
+(defmacro -g! (x &optional y)
+  (if y
+      `(round-to-small t
+                       (the-fixnum (- ,@(make-the-smalls (list x y)))))
+      `(round-to-small t
+                       (the-fixnum (- ,@(make-the-smalls (list x)))))))
+
+; So at this point we have four types:
+; (signed-byte 30)
+; (unsigned-byte 29)
+; (signed-byte 27)
+; (unsigned-byte 26)
+
+; There are general theorems relating these, e.g.,
+
+; (include-book "arithmetic-5/top" :dir :system)
+; (SET-DEFAULT-HINTS '((NONLINEARP-DEFAULT-HINT STABLE-UNDER-SIMPLIFICATIONP HIST PSPV)))
+
+; (defthm fact1
+;   (implies (and (natp n)
+;                 (natp k)
+;                 (<= n k)
+;                 (unsigned-byte-p n x))
+;            (unsigned-byte-p k x))
+;   :rule-classes nil)
+
+; (defthm fact2
+;   (implies (and (natp n)
+;                 (natp k)
+;                 (< n k)
+;                 (unsigned-byte-p n x))
+;            (signed-byte-p k x))
+;   :hints (("Goal" :use (:instance fact1 (k (- k 1)))))
+;   :rule-classes nil)
+
+; (defthm fact3
+;   (implies (and (natp n)
+;                 (natp k)
+;                 (<= n k)
+;                 (signed-byte-p n x))
+;            (signed-byte-p k x))
+;   :rule-classes nil)
+
+; Facts suffice that are proved in books/support/ppr-support.lisp.

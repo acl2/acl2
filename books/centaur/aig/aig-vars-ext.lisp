@@ -402,6 +402,9 @@ under-the-hood memoization; kind of nasty."
                               (sbitset-listp ndeps)
                               (<= (+ 60 (* 60 (max-sbitset-max-offset ndeps)))
                                   array-len))
+; Matt K. mod, August 2023: the following is necessary now that array-order is
+; disabled by default.
+                  :guard-hints (("Goal" :in-theory (enable array-order)))
                   ;; :guard-hints ((and stable-under-simplificationp
                   ;;                    '(:use ((:instance max-sbitset-max-offset-bound
                   ;;                             (x ndeps)))

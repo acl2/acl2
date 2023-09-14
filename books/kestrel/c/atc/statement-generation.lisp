@@ -3013,7 +3013,7 @@
        ((unless (equal int.type type))
         (reterr
          (msg "The term ~x0 of type ~x1 does not have ~
-               the expected type ~x1. ~
+               the expected type ~x2. ~
                This is indicative of ~
                unreachable code under the guards, ~
                given that the code is guard-verified."
@@ -3159,9 +3159,28 @@
           object-disjointp-commutative
           read-var-of-add-var
           remove-flexible-array-member-when-absent
+          not-flexible-array-member-p-when-ucharp
+          not-flexible-array-member-p-when-scharp
+          not-flexible-array-member-p-when-ushortp
+          not-flexible-array-member-p-when-sshortp
+          not-flexible-array-member-p-when-uintp
+          not-flexible-array-member-p-when-sintp
+          not-flexible-array-member-p-when-ulongp
+          not-flexible-array-member-p-when-slongp
+          not-flexible-array-member-p-when-ullongp
+          not-flexible-array-member-p-when-sllongp
           not-flexible-array-member-p-when-value-pointer
           value-fix-when-valuep
-          ,valuep-when-type-pred
+          valuep-when-ucharp
+          valuep-when-scharp
+          valuep-when-ushortp
+          valuep-when-sshortp
+          valuep-when-uintp
+          valuep-when-sintp
+          valuep-when-ulongp
+          valuep-when-slongp
+          valuep-when-ullongp
+          valuep-when-sllongp
           ,type-pred-of-type-write
           ,not-flexible-array-member-p-when-type-pred
           ident-fix-when-identp
@@ -3293,7 +3312,9 @@
                                ulong-array-length-of-ulong-array-write
                                slong-array-length-of-slong-array-write
                                ullong-array-length-of-ullong-array-write
-                               sllong-array-length-of-sllong-array-write))))
+                               sllong-array-length-of-sllong-array-write
+                               mv-nth-of-cons
+                               (:e zp)))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -3429,6 +3450,7 @@
                                not-zp-of-limit-minus-const
                                compustatep-of-exit-scope
                                compustatep-of-update-object
+                               compustatep-of-update-static-var
                                compustatep-of-if*-when-both-compustatep
                                uchar-array-length-of-uchar-array-write
                                schar-array-length-of-schar-array-write
@@ -4716,10 +4738,7 @@
        (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
        ((when (or (not gin.proofs)
                   (not called-fn-thm)
-                  (consp (cdr affect)) ; <- temporary
-                  (b* ((info (atc-get-var (car affect) gin.inscope)))
-                    (and info
-                         (atc-var-info->externalp info))))) ; <- temporary
+                  (consp (cdr affect)))) ; <- temporary
         (retok (make-stmt-gout
                 :items (list (block-item-stmt (stmt-expr call-expr)))
                 :type (type-void)
@@ -4911,7 +4930,20 @@
              value-array->length-when-ulong-arrayp
              value-array->length-when-slong-arrayp
              value-array->length-when-ullong-arrayp
-             value-array->length-when-sllong-arrayp))))
+             value-array->length-when-sllong-arrayp
+             read-object-of-objdesign-static-to-objdesign-of-var
+             read-object-of-objdesign-static
+             var-autop-of-add-frame
+             var-autop-of-enter-scope
+             var-autop-of-add-var
+             var-autop-of-update-var
+             var-autop-of-update-static-var
+             var-autop-of-update-object
+             write-static-var-to-update-static-var
+             write-static-var-okp-of-add-var
+             write-static-var-okp-of-enter-scope
+             write-static-var-okp-of-add-frame
+             write-static-var-okp-when-valuep-of-read-static-var))))
        ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                  :formula call-formula
                                                  :hints call-hints
@@ -4960,7 +4992,9 @@
                                (:e stmt-expr->get)
                                not-zp-of-limit-variable
                                ,call-thm-name
-                               compustatep-of-update-object))))
+                               compustatep-of-update-var
+                               compustatep-of-update-object
+                               compustatep-of-update-static-var))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -5016,6 +5050,16 @@
           not-flexible-array-member-p-when-slongp
           not-flexible-array-member-p-when-ullongp
           not-flexible-array-member-p-when-sllongp
+          not-flexible-array-member-p-when-uchar-arrayp
+          not-flexible-array-member-p-when-schar-arrayp
+          not-flexible-array-member-p-when-ushort-arrayp
+          not-flexible-array-member-p-when-sshort-arrayp
+          not-flexible-array-member-p-when-uint-arrayp
+          not-flexible-array-member-p-when-sint-arrayp
+          not-flexible-array-member-p-when-ulong-arrayp
+          not-flexible-array-member-p-when-slong-arrayp
+          not-flexible-array-member-p-when-ullong-arrayp
+          not-flexible-array-member-p-when-sllong-arrayp
           not-flexible-array-member-p-when-value-pointer
           value-fix-when-valuep
           valuep-when-ucharp
@@ -5046,7 +5090,17 @@
           ident-fix-when-identp
           identp-of-ident
           equal-of-ident-and-ident
-          (:e str-fix)))
+          (:e str-fix)
+          objdesign-of-var-of-update-static-var-iff
+          read-object-of-objdesign-static
+          read-var-to-read-static-var
+          read-static-var-of-update-static-var
+          var-autop-of-add-frame
+          var-autop-of-enter-scope
+          var-autop-of-add-var
+          var-autop-of-update-var
+          var-autop-of-update-static-var
+          var-autop-of-update-object))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -6155,8 +6209,7 @@
               (reterr
                (msg "A loop body must end with ~
                      a recursive call on every path, ~
-                     but in the function ~x0 ~
-                     it ends with ~x1 instead."
+                     but in the function ~x0 it ends with ~x1 instead."
                     gin.fn term))))
           (cond
            ((equal terms gin.affect)
