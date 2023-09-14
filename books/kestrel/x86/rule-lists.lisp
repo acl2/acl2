@@ -94,7 +94,20 @@
             x86isa::sar-spec$inline
             x86isa::sar-spec-32-nice ;x86isa::sar-spec-32
             x86isa::sar-spec-64-nice ;x86isa::sar-spec-32
-            )
+
+            ;; These recharacterize divide in terms of bvops:
+            x86isa::mv-nth-0-of-div-spec-8
+            x86isa::mv-nth-1-of-div-spec-8
+            x86isa::mv-nth-2-of-div-spec-8
+            x86isa::mv-nth-0-of-div-spec-16
+            x86isa::mv-nth-1-of-div-spec-16
+            x86isa::mv-nth-2-of-div-spec-16
+            x86isa::mv-nth-0-of-div-spec-32
+            x86isa::mv-nth-1-of-div-spec-32
+            x86isa::mv-nth-2-of-div-spec-32
+            x86isa::mv-nth-0-of-div-spec-64
+            x86isa::mv-nth-1-of-div-spec-64
+            x86isa::mv-nth-2-of-div-spec-64)
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules2 ()
@@ -831,7 +844,7 @@
 ;            x86isa::xr-set-flag ;this is the -diff rule
 
             ;; Flags:
-            sub-af-spec32-same ; rewrites to 0, so perhaps worth including this rule
+            x86isa::sub-af-spec32-same ; rewrites to 0, so perhaps worth including this rule
 
             ;; todo: organize these:
 
@@ -1370,7 +1383,7 @@
      ms X86ISA::ms$A
      fault X86ISA::fault$A
      rgfi X86ISA::RGFI$A ;expose xr
-     canonical-address-p-of-0
+     x86isa::canonical-address-p$inline-constant-opener
      addresses-of-subsequent-stack-slots
      ;; addresses-of-subsequent-stack-slots-aux-base
      ;; addresses-of-subsequent-stack-slots-aux-unroll

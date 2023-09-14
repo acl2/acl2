@@ -505,6 +505,12 @@
                                    SF-SPEC64)
                                   (;ACL2::SLICE-OF-PLUS-OF-LOGEXT-GEN-ALT ; bad forcing
                                    )))))
+;drop?
+;;not sure yet whether we should open sub-af-spec32
+(defthm sub-af-spec32-same
+  (equal (sub-af-spec32 x x)
+         0)
+  :hints (("Goal" :in-theory (enable SUB-AF-SPEC32))))
 
 ;drop?
 (defthm sub-zf-spec64-same
