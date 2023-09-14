@@ -20,6 +20,7 @@
 
 (include-book "support-axe")
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
@@ -28,7 +29,6 @@
 (include-book "kestrel/x86/support" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system)
-(include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/rule-lists" :dir :system)

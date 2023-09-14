@@ -151,6 +151,7 @@
     read-byte-when-program-at
     read-byte-of-set-flag
     read-byte-of-write-byte
+    read-byte-of-logext
     ))
 
 (defun read-rules ()
@@ -709,6 +710,7 @@
     ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
     ))
 
+;todo: separate out the 64 but rules
 (defun segment-base-and-bounds-rules ()
   '(segment-base-and-bounds-of-set-rip
     segment-base-and-bounds-of-set-rsp
@@ -722,6 +724,24 @@
     segment-base-and-bounds-of-write-byte
     segment-base-and-bounds-of-write
     ))
+
+;; are these only for making failures clearer?
+(defun get-prefixes-rules64 ()
+  (declare (xargs :guard t))
+  '(mv-nth-0-of-get-prefixes-of-set-rip
+    mv-nth-0-of-get-prefixes-of-set-rax
+    mv-nth-0-of-get-prefixes-of-set-rdx
+    mv-nth-0-of-get-prefixes-of-set-rsi
+    mv-nth-0-of-get-prefixes-of-set-rdi
+    mv-nth-0-of-get-prefixes-of-set-rsp
+    mv-nth-0-of-get-prefixes-of-set-rbp
+    mv-nth-1-of-get-prefixes-of-set-rip
+    mv-nth-1-of-get-prefixes-of-set-rax
+    mv-nth-1-of-get-prefixes-of-set-rdx
+    mv-nth-1-of-get-prefixes-of-set-rsi
+    mv-nth-1-of-get-prefixes-of-set-rdi
+    mv-nth-1-of-get-prefixes-of-set-rsp
+    mv-nth-1-of-get-prefixes-of-set-rbp))
 
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 (defun lifter-rules-common ()
@@ -2035,6 +2055,7 @@
           (write-rules)
           (read-byte-rules)
           (linear-memory-rules)
+          (get-prefixes-rules64)
           '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs ; puts in rml-size
             ;; this is sometimes needed in 64-bit mode (e.g., when a stack
