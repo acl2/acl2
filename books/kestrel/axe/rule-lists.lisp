@@ -322,6 +322,7 @@
     bitxor-of-constant-chop-arg1
     bitxor-of-constant-chop-arg2
     ;; todo: more like this?
+    ;; todo: rename these 4?:
     bvlt-trim-constant-arg1
     bvlt-trim-constant-arg2
     sbvlt-trim-constant-left
@@ -481,7 +482,7 @@
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
      leftrotate32-of-bvchop-arg2
-     ;; rightrotate32-trim-amt-dag ;move to trim rules? or drop since we go to leftrotate32
+     ;; rightrotate32-trim-amt-axe ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):
      ;;opening rotates (by constant amounts) in sha1 caused problems with trimming the same term to lots of different sizes
      ;; LEFTROTATE32-open-when-constant-shift-amount
@@ -623,8 +624,8 @@
      equal-of-bvmod-and-mod ;where should these go?
      equal-of-mod-and-bvmod
 
-     bvmod-trim-arg1-dag-all ;moved from axe-prover-rules
-     bvmod-trim-arg2-dag-all ;moved from axe-prover-rules
+     bvmod-trim-arg1-axe-all ;moved from axe-prover-rules
+     bvmod-trim-arg2-axe-all ;moved from axe-prover-rules
 
 ;bvmod-of-bvplus-of-bvmod ;has a work-hard
      bvlt-of-bvmod-same
@@ -1582,10 +1583,10 @@
   '(;; -all and -non-all versions?
     slice-trim-axe-all ;new
     getbit-trim-axe-all  ;new
-    bvmult-trim-arg1-dag-all  ;seemed to need this for rc6 decrypt
-    bvmult-trim-arg2-dag-all  ;seemed to need this for rc6 decrypt
-    ;; bvmult-trim-arg1-dag
-    ;; bvmult-trim-arg2-dag
+    bvmult-trim-arg1-axe-all  ;seemed to need this for rc6 decrypt
+    bvmult-trim-arg2-axe-all  ;seemed to need this for rc6 decrypt
+    ;; bvmult-trim-arg1-axe
+    ;; bvmult-trim-arg2-axe
     bvminus-trim-arg2-axe-all
     bvminus-trim-arg3-axe-all
     bvplus-trim-arg2-axe-all
@@ -1605,12 +1606,12 @@
     ;; bvxor-trim-arg1-axe-all ; use instead?
     ;; bvxor-trim-arg2-axe-all ; use instead?
     bitnot-trim-axe-all
-    bitxor-trim-arg1-dag-all
-    bitxor-trim-arg2-dag-all
-    bitor-trim-arg1-dag-all
-    bitor-trim-arg2-dag-all
-    bitand-trim-arg1-dag-all
-    bitand-trim-arg2-dag-all
+    bitxor-trim-arg1-axe-all
+    bitxor-trim-arg2-axe-all
+    bitor-trim-arg1-axe-all
+    bitor-trim-arg2-axe-all
+    bitand-trim-arg1-axe-all
+    bitand-trim-arg2-axe-all
     bvcat-trim-arg4-axe-all ;hope these are okay; seemed key for rc2 and maybe other proofs
     bvcat-trim-arg2-axe-all
     ;; bvcat-trim-arg2-axe
@@ -1655,7 +1656,7 @@
     trim-of-bvchop
     trim-of-bvcat
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
-    trim-does-nothing-dag ; should not be needed?
+    trim-does-nothing-axe ; should not be needed?
     ))
 
 (defun all-trim-rules ()
@@ -1772,7 +1773,7 @@
             bvif-same-tests2
             bvif-same-tests
 
-            bvcat-tighten-upper-size-dag
+            bvcat-tighten-upper-size-axe
             ;; bvif-with-small-arg1
             ;; bvif-with-small-arg2
             bvor-with-small-arg1
@@ -1929,8 +1930,8 @@
     mod-of-expt-of-2-constant-version
     bvlt-of-bvmult-6-5-20 ;which one of these helps?
     bvlt-of-bvmult-6-5-20-alt
-    bvlt-trim-arg1-dag-all
-    bvlt-trim-arg2-dag-all
+    bvlt-trim-arg1-axe-all
+    bvlt-trim-arg2-axe-all
     equal-of-bvplus-constant-and-constant
     equal-of-bvplus-constant-and-constant-alt
     bvlt-of-bvplus-of-bvcat-of-slice-sha1
@@ -2062,10 +2063,11 @@
      logext-when-top-bit-0 ;move?
      <-becomes-bvlt-dag
      sbvdiv-when-both-positive
-     bvdiv-trim-arg1-dag
-     bvdiv-trim-arg2-dag
-     bvdiv-trim-arg1-dag-all
-     bvdiv-trim-arg2-dag-all
+     ; move these?  add abvdiv-trim
+     bvdiv-trim-arg1-axe ;don't need this if we have the -all rule?
+     bvdiv-trim-arg2-axe ;don't need this if we have the -all rule?
+     bvdiv-trim-arg1-axe-all
+     bvdiv-trim-arg2-axe-all
 
      bvdiv-of-bvplus-minus-5
      bvchop-of-bvdiv
@@ -2143,7 +2145,7 @@
      fix-of-len ;is fix enabled in axe-rules though?
      equal-of-myif-same
 ;<-becomes-bvlt-alt
-     <-becomes-bvlt-dag-both
+     <-becomes-bvlt-axe-both
      equal-when-bvlt
      equal-when-bvlt-alt
      bvplus-of-bvuminus-tighten-gen-no-split-dag
@@ -2533,8 +2535,8 @@
 ;            sbvlt-transitive-hack
      natp-when-unsigned-byte-p
      sbvlt-of-negative-constant-when-unsigned-byte-p
-     sbvlt-trim-constant-left
-     sbvlt-trim-constant-right
+     sbvlt-trim-constant-left ; replace with a general trim rule?
+     sbvlt-trim-constant-right ; replace with a general trim rule?
      sbvlt-transitive-1-a
      sbvlt-transitive-2-a
      sbvlt-transitive-1-b
@@ -2550,8 +2552,8 @@
      natp-of-len                ;new
      <-becomes-bvlt-dag-alt-gen ;new
      <-becomes-bvlt-dag-gen     ;new
-     <-becomes-bvlt-dag-2       ;new
-     <-becomes-bvlt-dag-3       ;new
+     <-becomes-bvlt-axe-2       ;new
+     <-becomes-bvlt-axe-3       ;new
      <-becomes-bvlt-free-alt    ;fri jan 14 04:10:47 2011
      <-becomes-bvlt-free        ;fri jan 14 04:10:49 2011
 
@@ -2612,8 +2614,8 @@
 ;; Only used in the equivalence checker
 (defun strengthening-rules ()
   (declare (xargs :guard t))
-  (append '(bvlt-trim-constant-arg1
-            bvlt-trim-constant-arg2
+  (append '(bvlt-trim-constant-arg1 ; replace with a general trim rule?
+            bvlt-trim-constant-arg2 ; replace with a general trim rule?
             bvlt-when-bvlt-wider
             not-bvlt-when-not-bvlt-narrower
             not-bvlt-when-not-bvlt-narrower2
@@ -2703,9 +2705,9 @@
 
 ;Wed Feb 24 16:04:04 2010
 ;this is cheap, so let's try it first
-(table axe-rule-priorities-table '<-becomes-bvlt-dag-both -1)
-(table axe-rule-priorities-table '<-becomes-bvlt-dag-2 -1)
-(table axe-rule-priorities-table '<-becomes-bvlt-dag-3 -1)
+(table axe-rule-priorities-table '<-becomes-bvlt-axe-both -1)
+(table axe-rule-priorities-table '<-becomes-bvlt-axe-2 -1)
+(table axe-rule-priorities-table '<-becomes-bvlt-axe-3 -1)
 
 ;;rules about if (or should we go straight to myif and have all the rules be about that?!):
 
