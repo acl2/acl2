@@ -327,7 +327,7 @@
                                 (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
                                         assumptions))))))))
        (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
-       (- (and print (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
        (lifter-rules (if (member-eq executable-type *executable-types32*)
                          (append (lifter-rules32)
@@ -572,6 +572,7 @@
 ;TODO: Add show- variant
 ;bad name?
 ;try defmacroq?
+;; TODO: :print nil is not fully respected
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
 (defmacro def-unrolled (&whole whole-form
                                lifted-name ;name to use for the generated function and constant (the latter surrounded by stars)
@@ -592,7 +593,7 @@
                                (step-increment '100)
                                (memoizep 't)
                                (monitor 'nil)
-                               (print 't)             ;how much to print
+                               (print ':brief)             ;how much to print
                                (print-base '10)       ; 10 or 16
                                (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
                                (non-executable 't)  ;since stobj updates will not be let-bound      ;allow :auto?  only use for :output :all ?
