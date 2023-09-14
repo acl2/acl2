@@ -2126,6 +2126,7 @@
         (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
         (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
+       (- (acl2::ensure-x86 parsed-executable))
        (user-assumptions (acl2::translate-terms user-assumptions 'lift-subroutine-fn (w state)))
        ;; assumptions (these get simplified below to put them into normal form):
        (assumptions (if (eq :mach-o-64 executable-type)

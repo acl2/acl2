@@ -270,6 +270,7 @@
                   :mode :program))
   (b* ((- (cw "Lifting ~s0.~%" target)) ;todo: print the executable name
        (executable-type (acl2::parsed-executable-type parsed-executable))
+       (- (acl2::ensure-x86 parsed-executable))
        (- (cw "(Executable type: ~x0.)~%" executable-type))
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)

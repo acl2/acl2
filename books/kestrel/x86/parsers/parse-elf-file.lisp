@@ -460,3 +460,6 @@
 
 (defun get-all-elf-symbols (parsed-elf)
   (get-names-from-elf-symbol-table (get-elf-symbol-table parsed-elf) nil))
+
+(defun elf-cpu-type (parsed-elf)
+  (lookup-eq-safe :machine parsed-elf))
