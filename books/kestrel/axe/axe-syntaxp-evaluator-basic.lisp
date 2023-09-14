@@ -16,11 +16,9 @@
 (include-book "axe-syntax-functions-bv")
 (include-book "make-axe-syntaxp-evaluator")
 
-(make-axe-syntaxp-evaluator 'basic '(not-quotep ;drop?
-                                     heavier-dag-term
+(make-axe-syntaxp-evaluator 'basic '(heavier-dag-term
                                      ;; bv-term-syntaxp
                                      is-a-myif
-                                     not-is-a-myif ;drop?
                                      syntactic-booleanp
                                      syntactic-call-of
                                      syntactic-constantp

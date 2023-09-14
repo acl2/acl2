@@ -138,7 +138,7 @@
     (if (myquotep term) ;quoted constant (may arise from the translation of an IF)
         (mv (erp-nil) term)
       (let ((fn (ffn-symb term)))
-        (if (and (eq 'quotep fn) ; (quotep <var>), convert to axe-quotep (why?)
+        (if (and (eq 'quotep fn) ; (quotep <var>)
                  (= 1 (len (fargs term)))
                  (symbolp (first (fargs term)))
                  ;; (not (eq 'dag-array (first (fargs term)))) ;todo: think about this?

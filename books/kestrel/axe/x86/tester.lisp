@@ -341,6 +341,7 @@
        ;; Translate the assumptions supplied by the user:
        (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
        (executable-type (acl2::parsed-executable-type parsed-executable))
+       (- (acl2::ensure-x86 parsed-executable))
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (cw "(Now testing ~x0.~%" function-name-string))
        ;; Check the param names:

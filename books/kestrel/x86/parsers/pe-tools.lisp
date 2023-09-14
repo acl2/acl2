@@ -1,7 +1,7 @@
 ; Tools for processing the alists that represent parsed PE files.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -109,3 +109,6 @@
     (subroutine-offset-and-section-number-pe-32 target parsed-pe)
     (declare (ignore section-number))
     offset-to-subroutine))
+
+(defun pe-cpu-type (parsed-pe)
+  (lookup-eq-safe :machine (lookup-eq-safe :coff-file-header parsed-pe)))
