@@ -19,10 +19,10 @@
 ;; TODO: Somehow distinguish between a run failing to finish and a query failing with a cex -- for now, we just use must-fail.
 
 (include-book "kestrel/axe/bv-rules-axe" :dir :system) ;for trim-does-nothing-dag
-(include-book "kestrel/bv/rotate" :dir :system) ;for INTEGERP-OF-LEFTROTATE32
+;(include-book "kestrel/bv/rotate" :dir :system) ;for INTEGERP-OF-LEFTROTATE32
 (include-book "kestrel/bv/intro" :dir :system)
-(include-book "kestrel/axe/rules1" :dir :system)
-(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
+;(include-book "kestrel/axe/rules1" :dir :system)
+;(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (include-book "kestrel/x86/read-and-write" :dir :system)
 (include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
