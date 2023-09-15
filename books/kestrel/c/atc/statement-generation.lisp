@@ -199,13 +199,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-make-lets-of-uterms (bindings (uterms true-listp))
+(define atc-make-lets-of-uterms ((let/let* symbolp)
+                                 bindings
+                                 (uterms true-listp))
   :returns (let-uterms true-listp)
-  :short "Create a list of @(tsee let)s with the same bindings
+  :short "Create a list of @(tsee let)s or @(tsee let*)s with the same bindings
           and with bodies from a list of terms, in the same order."
   (cond ((endp uterms) nil)
-        (t (cons `(let ,bindings ,(car uterms))
-                 (atc-make-lets-of-uterms bindings (cdr uterms))))))
+        (t (cons `(,let/let* ,bindings ,(car uterms))
+                 (atc-make-lets-of-uterms let/let* bindings (cdr uterms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -256,20 +258,20 @@
        ((unless (and (true-listp uterm)
                      (consp uterm)))
         (raise "Internal error: unexpected term ~x0." uterm))
-       ((when (eq (car uterm) 'mv))
+       ((when (eq (car uterm) 'list))
         (b* ((uterms (cdr uterm))
              ((unless (eql (len uterms) comps))
               (raise "Internal error: ~x0 components for ~x1." comps uterm)))
           uterms))
-       ((when (eq (car uterm) 'let))
+       ((when (member-eq (car uterm) '(let let*)))
         (b* (((unless (and (consp (cdr uterm))
                            (consp (cddr uterm))
                            (endp (cdddr uterm))))
-              (raise "Internal error: malformed LET ~x0." uterm))
+              (raise "Internal error: malformed LET or LET* ~x0." uterm))
              (bindings (cadr uterm))
              (body-uterm (caddr uterm))
              (body-uterms (atc-uterm-to-components body-uterm comps)))
-          (atc-make-lets-of-uterms bindings body-uterms)))
+          (atc-make-lets-of-uterms (car uterm) bindings body-uterms)))
        ((when (eq (car uterm) 'mv-let))
         (b* (((unless (and (consp (cdr uterm))
                            (consp (cddr uterm))
@@ -4598,7 +4600,9 @@
                                    ulong-array-length-of-ulong-array-write
                                    slong-array-length-of-slong-array-write
                                    ullong-array-length-of-ullong-array-write
-                                   sllong-array-length-of-sllong-array-write)))
+                                   sllong-array-length-of-sllong-array-write
+                                   mv-nth-of-cons
+                                   (:e zp))))
           `(("Goal" :in-theory '(exec-stmt-when-if-and-true
                                  exec-stmt-when-if-and-false
                                  (:e stmt-kind)
@@ -4630,7 +4634,9 @@
                                  ulong-array-length-of-ulong-array-write
                                  slong-array-length-of-slong-array-write
                                  ullong-array-length-of-ullong-array-write
-                                 sllong-array-length-of-sllong-array-write)))))
+                                 sllong-array-length-of-sllong-array-write
+                                 mv-nth-of-cons
+                                 (:e zp))))))
        (if-stmt-instructions
         `((casesplit ,(atc-contextualize
                        test-term
