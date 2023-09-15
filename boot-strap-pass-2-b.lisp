@@ -754,6 +754,25 @@
 ; books/kestrel/acl2-arrays/acl2-arrays.lisp, and it disables array-order.
 (in-theory (disable array-order))
 
+; The printing functions are complicated.  Eric Smith noticed this and asked
+; for the following functions to be disabled.  They are in :program mode in
+; #+acl2-devel builds; hence, the readtime conditional.
+#-acl2-devel
+(in-theory (disable error-fms
+                    error-fms-channel
+                    error1
+                    error1-state-p
+                    fms
+                    fmt
+                    fmt-abbrev1
+                    fmt-ppr
+                    fmt0
+                    fmt1
+                    fmt1!
+                    ppr
+                    ppr1
+                    ppr2))
+
 ; The following two are necessary because after the defun-inline in
 ; basis-a.lisp for each of +f!-fn2 and +f!-fn3, the second pass of axioms.lisp
 ; clears the macro-aliases-table.

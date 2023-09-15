@@ -33,11 +33,11 @@
 (include-book "arithmetic-5/top" :dir :system)
 
 ; test9.lisp:
-; (include-book "std/util/define" :dir :system)
-; (include-book "std/util/deflist" :dir :system)
-; (include-book "std/util/defrule" :dir :system)
-; (include-book "std/util/defaggregate" :dir :system)
-; (include-book "std/util/def-bound-theorems" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/def-bound-theorems" :dir :system)
 |#
 
 (defttag t)

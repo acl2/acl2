@@ -9,6 +9,24 @@
 ; For abbrev-evisc-tuple and maybe others:
 (include-book "system/verified-termination-and-guards" :dir :system)
 
+; Re-enable functions that were disabled in the boot-strap after this book was
+; developed.
+#-acl2-devel
+(local (in-theory (enable error-fms
+                          error-fms-channel
+                          error1
+                          error1-state-p
+                          fms
+                          fmt
+                          fmt-abbrev1
+                          ;; fmt-ppr ; disabled in fmt-support.lisp
+                          ;; fmt0 ; disabled in fmt-support.lisp
+                          fmt1
+                          fmt1!
+                          ppr
+                          ;; ppr1 ; disabled in fmt-support.lisp
+                          ppr2)))
+
 (in-theory (disable array1p iprint-last-index fmt-state-p
                     standard-evisc-tuplep))
 
@@ -288,8 +306,6 @@
                  find-alternative-stop
                  natp-find-alternative-stop
                  find-alternative-stop
-                 cancel_times-equal-correct
-                 cancel_plus-equal-correct
                  fold-consts-in-+
                  rationalp-implies-acl2-numberp
                  assoc-equal
@@ -396,10 +412,7 @@
   (equal (abbrev-evisc-tuple (mv-nth 1
                                      (fmt-in-ctx ctx col channel state)))
          (abbrev-evisc-tuple state))
-  :hints (("Goal" :in-theory (enable ;abbrev-evisc-tuple
-                                     fmt-in-ctx
-                                     ;world-evisceration-alist
-                                     ))))
+  :hints (("Goal" :in-theory (enable fmt-in-ctx))))
 
 (defthm open-output-channel-p1-fmt1
   (implies (and (fmt-state-p state)
