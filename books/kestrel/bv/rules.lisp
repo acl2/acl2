@@ -5522,7 +5522,8 @@
            :use ((:instance bvchop-upper-bound (n (+ -1 size)) (x x))
                  (:instance bvchop-upper-bound (n (+ -1 size)) (x y))))))
 
-
+;rename
+;i don't like the bvplus here
 ;trying disabled.
 ;just go to getbit of bvplus?
 (defthmd getbit-of-plus
@@ -6247,8 +6248,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (getbit-of-plus
-                            ;<-of-bvchop-arg1
+                           (;<-of-bvchop-arg1
                             <-becomes-bvlt-free
                             <-becomes-bvlt-free-alt <-becomes-bvlt
 
