@@ -14,10 +14,13 @@
 (include-book "bvsx")
 (include-book "bvshr")
 (local (include-book "bvcat"))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "repeatbit2"))
 
 ;; NOTE: Currently, the shift amount must be less than the width.
 ;; TODO: Result may may be wrong if we shift all the way out! consider: (acl2::bvashr 32 -1 32)
-(defun bvashr (width x shift-amount)
+(defund bvashr (width x shift-amount)
   (declare (type (integer 0 *) shift-amount)
            (type integer x)
            (type integer width)
@@ -33,7 +36,7 @@
 (defthm natp-of-bvashr
   (natp (bvashr width x shift-amount)))
 
-;todo: gen
+;; See also bvchop-of-bvashr-both below.
 (defthm bvchop-of-bvashr
   (implies (and (<= (+ n shift-amount) width)
                 (natp shift-amount)
@@ -43,7 +46,28 @@
                   (slice (+ -1 n shift-amount)
                          shift-amount
                          x)))
-  :hints (("Goal" :in-theory (enable bvsx))))
+  :hints (("Goal" :in-theory (enable bvashr bvsx))))
+
+;todo: get rid of bvchop-of-bvashr?
+(defthm bvchop-of-bvashr-both
+  (implies (and (integerp width)
+                (<= shift-amount width)
+                (natp shift-amount)
+                (<= n width) ;gen?
+                )
+           (equal (bvchop n (bvashr width x shift-amount))
+                  (if (natp n)
+                      (if (<= n (- width shift-amount))
+                          (slice (+ -1 n shift-amount) shift-amount x)
+                        (bvsx n
+                              (+ width (- shift-amount))
+                              (slice (+ -1 width) shift-amount x)))
+                    0)))
+  :hints (("Goal" :in-theory (enable bvashr
+                                     bvshr
+                                     BVSX ;todo: instead prove bvchop of bvsx
+                                     posp
+                                     ))))
 
 (defthmd bvashr-rewrite-for-constant-shift-amount
   (implies (and (syntaxp (quotep shift-amount))
@@ -62,7 +86,7 @@
 (defthm unsigned-byte-p-of-bvashr
   (equal (unsigned-byte-p size (bvashr size x amt))
          (natp size))
-  :hints (("Goal" :in-theory (enable bvshr))))
+  :hints (("Goal" :in-theory (enable bvashr bvshr))))
 
 (defthm bvashr-of-bvchop
   (implies (and (natp width)

@@ -1482,10 +1482,7 @@
 
   1000)
 
-#-acl2-loop-only
-(declaim (inline min-fixnum))
-
-(defun min-fixnum (x y)
+(defun-inline min-fixnum (x y)
 
 ; This is a fast version of min, for fixnums.  We avoid the name minf because
 ; it's already used in the regression suite.

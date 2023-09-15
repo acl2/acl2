@@ -94,7 +94,20 @@
             x86isa::sar-spec$inline
             x86isa::sar-spec-32-nice ;x86isa::sar-spec-32
             x86isa::sar-spec-64-nice ;x86isa::sar-spec-32
-            )
+
+            ;; These recharacterize divide in terms of bvops:
+            x86isa::mv-nth-0-of-div-spec-8
+            x86isa::mv-nth-1-of-div-spec-8
+            x86isa::mv-nth-2-of-div-spec-8
+            x86isa::mv-nth-0-of-div-spec-16
+            x86isa::mv-nth-1-of-div-spec-16
+            x86isa::mv-nth-2-of-div-spec-16
+            x86isa::mv-nth-0-of-div-spec-32
+            x86isa::mv-nth-1-of-div-spec-32
+            x86isa::mv-nth-2-of-div-spec-32
+            x86isa::mv-nth-0-of-div-spec-64
+            x86isa::mv-nth-1-of-div-spec-64
+            x86isa::mv-nth-2-of-div-spec-64)
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules2 ()
@@ -151,6 +164,7 @@
     read-byte-when-program-at
     read-byte-of-set-flag
     read-byte-of-write-byte
+    read-byte-of-logext
     ))
 
 (defun read-rules ()
@@ -160,9 +174,11 @@
     read-of-xw-irrel
     read-of-set-flag
     read-in-terms-of-nth-and-pos-eric ; read-when-program-at
-    read-of-logext-48
+    read-of-logext
     read-when-equal-of-read
     read-when-equal-of-read-alt
+    <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
+    <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     ))
 
 (defun write-rules ()
@@ -658,7 +674,7 @@
     x86isa::add-af-spec32$inline-constant-opener
     x86isa::sub-af-spec32$inline-constant-opener
 
-    acl2::bool->bit$inline-base
+    acl2::bool->bit$inline-constant-opener
 ;    byte-ify-base
 ;    x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
 ;    x86isa::byte-listp-base-1
@@ -707,6 +723,39 @@
     ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
     ))
 
+;todo: separate out the 64 but rules
+(defun segment-base-and-bounds-rules ()
+  '(segment-base-and-bounds-of-set-rip
+    segment-base-and-bounds-of-set-rsp
+    segment-base-and-bounds-of-set-rbp
+    segment-base-and-bounds-of-set-rax
+    segment-base-and-bounds-of-set-rdx
+    segment-base-and-bounds-of-set-rsi
+    segment-base-and-bounds-of-set-rdi
+    segment-base-and-bounds-of-set-flag
+    segment-base-and-bounds-of-set-undef
+    segment-base-and-bounds-of-write-byte
+    segment-base-and-bounds-of-write
+    ))
+
+;; are these only for making failures clearer?
+(defun get-prefixes-rules64 ()
+  (declare (xargs :guard t))
+  '(mv-nth-0-of-get-prefixes-of-set-rip
+    mv-nth-0-of-get-prefixes-of-set-rax
+    mv-nth-0-of-get-prefixes-of-set-rdx
+    mv-nth-0-of-get-prefixes-of-set-rsi
+    mv-nth-0-of-get-prefixes-of-set-rdi
+    mv-nth-0-of-get-prefixes-of-set-rsp
+    mv-nth-0-of-get-prefixes-of-set-rbp
+    mv-nth-1-of-get-prefixes-of-set-rip
+    mv-nth-1-of-get-prefixes-of-set-rax
+    mv-nth-1-of-get-prefixes-of-set-rdx
+    mv-nth-1-of-get-prefixes-of-set-rsi
+    mv-nth-1-of-get-prefixes-of-set-rdi
+    mv-nth-1-of-get-prefixes-of-set-rsp
+    mv-nth-1-of-get-prefixes-of-set-rbp))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 (defun lifter-rules-common ()
   (append (acl2::base-rules)
@@ -730,6 +779,7 @@
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
           '(ACL2::BOOLOR-OF-NON-NIL)
+          (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           ;;(acl2::core-rules-bv) ;acl2::not-equal-max-int-when-<= not defined
           '(
             ;; Reading/writing registers (or parts of registers).  We leave
@@ -794,7 +844,7 @@
 ;            x86isa::xr-set-flag ;this is the -diff rule
 
             ;; Flags:
-            sub-af-spec32-same ; rewrites to 0, so perhaps worth including this rule
+            x86isa::sub-af-spec32-same ; rewrites to 0, so perhaps worth including this rule
 
             ;; todo: organize these:
 
@@ -954,8 +1004,8 @@
             acl2::slice-of-logext
             x86isa::alignment-checking-enabled-p-and-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
-            logand-becomes-bvand-axe-arg1
-            logand-becomes-bvand-axe-arg2
+            logand-becomes-bvand-axe-arg1-axe
+            logand-becomes-bvand-axe-arg2-axe
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
             acl2::fix-when-acl2-numberp
@@ -1333,7 +1383,7 @@
      ms X86ISA::ms$A
      fault X86ISA::fault$A
      rgfi X86ISA::RGFI$A ;expose xr
-     canonical-address-p-of-0
+     x86isa::canonical-address-p$inline-constant-opener
      addresses-of-subsequent-stack-slots
      ;; addresses-of-subsequent-stack-slots-aux-base
      ;; addresses-of-subsequent-stack-slots-aux-unroll
@@ -2018,6 +2068,7 @@
           (write-rules)
           (read-byte-rules)
           (linear-memory-rules)
+          (get-prefixes-rules64)
           '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs ; puts in rml-size
             ;; this is sometimes needed in 64-bit mode (e.g., when a stack
@@ -3166,4 +3217,7 @@
           (get-prefixes-openers)
           ;; todo: flesh out this list:
           '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs)))
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs
+            ;; could consider things like these:
+            ;; READ-OF-WRITE-DISJOINT2
+            )))

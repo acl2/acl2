@@ -29,7 +29,7 @@
 
 (assert! (not (logic-function-namep "len" (w state))))
 
-(assert! (not (logic-function-namep 'error1 (w state))))
+(assert! (logic-function-namep 'error1 (w state)))
 
 (must-succeed*
  (defun f (x) (declare (xargs :mode :program)) x)

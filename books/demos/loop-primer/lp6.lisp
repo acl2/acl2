@@ -141,9 +141,10 @@
    `(defthm lp6-8
       (equal
        ',names
-       '(EVISCERATE EVISCERATE1-LST EVISCERATE1
-                    UPDATE-BRR-DATA-1-BUILTIN MEMOIZE-FORM
-                    SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1))
+       '(FMT0 FMT0*
+              EVISCERATE EVISCERATE1-LST EVISCERATE1
+              UPDATE-BRR-DATA-1-BUILTIN MEMOIZE-FORM
+              SEARCH-FN SEARCH-FN-GUARD BUILD-STATE1))
       :rule-classes nil)))
 
 ; -----------------------------------------------------------------

@@ -24,8 +24,8 @@
 
 (include-book "support-x86")
 (include-book "support32")
-(include-book "read-over-write-rules")
-(include-book "write-over-write-rules")
+(include-book "read-over-write-rules32")
+(include-book "write-over-write-rules32")
 (include-book "read-over-write-rules64")
 (include-book "write-over-write-rules64")
 (include-book "read-and-write")

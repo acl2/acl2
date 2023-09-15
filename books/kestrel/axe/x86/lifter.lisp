@@ -36,6 +36,8 @@
 
 ;; TODO: add an option to enforce a rewrite step limit in the lifter, for debugging?  May require a change to the rewriter.
 
+;; TODO: Allow the :monitor option to be or include :debug, as we do for other tools.
+
 ;; TODO: Switch to using a simpler rewriter, that doesn't depend on skip-proofs
 
 ;; TODO: Consider updating this to use the new normal forms, at least for 64-bit mode
@@ -46,7 +48,9 @@
 (include-book "support-axe")
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
@@ -56,8 +60,6 @@
 (include-book "kestrel/x86/assumptions32" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)
-(include-book "kestrel/x86/read-over-write-rules" :dir :system)
-(include-book "kestrel/x86/write-over-write-rules" :dir :system)
 (include-book "kestrel/axe/rewriter" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
@@ -2124,6 +2126,7 @@
         (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
         (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
+       (- (acl2::ensure-x86 parsed-executable))
        (user-assumptions (acl2::translate-terms user-assumptions 'lift-subroutine-fn (w state)))
        ;; assumptions (these get simplified below to put them into normal form):
        (assumptions (if (eq :mach-o-64 executable-type)

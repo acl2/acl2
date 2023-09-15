@@ -437,9 +437,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-remove-extobj-args ((args pseudo-term-listp)
-                                (prec-objs atc-string-objinfo-alistp))
-  :returns (filtered-args pseudo-term-listp :hyp (pseudo-term-listp args))
+(define atc-remove-extobj-args ((args expr-listp)
+                                (formals symbol-listp)
+                                (extobjs symbol-listp))
+  :returns (filtered-args expr-listp :hyp (expr-listp args))
   :short "Remove from a list of argument terms
           the ones that are external objects."
   :long
@@ -448,15 +449,19 @@
     "While ACL2 functions have explicit arguments for external objects,
      the corresponding C functions do not, because they access them directly.
      Thus, when generating code for C function calls,
-     we do no need to translate to C
-     the ACL2 function arguments that are external objects.
+     we must omit the ACL2 function arguments that are external objects.
      Those arguments are removed using this code."))
-  (b* (((when (endp args)) nil)
-       (arg (car args)))
-    (if (and (symbolp arg)
-             (assoc-equal (symbol-name arg) prec-objs))
-        (atc-remove-extobj-args (cdr args) prec-objs)
-      (cons arg (atc-remove-extobj-args (cdr args) prec-objs)))))
+  (b* (((when (endp args))
+        (b* (((unless (endp formals))
+              (raise "Internal error: extra formals ~x0." formals)))
+          nil))
+       ((unless (consp formals))
+        (raise "Internal error: extra arguments ~x0." args))
+       (arg (car args))
+       (formal (car formals)))
+    (if (member-eq formal extobjs)
+        (atc-remove-extobj-args (cdr args) (cdr formals) extobjs)
+      (cons arg (atc-remove-extobj-args (cdr args) (cdr formals) extobjs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -643,14 +648,15 @@
   (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
-       ((mv okp
-            called-fn
-            arg-terms
-            in-types
-            out-type
-            affect
-            limit
-            called-fn-guard)
+       ((erp okp
+             called-fn
+             arg-terms
+             in-types
+             out-type
+             affect
+             extobjs
+             limit
+             called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when okp)
         (b* (((when (type-case out-type :void))
@@ -665,16 +671,8 @@
                (msg "The call ~x0 affects ~x1, ~
                      but it should affect ~x2 instead."
                     term gin.affect affect)))
-             ((unless (atc-check-cfun-call-args (formals+ called-fn (w state))
-                                                in-types
-                                                arg-terms))
-              (reterr
-               (msg "The call ~x0 does not satisfy the restrictions ~
-                     on array arguments being identical to the formals."
-                    term)))
              ((erp (pexprs-gout args))
-              (atc-gen-expr-pure-list (atc-remove-extobj-args arg-terms
-                                                              gin.prec-objs)
+              (atc-gen-expr-pure-list arg-terms
                                       (make-pexprs-gin
                                        :context gin.context
                                        :inscope gin.inscope
@@ -693,9 +691,12 @@
                      This is indicative of provably dead code, ~
                      given that the code is guard-verified."
                     called-fn in-types arg-terms args.types)))
+             (call-args (atc-remove-extobj-args args.exprs
+                                                (formals+ called-fn wrld)
+                                                extobjs))
              (expr (make-expr-call
                     :fun (make-ident :name (symbol-name called-fn))
-                    :args args.exprs))
+                    :args call-args))
              ((when (eq called-fn 'quote))
               (reterr (raise "Internal error: called function is QUOTE.")))
              (term `(,called-fn ,@args.terms))
@@ -3012,7 +3013,7 @@
        ((unless (equal int.type type))
         (reterr
          (msg "The term ~x0 of type ~x1 does not have ~
-               the expected type ~x1. ~
+               the expected type ~x2. ~
                This is indicative of ~
                unreachable code under the guards, ~
                given that the code is guard-verified."
@@ -3158,9 +3159,28 @@
           object-disjointp-commutative
           read-var-of-add-var
           remove-flexible-array-member-when-absent
+          not-flexible-array-member-p-when-ucharp
+          not-flexible-array-member-p-when-scharp
+          not-flexible-array-member-p-when-ushortp
+          not-flexible-array-member-p-when-sshortp
+          not-flexible-array-member-p-when-uintp
+          not-flexible-array-member-p-when-sintp
+          not-flexible-array-member-p-when-ulongp
+          not-flexible-array-member-p-when-slongp
+          not-flexible-array-member-p-when-ullongp
+          not-flexible-array-member-p-when-sllongp
           not-flexible-array-member-p-when-value-pointer
           value-fix-when-valuep
-          ,valuep-when-type-pred
+          valuep-when-ucharp
+          valuep-when-scharp
+          valuep-when-ushortp
+          valuep-when-sshortp
+          valuep-when-uintp
+          valuep-when-sintp
+          valuep-when-ulongp
+          valuep-when-slongp
+          valuep-when-ullongp
+          valuep-when-sllongp
           ,type-pred-of-type-write
           ,not-flexible-array-member-p-when-type-pred
           ident-fix-when-identp
@@ -3292,7 +3312,9 @@
                                ulong-array-length-of-ulong-array-write
                                slong-array-length-of-slong-array-write
                                ullong-array-length-of-ullong-array-write
-                               sllong-array-length-of-sllong-array-write))))
+                               sllong-array-length-of-sllong-array-write
+                               mv-nth-of-cons
+                               (:e zp)))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -3428,6 +3450,7 @@
                                not-zp-of-limit-minus-const
                                compustatep-of-exit-scope
                                compustatep-of-update-object
+                               compustatep-of-update-static-var
                                compustatep-of-if*-when-both-compustatep
                                uchar-array-length-of-uchar-array-write
                                schar-array-length-of-schar-array-write
@@ -4642,6 +4665,7 @@
                                 (arg-terms pseudo-term-listp)
                                 (arg-types type-listp)
                                 (affect symbol-listp)
+                                (extobjs symbol-listp)
                                 (limit pseudo-termp)
                                 (called-fn-guard symbolp)
                                 (gin stmt-ginp)
@@ -4670,14 +4694,6 @@
                but in the function ~x0 it ends with ~
                a call of ~x1 on arguments ~x2 instead."
               gin.fn called-fn arg-terms)))
-       ((unless (atc-check-cfun-call-args (formals+ called-fn wrld)
-                                          arg-types
-                                          arg-terms))
-        (reterr
-         (msg "The call of ~x0 with arguments ~x1 ~
-               does not satisfy the restrictions ~
-               on array and pointer arguments being identical to the formals."
-              called-fn arg-terms)))
        ((unless (equal gin.affect affect))
         (reterr
          (msg "When generating C code for the function ~x0, ~
@@ -4687,8 +4703,7 @@
                being affected here."
               gin.fn called-fn affect gin.affect)))
        ((erp (pexprs-gout args))
-        (atc-gen-expr-pure-list (atc-remove-extobj-args arg-terms
-                                                        gin.prec-objs)
+        (atc-gen-expr-pure-list arg-terms
                                 (make-pexprs-gin
                                  :context gin.context
                                  :inscope gin.inscope
@@ -4707,9 +4722,12 @@
                This is indicative of provably dead code, ~
                given that the code is guard-verified."
               called-fn arg-types arg-terms args.types)))
+       (call-args (atc-remove-extobj-args args.exprs
+                                          (formals+ called-fn wrld)
+                                          extobjs))
        (call-expr
         (make-expr-call :fun (make-ident :name (symbol-name called-fn))
-                        :args args.exprs))
+                        :args call-args))
        ((when (eq called-fn 'quote))
         (reterr (raise "Internal error: called function is QUOTE.")))
        (term `(,called-fn ,@args.terms))
@@ -4720,10 +4738,7 @@
        (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
        ((when (or (not gin.proofs)
                   (not called-fn-thm)
-                  (consp (cdr affect)) ; <- temporary
-                  (b* ((info (atc-get-var (car affect) gin.inscope)))
-                    (and info
-                         (atc-var-info->externalp info))))) ; <- temporary
+                  (consp (cdr affect)))) ; <- temporary
         (retok (make-stmt-gout
                 :items (list (block-item-stmt (stmt-expr call-expr)))
                 :type (type-void)
@@ -4915,7 +4930,20 @@
              value-array->length-when-ulong-arrayp
              value-array->length-when-slong-arrayp
              value-array->length-when-ullong-arrayp
-             value-array->length-when-sllong-arrayp))))
+             value-array->length-when-sllong-arrayp
+             read-object-of-objdesign-static-to-objdesign-of-var
+             read-object-of-objdesign-static
+             var-autop-of-add-frame
+             var-autop-of-enter-scope
+             var-autop-of-add-var
+             var-autop-of-update-var
+             var-autop-of-update-static-var
+             var-autop-of-update-object
+             write-static-var-to-update-static-var
+             write-static-var-okp-of-add-var
+             write-static-var-okp-of-enter-scope
+             write-static-var-okp-of-add-frame
+             write-static-var-okp-when-valuep-of-read-static-var))))
        ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                  :formula call-formula
                                                  :hints call-hints
@@ -4964,7 +4992,9 @@
                                (:e stmt-expr->get)
                                not-zp-of-limit-variable
                                ,call-thm-name
-                               compustatep-of-update-object))))
+                               compustatep-of-update-var
+                               compustatep-of-update-object
+                               compustatep-of-update-static-var))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -5020,6 +5050,16 @@
           not-flexible-array-member-p-when-slongp
           not-flexible-array-member-p-when-ullongp
           not-flexible-array-member-p-when-sllongp
+          not-flexible-array-member-p-when-uchar-arrayp
+          not-flexible-array-member-p-when-schar-arrayp
+          not-flexible-array-member-p-when-ushort-arrayp
+          not-flexible-array-member-p-when-sshort-arrayp
+          not-flexible-array-member-p-when-uint-arrayp
+          not-flexible-array-member-p-when-sint-arrayp
+          not-flexible-array-member-p-when-ulong-arrayp
+          not-flexible-array-member-p-when-slong-arrayp
+          not-flexible-array-member-p-when-ullong-arrayp
+          not-flexible-array-member-p-when-sllong-arrayp
           not-flexible-array-member-p-when-value-pointer
           value-fix-when-valuep
           valuep-when-ucharp
@@ -5050,7 +5090,17 @@
           ident-fix-when-identp
           identp-of-ident
           equal-of-ident-and-ident
-          (:e str-fix)))
+          (:e str-fix)
+          objdesign-of-var-of-update-static-var-iff
+          read-object-of-objdesign-static
+          read-var-to-read-static-var
+          read-static-var-of-update-static-var
+          var-autop-of-add-frame
+          var-autop-of-enter-scope
+          var-autop-of-add-var
+          var-autop-of-update-var
+          var-autop-of-update-static-var
+          var-autop-of-update-object))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
@@ -6159,8 +6209,7 @@
               (reterr
                (msg "A loop body must end with ~
                      a recursive call on every path, ~
-                     but in the function ~x0 ~
-                     it ends with ~x1 instead."
+                     but in the function ~x0 it ends with ~x1 instead."
                     gin.fn term))))
           (cond
            ((equal terms gin.affect)
@@ -6259,14 +6308,15 @@
                  a recursive call to the loop function occurs ~
                  not at the end of the computation on some path."
                 gin.fn))))
-       ((mv okp
-            called-fn
-            arg-terms
-            in-types
-            out-type
-            fn-affect
-            limit
-            called-fn-guard)
+       ((erp okp
+             called-fn
+             arg-terms
+             in-types
+             out-type
+             fn-affect
+             extobjs
+             limit
+             called-fn-guard)
         (atc-check-cfun-call term gin.var-term-alist gin.prec-fns wrld))
        ((when (and okp
                    (type-case out-type :void)))
@@ -6274,6 +6324,7 @@
                                 arg-terms
                                 in-types
                                 fn-affect
+                                extobjs
                                 limit
                                 called-fn-guard
                                 gin

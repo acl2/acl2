@@ -1329,7 +1329,7 @@
                 )
            (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
                   (leftrotate size amt1 x)))
-  :hints (("Goal" :in-theory (e/d (bvsx bvshr bvshl-rewrite-with-bvchop leftrotate)
+  :hints (("Goal" :in-theory (e/d (bvsx bvashr bvshr bvshl-rewrite-with-bvchop leftrotate)
                                   (;+-becomes-bvplus-hack
                                    )))))
 
@@ -1357,7 +1357,7 @@
                 (natp size))
            (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
                   (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
-  :hints (("Goal" :in-theory (enable bvshr bvsx bvshl-rewrite-with-bvchop leftrotate))))
+  :hints (("Goal" :in-theory (enable bvashr bvshr bvsx bvshl-rewrite-with-bvchop leftrotate))))
 
 (defthm bvor-of-bvashr-and-bvshl-alt
   (implies (and (unsigned-byte-p (+ amt1 amt2) x)

@@ -594,9 +594,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod, around August 2023: fmt is no longer in :program mode.
+#|
 (must-eval-to-t
  (b* (((er x) (ensure-function-program-mode 'fmt "This" t nil 'test state)))
    (value (equal x nil))))
+|#
 
 (must-eval-to-t
  (b* (((er x) (ensure-function-program-mode 'prove "This" t nil 'test state)))

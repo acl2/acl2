@@ -230,6 +230,16 @@
              (objdesign-of-var var (if* a b c)))
     :enable if*)
 
+  (defruled read-object-of-objdesign-static-to-objdesign-of-var
+    (implies (and (objdesign-of-var id compst)
+                  (not (var-autop id compst)))
+             (equal (read-object (objdesign-static id) compst)
+                    (read-object (objdesign-of-var id compst) compst)))
+    :enable (read-object-of-objdesign-of-var-to-read-var
+             read-var-to-read-static-var
+             read-object
+             read-static-var))
+
   (defval *atc-object-designator-rules*
     '(objdesign-of-var-when-static
       not-nil-when-objdesignp
