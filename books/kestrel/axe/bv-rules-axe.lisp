@@ -1289,7 +1289,7 @@
 
 
 (defthmd bvcat-blast-low
-  (implies (and (axe-syntaxp (not (quotep lowval))) ;prevents loops ;Fri Mar  4 20:18:21 2011
+  (implies (and (syntaxp (not (quotep lowval))) ;prevents loops ;Fri Mar  4 20:18:21 2011
                 (axe-syntaxp (not (syntactic-call-of 'bvcat lowval dag-array)));Thu Mar  3 01:52:18 2011
                 (< 1 lowsize) ;prevents loops
                 (integerp highsize)
