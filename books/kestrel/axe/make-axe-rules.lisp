@@ -379,7 +379,7 @@
                  ((when (not (axe-syntaxp-exprp axe-syntaxp-expr)))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp argument ~x0 in rule ~x1." axe-syntaxp-expr rule-symbol)
                   (mv :bad-syntaxp-argument *unrelievable-hyps* bound-vars))
-                 ;; Drops dag-array formals passed a last args to functions:
+                 ;; Drops dag-array formals passed as last args to functions:
                  (processed-axe-syntaxp-expr (process-axe-syntaxp-expr axe-syntaxp-expr wrld))
                  (mentioned-vars (free-vars-in-term processed-axe-syntaxp-expr)) ;dag-array has been perhaps removed
                  (allowed-vars bound-vars ;(cons 'dag-array bound-vars)

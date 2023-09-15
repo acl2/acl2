@@ -54,6 +54,9 @@
   (and (consp expr)
        (symbolp (ffn-symb expr))
        (not (eq 'quote (ffn-symb expr)))
+       ;; todo: consider converting quotep to axe-quotep when we make the
+       ;; rule, but we would need different checks before and after
+       (not (eq 'quotep (ffn-symb expr))) ; the rule should use axe-quotep instead
        (list-of-variables-and-constantsp (fargs expr))
        ;; special case:
        (implies (eq (ffn-symb expr) 'axe-quotep)
