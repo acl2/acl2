@@ -199,6 +199,103 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-make-lets-of-uterms (bindings (uterms true-listp))
+  :returns (let-uterms true-listp)
+  :short "Create a list of @(tsee let)s with the same bindings
+          and with bodies from a list of terms, in the same order."
+  (cond ((endp uterms) nil)
+        (t (cons `(let ,bindings ,(car uterms))
+                 (atc-make-lets-of-uterms bindings (cdr uterms))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-make-mv-lets-of-uterms (vars vars-uterms (uterms true-listp))
+  :returns (mv-let-uterms true-listp)
+  :short "Create a list of @(tsee mv-let)s with the same bindings
+          and with bodies from a list of terms, in the same order."
+  (cond ((endp uterms) nil)
+        (t (cons `(mv-let ,vars ,vars-uterms ,(car uterms))
+                 (atc-make-mv-lets-of-uterms vars vars-uterms (cdr uterms))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-uterm-to-components ((uterm "An untranslated term.") (comps posp))
+  :returns (uterms true-listp "Untranslated terms.")
+  :short "Split a term into component terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in generation of type assertions in modular proofs,
+     precisely in @(tsee atc-gen-term-type-formula).
+     A term may return one or more results, in general.
+     For terms that represent C constructs, each result has a C type,
+     and the type assertions in modular theorems say just that.
+     This ACL2 function turns a term into one or more terms,
+     one for each returned result:
+     the resulting terms represent the results of the term,
+     and can be individually used as arguments of type predicates
+     in the generated theorems.")
+   (xdoc::p
+    "A seemingly easy way to do this would be to apply @(tsee mv-nth)
+     with increasing indices to the term if it returns two or more results,
+     and instead return the term unchanged if it returns a single result.
+     But then, because of the presence of the @(tsee mv-nth) in certain places,
+     the generated theorems would not be readily applicable as rewrite rules,
+     in subsequent theorems that depend on them.
+     We need to ``push'' the @(tsee mv-nth)s into the term, but only to a point:
+     we push them through @(tsee let)s and @(tsee mv-let)s,
+     and also through @(tsee mv)s;
+     in all other cases, we apply the @(tsee mv-nth)s.
+     This leads to the following recursive definition,
+     which includes some defensive checks.
+     The @('comps') input is the number of results."))
+  (b* (((when (symbolp uterm))
+        (b* (((unless (eql comps 1))
+              (raise "Internal error: ~x0 components for ~x1." comps uterm)))
+          (list uterm)))
+       ((unless (and (true-listp uterm)
+                     (consp uterm)))
+        (raise "Internal error: unexpected term ~x0." uterm))
+       ((when (eq (car uterm) 'mv))
+        (b* ((uterms (cdr uterm))
+             ((unless (eql (len uterms) comps))
+              (raise "Internal error: ~x0 components for ~x1." comps uterm)))
+          uterms))
+       ((when (eq (car uterm) 'let))
+        (b* (((unless (and (consp (cdr uterm))
+                           (consp (cddr uterm))
+                           (endp (cdddr uterm))))
+              (raise "Internal error: malformed LET ~x0." uterm))
+             (bindings (cadr uterm))
+             (body-uterm (caddr uterm))
+             (body-uterms (atc-uterm-to-components body-uterm comps)))
+          (atc-make-lets-of-uterms bindings body-uterms)))
+       ((when (eq (car uterm) 'mv-let))
+        (b* (((unless (and (consp (cdr uterm))
+                           (consp (cddr uterm))
+                           (consp (cdddr uterm))
+                           (endp (cddddr uterm))))
+              (raise "Internal error: malformed MV-LET ~x0." uterm))
+             (vars (cadr uterm))
+             (vars-uterms (caddr uterm))
+             (body-uterm (cadddr uterm))
+             (body-uterms (atc-uterm-to-components body-uterm comps)))
+          (atc-make-mv-lets-of-uterms vars vars-uterms body-uterms))))
+    (if (eql comps 1)
+        (list uterm)
+      (rev (atc-uterm-to-components-aux uterm comps))))
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :prepwork
+  ((define atc-uterm-to-components-aux ((uterm "An untranslated term.")
+                                        (comps natp))
+     :returns (uterms true-listp "Untranslated terms.")
+     :parents nil
+     (cond ((zp comps) nil)
+           (t (cons `(mv-nth ,(1- comps) ,uterm)
+                    (atc-uterm-to-components-aux uterm (1- comps))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-term-type-formula ((uterm "An untranslated term.")
                                    (type typep)
                                    (affect symbol-listp)
@@ -247,43 +344,36 @@
      This way, we obtain the list of all the types of
      all the values returned by the term.
      This list cannot be empty, because a term always returns some values.
-     If there is just one, we return a single formula
-     that applies the (only) type's recognizer to the term.
-     If there are two or more, we go through them,
-     and return formulas that apply each type recognizer
-     to the @(tsee mv-nth) of the term with increasing index."))
-  (b* (((mv affect-types thm-names) (atc-gen-type-formulas-aux affect inscope))
+     Then we use @(tsee atc-uterm-to-components) to obtain terms for the results
+     (see that function's documentation).
+     Finally we go through the types and terms,
+     which must be equal in number,
+     and return formulas for the terms."))
+  (b* (((mv affect-types thm-names) (atc-gen-type-formulas-aux1 affect inscope))
        (types (if (type-case type :void)
                   affect-types
                 (cons type affect-types)))
        ((when (endp types))
         (raise "Internal error: term ~x0 returns no values." uterm)
         (mv nil nil))
-       ((when (endp (cdr types)))
-        (b* ((type (car types))
-             (pred (atc-type-to-recognizer type prec-tags)))
-          (if (or (symbolp uterm)
-                  (not (type-case type :array)))
-              (mv `(,pred ,uterm) thm-names)
-            (b* ((elemtype (type-array->of type))
-                 (elemfixtype (type-kind elemtype))
-                 (array-length (pack elemfixtype '-array-length)))
-              (mv `(and (,pred ,uterm)
-                        (equal (,array-length ,uterm)
-                               (,array-length ,(car affect))))
-                  thm-names)))))
-       (affected-vars (if (type-case type :void)
-                          affect
-                        (cons nil affect)))
+       (uterms (atc-uterm-to-components uterm (len types)))
        (conjuncts
-        (atc-gen-type-formulas-aux-aux uterm 0 types affected-vars prec-tags))
-       (formula `(and ,@conjuncts)))
+        (atc-gen-type-formulas-aux2 types
+                                    uterms
+                                    (if (type-case type :void)
+                                        affect
+                                      (cons nil affect))
+                                    prec-tags))
+       (formula (if (endp (cdr conjuncts))
+                    (car conjuncts)
+                  `(and ,@conjuncts))))
     (mv formula thm-names))
+  :guard-hints (("Goal" :in-theory (enable posp)))
 
   :prepwork
 
-  ((define atc-gen-type-formulas-aux ((affect symbol-listp)
-                                      (inscope atc-symbol-varinfo-alist-listp))
+  ((define atc-gen-type-formulas-aux1 ((affect symbol-listp)
+                                       (inscope atc-symbol-varinfo-alist-listp))
      :returns (mv (types type-listp)
                   (thm-names symbol-listp))
      :parents nil
@@ -296,37 +386,38 @@
           (type (atc-var-info->type info))
           (thm-name (atc-var-info->thm info))
           ((mv more-types more-thm-names)
-           (atc-gen-type-formulas-aux (cdr affect) inscope)))
+           (atc-gen-type-formulas-aux1 (cdr affect) inscope)))
        (mv (cons type more-types)
            (cons thm-name more-thm-names)))
      ///
      (more-returns
       (types true-listp :rule-classes :type-prescription)))
 
-   (define atc-gen-type-formulas-aux-aux ((uterm "An untranslated term.")
-                                          (index natp)
-                                          (types type-listp)
-                                          (affected-vars symbol-listp)
-                                          (prec-tags atc-string-taginfo-alistp))
+   (define atc-gen-type-formulas-aux2 ((types type-listp)
+                                       (uterms true-listp)
+                                       (affected-vars symbol-listp)
+                                       (prec-tags atc-string-taginfo-alistp))
      :returns (conjuncts true-listp)
      :parents nil
      (b* (((when (endp types)) nil)
           (type (car types))
+          (uterm (car uterms))
+          (affected-var (car affected-vars))
           (pred (atc-type-to-recognizer type prec-tags))
           (conjuncts
            (if (type-case type :array)
                (b* ((elemtype (type-array->of type))
                     (elemfixtype (type-kind elemtype))
                     (array-length (pack elemfixtype '-array-length)))
-                 `((,pred (mv-nth ,index ,uterm))
-                   (equal (,array-length (mv-nth ,index ,uterm))
-                          (,array-length ,(car affected-vars)))))
-             `((,pred (mv-nth ,index ,uterm)))))
-          (more-conjuncts (atc-gen-type-formulas-aux-aux uterm
-                                                         (1+ index)
-                                                         (cdr types)
-                                                         (cdr affected-vars)
-                                                         prec-tags)))
+                 `((,pred ,uterm)
+                   ,@(and (not (eq uterm affected-var))
+                          `((equal (,array-length ,uterm)
+                                   (,array-length ,affected-var))))))
+             `((,pred ,uterm))))
+          (more-conjuncts (atc-gen-type-formulas-aux2 (cdr types)
+                                                      (cdr uterms)
+                                                      (cdr affected-vars)
+                                                      prec-tags)))
        (append conjuncts more-conjuncts)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

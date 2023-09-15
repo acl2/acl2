@@ -4,6 +4,24 @@
 
 (in-package "ACL2")
 
+; Re-enable functions that were disabled in the boot-strap after this book was
+; developed.
+#-acl2-devel
+(local (in-theory (enable error-fms
+                          error-fms-channel
+                          error1
+                          error1-state-p
+                          fms
+                          fmt
+                          fmt-abbrev1
+                          fmt-ppr
+                          fmt0
+                          fmt1
+                          fmt1!
+                          ppr
+                          ppr1
+                          ppr2)))
+
 (make-event
  (er-progn (set-gag-mode-evisc-tuple t state)
            (value '(value-triple nil))))
@@ -262,7 +280,7 @@
 (verify-termination fmt-soft-right-margin) ; and guards
 (verify-termination fmt-hard-right-margin) ; and guards
 
-(include-book "arithmetic/top-with-meta" :dir :system)
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (verify-termination scan-past-whitespace
   (declare (xargs :verify-guards nil)))
@@ -741,12 +759,12 @@
 
 (verify-guards splat)
 
+(local (in-theory (disable functional-commutativity-of-minus-*-left)))
+
 (encapsulate
   ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
-
-  (in-theory (disable functional-commutativity-of-minus-*-left))
 
   (verify-termination number-of-digits
     (declare (xargs :verify-guards nil)))
