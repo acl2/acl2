@@ -1,7 +1,7 @@
 ; Tools for processing the alists that represent parsed mach-o files.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -159,3 +159,6 @@
 (defun get-all-mach-o-symbols (parsed-mach-o)
   (let ((text-section-number (get-text-section-number-mach-o parsed-mach-o)))
     (get-names-from-mach-o-symbol-table text-section-number (get-mach-o-symbol-table parsed-mach-o) nil)))
+
+(defun mach-o-cpu-type (parsed-mach-o)
+  (lookup-eq-safe :cputype (lookup-eq-safe :header parsed-mach-o)))
