@@ -95,7 +95,7 @@
                             get-pc-designator-stack-from-call-stack-of-pop-frame))))
 
 (defthm run-until-exit-segment-or-hit-loop-header-opener-1-non-myif
-  (implies (and (axe-syntaxp (not-is-a-myif s dag-array)) ;; todo: will it always be a make-state?
+  (implies (and (axe-syntaxp (not (is-a-myif s dag-array))) ;; todo: will it always be a make-state?
                 (< segment-stack-height (stack-height s))
                 (not (member-equal (get-pc-designator-from-state s) loop-headers)))
            (equal (run-until-exit-segment-or-hit-loop-header segment-stack-height segment-pcs loop-headers s)
@@ -104,7 +104,7 @@
   )
 
 (defthm run-until-exit-segment-or-hit-loop-header-opener-2-non-myif
-  (implies (and (axe-syntaxp (not-is-a-myif s dag-array)) ;; todo: will it always be a make-state?
+  (implies (and (axe-syntaxp (not (is-a-myif s dag-array))) ;; todo: will it always be a make-state?
                 (equal segment-stack-height (stack-height s))
                 (member-equal (jvm::pc (jvm::thread-top-frame (th) s)) segment-pcs)
                 (not (member-equal (get-pc-designator-from-state s) loop-headers)))
