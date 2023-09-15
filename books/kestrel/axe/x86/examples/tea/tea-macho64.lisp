@@ -45,7 +45,6 @@
 ;; Produces the DAG *tea*.
 (def-unrolled tea
   "tea.macho64"
-  :print nil ; todo: this is not respected
   :stack-slots 8
   :target "_encrypt"
   ;; todo: have the tool translate the items in the tuple:
@@ -53,11 +52,10 @@
            (:mem32 (binary-+ '4 (rdi x86)))) ;extract v1
   ;; TODO: How much of this can we automate?
   ;; TODO: Can we just make stronger assumptions about things being loaded at concrete addresses?
-  :assumptions '((canonical-address-p$inline (read 8 (rsp x86) x86)) ;todo: replace something in the standard assumptions with this
-                 (canonical-address-p$inline (rdi x86))
-                 (canonical-address-p$inline (binary-+ 7 (rdi x86)))
+  :assumptions '((canonical-address-p$inline (rdi x86))
+                 (canonical-address-p$inline (binary-+ 7 (rdi x86))) ; first arg has 2 32-bit elements = 8 bytes
                  (canonical-address-p$inline (rsi x86))
-                 (canonical-address-p$inline (binary-+ 15 (rsi x86)))
+                 (canonical-address-p$inline (binary-+ 15 (rsi x86))) ; second arg has 4 32-bit elements = 16 bytes
 
                  ;;disjointness of v and stack:
                  ;; TODO: Why does separate take the :r arguments?
