@@ -389,10 +389,6 @@
                   (bvsx size size2 x)))
   :hints (("Goal" :in-theory (enable bvsx))))
 
-(defthm bvuminus-of-bvsx-16-32-16 ;gen!
-  (equal (BVUMINUS '16 (BVSX '32 '16 x))
-         (bvuminus 16 x)))
-
 (defthm bvchop-of-zf-spec
   (implies (posp size)
            (equal (BVCHOP size (ZF-SPEC$INLINE result))

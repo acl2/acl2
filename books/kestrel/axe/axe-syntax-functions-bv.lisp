@@ -568,3 +568,12 @@
                          (natp (unquote (first (dargs expr))))
                          (acons (unquote quoted-varname) (first (dargs expr)) nil))
                   nil)))))))))
+
+(defund term-should-be-converted-to-bvp (darg dag-array)
+  (declare (xargs :guard (or (myquotep darg)
+                             (and (natp darg)
+                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))))
+  (and (not (consp darg)) ; test for nodenum
+       (let ((expr (aref1 'dag-array dag-array darg)))
+         (and (consp expr)
+              (member-eq (ffn-symb expr) *functions-convertible-to-bv*)))))

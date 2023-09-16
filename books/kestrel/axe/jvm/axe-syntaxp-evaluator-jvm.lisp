@@ -1,7 +1,7 @@
 ; An axe-syntaxp-evaluator that knows about the JVM model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -27,6 +27,7 @@
                                    should-reverse-equality
                                    bv-array-write-nest-ending-inp-axe
                                    bvcat-nest-with-low-zerosp-axe
+                                   term-should-be-converted-to-bvp
                                    no-state-to-step-p ;jvm-specific
                                    bv-array-write-nest-with-val-at-indexp-axe
                                    term-should-be-trimmed-axe-plus-one
