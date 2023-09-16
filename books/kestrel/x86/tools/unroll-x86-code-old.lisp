@@ -33,7 +33,6 @@
 (include-book "symsim")
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/runes" :dir :system)
-(include-book "kestrel/axe/util2" :dir :system) ;for make-cons-nest
 (include-book "kestrel/x86/parsers/parsed-executable-tools" :dir :system)
 
 ;todo: factor some of this stuff out into a lifter-common file
