@@ -878,7 +878,9 @@
                                        ,theorem-body
                                        ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
                                        ,@(and broken-theorem-hints `(:hints ,broken-theorem-hints)))
-                                    model-query-timeout debug print nil state))
+                                    model-query-timeout debug print
+                                    :all ; todo: consider using start-and-return
+                                    nil state))
        ((when erp) (mv erp nil nil nil rand state))
        ;; Try all the recs and record which ones worked:
        ((mv erp model-results state) ; each of the model-results is of the form (<model> <total-num-recs> <first-working-rec-num-or-nil> <total-time>).

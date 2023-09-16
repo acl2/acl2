@@ -2867,8 +2867,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Sends an HTTP POST request containing the POST-DATA to the server at
-;; SERVER-URL.  Parses the response as JSON.  Returns (mv erp
-;; parsed-json-response state).
+;; SERVER-URL.  Parses the response as JSON.
+;; Returns (mv erp parsed-json-response state).
 (defund post-and-parse-response-as-json (server-url timeout post-data debug state)
   (declare (xargs :guard (and (stringp server-url)
                               (natp timeout)
@@ -2886,7 +2886,7 @@
        ;; Parse the JSON:
        ((mv erp parsed-json-response) (acl2::parse-string-as-json post-response))
        ((when erp)
-        (cw "Error parsing JSON response from ~x0.~%" server-url)
+        (cw "Error parsing JSON response from ~x0: ~s1~%" server-url post-response)
         (mv erp nil state))
        (- (and debug (cw "Parsed POST response: ~X01~%" parsed-json-response nil))))
     (mv nil parsed-json-response state)))
@@ -3048,7 +3048,7 @@
            (model-infop (cdr entry))
            (model-info-alistp (rest alist))))))
 
-;; Returns (mv erp recs state).
+;; Returns (mv erp recs state).  If phase is :all, we expect no recs back.
 (defun get-recs-from-ml-model (model
                                num-recs
                                disallowed-rec-types
@@ -3056,7 +3056,12 @@
                                ;; checkpoint-clauses-non-top ; todo: use these too
                                broken-theorem
                                model-info ; the URL, etc.
-                               timeout debug print state)
+                               timeout debug print
+                               ;; :start means we start the model but don't wait for the answer (will ask again later)
+                               ;; :retrieve means we previously started the model and now want the answer
+                               ;; :all means we are not using the start-and-return optimization
+                               phase
+                               state)
   (declare (xargs :guard (and (model-namep model)
                               (natp num-recs)
                               (rec-type-listp disallowed-rec-types)
@@ -3066,7 +3071,8 @@
                               (model-infop model-info)
                               (natp timeout)
                               (booleanp debug)
-                              (acl2::print-levelp print))
+                              (acl2::print-levelp print)
+                              (member-eq phase '(:start :retrieve :all)))
                   :mode :program ; because of make-numbered-checkpoint-entries
                   :stobjs state))
   (b* (((when (not model-info))
@@ -3085,11 +3091,11 @@
         (mv :no-server nil state))
        (- (and print (cw "Server for ~x0 is ~s1.~%" model server-url)))
        ;; Send query to server:
-       ((mv erp semi-parsed-recommendations state) ; semi-parsed means the JSON has been parsed
-        (if (zp num-recs)
+       ((mv erp semi-parsed-response state) ;; semi-parsed means the JSON has been parsed
+        (if (zp num-recs) ;handle this higher up?
             (prog2$ (cw "Not asking server for recommendations since num-recs=0.")
                     (mv nil
-                        nil ; empty list of recommendations
+                        nil ; no server response
                         state))
           (b* ((- (and (acl2::print-level-at-least-tp print)
                        (cw "Asking server for ~x0 recommendations from ~x1 on ~x2 ~s3: " ; the line is ended below when we print the time
@@ -3106,31 +3112,40 @@
                (post-data (acons-all-to-val (rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types)) ; todo: drop this?  can the models handle disallowed unknown rec types?
                                             "off"
                                             post-data))
-               ;; Send POST requqest to server and parse the response:
-               ((mv erp parsed-response state)
+               (post-data (if (eq :start phase)
+                              (acons "start-and-return" "true" post-data) ; starts the model working, must call it later on the same args to get the answer
+                            (if (eq :retrieve phase)
+                                (acons "retrieve-started" "true" post-data)
+                              post-data)))
+               ;; Send POST request to server and parse the response:
+               ((mv erp semi-parsed-response state)
                 (post-and-parse-response-as-json server-url timeout post-data debug state))
                ((when erp)
                 ;; (er hard? 'get-recs-from-ml-model "Error in HTTP POST: ~@0" erp) ; was catching rare "output operation on closed SSL stream" errors
-                (mv erp nil state))
-               ((when (not (acl2::parsed-json-arrayp parsed-response)))
-                (er hard? 'get-recs-from-ml-model "Error: Response from server is not a JSON array: ~x0." parsed-response)
-                (mv :bad-server-response nil state)))
-            (mv nil (acl2::parsed-json-array->values parsed-response) state))))
-       ((when erp) (mv erp nil state))
-       (- (if (not (consp semi-parsed-recommendations))
-              (cw " WARNING: No recommendations returned from server for ~x0.~%" model)
-            (if (not (equal num-recs (len semi-parsed-recommendations)))
-                (cw " WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
-              nil)))
-       ;; Parse the individual strings in the recs:
-       ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
-       ((when erp)
-        (er hard? 'get-recs-from-ml-model "Error parsing recommendations.")
-        (mv erp nil state))
-       (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil))))
-    (mv nil ; no error
-        ml-recommendations
-        state)))
+                (mv erp nil state)))
+            (mv nil semi-parsed-response state))))
+       ((when erp) (mv erp nil state)))
+    (if (eq :start phase)
+        (mv nil nil state) ;; todo: check that the parsed response is the expected string
+      ;; We expect to have received actual recs:
+      (b* (((when (not (acl2::parsed-json-arrayp semi-parsed-response)))
+            (er hard? 'get-recs-from-ml-model "Error: Response from server is not a JSON array: ~x0." semi-parsed-response)
+            (mv :bad-server-response nil state))
+           (semi-parsed-recommendations (acl2::parsed-json-array->values semi-parsed-response))
+           (- (if (not (consp semi-parsed-recommendations))
+                  (cw " WARNING: No recommendations returned from server for ~x0.~%" model)
+                (if (not (equal num-recs (len semi-parsed-recommendations)))
+                    (cw " WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
+                  nil)))
+           ;; Parse the individual strings in the recs:
+           ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
+           ((when erp)
+            (er hard? 'get-recs-from-ml-model "Error parsing recommendations.")
+            (mv erp nil state))
+           (- (and debug (cw "Parsed ML recommendations: ~X01~%" ml-recommendations nil))))
+        (mv nil ; no error
+            ml-recommendations
+            state)))))
 
 ;; Goes through the MODELS, getting recs from each.  Returns an alist from model-names to rec-lists.
 ;; Returns (mv erp model-rec-alist state), where MODEL-REC-ALIST maps model-names to rec lists.
@@ -3144,6 +3159,7 @@
                              timeout
                              debug
                              print
+                             phase
                              acc
                              state)
   (declare (xargs :guard (and (model-info-alistp model-info-alist)
@@ -3153,7 +3169,8 @@
                               (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
                               (natp timeout)
                               (booleanp debug)
-                              (acl2::print-levelp print))
+                              (acl2::print-levelp print)
+                              (member-eq phase '(:retrieve :all)))
                   :mode :program
                   :stobjs state))
 ;  (declare (ignore checkpoint-clauses-non-top)) ; ttodo
@@ -3216,7 +3233,7 @@
                (make-cases-recs translated-theorem-body checkpoint-clauses-top checkpoint-clauses-non-top num-recs-per-model print state)))
             (otherwise
              ;; It's a normal ML model:
-             (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print state))))
+             (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print phase state))))
          ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
          (- (and erp (cw "Error using ~x0.~%" model))) ; but continue
          (- (if print-timep
@@ -3234,10 +3251,75 @@
          (recs (remove-disallowed-recs recs disallowed-rec-types nil)))
       (get-recs-from-models (rest model-info-alist)
                             num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top translated-theorem-body broken-theorem
-                            timeout debug print
+                            timeout debug print phase
                             ;; Associate this model with its recs in the result:
                             (acons model recs acc)
                             state))))
+
+;; Returns (mv erp state)
+(defun startup-models (model-info-alist
+                       num-recs-per-model
+                       disallowed-rec-types
+                       checkpoint-clauses-top
+                       checkpoint-clauses-non-top
+                       translated-theorem-body
+                       broken-theorem ; a thm or defthm form
+                       timeout
+                       debug
+                       print
+                       state)
+  (declare (xargs :guard (and (model-info-alistp model-info-alist)
+                              (natp num-recs-per-model)
+                              (rec-type-listp disallowed-rec-types)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses-top)
+                              (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
+                              (natp timeout)
+                              (booleanp debug)
+                              (acl2::print-levelp print))
+                  :mode :program
+                  :stobjs state)
+           (irrelevant translated-theorem-body) ; todo!
+           )
+  (if (endp model-info-alist)
+      (mv nil state) ; no error
+    (b* ((entry (first model-info-alist))
+         (model (car entry))
+         (model-info (cdr entry))
+         (print-timep (acl2::print-level-at-least-tp print))
+         ;; Record the start time (if we will need it):
+         ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+         ;; Dispatch to the model:
+         ((mv erp
+              & ; recs should be nil
+              state)
+          (case model
+            ;; TODO: Make the dispatch to heursitics generic, so we don't have to mention them all here:
+            ((:enable-fns-body :enable-fns-top-cps :enable-fns-non-top-cps
+              :enable-rules-body :enable-rules-top-cps :enable-rules-non-top-cps
+              :history :induct :cases)
+             (mv nil nil state) ; no need to start the model
+             )
+            (otherwise
+             ;; It's a normal ML model:
+             (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print :start state))))
+         ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+         (- (and erp (cw "Error using ~x0.~%" model))) ; but continue
+         (- (if print-timep
+                (let* ((time-diff (- done-time start-time))
+                       (time-diff (if (< time-diff 0)
+                                      (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
+                                              0)
+                                    time-diff)))
+                  (progn$ (cw "Started model in ")
+                          (acl2::print-to-hundredths time-diff)
+                          (cw "s~%") ; s = seconds
+                          ))
+              nil)))
+      (startup-models (rest model-info-alist)
+                      num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top translated-theorem-body broken-theorem
+                      timeout debug print
+                      ;; Associate this model with its recs in the result:
+                      state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3355,6 +3437,7 @@
                                  step-limit time-limit
                                  disallowed-rec-types ;todo: for this, handle the similar treatment of :use-lemma and :add-enable-hint?
                                  max-wins
+                                 start-and-return
                                  state)
   (declare (xargs :guard (and (acl2::pseudo-term-list-listp checkpoint-clauses-top)
                               (acl2::pseudo-term-list-listp checkpoint-clauses-non-top)
@@ -3379,14 +3462,31 @@
                               (or ;; (eq :auto max-wins)
                                (null max-wins)
                                (natp max-wins))
-                              (rec-type-listp disallowed-rec-types))
+                              (rec-type-listp disallowed-rec-types)
+                              (booleanp start-and-return))
                   :stobjs state
                   :mode :program))
   (b* ((state (acl2::widen-margins state))
+       ;; Start all the models working, in parallel:
+       (translated-theorem-body (acl2::translate-term theorem-body 'best-rec-for-checkpoints (w state)))
+
+       ;; Maybe start the models working:
+       ((mv erp state)
+        (if start-and-return
+            (prog2$ (cw "Starting the models:~%")
+                    (startup-models model-info-alist num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top
+                                    translated-theorem-body broken-theorem timeout debug print state))
+          (mv nil state)))
+       ((when erp) (mv erp nil nil state))
+
+       ;; Go back and get the recs from the models (TODO: Could reduce waiting even more by trying some recs first):
+       ;; WARNING: Keep args in sync between startup-models and get-recs-from-models (except startup-models has no acc)!
+       (- (cw "Querying the models:~%"))
        ((mv erp model-rec-alist state)
         (get-recs-from-models model-info-alist num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top
-                              (acl2::translate-term theorem-body 'best-rec-for-checkpoints (w state))
-                              broken-theorem timeout debug print nil state))
+                              translated-theorem-body broken-theorem timeout debug print
+                              (if start-and-return :retrieve :all)
+                              nil state))
        ((when erp) (mv erp nil nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs model-rec-alist))
@@ -3399,7 +3499,7 @@
                           (show-recommendations recommendations state))
                 state))
        ;; Try the recommendations:
-       (- (and print (cw "~%TRYING RECOMMENDATIONS:~%")))
+       (- (and print (cw "~%TRYING ~x0 RECOMMENDATIONS:~%" (len recommendations))))
        ((mv erp successful-recs extra-recs-ignoredp state)
         (try-recommendations recommendations current-book-absolute-path avoid-current-bookp theorem-name theorem-body theorem-hints theorem-otf-flg step-limit time-limit max-wins improve-recsp print nil state))
        (state (acl2::unwiden-margins state))
@@ -3456,6 +3556,7 @@
                              disallowed-rec-types
                              max-wins
                              suppress-trivial-warningp
+                             start-and-return
                              state)
   (declare (xargs :guard (and (symbolp theorem-name)
                               ;; theorem-body is an untranslated term
@@ -3480,7 +3581,8 @@
                               (or ;; (eq :auto max-wins)
                                (null max-wins)
                                (natp max-wins))
-                              (booleanp suppress-trivial-warningp))
+                              (booleanp suppress-trivial-warningp)
+                              (booleanp start-and-return))
                   :stobjs state
                   :mode :program))
   (b* (((mv erp provedp rec checkpoint-clauses-top checkpoint-clauses-non-top state)
@@ -3517,6 +3619,7 @@
                                 step-limit time-limit
                                 disallowed-rec-types
                                 max-wins
+                                start-and-return
                                 state))))
 
 ;; Keeps the entries in ALIST that correspond to the MODELS.  Also does some
@@ -3591,6 +3694,7 @@
                          disallowed-rec-types
                          max-wins
                          models
+                         start-and-return
                          state)
   (declare (xargs :guard (and (symbolp theorem-name)
                               ;; theorem-body
@@ -3615,7 +3719,8 @@
                               (or (eq :all models)
                                   (eq :non-ml models)
                                   (model-namep models) ; represents a singleton set
-                                  (model-namesp models)))
+                                  (model-namesp models))
+                              (booleanp start-and-return))
                   :stobjs state
                   :mode :program))
   (b* ((wrld (w state))
@@ -3647,6 +3752,7 @@
                               disallowed-rec-types
                               max-wins
                               nil
+                              start-and-return
                               state))
        ((when erp) (mv erp nil state)))
     (if successp
@@ -3677,9 +3783,10 @@
                          (max-wins ':auto)
                          (models ':all)
                          (rule-classes '(:rewrite))
+                         (start-and-return 'nil) ; todo: make the default t (here and elsewhere)
                          )
   `(acl2::make-event-quiet
-    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models ',start-and-return state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::defthm-advice (&rest rest) `(defthm-advice ,@rest))
@@ -3699,6 +3806,7 @@
                       disallowed-rec-types
                       max-wins
                       models
+                      start-and-return
                       state)
   (declare (xargs :guard (and ;; theorem-body
                           ;; theorem-hints
@@ -3721,7 +3829,8 @@
                           (or (eq :all models)
                               (eq :non-ml models)
                               (model-namep models) ; represents a singleton set
-                              (model-namesp models)))
+                              (model-namesp models))
+                          (booleanp start-and-return))
                   :stobjs state
                   :mode :program))
   (b* ((wrld (w state))
@@ -3753,6 +3862,7 @@
                               disallowed-rec-types
                               max-wins
                               nil
+                              start-and-return
                               state))
        ((when erp) (mv erp nil state)))
     (if successp
@@ -3779,9 +3889,10 @@
                       (models ':all)
                       (improve-recsp 't)
                       ;; no rule-classes
+                      (start-and-return 'nil)
                       )
   `(acl2::make-event-quiet
-    (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
+    (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models ',start-and-return  state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::thm-advice (&rest rest) `(thm-advice ,@rest))
@@ -3801,6 +3912,7 @@
                   disallowed-rec-types
                   max-wins
                   models
+                  start-and-return
                   state)
   (declare (xargs :guard (and (natp n)
                               (booleanp improve-recsp)
@@ -3822,7 +3934,8 @@
                               (or (eq :all models)
                                   (eq :non-ml models)
                                   (model-namep models) ; represents a singleton set
-                                  (model-namesp models)))
+                                  (model-namesp models))
+                              (booleanp start-and-return))
                   :stobjs state
                   :mode :program ; because we untranslate (for now)
                   ))
@@ -3864,8 +3977,8 @@
                                raw-checkpoint-clauses-top))
        (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
                                                           state))
-       (- (and (acl2::print-level-at-least-tp print) (cw "Top-level Proof checkpoints to use: ~X01.)~%" checkpoint-clauses-top nil)))
-       (- (and (acl2::print-level-at-least-tp print) (cw "Non-top-level Proof checkpoints to use: ~X01.)~%" checkpoint-clauses-non-top nil)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Top-level Proof checkpoints to use: ~X01.~%" checkpoint-clauses-top nil)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Non-top-level Proof checkpoints to use: ~X01.~%" checkpoint-clauses-non-top nil)))
        ((mv erp
             & ;; successp
             & ;; best-rec
@@ -3888,6 +4001,7 @@
                                   step-limit time-limit
                                   disallowed-rec-types
                                   max-wins
+                                  start-and-return
                                   state))
        ((when erp) (mv erp nil state))
        ;; Ensure there are no checkpoints left over from an attempt to use advice, in case the user calls the tool again.
@@ -3932,8 +4046,9 @@
                        (time-limit ':auto)
                        (disallowed-rec-types 'nil)
                        (max-wins ':auto)
-                       (models ':all))
-  `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models state)))
+                       (models ':all)
+                       (start-and-return 'nil))
+  `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models ',start-and-return state)))
 
 ;; Just a synonym in ACL2 package
 (defmacro acl2::advice (&rest rest) `(advice ,@rest))
@@ -3989,17 +4104,19 @@
                   :stobjs state
                   :mode :program))
   (b* ( ;; Get all the recs to try:
+       (broken-theorem ;; the presumed broken-theorem:
+        `(defthm fake-theorem-name ; todo: use the real name?
+           ,theorem-body
+           ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
+           ,@(and theorem-hints `(:hints ,theorem-hints))))
+       (translated-theorem-body (acl2::translate-term theorem-body 'all-successful-actions-for-checkpoints (w state)))
+       (timeout 40 ; todo
+                )
        ((mv erp model-rec-alist state)
-        (get-recs-from-models model-info-alist
-                              num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top
-                              (acl2::translate-term theorem-body 'all-successful-actions-for-checkpoints (w state))
-                              ;; the presumed broken-theorem:
-                              `(defthm fake-theorem-name ; todo: use the real name?
-                                 ,theorem-body
-                                 ,@(and theorem-otf-flg `(:otf-flg ,theorem-otf-flg))
-                                 ,@(and theorem-hints `(:hints ,theorem-hints)))
-                              40 ; todo: timeout
-                              debug print nil state))
+        (get-recs-from-models model-info-alist num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top
+                              translated-theorem-body broken-theorem timeout debug print
+                              :all ; todo: can we use start-and-return here?
+                              nil state))
        ((when erp) (mv erp nil state))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs model-rec-alist))
