@@ -162,8 +162,7 @@
 
   (defruled consp-car-when-non-empty-mapp
     (implies (and map (mapp map))
-             (consp (car map))))
-)
+             (consp (car map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,8 +213,7 @@
              (< (+ (acl2-count (car (car map)))
                    (acl2-count (cdr (car map))))
                 (acl2-count map)))
-    :hints (("Goal" :in-theory (enable mfix alistp-when-mapp))))
-)
+    :hints (("Goal" :in-theory (enable mfix alistp-when-mapp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -271,21 +269,35 @@
     :rule-classes :built-in-clause
     :enable (empty mfix alistp-when-mapp)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define head-key ((map mapp))
   :guard (not (empty map))
-  :enabled t
+  :short "Smallest key of a non-empty omap."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used as an abbreviation, so it is enabled by default."))
   (mv-let (key val)
       (head map)
     (declare (ignore val))
-    key))
+    key)
+  :enabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head-val ((map mapp))
   :guard (not (empty map))
-  :enabled t
+  :short "Value associated to the smallest key of a non-empty omap."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used as an abbreviation, so it is enabled by default."))
   (mv-let (key val)
       (head map)
     (declare (ignore key))
-    val))
+    val)
+  :enabled t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,18 +330,20 @@
              (o< (acl2-count (tail map))
                  (acl2-count map)))
     :rule-classes :built-in-clause
-    :enable (empty mfix)))
+    :enable (empty mfix))
 
-(defruled head-tail-order
-  (implies (not (empty (tail X)))
-           (<< (mv-nth 0 (head X))
-               (mv-nth 0 (head (tail X)))))
-  :enable (mapp head tail mfix))
-(defruled head-tail-order-contrapositive
-  (implies (not (<< (mv-nth 0 (head X))
-                    (mv-nth 0 (head (tail X)))))
-           (empty (tail X)))
-  :enable head-tail-order)
+  (defruled head-tail-order
+    (implies (not (empty (tail X)))
+             (<< (mv-nth 0 (head X))
+                 (mv-nth 0 (head (tail X)))))
+    :enable (mapp head mfix))
+
+  (defruled head-tail-order-contrapositive
+    (implies (not (<< (mv-nth 0 (head X))
+                      (mv-nth 0 (head (tail X)))))
+             (empty (tail X)))
+    :enable head-tail-order
+    :disable tail))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -354,6 +368,7 @@
                    (t (cons (cons key0 val0)
                             (update key val (tail map))))))))
   ///
+
   (defrule update-of-head-and-tail
     (implies (not (empty map))
              (equal (update (mv-nth 0 (head map))
@@ -428,58 +443,69 @@
                  ((equal key (mv-nth 0 (head map))) (tail map))
                  (t (update key val (tail map)))))
     :enable (update tail))
- )
 
-(defrule head-value-of-update-empty
-  (implies (empty map)
-           (equal (mv-nth 1 (head (update key val map)))
-                  val))
-  :enable (head-value-of-update))
-(defrule head-value-of-update-key-<<
-  (implies (and (not (empty map))
-                (or (<< key (mv-nth 0 (head map)))
-                    (equal key (mv-nth 0 (head map)))))
-           (equal (mv-nth 1 (head (update key val map)))
-                  val))
-  :enable (head-value-of-update))
+  (defrule head-value-of-update-empty
+    (implies (empty map)
+             (equal (mv-nth 1 (head (update key val map)))
+                    val))
+    :enable (head-value-of-update)
+    :disable update)
 
-(defrule head-value-of-update-when-head-key-equal
-  (implies (equal (mv-nth 0 (head (update key val x)))
-                  key)
-           (equal (mv-nth 1 (head (update key val x)))
-                           val))
-  :hints (("Goal" :in-theory (enable acl2::<<-irreflexive head-of-update))))
+  (defrule head-value-of-update-key-<<
+    (implies (and (not (empty map))
+                  (or (<< key (mv-nth 0 (head map)))
+                      (equal key (mv-nth 0 (head map)))))
+             (equal (mv-nth 1 (head (update key val map)))
+                    val))
+    :enable (head-value-of-update)
+    :disable update)
 
-(defrule head-value-of-update-not-<<
-  (implies (and (not (empty map))
-                (<< (mv-nth 0 (head map)) key))
-           (equal (mv-nth 1 (head (update key val map)))
-                  (mv-nth 1 (head map))))
-  :enable (head-value-of-update))
+  (defrule head-value-of-update-when-head-key-equal
+    (implies (equal (mv-nth 0 (head (update key val x)))
+                    key)
+             (equal (mv-nth 1 (head (update key val x)))
+                    val))
+    :enable (acl2::<<-irreflexive head-of-update)
+    :disable update)
 
-(defrule tail-of-update-empty
-  (implies (empty map)
-           (equal (tail (update key val map))
-                  nil))
-  :enable (tail-of-update))
-(defrule tail-of-update-<<
-  (implies (and (not (empty map))
-                (<< key (mv-nth 0 (head map))))
-           (equal (tail (update key val map))
-                  map))
-  :enable (tail-of-update))
-(defrule tail-of-update-equal
-  (implies (and (not (empty map))
-                (equal key (mv-nth 0 (head map))))
-           (equal (tail (update key val map))
-                  (tail map)))
-  :enable (tail-of-update))
-(defrule tail-of-update-<<-rev
-  (implies (and (not (empty map))
-                (<< (mv-nth 0 (head map)) key))
-           (equal (tail (update key val map))
-                  (update key val (tail map))))
-  :enable (tail-of-update))
+  (defrule head-value-of-update-not-<<
+    (implies (and (not (empty map))
+                  (<< (mv-nth 0 (head map)) key))
+             (equal (mv-nth 1 (head (update key val map)))
+                    (mv-nth 1 (head map))))
+    :enable (head-value-of-update)
+    :disable update)
+
+  (defrule tail-of-update-empty
+    (implies (empty map)
+             (equal (tail (update key val map))
+                    nil))
+    :enable (tail-of-update)
+    :disable update)
+
+  (defrule tail-of-update-<<
+    (implies (and (not (empty map))
+                  (<< key (mv-nth 0 (head map))))
+             (equal (tail (update key val map))
+                    map))
+    :enable (tail-of-update)
+    :disable update)
+
+  (defrule tail-of-update-equal
+    (implies (and (not (empty map))
+                  (equal key (mv-nth 0 (head map))))
+             (equal (tail (update key val map))
+                    (tail map)))
+    :enable (tail-of-update)
+    :disable update)
+
+  (defrule tail-of-update-<<-rev
+    (implies (and (not (empty map))
+                  (<< (mv-nth 0 (head map)) key))
+             (equal (tail (update key val map))
+                    (update key val (tail map))))
+    :enable (tail-of-update)
+    :disable update))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -663,54 +689,73 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-ruleset order-rules
-  '(acl2::<<-irreflexive
-    acl2::<<-transitive
-    acl2::<<-asymmetric
-    acl2::<<-trichotomy
-    acl2::<<-implies-lexorder
-    (:induction update)
-  ;  update-induction-case
-  ;  head-update
-    head-of-update
-    head-key-of-update
-    head-value-of-update
-    head-tail-order
-    head-tail-order-contrapositive))
+(defsection omap-order-rules
+  :short "Some rules involving the ordering in omaps."
 
-(defthm weak-update-induction-helper-1
-  (implies (and (mapp M)
-                (not (in key M))
-                (not (equal (mv-nth 0 (head (update key val M))) key)))
-           (equal (head (update key val M))
-                  (head M)))
-  :hints (("Goal" :in-theory (acl2::enable* order-rules))))
+  (def-ruleset order-rules
+    '(acl2::<<-irreflexive
+      acl2::<<-transitive
+      acl2::<<-asymmetric
+      acl2::<<-trichotomy
+      acl2::<<-implies-lexorder
+      (:induction update)
+      ;; update-induction-case
+      ;; head-update
+      head-of-update
+      head-key-of-update
+      head-value-of-update
+      head-tail-order
+      head-tail-order-contrapositive)))
 
-(defthm weak-update-induction-helper-2
-  (implies (and (not (in key M))
-                (not (equal (mv-nth 0 (head (update key val M))) key)))
-           (equal (tail (update key val M))
-                  (update key val (tail M))))
-  :hints (("Goal" :in-theory (acl2::enable* order-rules))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm weak-update-induction-helper-3
-  (implies (and (not (in key M))
-                (equal (mv-nth 0 (head (update key val M))) key))
-           (equal (tail (update key val M))
-                  (mfix M)))
-  :hints(("Goal" :in-theory (acl2::enable* order-rules))))
+(defsection update-induction-on-maps
+  :short "Induction on omaps based on
+          abstract characterization of @(tsee update)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to the induction on osets
+     in @('[books]/std/osets/primitives.lisp').")
+   (xdoc::p
+    "We want to do certain proofs by induction based on @(tsee update),
+     but not based on the definition of @(tsee update),
+     which involves the internal representation of omaps.
+     Instead "))
 
-(defun weak-update-induction (key val M)
-  (declare (xargs :guard (mapp M)))
-  (cond ((empty M) nil)
-        ((in key M) nil)
-        ((equal (head-key (update key val M)) key) nil)
-        (t (list (weak-update-induction key val (tail M))))))
+  (defthm weak-update-induction-helper-1
+    (implies (and (mapp M)
+                  (not (in key M))
+                  (not (equal (mv-nth 0 (head (update key val M))) key)))
+             (equal (head (update key val M))
+                    (head M)))
+    :hints (("Goal" :in-theory (acl2::enable* order-rules))))
 
-(defthm use-weak-update-induction t
-  :rule-classes ((:induction
-                  :pattern (update key val M)
-                  :scheme (weak-update-induction key val M))))
+  (defthm weak-update-induction-helper-2
+    (implies (and (not (in key M))
+                  (not (equal (mv-nth 0 (head (update key val M))) key)))
+             (equal (tail (update key val M))
+                    (update key val (tail M))))
+    :hints (("Goal" :in-theory (acl2::enable* order-rules))))
+
+  (defthm weak-update-induction-helper-3
+    (implies (and (not (in key M))
+                  (equal (mv-nth 0 (head (update key val M))) key))
+             (equal (tail (update key val M))
+                    (mfix M)))
+    :hints(("Goal" :in-theory (acl2::enable* order-rules))))
+
+  (defun weak-update-induction (key val M)
+    (declare (xargs :guard (mapp M)))
+    (cond ((empty M) nil)
+          ((in key M) nil)
+          ((equal (head-key (update key val M)) key) nil)
+          (t (list (weak-update-induction key val (tail M))))))
+
+  (defthm use-weak-update-induction t
+    :rule-classes ((:induction
+                    :pattern (update key val M)
+                    :scheme (weak-update-induction key val M)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -731,8 +776,7 @@
              (< (acl2-count (lookup key map))
                 (acl2-count map)))
     :hints (("Goal" :in-theory (disable acl2-count-in-<-map)
-             :use acl2-count-in-<-map)))
-)
+             :use acl2-count-in-<-map))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1033,12 +1077,14 @@
                             (1- c))))
                 (> (size map) c))
        :rule-classes nil)))
+
   ;; (defrule size-update
   ;;   (equal (size (update key val m))
   ;;          (if (in key m)
   ;;              (size m)
   ;;            (1+ (size m)))))
-  )
+
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
