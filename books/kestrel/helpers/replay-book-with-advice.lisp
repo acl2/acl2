@@ -76,6 +76,7 @@
                                     '(:add-hyp) ; disallow :add-hyp, because no hyps are needed for these theorems
                                     1           ; max-wins
                                     t ; suppress warning about trivial rec, because below we ask if "original" is the best rec and handle trivial recs there
+                                    nil ; todo: consider t here for start and return?
                                     state))
        ;; TODO: Maybe track errors separately?  Might be that a step limit was reached before checkpoints could even be generated, so perhaps that counts as a :no?
        ((when erp) (mv erp :no state)))

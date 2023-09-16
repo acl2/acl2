@@ -1897,7 +1897,7 @@
              rationalp-of-ceiling
              integerp-of-ceiling
              bvlt-of-bvuminus-arg2-constant
-;    <-becomes-bvlt-dag-both
+;    <-becomes-bvlt-axe-both
              <-0-+-negative-2
 ;    +-of-myif-arg1 ;new5
 ;   +-of-myif-arg2 ;new5
