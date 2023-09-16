@@ -21,6 +21,7 @@
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "unroll-x86-code")
 (include-book "tester-rules")
+(include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 (include-book "rule-lists")
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
