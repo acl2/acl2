@@ -264,7 +264,8 @@
                    (axe-quotep (axe-quotep
                                 ;; arg0 is a variable (we check this only for axe-quotep), so look it up:
                                 (lookup-eq arg0 alist)))
-                   ,@(make-axe-syntaxp-evaluator-case-for-arity-aux 1 arity-1-fns wrld))
+                   ,@(make-axe-syntaxp-evaluator-case-for-arity-aux 1 arity-1-fns wrld)
+                   (t (er hard? ',eval-axe-syntaxp-function-application-fn "Unrecognized function in axe-syntaxp rule: ~x0." fn)))
                (let ((arg1 (first args))
                      (args (rest args)))
                  (declare (ignorable args arg1))

@@ -63,7 +63,7 @@
 (include-book "dag-to-term")
 (include-book "kestrel/utilities/defconst-computed" :dir :system) ;not strictly needed
 ;(include-book "def-dag-builder-theorems")
-(include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
+;(include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 ;(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system) ;need strip-cdrs-of-append for the generated proofs
@@ -595,7 +595,7 @@
                 ;; todo: consider using CASE here:
                 (if (eq :axe-syntaxp fn)
                     (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :axe-syntaxp
-                           (result (and ;(all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
+                           (result (and
                                         (,eval-axe-syntaxp-expr-fn syntaxp-expr alist dag-array) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
                                         )))
                       (if result

@@ -99,7 +99,11 @@
          (SYNTACTIC-VARIABLEP (IF (CONSP ARG0)
                                   ARG0
                                 (LOOKUP-EQ ARG0 ALIST))
-                              dag-array)))
+                              dag-array))
+        (t (ER HARD?
+               'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
+               "Unrecognized function in axe-syntaxp rule: ~x0."
+               FN)))
       (LET
        ((ARG1 (FIRST ARGS)) (ARGS (REST ARGS)))
        (DECLARE (IGNORABLE ARGS ARG1))

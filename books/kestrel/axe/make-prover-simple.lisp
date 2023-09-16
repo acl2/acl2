@@ -56,7 +56,7 @@
 (include-book "match-hyp-with-nodenum-to-assume-false")
 (include-book "dag-or-term-to-dag-basic") ;todo: gen?
 ;(include-book "merge-tree-into-dag-array-basic") ;for merge-trees-into-dag-array-basic ;todo: gen?
-(include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
+;(include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
 (include-book "make-assumption-array")
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -487,8 +487,9 @@
     equiv-listp-of-cdr
     equiv-listp-of-get-equivs
     subsetp-equal-of-free-vars-in-term-of-car-and-strip-cars-when-normal
-    all-vars-in-terms-bound-in-alistp-correct
-    all-vars-in-term-bound-in-alistp-correct))
+    ;all-vars-in-terms-bound-in-alistp-correct
+    ;all-vars-in-term-bound-in-alistp-correct
+    ))
 
 (defconst *default-axe-prover-rules*
   '(implies equal-same))
