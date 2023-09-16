@@ -445,6 +445,24 @@
     bvsx-of-if-becomes-bvsx-of-bvif-arg3
     repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
+;; These are needed only when operations like logxor or + may appears
+(defun convert-to-bv-rules ()
+  (declare (xargs :guard t))
+  '(bvplus-convert-arg2-to-bv-axe
+    bvplus-convert-arg3-to-bv-axe
+    bvand-convert-arg2-to-bv-axe
+    bvand-convert-arg3-to-bv-axe
+    bvor-convert-arg2-to-bv-axe
+    bvor-convert-arg3-to-bv-axe
+    bvxor-convert-arg2-to-bv-axe
+    bvxor-convert-arg3-to-bv-axe
+    trim-of-logand-becomes-bvand
+    trim-of-logior-becomes-bvor
+    trim-of-logxor-becomes-bvxor
+    trim-of-lognot-becomes-bvnot
+    trim-of-+-becomes-bvplus
+    ))
+
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
   (declare (xargs :guard t))

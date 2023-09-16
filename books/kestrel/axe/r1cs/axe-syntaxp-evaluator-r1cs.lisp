@@ -1,7 +1,7 @@
 ; A custom axe-syntaxp-evaluator for R1CS proofs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -30,6 +30,7 @@
                                     syntactic-variablep
                                     is-the-variablep
                                     should-reverse-equality
+                                    ;term-should-be-converted-to-bvp ; needed?
                                     bv-array-write-nest-ending-inp-axe
                                     bvcat-nest-with-low-zerosp-axe
                                     bv-array-write-nest-with-val-at-indexp-axe
