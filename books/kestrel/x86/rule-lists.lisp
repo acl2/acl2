@@ -1436,7 +1436,7 @@
             acl2::collect-constants-over-<-2
             acl2::<-of-negative-when-usbp
             x86isa::canonical-address-p-of-if
-            acl2::<-becomes-bvlt-dag-both
+            acl2::<-becomes-bvlt-axe-both
             acl2::bvlt-of-bvplus-constant-and-constant-other
             acl2::bvlt-transitive-4-a
             acl2::bvlt-transitive-4-b
@@ -3190,7 +3190,7 @@
 ;; ;;             ;read-when-program-at
 ;; ;;             ;read-of-write-disjoint2
 ;; ;;             ;read-of-write-disjoint
-;; ;; ;acl2::<-becomes-bvlt-dag-both
+;; ;; ;acl2::<-becomes-bvlt-axe-both
 ;; ;; ;            read-byte-from-segment-when-code-segment-assumptions32
 ;; ;;  ;           mv-nth-1-of-add-to-*sp
 ;; ;;   ;          not-mv-nth-0-of-add-to-*sp
