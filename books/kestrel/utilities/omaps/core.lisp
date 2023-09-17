@@ -529,9 +529,8 @@
              (head new)
              (update new-key new-val
                      (update* (tail new) old)))))
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
   ///
-  (verify-guards update*)
 
   (defrule update*-when-left-empty
     (implies (empty new)
@@ -558,9 +557,8 @@
                    (t (update key0
                               val0
                               (delete key (tail map))))))))
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
   ///
-  (verify-guards delete)
 
   (defrule delete-when-empty
     (implies (empty map)
@@ -576,9 +574,8 @@
    "This lifts @(tsee delete) from a single key to a set of keys.")
   (cond ((set::empty keys) (mfix map))
         (t (delete (set::head keys) (delete* (set::tail keys) map))))
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
   ///
-  (verify-guards delete*)
 
   (defrule delete*-when-left-empty
     (implies (set::empty keys)
@@ -828,9 +825,8 @@
              (if (equal val val0)
                  (set::insert key0 (rlookup val (tail map)))
                (rlookup val (tail map))))))
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
   ///
-  (verify-guards rlookup)
 
   (defrule rlookup-when-empty
     (implies (empty map)
@@ -848,9 +844,8 @@
   (cond ((set::empty vals) nil)
         (t (set::union (rlookup (set::head vals) map)
                        (rlookup* (set::tail vals) map))))
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
   ///
-  (verify-guards rlookup*)
 
   (defrule rlookup*-when-left-empty
     (implies (set::empty vals)
@@ -877,9 +872,8 @@
              (if (set::in key keys)
                  (update key val (restrict keys (tail map)))
                (restrict keys (tail map))))))
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
   ///
-  (verify-guards restrict)
 
   (defrule restrict-when-left-empty
     (implies (set::empty keys)
@@ -951,9 +945,8 @@
              (head map)
              (declare (ignore key))
              (set::insert val (values (tail map))))))
-  :verify-guards nil ; done below
+  :verify-guards :after-returns
   ///
-  (verify-guards values)
 
   (defrule values-when-empty
     (implies (empty map)
