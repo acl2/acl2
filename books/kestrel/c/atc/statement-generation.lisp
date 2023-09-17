@@ -20,6 +20,7 @@
 (local (include-book "std/alists/assoc" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
+(local (include-book "std/typed-lists/boolean-listp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
@@ -207,7 +208,12 @@
           and with bodies from a list of terms, in the same order."
   (cond ((endp uterms) nil)
         (t (cons `(,let/let* ,bindings ,(car uterms))
-                 (atc-make-lets-of-uterms let/let* bindings (cdr uterms))))))
+                 (atc-make-lets-of-uterms let/let* bindings (cdr uterms)))))
+  ///
+  (defret len-of-atc-make-lets-of-uterms
+    (equal (len let-uterms)
+           (len uterms))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,12 +223,40 @@
           and with bodies from a list of terms, in the same order."
   (cond ((endp uterms) nil)
         (t (cons `(mv-let ,vars ,vars-uterms ,(car uterms))
-                 (atc-make-mv-lets-of-uterms vars vars-uterms (cdr uterms))))))
+                 (atc-make-mv-lets-of-uterms vars vars-uterms (cdr uterms)))))
+  ///
+  (defret len-of-atc-make-mv-lets-of-uterms
+    (equal (len mv-let-uterms)
+           (len uterms))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-symbolp-list ((list true-listp))
+  :returns (bools boolean-listp)
+  :short "Check if each element of a list is a symbol or not,
+          returning a list of booleans, one per element."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee symbolp) to lists.
+     Note that it differs from @(tsee symbol-listp).
+     This belongs to a more general library."))
+  (cond ((endp list) nil)
+        (t (cons (symbolp (car list))
+                 (atc-symbolp-list (cdr list)))))
+  ///
+  (defret len-of-atc-symbolp-list
+    (equal (len bools)
+           (len list))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-uterm-to-components ((uterm "An untranslated term.") (comps posp))
-  :returns (uterms true-listp "Untranslated terms.")
+  :returns (mv (uterms true-listp "Untranslated terms.")
+               (varps boolean-listp)
+               (bound-vars symbol-listp))
   :short "Split a term into component terms."
   :long
   (xdoc::topstring
@@ -250,43 +284,81 @@
      in all other cases, we apply the @(tsee mv-nth)s.
      This leads to the following recursive definition,
      which includes some defensive checks.
-     The @('comps') input is the number of results."))
+     The @('comps') input is the number of results.")
+   (xdoc::p
+    "We also return a list of the bound variables encountered along the way.
+     We also return a list of boolean flags, one for each component,
+     each of which says whether
+     pushing the @(tsee mv-nth) through the corresponding term
+     reached a variable.
+     The purpose of this list of bound variables
+     and of this list of boolean flags
+     is explained in @(tsee atc-gen-term-type-formula)."))
   (b* (((when (symbolp uterm))
         (b* (((unless (eql comps 1))
-              (raise "Internal error: ~x0 components for ~x1." comps uterm)))
-          (list uterm)))
+              (raise "Internal error: ~x0 components for ~x1." comps uterm)
+              (mv nil nil nil)))
+          (mv (list uterm)
+              (list t)
+              nil)))
        ((unless (and (true-listp uterm)
                      (consp uterm)))
-        (raise "Internal error: unexpected term ~x0." uterm))
+        (raise "Internal error: unexpected term ~x0." uterm)
+        (mv nil nil nil))
        ((when (eq (car uterm) 'list))
         (b* ((uterms (cdr uterm))
              ((unless (eql (len uterms) comps))
-              (raise "Internal error: ~x0 components for ~x1." comps uterm)))
-          uterms))
+              (raise "Internal error: ~x0 components for ~x1." comps uterm)
+              (mv nil nil nil)))
+          (mv uterms
+              (atc-symbolp-list uterms)
+              nil)))
        ((when (member-eq (car uterm) '(let let*)))
         (b* (((unless (and (consp (cdr uterm))
                            (consp (cddr uterm))
                            (endp (cdddr uterm))))
-              (raise "Internal error: malformed LET or LET* ~x0." uterm))
+              (raise "Internal error: malformed LET or LET* ~x0." uterm)
+              (mv nil nil nil))
              (bindings (cadr uterm))
+             ((unless (and (alistp bindings) ; really a doublet list
+                           (symbol-listp (strip-cars bindings))))
+              (raise "Internal error: malformed LET or LET* bindings ~x0."
+                     bindings)
+              (mv nil nil nil))
+             (vars (strip-cars bindings))
              (body-uterm (caddr uterm))
-             (body-uterms (atc-uterm-to-components body-uterm comps)))
-          (atc-make-lets-of-uterms (car uterm) bindings body-uterms)))
+             ((mv body-uterms varsp body-bound-vars)
+              (atc-uterm-to-components body-uterm comps)))
+          (mv (atc-make-lets-of-uterms (car uterm) bindings body-uterms)
+              varsp
+              (append vars body-bound-vars))))
        ((when (eq (car uterm) 'mv-let))
         (b* (((unless (and (consp (cdr uterm))
                            (consp (cddr uterm))
                            (consp (cdddr uterm))
                            (endp (cddddr uterm))))
-              (raise "Internal error: malformed MV-LET ~x0." uterm))
+              (raise "Internal error: malformed MV-LET ~x0." uterm)
+              (mv nil nil nil))
              (vars (cadr uterm))
+             ((unless (symbol-listp vars))
+              (raise "Internal error: MV-LET bound variables not symbols." vars)
+              (mv nil nil nil))
              (vars-uterms (caddr uterm))
              (body-uterm (cadddr uterm))
-             (body-uterms (atc-uterm-to-components body-uterm comps)))
-          (atc-make-mv-lets-of-uterms vars vars-uterms body-uterms))))
+             ((mv body-uterms varsp body-bound-vars)
+              (atc-uterm-to-components body-uterm comps)))
+          (mv (atc-make-mv-lets-of-uterms vars vars-uterms body-uterms)
+              varsp
+              (append vars body-bound-vars)))))
     (if (eql comps 1)
-        (list uterm)
-      (rev (atc-uterm-to-components-aux uterm comps))))
+        (mv (list uterm)
+            (list nil)
+            nil)
+      (mv (rev (atc-uterm-to-components-aux uterm comps))
+          (repeat comps nil)
+          nil)))
   :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
   :prepwork
   ((define atc-uterm-to-components-aux ((uterm "An untranslated term.")
                                         (comps natp))
@@ -294,7 +366,18 @@
      :parents nil
      (cond ((zp comps) nil)
            (t (cons `(mv-nth ,(1- comps) ,uterm)
-                    (atc-uterm-to-components-aux uterm (1- comps))))))))
+                    (atc-uterm-to-components-aux uterm (1- comps)))))
+     ///
+     (defret len-of-atc-uterm-to-components-aux
+       (equal (len uterms)
+              (nfix comps))
+       :hints (("Goal" :induct t :in-theory (enable nfix fix))))))
+  ///
+  (defret len-of-atc-uterm-to-components.varps
+    (equal (len varps)
+           (len uterms))
+    :hints (("Goal" :induct t)))
+  (in-theory (disable len-of-atc-uterm-to-components.varps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -332,9 +415,10 @@
      accompany assertions involving the recognizers
      (which only talk about the element type).
      These assertions are not generated
-     if the term is exactly the variable array,
-     because otherwise the rewrite rule would be illegal,
-     rewriting something to itself.")
+     when they would lead to rewrite rules
+     that rewrite a term to itself,
+     which are illegal rewrite rules;
+     the exact circumstances are explained below.")
    (xdoc::p
     "We also return the names of the theorems from the symbol table
      that are associated to each variable for the affected objects.
@@ -350,7 +434,10 @@
      (see that function's documentation).
      Finally we go through the types and terms,
      which must be equal in number,
-     and return formulas for the terms."))
+     and return formulas for the terms.
+     We skip the array length sub-formula exactly when
+     the boolean flag returned by @(tsee atc-uterm-to-components) is @('nil')
+     or it is not but the (affected) variable is bound in the term."))
   (b* (((mv affect-types thm-names) (atc-gen-type-formulas-aux1 affect inscope))
        (types (if (type-case type :void)
                   affect-types
@@ -358,10 +445,13 @@
        ((when (endp types))
         (raise "Internal error: term ~x0 returns no values." uterm)
         (mv nil nil))
-       (uterms (atc-uterm-to-components uterm (len types)))
+       ((mv uterms varps bound-vars)
+        (atc-uterm-to-components uterm (len types)))
        (conjuncts
         (atc-gen-type-formulas-aux2 types
                                     uterms
+                                    varps
+                                    bound-vars
                                     (if (type-case type :void)
                                         affect
                                       (cons nil affect))
@@ -397,6 +487,8 @@
 
    (define atc-gen-type-formulas-aux2 ((types type-listp)
                                        (uterms true-listp)
+                                       (varps boolean-listp)
+                                       (bound-vars symbol-listp)
                                        (affected-vars symbol-listp)
                                        (prec-tags atc-string-taginfo-alistp))
      :returns (conjuncts true-listp)
@@ -412,12 +504,15 @@
                     (elemfixtype (type-kind elemtype))
                     (array-length (pack elemfixtype '-array-length)))
                  `((,pred ,uterm)
-                   ,@(and (not (eq uterm affected-var))
+                   ,@(and (or (not (car varps))
+                              (member-eq affected-var bound-vars))
                           `((equal (,array-length ,uterm)
                                    (,array-length ,affected-var))))))
              `((,pred ,uterm))))
           (more-conjuncts (atc-gen-type-formulas-aux2 (cdr types)
                                                       (cdr uterms)
+                                                      (cdr varps)
+                                                      bound-vars
                                                       (cdr affected-vars)
                                                       prec-tags)))
        (append conjuncts more-conjuncts)))))
