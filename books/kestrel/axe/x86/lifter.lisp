@@ -2249,7 +2249,7 @@
                            executable ; a string (filename), or (for example) a defconst created by defconst-x86
                            stack-slots-needed
                            subroutine-length
-                           loop-alist ;offsets (from start of method) of loops, paired with offset lists for their bodies
+                           loop-alist ;offsets (from start of subroutine) of loops, paired with offset lists for their bodies
                            &key
                            (extra-rules 'nil)
                            (remove-rules 'nil)
