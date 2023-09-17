@@ -161,7 +161,8 @@
     :rule-classes (:rewrite :forward-chaining))
 
   (defruled consp-car-when-non-empty-mapp
-    (implies (and map (mapp map))
+    (implies (and map
+                  (mapp map))
              (consp (car map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -205,7 +206,8 @@
              (equal (mfix x) nil)))
 
   (defrule mapp-non-nil-implies-non-empty
-    (implies (and (mapp map) map)
+    (implies (and (mapp map)
+                  map)
              (not (empty map))))
 
   (defrule acl2-count-head-when-non-empty
