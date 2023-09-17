@@ -5321,13 +5321,6 @@
   :hints (("Goal" :use (:instance equal-of-bvplus-constant-and-constant)
            :in-theory (disable equal-of-bvplus-constant-and-constant))))
 
-(defthmd bvplus-drop
-  (implies (and (< (+ x y) (expt 2 32))
-                (natp x)
-                (natp y))
-           (equal (bvplus 32 x y)
-                  (+ x y))))
-
 (defthm logext-when-non-negative-becomes-bvchop
   (implies (<= 0 (logext size x))
            (equal (logext size x)
@@ -6253,7 +6246,7 @@
                 )
            (equal (BVPLUS 32 x (bvuminus 32 y))
                   (bvchop 32 free))) ;gets computed
-  :hints (("Goal" :in-theory (e/d (bvplus-drop) (BVPLUS-OF-1-TIGHTEN)))))
+  :hints (("Goal" :in-theory (e/d (bvplus-becomes-+) (BVPLUS-OF-1-TIGHTEN)))))
 
 (defthm rewrite-bv-equality-when-sizes-dont-match-1
   (implies (and (bind-free (bind-var-to-bv-term-size 'x-size x) (x-size))

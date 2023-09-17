@@ -22,7 +22,6 @@
 (include-book "kestrel/axe/rules2" :dir :system) ;drop?
 (include-book "kestrel/bv/rules3" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system)
-(include-book "kestrel/axe/util2" :dir :system) ;for make-cons-nest
 (include-book "support32") ; drop? needed to prove rb-in-terms-of-nth-and-pos-eric-gen -- why?
 (include-book "support-x86") ; why?
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
