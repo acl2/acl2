@@ -305,7 +305,7 @@
                      (consp uterm)))
         (raise "Internal error: unexpected term ~x0." uterm)
         (mv nil nil nil))
-       ((when (eq (car uterm) 'list))
+       ((when (eq (car uterm) 'mv))
         (b* ((uterms (cdr uterm))
              ((unless (eql (len uterms) comps))
               (raise "Internal error: ~x0 components for ~x1." comps uterm)
@@ -6405,7 +6405,7 @@
                     gin.fn term))))
           (cond
            ((equal terms gin.affect)
-            (retok (atc-gen-block-item-list-none term gin state)))
+            (retok (atc-gen-block-item-list-none `(mv ,@terms) gin state)))
            ((equal (cdr terms) gin.affect)
             (b* ((gin (change-stmt-gin gin :proofs nil)))
               (atc-gen-return-stmt (car terms)
