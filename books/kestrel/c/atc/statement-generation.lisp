@@ -6405,17 +6405,7 @@
                     gin.fn term))))
           (cond
            ((equal terms gin.affect)
-            (retok (make-stmt-gout :items nil
-                                   :type (type-void)
-                                   :term term
-                                   :context (make-atc-context :preamble nil
-                                                              :premises nil)
-                                   :inscope nil
-                                   :limit (pseudo-term-quote 1)
-                                   :events nil
-                                   :thm-name nil
-                                   :thm-index gin.thm-index
-                                   :names-to-avoid gin.names-to-avoid)))
+            (retok (atc-gen-block-item-list-none term gin state)))
            ((equal (cdr terms) gin.affect)
             (b* ((gin (change-stmt-gin gin :proofs nil)))
               (atc-gen-return-stmt (car terms)
