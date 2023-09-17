@@ -272,13 +272,6 @@
                                    slice-of-+
                                    logtail-of-plus)))))
 
-;can loop
-(defthmd bvnot-of-0
-  (Implies (natp width)
-           (equal (BVNOT width 0)
-                  (- (expt 2 width) 1)))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
 (defthm bvand-with-mask-basic-gen
   (implies (and (<= size n)
                 (natp size)
@@ -398,27 +391,6 @@
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
 (in-theory (disable slice-of-+)) ;todo
-
-(defthm bvnot-of-all-ones
-  (implies (natp width)
-           (equal (BVNOT WIDTH (+ -1 (EXPT 2 WIDTH)))
-                  0))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-;why didn't the trim rule work?
-(defthm bvnot-of-bvcat-trim
-  (implies (natp low)
-           (equal (BVNOT LOW (BVCAT WIDTH x LOW y))
-                  (bvnot low y)))
-  :hints (("Goal"
-           :use ((:instance BVCHOP-LOGNOT-BVCHOP
-                            (n low)
-                            (x (BVCAT WIDTH X LOW Y)))
-                 (:instance BVCHOP-LOGNOT-BVCHOP
-                            (n low)
-                            (x Y)))
-           :in-theory (e/d (bvnot) (BVCHOP-LOGNOT-BVCHOP ; are these 2 the same?
-                                    BVCHOP-OF-LOGNOT-OF-BVCHOP)))))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64

@@ -504,30 +504,6 @@
                                    BVMULT-PAD-ARG2)))))
 
 ;move
-(defthm collect-constants-<-/
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< a (* b x))
-                  (< (/ a b) x))))
-
-;move
-(defthm collect-constants-<-/-two
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< (* b x) a)
-                  (< x (/ a b)))))
-
-;move
 (defthm my-non-integerp-<-integerp
   (implies (and (syntaxp (quotep k))
                 (not (integerp k))
