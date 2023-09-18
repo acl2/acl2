@@ -312,6 +312,12 @@
    (xdoc::p
     "Added some theorems.")
 
+   (xdoc::p
+    "Disabled some rules.")
+
+   (xdoc::p
+    "Improved documentation and organization.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"

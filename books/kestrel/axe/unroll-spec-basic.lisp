@@ -1,7 +1,7 @@
 ; A version of unroll-spec that uses rewriter-basic.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -37,6 +37,7 @@
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "dag-info")
+(include-book "kestrel/axe/util2" :dir :system) ; not strictly needed but brings in symbolic-list
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 

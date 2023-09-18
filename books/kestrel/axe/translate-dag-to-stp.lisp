@@ -59,15 +59,16 @@
 (include-book "axe-syntax-functions-bv") ;for maybe-get-type-of-bv-function-call, todo reduce
 (include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
 (include-book "kestrel/bv/defs" :dir :system) ;todo: make sure this book includes the definitions of all functions it translates.
-(include-book "kestrel/bv/getbit-def" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-if
+;(include-book "kestrel/bv/getbit-def" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-if" :dir :system)
+;(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/logext-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/utilities/file-io-string-trees" :dir :system)
-(include-book "kestrel/utilities/erp" :dir :system)
+;(include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system) ; for newline-string
 (include-book "kestrel/utilities/temp-dirs" :dir :system)
 (include-book "kestrel/file-io-light/write-strings-to-file-bang" :dir :system) ;; todo reduce, just used to clear a file
@@ -86,7 +87,39 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
-(in-theory (disable open-output-channels open-output-channel-p1))
+(in-theory (disable open-output-channels open-output-channel-p1)) ; drop?
+
+;(in-theory (disable (:e nat-to-string))) ;why?
+
+;; (defthm <-of-maxelem-of-cdr
+;;   (implies (and (all-< items x)
+;;                 (< 1 (len items)))
+;;            (< (maxelem (cdr items)) x))
+;;   :hints (("Goal" :in-theory (enable all-< maxelem))))
+
+;; (defthm <=-of-0-and-maxelem
+;;   (implies (and (nat-listp x)
+;;                 (<= 1 (len x)))
+;;            (<= 0 (maxelem x)))
+;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
+
+;; (defthm integerp-of-maxelem-when-nat-listp
+;;   (implies (and (nat-listp x)
+;;                 (<= 1 (len x)))
+;;            (integerp (maxelem x)))
+;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
+
+(defthmd integer-listp-when-nat-listp
+  (implies (nat-listp x)
+           (integer-listp x))
+  :hints (("Goal" :in-theory (enable integer-listp))))
+
+(defthm nat-listp-forward-to-all-integerp
+  (implies (nat-listp x)
+           (all-integerp x))
+  :rule-classes :forward-chaining)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (e/d (<-of-+-of-1-when-integers)
                        ;; Avoid printing during proofs
@@ -129,14 +162,10 @@
 ;(in-theory (disable bounded-dag-exprp)) ;move?
 
 (local (in-theory (disable string-append
-                           ;LIST::EQUAL-CONS-CASES
                            alistp nat-listp ;don't induct on these
-                           ;list::len-when-at-most-1
-                           CONSP-FROM-LEN-CHEAP
-                           ;LIST::LEN-OF-NON-CONSP
-                           )))
+                           consp-from-len-cheap)))
 
-;; Justifies the correctness of the translation
+;; Helps justify the correctness of the translation
 (defthm equality-of-zero-length-arrays
   (implies (and (bv-arrayp width1 0 x)
                 (bv-arrayp width2 0 y))
@@ -211,38 +240,6 @@
 (defthm string-treep-of-n-close-parens
   (implies (string-treep acc)
            (string-treep (n-close-parens n acc))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;(in-theory (disable (:e nat-to-string))) ;why?
-
-;; (defthm <-of-maxelem-of-cdr
-;;   (implies (and (all-< items x)
-;;                 (< 1 (len items)))
-;;            (< (maxelem (cdr items)) x))
-;;   :hints (("Goal" :in-theory (enable all-< maxelem))))
-
-;; (defthm <=-of-0-and-maxelem
-;;   (implies (and (nat-listp x)
-;;                 (<= 1 (len x)))
-;;            (<= 0 (maxelem x)))
-;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
-
-;; (defthm integerp-of-maxelem-when-nat-listp
-;;   (implies (and (nat-listp x)
-;;                 (<= 1 (len x)))
-;;            (integerp (maxelem x)))
-;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
-
-(defthmd integer-listp-when-nat-listp
-  (implies (nat-listp x)
-           (integer-listp x))
-  :hints (("Goal" :in-theory (enable integer-listp))))
-
-(defthm nat-listp-forward-to-all-integerp
-  (implies (nat-listp x)
-           (all-integerp x))
-  :rule-classes :forward-chaining)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -504,13 +501,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a string-tree.
-(defund makevarname (n)
+(defund make-node-var (n)
   (declare (type (integer 0 *) n))
   (cons "NODE" (nat-to-string n)))
 
-(defthm string-treep-of-makevarname
-  (string-treep (makevarname n))
-  :hints (("Goal" :in-theory (enable makevarname))))
+(defthm string-treep-of-make-node-var
+  (string-treep (make-node-var n))
+  :hints (("Goal" :in-theory (enable make-node-var))))
 
 ;;;
 ;;; translating booleans
@@ -540,7 +537,7 @@
           ;;i suppose any constant other than nil could be translated as t (but print a warning?!):
           (er hard? 'translate-boolean-arg "unrecognized boolean constant: ~x0.~%" arg)))
     ;;arg is a node number:
-    (makevarname arg)))
+    (make-node-var arg)))
 
 (defthm string-treep-of-translate-boolean-arg
   (string-treep (translate-boolean-arg arg))
@@ -600,7 +597,7 @@
 (defund translate-bv-nodenum-and-pad (nodenum desired-size actual-size)
   (declare (type (integer 0 *) desired-size actual-size)
            (xargs :guard (natp nodenum)))
-  (let ((varname (makevarname nodenum)))
+  (let ((varname (make-node-var nodenum)))
     ;;we need to pad with zeros if the node isn't wide enough:
     (if (< actual-size desired-size)
         (pad-with-zeros (- desired-size actual-size) varname)
@@ -863,7 +860,7 @@
                 ;; translate the LHS (without padding yet):
                 (mv-let (erp1 lhs-string-tree constant-array-info)
                   (if (atom lhs) ;checks for nodenum
-                      (mv nil (makevarname lhs) constant-array-info)
+                      (mv nil (make-node-var lhs) constant-array-info)
                     ;;lhs is a constant array:
                     (if (and (nat-listp (unquote lhs)) ;these checks may be implied by the type tests above
                              )
@@ -875,7 +872,7 @@
                   ;; translate the RHS (without padding yet):
                   (mv-let (erp2 rhs-string-tree constant-array-info)
                     (if (atom rhs) ;checks for nodenum
-                        (mv nil (makevarname rhs) constant-array-info)
+                        (mv nil (make-node-var rhs) constant-array-info)
                       ;;rhs is a constant array:
                       (if (and (nat-listp (unquote rhs)) ;these checks may be implied by the type tests above
                                )
@@ -1008,7 +1005,7 @@
                           calling-fn (unquote arg))
                       (mv nil constant-array-info 0)))
           ;;arg is a nodenum:
-          (mv (makevarname arg)
+          (mv (make-node-var arg)
               constant-array-info
               arg-element-width))))))
 
@@ -1976,7 +1973,7 @@
         (translate-nodes-to-stp (rest nodenums-to-translate)
                                 dag-array-name dag-array dag-len
                                 (list* "LET "
-                                       (makevarname nodenum) ;ffixme any possible name clashes?
+                                       (make-node-var nodenum) ;ffixme any possible name clashes?
                                        " = "
                                        translated-expr
                                        " IN (" (newline-string) ; todo: combine these
@@ -2034,7 +2031,7 @@
     (let* ((entry (first nodenum-type-alist))
            (nodenum (car entry))
            (type (cdr entry))
-           (varname (makevarname nodenum)) ;todo: store these in an array?
+           (varname (make-node-var nodenum)) ;todo: store these in an array?
            )
       (if (bv-typep type)
           (list* varname
@@ -2106,7 +2103,7 @@
                           (let* ((low (second type))
                                  (high (third type))
                                  (width (integer-length high))
-                                 (varname (makevarname nodenum)))
+                                 (varname (make-node-var nodenum)))
                             (list* "ASSERT(BVLE("
                                    (translate-bv-constant low width)
                                    ","
@@ -2763,7 +2760,7 @@
 ;; (defun translate-arg-auto-sized (item)
 ;;   (if (consp item) ;quotep
 ;;       (translate-bv-constant (unquote item) (max 1 (integer-length (unquote item)))) ;the max causes 0 (which has an integer-length of 0 to nevertheless result in a positive size)
-;;     (makevarname item)))
+;;     (make-node-var item)))
 
 ;; Returns a string-tree.
 (defun translate-possibly-negated-nodenum (item)
@@ -2771,9 +2768,9 @@
                   :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenump)))))
   (if (consp item) ;test for call of NOT
       (list* "(NOT("
-             (makevarname (farg1 item))
+             (make-node-var (farg1 item))
              "))")
-    (makevarname item)))
+    (make-node-var item)))
 
 ;returns a string-tree
 ;the input must have at least one element
