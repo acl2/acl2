@@ -17581,7 +17581,8 @@
                 (integerp y))
            (equal (sbvlt 32 0 (sbvdiv 32 x y))
                   (not (sbvlt 32 x y))))
-  :hints (("Goal" :cases ((sbvle 32 0 x)))))
+  :hints (("Goal" :use (:instance sbvlt-of-sbvdiv-and-0-when-neg-and-pos (size 32))
+           :in-theory (disable sbvlt-of-sbvdiv-and-0-when-neg-and-pos))))
 
 ;todo: move this stuff to bv library but needs equal-of-slice:
 
