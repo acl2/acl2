@@ -46,7 +46,7 @@
 
 (in-theory (disable mv-nth)) ;todo
 
-(local (in-theory (enable acl2::natp-of-+-of-1-alt)))
+(local (in-theory (enable acl2::natp-of-+-of-1-alt acl2::slice-becomes-getbit)))
 
 (local
  (defthm symbolp-of-if

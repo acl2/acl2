@@ -73,12 +73,19 @@
 
 (theory-invariant (incompatible (:rewrite bvchop-1-becomes-getbit) (:definition getbit)))
 
-(defthm slice-becomes-getbit
+;; Not sure we want this enabled, at least during library development
+(defthmd slice-becomes-getbit
   (equal (slice n n x)
          (getbit n x))
   :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit)))))
 
 (theory-invariant (incompatible (:rewrite slice-becomes-getbit) (:definition getbit)))
+
+;; In case we are not enforcing either normal form
+(defthm equal-of-slice-and-getbit
+  (equal (equal (slice n n x) (getbit n x))
+         t)
+  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
 ;justifies the correctness of some operations performed by Axe
 (defthmd unsigned-byte-p-1-of-getbit
