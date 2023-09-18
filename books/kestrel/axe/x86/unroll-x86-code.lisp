@@ -50,6 +50,7 @@
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ;reduce?
+(include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 (include-book "ihs/logops-lemmas" :dir :system) ;reduce? for logext-identity
 (include-book "kestrel/arithmetic-light/mod" :dir :system)
 (include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
