@@ -2821,22 +2821,22 @@
      it is not true in general, and we will generalize this.")
    (xdoc::p
     "we ``save'' the initial computation state
-     in a variable that we obtain by adding @('0')
+     in a variable that we obtain by adding @('-init')
      at the end of the symbol of the variable for the computation state.
-     We should refine this to ensure that the variable does not interfere
-     with other variables.")
+     This does not interfere with any other variables,
+     because of the dash which is disallowed in C variable names.")
    (xdoc::p
     "The @('context') parameter of this ACL2 function is
      the context at the end of the function body;
      this is used to contextualize the computation state
      from where the frame is popped."))
-  (b* ((compst0-var (pack compst-var "0"))
+  (b* ((compst-init-var (pack compst-var '-init))
        (name (pack fn '-pop-frame))
        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
                                   name nil names-to-avoid wrld))
        (new-compst (atc-gen-fun-endstate affect
                                          typed-formals
-                                         compst0-var
+                                         compst-init-var
                                          prec-objs
                                          t))
        (formula `(equal (pop-frame ,compst-var) ,new-compst))
@@ -2849,7 +2849,7 @@
                                    nil
                                    t
                                    wrld))
-       (formula `(let ((,compst0-var ,compst-var)) ,formula))
+       (formula `(let ((,compst-init-var ,compst-var)) ,formula))
        (formals-thms (atc-gen-pop-frame-thm-aux typed-formals))
        (hints
         `(("Goal"
