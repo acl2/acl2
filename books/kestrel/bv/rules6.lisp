@@ -347,7 +347,8 @@
                 (integerp x)
                 (integerp y))
            (equal (bvand size x y)
-                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y)) (+ -1 size) (bvand (+ -1 size) x y)))))
+                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y)) (+ -1 size) (bvand (+ -1 size) x y))))
+  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
 ;; (thm
 ;;  (implies (and (< high n)

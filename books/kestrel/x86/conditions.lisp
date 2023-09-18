@@ -32,6 +32,7 @@
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
 (local (include-book "kestrel/axe/rules3" :dir :system)) ; todo
 
+(local (in-theory (enable acl2::slice-becomes-getbit)))
 (local (in-theory (disable acl2::equal-of-bvchops-when-equal-of-getbits))) ;todo: looped, should have 32 in the name
 
 (defthm acl2::equal-of-bvchops-when-equal-of-getbits-8
@@ -39,24 +40,27 @@
                 (equal (getbit 7 x) (getbit 7 y)))
            (equal (equal (bvchop 7 x) (bvchop 7 y))
                   (equal (bvchop 8 x) (bvchop 8 y))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 0)))
+  :hints (("Goal" :in-theory (enable acl2::slice-becomes-getbit))))
 
 (defthm acl2::equal-of-bvchops-when-equal-of-getbits-16
   (implies (and (syntaxp (acl2::want-to-strengthen (equal (bvchop 15 x) (bvchop 15 y))))
                 (equal (getbit 15 x) (getbit 15 y)))
            (equal (equal (bvchop 15 x) (bvchop 15 y))
                   (equal (bvchop 16 x) (bvchop 16 y))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 0)))
+  :hints (("Goal" :in-theory (enable acl2::slice-becomes-getbit))))
 
 ;move
 ;todo: gen the other and kill this:
 (defthm acl2::equal-of-bvchops-when-equal-of-getbits-64
   (implies (and (syntaxp (acl2::want-to-strengthen
-                          (equal (bvchop 63 x) (bvchop 63 y))))
+                           (equal (bvchop 63 x) (bvchop 63 y))))
                 (equal (getbit 63 x) (getbit 63 y)))
            (equal (equal (bvchop 63 x) (bvchop 63 y))
                   (equal (bvchop 64 x) (bvchop 64 y))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 0)))
+  :hints (("Goal" :in-theory (enable acl2::slice-becomes-getbit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
