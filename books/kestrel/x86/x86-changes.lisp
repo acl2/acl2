@@ -37,6 +37,8 @@
 
 (in-theory (disable X86ISA::ZF-SPEC-THM)) ;bad?
 
+(local (in-theory (enable acl2::slice-becomes-getbit)))
+
 (local
  (defthm not-equal-when-<-cheap
    (implies (< y x)

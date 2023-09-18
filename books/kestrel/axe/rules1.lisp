@@ -2971,7 +2971,8 @@
                          (+ -1 element-width)
                          ;wrap a bvchop-list around the data?
                          (bv-array-read (+ -1 element-width) len index data))))
-  :hints (("Goal" :in-theory (enable GETBIT-OF-BV-ARRAY-READ-HELPER bvchop-of-bv-array-read))))
+  :hints (("Goal" :in-theory (enable GETBIT-OF-BV-ARRAY-READ-HELPER bvchop-of-bv-array-read
+                                     slice-becomes-getbit))))
 
 ;what should we do when the data is not a quotep?
 (defthmd bv-array-read-blast
