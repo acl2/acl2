@@ -2850,11 +2850,7 @@
                                    t
                                    wrld))
        (formula `(let ((,compst0-var ,compst-var)) ,formula))
-       (formal-thm? (b* (((unless (consp affect)) nil)
-                         (formal (car affect))
-                         (info (cdr (assoc-eq formal typed-formals)))
-                         ((unless info) nil))
-                      (list (atc-var-info->thm info))))
+       (formals-thms (atc-gen-pop-frame-thm-aux typed-formals))
        (hints
         `(("Goal"
            :in-theory
@@ -2877,9 +2873,11 @@
              update-object-of-add-var
              update-object-of-add-frame
              write-object-to-update-object
+             write-object-okp-of-update-object-same
+             write-object-okp-of-update-object-disjoint
              write-object-okp-when-valuep-of-read-object-no-syntaxp
              write-object-okp-of-if*-val
-             ,@formal-thm?
+             ,@formals-thms
              valuep-when-ucharp
              valuep-when-scharp
              valuep-when-ushortp
@@ -2955,6 +2953,10 @@
              update-object-of-if*-val
              update-object-of-read-object-same
              update-object-of-update-object-same
+             update-object-of-update-object-less-symbol
+             update-object-of-update-object-less-ident
+             update-object-of-update-var
+             update-object-of-update-static-var
              update-static-var-of-add-var
              update-static-var-of-add-frame
              compustatep-of-update-static-var
@@ -2966,12 +2968,20 @@
              update-static-var-of-enter-scope
              compustatep-of-add-frame
              update-static-var-of-if*-val
+             object-disjointp-commutative
              ,body-correct-thm))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
                                             :enable nil)))
-    (mv event name names-to-avoid)))
+    (mv event name names-to-avoid))
+  :prepwork
+  ((define atc-gen-pop-frame-thm-aux ((typed-formals atc-symbol-varinfo-alistp))
+     :returns (thms symbol-listp)
+     :parents nil
+     (cond ((endp typed-formals) nil)
+           (t (cons (atc-var-info->thm (cdar typed-formals))
+                    (atc-gen-pop-frame-thm-aux (cdr typed-formals))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
