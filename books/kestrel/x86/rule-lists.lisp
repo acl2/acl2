@@ -2054,7 +2054,9 @@
     esp-of-xw
     ebp-of-xw
 
-    acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
+    bvplus-of-constant-and-esp-when-overflow
+    ;;acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
+
     read-stack-dword-of-write-to-segment-diff-segments
     write-to-segment-of-write-byte-to-segment-included
     write-to-segment-of-write-to-segment-included
