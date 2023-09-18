@@ -2236,7 +2236,7 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bvplus-convert-arg3-to-bv-axe
-  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y dag-array))
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y dag-array))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))

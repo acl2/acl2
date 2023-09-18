@@ -460,7 +460,7 @@
     trim-of-logior-becomes-bvor
     trim-of-logxor-becomes-bvxor
     trim-of-lognot-becomes-bvnot
-    trim-of-+-becomes-bvplus
+    trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving acl2::bvplus-of-constant-when-overflow?
     ))
 
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
