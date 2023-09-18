@@ -4567,3 +4567,17 @@
 (defthm if-of-if-of-cons-and-nil
   (equal (if (if test (cons a b) nil) tp ep)
          (if test tp ep)))
+
+; Helps resolve updates to ESP.
+; Note that this replaces BVPLUS with +.  TODO: Think about when we want this.
+;; todo: do we need a version for 64-bit?
+(defthmd bvplus-of-constant-and-esp-when-overflow
+  (implies (and (syntaxp (quotep k))
+                (<= (- (expt 2 32) k) (esp x86))
+                (unsigned-byte-p 32 (esp x86))
+                (unsigned-byte-p 32 k))
+           (equal (bvplus 32 k (esp x86))
+                  (+ (- (- (expt 2 32) k)) ;gets computed
+                     (esp x86))))
+  :hints (("Goal" ; :in-theory (disable acl2::plus-bvcat-with-0-alt) ; yuck
+           :use (:instance acl2::bvplus-of-constant-when-overflow (x (esp x86))))))
