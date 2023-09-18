@@ -70,7 +70,7 @@
                       (getbit low x)
                     (bitnot (getbit low x)))))
   :hints (("Goal" :use (:instance slice-of-bvuminus (high low))
-           :in-theory (disable slice-of-bvuminus))))
+           :in-theory (e/d (slice-becomes-getbit) (slice-of-bvuminus)))))
 
 (defthm equal-of-bvchop-and-bvchop-same-diff-sizes
   (implies (natp size)
