@@ -1299,7 +1299,8 @@
             acl2::bv-array-read-shorten-axe
             )))
 
-;; This needs to fire before bvplus-convert-arg3-to-bv-axe
+;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
+;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
 (table axe-rule-priorities-table 'acl2::bvplus-of-+-combine-constants -1)
 
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
