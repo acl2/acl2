@@ -2953,7 +2953,13 @@
              compustatep-of-add-frame
              update-static-var-of-if*-val
              object-disjointp-commutative
-             ,body-correct-thm))))
+             mv-nth-of-cons
+             (:e zp)
+             ,body-correct-thm))
+          (and stable-under-simplificationp
+               '(:in-theory '(if*
+                              mv-nth-of-cons
+                              (:e zp))))))
        ((mv event &) (evmac-generate-defthm name
                                             :formula formula
                                             :hints hints
@@ -3346,10 +3352,7 @@
             fn-correct-thm
             fn-correct-lemma-thm
             names-to-avoid)
-        (if (and body.thm-name
-                 (or (not affect)
-                     (and (consp affect)
-                          (not (cdr affect)))))
+        (if body.thm-name
             (atc-gen-fun-correct-thm fn
                                      fn-guard
                                      fn-def*
@@ -3410,9 +3413,6 @@
          init-inscope-events
          body.events
          (and body.thm-name
-              (or (not affect)
-                  (and (consp affect)
-                       (not (cdr affect))))
               (list pop-frame-event))
          fn-result-events
          fn-correct-events
