@@ -3783,7 +3783,7 @@
                          (max-wins ':auto)
                          (models ':all)
                          (rule-classes '(:rewrite))
-                         (start-and-return 'nil) ; todo: make the default t (here and elsewhere)
+                         (start-and-return 't)
                          )
   `(acl2::make-event-quiet
     (defthm-advice-fn ',name ',body ',hints ,otf-flg ',rule-classes ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models ',start-and-return state)))
@@ -3889,7 +3889,7 @@
                       (models ':all)
                       (improve-recsp 't)
                       ;; no rule-classes
-                      (start-and-return 'nil)
+                      (start-and-return 't)
                       )
   `(acl2::make-event-quiet
     (thm-advice-fn ',body ',hints ,otf-flg ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models ',start-and-return  state)))
@@ -4047,7 +4047,7 @@
                        (disallowed-rec-types 'nil)
                        (max-wins ':auto)
                        (models ':all)
-                       (start-and-return 'nil))
+                       (start-and-return 't))
   `(acl2::make-event-quiet (advice-fn ,n ,improve-recsp ,print ,timeout ,debug ,step-limit ,time-limit ',disallowed-rec-types ,max-wins ,models ',start-and-return state)))
 
 ;; Just a synonym in ACL2 package
