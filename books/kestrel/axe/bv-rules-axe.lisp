@@ -2222,28 +2222,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvplus-convert-arg2-to-bv-axe
-  (implies (axe-syntaxp (term-should-be-converted-to-bvp x dag-array))
-           (equal (bvplus size x y)
-                  (bvplus size (trim size x) y)))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm bvplus-convert-arg3-to-bv-axe
-  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y dag-array))
-           (equal (bvplus size x y)
-                  (bvplus size x (trim size y))))
-  :hints (("Goal" :in-theory (enable trim))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defthm bvand-convert-arg2-to-bv-axe
-  (implies (axe-syntaxp (term-should-be-converted-to-bvp x dag-array))
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvand size x y)
                   (bvand size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bvand-convert-arg3-to-bv-axe
-  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y dag-array))
+  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvand size x y)
                   (bvand size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
@@ -2251,13 +2237,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvor-convert-arg2-to-bv-axe
-  (implies (axe-syntaxp (term-should-be-converted-to-bvp x dag-array))
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvor size x y)
                   (bvor size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bvor-convert-arg3-to-bv-axe
-  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y dag-array))
+  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvor size x y)
                   (bvor size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
@@ -2265,13 +2251,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvxor-convert-arg2-to-bv-axe
-  (implies (axe-syntaxp (term-should-be-converted-to-bvp x dag-array))
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvxor size x y)
                   (bvxor size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bvxor-convert-arg3-to-bv-axe
-  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y dag-array))
+  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvxor size x y)
                   (bvxor size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; Doesn't apply to when x is a + since we turn bvplus back into + for x86 stack pointer calculations.
+(defthm bvplus-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x '(binary-+) dag-array))
+           (equal (bvplus size x y)
+                  (bvplus size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;; Doesn't apply to when y is a + since we turn bvplus back into + for x86 stack pointer calculations.
+(defthm bvplus-convert-arg3-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y '(binary-+) dag-array))
+           (equal (bvplus size x y)
+                  (bvplus size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
