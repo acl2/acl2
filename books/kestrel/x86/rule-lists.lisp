@@ -617,7 +617,7 @@
    x86isa::if-of-one-byte-opcode-execute-of-if-arg5 ;do we need this?
    x86isa::<-of-if-arg2                              ;could be dangerous
    x86isa::logext-of-if-arg2
-   run-until-rsp-greater-than-of-if-arg2 ;careful, this can cause splits:
+   run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits:
    ))
 
 (defun simple-opener-rules ()
@@ -889,9 +889,9 @@
             return-last
             ;; symbolic execution (perhaps separate these out):
             run-until-return
-            run-until-rsp-greater-than-opener
-            run-until-rsp-greater-than-base
-            rsp-greater-than
+            run-until-stack-shorter-than-opener
+            run-until-stack-shorter-than-base
+            stack-shorter-thanp
 
             ;; x86-fetch-decode-execute-opener ; this had binding hyps
             ;; x86-fetch-decode-execute ; this splits into too many cases when things can't be resolved
@@ -3206,7 +3206,7 @@
 
 (defun debug-rules-common ()
   (declare (xargs :guard t))
-  '(run-until-rsp-greater-than-opener
+  '(run-until-stack-shorter-than-opener
     not-mv-nth-0-of-wme-size ;gets rid of error branch
     mv-nth-1-of-wme-size     ;introduces write-to-segment
     ))

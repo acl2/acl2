@@ -495,7 +495,7 @@
        (- (and (acl2::dag-or-quotep-size-less-thanp result-dag 1000)
                (cw "(Term after lifting: ~X01)~%" (acl2::dag-to-term result-dag) nil)))
        (result-dag-fns (dag-fns result-dag))
-       ((when (member-eq 'run-until-rsp-greater-than result-dag-fns)) ; TODO: try pruning first
+       ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first
         (cw "FAILED: Did not finish the run.  See DAG above.)~%")
         (mv-let (elapsed state)
           (real-time-since start-real-time state)
