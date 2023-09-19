@@ -20,43 +20,43 @@
 (defmacro defpun (&rest args)
   `(acl2::defpun ,@args))
 
-;; Tests whether the stack is shorter than it was when the RSP was val.  Recall
-;; that the stack grows downward, so large RSP mean shorter stacks.
-(defun rsp-greater-than (val x86)
+;; Tests whether the stack is shorter than it was when the RSP was OLD-RSP.  Recall
+;; that the stack grows downward, so a larger RSP means a shorter stack.
+(defun stack-shorter-thanp (old-rsp x86)
   (declare (xargs :stobjs x86
-                  :guard (natp val))) ;tighten?
+                  :guard (natp old-rsp))) ;tighten?
   (> (rgfi *rsp* x86)
-     val))
+     old-rsp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; What should we do about faults?
 ;; TODO: How to get defpun to work with a stobj?
-(defpun run-until-rsp-greater-than (target-rsp x86)
+(defpun run-until-stack-shorter-than (target-rsp x86)
   ;;  (declare (xargs :stobjs x86)) ;TODO: This didn't work
-  (if (rsp-greater-than target-rsp x86)
+  (if (stack-shorter-thanp target-rsp x86)
       x86
-    (run-until-rsp-greater-than target-rsp (x86-fetch-decode-execute x86))))
+    (run-until-stack-shorter-than target-rsp (x86-fetch-decode-execute x86))))
 
-(defthm run-until-rsp-greater-than-base
-  (implies (rsp-greater-than target-rsp x86)
-           (equal (run-until-rsp-greater-than target-rsp x86)
+(defthm run-until-stack-shorter-than-base
+  (implies (stack-shorter-thanp target-rsp x86)
+           (equal (run-until-stack-shorter-than target-rsp x86)
                   x86)))
 
-(defthm run-until-rsp-greater-than-opener
-  (implies (not (rsp-greater-than target-rsp x86))
-           (equal (run-until-rsp-greater-than target-rsp x86)
-                  (run-until-rsp-greater-than target-rsp (x86-fetch-decode-execute x86)))))
+(defthm run-until-stack-shorter-than-opener
+  (implies (not (stack-shorter-thanp target-rsp x86))
+           (equal (run-until-stack-shorter-than target-rsp x86)
+                  (run-until-stack-shorter-than target-rsp (x86-fetch-decode-execute x86)))))
 
-(defthm run-until-rsp-greater-than-of-if-arg2
-  (equal (x::run-until-rsp-greater-than target-rsp (if test x86a x86b))
+(defthm run-until-stack-shorter-than-of-if-arg2
+  (equal (x::run-until-stack-shorter-than target-rsp (if test x86a x86b))
          (if test
-             (x::run-until-rsp-greater-than target-rsp x86a)
-           (x::run-until-rsp-greater-than target-rsp x86b))))
+             (x::run-until-stack-shorter-than target-rsp x86a)
+           (x::run-until-stack-shorter-than target-rsp x86b))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Try to use defun here (but may need a stobj declare on run-until-rsp-greater-than)
+;; TODO: Try to use defun here (but may need a stobj declare on run-until-stack-shorter-than)
 (defund-nx run-until-return (x86)
   (declare (xargs :stobjs x86))
-  (run-until-rsp-greater-than (xr :rgf *rsp* x86) x86))
+  (run-until-stack-shorter-than (xr :rgf *rsp* x86) x86))
