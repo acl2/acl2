@@ -1,7 +1,7 @@
 ; Mixed bit-vector theorems
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
-(include-book "slice")
+;(include-book "slice")
 (include-book "getbit")
 (include-book "bvplus")
 ;(include-book "bvminus")
