@@ -158,12 +158,19 @@
   (defruled alistp-when-mapp
     (implies (mapp x)
              (alistp x))
-    :rule-classes (:rewrite :forward-chaining))
+    :rule-classes (:rewrite :forward-chaining)))
 
-  (defruled consp-car-when-non-empty-mapp
-    (implies (and map
-                  (mapp map))
-             (consp (car map)))))
+; This breaks the omap abstraction,
+; so it is local to this file (not exported by the omaps library).
+; It is enabled in one theorem in this file,
+; but its implicit tau rule is apparently used in other proofs,
+; so for now we cannot just make it local to the theorem that enables it.
+; We should see if we can eliminate this altogether.
+(defruledl consp-car-when-non-empty-mapp
+  (implies (and map
+                (mapp map))
+           (consp (car map)))
+  :enable mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
