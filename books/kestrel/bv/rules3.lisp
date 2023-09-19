@@ -15,8 +15,7 @@
 (include-book "bvashr")
 (local (include-book "logior"))
 (local (include-book "logxor"))
-(local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
-(local (include-book "rules0"))
+(local (include-book "rules0")) ; needed to prove getbit-0-of-bvplus
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
@@ -25,11 +24,36 @@
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 
 (defthm lessthan-256-backchain
-  (implies (and (unsigned-byte-p 8 x))
+  (implies (unsigned-byte-p 8 x)
            (< x 256)))
+
+;rename and move
+(defthm collect-constants-<-/
+  (implies (and (syntaxp (and (quotep a)
+                              (quotep b)))
+                (< 0 b)
+                (rationalp a)
+                (rationalp b)
+                (rationalp x)
+                )
+           (equal (< a (* b x))
+                  (< (/ a b) x))))
+
+;rename and move
+(defthm collect-constants-<-/-two
+  (implies (and (syntaxp (and (quotep a)
+                              (quotep b)))
+                (< 0 b)
+                (rationalp a)
+                (rationalp b)
+                (rationalp x)
+                )
+           (equal (< (* b x) a)
+                  (< x (/ a b)))))
 
 (defthm plus-bvcat-with-0-special
   (implies (and (unsigned-byte-p n x)
@@ -71,30 +95,6 @@
                   (bvcat (- newsize newsize2) (slice (+ -1 newsize) newsize2 y) newsize2 x)))
   :hints (("Goal" :use (:instance plus-bvcat-with-0)
            :in-theory (disable plus-bvcat-with-0))))
-
-;rename and move
-(defthm collect-constants-<-/
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< a (* b x))
-                  (< (/ a b) x))))
-
-;rename and move
-(defthm collect-constants-<-/-two
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< (* b x) a)
-                  (< x (/ a b)))))
 
 ;; These loop (note that <-UNARY-/-POSITIVE-LEFT <-UNARY-/-POSITIVE-RIGHT should probably have syntaxp hyps added).
 (theory-invariant (incompatible (:rewrite collect-constants-<-/) (:rewrite <-unary-/-positive-left)))
@@ -1412,18 +1412,25 @@
   :hints (("Goal" :use (:instance bvplus-disjoint-ones-32-24-8-two)
            :in-theory (disable bvplus-disjoint-ones-32-24-8-two))))
 
+(defthm getbit-0-of-bvplus-tighten
+  (implies (and (< 1 size)
+                (integerp size))
+           (equal (getbit 0 (bvplus size x y))
+                  (getbit 0 (bvplus 1 x y))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bitxor-of-+
+  (implies (and (integerp y)
+                (integerp z))
+           (equal (bitxor x (+ y z))
+                  (bitxor x (bitxor y z)))))
+
 (defthm bvplus-1-of-bvplus-trim-arg1
   (implies (and (< 1 size)
                 (integerp size))
            (equal (bvplus 1 (bvplus size x y) z)
                   (bvplus 1 (bvplus 1 x y) z)))
-  :hints (("Goal" :use ((:instance bvplus-of-bvchop-arg2 (size 1)
-                                   (x (bvplus size x y))
-                                   (y z)))
-           :in-theory (disable bvplus-of-bvchop-arg2
-                               EQUAL-OF-BITXOR-AND-BITXOR-SAME-6
-                               EQUAL-OF-BITXOR-AND-BITXOR-SAME-ALT
-                               bvchop-1-becomes-getbit))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-1-of-bvplus-trim-arg2
    (implies (and (< 1 size)
@@ -1565,7 +1572,8 @@
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                    bitxor
-                                   bvxor)
+                                   bvxor
+                                   expt-of-+)
                            (;hack-6 ;yuck!
                             BVXOR-1-BECOMES-BITXOR
                             BITXOR-OF-UNARY-MINUS-ARG1
@@ -1918,8 +1926,7 @@
                 (NATP YSIZE)
                 (<= XSIZE YSIZE))
            (< (+ X Y) (EXPT 2 (+ 1 YSIZE))))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 <-OF-EXPT-AND-EXPT-same-base))
-           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i (min xsize ysize)) (j (max xsize ysize))))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
 
 (defthm sum-bound2
    (IMPLIES (AND (UNSIGNED-BYTE-P XSIZE X)
@@ -1928,8 +1935,7 @@
                  (NATP YSIZE)
                  (<= XSIZE YSIZE))
             (< (+ X Y) (* 2 (EXPT 2 YSIZE))))
-   :hints (("Goal" :in-theory (e/d (unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 <-OF-EXPT-AND-EXPT-same-base))
-            :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i (min xsize ysize)) (j (max xsize ysize))))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
 
 (defthm sum-bound-lemma
   (implies (and (unsigned-byte-p xsize x)
@@ -2581,8 +2587,7 @@
                 (rationalp z)
                 (rationalp x))
            (equal (< (+ x (* x z)) (* x y))
-                  (< (+ 1 z) y)))
-  :hints (("Goal" :use (:instance <-*-left-cancel (z x) (x (+ 1 z))))))
+                  (< (+ 1 z) y))))
 
 (defthm getbit-of-+-of-expt
   (implies (and (natp n)
@@ -2761,7 +2766,8 @@
                            (y2 (EXPT 2 m)))
            :cases ((equal 0 x)
                    (and (equal 0 y) (equal 0 x)))
-           :in-theory (e/d (BVMULT UNSIGNED-BYTE-P unsigned-byte-p-forced)
+           :in-theory (e/d (BVMULT UNSIGNED-BYTE-P unsigned-byte-p-forced
+                                   expt-of-+)
                            (<-of-*-and-*
                             bvchop-of-*)))))
 
