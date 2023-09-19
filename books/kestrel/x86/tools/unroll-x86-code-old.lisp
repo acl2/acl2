@@ -119,7 +119,7 @@
        (- (cw "Result: ~x0" result))
        (- (cw "Runes used: ~x0" runes))
        (runes (acl2::drop-fake-runes runes))
-       ((when (member-eq 'run-until-rsp-greater-than (acl2::all-ffn-symbs result nil)))
+       ((when (member-eq 'run-until-stack-shorter-than (acl2::all-ffn-symbs result nil)))
         (mv t (er hard 'lifter "Lifter error: The run did not finish.") state))
        (vars (acl2::all-vars result))
        ;;use defun-nx by default because stobj updates are not all let-bound to x86

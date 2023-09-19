@@ -191,7 +191,7 @@
          ;;                       (cw ")~%"))))
          ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
          (dag-fns (acl2::dag-fns dag)))
-      (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
+      (if (not (member-eq 'run-until-stack-shorter-than dag-fns)) ;; stop if the run is done
           (prog2$ (cw "Note: The run has completed.~%")
                   (mv (erp-nil) dag state))
         (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
@@ -490,7 +490,7 @@
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
        ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
-       ((when (intersection-eq result-dag-fns '(run-until-rsp-greater-than run-until-return)))
+       ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return)))
         (if (< result-dag-size 10000)
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (untranslate (dag-to-term result-dag) nil (w state)) nil)
