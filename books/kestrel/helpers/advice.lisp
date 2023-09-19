@@ -3089,7 +3089,6 @@
        ((when (not (stringp model-string)))
         (er hard? 'advice-fn "Model name for server is not a string: ~x0." model-string)
         (mv :no-server nil state))
-       (- (and print (cw "Server for ~x0 is ~s1.~%" model server-url)))
        ;; Send query to server:
        ((mv erp semi-parsed-response state) ;; semi-parsed means the JSON has been parsed
         (if (zp num-recs) ;handle this higher up?
@@ -3098,11 +3097,8 @@
                         nil ; no server response
                         state))
           (b* ((- (and (acl2::print-level-at-least-tp print)
-                       (cw "Asking server for ~x0 recommendations from ~x1 on ~x2 ~s3: " ; the line is ended below when we print the time
-                           num-recs
-                           model
-                           (len checkpoint-clauses-top)
-                           (if (< 1 (len checkpoint-clauses-top)) "checkpoints" "checkpoint"))))
+                       (cw "Model ~x0 (on ~s1): " ; the line is ended in get-recs-from-models when we print the time
+                           model server-url)))
                ;; Assemble the data to send with the POST request (an alist):
                (post-data (acons "use-group" model-string ; the name of the model to use (often a group of models, one for each action type)
                                  (acons "n" (acl2::nat-to-string num-recs)
@@ -3135,7 +3131,7 @@
            (- (if (not (consp semi-parsed-recommendations))
                   (cw " WARNING: No recommendations returned from server for ~x0.~%" model)
                 (if (not (equal num-recs (len semi-parsed-recommendations)))
-                    (cw " WARNING: Number of recs returned from server for ~x0 is ~x1 but we requested ~x2.~%" model (len semi-parsed-recommendations) num-recs)
+                    (cw " WARNING: Got only ~x0 of ~x1 recs for ~x2.~%" (len semi-parsed-recommendations) num-recs model)
                   nil)))
            ;; Parse the individual strings in the recs:
            ((mv erp ml-recommendations state) (parse-recommendations semi-parsed-recommendations model state))
@@ -3289,22 +3285,21 @@
          ;; Record the start time (if we will need it):
          ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
          ;; Dispatch to the model:
+         (ml-modelp (not (member-eq model
+                               ;; TODO: Avoiding listing all these here:
+                                    '(:enable-fns-body :enable-fns-top-cps :enable-fns-non-top-cps
+                                      :enable-rules-body :enable-rules-top-cps :enable-rules-non-top-cps
+                                      :history :induct :cases))))
          ((mv erp
-              & ; recs should be nil
+              & ; recs (should be nil)
               state)
-          (case model
-            ;; TODO: Make the dispatch to heursitics generic, so we don't have to mention them all here:
-            ((:enable-fns-body :enable-fns-top-cps :enable-fns-non-top-cps
-              :enable-rules-body :enable-rules-top-cps :enable-rules-non-top-cps
-              :history :induct :cases)
-             (mv nil nil state) ; no need to start the model
-             )
-            (otherwise
-             ;; It's a normal ML model:
-             (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print :start state))))
+          (if (not ml-modelp)
+              (mv nil nil state) ; no need to start the model
+            ;; It's a ML model on a server, so start it:
+            (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print :start state)))
          ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
          (- (and erp (cw "Error using ~x0.~%" model))) ; but continue
-         (- (if print-timep
+         (- (if (and print-timep ml-modelp)
                 (let* ((time-diff (- done-time start-time))
                        (time-diff (if (< time-diff 0)
                                       (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
@@ -3469,7 +3464,10 @@
   (b* ((state (acl2::widen-margins state))
        ;; Start all the models working, in parallel:
        (translated-theorem-body (acl2::translate-term theorem-body 'best-rec-for-checkpoints (w state)))
-
+       (- (cw "Asking for ~x0 recs per model on ~x1 top-level ~s2 and ~x3 non-top-level ~s4.~%"
+              num-recs-per-model
+              (len checkpoint-clauses-top) (if (= 1 (len checkpoint-clauses-top)) "checkpoint" "checkpoints")
+              (len checkpoint-clauses-non-top) (if (= 1 (len checkpoint-clauses-non-top)) "checkpoint" "checkpoints")))
        ;; Maybe start the models working:
        ((mv erp state)
         (if start-and-return
@@ -3958,7 +3956,7 @@
               (caddr most-recent-failed-theorem)
               (cadr (assoc-keyword :hints (cdddr most-recent-failed-theorem)))
               (cadr (assoc-keyword :otf-flg (cdddr most-recent-failed-theorem))))))
-       (- (and print (cw "Generating advice for:~%~X01:~%" most-recent-failed-theorem nil)))
+       (- (and print (cw "~%Generating advice for:~%~X01:~%" most-recent-failed-theorem nil)))
        (- (and (acl2::print-level-at-least-tp print) (cw "Original hints were:~%~X01.~%" theorem-hints nil)))
        ;; Get the checkpoints from the failed attempt:
        ;; TODO: Consider trying again with no hints, in case the user gave were wrongheaded.
@@ -3977,8 +3975,8 @@
                                raw-checkpoint-clauses-top))
        (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
                                                           state))
-       (- (and (acl2::print-level-at-least-tp print) (cw "Top-level Proof checkpoints to use: ~X01.~%" checkpoint-clauses-top nil)))
-       (- (and (acl2::print-level-at-least-tp print) (cw "Non-top-level Proof checkpoints to use: ~X01.~%" checkpoint-clauses-non-top nil)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Top-level checkpoints to use: ~X01.~%" checkpoint-clauses-top nil)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "Non-top-level checkpoints to use: ~X01.~%" checkpoint-clauses-non-top nil)))
        ((mv erp
             & ;; successp
             & ;; best-rec
