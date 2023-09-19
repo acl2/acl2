@@ -14,6 +14,7 @@
 (include-book "bvchop")
 (include-book "logext") ;todo: include less?
 (include-book "kestrel/booleans/boolor" :dir :system) ;todo
+(include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "unsigned-byte-p"))
@@ -448,4 +449,35 @@
                 (< free size)
                 (natp size))
            (sbvlt size k x))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;; When do we want this?
+(defthmd sbvlt-of-0-arg3
+  (implies (posp size)
+           (equal (sbvlt size x 0)
+                  (equal 1 (getbit (+ -1 size) x))))
+  :hints (("Goal" :in-theory (enable sbvlt logext-cases))))
+
+;; In case we don't want to rewrite the sbvlt.
+(defthm getbit-when-not-sbvlt-of-0-cheap
+  (implies (not (sbvlt 32 x 0))
+           (equal (getbit 31 x)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;; In case we don't want to rewrite the sbvlt.
+(defthm getbit-when-sbvlt-of-0-cheap
+  (implies (sbvlt 32 x 0)
+           (equal (getbit 31 x)
+                  1))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;todo: gen the 0
+(defthm sbvlt-unique-weaken
+  (implies (and (syntaxp (acl2::want-to-weaken (sbvlt 32 i 0)))
+                (not (sbvlt 32 0 i)))
+           (equal (sbvlt 32 i 0)
+                  (not (equal 0 (bvchop 32 i)))))
   :hints (("Goal" :in-theory (enable sbvlt))))

@@ -778,6 +778,7 @@
           (acl2::array-reduction-rules)
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
+          (acl2::convert-to-bv-rules)
           '(ACL2::BOOLOR-OF-NON-NIL)
           (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           ;;(acl2::core-rules-bv) ;acl2::not-equal-max-int-when-<= not defined
@@ -1297,6 +1298,10 @@
 
             acl2::bv-array-read-shorten-axe
             )))
+
+;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
+;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
+(table axe-rule-priorities-table 'acl2::bvplus-of-+-combine-constants -1)
 
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
 

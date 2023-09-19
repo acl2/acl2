@@ -106,7 +106,7 @@
            (equal (factorial-spec.2 n acc)
                   (factorial-loop-1.4 n acc)))
   :hints (("Goal" :induct t
-           :expand ((factorial-spec.2 n acc)))))
+           :in-theory (enable factorial-spec.2))))
 
 ;; Final correctness theorem linking the lifted code and the spec.
 ;; (The initial undef value in the code is unused.)
