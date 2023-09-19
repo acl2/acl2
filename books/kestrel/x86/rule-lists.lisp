@@ -3125,8 +3125,7 @@
             )))
 
 ;; some commonly monitored stuff:
-;;   :monitor (run-until-rsp-greater-than-opener
-;;             acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-1 ;todo: handle multi-conjunct rules better
+;;   :monitor (acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-1 ;todo: handle multi-conjunct rules better
 ;;             acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-2
 ;; ;            rb-in-terms-of-nth-and-pos-eric-gen
 ;;             rb-returns-no-error-app-view
@@ -3159,7 +3158,6 @@
 ;;             not-mv-nth-0-of-add-to-*sp-gen-special
 ;;             X86ISA::X86P-XW
 ;;             not-mv-nth-0-of-add-to-*sp-gen-special
-;;             run-until-rsp-greater-than-opener
 ;; ;;             x86isa::write-*sp-when-not-64-bit-modep-gen2
 ;;              mv-nth-1-of-add-to-*sp-gen
 ;;              not-mv-nth-0-of-add-to-*sp-gen
@@ -3197,7 +3195,6 @@
 ;; ;;  ;           mv-nth-1-of-add-to-*sp
 ;; ;;   ;          not-mv-nth-0-of-add-to-*sp
 ;; ;;             ;x86isa::write-*sp-when-not-64-bit-modep-gen
-;; ;; ;            run-until-rsp-greater-than-opener
 ;; ;;             read-*ip-becomes-eip-gen
 ;; ;;             code-segment-assumptions32-of-write-to-segment-of-ss
 ;;             )
