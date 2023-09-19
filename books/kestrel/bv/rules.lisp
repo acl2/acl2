@@ -1883,32 +1883,6 @@
                   0)))
   :hints (("Goal" :in-theory (enable natp))))
 
-(defthm slice-of-bvnot
-  (implies (and (< highbit size)
-                (<= lowbit highbit)
-                (natp size)
-                (natp lowbit)
-                (natp highbit))
-           (equal (slice highbit lowbit (bvnot size x))
-                  (bvnot (+ 1 highbit (- lowbit)) (slice highbit lowbit x))))
-  :hints (("Goal"
-           :use ((:instance bvchop-lognot-bvchop (n (+ 1 highbit (- lowbit))) (x (logtail lowbit x)))
-                 (:instance bvchop-of-mask-gen (size2 (+ 1 highbit (- lowbit)))
-                            (size1 (- size lowbit))))
-           :cases ((integerp x)
-                   (not (integerp x))
-                   )
-           :in-theory (e/d (bvnot slice ;logtail-bvchop
-                                  lognot-of-logtail
-                                  bvchop-of-mask-gen
-                                  ) (bvchop-of-logtail-becomes-slice
-                                  bvchop-of-minus
-                                  logtail-of-lognot
-                                  ;LOGNOT-OF-LOGTAIL
-                                  bvchop-lognot-bvchop
-;bvchop-of-logtail
-                                  logtail-of-bvchop-becomes-slice)))))
-
 ;gen!
 (defthm bvnot-equal-1-rewrite
   (equal (equal (bvnot 1 x) 1)
@@ -2305,12 +2279,12 @@
                   (* 2 x)))
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
-;drop the y?
-(defthm additive-inverse-hack
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (+ y (- x) x)
-                  y)))
+;; ;drop the y?
+;; (defthm additive-inverse-hack
+;;   (implies (and (integerp x)
+;;                 (integerp y))
+;;            (equal (+ y (- x) x)
+;;                   y)))
 
 (defthm bvchop-hack1
   (implies (and (integerp x)
