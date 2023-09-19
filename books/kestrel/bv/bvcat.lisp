@@ -1222,6 +1222,7 @@
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize highval lowsize (bvchop lowsize lowval)))))
 
+;; todo: rename y to x
 (defthm split-bv
   (implies (and (unsigned-byte-p n y)
                 (natp m)
@@ -1231,6 +1232,28 @@
            (equal y
                   (bvcat (+ n (- m)) (slice (+ -1 n) m y)
                          m (bvchop m y))))
+  :rule-classes nil)
+
+;; special case that splits of the top bit
+; may get undone by rules about bvcat
+(defthm split-bv-top
+  (implies (unsigned-byte-p size x)
+           (equal x (bvcat 1 (getbit (+ -1 size) x) (+ -1 size) (bvchop (+ -1 size) x))))
+  :hints (("Goal" :use (:instance split-bv (y x) (n size) (m (+ -1 size)))
+           :cases ((equal size 1))
+           :in-theory (e/d ( getbit) (bvchop-1-becomes-getbit))))
+  :rule-classes nil)
+
+;; this one opens up the bvcat to expose the underlying addition
+(defthm split-bv-top-add
+  (implies (unsigned-byte-p size x)
+           (equal x
+                  (+ (* (expt 2 (+ -1 size))
+                        (getbit (+ -1 size) x))
+                     (bvchop (+ -1 size) x))))
+  :hints (("Goal" :use (:instance split-bv-top)
+           :cases ((equal size 1))
+           :in-theory (e/d (bvcat logapp getbit) (bvchop-1-becomes-getbit))))
   :rule-classes nil)
 
 (defthmd equal-of-bvchop-and-bvchop-when-unsigned-byte-p-of-bvchop
