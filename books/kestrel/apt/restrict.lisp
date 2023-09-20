@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -549,31 +549,37 @@
   :mode :program
   :short "Generate the theorem that relates the old and new functions."
   :long
-  "<p>
-   The macro used to introduce the theorem is determined by
-   whether the theorem must be enabled or not.
-   </p>
-   <p>
-   The formula of the theorem equates old and new functions
-   under the restricting predicate,
-   as described in the documentation.
-   </p>
-   <p>
-   If the old and new functions are not recursive,
-   then, following the design notes, the theorem is proved
-   in the theory consisting of
-   the two theorems that install the non-normalized definitions of the functions
-   and the induction rule of the old function.
-   If the old and new functions are recursive,
-   then, following the design notes, the theorem is proved
-   by induction on the old function,
-   in the theory consisting of
-   the two theorems that install the non-normalized definitions of the functions
-   and the induction rule of the old function,
-   and using the @(':restriction-of-rec-calls') applicability condition.
-   If the old and new functions are reflexive,
-   we functionally instantiate the stub in that applicability condition.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The macro used to introduce the theorem is determined by
+     whether the theorem must be enabled or not.")
+   (xdoc::p
+    "The formula of the theorem equates old and new functions
+     under the restricting predicate,
+     as described in the documentation.")
+   (xdoc::p
+    "If the old and new functions are not recursive,
+     then, following the design notes, the theorem is proved
+     in the theory consisting of
+     the non-normalized definitions of the functions.")
+   (xdoc::p
+    "If the old and new functions are recursive,
+     then, following the design notes, the theorem is proved
+     by induction on the old function,
+     in the theory consisting of
+     the induction rule of the old function
+     and the non-normalized definitions of the functions.
+     But we have seen at least one case in which a definition was not expanded,
+     presumably due to some ACL2 heuristics.
+     Thus, we use @(':expand') hints to force the expansion,
+     which should be more reliable in the face of heuristics.
+     Even with the @(':expand') hints,
+     the non-normalized definitions of the functions must be in the theory,
+     otherwise some tests fail
+     (perhaps because the expansion is using the original definitions,
+     instead of the non-normalized definitions).
+     Also, if the old and new functions are reflexive,
+     we functionally instantiate the stub in that applicability condition."))
   (b* ((formals (formals old wrld))
        (formula (implicate restriction
                            `(equal (,old ,@formals)
@@ -582,15 +588,17 @@
        (recursive (recursivep old nil wrld))
        (hints (if recursive
                   (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
-                                          appcond-thm-names)))
+                                                  appcond-thm-names)))
                        (lemma-instance (if stub?
                                            `(:functional-instance ,lemma-name
-                                             (,stub? ,new))
+                                                                  (,stub? ,new))
                                          lemma-name)))
                     `(("Goal"
                        :in-theory '(,old-unnorm
                                     ,new-unnorm
                                     (:induction ,old))
+                       :expand ((,old ,@formals)
+                                (,new ,@formals))
                        :induct (,old ,@formals))
                       '(:use ,lemma-instance)))
                 `(("Goal"
