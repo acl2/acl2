@@ -157,6 +157,12 @@
   :hints (("Goal" :in-theory (e/d (segment-expand-down-bit)
                                   (segment-expand-down-bit-intro)))))
 
+(defthm x::segment-expand-down-bit-of-set-flag
+  (equal (x::segment-expand-down-bit seg-reg (x::set-flag flg val x86))
+         (x::segment-expand-down-bit seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (x::set-flag)
+                                  ()))))
+
 ;;;
 ;;; segment-base32
 ;;;
@@ -2959,26 +2965,13 @@
 
 ;gen
 
-
 (defthm canonical-address-p$inline-of-n-minus-2 ;gen
   (implies (and (natp n)
                 (< n (expt 2 32)))
            (canonical-address-p$inline (binary-+ '-2 n)))
   :hints (("Goal" :in-theory (enable canonical-address-p$inline signed-byte-p))))
 
-;move
-; better than x86isa::size-of-rb-1
-(defthm unsigned-byte-p-of-mv-nth-1-of-rb-1
-  (implies (and (<= (* 8 n) m)
-                (natp m)
-                (x86p x86))
-           (unsigned-byte-p m (mv-nth 1 (rb-1 n addr r-x x86))))
-  :hints (("Goal" :use (:instance x86isa::size-of-rb-1
-                                  (X86ISA::ADDR addr)
-                                  (X86ISA::R-X r-x)
-                                  (m (* 8 n)))
-           :in-theory (e/d (ash rb-1)
-                           (x86isa::size-of-rb-1)))))
+
 
 ;; (defthm bound-hack ;should not be needed (also, this should be proved automatically by linear)
 ;;   (implies (and (<= eff-addr 4294967296)

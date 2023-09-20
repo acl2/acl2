@@ -13,6 +13,8 @@
 
 ;TODO: Separate out the x86 rules in this file from liter utilities like normal-output-indicatorp
 
+(include-book "support-x86") ;drop? for stuff about create-canonical-address-list
+(include-book "flags") ; reduce?
 (include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
 (in-theory (disable acl2::nth-when-zp)) ; can cause problems
 ;(include-book "projects/x86isa/tools/execution/top" :dir :system) ;todo don't even use init-x86-state?
@@ -22,9 +24,8 @@
 (include-book "kestrel/axe/rules2" :dir :system) ;drop?
 (include-book "kestrel/bv/rules3" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system)
-(include-book "support32") ; drop? needed to prove rb-in-terms-of-nth-and-pos-eric-gen -- why?
-(include-book "support-x86") ; why?
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
+(local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/arith" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -101,17 +102,11 @@
            (< paddr addr))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0 nil nil))))
 
-
  ;try to get my rule to fire:
 (in-theory (disable ;rb-in-terms-of-nth-and-pos
                     ;rb-in-terms-of-rb-subset-p
                     ;combine-bytes-rb-in-terms-of-rb-subset-p
             ))
-
-
-
-
-
 
 ;(in-theory (enable create-canonical-address-list)) ;or rewrite it when the number of addrs is 1
 
@@ -253,6 +248,19 @@
 
 (local (in-theory (enable APP-VIEW)))
 
+; better than x86isa::size-of-rb-1
+(defthm unsigned-byte-p-of-mv-nth-1-of-rb-1
+  (implies (and (<= (* 8 n) m)
+                (natp m)
+                (x86p x86))
+           (unsigned-byte-p m (mv-nth 1 (rb-1 n addr r-x x86))))
+  :hints (("Goal" :use (:instance x86isa::size-of-rb-1
+                                  (X86ISA::ADDR addr)
+                                  (X86ISA::R-X r-x)
+                                  (m (* 8 n)))
+           :in-theory (e/d (ash rb-1 ifix)
+                           (x86isa::size-of-rb-1)))))
+
 ;to handle a multi-byte RB by peeling off one known byte at a time
 (defthm rb-in-terms-of-nth-and-pos-eric-gen
   (implies (and ;; find that a program is loaded in the initial state:
@@ -295,7 +303,8 @@
            :in-theory (e/d (;rb rb-1
                             program-at
                             ash
-
+                            acl2::bvchop-of-logtail-becomes-slice
+                            ;;rb-split ; looped
                             )
                            (;rb-1-when-not-r
                             distributivity ;blocks slice-of-combine-bytes
@@ -443,7 +452,8 @@
 
 (defthm canonical-address-p-of-logext-64
   (implies (canonical-address-p x)
-           (canonical-address-p (logext 64 x)))) ;when can we drop the logext completely?
+           (canonical-address-p (logext 64 x)))
+  :hints (("Goal" :in-theory (enable canonical-address-p)))) ;when can we drop the logext completely?
 
 (acl2::defopeners get-prefixes)
 
@@ -2182,6 +2192,12 @@
          (64-bit-modep x86))
   :hints (("Goal" :in-theory (enable x::set-flag))))
 
+(defthm getbit-of-ash-low
+  (implies (posp c)
+           (equal (acl2::getbit 0 (ash x c))
+                  0))
+  :hints (("Goal" :in-theory (enable ash))))
+
 (defthm alignment-checking-enabled-p-of-set-flag
   (implies (and (member-equal flag x::*flags*) ;drop?
                 (not (equal flag :ac)))
@@ -2209,7 +2225,8 @@
                                      x86isa::!rflagsBits->id
                                      segment-selectorbits->rpl
                                      cr0bits->am
-                                     2bits-fix))))
+                                     2bits-fix
+                                     ))))
 
 ;; goes to set-flag instead of exposing details of the flags
 (defthm write-user-rflags-rewrite
@@ -2264,9 +2281,3 @@
                                      x86isa::rflagsbits->ac
                                      x86isa::rflagsbits-fix
                                      x::get-flag))))
-
-(defthm x::segment-expand-down-bit-of-set-flag
-  (equal (x::segment-expand-down-bit seg-reg (x::set-flag flg val x86))
-         (x::segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (x::set-flag)
-                                  ()))))
