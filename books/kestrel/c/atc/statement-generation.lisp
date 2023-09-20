@@ -4929,8 +4929,7 @@
         (reterr (raise "Internal error: function ~x0 has no info." called-fn)))
        (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
        ((when (or (not gin.proofs)
-                  (not called-fn-thm)
-                  (consp (cdr affect)))) ; <- temporary
+                  (not called-fn-thm)))
         (retok (make-stmt-gout
                 :items (list (block-item-stmt (stmt-expr call-expr)))
                 :type (type-void)
@@ -5112,6 +5111,8 @@
              write-object-okp-of-add-var
              write-object-okp-of-enter-scope
              write-object-okp-of-add-frame
+             write-object-okp-of-update-object-same
+             write-object-okp-of-update-object-disjoint
              write-object-okp-when-valuep-of-read-object-no-syntaxp
              value-array->length-when-uchar-arrayp
              value-array->length-when-schar-arrayp
@@ -5217,19 +5218,18 @@
                                         (list (make-atc-premise-compustate
                                                :var gin.compst-var
                                                :term new-compst))))
-       (new-context (if (and (consp gin.affect)
-                             (not (consp (cdr gin.affect))))
-                        (b* ((var (car gin.affect)))
-                          (atc-context-extend new-context
-                                              (list (make-atc-premise-cvalue
-                                                     :var var
-                                                     :term term))))
-                      new-context))
+       (premise (if (consp (cdr gin.affect))
+                    (make-atc-premise-cvalues :vars gin.affect
+                                              :term term)
+                  (make-atc-premise-cvalue :var (car gin.affect)
+                                           :term term)))
+       (new-context (atc-context-extend new-context (list premise)))
        (new-inscope-rules
         `(objdesign-of-var-of-update-object-iff
           read-object-of-objdesign-of-var-to-read-var
           read-var-of-update-object
           compustate-frames-number-of-add-var-not-zero
+          compustate-frames-number-of-update-object
           read-var-of-add-var
           remove-flexible-array-member-when-absent
           not-flexible-array-member-p-when-ucharp
@@ -5292,7 +5292,8 @@
           var-autop-of-add-var
           var-autop-of-update-var
           var-autop-of-update-static-var
-          var-autop-of-update-object))
+          var-autop-of-update-object
+          object-disjointp-commutative))
        ((mv new-inscope new-inscope-events names-to-avoid)
         (atc-gen-new-inscope gin.fn
                              gin.fn-guard
