@@ -437,7 +437,8 @@
                           (verify-guards booleanp)
                           (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
-               (exported-event "A @(tsee pseudo-event-formp)."))
+               (exported-event "A @(tsee pseudo-event-formp).")
+               (new-body "A @(tsee pseudo-termp)."))
   :mode :program
   :short "Generate the new function definition."
   :long
@@ -530,13 +531,14 @@
                                  :guard ,new-guard
                                  :verify-guards ,verify-guards))
                  ,new-body)))
-    (mv local-event exported-event)))
+    (mv local-event exported-event new-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-old-to-new ((old symbolp)
                                  (restriction pseudo-termp)
                                  (new symbolp)
+                                 (new-body pseudo-termp)
                                  (old-to-new symbolp)
                                  (old-to-new-enable booleanp)
                                  (appcond-thm-names symbol-symbol-alistp)
@@ -566,48 +568,65 @@
     "If the old and new functions are recursive,
      then, following the design notes, the theorem is proved
      by induction on the old function,
-     in the theory consisting of
-     the induction rule of the old function
-     and the non-normalized definitions of the functions.
-     But we have seen at least one case in which a definition was not expanded,
+     utilizing the non-normalized definitions of the functions
+     and the applicability condition.
+     We have seen at least one case in which a definition was not expanded,
      presumably due to some ACL2 heuristics.
-     Thus, we use @(':expand') hints to force the expansion,
-     which should be more reliable in the face of heuristics.
-     Even with the @(':expand') hints,
-     the non-normalized definitions of the functions must be in the theory,
-     otherwise some tests fail
-     (perhaps because the expansion is using the original definitions,
-     instead of the non-normalized definitions).
-     Also, if the old and new functions are reflexive,
-     we functionally instantiate the stub in that applicability condition."))
+     Using @(':expand') hints does not work when the restricting predicate
+     equates a formal with a quoted constant,
+     because in that case ACL2 may replace the formal with the constant,
+     preventing the @(':expand') from applying.
+     So we generate proof builder instructions to
+     apply the induction rule,
+     claims the non-normalized definitions
+     (which are thus added as hypothesis to the induction step),
+     and prove the induction step(s) and base case(s).
+     Since there may be multiple induction step(s) and/or base case(s),
+     we repeat the same proof builder instructions
+     until there are no more goals.
+     If the old and new functions are reflexive,
+     we functionally instantiate the stub in that applicability condition,
+     in the induction step."))
   (b* ((formals (formals old wrld))
        (formula (implicate restriction
                            `(equal (,old ,@formals)
                                    (,new ,@formals))))
        (formula (untranslate formula t wrld))
-       (recursive (recursivep old nil wrld))
-       (hints (if recursive
-                  (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
-                                                  appcond-thm-names)))
-                       (lemma-instance (if stub?
-                                           `(:functional-instance ,lemma-name
-                                                                  (,stub? ,new))
-                                         lemma-name)))
-                    `(("Goal"
-                       :in-theory '(,old-unnorm
-                                    ,new-unnorm
-                                    (:induction ,old))
-                       :expand ((,old ,@formals)
-                                (,new ,@formals))
-                       :induct (,old ,@formals))
-                      '(:use ,lemma-instance)))
-                `(("Goal"
-                   :in-theory '(,old-unnorm
-                                ,new-unnorm))))))
-    (evmac-generate-defthm old-to-new
-                           :formula formula
-                           :hints hints
-                           :enable old-to-new-enable)))
+       (recursive (recursivep old nil wrld)))
+    (if recursive
+        (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
+                                        appcond-thm-names)))
+             (lemma-instance (if stub?
+                                 `(:functional-instance ,lemma-name
+                                                        (,stub? ,new))
+                               lemma-name))
+             (instructions
+              `((in-theory (enable (:induction ,old)))
+                (induct (,old ,@formals))
+                (repeat
+                 (do-all
+                  (claim (equal (,old ,@formals)
+                                ,(ubody old wrld))
+                         :hints (("Goal"
+                                  :in-theory '(,old-unnorm)
+                                  :expand ((,old ,@formals)))))
+                  (claim (equal (,new ,@formals)
+                                ,new-body)
+                         :hints (("Goal"
+                                  :in-theory '(,new-unnorm)
+                                  :expand ((,new ,@formals)))))
+                  (prove :hints (("Goal"
+                                  :in-theory '(,old-unnorm ,new-unnorm)
+                                  :use ,lemma-instance))))))))
+          (evmac-generate-defthm old-to-new
+                                 :formula formula
+                                 :instructions instructions
+                                 :enable old-to-new-enable))
+      (b* ((hints `(("Goal" :in-theory '(,old-unnorm ,new-unnorm)))))
+        (evmac-generate-defthm old-to-new
+                               :formula formula
+                               :hints hints
+                               :enable old-to-new-enable)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -851,7 +870,8 @@
             names-to-avoid)
         (install-not-normalized-event old t names-to-avoid wrld))
        ((mv new-local-event
-            new-exported-event)
+            new-exported-event
+            new-body)
         (restrict-gen-new old
                           restriction
                           undefined
@@ -868,6 +888,7 @@
         (restrict-gen-old-to-new old
                                  restriction
                                  new
+                                 new-body
                                  old-to-new
                                  old-to-new-enable
                                  appcond-thm-names
