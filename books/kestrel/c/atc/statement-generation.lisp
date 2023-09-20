@@ -895,8 +895,7 @@
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
              ((when (or (not gin.proofs)
-                        (not called-fn-thm)
-                        (consp affect))) ; <- temporary
+                        (not called-fn-thm)))
               (retok expr
                      out-type
                      term
