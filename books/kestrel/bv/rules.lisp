@@ -4769,13 +4769,6 @@
                 )
            (not (equal const x))))
 
-;similar to UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2?
-(defthmd slice-too-high-is-0-new
-  (implies (and (unsigned-byte-p low (bvchop (+ 1 high) x))
-                (integerp high))
-           (equal (slice high low x) 0))
-  :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
-
 (defthm slice-when-not-bvlt-free
   (implies (and (not (bvlt size free x))
                 (syntaxp (and (quotep free)
