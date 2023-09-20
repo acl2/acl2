@@ -18,8 +18,12 @@
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; todo: use byte-listp instead below?
 (include-book "kestrel/bv/bvcat" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-(local (include-book "kestrel/bv/rules" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system)) ; for slice-too-high-is-0-new (todo: move it)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/lists-light/nth" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (in-theory (disable rb rb-1 rml-size))
 
@@ -233,3 +237,81 @@
                             ACL2::SLICE-TOO-HIGH-IS-0-NEW)
                            (;ACL2::UNSIGNED-BYTE-P-LOGIOR ;caused forcing
                             )))))
+
+(defthm unsigned-byte-p-of-combine-bytes-lemma
+  (implies (byte-listp bytes)
+           (unsigned-byte-p (* 8 (len bytes))
+                            (combine-bytes bytes)))
+  :hints (("Goal" :in-theory (enable combine-bytes byte-listp))))
+
+
+
+
+;; ;replace the other one!
+;; (encapsulate ()
+;;   (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+;;   (defthm slice-of-times-of-expt-gen
+;;     (implies (and            ;(<= j n) ;drop?
+;;               (integerp x)   ;drop?
+;;               (natp n)
+;;               (natp j)
+;;               (natp m))
+;;              (equal (slice m n (* (expt 2 j) x))
+;;                     (slice (- m j) (- n j) x)))
+;;     :hints (("Goal" :in-theory (e/d (slice logtail nfix) ())))))
+
+;move
+;; ;avoids having to give a highsize
+;; (defthm slice-of-logapp
+;;   (implies (and (natp lowsize)
+;;                 (natp low)
+;;                 (natp high)
+;;                 (integerp highval))
+;;            (equal (slice high low (logapp lowsize lowval highval))
+;;                   (slice high low (bvcat (+ 1 high (- lowsize)) highval lowsize lowval))))
+;;   :otf-flg t
+;;   :hints (("Goal" :use (:instance ACL2::BVCAT-RECOMBINE
+;;                                   (acl2::lowsize lowsize)
+;;                                   (acl2::lowval lowval)
+;;                                   (acl2::highval highval)
+;;                                   (acl2::highsize (+ 1 high (- lowsize)))))))
+
+
+;;   :hints (("Goal" :in-theory (e/d (;bvcat logapp
+;;                                          ;acl2::slice-of-sum-cases
+;;                                          )
+;;                                   (acl2::slice-of-*)))))
+
+;move
+(defthm slice-of-logapp-case-1
+  (implies (and (natp high)
+                (natp low)
+                (natp lowsize)
+                (<= lowsize low) ; this case
+                (unsigned-byte-p lowsize lowval)
+                (integerp highval))
+           (equal (acl2::slice high low (logapp lowsize lowval highval))
+                  (acl2::slice (+ (- lowsize) high) (+ (- lowsize) low) highval)))
+  :hints (("Goal" :in-theory (e/d (acl2::slice logapp) (acl2::logtail-of-plus
+                                                  acl2::unsigned-byte-p-of-logapp-large-case))
+           :use (:instance acl2::unsigned-byte-p-of-logapp-large-case
+                           (size1 low)
+                           (size lowsize)
+                           (i lowval)
+                           (j (acl2::BVCHOP (+ LOW (- LOWSIZE)) HIGHVAL))))))
+
+(defthm slice-of-combine-bytes
+  (implies (and (natp n)
+                (< n (len bytes))
+                (byte-listp bytes) ;too bad
+                )
+           (equal (acl2::slice (+ 7 (* 8 n)) (* 8 n) (x86isa::combine-bytes bytes))
+                  (acl2::bvchop 8 (nth n bytes))))
+  :hints (("Goal" :in-theory (e/d (x86isa::combine-bytes
+                                   ACL2::BVCAT-RECOMBINE
+                                   ;;logapp
+                                   ;;ACL2::SLICE-OF-SUM-CASES
+                                   (:i nth)
+                                   BYTE-LISTP)
+                                  (;acl2::nth-of-cdr
+                                   )))))
