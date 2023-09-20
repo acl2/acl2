@@ -1191,32 +1191,6 @@
                                     EXPT-OF-+)
                             (LOGBITP-IFF-GETBIT INTEGERP-OF-EXPT-when-natp)))))
 
-(defthm bvor-of-slice-tighten
-   (implies (and (<= size (- high low))
-                 (natp size)
-                 (< 0 size)
-                 (natp low)
-                 (natp high)
-                 (integerp x)
-                 (integerp y)
-                 )
-            (equal (bvor size x (slice high low y))
-                   (bvor size x (slice (+ low size -1) low y))))
-   :hints (("Goal" :in-theory (enable bvor))))
-
-(defthm bvor-of-slice-tighten-alt
-   (implies (and (<= size (- high low))
-                 (natp size)
-                 (< 0 size)
-                 (natp low)
-                 (natp high)
-                 (integerp x)
-                 (integerp y)
-                 )
-            (equal (bvor size (slice high low y) x)
-                   (bvor size (slice (+ low size -1) low y) x)))
-   :hints (("Goal" :in-theory (enable bvor))))
-
 (defthm bvcat-of-logext-same
    (implies (and (natp size)
                  (< 0 size)
@@ -1233,30 +1207,6 @@
                  (integerp y))
             (equal (logapp size2 (logext size2 x) y)
                    (logapp size2 x y))))
-
-(defthm bvor-of-slice-tighten-2
-  (implies (and (< size (+ 1 high (- low)))
-                (< 0 size)
-                (natp size)
-                (natp low)
-                (natp high)
-                (integerp x)
-                (integerp y))
-           (equal (bvor size y (slice high low x))
-                  (bvor size y (slice (+ low size -1) low x))))
-  :hints (("Goal" :in-theory (enable bvor))))
-
-(defthm bvor-of-slice-tighten-1
-   (implies (and (< size (+ 1 high (- low)))
-                 (< 0 size)
-                 (natp size)
-                 (natp low)
-                 (natp high)
-                 (integerp x)
-                 (integerp y))
-            (equal (bvor size (slice high low x) y)
-                   (bvor size (slice (+ low size -1) low x) y)))
-  :hints (("Goal" :in-theory (enable bvor))))
 
 (defthm bvchop-of-minus-of-bvchop-gen
   (implies (and (<= size size2)
@@ -2673,8 +2623,6 @@
                         y)
                   (bvcat
                    (+ -1 m) (slice (+ -1 m) 1 y) 1 (bvor 1 (getbit n x) (getbit 0 y))))))
-
-
 
 ;make an -alt version?
 (defthm bvor-of-bvcat-and-bvcat-constant-version
@@ -4674,16 +4622,6 @@
                   (BVXOR NEWSIZE X Y)))
   :hints (("Goal" :use (:instance BVXOR-TIGHTEN)
            :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (BVXOR-TIGHTEN)))))
-
-(DEFTHMd BVOR-TIGHTEN-free
-  (IMPLIES (AND (UNSIGNED-BYTE-P NEWSIZE Y)
-                (< NEWSIZE OLDSIZE)
-                (UNSIGNED-BYTE-P NEWSIZE X)
-                (NATP OLDSIZE))
-           (EQUAL (BVOR OLDSIZE X Y)
-                  (BVOR NEWSIZE X Y)))
-  :hints (("Goal" :use (:instance BVOR-TIGHTEN)
-           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (BVOR-TIGHTEN)))))
 
 ;move
 ;; Seems pretty safe
