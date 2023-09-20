@@ -94,7 +94,20 @@
             x86isa::sar-spec$inline
             x86isa::sar-spec-32-nice ;x86isa::sar-spec-32
             x86isa::sar-spec-64-nice ;x86isa::sar-spec-32
-            )
+
+            ;; These recharacterize divide in terms of bvops:
+            x86isa::mv-nth-0-of-div-spec-8
+            x86isa::mv-nth-1-of-div-spec-8
+            x86isa::mv-nth-2-of-div-spec-8
+            x86isa::mv-nth-0-of-div-spec-16
+            x86isa::mv-nth-1-of-div-spec-16
+            x86isa::mv-nth-2-of-div-spec-16
+            x86isa::mv-nth-0-of-div-spec-32
+            x86isa::mv-nth-1-of-div-spec-32
+            x86isa::mv-nth-2-of-div-spec-32
+            x86isa::mv-nth-0-of-div-spec-64
+            x86isa::mv-nth-1-of-div-spec-64
+            x86isa::mv-nth-2-of-div-spec-64)
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules2 ()
@@ -151,6 +164,7 @@
     read-byte-when-program-at
     read-byte-of-set-flag
     read-byte-of-write-byte
+    read-byte-of-logext
     ))
 
 (defun read-rules ()
@@ -160,9 +174,11 @@
     read-of-xw-irrel
     read-of-set-flag
     read-in-terms-of-nth-and-pos-eric ; read-when-program-at
-    read-of-logext-48
+    read-of-logext
     read-when-equal-of-read
     read-when-equal-of-read-alt
+    <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
+    <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     ))
 
 (defun write-rules ()
@@ -601,7 +617,7 @@
    x86isa::if-of-one-byte-opcode-execute-of-if-arg5 ;do we need this?
    x86isa::<-of-if-arg2                              ;could be dangerous
    x86isa::logext-of-if-arg2
-   run-until-rsp-greater-than-of-if-arg2 ;careful, this can cause splits:
+   run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits:
    ))
 
 (defun simple-opener-rules ()
@@ -658,7 +674,7 @@
     x86isa::add-af-spec32$inline-constant-opener
     x86isa::sub-af-spec32$inline-constant-opener
 
-    acl2::bool->bit$inline-base
+    acl2::bool->bit$inline-constant-opener
 ;    byte-ify-base
 ;    x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
 ;    x86isa::byte-listp-base-1
@@ -707,6 +723,39 @@
     ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
     ))
 
+;todo: separate out the 64 but rules
+(defun segment-base-and-bounds-rules ()
+  '(segment-base-and-bounds-of-set-rip
+    segment-base-and-bounds-of-set-rsp
+    segment-base-and-bounds-of-set-rbp
+    segment-base-and-bounds-of-set-rax
+    segment-base-and-bounds-of-set-rdx
+    segment-base-and-bounds-of-set-rsi
+    segment-base-and-bounds-of-set-rdi
+    segment-base-and-bounds-of-set-flag
+    segment-base-and-bounds-of-set-undef
+    segment-base-and-bounds-of-write-byte
+    segment-base-and-bounds-of-write
+    ))
+
+;; are these only for making failures clearer?
+(defun get-prefixes-rules64 ()
+  (declare (xargs :guard t))
+  '(mv-nth-0-of-get-prefixes-of-set-rip
+    mv-nth-0-of-get-prefixes-of-set-rax
+    mv-nth-0-of-get-prefixes-of-set-rdx
+    mv-nth-0-of-get-prefixes-of-set-rsi
+    mv-nth-0-of-get-prefixes-of-set-rdi
+    mv-nth-0-of-get-prefixes-of-set-rsp
+    mv-nth-0-of-get-prefixes-of-set-rbp
+    mv-nth-1-of-get-prefixes-of-set-rip
+    mv-nth-1-of-get-prefixes-of-set-rax
+    mv-nth-1-of-get-prefixes-of-set-rdx
+    mv-nth-1-of-get-prefixes-of-set-rsi
+    mv-nth-1-of-get-prefixes-of-set-rdi
+    mv-nth-1-of-get-prefixes-of-set-rsp
+    mv-nth-1-of-get-prefixes-of-set-rbp))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 (defun lifter-rules-common ()
   (append (acl2::base-rules)
@@ -729,7 +778,9 @@
           (acl2::array-reduction-rules)
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
+          (acl2::convert-to-bv-rules)
           '(ACL2::BOOLOR-OF-NON-NIL)
+          (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           ;;(acl2::core-rules-bv) ;acl2::not-equal-max-int-when-<= not defined
           '(
             ;; Reading/writing registers (or parts of registers).  We leave
@@ -794,7 +845,7 @@
 ;            x86isa::xr-set-flag ;this is the -diff rule
 
             ;; Flags:
-            sub-af-spec32-same ; rewrites to 0, so perhaps worth including this rule
+            x86isa::sub-af-spec32-same ; rewrites to 0, so perhaps worth including this rule
 
             ;; todo: organize these:
 
@@ -838,9 +889,9 @@
             return-last
             ;; symbolic execution (perhaps separate these out):
             run-until-return
-            run-until-rsp-greater-than-opener
-            run-until-rsp-greater-than-base
-            rsp-greater-than
+            run-until-stack-shorter-than-opener
+            run-until-stack-shorter-than-base
+            stack-shorter-thanp
 
             ;; x86-fetch-decode-execute-opener ; this had binding hyps
             ;; x86-fetch-decode-execute ; this splits into too many cases when things can't be resolved
@@ -954,8 +1005,8 @@
             acl2::slice-of-logext
             x86isa::alignment-checking-enabled-p-and-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
-            logand-becomes-bvand-axe-arg1
-            logand-becomes-bvand-axe-arg2
+            logand-becomes-bvand-axe-arg1-axe
+            logand-becomes-bvand-axe-arg2-axe
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
             acl2::fix-when-acl2-numberp
@@ -1248,6 +1299,10 @@
             acl2::bv-array-read-shorten-axe
             )))
 
+;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
+;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
+(table axe-rule-priorities-table 'acl2::bvplus-of-+-combine-constants -1)
+
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
 
 ;; Used in both versions of the lifter
@@ -1333,7 +1388,7 @@
      ms X86ISA::ms$A
      fault X86ISA::fault$A
      rgfi X86ISA::RGFI$A ;expose xr
-     canonical-address-p-of-0
+     x86isa::canonical-address-p$inline-constant-opener
      addresses-of-subsequent-stack-slots
      ;; addresses-of-subsequent-stack-slots-aux-base
      ;; addresses-of-subsequent-stack-slots-aux-unroll
@@ -1386,7 +1441,7 @@
             acl2::collect-constants-over-<-2
             acl2::<-of-negative-when-usbp
             x86isa::canonical-address-p-of-if
-            acl2::<-becomes-bvlt-dag-both
+            acl2::<-becomes-bvlt-axe-both
             acl2::bvlt-of-bvplus-constant-and-constant-other
             acl2::bvlt-transitive-4-a
             acl2::bvlt-transitive-4-b
@@ -2004,7 +2059,9 @@
     esp-of-xw
     ebp-of-xw
 
-    acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
+    bvplus-of-constant-and-esp-when-overflow
+    ;;acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
+
     read-stack-dword-of-write-to-segment-diff-segments
     write-to-segment-of-write-byte-to-segment-included
     write-to-segment-of-write-to-segment-included
@@ -2018,6 +2075,7 @@
           (write-rules)
           (read-byte-rules)
           (linear-memory-rules)
+          (get-prefixes-rules64)
           '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs ; puts in rml-size
             ;; this is sometimes needed in 64-bit mode (e.g., when a stack
@@ -3072,8 +3130,7 @@
             )))
 
 ;; some commonly monitored stuff:
-;;   :monitor (run-until-rsp-greater-than-opener
-;;             acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-1 ;todo: handle multi-conjunct rules better
+;;   :monitor (acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-1 ;todo: handle multi-conjunct rules better
 ;;             acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-2
 ;; ;            rb-in-terms-of-nth-and-pos-eric-gen
 ;;             rb-returns-no-error-app-view
@@ -3106,7 +3163,6 @@
 ;;             not-mv-nth-0-of-add-to-*sp-gen-special
 ;;             X86ISA::X86P-XW
 ;;             not-mv-nth-0-of-add-to-*sp-gen-special
-;;             run-until-rsp-greater-than-opener
 ;; ;;             x86isa::write-*sp-when-not-64-bit-modep-gen2
 ;;              mv-nth-1-of-add-to-*sp-gen
 ;;              not-mv-nth-0-of-add-to-*sp-gen
@@ -3139,19 +3195,18 @@
 ;; ;;             ;read-when-program-at
 ;; ;;             ;read-of-write-disjoint2
 ;; ;;             ;read-of-write-disjoint
-;; ;; ;acl2::<-becomes-bvlt-dag-both
+;; ;; ;acl2::<-becomes-bvlt-axe-both
 ;; ;; ;            read-byte-from-segment-when-code-segment-assumptions32
 ;; ;;  ;           mv-nth-1-of-add-to-*sp
 ;; ;;   ;          not-mv-nth-0-of-add-to-*sp
 ;; ;;             ;x86isa::write-*sp-when-not-64-bit-modep-gen
-;; ;; ;            run-until-rsp-greater-than-opener
 ;; ;;             read-*ip-becomes-eip-gen
 ;; ;;             code-segment-assumptions32-of-write-to-segment-of-ss
 ;;             )
 
 (defun debug-rules-common ()
   (declare (xargs :guard t))
-  '(run-until-rsp-greater-than-opener
+  '(run-until-stack-shorter-than-opener
     not-mv-nth-0-of-wme-size ;gets rid of error branch
     mv-nth-1-of-wme-size     ;introduces write-to-segment
     ))
@@ -3166,4 +3221,7 @@
           (get-prefixes-openers)
           ;; todo: flesh out this list:
           '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs)))
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs
+            ;; could consider things like these:
+            ;; READ-OF-WRITE-DISJOINT2
+            )))

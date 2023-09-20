@@ -247,6 +247,9 @@
 
     lookup-eq-safe
 
+    want-to-weaken ; for polarity-based reasoning
+    want-to-strengthen ; for polarity-based reasoning
+
     ;; Stuff from ACL2 (TODO: Should these be in *acl2-exports*?):
     common-lisp::ignorable
     my-sublis-var

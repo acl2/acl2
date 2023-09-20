@@ -126,10 +126,10 @@
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt
             acl2::bvchop-of-bvshr-same
-            bvand-of-lognot-arg2
-            bvand-of-lognot-arg3
-            bvxor-of-lognot-arg2
-            bvxor-of-lognot-arg3
+            ;bvand-of-lognot-arg2
+            ;bvand-of-lognot-arg3
+            ;bvxor-of-lognot-arg2
+            ;bvxor-of-lognot-arg3
             acl2::bvchop-of-lognot
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             bvif-of-if-constants-nil-nonnil
@@ -170,6 +170,7 @@
             acl2::bvif-of-logext-2
             equal-of-bvif-safe2
             )
+          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
           (acl2::booleanp-rules)
           (acl2::boolean-rules-safe)
           (acl2::type-rules)))
@@ -248,8 +249,8 @@
             of-spec-of-logext-32
             ACL2::LOGXOR-BVCHOP-BVCHOP        ; introduce bvxor
             ACL2::LOGXOR-of-BVCHOP-becomes-bvxor-arg1 ; introduce bvxor
-            bvplus-of-logxor-arg1                     ; introduce bvxor
-            bvxor-of-logxor-arg2                      ; introduce bvxor
+;            bvplus-of-logxor-arg1                     ; introduce bvxor
+;            bvxor-of-logxor-arg2                      ; introduce bvxor
             integerp-of-logxor                        ;todo: more
             acl2::unsigned-byte-p-of-if
             acl2::unsigned-byte-p-of-bvplus ;todo: more
@@ -257,19 +258,6 @@
             XR-OF-IF ;restrict?
             ACL2::SLICE-OUT-OF-ORDER
             X86ISA::DIV-SPEC$inline ; just a dispatch on the size
-            ;; todo: more like this?:
-            mv-nth-0-of-div-spec-8
-            mv-nth-1-of-div-spec-8
-            mv-nth-2-of-div-spec-8
-            mv-nth-0-of-div-spec-16
-            mv-nth-1-of-div-spec-16
-            mv-nth-2-of-div-spec-16
-            mv-nth-0-of-div-spec-32
-            mv-nth-1-of-div-spec-32
-            mv-nth-2-of-div-spec-32
-            mv-nth-0-of-div-spec-64
-            mv-nth-1-of-div-spec-64
-            mv-nth-2-of-div-spec-64
             ACL2::BVCAT-OF-0-arg2
             bvmod-tighten-64-32
             bvdiv-tighten-64-32
@@ -295,7 +283,7 @@
             ACL2::BVPLUS-OF-BVUMINUS-SAME
             ACL2::BVCHOP-NUMERIC-BOUND
             ACL2::BVCHOP-OF-LOGXOR-BECOMES-BVXOR
-            BVUMINUS-OF-BVSX-16-32-16
+            ;acl2::bvuminus-of-bvsx-low ; todo: other cases? todo: push back
             SF-SPEC64-of-bvchop-64
             jnl-condition-of-sf-spec32-and-of-spec32-same
             jnl-condition-of-sf-spec64-and-of-spec64-same
@@ -454,7 +442,6 @@
             acl2::boolif-when-quotep-arg3
             acl2::bvchop-1-becomes-getbit
             ACL2::BVCHOP-OF-BVSX
-            bvuminus-of-bvsx-16-32-16
             ACL2::BVCHOP-OF-BVUMINUS-SAME
             ACL2::BVUMINUS-OF-BVUMINUS
             ACL2::BVSX-OF-BVCHOP

@@ -127,6 +127,7 @@
 (include-book "trim")
 (include-book "trim-intro-rules")
 (include-book "trim-rules")
+(include-book "convert-to-bv-rules")
 
 ; Operations specialized to particular sizes:
 (include-book "ops32")

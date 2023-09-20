@@ -95,7 +95,7 @@
 (defruled not-errorp-when-scopep
   (implies (scopep x)
            (not (errorp x)))
-  :enable errorp)
+  :enable (errorp scopep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

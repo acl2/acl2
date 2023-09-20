@@ -347,7 +347,8 @@
                 (integerp x)
                 (integerp y))
            (equal (bvand size x y)
-                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y)) (+ -1 size) (bvand (+ -1 size) x y)))))
+                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y)) (+ -1 size) (bvand (+ -1 size) x y))))
+  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
 ;; (thm
 ;;  (implies (and (< high n)
@@ -502,30 +503,6 @@
   :hints (("Goal" :in-theory (e/d (bvchop-identity)
                                   (BVMULT-PAD-ARG1
                                    BVMULT-PAD-ARG2)))))
-
-;move
-(defthm collect-constants-<-/
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< a (* b x))
-                  (< (/ a b) x))))
-
-;move
-(defthm collect-constants-<-/-two
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< (* b x) a)
-                  (< x (/ a b)))))
 
 ;move
 (defthm my-non-integerp-<-integerp

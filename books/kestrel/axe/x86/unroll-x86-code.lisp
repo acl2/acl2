@@ -20,7 +20,9 @@
 
 (include-book "support-axe")
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
@@ -28,8 +30,6 @@
 (include-book "kestrel/x86/support" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system)
-(include-book "kestrel/x86/read-over-write-rules" :dir :system)
-(include-book "kestrel/x86/write-over-write-rules" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/rule-lists" :dir :system)
 (include-book "kestrel/x86/run-until-return" :dir :system)
@@ -50,9 +50,11 @@
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ;reduce?
+(include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 (include-book "ihs/logops-lemmas" :dir :system) ;reduce? for logext-identity
 (include-book "kestrel/arithmetic-light/mod" :dir :system)
 (include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
+(include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
@@ -97,6 +99,20 @@
 
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
+
+;move?
+;; Returns a symbol-list.
+(defund maybe-add-debug-rules (debug-rules monitor)
+  (declare (xargs :guard (and (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (symbol-listp debug-rules))))
+  (if (eq :debug monitor)
+      debug-rules
+    (if (member-eq :debug monitor)
+        ;; replace :debug in the list with all the debug-rules:
+        (union-eq debug-rules (remove-eq :debug monitor))
+      ;; no special treatment:
+      monitor)))
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -175,7 +191,7 @@
          ;;                       (cw ")~%"))))
          ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
          (dag-fns (acl2::dag-fns dag)))
-      (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
+      (if (not (member-eq 'run-until-stack-shorter-than dag-fns)) ;; stop if the run is done
           (prog2$ (cw "Note: The run has completed.~%")
                   (mv (erp-nil) dag state))
         (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
@@ -255,6 +271,7 @@
                   :mode :program))
   (b* ((- (cw "Lifting ~s0.~%" target)) ;todo: print the executable name
        (executable-type (acl2::parsed-executable-type parsed-executable))
+       (- (acl2::ensure-x86 parsed-executable))
        (- (cw "(Executable type: ~x0.)~%" executable-type))
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)
@@ -312,7 +329,7 @@
                                 (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
                                         assumptions))))))))
        (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
-       (- (and print (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
        (lifter-rules (if (member-eq executable-type *executable-types32*)
                          (append (lifter-rules32)
@@ -325,11 +342,8 @@
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
        (rules (set-difference-eq rules remove-rules))
        (32-bitp (member-eq executable-type *executable-types32*))
-       (rules-to-monitor (if (eq :debug monitor)
-                             (if 32-bitp
-                                 (debug-rules32)
-                               (debug-rules64))
-                           monitor))
+       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Next, we simplify the assumptions.  This allows us to state the
        ;; theorem about a lifted routine concisely, using an assumption
        ;; function that opens to a large conjunction before lifting is
@@ -476,7 +490,7 @@
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
        ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
-       ((when (intersection-eq result-dag-fns '(run-until-rsp-greater-than run-until-return)))
+       ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return)))
         (if (< result-dag-size 10000)
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (untranslate (dag-to-term result-dag) nil (w state)) nil)
@@ -560,6 +574,7 @@
 ;TODO: Add show- variant
 ;bad name?
 ;try defmacroq?
+;; TODO: :print nil is not fully respected
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
 (defmacro def-unrolled (&whole whole-form
                                lifted-name ;name to use for the generated function and constant (the latter surrounded by stars)
@@ -580,7 +595,7 @@
                                (step-increment '100)
                                (memoizep 't)
                                (monitor 'nil)
-                               (print 't)             ;how much to print
+                               (print ':brief)             ;how much to print
                                (print-base '10)       ; 10 or 16
                                (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
                                (non-executable 't)  ;since stobj updates will not be let-bound      ;allow :auto?  only use for :output :all ?

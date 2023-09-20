@@ -2226,10 +2226,8 @@
                         t
                       nil))))
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 1) (ls 31)))
-           :in-theory (e/d (bvlt bvcat logapp) (<-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
-
-
-
+           :in-theory (e/d (bvlt bvcat logapp slice-becomes-getbit)
+                           (<-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
 
 (defthm introduce-bvlt-hack
   (equal (< (bvplus '29 x y) '4)
@@ -3337,9 +3335,8 @@
   :hints (("Goal"
            :cases ((equal 0 (GETBIT 0 K)) (equal 1 (GETBIT 0 K)))
            :use (:instance split-with-bvcat (x (slice high low x)) (hs 1) (ls (+ -1 size)))
-           :in-theory (e/d (bvlt unsigned-byte-p bvcat logapp bvplus posp)
-                           (
-                            anti-bvplus
+           :in-theory (e/d (bvlt unsigned-byte-p bvcat logapp bvplus posp slice-becomes-getbit)
+                           (anti-bvplus
                             PLUS-BECOMES-BVPLUS
                             <-becomes-bvlt <-becomes-bvlt-alt
                             <-of-bvmult-hack ;bozo
@@ -3633,12 +3630,12 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil nil nil)))
   :hints (("Goal"
            :use (:instance split-with-bvcat (x (slice high low x)) (hs 1) (ls (+ -1 size)))
-           :in-theory (e/d (bvminus bvuminus bvcat logapp bvplus) (anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
-
-                                                                               bvlt-of-plus-arg1
-                                                                               bvminus-becomes-bvplus-of-bvuminus
-                                                                               bvlt-of-plus-arg2
-                                                                               )))) )
+           :in-theory (e/d (bvminus bvuminus bvcat logapp bvplus slice-becomes-getbit)
+                           (anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
+                                        bvlt-of-plus-arg1
+                                        bvminus-becomes-bvplus-of-bvuminus
+                                        bvlt-of-plus-arg2
+                                        )))) )
 
 ;; todo: loops with tightening rules?
 (defthmd equal-of-bvchop-extend
@@ -4132,7 +4129,7 @@
            (equal (bvplus 6 51 x)
                   (bvplus 5 -13 x)))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   )
+                                   slice-becomes-getbit)
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
@@ -4298,7 +4295,8 @@
            (equal (bvplus 6 50 x)
                   (bvplus 5 -14 x)))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   slice-of-bvplus-cases)
+                                   slice-of-bvplus-cases
+                                   slice-becomes-getbit)
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
@@ -4356,7 +4354,7 @@
            (equal (bvplus 6 49 x)
                   (bvplus 5 -15 x)))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   )
+                                   slice-becomes-getbit)
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
@@ -4841,6 +4839,7 @@
            (equal (bvplus 4 13 x)
                   (bvplus 3 -3 x)))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
+                                   slice-becomes-getbit
                                    )
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   <-of-bvmult-hack ;bozo
@@ -4866,6 +4865,7 @@
            (equal (equal (slice 4 3 x) 0)
                   (equal (slice 4 4 x) 0)))
   :hints (("Goal" :in-theory (e/d (;bvcat logapp
+                                   slice-becomes-getbit
                                          )
                                   (GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
                                       BVCAT-EQUAL-REWRITE-ALT
@@ -7931,8 +7931,9 @@
            (equal (equal (bvplus size w z) (bvplus size2 x y))
                   (and (unsigned-byte-p size (bvplus size2 x y))
                        (equal (bvplus size w z) (bvplus size x y)))))
-  :hints (("Goal" :in-theory (disable BVLT-31-8-BECOMES-UNSIGNED-BYTE-P
-                                      UNSIGNED-BYTE-P-OF-BVPLUS-TIGHTEN))))
+  :hints (("Goal" :in-theory (e/d (slice-becomes-getbit)
+                                  (BVLT-31-8-BECOMES-UNSIGNED-BYTE-P
+                                   UNSIGNED-BYTE-P-OF-BVPLUS-TIGHTEN)))))
 
 (defthm equal-of-bvplus-and-bvplus-diff-sizes-alt
   (implies (and (< size size2)
@@ -8368,6 +8369,7 @@
                                           bvminus
                                           bvlt
                                           getbit-when-val-is-not-an-integer
+                                          slice-becomes-getbit
                                           )
                                   (SLICE-OF-+
                                    anti-bvplus GETBIT-OF-+
@@ -12288,9 +12290,8 @@
                 (natp n))
            (equal (slice m 0 x)
                   (slice m 0 y)))
-
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable differing-bit))))
+  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit))))
 
 ;; (defthm natp-of-differing-bit
 ;;   (natp (differing-bit n x y)))
@@ -12325,7 +12326,7 @@
            (equal (< (differing-bit n x y) 0)
                   (equal (bvchop (+ 1 n) x)
                          (bvchop (+ 1 n) y))))
-  :hints (("Goal" :in-theory (enable differing-bit))))
+  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit))))
 
 ;;(local (in-theory (enable BVOR-1-BECOMES-BITOR)))         ;Thu Mar 31 16:45:29 2011
 
@@ -17581,7 +17582,8 @@
                 (integerp y))
            (equal (sbvlt 32 0 (sbvdiv 32 x y))
                   (not (sbvlt 32 x y))))
-  :hints (("Goal" :cases ((sbvle 32 0 x)))))
+  :hints (("Goal" :use (:instance sbvlt-of-sbvdiv-and-0-when-neg-and-pos (size 32))
+           :in-theory (disable sbvlt-of-sbvdiv-and-0-when-neg-and-pos))))
 
 ;todo: move this stuff to bv library but needs equal-of-slice:
 
