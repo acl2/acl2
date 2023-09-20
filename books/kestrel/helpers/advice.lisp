@@ -3468,6 +3468,7 @@
               num-recs-per-model
               (len checkpoint-clauses-top) (if (= 1 (len checkpoint-clauses-top)) "checkpoint" "checkpoints")
               (len checkpoint-clauses-non-top) (if (= 1 (len checkpoint-clauses-non-top)) "checkpoint" "checkpoints")))
+       ((mv models-start-time state) (acl2::get-real-time state))
        ;; Maybe start the models working:
        ((mv erp state)
         (if start-and-return
@@ -3486,6 +3487,11 @@
                               (if start-and-return :retrieve :all)
                               nil state))
        ((when erp) (mv erp nil nil state))
+       ((mv models-end-time state) (acl2::get-real-time state))
+       (- (progn$ (cw "Total model time: ")
+                  (acl2::print-to-hundredths (- models-end-time models-start-time))
+                  (cw "s~%") ; s = seconds
+                  ))
        ;; Combine all the lists:
        (recommendation-lists (strip-cdrs model-rec-alist))
        (recommendations (merge-rec-lists-into-recs recommendation-lists nil)) ; also removes duplicates
