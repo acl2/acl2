@@ -783,6 +783,8 @@
                (expr exprp)
                (type typep)
                (term* pseudo-termp :hyp (pseudo-termp term))
+               (result "An untranslated term.")
+               (new-compst "An untranslated term.")
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
@@ -833,7 +835,7 @@
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
      to not stop right away due to the limit being 0."))
-  (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil 1 nil)
+  (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((erp okp
@@ -899,6 +901,8 @@
               (retok expr
                      out-type
                      term
+                     nil
+                     nil
                      `(binary-+ '2 ,limit)
                      args.events
                      nil
@@ -1035,6 +1039,8 @@
           (retok expr
                  out-type
                  term
+                 result
+                 new-compst
                  `(binary-+ '2 ,limit)
                  (append args.events
                          (list guard-lemma-event
@@ -1059,6 +1065,8 @@
         (retok pure.expr
                pure.type
                pure.term
+               (untranslate$ pure.term nil state)
+               gin.compst-var
                bound
                pure.events
                nil
@@ -1122,6 +1130,8 @@
     (retok pure.expr
            pure.type
            pure.term
+           (untranslate$ pure.term nil state)
+           gin.compst-var
            bound
            (append pure.events (list event))
            thm-name
@@ -1487,6 +1497,8 @@
        ((erp init.expr
              init.type
              init.term
+             & ; init.result
+             & ; init.new-compst
              init.limit
              init.events
              init.thm-name
@@ -1691,6 +1703,8 @@
        ((erp rhs.expr
              rhs.type
              rhs.term
+             & ; rhs.result
+             & ; rhs.new-compst
              rhs.limit
              rhs.events
              rhs.thm-name
@@ -4035,6 +4049,8 @@
        ((erp expr.expr
              expr.type
              expr.term
+             & ; expr.result
+             & ; expr.new-compst
              expr.limit
              expr.events
              expr.thm-name
@@ -5737,6 +5753,8 @@
                    ((erp init.expr
                          init.type
                          & ; init.term
+                         & ; init.result
+                         & ; init.new-compst
                          init.limit
                          init.events
                          & ; init.thm-name
@@ -5819,6 +5837,8 @@
                    ((erp rhs.expr
                          rhs.type
                          & ; rhs.term
+                         & ; rhs.result
+                         & ; rhs.new-compst
                          rhs.limit
                          rhs.events
                          & ; rhs.thm-name
