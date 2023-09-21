@@ -480,6 +480,10 @@
         (('if & ''nil ''t) nil)
         (& (and nil (cw "WARNING! (if a b c) unsupported case-split may be required. ~%"))))
       (cons term nil)))
+    (('equal ''t x)
+     (rp-extract-context x))
+    (('equal x ''t)
+     (rp-extract-context x))
     (''t
      nil)
     (&

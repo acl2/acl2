@@ -326,7 +326,7 @@
            (- (cw "~p0~%~p1~%" (if failed? '"!!! This proof has failed !!!" "") end-message))
            (lst `(,(str::Cat "--- Starting the proofs for "
                              (if (stringp print-message) (str::cat "- " print-message " - ") "")
-                             (symbol-name name) " ---")
+                             (symbol-name name) " ---~%")
                   ,event
                   ,@(and failed? '("!!! This proof has failed !!!"))
                   ,end-message
@@ -410,6 +410,7 @@
                                      thm-name
                                      (hyp)
                                      (then-fgl 'nil)
+                                     (only-fgl 'nil)
                                      (cases 'nil)
                                      (read-from-file 'nil)
                                      (keep-going 'nil)
@@ -429,7 +430,7 @@
               (print-message ',print-message)
 
               (- (cw "~%-------~%Starting verify-svtv-of-mult for ~p0~%~%" ',name))
-              (- (cw "~%--- Starting the proofs for ~s0~s1 ---"
+              (- (cw "~%--- Starting the proofs for ~s0~s1 ---~%"
                      (if (stringp print-message) (str::cat "- " print-message " - ") "")
                      (symbol-name ',name)))
               
@@ -477,16 +478,17 @@
                                       (str::Cat "?" (symbol-name x))
                                       x)))
 
-              (vescmul-event `(with-output :stack :pop
-                                (defthmrp-multiplier
-                                  ,@(and ,then-fgl `(:then-fgl ,',then-fgl))
-                                  ,(or ',thm-name '<mult>-is-correct)
-                                  (implies ,hyps
-                                           (b* (((sv::svassocs ,@ignorable-outs)
-                                                 ,simulate-call))
-                                             ,',concl))
+              (vescmul-event ;;(with-output :stack :pop
+               `(,',(if only-fgl 'fgl::def-fgl-thm 'defthmrp-multiplier)
+                 ,@(and ,then-fgl `(:then-fgl ,',then-fgl))
+                 ,(or ',thm-name '<mult>-is-correct)
+                 (implies ,hyps
+                          (b* (((sv::svassocs ,@ignorable-outs)
+                                ,simulate-call))
+                            ,',concl))
 
-                                  ,@(and cases `(:cases ,cases)))))
+                 ,@(and cases `(:cases ,cases))))
+                             ;;)
 
               (modified-equiv-events (and has-modified
                                           `(defsection <mult>-is-correct
@@ -522,7 +524,7 @@
                                     PASSING \":THEN-FGL T\" AS AN ARGUMENT." nil))
                               (t nil))))))
            (value
-            (if ,then-fgl
+            (if ,(or only-fgl then-fgl)
                 `(progn (value-triple (acl2::tshell-ensure))
                         (make-event ',event))
               event)))))
@@ -536,6 +538,7 @@
                                     thm-name
                                     (hyp)
                                     (then-fgl 'nil)
+                                    (only-fgl 'nil)
                                     (cases 'nil)
                                     (read-from-file 'nil)
                                     (keep-going 'nil)
@@ -552,8 +555,9 @@
                                 :concl ',concl
                                 :thm-name ',thm-name
                                 :hyp ',hyp
-                                :then-fgl ,then-fgl
-                                :cases ',cases
+                                :then-fgl ,(and (not only-fgl) then-fgl)
+                                :only-fgl ,only-fgl
+                                :cases ',(and (not only-fgl) cases)
                                 :read-from-file ,read-from-file
                                 :keep-going ',keep-going
                                 :print-message ',print-message

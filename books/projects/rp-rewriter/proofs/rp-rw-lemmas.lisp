@@ -2006,7 +2006,8 @@ a)
                            ()))))|#
 
 (defthm rp-evl-of-extract-context
-  (implies (rp-termp term)
+  (implies (and (rp-termp term)
+                (rp-evlt term a))
            (iff (eval-and-all (rp-extract-context term) a)
                 (rp-evlt term a)))
   :otf-flg t
