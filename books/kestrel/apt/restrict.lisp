@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -437,7 +437,8 @@
                           (verify-guards booleanp)
                           (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
-               (exported-event "A @(tsee pseudo-event-formp)."))
+               (exported-event "A @(tsee pseudo-event-formp).")
+               (new-body "A @(tsee pseudo-termp)."))
   :mode :program
   :short "Generate the new function definition."
   :long
@@ -530,13 +531,14 @@
                                  :guard ,new-guard
                                  :verify-guards ,verify-guards))
                  ,new-body)))
-    (mv local-event exported-event)))
+    (mv local-event exported-event new-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-old-to-new ((old symbolp)
                                  (restriction pseudo-termp)
                                  (new symbolp)
+                                 (new-body pseudo-termp)
                                  (old-to-new symbolp)
                                  (old-to-new-enable booleanp)
                                  (appcond-thm-names symbol-symbol-alistp)
@@ -549,57 +551,82 @@
   :mode :program
   :short "Generate the theorem that relates the old and new functions."
   :long
-  "<p>
-   The macro used to introduce the theorem is determined by
-   whether the theorem must be enabled or not.
-   </p>
-   <p>
-   The formula of the theorem equates old and new functions
-   under the restricting predicate,
-   as described in the documentation.
-   </p>
-   <p>
-   If the old and new functions are not recursive,
-   then, following the design notes, the theorem is proved
-   in the theory consisting of
-   the two theorems that install the non-normalized definitions of the functions
-   and the induction rule of the old function.
-   If the old and new functions are recursive,
-   then, following the design notes, the theorem is proved
-   by induction on the old function,
-   in the theory consisting of
-   the two theorems that install the non-normalized definitions of the functions
-   and the induction rule of the old function,
-   and using the @(':restriction-of-rec-calls') applicability condition.
-   If the old and new functions are reflexive,
-   we functionally instantiate the stub in that applicability condition.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The macro used to introduce the theorem is determined by
+     whether the theorem must be enabled or not.")
+   (xdoc::p
+    "The formula of the theorem equates old and new functions
+     under the restricting predicate,
+     as described in the documentation.")
+   (xdoc::p
+    "If the old and new functions are not recursive,
+     then, following the design notes, the theorem is proved
+     in the theory consisting of
+     the non-normalized definitions of the functions.")
+   (xdoc::p
+    "If the old and new functions are recursive,
+     then, following the design notes, the theorem is proved
+     by induction on the old function,
+     utilizing the non-normalized definitions of the functions
+     and the applicability condition.
+     We have seen at least one case in which a definition was not expanded,
+     presumably due to some ACL2 heuristics.
+     Using @(':expand') hints does not work when the restricting predicate
+     equates a formal with a quoted constant,
+     because in that case ACL2 may replace the formal with the constant,
+     preventing the @(':expand') from applying.
+     So we generate proof builder instructions to
+     apply the induction rule,
+     claims the non-normalized definitions
+     (which are thus added as hypothesis to the induction step),
+     and prove the induction step(s) and base case(s).
+     Since there may be multiple induction step(s) and/or base case(s),
+     we repeat the same proof builder instructions
+     until there are no more goals.
+     If the old and new functions are reflexive,
+     we functionally instantiate the stub in that applicability condition,
+     in the induction step."))
   (b* ((formals (formals old wrld))
        (formula (implicate restriction
                            `(equal (,old ,@formals)
                                    (,new ,@formals))))
        (formula (untranslate formula t wrld))
-       (recursive (recursivep old nil wrld))
-       (hints (if recursive
-                  (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
-                                          appcond-thm-names)))
-                       (lemma-instance (if stub?
-                                           `(:functional-instance ,lemma-name
-                                             (,stub? ,new))
-                                         lemma-name)))
-                    `(("Goal"
-                       :in-theory '(,old-unnorm
-                                    ,new-unnorm
-                                    (:induction ,old))
-                       :induct (,old ,@formals))
-                      '(:use ,lemma-instance)))
-                `(("Goal"
-                   :in-theory '(,old-unnorm
-                                ,new-unnorm))))))
-    (evmac-generate-defthm old-to-new
-                           :formula formula
-                           :hints hints
-                           :enable old-to-new-enable)))
+       (recursive (recursivep old nil wrld)))
+    (if recursive
+        (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
+                                        appcond-thm-names)))
+             (lemma-instance (if stub?
+                                 `(:functional-instance ,lemma-name
+                                                        (,stub? ,new))
+                               lemma-name))
+             (instructions
+              `((in-theory (enable (:induction ,old)))
+                (induct (,old ,@formals))
+                (repeat
+                 (do-all
+                  (claim (equal (,old ,@formals)
+                                ,(ubody old wrld))
+                         :hints (("Goal"
+                                  :in-theory '(,old-unnorm)
+                                  :expand ((,old ,@formals)))))
+                  (claim (equal (,new ,@formals)
+                                ,new-body)
+                         :hints (("Goal"
+                                  :in-theory '(,new-unnorm)
+                                  :expand ((,new ,@formals)))))
+                  (prove :hints (("Goal"
+                                  :in-theory '(,old-unnorm ,new-unnorm)
+                                  :use ,lemma-instance))))))))
+          (evmac-generate-defthm old-to-new
+                                 :formula formula
+                                 :instructions instructions
+                                 :enable old-to-new-enable))
+      (b* ((hints `(("Goal" :in-theory '(,old-unnorm ,new-unnorm)))))
+        (evmac-generate-defthm old-to-new
+                               :formula formula
+                               :hints hints
+                               :enable old-to-new-enable)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -843,7 +870,8 @@
             names-to-avoid)
         (install-not-normalized-event old t names-to-avoid wrld))
        ((mv new-local-event
-            new-exported-event)
+            new-exported-event
+            new-body)
         (restrict-gen-new old
                           restriction
                           undefined
@@ -860,6 +888,7 @@
         (restrict-gen-old-to-new old
                                  restriction
                                  new
+                                 new-body
                                  old-to-new
                                  old-to-new-enable
                                  appcond-thm-names
