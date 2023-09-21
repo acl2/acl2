@@ -43,7 +43,7 @@ topic.
 <ul>
   <li>at least 8GB of free hard drive space</li>
   <li>at least 4GB of RAM</li>
-  <li>Windows 10 version 21H1 or greater. Windows 11 may also work.</li>
+  <li>Windows 10 version 21H1 or greater. Windows 11 will also work.</li>
 </ul>
 
 <p>
@@ -166,7 +166,7 @@ occurring.
 <ul>
   <li>at least 5GB of free hard drive space</li>
   <li>at least 4GB of RAM</li>
-  <li>macOS Big Sur (11), Monterey (12), or Ventura (13)</li>
+  <li>macOS Big Sur (11), Monterey (12) or Ventura (13) on a Mac with an Intel processor, or macOS Ventura (13) on a Mac with an M1/M2 processor</li>
 </ul>
 <p>Installation should take less than an hour, though installation time
   will depend on your computer's specs and on the speed of your internet
@@ -191,8 +191,8 @@ occurring.
       <li>In the \"About This Mac\" window, double check that you are
         running one of \"macOS Big Sur\", \"macOS
         Monterey\", or \"macOS Ventura\". If you are using a different version
-        of macOS, you will likely need to use the Khoury Virtual Desktop
-        Infrastructure (VDI).</li></ol></li>
+        of macOS, you may need to build the ACL2s package from scratch on your
+        machine, which will take some time.</li></ol></li>
   <li>Install Homebrew<ol>
       <li>Open the Terminal app, either by searching for it or via
         opening Finder and selecting Go -&gt; Utilities in the menu bar,
@@ -202,10 +202,24 @@ occurring.
         into a Terminal window, then press enter. You only need to run that
         single command, and can safely ignore the other instructions on
         Homebrew's website. You may need to enter your password one or more
-        times throughout the process.</li>
+        times throughout the process. If the installer tells you that you'll
+        need to add a line to your @('.zprofile') file, you should follow the
+        instructions it provides to do this. </li>
   </ol></li>
   <li>Tap and install ACL2s<ol>
-      <li>Run <code>brew tap mister-walter/acl2s</code> and then <code>brew install acl2s --force-bottle</code> inside of Terminal.</li></ol></li>
+      <li>Run @({brew tap mister-walter/acl2s}) and then @({brew install acl2s --force-bottle}) inside of Terminal.</li>
+      <li><b>Note:</b> if the above command fails with an error like @('--force-bottle passed but mister-walter/acl2s/acl2s has no bottle!'),
+        then your macOS version is probably older than our supported version for your processor.
+        If you can update your macOS version, you should do so. If you cannot update
+        or do not wish to, please follow the instructions in the first entry of the
+        macOS FAQ section of @(see acl2s-installation-faq).
+      </li>
+      <li><b>Note:</b> if you get @('command not found') when running @('brew'),
+        you likely missed the instructions that the installer printed out when
+        installing Homebrew. Run the following commend to resolve this:
+        @({echo 'eval $(/opt/homebrew/bin/brew shellenv)' >> $HOME/.zprofile && source $HOME/.zprofile})
+      </li>
+  </ol></li>
   <li>Install Java<ol>
       <li>Download and install Java 17 or 18. The easiest way to do this is to go to <a href=\"https://www.oracle.com/java/technologies/downloads/#jdk17-mac\">this link</a>
         and download either the Arm64 DMG installer (if you are on a M1/M2
@@ -268,7 +282,7 @@ occurring.
 <ol>
   <li>Ensure the following software is installed on your machine. If not,
     install using your Linux distribution's package manager.<ul>
-      <li>Java 11 or greater (OpenJDK is fine too) (@('openjdk-11-jre') or newer on Ubuntu)</li>
+      <li>Java 17 or greater (OpenJDK is fine too) (@('openjdk-17-jre') or newer on Ubuntu)</li>
       <li>@('git')</li>
       <li>@('curl')</li>
       <li>@('procps')</li>
@@ -312,23 +326,6 @@ occurring.
   :short "FAQ related to ACL2s installation"
   :long
   "
-<h3>Running ACL2s on Khoury Virtual Desktops</h3>
-If you're a Northeastern student, you can run ACL2s using the Khoury
-Virtual Desktops Infrastructure (VDI). See the
-<a href=\"https://www.khoury.northeastern.edu/systems/vdi/\" >
-  documentation</a>. You have many options including using
-an <a href=\"https://view.khoury.northeastern.edu/portal/webclient/index.html#/\"
-> HTML client</a> that allows you to log into a virtual machine and
-run ACL2s using a browser. Use your Khoury CS account credentials and
-select \"CCIS-WINDOWS\"; then select \"Linux Lab\" and you will see a
-Desktop. Use the file explorer and click on \"Other Locations\",
-\"Computer\", \"bin\" and then \"acl2s\". Drap the acl2s icon to your
-Desktop while holding \"Alt\" or \"Option\" (on Mac) and when you release
-it, a menu will pop up;  select \"link here\" and you will have a direct
-link to ACL2s in your Desktop. Double click on the acl2s icon in
-your desktop and this will start ACL2s on your VM.
-
-
 <h3>FAQ</h3>
 
 If you are running into a problem on Windows that is not covered by
@@ -344,14 +341,6 @@ reinstall Xming if you already have it installed.
 
 <h4>General FAQ</h4>
 <ul class=\"morespace\">
-  <li><span class=\"question\">Why can't I access the Khoury VDI system?</span><br/>Ensure that
-    you are connected to the Northeastern network, or are using the
-    Northeastern VPN. You cannot connect to the VDI system from
-    outside of Northeastern's network without using the VPN.<br/>
-    Check that you are using your Khoury account credentials to log
-    in, which may be different from your Northeastern account
-    credentials.
-  </li>
   <li><span class=\"question\">I already have a version of Eclipse installed for another
       class, can I use that?</span><br/>  We do not support using an
     existing Eclipse installation. If you are using Windows, the
