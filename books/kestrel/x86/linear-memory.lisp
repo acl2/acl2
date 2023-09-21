@@ -17,6 +17,7 @@
 (include-book "projects/x86isa/machine/linear-memory" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; todo: use byte-listp instead below?
 (include-book "kestrel/bv/bvcat" :dir :system)
+(include-book "support-bv")
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for slice-too-high-is-0-new (todo: move it)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -26,12 +27,6 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (in-theory (disable rb rb-1 rml-size))
-
-;move
-(defthm unsigned-byte-p-of-0
-  (equal (unsigned-byte-p size 0)
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm mv-nth-0-of-rb-1-of-xw
   (implies (not (equal :mem fld))
@@ -207,18 +202,6 @@
 ;;   :RULE-CLASSES :TYPE-PRESCRIPTION
 ;;   :hints (("Goal" :in-theory (e/d (COMBINE-BYTES) ( NATP-COMBINE-BYTES)))))
 
-;; (DEFTHM ACL2::UNSIGNED-BYTE-P-LOGIOR-better
-;;   (IMPLIES (AND ;(FORCE (INTEGERP I))
-;;                 (FORCE (INTEGERP J)))
-;;            (EQUAL (UNSIGNED-BYTE-P ACL2::SIZE (LOGIOR I J))
-;;                   (AND (UNSIGNED-BYTE-P ACL2::SIZE I)
-;;                        (UNSIGNED-BYTE-P ACL2::SIZE J))))
-;;   :hints (("Goal"
-;;            :use (:instance ACL2::UNSIGNED-BYTE-P-LOGIOR (i (ifix i)))
-;;            :in-theory (e/d (LOGIOR ifix) ( ACL2::UNSIGNED-BYTE-P-LOGIOR
-;;                                              ACL2::LOGNOT-OF-LOGAND))))
-;; )
-
 ;also uses better bvops
 (defthmd combine-bytes-unroll-better
   (implies (and (not (endp bytes))
@@ -247,58 +230,6 @@
 
 
 
-;; ;replace the other one!
-;; (encapsulate ()
-;;   (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-;;   (defthm slice-of-times-of-expt-gen
-;;     (implies (and            ;(<= j n) ;drop?
-;;               (integerp x)   ;drop?
-;;               (natp n)
-;;               (natp j)
-;;               (natp m))
-;;              (equal (slice m n (* (expt 2 j) x))
-;;                     (slice (- m j) (- n j) x)))
-;;     :hints (("Goal" :in-theory (e/d (slice logtail nfix) ())))))
-
-;move
-;; ;avoids having to give a highsize
-;; (defthm slice-of-logapp
-;;   (implies (and (natp lowsize)
-;;                 (natp low)
-;;                 (natp high)
-;;                 (integerp highval))
-;;            (equal (slice high low (logapp lowsize lowval highval))
-;;                   (slice high low (bvcat (+ 1 high (- lowsize)) highval lowsize lowval))))
-;;   :otf-flg t
-;;   :hints (("Goal" :use (:instance ACL2::BVCAT-RECOMBINE
-;;                                   (acl2::lowsize lowsize)
-;;                                   (acl2::lowval lowval)
-;;                                   (acl2::highval highval)
-;;                                   (acl2::highsize (+ 1 high (- lowsize)))))))
-
-
-;;   :hints (("Goal" :in-theory (e/d (;bvcat logapp
-;;                                          ;acl2::slice-of-sum-cases
-;;                                          )
-;;                                   (acl2::slice-of-*)))))
-
-;move
-(defthm slice-of-logapp-case-1
-  (implies (and (natp high)
-                (natp low)
-                (natp lowsize)
-                (<= lowsize low) ; this case
-                (unsigned-byte-p lowsize lowval)
-                (integerp highval))
-           (equal (acl2::slice high low (logapp lowsize lowval highval))
-                  (acl2::slice (+ (- lowsize) high) (+ (- lowsize) low) highval)))
-  :hints (("Goal" :in-theory (e/d (acl2::slice logapp) (acl2::logtail-of-plus
-                                                  acl2::unsigned-byte-p-of-logapp-large-case))
-           :use (:instance acl2::unsigned-byte-p-of-logapp-large-case
-                           (size1 low)
-                           (size lowsize)
-                           (i lowval)
-                           (j (acl2::BVCHOP (+ LOW (- LOWSIZE)) HIGHVAL))))))
 
 (defthm slice-of-combine-bytes
   (implies (and (natp n)

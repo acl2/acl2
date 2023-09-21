@@ -22,6 +22,7 @@
 (include-book "flags")
 (include-book "conditions")
 
+(include-book "support-bv")
 (include-book "support-x86")
 (include-book "support32")
 (include-book "read-over-write-rules32")
