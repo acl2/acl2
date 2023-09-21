@@ -547,13 +547,6 @@
   (signed-byte-p 64 (bvchop 32 x))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
-(defthm signed-byte-p-of-one-less-of-logext
-  (equal (signed-byte-p 32 (+ -1 (logext 32 x)))
-         (not (equal (expt 2 31) (bvchop 32 x))))
-  :hints (("Goal" :in-theory (enable signed-byte-p
-                                     acl2::add-bvchops-to-equality-of-sbps-4))))
-
-
 ;; This can help if the model splits into cases unnecessarily, but we are
 ;; attempting to handle that better by keeping JCC/CMOVCC/SETCC-SPEC disabled.
 (defthm not-sbvlt-of-0-recollapse
