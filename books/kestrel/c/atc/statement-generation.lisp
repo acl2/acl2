@@ -815,9 +815,11 @@
    (xdoc::p
     "We also return the C type of the expression,
      the transformed term,
-     the affected variables,
-     and a limit that suffices for @(tsee exec-expr-call-or-pure)
-     to execute the expression completely.")
+     the term for the C result of the expression,
+     the term for the C computation state after the execution of the expression,
+     a limit that suffices for @(tsee exec-expr-call-or-pure)
+     to execute the expression completely,
+     and then the usual outputs.")
    (xdoc::p
     "If the term is a call of a function that precedes @('fn')
      in the list of target functions among @('t1'), ..., @('tp'),
@@ -829,12 +831,21 @@
      is retrieved from the called function's information;
      we add 2 to it, to take into account the decrementing of the limit
      to go from @(tsee exec-expr-call-or-pure) to @(tsee exec-expr-call)
-     and from there to @(tsee exec-fun).")
+     and from there to @(tsee exec-fun).
+     If the called function affects no objects,
+     the @('result') term is essentially the untranslation of the input term,
+     and @('new-compst') is the same as the computation state variable;
+     if the called function affects objects,
+     the @('result') term is @(tsee mv-ntn) of 0 applied to the call,
+     and @('new-compst') updates the computation state variable
+     with the @(tsee mv-nth)s of 1, 2, etc. applied to the call.")
    (xdoc::p
     "Otherwise, we attempt to translate the term as a pure expression term.
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
-     to not stop right away due to the limit being 0."))
+     to not stop right away due to the limit being 0.
+     In this case, @('result') is essentially the untranslated input term,
+     and @('new-compst') is the computation state variable unchanged."))
   (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
