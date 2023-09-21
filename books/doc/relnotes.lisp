@@ -189,6 +189,11 @@
      @(':untranslate t'), removes some unused @(tsee let) bindings and @(tsee
      let*) bindings that formerly remained.")
 
+   (xdoc::p
+    "The @(tsee apt::restrict) transformation has been improved
+     to generate more robust proofs,
+     which get around certain ACL2 heuristics.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
