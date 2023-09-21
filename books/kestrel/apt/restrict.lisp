@@ -602,8 +602,8 @@
                                lemma-name))
              (instructions
               `((in-theory (enable (:induction ,old)))
-                (induct (,old ,@formals))
-                (repeat
+                (then
+                 (induct (,old ,@formals))
                  (do-all
                   (claim (equal (,old ,@formals)
                                 ,(ubody old wrld))
