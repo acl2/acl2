@@ -177,7 +177,7 @@
       (if skipp
           (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)
         (mv-let (erp state)
-          (submit-event (if skip-proofsp event `(skip-proofs ,event))
+          (submit-event (if skip-proofsp `(skip-proofs ,event) event)
                         nil ;print
                         nil state)
           (if erp
