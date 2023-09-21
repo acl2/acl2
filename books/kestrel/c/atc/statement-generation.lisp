@@ -1167,6 +1167,7 @@
                                  (stmt-thm symbolp)
                                  (term? pseudo-termp)
                                  (type typep)
+                                 (result "An untranslated term.")
                                  (new-compst "An untranslated term.")
                                  (gin stmt-ginp)
                                  state)
@@ -1216,15 +1217,11 @@
        (thm-index (1+ gin.thm-index))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
-       (uterm (untranslate$ term? nil state))
        (exec-formula `(equal (exec-block-item ',item
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                             (mv ,(if (type-case type :void)
-                                      nil
-                                    uterm)
-                                 ,new-compst)))
+                             (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -1234,24 +1231,25 @@
                                         item-limit
                                         t
                                         wrld))
-       (formula (if term?
-                    (b* (((mv type-formula &)
-                          (atc-gen-term-type-formula uterm
-                                                     type
-                                                     gin.affect
-                                                     gin.inscope
-                                                     gin.prec-tags))
-                         (type-formula (atc-contextualize type-formula
-                                                          gin.context
-                                                          gin.fn
-                                                          gin.fn-guard
-                                                          nil
-                                                          nil
-                                                          nil
-                                                          nil
-                                                          wrld)))
-                      `(and ,exec-formula ,type-formula))
-                  exec-formula))
+       (formula
+        (if term?
+            (b* (((mv type-formula &)
+                  (atc-gen-term-type-formula (untranslate$ term? nil state)
+                                             type
+                                             gin.affect
+                                             gin.inscope
+                                             gin.prec-tags))
+                 (type-formula (atc-contextualize type-formula
+                                                  gin.context
+                                                  gin.fn
+                                                  gin.fn-guard
+                                                  nil
+                                                  nil
+                                                  nil
+                                                  nil
+                                                  wrld)))
+              `(and ,exec-formula ,type-formula))
+          exec-formula))
        (hints
         `(("Goal" :in-theory '(exec-block-item-when-stmt
                                (:e block-item-kind)
@@ -1660,6 +1658,7 @@
                              stmt-thm-name
                              nil
                              (type-void)
+                             nil
                              new-compst
                              (change-stmt-gin
                               gin
@@ -4060,7 +4059,7 @@
        ((erp expr.expr
              expr.type
              expr.term
-             & ; expr.result
+             expr.result
              & ; expr.new-compst
              expr.limit
              expr.events
@@ -4164,6 +4163,7 @@
                                  stmt-thm-name
                                  expr.term
                                  expr.type
+                                 expr.result
                                  gin.compst-var
                                  (change-stmt-gin
                                   gin
@@ -4813,6 +4813,7 @@
                                  if-stmt-thm
                                  term
                                  type
+                                 uterm/nil
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -5233,6 +5234,7 @@
                                  stmt-thm-name
                                  term
                                  (type-void)
+                                 nil
                                  new-compst
                                  (change-stmt-gin
                                   gin
