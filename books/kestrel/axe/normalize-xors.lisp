@@ -706,7 +706,9 @@
        (all-leaves (if (eql 0 combined-constant)
                        nodenum-leaves-high-to-low
                      (cons (enquote combined-constant) ; TODO: save this cons (the constant will always be 1 since it's not 0).
-                           nodenum-leaves-high-to-low))))
+                           nodenum-leaves-high-to-low)))
+       ;; (- (cw "~x0 bitxor leaves.~%" (len all-leaves)))
+       )
     all-leaves))
 ;;                  (rev-sorted-nodenum-leaves-with-constant
 ;;                   (if (eql 0 combined-constant)
@@ -1098,7 +1100,7 @@
                        nodenum-leaves-high-to-low
                      (cons (enquote combined-constant) ;save this cons? ;fixme when the result is reversed, does that mean the constant goes last?
                            nodenum-leaves-high-to-low)))
-       ;; (- (cw "~x0 leaves.~%" (len all-leaves)))
+       ;; (- (cw "~x0 bvxor leaves.~%" (len all-leaves)))
        )
     all-leaves))
 
