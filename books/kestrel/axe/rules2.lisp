@@ -3238,13 +3238,6 @@
 ;;
 ;; stuff about arrays of unsigned bytes (BOZO gen to array of arbitrary type elements - we have that notion in ../bvseq/arrays)
 ;;
-(in-theory (disable ;true-listp
-                    )) ;bozo
-
-(in-theory (disable ;take
-                    ;;BV-ARRAYP-LIST
-                    ))
-
 (defthm take-when-<-of-len
   (implies (< (len x) n) ;could be expensive?
            (equal (take n x)
@@ -3726,11 +3719,11 @@
 ;;                            )
 ;;            :in-theory (disable bv-array-read BITXOR-OF-BVCHOP-ARG2 BITXOR-OF-GETBIT-ARG2))))
 
-(defthmd lookup-of-bvif
-  (equal (lookup (bvif size test a b) program)
-         (myif test (lookup (bvchop size a) program)
-               (lookup (bvchop size b) program)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
+;; (defthmd lookup-of-bvif
+;;   (equal (lookup (bvif size test a b) program)
+;;          (myif test (lookup (bvchop size a) program)
+;;                (lookup (bvchop size b) program)))
+;;   :hints (("Goal" :in-theory (enable bvif myif))))
 
 ;; ;turns a bvif into a myif...
 ;; (defthm INDEX-INTO-PROGRAM-of-bvif
