@@ -351,3 +351,12 @@
            (<= (* (expt 2 pos) (logtail pos i)) i))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable logtail))))
+
+;Disabled since logtail is more complex than floor
+(defthmd floor-of-2-becomes-logtail-of-1
+  (implies (integerp x)
+           (equal (floor x 2)
+                  (logtail 1 x)))
+  :hints (("Goal" :in-theory (enable logtail ifix))))
+
+(theory-invariant (incompatible (:rewrite floor-of-2) (:definition logtail)))

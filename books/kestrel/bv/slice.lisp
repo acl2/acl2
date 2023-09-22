@@ -754,3 +754,8 @@
                 (integerp high))
            (equal (slice high low x) 0))
   :hints (("Goal" :in-theory (enable slice bvchop-of-logtail))))
+
+(defthm slice-of-ifix
+  (equal (slice high low (ifix x))
+         (slice high low x))
+  :hints (("Goal" :in-theory (enable ifix))))
