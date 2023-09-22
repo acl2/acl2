@@ -4224,7 +4224,7 @@
                                  (append expr.events
                                          (list stmt-event))
                                  stmt-thm-name
-                                 (untranslate$ expr.term nil state)
+                                 uterm
                                  expr.type
                                  expr.result
                                  gin.compst-var
