@@ -2303,15 +2303,27 @@
                         (equal (fix c1) c2))
                     nil))))
 
-(defthm <-of-expt-and*-*-of-2-and-expt
-  (IMPLIES (AND (INTEGERP N)
-                (< 0 N)
-                (NATP M)
-                (<= N M))
-           (<= (EXPT 2 N) (* 2 (EXPT 2 M))))
-  :hints (("Goal" :use (:instance <-OF-EXPT-AND-EXPT-same-base (r 2)
+;move
+(defthm <-of-*-of-2-and-expt-and-expt
+  (implies (and (integerp n)
+                (integerp m))
+           (equal (< (* 2 (expt 2 m)) (expt 2 n))
+                  (< (+ 1 m) n)))
+  :hints (("Goal" :use (:instance <-of-expt-and-expt-same-base (r 2)
                                   (i (+ 1 m))
-                                  (j n)))))
+                                  (j n))
+           :in-theory (e/d (expt-of-+) (<-OF-EXPT-AND-EXPT-SAME-BASE)))))
+
+;move
+(defthm <-of-expt-and-*-of-2-and-expt
+  (implies (and (integerp n)
+                (integerp m))
+           (equal (< (expt 2 n) (* 2 (expt 2 m)))
+                  (< n (+ 1 m))))
+  :hints (("Goal" :use (:instance <-of-expt-and-expt-same-base (r 2)
+                                  (i (+ 1 m))
+                                  (j n))
+           :in-theory (e/d (expt-of-+) (<-OF-EXPT-AND-EXPT-SAME-BASE)))))
 
 ;move?
 (defthm logext-of-bvsx
