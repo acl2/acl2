@@ -227,10 +227,6 @@
                             (combine-bytes bytes)))
   :hints (("Goal" :in-theory (enable combine-bytes byte-listp))))
 
-
-
-
-
 (defthm slice-of-combine-bytes
   (implies (and (natp n)
                 (< n (len bytes))

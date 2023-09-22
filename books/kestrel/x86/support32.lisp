@@ -92,19 +92,12 @@
            (canonical-address-p x86isa::ad))
   :hints (("Goal" :in-theory (enable canonical-address-p))))
 
-;;gen
-(defthm bvplus-subst-smaller-term
-  (implies (and (equal (bvchop 32 x) (bvchop 32 x2))
-                (syntaxp (acl2::smaller-termp x2 x)))
-           (equal (bvplus 32 x y)
-                  (bvplus 32 x2 y))))
-
-;dup in bv3
-(defthmd acl2::bvplus-recollapse
-  (implies (and (integerp x) (integerp y))
-           (equal (bvchop acl2::size (+ x y))
-                  (bvplus acl2::size x y)))
-  :hints (("Goal" :in-theory (enable bvplus))))
+;; ;dup in bv3
+;; (defthmd acl2::bvplus-recollapse
+;;   (implies (and (integerp x) (integerp y))
+;;            (equal (bvchop acl2::size (+ x y))
+;;                   (bvplus acl2::size x y)))
+;;   :hints (("Goal" :in-theory (enable bvplus))))
 
 ;(local (in-theory (disable X86ISA::MEMI-IS-N08P))) ;does forcing
 
@@ -781,10 +774,6 @@
   :hints (("Goal" :in-theory (enable x86isa::add-to-*ip
                                      code-segment-assumptions32-for-code
                                      segment-base-and-bounds))))
-
-(defthm fix-of-ifix
-  (equal (fix (ifix x))
-         (ifix x)))
 
 ;;;
 ;;; data-segment-writeable-bit
