@@ -4126,8 +4126,7 @@
        (uterm (if mvp
                   `(mv ,expr.result ,@gin.affect)
                 (untranslate$ expr.term nil state)))
-       ((when (or (not expr.thm-name)
-                  mvp)) ; temporary
+       ((when (not expr.thm-name))
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
@@ -4168,7 +4167,7 @@
                                          stmt-limit
                                          t
                                          wrld))
-       ((mv stmt-formula2 &)
+       ((mv stmt-formula2 type-thms)
         (atc-gen-term-type-formula uterm
                                    expr.type
                                    gin.affect
@@ -4192,11 +4191,28 @@
                                mv-nth-of-cons
                                (:e zp)
                                ,valuep-when-type-pred
-                               ,expr.thm-name))))
+                               ,expr.thm-name
+                               ,@type-thms))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
+       ((when mvp)
+        (retok (make-stmt-gout
+                :items (list (block-item-stmt stmt))
+                :type expr.type
+                :term expr.term
+                :context (make-atc-context :preamble nil :premises nil)
+                :inscope nil
+                :limit (pseudo-term-fncall
+                        'binary-+
+                        (list (pseudo-term-quote 3)
+                              expr.limit))
+                :events (append expr.events
+                                (list stmt-event))
+                :thm-name nil
+                :thm-index expr.thm-index
+                :names-to-avoid expr.names-to-avoid)))
        ((mv item
             item-limit
             item-events
