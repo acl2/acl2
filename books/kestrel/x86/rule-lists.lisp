@@ -945,7 +945,7 @@
             acl2::<-of-+-cancel-2-2
             acl2::<-of-+-cancel-2-1
             acl2::integerp-of-+-when-integerp-1-cheap
-            x86isa::fix-when-integerp
+            acl2::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap
             x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
@@ -1031,7 +1031,7 @@
             acl2::bvchop-of-bvplus
             acl2::bvchop-identity
 ;            combine-bytes-and-byte-ify
-            x86isa::open-ash-positive-constants
+            acl2::open-ash-positive-constants
             acl2::logext-of-bvchop-same
             acl2::logext-identity
             ;x86isa::rgfi-is-i64p ;targets signed-byte-of-xr
@@ -1591,7 +1591,7 @@
     read-byte-from-segment-when-code-segment-assumptions32-for-code
     read-from-segment-when-code-segment-assumptions32-for-code
 
-    fix-of-ifix
+    acl2::fix-of-ifix
 
     ;; Rules about EIP/SET-EIP:
     xw-becomes-set-eip

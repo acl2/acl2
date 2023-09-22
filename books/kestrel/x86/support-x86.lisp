@@ -37,6 +37,18 @@
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/bv/getbit2" :dir :system))
 
+(defthm unsigned-byte-p-8-of-car-when-byte-listp
+  (implies (byte-listp bytes)
+           (equal (unsigned-byte-p 8 (car bytes))
+                  (consp bytes)))
+  :hints (("Goal" :in-theory (enable byte-listp))))
+
+(defthm integerp-of-car-when-byte-listp
+  (implies (byte-listp bytes)
+           (equal (integerp (car bytes))
+                  (consp bytes)))
+  :hints (("Goal" :in-theory (enable byte-listp))))
+
 (in-theory (disable GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)) ;for speed
 
 (defthm x86isa::x86p-xw-unforced
@@ -318,7 +330,6 @@
                   (integerp ad)))
   :hints (("Goal" :in-theory (enable canonical-address-p SIGNED-BYTE-P))))
 
-
 (defun nth-of-create-canonical-address-list-induct (n count addr)
   (if (zp count)
       (list n count addr)
@@ -346,20 +357,6 @@
 
 (defthm canonical-address-listp-of-nil
   (x86isa::canonical-address-listp nil))
-
-(defthm fix-when-integerp
-  (implies (integerp x)
-           (equal (fix x)
-                  x)))
-
-(defthm open-ash-positive-constants
-  (implies (and (syntaxp (quotep i))
-                (syntaxp (quotep c))
-                (natp c)
-                (integerp i))
-           (equal (ash i c)
-                  (* i (expt 2 c))))
-  :hints (("Goal" :in-theory (enable ash))))
 
 (defthm integerp-of-xr-rgf
   (implies (x86p x86)
@@ -403,55 +400,6 @@
            (integerp (memi i x86)))
   :hints (("Goal" :in-theory (enable memi))))
 
-;move
-(defthm bvchop-of-+-of-*-of-256
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (acl2::bvchop 8 (+ x (* 256 y)))
-                  (acl2::bvchop 8 x))))
-
-(defthmd mod-becomes-bvchop-8
-  (implies (integerp x)
-           (equal (mod x 256)
-                  (acl2::bvchop 8 x)))
-  :hints (("Goal" :in-theory (enable acl2::bvchop ifix))))
-
-(defthm unsigned-byte-p-8-of-car-when-byte-listp
-  (implies (byte-listp bytes)
-           (equal (unsigned-byte-p 8 (car bytes))
-                  (consp bytes)))
-  :hints (("Goal" :in-theory (enable byte-listp))))
-
-(defthm integerp-of-car-when-byte-listp
-  (implies (byte-listp bytes)
-           (equal (integerp (car bytes))
-                  (consp bytes)))
-  :hints (("Goal" :in-theory (enable byte-listp))))
-
-;move
-(defthm bvchop-upper-bound-strong
-  (implies (natp n)
-           (<= (acl2::bvchop n x) (+ -1 (expt 2 n))))
-  :rule-classes (:rewrite)
-  :hints (("Goal" :in-theory (enable acl2::bvchop))))
-
-(defthm bvplus-of-*-of-256
-  (implies (and (natp size)
-                (<= 8 size)
-                (unsigned-byte-p 8 byte)
-                (integerp val))
-           (equal (acl2::bvplus size byte (* 256 val))
-                  (acl2::bvcat (- size 8) val 8 byte)))
-  :hints (("Goal"
-           :use (:instance bvchop-upper-bound-strong (n (+ -8 SIZE))
-                           (x val))
-           :in-theory (e/d (acl2::bvcat acl2::bvplus
-                                        acl2::bvchop-of-sum-cases
-                                        logtail
-                                        ACL2::EXPT-OF-+)
-                           (acl2::bvchop-upper-bound
-                            bvchop-upper-bound-strong
-                            ACL2::BVCHOP-BOUND-2)))))
 
 ;; resolve a call to rb on a singleton list when we know the program
 ;; this rule seems simpler than rb-in-terms-of-nth-and-pos (which is now gone) since it has no extended bind-free hyp.
@@ -496,7 +444,7 @@
                             ash
                             ;x86isa::RB-RB-SUBSET
                             natp
-                            mod-becomes-bvchop-8
+                            acl2::mod-becomes-bvchop-8
                             ;;acl2::bvchop
                             ;;ACL2::CAR-BECOMES-NTH-OF-0
                             acl2::bvchop-of-logtail-becomes-slice
@@ -663,19 +611,6 @@
                                    acl2::bvchop-1-becomes-getbit
                                    acl2::bvchop-of-logtail-becomes-slice)))))
 
-;gen
-(defthm strengthen-upper-bound-when-top-bit-0
-  (implies (and (syntaxp (acl2::want-to-strengthen (< x 9223372036854775808)))
-                (equal (acl2::getbit 63 x) 1)
-                (integerp x))
-           (equal (< x 9223372036854775808)
-                  (<= x 0)))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::logtail)
-                                  (acl2::slice-becomes-getbit
-                                   acl2::bvchop-1-becomes-getbit
-                                   acl2::bvchop-of-logtail-becomes-slice)))))
-
-
 ;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
 ;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))
 
@@ -735,12 +670,6 @@
            (equal (memi addr (xw :mem addr val x86))
                   (acl2::bvchop 8 val)))
   :hints (("Goal" :in-theory (enable memi))))
-
-;; Since 0 and 1 are the only BVs less than 2
-(defthmd <-of-bvchop-and-2
-  (equal (< (ACL2::BVCHOP size x) 2)
-         (or (equal (ACL2::BVCHOP size x) 0)
-             (equal (ACL2::BVCHOP size x) 1))))
 
 ;gen
 (local
@@ -926,7 +855,7 @@
                                    SAR-SPEC-32 ACL2::BVSHR
                                    ;;ACL2::LOGEXT-CASES
                                    acl2::bvchop-of-logtail-becomes-slice
-                                   <-of-bvchop-and-2
+                                   acl2::<-of-bvchop-and-2
                                    acl2::slice-alt-def
                                    )
                                   ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
@@ -1066,7 +995,7 @@
                             SAR-SPEC-64 ACL2::BVSHR
                                         ;;ACL2::LOGEXT-CASES
                             acl2::bvchop-of-logtail-becomes-slice
-                            <-of-bvchop-and-2
+                            acl2::<-of-bvchop-and-2
                             acl2::slice-alt-def
                             )
                            ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
