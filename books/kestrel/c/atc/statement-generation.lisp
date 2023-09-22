@@ -815,9 +815,11 @@
    (xdoc::p
     "We also return the C type of the expression,
      the transformed term,
-     the affected variables,
-     and a limit that suffices for @(tsee exec-expr-call-or-pure)
-     to execute the expression completely.")
+     the term for the C result of the expression,
+     the term for the C computation state after the execution of the expression,
+     a limit that suffices for @(tsee exec-expr-call-or-pure)
+     to execute the expression completely,
+     and then the usual outputs.")
    (xdoc::p
     "If the term is a call of a function that precedes @('fn')
      in the list of target functions among @('t1'), ..., @('tp'),
@@ -829,12 +831,21 @@
      is retrieved from the called function's information;
      we add 2 to it, to take into account the decrementing of the limit
      to go from @(tsee exec-expr-call-or-pure) to @(tsee exec-expr-call)
-     and from there to @(tsee exec-fun).")
+     and from there to @(tsee exec-fun).
+     If the called function affects no objects,
+     the @('result') term is essentially the untranslation of the input term,
+     and @('new-compst') is the same as the computation state variable;
+     if the called function affects objects,
+     the @('result') term is @(tsee mv-nth) of 0 applied to the call,
+     and @('new-compst') updates the computation state variable
+     with the @(tsee mv-nth)s of 1, 2, etc. applied to the call.")
    (xdoc::p
     "Otherwise, we attempt to translate the term as a pure expression term.
      The type is the one returned by that translation.
      As limit we return 1, which suffices for @(tsee exec-expr-call-or-pure)
-     to not stop right away due to the limit being 0."))
+     to not stop right away due to the limit being 0.
+     In this case, @('result') is essentially the untranslated input term,
+     and @('new-compst') is the computation state variable unchanged."))
   (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
@@ -1156,6 +1167,7 @@
                                  (stmt-thm symbolp)
                                  (term? pseudo-termp)
                                  (type typep)
+                                 (result "An untranslated term.")
                                  (new-compst "An untranslated term.")
                                  (gin stmt-ginp)
                                  state)
@@ -1205,15 +1217,11 @@
        (thm-index (1+ gin.thm-index))
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
-       (uterm (untranslate$ term? nil state))
        (exec-formula `(equal (exec-block-item ',item
                                               ,gin.compst-var
                                               ,gin.fenv-var
                                               ,gin.limit-var)
-                             (mv ,(if (type-case type :void)
-                                      nil
-                                    uterm)
-                                 ,new-compst)))
+                             (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -1223,24 +1231,25 @@
                                         item-limit
                                         t
                                         wrld))
-       (formula (if term?
-                    (b* (((mv type-formula &)
-                          (atc-gen-term-type-formula uterm
-                                                     type
-                                                     gin.affect
-                                                     gin.inscope
-                                                     gin.prec-tags))
-                         (type-formula (atc-contextualize type-formula
-                                                          gin.context
-                                                          gin.fn
-                                                          gin.fn-guard
-                                                          nil
-                                                          nil
-                                                          nil
-                                                          nil
-                                                          wrld)))
-                      `(and ,exec-formula ,type-formula))
-                  exec-formula))
+       (formula
+        (if term?
+            (b* (((mv type-formula &)
+                  (atc-gen-term-type-formula (untranslate$ term? nil state)
+                                             type
+                                             gin.affect
+                                             gin.inscope
+                                             gin.prec-tags))
+                 (type-formula (atc-contextualize type-formula
+                                                  gin.context
+                                                  gin.fn
+                                                  gin.fn-guard
+                                                  nil
+                                                  nil
+                                                  nil
+                                                  nil
+                                                  wrld)))
+              `(and ,exec-formula ,type-formula))
+          exec-formula))
        (hints
         `(("Goal" :in-theory '(exec-block-item-when-stmt
                                (:e block-item-kind)
@@ -1649,6 +1658,7 @@
                              stmt-thm-name
                              nil
                              (type-void)
+                             nil
                              new-compst
                              (change-stmt-gin
                               gin
@@ -4009,14 +4019,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-return-stmt ((term pseudo-termp) (gin stmt-ginp) state)
+(define atc-gen-return-stmt ((term pseudo-termp)
+                             (mvp booleanp)
+                             (gin stmt-ginp)
+                             state)
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C return statement from an ACL2 term."
   :long
   (xdoc::topstring
    (xdoc::p
     "The term passed here as parameter is the one representing
-     the expression to be returned by the statement.")
+     the expression to be returned by the statement.
+     This may come from two possible places
+     (i.e. from two possible calls in @(tsee atc-gen-stmt)):
+     when encountering a term @('(mv ret v1 ... vn)')
+     affecting variables @('v1'), ..., @('vn'),
+     in which case @('ret') is passed to this function
+     and @('mvp') is @('t');
+     when encountering a term @('term')
+     that must be an expression term used as a statement term,
+     in which case @('term') is passed to this function
+     and @('mvp') is @('nil').
+     The flag @('mvp') is used to easily distinguish these two cases,
+     which need slightly different treatment.
+     Note that, in @('(mv ret v1 ... vn)'),
+     @('ret') may be either a pure expression term or a function call,
+     and the same holds for the second case discussed above;
+     thus, the two situations cannot be readily distinguished
+     just by looking at the term alone.")
+   (xdoc::p
+    "If @('mvp') is @('t'),
+     we call @(tsee atc-gen-expr) with @('term') (i.e. @('ret'))
+     and we set the affected variables in @('gin') to @('nil').
+     In @('(mv ret v1 ... vn)'), @('ret') must not affect any variables,
+     which is guaranteed by ACL2 checks on multiple values,
+     which cannot be nested:
+     if @('ret') affected variables, it would have to return multiple values,
+     and could not be an argument of @(tsee mv) in ACL2.")
+   (xdoc::p
+    "If instead @('mvp') is @('nil'),
+     we also call @(tsee atc-gen-expr) with @('term'),
+     but without modifying the affected variables in @('gin').
+     This is because the term in question is the whole thing
+     returned by the ACL2 function being translated to C at that point,
+     and so it has to affect exactly the variables that the function affects.")
    (xdoc::p
     "We generate three theorems, which build upon each other:
      one for @(tsee exec-stmt) applied to the return statement,
@@ -4049,14 +4095,18 @@
        ((erp expr.expr
              expr.type
              expr.term
-             & ; expr.result
-             & ; expr.new-compst
+             expr.result
+             expr.new-compst
              expr.limit
              expr.events
              expr.thm-name
              expr.thm-index
              expr.names-to-avoid)
-        (atc-gen-expr term gin state))
+        (atc-gen-expr term
+                      (if mvp
+                          (change-stmt-gin gin :affect nil)
+                        gin)
+                      state))
        ((when (type-case expr.type :void))
         (reterr
          (raise "Internal error: return term ~x0 has type void." term)))
@@ -4073,7 +4123,8 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
-       ((when (not expr.thm-name))
+       ((when (or (not expr.thm-name)
+                  mvp)) ; temporary
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
@@ -4106,7 +4157,7 @@
                                          ,gin.compst-var
                                          ,gin.fenv-var
                                          ,gin.limit-var)
-                              (mv ,uterm ,gin.compst-var)))
+                              (mv ,expr.result ,expr.new-compst)))
        (stmt-formula1 (atc-contextualize stmt-formula1
                                          gin.context
                                          gin.fn
@@ -4153,6 +4204,7 @@
                                  stmt-thm-name
                                  expr.term
                                  expr.type
+                                 expr.result
                                  gin.compst-var
                                  (change-stmt-gin
                                   gin
@@ -4802,6 +4854,7 @@
                                  if-stmt-thm
                                  term
                                  type
+                                 uterm/nil
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -5222,6 +5275,7 @@
                                  stmt-thm-name
                                  term
                                  (type-void)
+                                 nil
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -6427,10 +6481,7 @@
            ((equal terms gin.affect)
             (retok (atc-gen-block-item-list-none `(mv ,@terms) gin state)))
            ((equal (cdr terms) gin.affect)
-            (b* ((gin (change-stmt-gin gin :proofs nil)))
-              (atc-gen-return-stmt (car terms)
-                                   (change-stmt-gin gin :affect nil)
-                                   state)))
+            (atc-gen-return-stmt (car terms) t gin state))
            (t (reterr
                (msg "When generating C code for the function ~x0, ~
                      a term ~x0 has been encountered, ~
@@ -6537,7 +6588,7 @@
                a recursive call on every path, ~
                but in the function ~x0 it ends with ~x1 instead."
               gin.fn term))))
-    (atc-gen-return-stmt term gin state))
+    (atc-gen-return-stmt term nil gin state))
 
   :prepwork ((local (in-theory (disable equal-of-type-pointer
                                         equal-of-type-array

@@ -2153,8 +2153,13 @@
                            nil))
 
 (defun gc-off1 (guard-checking-on)
-  (member-eq guard-checking-on
-             '(nil :none)))
+
+; This little function helps preserve the property that for any value v of
+; state global guard-checking-on that is not in *guard-checking-values*, v is
+; treated as :nowarn -- as documented in :DOC guard-evaluation-table.
+
+  (or (eq guard-checking-on nil)
+      (eq guard-checking-on :none)))
 
 (defun gc-off (state)
   (gc-off1 (f-get-global 'guard-checking-on state)))

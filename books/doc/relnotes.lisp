@@ -535,6 +535,12 @@
      now in a new book, @('fmx-cw-support'), which is not included in
      @('system/top.lisp').")
 
+   (xdoc::p
+    "The behavior of function @('computed-hint-rewrite') in @(see
+     community-book) @('books/misc/computed-hint-rewrite.lisp') has been
+     tweaked to be properly in sync with that of source function
+     @('simplify-clause').")
+
    ))
 
 (defxdoc note-8-5-books
