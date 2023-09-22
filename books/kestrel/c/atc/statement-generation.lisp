@@ -4156,7 +4156,7 @@
                                          ,gin.compst-var
                                          ,gin.fenv-var
                                          ,gin.limit-var)
-                              (mv ,uterm ,gin.compst-var)))
+                              (mv ,expr.result ,gin.compst-var)))
        (stmt-formula1 (atc-contextualize stmt-formula1
                                          gin.context
                                          gin.fn
