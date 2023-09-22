@@ -4123,6 +4123,9 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
+       (uterm (if mvp
+                  `(mv ,expr.result ,@gin.affect)
+                (untranslate$ expr.term nil state)))
        ((when (or (not expr.thm-name)
                   mvp)) ; temporary
         (retok (make-stmt-gout
@@ -4145,14 +4148,12 @@
                           expr.limit)))
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
-       (type-pred (atc-type-to-recognizer expr.type gin.prec-tags))
        (valuep-when-type-pred (atc-type-to-valuep-thm expr.type gin.prec-tags))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil names-to-avoid wrld))
-       (uterm (untranslate$ expr.term nil state))
        (stmt-formula1 `(equal (exec-stmt ',stmt
                                          ,gin.compst-var
                                          ,gin.fenv-var
@@ -4167,7 +4168,12 @@
                                          stmt-limit
                                          t
                                          wrld))
-       (stmt-formula2 `(,type-pred ,uterm))
+       ((mv stmt-formula2 &)
+        (atc-gen-term-type-formula uterm
+                                   expr.type
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags))
        (stmt-formula2 (atc-contextualize stmt-formula2
                                          gin.context
                                          gin.fn
