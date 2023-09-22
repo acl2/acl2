@@ -4123,7 +4123,8 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
-       ((when (not expr.thm-name))
+       ((when (or (not expr.thm-name)
+                  mvp)) ; temporary
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
@@ -6480,8 +6481,7 @@
            ((equal terms gin.affect)
             (retok (atc-gen-block-item-list-none `(mv ,@terms) gin state)))
            ((equal (cdr terms) gin.affect)
-            (b* ((gin (change-stmt-gin gin :proofs nil)))
-              (atc-gen-return-stmt (car terms) t gin state)))
+            (atc-gen-return-stmt (car terms) t gin state))
            (t (reterr
                (msg "When generating C code for the function ~x0, ~
                      a term ~x0 has been encountered, ~
