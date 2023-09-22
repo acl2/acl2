@@ -1603,6 +1603,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            eqlablep
            fix
            fn-symb
+           gc-off1 ; used in oneified code
            iff
            ifix
            implies
