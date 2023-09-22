@@ -722,11 +722,25 @@
      we retrieve the guard obligations of the restricting predicate
      with limited simplification as well,
      so that we have a possibly stronger theorem
-     as that applicability condition."))
+     as that applicability condition.")
+   (xdoc::p
+    "We also enable @(tsee not) in the quoted theory.
+     We have seen at least one example fail without this,
+     due to some special treatment by ACL2 in clausification.
+     It is not clear whether enabling @(tsee not) may cause problems elsewhere:
+     the proofs in the design notes,
+     upon which the generated ACL2 proofs are based,
+     assume that certain parts of the terms are ``atomic'';
+     those parts might start with @(tsee not),
+     in which case enabling @(tsee not) may disrupt the proofs.
+     As we have not yet observed such cases though,
+     for now we add @(tsee not) to the theory,
+     but with the caveat that we may need something more general and robust
+     at some point in the future."))
   (b* ((recursive (recursivep old nil wrld))
        (hints (if recursive
                   `(("Goal"
-                     :in-theory '(,old-to-new)
+                     :in-theory '(,old-to-new not)
                      :use ((:guard-theorem ,old)
                            ,(cdr (assoc-eq :restriction-guard
                                            appcond-thm-names))
@@ -738,7 +752,7 @@
                               (cdr (assoc-eq :restriction-of-rec-calls
                                              appcond-thm-names))))))
                 `(("Goal"
-                   :in-theory nil
+                   :in-theory '(not)
                    :use ((:guard-theorem ,old)
                          ,(cdr (assoc-eq :restriction-guard
                                          appcond-thm-names)))))))
