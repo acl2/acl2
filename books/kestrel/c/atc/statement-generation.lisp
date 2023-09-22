@@ -4019,14 +4019,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-return-stmt ((term pseudo-termp) (gin stmt-ginp) state)
+(define atc-gen-return-stmt ((term pseudo-termp)
+                             (mvp booleanp)
+                             (gin stmt-ginp)
+                             state)
   :returns (mv erp (gout stmt-goutp))
   :short "Generate a C return statement from an ACL2 term."
   :long
   (xdoc::topstring
    (xdoc::p
     "The term passed here as parameter is the one representing
-     the expression to be returned by the statement.")
+     the expression to be returned by the statement.
+     This may come from two possible places
+     (i.e. from two possible calls in @(tsee atc-gen-stmt)):
+     when encountering a term @('(mv ret v1 ... vn)')
+     affecting variables @('v1'), ..., @('vn'),
+     in which case @('ret') is passed to this function
+     and @('mvp') is @('t');
+     when encountering a term @('term')
+     that must be an expression term used as a statement term,
+     in which case @('term') is passed to this function
+     and @('mvp') is @('nil').
+     The flag @('mvp') is used to easily distinguish these two cases,
+     which need slightly different treatment.
+     Note that, in @('(mv ret v1 ... vn)'),
+     @('ret') may be either a pure expression term or a function call,
+     and the same holds for the second case discussed above;
+     thus, the two situations cannot be readily distinguished
+     just by looking at the term alone.")
+   (xdoc::p
+    "If @('mvp') is @('t'),
+     we call @(tsee atc-gen-expr) with @('term') (i.e. @('ret'))
+     and we set the affected variables in @('gin') to @('nil').
+     In @('(mv ret v1 ... vn)'), @('ret') must not affect any variables,
+     which is guaranteed by ACL2 checks on multiple values,
+     which cannot be nested:
+     if @('ret') affected variables, it would have to return multiple values,
+     and could not be an argument of @(tsee mv) in ACL2.")
+   (xdoc::p
+    "If instead @('mvp') is @('nil'),
+     we also call @(tsee atc-gen-expr) with @('term'),
+     but without modifying the affected variables in @('gin').
+     This is because the term in question is the whole thing
+     returned by the ACL2 function being translated to C at that point,
+     and so it has to affect exactly the variables that the function affects.")
    (xdoc::p
     "We generate three theorems, which build upon each other:
      one for @(tsee exec-stmt) applied to the return statement,
@@ -4066,7 +4102,11 @@
              expr.thm-name
              expr.thm-index
              expr.names-to-avoid)
-        (atc-gen-expr term gin state))
+        (atc-gen-expr term
+                      (if mvp
+                          (change-stmt-gin gin :affect nil)
+                        gin)
+                      state))
        ((when (type-case expr.type :void))
         (reterr
          (raise "Internal error: return term ~x0 has type void." term)))
@@ -6441,9 +6481,7 @@
             (retok (atc-gen-block-item-list-none `(mv ,@terms) gin state)))
            ((equal (cdr terms) gin.affect)
             (b* ((gin (change-stmt-gin gin :proofs nil)))
-              (atc-gen-return-stmt (car terms)
-                                   (change-stmt-gin gin :affect nil)
-                                   state)))
+              (atc-gen-return-stmt (car terms) t gin state)))
            (t (reterr
                (msg "When generating C code for the function ~x0, ~
                      a term ~x0 has been encountered, ~
@@ -6550,7 +6588,7 @@
                a recursive call on every path, ~
                but in the function ~x0 it ends with ~x1 instead."
               gin.fn term))))
-    (atc-gen-return-stmt term gin state))
+    (atc-gen-return-stmt term nil gin state))
 
   :prepwork ((local (in-theory (disable equal-of-type-pointer
                                         equal-of-type-array
