@@ -4096,7 +4096,7 @@
              expr.type
              expr.term
              expr.result
-             & ; expr.new-compst
+             expr.new-compst
              expr.limit
              expr.events
              expr.thm-name
@@ -4156,7 +4156,7 @@
                                          ,gin.compst-var
                                          ,gin.fenv-var
                                          ,gin.limit-var)
-                              (mv ,expr.result ,gin.compst-var)))
+                              (mv ,expr.result ,expr.new-compst)))
        (stmt-formula1 (atc-contextualize stmt-formula1
                                          gin.context
                                          gin.fn
