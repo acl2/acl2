@@ -255,7 +255,7 @@
            (equal (bvchop places (ash i c))
                   (acl2::bvshr (- places c) i (- c))))
   :hints (("Goal" :in-theory (e/d (ash acl2::bvshr slice logtail ACL2::FLOOR-OF-/ ifix)
-                                  (acl2::bvchop-of-logtail-becomes-slice acl2::floor-of-2)))))
+                                  (acl2::bvchop-of-logtail-becomes-slice acl2::floor-of-2-becomes-logtail-of-1)))))
 
 (defthm bvshr-of-logand-becomes-bvshr-of-bvand
   (implies (and (natp amt)

@@ -856,6 +856,22 @@
                            (acl2::sbvlt-rewrite ;disable
                             )))))
 
+;todo: also prove for slice and logtail
+(defthm getbit-of-*-of-1/2
+  (implies (and (integerp x)
+                (equal 0 (getbit 0 x)) ; needed?
+                (natp n))
+           (equal (getbit n (* 1/2 x))
+                  (getbit (+ 1 n) x)))
+  :hints (("Goal" :in-theory (e/d (getbit slice logtail acl2::expt-of-+ ifix bvchop)
+                                  (acl2::bvchop-1-becomes-getbit)))))
+
+;gen and move
+(defthm evenp-of-bvchop
+  (equal (evenp (bvchop 32 x))
+         (equal 0 (getbit 0 x)))
+  :hints (("Goal" :in-theory (e/d (getbit slice bvchop evenp) (acl2::bvchop-1-becomes-getbit)))))
+
 ;; Shows that the division can't be too positive
 ;; todo: gen the 2 but watch for the one weird case
 (defthm not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
