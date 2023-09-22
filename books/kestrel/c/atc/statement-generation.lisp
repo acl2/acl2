@@ -836,7 +836,7 @@
      the @('result') term is essentially the untranslation of the input term,
      and @('new-compst') is the same as the computation state variable;
      if the called function affects objects,
-     the @('result') term is @(tsee mv-ntn) of 0 applied to the call,
+     the @('result') term is @(tsee mv-nth) of 0 applied to the call,
      and @('new-compst') updates the computation state variable
      with the @(tsee mv-nth)s of 1, 2, etc. applied to the call.")
    (xdoc::p
