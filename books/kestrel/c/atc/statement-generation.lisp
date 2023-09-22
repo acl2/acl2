@@ -1165,7 +1165,7 @@
                                  (stmt-limit pseudo-termp)
                                  (stmt-events pseudo-event-form-listp)
                                  (stmt-thm symbolp)
-                                 (term? pseudo-termp)
+                                 (uterm? "An untranslated term.")
                                  (type typep)
                                  (result "An untranslated term.")
                                  (new-compst "An untranslated term.")
@@ -1192,11 +1192,11 @@
      and a possibly updated computation state;
      these are the same as the ones for the statement theorem.")
    (xdoc::p
-    "If @('term?') is not @('nil'),
+    "If @('uterm?') is not @('nil'),
      we also generate, as part of the theorem,
      an assertion that the term returns a value, or values,
      of the expected type(s).
-     Callers pass a non-@('nil') @('term?')
+     Callers pass a non-@('nil') @('uterm?')
      when the blok item corresponds to a full ACL2 term
      (e.g. a conditional);
      while they pass @('nil') otherwise
@@ -1232,9 +1232,9 @@
                                         t
                                         wrld))
        (formula
-        (if term?
+        (if uterm?
             (b* (((mv type-formula &)
-                  (atc-gen-term-type-formula (untranslate$ term? nil state)
+                  (atc-gen-term-type-formula uterm?
                                              type
                                              gin.affect
                                              gin.inscope
@@ -4224,7 +4224,7 @@
                                  (append expr.events
                                          (list stmt-event))
                                  stmt-thm-name
-                                 expr.term
+                                 (untranslate$ expr.term nil state)
                                  expr.type
                                  expr.result
                                  gin.compst-var
@@ -4874,7 +4874,7 @@
                                                else-stmt-event
                                                if-stmt-event))
                                  if-stmt-thm
-                                 term
+                                 (untranslate$ term nil state)
                                  type
                                  uterm/nil
                                  new-compst
@@ -5295,7 +5295,7 @@
                                                call-event
                                                stmt-event))
                                  stmt-thm-name
-                                 term
+                                 uterm
                                  (type-void)
                                  nil
                                  new-compst
