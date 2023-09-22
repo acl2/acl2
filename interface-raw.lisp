@@ -2096,7 +2096,7 @@
                (cond (super-stobjs-in
                       '(let ((temp (f-get-global 'guard-checking-on
                                                  *the-live-state*)))
-                         (cond ((or (eq temp :none) (eq temp nil))
+                         (cond ((gc-off1 temp)
 
 ; Calls of a stobj primitive that takes its stobj as an argument are always
 ; guard-checked.  If that changes, consider also changing
@@ -2139,16 +2139,13 @@
 ; skip-early-exit-code-when-none is true.
 
                       guard-checking-on-form)
-                     (t `(let ((x ,guard-checking-on-form))
-                           (and x
-                                (not (eq x :none)))))))
+                     (t `(not (gc-off1 ,guard-checking-on-form)))))
               (fail_guard ; form for reporting guard failure
                (oneify-fail-form
                 'ev-fncall-guard-er fn formals guard super-stobjs-in wrld
                 (and super-stobjs-in
-                     '(cond ((member-eq (f-get-global 'guard-checking-on
-                                                      *the-live-state*)
-                                        '(nil :none))
+                     '(cond ((gc-off1 (f-get-global 'guard-checking-on
+                                                    *the-live-state*))
                              :live-stobj)
                             (t
                              :live-stobj-gc-on)))))
