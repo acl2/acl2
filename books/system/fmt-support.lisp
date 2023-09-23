@@ -1289,7 +1289,7 @@
 (verify-termination ppr1)
 
 (make-flag flag-ppr1 ppr1
-; Eliminates nearly 2/3 of the time:
+; Eliminates nearly 2/3 of the time for flag-lemma-for-ppr-tuple-p-ppr1:
            :ruler-extenders (:lambdas))
 
 ; I now develop a computed hint for this the theorem that ppr1/ppr1-lst 
