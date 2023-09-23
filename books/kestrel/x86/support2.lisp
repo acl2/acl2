@@ -30,6 +30,7 @@
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system)) ;prevent calls of expt on huge args
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
