@@ -22,7 +22,7 @@
 (include-book "arithmetic-light/top")
 (include-book "built-ins/top")
 (include-book "bv/top")
-(in-theory (disable collect-constants-<-/ collect-constants-<-/-two)) ; avoid theory-invariant errors in books that include this book
+(in-theory (disable <-of-*-of-constant-and-constant <-of-constant-and-*-of-constant)) ; avoid theory-invariant errors in books that include this book
 (include-book "auto-termination/top") ; omits some books (see file for why)
 (include-book "bitcoin/top")
 (include-book "c/top")

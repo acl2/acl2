@@ -257,7 +257,7 @@
                   (bvcat 2 x n y)))
   :hints (("Goal" :in-theory (enable SLICE-TOO-HIGH-IS-0))))
 
-;(local (in-theory (disable COLLECT-CONSTANTS-<-/))) ;investigate this
+;(local (in-theory (disable <-of-constant-and-*-of-constant))) ;investigate this
 
 (include-book "kestrel/arithmetic-light/floor2" :dir :system) ;move up or drop?
 
@@ -429,11 +429,6 @@
                                    <-BECOMES-BVLT
                                    <-BECOMES-BVLT-alt
                                    anti-bvplus TIMES-4-BECOMES-LOGAPP)))))
-
-;move
-(defthm <-of-+-cancel
-  (equal (< (+ x y) x)
-         (< y 0)))
 
 (defthm logtail-hack77
   (implies (posp size)

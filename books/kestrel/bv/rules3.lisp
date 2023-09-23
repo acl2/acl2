@@ -31,30 +31,6 @@
   (implies (unsigned-byte-p 8 x)
            (< x 256)))
 
-;rename and move
-(defthm collect-constants-<-/
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< a (* b x))
-                  (< (/ a b) x))))
-
-;rename and move
-(defthm collect-constants-<-/-two
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< (* b x) a)
-                  (< x (/ a b)))))
-
 (defthm plus-bvcat-with-0-special
   (implies (and (unsigned-byte-p n x)
                 (natp m)
@@ -97,8 +73,8 @@
            :in-theory (disable plus-bvcat-with-0))))
 
 ;; These loop (note that <-UNARY-/-POSITIVE-LEFT <-UNARY-/-POSITIVE-RIGHT should probably have syntaxp hyps added).
-(theory-invariant (incompatible (:rewrite collect-constants-<-/) (:rewrite <-unary-/-positive-left)))
-(theory-invariant (incompatible (:rewrite collect-constants-<-/-two) (:rewrite <-unary-/-positive-right)))
+(theory-invariant (incompatible (:rewrite <-of-constant-and-*-of-constant) (:rewrite <-unary-/-positive-left)))
+(theory-invariant (incompatible (:rewrite <-of-*-of-constant-and-constant) (:rewrite <-unary-/-positive-right)))
 
 ;; (thm
 ;;  (equal (SLICE '19 '14 (bvcat '8 y '8 x))
@@ -2302,28 +2278,6 @@
                           (equal x (- c2 c1))
                         (equal (fix c1) c2))
                     nil))))
-
-;move
-(defthm <-of-*-of-2-and-expt-and-expt
-  (implies (and (integerp n)
-                (integerp m))
-           (equal (< (* 2 (expt 2 m)) (expt 2 n))
-                  (< (+ 1 m) n)))
-  :hints (("Goal" :use (:instance <-of-expt-and-expt-same-base (r 2)
-                                  (i (+ 1 m))
-                                  (j n))
-           :in-theory (e/d (expt-of-+) (<-OF-EXPT-AND-EXPT-SAME-BASE)))))
-
-;move
-(defthm <-of-expt-and-*-of-2-and-expt
-  (implies (and (integerp n)
-                (integerp m))
-           (equal (< (expt 2 n) (* 2 (expt 2 m)))
-                  (< n (+ 1 m))))
-  :hints (("Goal" :use (:instance <-of-expt-and-expt-same-base (r 2)
-                                  (i (+ 1 m))
-                                  (j n))
-           :in-theory (e/d (expt-of-+) (<-OF-EXPT-AND-EXPT-SAME-BASE)))))
 
 ;move?
 (defthm logext-of-bvsx
