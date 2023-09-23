@@ -4569,10 +4569,9 @@
                     (pot-lst rawp)
                     (pprogn
                      (fms0 "~|Current pot-lst:~%")
-                     (prog2$ (cw "~x0~|"
-                                 (if rawp
-                                     pot-lst
-                                   (print-pot-lst pot-lst nil)))
+                     (prog2$ (if rawp
+                                 (cw "~x0~|" pot-lst)
+                               (print-pot-lst pot-lst nil))
                              state)))))))))))))
 
 (define-pc-macro print-main ()
