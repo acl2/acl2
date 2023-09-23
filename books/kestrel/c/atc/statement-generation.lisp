@@ -4197,22 +4197,6 @@
                                                  :formula stmt-formula
                                                  :hints stmt-hints
                                                  :enable nil))
-       ((when mvp)
-        (retok (make-stmt-gout
-                :items (list (block-item-stmt stmt))
-                :type expr.type
-                :term expr.term
-                :context (make-atc-context :preamble nil :premises nil)
-                :inscope nil
-                :limit (pseudo-term-fncall
-                        'binary-+
-                        (list (pseudo-term-quote 3)
-                              expr.limit))
-                :events (append expr.events
-                                (list stmt-event))
-                :thm-name nil
-                :thm-index expr.thm-index
-                :names-to-avoid expr.names-to-avoid)))
        ((mv item
             item-limit
             item-events
@@ -4227,13 +4211,27 @@
                                  uterm
                                  expr.type
                                  expr.result
-                                 gin.compst-var
+                                 expr.new-compst
                                  (change-stmt-gin
                                   gin
                                   :thm-index thm-index
-                                  :names-to-avoid names-to-avoid
-                                  :proofs (and stmt-thm-name t))
-                                 state)))
+                                  :names-to-avoid names-to-avoid)
+                                 state))
+       ((when mvp)
+        (retok (make-stmt-gout
+                :items (list (block-item-stmt stmt))
+                :type expr.type
+                :term expr.term
+                :context (make-atc-context :preamble nil :premises nil)
+                :inscope nil
+                :limit (pseudo-term-fncall
+                        'binary-+
+                        (list (pseudo-term-quote 3)
+                              expr.limit))
+                :events item-events
+                :thm-name nil
+                :thm-index thm-index
+                :names-to-avoid names-to-avoid))))
     (retok (atc-gen-block-item-list-one expr.term
                                         expr.type
                                         item
