@@ -2727,35 +2727,7 @@
 
 ;(in-theory (disable mod-cancel))
 
-;BBOZO see the loop below:
-(local (in-theory (disable <-unary-/-positive-right)))
-;; 970. Attempting to apply (:REWRITE COLLECT-CONSTANTS-<-/-TWO) to
-;;      (< (BINARY-* '32
-;;                   (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;                        '1))
-;;         '1)
-;; 971. Rewriting (to establish) the rhs of the conclusion,
-;;      (< X (BINARY-* A (UNARY-/ B))),
-;;    under the substitution
-;;      A : '1
-;;      X : (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;               '1)
-;;      B : '32
-;; 972. Attempting to apply (:REWRITE <-UNARY-/-POSITIVE-RIGHT) to
-;;      (< (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;              '1)
-;;         '1/32)
-;; 973. Rewriting (to establish) the rhs of the conclusion,
-;;      (< (BINARY-* X Y) '1),
-;;    under the substitution
-;;      X : '32
-;;      Y : (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;               '1)
-;; 974. Attempting to apply (:REWRITE COLLECT-CONSTANTS-<-/-TWO) to
-;;      (< (BINARY-* '32
-;;                   (MOD (BINARY-* '1/32 (LOCALVAR '2 S0))
-;;                        '1))
-;;         '1)
+(local (in-theory (disable <-unary-/-positive-right))) ; avoid loops
 
 (in-theory (disable UPDATE-SUBRANGE-SPLIT-OFF-LAST-ELEM));bozo move?
 (theory-invariant (incompatible (:rewrite UPDATE-SUBRANGE-SPLIT-OFF-LAST-ELEM) (:rewrite UPDATE-NTH-OF-UPDATE-SUBRANGE)))
