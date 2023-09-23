@@ -17366,7 +17366,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (t ,(cond ((eq type 'soft) '(value t))
                          (t t))))))))
 
-(defmacro fixnum-bound () ; most-positive-fixnum in Allegro CL and many others
+(defmacro fixnum-bound ()
+; This has been the value of most-positive-fixnum in some 32-bit Lisps.
   (1- (expt 2 29)))
 
 (defconst *default-step-limit*
@@ -29509,9 +29510,10 @@ Lisp definition."
     (if (integerp x)
         (if (< x lo)
             lo
-            (if (< *small-hi* x)
-                *small-hi*
-                x))
+          (let ((hi *small-hi*))
+            (if (< hi x)
+                hi
+              x)))
         0)))
 
 (defun make-the-smalls (args)
@@ -29523,14 +29525,14 @@ Lisp definition."
 (defmacro +g (&rest args)
   (declare (xargs :guard (< (len args) 6)))
   `(round-to-small nil
-          (the-fixnum
-           (+ ,@(make-the-smalls args)))))
+                   (the-fixnum
+                    (+ ,@(make-the-smalls args)))))
 
 (defmacro +g! (&rest args)
   (declare (xargs :guard (< (len args) 6)))
   `(round-to-small t
-          (the-fixnum
-           (+ ,@(make-the-smalls args)))))
+                   (the-fixnum
+                    (+ ,@(make-the-smalls args)))))
 
 (defmacro -g (x &optional y)
   (if y

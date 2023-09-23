@@ -1288,7 +1288,9 @@
 
 (verify-termination ppr1)
 
-(make-flag flag-ppr1 ppr1)
+(make-flag flag-ppr1 ppr1
+; Eliminates nearly 2/3 of the time:
+           :ruler-extenders (:lambdas))
 
 ; I now develop a computed hint for this the theorem that ppr1/ppr1-lst 
 ; produces ppr-tuple-ps.

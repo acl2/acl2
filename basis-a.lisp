@@ -2252,9 +2252,6 @@
      (er-hard-val ,val ,@args)))
 
 (defmacro the-fixnum! (n ctx)
-
-; See also the-half-fixnum!.
-
   `(the-fixnum
     (let ((n ,n))
       (if (and (<= n ,(fixnum-bound))
@@ -2264,24 +2261,6 @@
                      "The object ~x0 is not a fixnum (precisely:  not a ~
                       ~x1)."
                      n *fixnum-type*)))))
-
-(defmacro the-half-fixnum! (n ctx)
-
-; Same as the-fixnum!, but leaves some room.
-
-  (let ((upper-bound (floor (fixnum-bound) 2))) ; (1- (expt 2 28))
-    (declare (type (signed-byte 29) upper-bound))
-    (let ((lower-bound (- (1+ upper-bound))))
-      (declare (type (signed-byte 29) lower-bound))
-      `(the-fixnum
-        (let ((n ,n))
-          (if (and (<= n ,upper-bound)
-                   (>= n ,lower-bound))
-              n
-            (er-hard-val 0 ,ctx
-                         "The object ~x0 is not a `half-fixnum' ~
-                          (precisely:  not a (signed-byte 29))."
-                         n)))))))
 
 (defmacro the-unsigned-byte! (bits n ctx)
   `(the (unsigned-byte ,bits)
@@ -2848,12 +2827,6 @@
    t
    (cond ((> j maximum) j)
          ((atom x)
-
-; Note the coercion below to a small nat.  We might redo the guard of flsz-atom
-; so that it returns a small nat.  This should be easy enough if we just
-; replace uses of +f! with +g!.  The hard part may be to redo the acl2-devel
-; proof in /Users/kaufmann/acl2/acl2-fmt/books/system/fmt-support.lisp.
-
           (round-to-small t (flsz-atom x print-base print-radix j state)))
          ((evisceratedp eviscp x)
           (if (stringp (cdr x))
@@ -3255,34 +3228,30 @@
        (f-get-global 'fmt-soft-right-margin state)))
 
 (defun set-fmt-hard-right-margin (n state)
-  (declare (xargs :guard (posp n) :stobjs state))
+  (declare (xargs :guard t :stobjs state))
   (cond
-   ((and (integerp n)
-         (< 0 n))
-    (f-put-global 'fmt-hard-right-margin
-                  (the-half-fixnum! n 'set-fmt-hard-right-margin)
-                  state))
-   (t (let ((err (er hard 'set-fmt-hard-right-margin
-                     "The fmt-hard-right-margin must be a positive ~
-                      integer, but ~x0 is not."
-                     n)))
-        (declare (ignore err))
-        state))))
+   ((and (small-nat-guard n)
+         (not (= n 0)))
+    (f-put-global 'fmt-hard-right-margin n state))
+   (t (prog2$ (er hard? 'set-fmt-hard-right-margin
+                  "The fmt-hard-right-margin must be a positive integer no ~
+                   greater than ~x0, but ~x1 is not."
+                  *small-hi*
+                  n)
+              state))))
 
 (defun set-fmt-soft-right-margin (n state)
-  (declare (xargs :guard (posp n) :stobjs state))
+  (declare (xargs :guard t :stobjs state))
   (cond
-   ((and (integerp n)
-         (< 0 n))
-    (f-put-global 'fmt-soft-right-margin
-                  (the-half-fixnum! n 'set-fmt-soft-right-margin)
-                  state))
-   (t (let ((err (er hard 'set-fmt-soft-right-margin
-                     "The fmt-soft-right-margin must be a positive ~
-                      integer, but ~x0 is not."
-                     n)))
-        (declare (ignore err))
-        state))))
+   ((and (small-nat-guard n)
+         (not (= n 0)))
+    (f-put-global 'fmt-soft-right-margin n state))
+   (t (prog2$ (er hard? 'set-fmt-soft-right-margin
+                  "The fmt-soft-right-margin must be a positive integer no ~
+                   greater than ~x0, but ~x1 is not."
+                  *small-hi*
+                  n)
+              state))))
 
 (defun write-for-read (state)
   (declare (xargs :guard t))
@@ -5425,7 +5394,7 @@
                      (let* ((n0 (fmt-var s alist i maximum))
                             (n (if (and (natp n0)
                                         (<= n0 (floor (fixnum-bound) 2)))
-                                   n0 ; (the-half-fixnum! n0 'fmt0)
+                                   n0
                                  (er-hard-val
                                   0 'fmt0 "~@0"
                                   (illegal-fmt-msg
@@ -5859,7 +5828,7 @@
                                            (declare
                                             (type (unsigned-byte 29) o))
                                            (cond
-                                            ((eql m max+1)
+                                            ((= o 0)
                                              (illegal-fmt-msg
                                               find-alternative-skip
                                               s))
@@ -5957,7 +5926,7 @@
                           (#\_
                            (cond
                             ((and (natp c2)
-                                  (<= c2 ; for the-half-fixnum!
+                                  (<= c2
                                       (floor (fixnum-bound) 2)))
                              (fmx-cw-msg-1 s alist i+3 maximum clk-1))
                             (t
