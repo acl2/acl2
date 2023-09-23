@@ -1237,7 +1237,9 @@
                            ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                             (add-bitxor-nest-to-dag-array-with-name rev-leaves
                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'normalize-xors-new-array 'normalize-xors-new-parent-array))
-                           ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)))
+                           ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array))
+                           ;; (- (cw "DAG len after adding xor nest: ~x0.~%" dag-len))
+                           )
                         (normalize-xors-aux (+ 1 n)
                                             old-dag-array old-dag-len old-dag-parent-array
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
