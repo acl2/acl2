@@ -19,6 +19,18 @@
            (xargs :type-prescription (bitp (bitxor x y))))
   (bvxor 1 x y))
 
+;; This version requires bitp inputs and so may be faster and may also help
+;; catch bugs via stricter guard obligations.  We intened to keep this enabled
+;; for reasoning.
+(defun bitxor$ (x y)
+  (declare (xargs :guard (and (bitp x) (bitp y))
+                  :split-types t
+                  :type-prescription (bitp (bitxor$ x y)))
+           (type bit x)
+           (type bit y))
+  (mbe :logic (bitxor x y)
+       :exec (logxor x y)))
+
 (defthm bitxor-associative
   (equal (bitxor (bitxor x y) z)
          (bitxor x (bitxor y z)))
