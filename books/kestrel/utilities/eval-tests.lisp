@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; TODO: Consider adding an option to keep going after failures.
+
 (include-book "kestrel/utilities/magic-ev-term" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
 
