@@ -430,11 +430,6 @@
                                    <-BECOMES-BVLT-alt
                                    anti-bvplus TIMES-4-BECOMES-LOGAPP)))))
 
-;move
-(defthm <-of-+-cancel
-  (equal (< (+ x y) x)
-         (< y 0)))
-
 (defthm logtail-hack77
   (implies (posp size)
            (equal (logtail (+ -1 size) (- (expt 2 size)))
