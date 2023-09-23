@@ -13,7 +13,7 @@
 
 (include-book "rules")
 (include-book "bvashr")
-(local (include-book "logior"))
+;(local (include-book "logior"))
 (local (include-book "logxor"))
 (local (include-book "rules0")) ; needed to prove getbit-0-of-bvplus
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -519,71 +519,6 @@
            (equal (bvcat highsize highval lowsize (myif test a b))
                   (bvcat highsize highval lowsize (bvif lowsize test a b))))
   :hints (("Goal" :in-theory (enable myif bvif))))
-
-(local
- (defun induct-floor-and-sub1 (x n)
-   (if (zp n)
-       (list x n)
-     (induct-floor-and-sub1 (floor x 2) (+ -1 n)))))
-
-;move
-(defthm logand-of-minus-of-expt
-  (implies (and (natp n)
-                (integerp x)
-                (< x 0)
-                (<= (- (expt 2 n)) x))
-           (equal (logand (- (expt 2 n)) x)
-                  (- (expt 2 n))))
-  :hints (("Subgoal *1/2" :use (:instance floor-weak-monotone
-                                          (i1 (- (expt 2 n)))
-                                          (i2 x)
-                                          (j 2))
-           :expand (logand x (- (expt 2 n)))
-           :in-theory (e/d (expt-of-+ ;fl
-                            ;mod-=-0
-                            mod-expt-split)
-                           (MOD-OF-EXPT-OF-2
-                            mod-of-expt-of-2-constant-version
-                            floor-unique-equal-version
-                            floor-weak-monotone ;hack-6
-                            )))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (induct-floor-and-sub1 x n)
-           :expand (logand x (- (expt 2 n)))
-           :in-theory (e/d (lognot logand ;fl
-                                   expt-of-+
-                                   mod-expt-split)
-                           (;hack-6                     ;ffixme
-                            ;EQUAL-OF-EXPT2-AND-CONSTANT ;fixme
-                            )))))
-
-(defthm logand-of-minus-of-expt-alt
-  (implies (and (natp n)
-                (integerp x)
-                (< x 0)
-                (<= (- (expt 2 n)) x))
-           (equal (logand x (- (expt 2 n)))
-                  (- (expt 2 n))))
-  :hints (("Goal" :use (:instance logand-of-minus-of-expt)
-           :in-theory (disable logand-of-minus-of-expt))))
-
-(defthm logand-of-minus-of-expt-and-lognot
-  (implies (and (natp n)
-                (unsigned-byte-p n x))
-           (equal (logand (- (expt 2 n)) (lognot x))
-                  (- (expt 2 n))))
-  :hints (("Goal" :in-theory (e/d (lognot logand
-                                          expt-of-+
-                                          ;;INTEGER-TIGHTEN-BOUND ;why?
-                                          )
-                                  (size-non-negative-when-unsigned-byte-p-free)))))
-
-(defthm logior-of-all-ones
-  (implies (and (natp n)
-                (unsigned-byte-p n x))
-           (equal (logior (+ -1 (expt 2 n)) x)
-                  (+ -1 (expt 2 n))))
-  :hints (("Goal" :in-theory (e/d (logior) (lognot-of-logand)))))
 
 (defthmd getbit-of-bvif-quoteps
   (implies (and (syntaxp (quotep thenpart))
@@ -1111,21 +1046,7 @@
          (myif test a b))
   :hints (("Goal" :in-theory (enable myif))))
 
-;kill some others?
-(DEFTHMd BVCAT-EQual-rewrite-constant
-  (IMPLIES (AND (syntaxp (and (quotep x)
-                              (quotep highsize)
-                              (quotep lowsize)))
-                (NATP LOWSIZE)
-                (NATP HIGHSIZE))
-           (EQUAL (EQUAL X
-                         (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL))
-                  (AND (UNSIGNED-BYTE-P (+ LOWSIZE HIGHSIZE) X)
-                       (EQUAL (BVCHOP LOWSIZE X)
-                              (BVCHOP LOWSIZE LOWVAL))
-                       (EQUAL (SLICE (+ -1 LOWSIZE HIGHSIZE)
-                                     LOWSIZE X)
-                              (BVCHOP HIGHSIZE HIGHVAL))))))
+
 ;move
 (defthmd bvif-blast
   (implies (and (< 1 size)

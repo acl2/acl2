@@ -1559,3 +1559,20 @@
          (if test
              (bvcat highsize highval lowsize lowval1)
            (bvcat highsize highval lowsize lowval2))))
+
+;rename
+;kill some others?
+(DEFTHMd BVCAT-EQual-rewrite-constant
+  (IMPLIES (AND (syntaxp (and (quotep x)
+                              (quotep highsize)
+                              (quotep lowsize)))
+                (NATP LOWSIZE)
+                (NATP HIGHSIZE))
+           (EQUAL (EQUAL X
+                         (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL))
+                  (AND (UNSIGNED-BYTE-P (+ LOWSIZE HIGHSIZE) X)
+                       (EQUAL (BVCHOP LOWSIZE X)
+                              (BVCHOP LOWSIZE LOWVAL))
+                       (EQUAL (SLICE (+ -1 LOWSIZE HIGHSIZE)
+                                     LOWSIZE X)
+                              (BVCHOP HIGHSIZE HIGHVAL))))))

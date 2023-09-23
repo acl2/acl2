@@ -1,7 +1,7 @@
 ; Expressing a sum as a ripple-carry adder
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (include-book "bvplus")
 (include-book "rules") ; for GETBIT-OF-PLUS
 (include-book "rules0") ; for bvplus-1-becomes-bitxor
+(local (include-book "bvcat"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -204,13 +205,15 @@
                   (< (+ a x y) (EXPT 2 (+ -1 N)))))
   :hints (("Goal" :in-theory (enable expt))))
 
-(defthm arith-cancel-a
-  (equal (< (+ a b c x e) x)
-         (< (+ a b c e) 0)))
+(local
+  (defthm arith-cancel-a
+    (equal (< (+ a b c x e) x)
+           (< (+ a b c e) 0))))
 
-(defthm arith-cancel-b
-  (equal (< (+ a b c d x) x)
-         (< (+ a b c d) 0)))
+(local
+  (defthm arith-cancel-b
+    (equal (< (+ a b c d x) x)
+           (< (+ a b c d) 0))))
 
 (defthmd expt-split-linear
   (implies (integerp n)
