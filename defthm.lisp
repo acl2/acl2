@@ -11286,7 +11286,7 @@
                keyword-value-listp with no duplicate keys and ~x0 is not!"
               args))))))
 
-(defun monitor-fn (x args quietp state)
+(defun monitor-fn (x args ctx quietp state)
 
 ; Expects and ensures Wormhole Coherence
 
@@ -11303,7 +11303,7 @@
 ; and we return (value t).  If quietp is nil, we print the new current value of
 ; brr-monitored-runes to the comment window and return (value :invisible)
 
-  (er-let* ((new-pairs (translate-rune-and-criteria x args quietp state)))
+  (er-let* ((new-pairs (translate-rune-and-criteria x args ctx state)))
     (progn$
      (semi-initialize-brr-wormhole state)
      (progn$
@@ -11524,7 +11524,7 @@
                             :brr-gstack))))
 
 (defmacro monitor (x expr &optional quietp)
-  `(monitor-fn ,x ,expr ,quietp state))
+  `(monitor-fn ,x ,expr 'monitor ,quietp state))
 
 (defmacro unmonitor (rune)
   `(unmonitor-fn ,rune 'unmonitor state))
