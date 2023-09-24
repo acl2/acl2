@@ -508,3 +508,7 @@
   :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
                                   (bvchop-of-logtail-becomes-slice
                                    logtail-of-bvchop-becomes-slice)))))
+
+(defthm bvxor-cancel-2-of-more-and-1-of-more
+  (equal (equal (bvxor size y (bvxor size x z)) (bvxor size x w))
+         (equal (bvxor size y z) (bvchop size w))))

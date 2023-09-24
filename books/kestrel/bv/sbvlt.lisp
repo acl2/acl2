@@ -481,3 +481,8 @@
            (equal (sbvlt 32 i 0)
                   (not (equal 0 (bvchop 32 i)))))
   :hints (("Goal" :in-theory (enable sbvlt))))
+
+;gen
+(defthm sbvlt-of-maxint-when-sbvlt
+  (implies (sbvlt 32 n free)
+           (sbvlt 32 n 2147483647)))

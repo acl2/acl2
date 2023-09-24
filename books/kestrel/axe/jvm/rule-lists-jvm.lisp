@@ -1534,6 +1534,7 @@
 ;todo: rename?  Maybe to miter-rules?
 ;fixme build this from smaller lists of rules?
 ;GETBIT-OF-BVXOR-ERIC ;seemed to be bad for dag prover Tue Jan 12 06:24:08 2010
+;todo: move this out of this jvm-specific file?
 (defun axe-rules ()
   (declare (xargs :guard t))
   (set-difference-equal
@@ -1777,7 +1778,7 @@
              bvxor-cancel-2-of-more-and-1-of-more
              bitxor-when-equal-of-constant-and-bvchop-arg1
              bitxor-when-equal-of-constant-and-bvchop-arg2
-             <-cancel-only-and-2-of-more ;fixme also add comm of plus?
+             <-of-+-cancel-1-2+  ; todo: also add commutativity of plus?
              getbit-when-equal-of-constant-and-bvchop
              equal-of-constant-when-not-bvlt-constant-1
              equal-of-constant-when-not-bvlt-constant-2
