@@ -1,7 +1,7 @@
 ; Mixed rules 3
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -96,6 +96,14 @@
 (local (in-theory (disable <-of-constant-when-unsigned-byte-p-size-param)))
 
 (local (in-theory (disable <-OF-IF-ARG1)))
+
+;; surprising that this is needed
+(local
+  (defthm integerp-of-+-type
+    (implies (and (integerp x) (integerp y))
+             (integerp (+ x y)))
+    :rule-classes :type-prescription)
+  )
 
 ;drop?:
 (defconst *minus-1* 4294967295)
@@ -14218,11 +14226,6 @@
 
            :in-theory (enable bvplus bvuminus bvminus bvchop-of-sum-cases bvlt bvcat logapp))))
 
-
-
-
-
-
 (defthm *-of-1/4-and-bvcat-of-0
   (equal (* 1/4 (BVCAT highsize highval 2 0)) ;gen the 2 (and maybe the 0)?
          (bvchop highsize highval))
@@ -14699,12 +14702,6 @@
            (equal (bvif size (equal k (bvchop size x)) x y)
                   (bvif size (equal k (bvchop size x)) k y))))
 
-(local ; todo: move?
- (defthm integerp-of-+-type
-   (implies (and (integerp x) (integerp y))
-            (integerp (+ x y)))
-   :rule-classes :type-prescription))
-
 ;gen
 (defthm bvlt-of-constant-and-slice
   (implies (and (syntaxp (quotep k))
@@ -14851,15 +14848,6 @@
   :hints (("Goal" :use (:instance bvchop-0-hack-helper (x (bvchop 6 x))))))
 
 
-
-(defthm equal-of-firstn-and-firstn-same
-  (implies (and (natp n1)
-                (natp n2)
-                (<= n1 (len x))
-                (<= n2 (len x)))
-           (equal (equal (firstn n1 x) (firstn n2 x))
-                  (equal n1 n2))))
-
 ;ffixme what other bvop of myif rules are missing?
 (defthm bvuminus-of-myif-arg2
   (equal (bvuminus size (myif test x y))
@@ -14873,10 +14861,6 @@
            (equal (bv-array-read '32 '2 (unary-- index) data)
                   (bv-array-read '32 '2 (getbit 0 index) data)))
   :hints (("Goal" :in-theory (e/d (bv-array-read) (NTH-BECOMES-BV-ARRAY-READ2)))))
-
-(defthm <-cancel-only-and-2-of-more
-  (equal (< x (+ y (+ x z)))
-         (< 0 (+ y z))))
 
 (defthm bitxor-when-equal-of-constant-and-bvchop-arg2
   (implies (and (equal free (bvchop size x))
@@ -14893,12 +14877,6 @@
                 (posp size))
            (equal (bitxor x y)
                   (bitxor free y))))
-
-(defthm bvxor-cancel-2-of-more-and-1-of-more
-  (equal (equal (bvxor size y (bvxor size x z)) (bvxor size x w))
-         (equal (bvxor size y z) (bvchop size w))))
-
-
 
 ;gen!
 (defthm         bvplus-of-bvuminus-of-bvcat-and-bvcat
@@ -17293,10 +17271,6 @@
            (equal (SBVLT '32 (BVPLUS '32 '1 n) '0)
                   (SBVLT 32 n -1)))
   :hints (("Goal" :in-theory (enable SBVLT-REWRITE))))
-
-(defthm sbvlt-of-maxint-when-sbvlt
-  (IMPLIES (SBVLT 32 N free)
-           (SBVLT 32 N 2147483647)))
 
 (defthm bvlt-of-bvplus-of-1
   (IMPLIES (AND (BVLT 31 I J)
