@@ -479,6 +479,7 @@
      sbvle ;new
      sbvge ;Thu Jan 19 16:35:59 2017
      sbvgt ;Thu Jan 19 16:35:59 2017
+     bitxor$ ; always expand
 
      ;; Handling rotates: ; todo: compare to the rules below for leftrotate32
      rightrotate-becomes-leftrotate ;turn rightrotate into leftrotate

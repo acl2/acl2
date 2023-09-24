@@ -1,7 +1,7 @@
 ; Taking the and of two bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,18 @@
            (type integer y)
            (xargs :type-prescription (bitp (bitand x y))))
   (bvand 1 x y))
+
+;; This version requires bitp inputs and so may be faster and may also help
+;; catch bugs via stricter guard obligations.  We intened to keep this enabled
+;; for reasoning.
+(defun bitand$ (x y)
+  (declare (xargs :guard (and (bitp x) (bitp y))
+                  :split-types t
+                  :type-prescription (bitp (bitand$ x y)))
+           (type bit x)
+           (type bit y))
+  (mbe :logic (bitand x y)
+       :exec (logand x y)))
 
 (defthm bitand-associative
   (equal (bitand (bitand x y) z)
