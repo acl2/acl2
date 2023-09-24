@@ -1165,7 +1165,7 @@
                                  (stmt-limit pseudo-termp)
                                  (stmt-events pseudo-event-form-listp)
                                  (stmt-thm symbolp)
-                                 (term? pseudo-termp)
+                                 (uterm? "An untranslated term.")
                                  (type typep)
                                  (result "An untranslated term.")
                                  (new-compst "An untranslated term.")
@@ -1192,11 +1192,11 @@
      and a possibly updated computation state;
      these are the same as the ones for the statement theorem.")
    (xdoc::p
-    "If @('term?') is not @('nil'),
+    "If @('uterm?') is not @('nil'),
      we also generate, as part of the theorem,
      an assertion that the term returns a value, or values,
      of the expected type(s).
-     Callers pass a non-@('nil') @('term?')
+     Callers pass a non-@('nil') @('uterm?')
      when the blok item corresponds to a full ACL2 term
      (e.g. a conditional);
      while they pass @('nil') otherwise
@@ -1232,9 +1232,9 @@
                                         t
                                         wrld))
        (formula
-        (if term?
+        (if uterm?
             (b* (((mv type-formula &)
-                  (atc-gen-term-type-formula (untranslate$ term? nil state)
+                  (atc-gen-term-type-formula uterm?
                                              type
                                              gin.affect
                                              gin.inscope
@@ -4123,8 +4123,10 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
-       ((when (or (not expr.thm-name)
-                  mvp)) ; temporary
+       (uterm (if mvp
+                  `(mv ,expr.result ,@gin.affect)
+                (untranslate$ expr.term nil state)))
+       ((when (not expr.thm-name))
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
@@ -4145,14 +4147,12 @@
                           expr.limit)))
        (thm-index expr.thm-index)
        (names-to-avoid expr.names-to-avoid)
-       (type-pred (atc-type-to-recognizer expr.type gin.prec-tags))
        (valuep-when-type-pred (atc-type-to-valuep-thm expr.type gin.prec-tags))
        (stmt-thm-name (pack gin.fn '-correct- thm-index))
        (thm-index (1+ thm-index))
        ((mv stmt-thm-name names-to-avoid)
         (fresh-logical-name-with-$s-suffix
          stmt-thm-name nil names-to-avoid wrld))
-       (uterm (untranslate$ expr.term nil state))
        (stmt-formula1 `(equal (exec-stmt ',stmt
                                          ,gin.compst-var
                                          ,gin.fenv-var
@@ -4167,7 +4167,12 @@
                                          stmt-limit
                                          t
                                          wrld))
-       (stmt-formula2 `(,type-pred ,uterm))
+       ((mv stmt-formula2 type-thms)
+        (atc-gen-term-type-formula uterm
+                                   expr.type
+                                   gin.affect
+                                   gin.inscope
+                                   gin.prec-tags))
        (stmt-formula2 (atc-contextualize stmt-formula2
                                          gin.context
                                          gin.fn
@@ -4186,7 +4191,8 @@
                                mv-nth-of-cons
                                (:e zp)
                                ,valuep-when-type-pred
-                               ,expr.thm-name))))
+                               ,expr.thm-name
+                               ,@type-thms))))
        ((mv stmt-event &) (evmac-generate-defthm stmt-thm-name
                                                  :formula stmt-formula
                                                  :hints stmt-hints
@@ -4202,16 +4208,30 @@
                                  (append expr.events
                                          (list stmt-event))
                                  stmt-thm-name
-                                 expr.term
+                                 uterm
                                  expr.type
                                  expr.result
-                                 gin.compst-var
+                                 expr.new-compst
                                  (change-stmt-gin
                                   gin
                                   :thm-index thm-index
-                                  :names-to-avoid names-to-avoid
-                                  :proofs (and stmt-thm-name t))
-                                 state)))
+                                  :names-to-avoid names-to-avoid)
+                                 state))
+       ((when mvp)
+        (retok (make-stmt-gout
+                :items (list (block-item-stmt stmt))
+                :type expr.type
+                :term expr.term
+                :context (make-atc-context :preamble nil :premises nil)
+                :inscope nil
+                :limit (pseudo-term-fncall
+                        'binary-+
+                        (list (pseudo-term-quote 3)
+                              expr.limit))
+                :events item-events
+                :thm-name nil
+                :thm-index thm-index
+                :names-to-avoid names-to-avoid))))
     (retok (atc-gen-block-item-list-one expr.term
                                         expr.type
                                         item
@@ -4852,7 +4872,7 @@
                                                else-stmt-event
                                                if-stmt-event))
                                  if-stmt-thm
-                                 term
+                                 (untranslate$ term nil state)
                                  type
                                  uterm/nil
                                  new-compst
@@ -5273,7 +5293,7 @@
                                                call-event
                                                stmt-event))
                                  stmt-thm-name
-                                 term
+                                 uterm
                                  (type-void)
                                  nil
                                  new-compst
