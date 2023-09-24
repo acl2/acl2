@@ -30,6 +30,7 @@
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system)) ;prevent calls of expt on huge args
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
@@ -251,7 +252,7 @@
            (equal (bvchop places (ash i c))
                   (acl2::bvshr (- places c) i (- c))))
   :hints (("Goal" :in-theory (e/d (ash acl2::bvshr slice logtail ACL2::FLOOR-OF-/ ifix)
-                                  (acl2::bvchop-of-logtail-becomes-slice acl2::floor-of-2)))))
+                                  (acl2::bvchop-of-logtail-becomes-slice acl2::floor-of-2-becomes-logtail-of-1)))))
 
 
 

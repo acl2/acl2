@@ -1444,3 +1444,9 @@
                 (rationalp j))
            (equal (< (floor i j) i)
                   (not (equal i 0)))))
+
+;rename
+(defthmd floor-of-/
+  (equal (floor x (/ y))
+         (floor (* x y) 1))
+  :hints (("Goal" :in-theory (enable floor))))

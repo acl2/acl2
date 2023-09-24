@@ -621,3 +621,23 @@
   :hints (("Goal" :in-theory (e/d (getbit bvchop)
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit)))))
+
+(defthm getbit-of-expt-gen
+  (implies (and (natp m)
+                (natp n))
+           (equal (getbit m (expt 2 n))
+                  (if (equal m n)
+                      1
+                    0)))
+  :hints (("Goal" :in-theory (e/d (getbit slice)
+                                  (bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice
+                                   slice-becomes-getbit)))))
+
+(defthm getbit-of-if-two-constants
+  (implies (and (syntaxp (and (quotep n)
+                              (quotep x1)
+                              (quotep x2))))
+           (equal (getbit n (if test x1 x2))
+                  (if test (getbit n x1)
+                    (getbit n x2)))))
