@@ -685,11 +685,11 @@
            (equal (mod x y)
                   0))
   :hints (("Goal"
-           :use (:instance acl2::integerp-of-*
+           :use (:instance integerp-of-*
                            (x (* x (/ y2)))
                            (y (* (/ y) y2)))
-           :in-theory (e/d (acl2::equal-of-0-and-mod)
-                           (acl2::integerp-of-*)))))
+           :in-theory (e/d (equal-of-0-and-mod)
+                           (integerp-of-*)))))
 
 (defthm mod-when-equal-of-mod-and-0-free-cheap
   (implies (and (syntaxp (quotep y))
@@ -710,7 +710,7 @@
                 (not (equal 0 y1)))
            (equal (mod (mod x y1) y2)
                   (mod x y2)))
-  :hints (("Goal" :in-theory (enable acl2::equal-of-0-and-mod
+  :hints (("Goal" :in-theory (enable equal-of-0-and-mod
                                      mod-sum-cases ; why?
                                      ))))
 
@@ -795,10 +795,10 @@
                 (integerp y))
            (equal (mod x y)
                   (+ x y)))
-  :hints (("Goal" :use (:instance acl2::mod-when-<
+  :hints (("Goal" :use (:instance mod-when-<
                                   (x (+ x y))
                                   (y y))
-           :in-theory (disable acl2::mod-when-<))))
+           :in-theory (disable mod-when-<))))
 
 (defthm mod-of-*-and-*-cancel-arg2-arg2
   (equal (mod (* x z) (* y z))
@@ -838,11 +838,11 @@
                  (integerp p))
             (equal (mod (* x y (mod z p)) p)
                    (mod (* x y z) p)))
-   :hints (("Goal" :use (:instance acl2::mod-of-*-of-mod
+   :hints (("Goal" :use (:instance mod-of-*-of-mod
                                    (z p)
                                    (x (* x y))
                                    (x1 z))
-            :in-theory (disable acl2::mod-of-*-of-mod))))
+            :in-theory (disable mod-of-*-of-mod))))
 
 ;; Disabled by default for speed
 (defthmd equal-when-equal-of-floors-and-equal-of-mods
