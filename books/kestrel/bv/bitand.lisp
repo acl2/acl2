@@ -27,10 +27,9 @@
   (declare (xargs :guard (and (bitp x) (bitp y))
                   :split-types t
                   :type-prescription (bitp (bitand$ x y)))
-           (type bit x)
-           (type bit y))
+           (type bit x y))
   (mbe :logic (bitand x y)
-       :exec (logand x y)))
+       :exec (the bit (logand x y))))
 
 (defthm bitand-associative
   (equal (bitand (bitand x y) z)
