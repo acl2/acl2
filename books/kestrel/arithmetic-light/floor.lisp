@@ -1187,10 +1187,9 @@
                   (floor i 1))))
 
 (defthm floor-of-/-arg2
-  (implies (and (rationalp i)
-                (rationalp j1))
-           (equal (floor i (/ j1))
-                  (floor (* i j1) 1))))
+  (equal (floor i (/ j))
+         (floor (* i j) 1))
+  :hints (("Goal" :in-theory (enable floor))))
 
 (defthm floor-of-*-of-/-arg2
   (implies (and (rationalp i)
@@ -1445,8 +1444,21 @@
            (equal (< (floor i j) i)
                   (not (equal i 0)))))
 
-;rename
-(defthmd floor-of-/
-  (equal (floor x (/ y))
-         (floor (* x y) 1))
+;; a kind of cancellation rule (todo: add more)
+;; or just normalize the denominator to 1
+(defthm floor-of-*-same-2+-1
+  (equal (floor (* i1 j i2) j)
+         (if (equal (fix j) 0)
+             0
+           (floor (* i1 i2) 1)))
   :hints (("Goal" :in-theory (enable floor))))
+
+;todo: improve
+(defthm floor-of-*-same-2-1
+  (implies (and (rationalp i)
+                (rationalp j)
+                (not (equal 0 j)))
+           (equal (floor (* i j) j)
+                  (floor i 1)))
+  :hints (("Goal" :use (:instance floor-of-*-same)
+           :in-theory (disable floor-of-*-same))))

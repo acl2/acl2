@@ -84,7 +84,7 @@
 (local (include-book "floor-mod-expt"))
 (local (include-book "arith")) ;todo for integerp-squeeze
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
-(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;move
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;todo for mod-x-i*j-of-positives
 ;(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system)) ; for EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -93,6 +93,10 @@
                            UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT ;move
                            UNSIGNED-BYTE-P-PLUS
                            LOGAND-WITH-MASK
+
+                           ;; floor-=-x/y ; these are prep for not including them at all
+                           ;; floor-bounded-by-/
+                           ;; mod-=-0
                            )))
 
 ;rename
@@ -210,10 +214,11 @@
                   (xor (logbitp i j1) (logbitp i j2))))
   :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
                                   (LOGBITP-IFF-GETBIT ;fixme why?
-                                   MOD-=-0 mod-cancel
+
+                                   mod-cancel
                                    ;;for speed:
-                                   FLOOR-=-X/Y
-                                   floor-bounded-by-/)))))
+
+                                   )))))
 
 (defthm logbitp-of-logand
   (implies (and (natp i)
@@ -223,10 +228,10 @@
                   (and (logbitp i j1) (logbitp i j2))))
   :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
                                   (LOGBITP-IFF-GETBIT
-                                   MOD-=-0 mod-cancel
+                                    mod-cancel
                                    ;;for speed:
-                                   FLOOR-=-X/Y
-                                   floor-bounded-by-/)))))
+
+                                   )))))
 
 (defthm logbitp-of-logior
   (implies (and (natp i)
@@ -236,10 +241,10 @@
                   (or (logbitp i j1) (logbitp i j2))))
   :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
                                   (LOGBITP-IFF-GETBIT
-                                   MOD-=-0 mod-cancel
+                                    mod-cancel
 ;for speed:
-                                   FLOOR-=-X/Y
-                                   floor-bounded-by-/)))))
+
+                                   )))))
 
 (defthm logxor-of-logapp
   (implies (and (natp n)
@@ -3014,7 +3019,7 @@
 ;           :cases ((equal 0 k) (not (integerp k)))
            :use (:instance bvmod-of-bvmult-of-expt (n (lg k)))
            :in-theory (disable bvmod-of-bvmult-of-expt
-                               mod-=-0
+
                                ))))
 
 ;move this stuff?
@@ -3415,8 +3420,6 @@
            ;; this says x <= y but matches better
            (not (< y x))))
 
-
-;gross proof?
 (defthmd bit-blast-peel-off-low
   (implies (and (equal free1 free2)
                 (equal free1 (getbit 0 x))
@@ -5457,7 +5460,7 @@
                 (rationalp x))
            (equal (integerp (* 1/2 (mod x (expt 2 size))))
                   (integerp (* 1/2 x))))
-  :hints (("Goal" :in-theory (e/d (expt) (expt-hack)))))
+  :hints (("Goal" :in-theory (e/d ((:i expt) expt) ()))))
 
 ;; Disabled by default since this is pretty aggressive and splits into cases.
 (defthmd logext-of-plus

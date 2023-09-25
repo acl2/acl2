@@ -24,7 +24,7 @@
 (include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/lists-light/finalcdr" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
-(local (include-book "kestrel/bv/rules10" :dir :system)) ; todo, for floor-of-/
+(local (include-book "kestrel/bv/rules10" :dir :system)) ; todo, for floor-of-/-arg2
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; todo, for logtail-of-one-more
 (local (include-book "kestrel/bv/arith" :dir :system)) ; todo
 (local (include-book "kestrel/bv/logior-b" :dir :system))
@@ -251,7 +251,7 @@
                 )
            (equal (bvchop places (ash i c))
                   (acl2::bvshr (- places c) i (- c))))
-  :hints (("Goal" :in-theory (e/d (ash acl2::bvshr slice logtail ACL2::FLOOR-OF-/ ifix)
+  :hints (("Goal" :in-theory (e/d (ash acl2::bvshr slice logtail ifix)
                                   (acl2::bvchop-of-logtail-becomes-slice acl2::floor-of-2-becomes-logtail-of-1)))))
 
 
@@ -269,7 +269,7 @@
            (equal (acl2::bvchop size (ash x n))
                   (acl2::slice (+ -1 size (- n)) (- n) x)))
   :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (ash acl2::slice logtail ifix ACL2::FLOOR-OF-/)
+           :in-theory (e/d (ash acl2::slice logtail ifix)
                            (acl2::bvchop-of-logtail-becomes-slice)))))
 
 ;move
