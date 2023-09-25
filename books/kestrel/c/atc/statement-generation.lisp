@@ -3552,6 +3552,7 @@
    (item-limit pseudo-termp)
    (item-events pseudo-event-form-listp)
    (item-thm symbolp)
+   (result "An untranslated term.")
    (new-compst "An untranslated term.")
    (new-context atc-contextp)
    (new-inscope atc-symbol-varinfo-alist-listp)
@@ -3614,15 +3615,11 @@
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
        (voidp (type-case type :void))
-       (uterm (untranslate$ term nil state))
        (exec-formula `(equal (exec-block-item-list ',items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,(if voidp
-                                      nil
-                                    uterm)
-                                 ,new-compst)))
+                             (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3632,6 +3629,7 @@
                                         items-limit
                                         t
                                         wrld))
+       (uterm (untranslate$ term nil state))
        ((mv type-formula &)
         (atc-gen-term-type-formula
          uterm type gin.affect gin.inscope gin.prec-tags))
@@ -4242,6 +4240,7 @@
                                         item-limit
                                         item-events
                                         item-thm-name
+                                        expr.result
                                         gin.compst-var
                                         gin.context
                                         nil
@@ -4928,6 +4927,7 @@
                                   (append item-events
                                           new-inscope-events)
                                   item-thm-name
+                                  uterm/nil
                                   new-compst
                                   new-context
                                   (and voidp new-inscope)
@@ -5407,6 +5407,7 @@
                                           item-limit
                                           events
                                           item-thm-name
+                                          nil
                                           new-compst
                                           new-context
                                           new-inscope
