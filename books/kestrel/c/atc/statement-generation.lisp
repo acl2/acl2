@@ -15,6 +15,7 @@
 (include-book "object-tables")
 
 (include-book "kestrel/std/system/close-lambdas" :dir :system)
+(include-book "kestrel/utilities/make-cons-nest" :dir :system)
 
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
@@ -4123,6 +4124,9 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
+       (term (if mvp
+                 (acl2::make-cons-nest (cons expr.term gin.affect))
+               expr.term))
        (uterm (if mvp
                   `(mv ,expr.result ,@gin.affect)
                 (untranslate$ expr.term nil state)))
@@ -4130,7 +4134,7 @@
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
-                :term expr.term
+                :term term
                 :context (make-atc-context :preamble nil :premises nil)
                 :inscope nil
                 :limit (pseudo-term-fncall
@@ -4221,7 +4225,7 @@
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
-                :term expr.term
+                :term term
                 :context (make-atc-context :preamble nil :premises nil)
                 :inscope nil
                 :limit (pseudo-term-fncall
