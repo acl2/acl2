@@ -381,22 +381,6 @@
          0)
   :hints (("Goal" :in-theory (enable mod))))
 
-
-;move
-(local
- (defthm floor-of---special-case
-   (implies (and (acl2-numberp i)
-                 ;; (not (rationalp i))
-                 (acl2-numberp j)
-                 (not (rationalp j)))
-            (equal (floor (- i) j)
-                   (if (rationalp (* i (/ j)))
-                       (if (integerp (* i (/ j)))
-                           (- (floor i j))
-                           (+ -1 (- (floor i j))))
-                     0)))
-   :hints (("Goal" :in-theory (enable floor)))))
-
 ;; TODO: Improve the form of the RHS?
 (defthm mod-of-minus-arg1
   (equal (mod (- x) y)
@@ -417,7 +401,7 @@
                    (- x)))
              (- x))))
   :hints (("Goal"
-           :in-theory (e/d (mod floor-when-integerp-of-quotient)
+           :in-theory (e/d (mod floor-when-integerp-of-quotient floor-of---special-case)
                            (prefer-positive-addends-equal))
            :cases ((not (acl2-numberp y))
                    (rationalp y)

@@ -20,17 +20,17 @@
 (local (include-book "times-and-divide"))
 (local (include-book "nonnegative-integer-quotient"))
 (local (include-book "integerp"))
-;(local (include-book "expt"))
-;(local (include-book "../../meta/meta-plus-lessp"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;rename and move
-(defthm floor-bound-hack-eric
-  (implies (and (<= 1 j)
-                (<= 0 i)
-                (rationalp i)
-                (rationalp j))
-           (<= (* i (/ j)) i)))
+;drop?  but used below
+(local
+  (defthm floor-bound-hack-eric
+    (implies (and (<= 1 j)
+                  (<= 0 i)
+                  (rationalp i)
+                  (rationalp j))
+             (<= (* i (/ j)) i))))
 
 ;move
 (defthm <-of-numerator-and-denominator-same
@@ -276,6 +276,19 @@
                   (if (integerp (* i (/ j)))
                       (- (floor i j))
                     (+ -1 (- (floor i j))))))
+  :hints (("Goal" :in-theory (enable floor))))
+
+(defthmd floor-of---special-case
+  (implies (and (not (rationalp j)) ; unusual!
+                (acl2-numberp i)
+                ;; (not (rationalp i))
+                (acl2-numberp j))
+           (equal (floor (- i) j)
+                  (if (rationalp (* i (/ j)))
+                      (if (integerp (* i (/ j)))
+                          (- (floor i j))
+                        (+ -1 (- (floor i j))))
+                    0)))
   :hints (("Goal" :in-theory (enable floor))))
 
 (defthm floor-minus-arg1-better
