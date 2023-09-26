@@ -3971,16 +3971,17 @@
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
                                                  new-context))
-       (uterm (untranslate$ term nil state))
-       (voidp (type-case type :void))
+       ((mv result type-formula &)
+        (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
+                                               type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
        (exec-formula `(equal (exec-block-item-list ',items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,(if voidp
-                                      nil
-                                    uterm)
-                                 ,new-compst)))
+                             (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3990,9 +3991,6 @@
                                         items-limit
                                         t
                                         wrld))
-       ((mv type-formula &)
-        (atc-gen-term-type-formula
-         uterm type gin.affect gin.inscope gin.prec-tags))
        (type-formula (atc-contextualize type-formula
                                         gin.context
                                         gin.fn
