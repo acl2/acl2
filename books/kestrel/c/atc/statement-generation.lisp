@@ -547,10 +547,10 @@
      by updating the affected object with the call.")
    (xdoc::p
     "Otherwise, there are two cases.
-     If the function is void, we return @('nil') as result term,
+     If the function is @('void'), we return @('nil') as result term,
      and as new computation state we return the nest of object updates
      for all the @(tsee mv-nth) components of the call, starting with index 0.
-     If the function is not void,
+     If the function is not @('void'),
      we return the @(tsee mv-nth) of index 0 of the call as result term,
      and as new computation state the nest of object updates
      with the @(tsee mv-nth) components starting with index 1.
