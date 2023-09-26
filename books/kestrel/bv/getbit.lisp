@@ -641,3 +641,15 @@
            (equal (getbit n (if test x1 x2))
                   (if test (getbit n x1)
                     (getbit n x2)))))
+
+;enable?
+(defthmd getbit-when-negative-and-small
+  (implies (and (< x 0)
+                (<= (- (expt 2 n)) x)
+                (natp n)
+                (integerp x))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))
