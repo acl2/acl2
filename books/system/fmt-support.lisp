@@ -3559,7 +3559,7 @@
             min
             fix
             member-equal
-            integer-range-p unsigned-byte-p min mv-nth punctp
+            integer-range-p unsigned-byte-p min
             left-pad-with-blanks
             len msgp length keywordp
             ))
