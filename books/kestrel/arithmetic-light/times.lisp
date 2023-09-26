@@ -577,11 +577,11 @@
                     (if (equal 0 i)
                         nil
                       (< j -1)))))
-  :hints (("Goal" :use (:instance acl2::<-of-*-and-*-cancel-gen
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel-gen
                                   (y i)
                                   (x1 1)
                                   (x2 (- j)))
-           :in-theory (disable acl2::<-of-*-and-*-cancel-gen))))
+           :in-theory (disable <-of-*-and-*-cancel-gen))))
 
 (defthm equal-of-*-cancel-arg1+
   (equal (equal (* x y) x)
