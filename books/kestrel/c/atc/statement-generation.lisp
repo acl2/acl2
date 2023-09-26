@@ -15,6 +15,7 @@
 (include-book "object-tables")
 
 (include-book "kestrel/std/system/close-lambdas" :dir :system)
+(include-book "kestrel/utilities/make-cons-nest" :dir :system)
 
 (local (include-book "kestrel/std/system/w" :dir :system))
 (local (include-book "std/alists/assoc" :dir :system))
@@ -305,7 +306,7 @@
                      (consp uterm)))
         (raise "Internal error: unexpected term ~x0." uterm)
         (mv nil nil nil))
-       ((when (eq (car uterm) 'mv))
+       ((when (eq (car uterm) 'list))
         (b* ((uterms (cdr uterm))
              ((unless (eql (len uterms) comps))
               (raise "Internal error: ~x0 components for ~x1." comps uterm)
@@ -3551,6 +3552,7 @@
    (item-limit pseudo-termp)
    (item-events pseudo-event-form-listp)
    (item-thm symbolp)
+   (result "An untranslated term.")
    (new-compst "An untranslated term.")
    (new-context atc-contextp)
    (new-inscope atc-symbol-varinfo-alist-listp)
@@ -3613,15 +3615,11 @@
        ((mv name names-to-avoid)
         (fresh-logical-name-with-$s-suffix name nil gin.names-to-avoid wrld))
        (voidp (type-case type :void))
-       (uterm (untranslate$ term nil state))
        (exec-formula `(equal (exec-block-item-list ',items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,(if voidp
-                                      nil
-                                    uterm)
-                                 ,new-compst)))
+                             (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3631,6 +3629,7 @@
                                         items-limit
                                         t
                                         wrld))
+       (uterm (untranslate$ term nil state))
        ((mv type-formula &)
         (atc-gen-term-type-formula
          uterm type gin.affect gin.inscope gin.prec-tags))
@@ -4123,14 +4122,15 @@
                has pointer type ~x2, which is disallowed."
               gin.fn term expr.type)))
        (stmt (make-stmt-return :value expr.expr))
-       (uterm (if mvp
-                  `(mv ,expr.result ,@gin.affect)
-                (untranslate$ expr.term nil state)))
+       (term (if mvp
+                 (acl2::make-cons-nest (cons expr.term gin.affect))
+               expr.term))
+       (uterm (untranslate$ term nil state))
        ((when (not expr.thm-name))
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
                 :type expr.type
-                :term expr.term
+                :term term
                 :context (make-atc-context :preamble nil :premises nil)
                 :inscope nil
                 :limit (pseudo-term-fncall
@@ -4217,36 +4217,25 @@
                                   :thm-index thm-index
                                   :names-to-avoid names-to-avoid)
                                  state))
-       ((when mvp)
-        (retok (make-stmt-gout
-                :items (list (block-item-stmt stmt))
-                :type expr.type
-                :term expr.term
-                :context (make-atc-context :preamble nil :premises nil)
-                :inscope nil
-                :limit (pseudo-term-fncall
-                        'binary-+
-                        (list (pseudo-term-quote 3)
-                              expr.limit))
-                :events item-events
-                :thm-name nil
-                :thm-index thm-index
-                :names-to-avoid names-to-avoid))))
-    (retok (atc-gen-block-item-list-one expr.term
-                                        expr.type
-                                        item
-                                        item-limit
-                                        item-events
-                                        item-thm-name
-                                        gin.compst-var
-                                        gin.context
-                                        nil
-                                        (change-stmt-gin
-                                         gin
-                                         :thm-index thm-index
-                                         :names-to-avoid names-to-avoid
-                                         :proofs (and item-thm-name t))
-                                        state)))
+       (gout (atc-gen-block-item-list-one term
+                                          expr.type
+                                          item
+                                          item-limit
+                                          item-events
+                                          item-thm-name
+                                          expr.result
+                                          expr.new-compst
+                                          gin.context
+                                          nil
+                                          (change-stmt-gin
+                                           gin
+                                           :thm-index thm-index
+                                           :names-to-avoid names-to-avoid
+                                           :proofs (and item-thm-name t))
+                                          state)))
+    (retok (if mvp
+               (change-stmt-gout gout :thm-name nil) ; temporary
+             gout)))
   :guard-hints
   (("Goal"
     :in-theory (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite)
@@ -4924,6 +4913,7 @@
                                   (append item-events
                                           new-inscope-events)
                                   item-thm-name
+                                  uterm/nil
                                   new-compst
                                   new-context
                                   (and voidp new-inscope)
@@ -5403,6 +5393,7 @@
                                           item-limit
                                           events
                                           item-thm-name
+                                          nil
                                           new-compst
                                           new-context
                                           new-inscope
@@ -6499,7 +6490,9 @@
                     gin.fn term))))
           (cond
            ((equal terms gin.affect)
-            (retok (atc-gen-block-item-list-none `(mv ,@terms) gin state)))
+            (retok (atc-gen-block-item-list-none (acl2::make-cons-nest terms)
+                                                 gin
+                                                 state)))
            ((equal (cdr terms) gin.affect)
             (atc-gen-return-stmt (car terms) t gin state))
            (t (reterr
