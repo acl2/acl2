@@ -13,6 +13,9 @@
 ;; TODO: Formalize and prove some of the "Note"s on:
 ;; https://stp.readthedocs.io/en/stable/cvc-input-language.html
 
+;; TODO: Formalize and prove properties described in:
+;; https://cs.nyu.edu/acsys/cvc3/doc/user_doc.html#user_doc_pres_lang
+
 (include-book "bvuminus")
 (include-book "bvminus")
 (include-book "bvnot")
