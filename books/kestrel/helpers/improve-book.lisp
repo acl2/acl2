@@ -28,6 +28,7 @@
 ;; TOOD: Handle defsection
 ;; TODO: Handle define (prepwork, ///, etc.)
 ;; TODO: Handle defrule
+;; TODO: Handle with-output
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
@@ -601,7 +602,7 @@
     ((defun defund) (improve-defun-event event rest-events print state))
     ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
      )
-    ((encapsulate) (submit-event event nil nil state) ; todo: handle!
+    ((encapsulate) (submit-event event nil nil state) ; todo: handle! may be easy if no constrained functions and no local events
      )
     (include-book (improve-include-book-event event rest-events initial-included-books print state) )
     ((in-package) (improve-in-package-event event rest-events print state))

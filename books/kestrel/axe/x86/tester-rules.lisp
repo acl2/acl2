@@ -42,6 +42,7 @@
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/top" :dir :system)) ; todo
+(local (include-book "kestrel/bv/bvsx-rules" :dir :system))
 ;(local (include-book "kestrel/alists-light/alistp" :dir :system))
 
 (acl2::def-constant-opener acl2::bool-fix$inline) ; or build into axe?

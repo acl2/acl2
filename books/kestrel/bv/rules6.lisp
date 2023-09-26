@@ -505,7 +505,7 @@
                                    BVMULT-PAD-ARG2)))))
 
 ;move
-(defthm my-non-integerp-<-integerp
+(defthmd my-non-integerp-<-integerp
   (implies (and (syntaxp (quotep k))
                 (not (integerp k))
                 (rationalp k)
@@ -515,7 +515,7 @@
            (equal (< k n)
                   (< (floor k 1) n))))
 ;fixme drop?
-(defthm <-of-non-integerp-and-integerp
+(defthmd <-of-non-integerp-and-integerp
   (implies (and (syntaxp (quotep k))
                 (not (integerp k))
                 (integerp n)
@@ -526,7 +526,7 @@
            :use (:instance my-non-integerp-<-integerp (k k)))))
 
 ;move
-(defthm my-integerp-<-non-integerp
+(defthmd my-integerp-<-non-integerp
   (implies (and (syntaxp (quotep k))
                 (not (integerp k))
                 (rationalp k)
