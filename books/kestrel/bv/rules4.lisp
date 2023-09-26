@@ -27,6 +27,8 @@
 
 ; if x has a zero in it, and is negative, it can't be too big
 ;rename
+;tau knows this somehow
+;disable?
 (defthm getbit-of-0-bound-when-negative
   (implies (and (< x 0)
                 (equal 0 (getbit n x))
@@ -57,18 +59,6 @@
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice)))))
-
-;enable?
-(defthmd getbit-when-negative-and-small
-  (implies (and (< x 0)
-                (<= (- (expt 2 n)) x)
-                (natp n)
-                (integerp x))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit)))))
 
 ;may need GETBIT-EQUAL-1-POLARITY -- move it!
 ;; any bit above the sign bit is the same as the sign bit
@@ -158,13 +148,6 @@
                               *-preserves->=-for-nonnegatives <-*-right-cancel *-preserves->-for-nonnegatives-1)
            :use (:instance multiply-both-sides-hack (x y) (y (+ 1 x)) (z (expt 2 n))))))
 
-(defthm logtail-times-expt-bound
-  (implies (and (integerp x)
-                (Natp size))
-           (<= (* (EXPT 2 size) (LOGTAIL size X)) x))
-  :hints (("Goal" :use (:instance bvchop-plus-times-expt-logtail)
-           :in-theory (disable bvchop-plus-times-expt-logtail))))
-
 (defthm plus-of-times-expt-bound
   (implies (and (< hv (logtail lowsize x))
                 (integerp hv)
@@ -174,9 +157,11 @@
                 )
            (< (+ lv (* hv (expt 2 lowsize)))
               x))
-  :hints (("Goal" :use ((:instance logtail-times-expt-bound (size lowsize))
+  :hints (("Goal" :use (;(:instance logtail-times-expt-bound (size lowsize))
                         (:instance low-bits-dont-matter (z lv) (n lowsize) (x hv) (y (LOGTAIL LOWSIZE X))))
-           :in-theory (disable bvchop-plus-times-expt-logtail low-bits-dont-matter LOGTAIL-TIMES-EXPT-BOUND))))
+           :in-theory (disable bvchop-plus-times-expt-logtail low-bits-dont-matter
+                               ;LOGTAIL-TIMES-EXPT-BOUND
+                               ))))
 
 ;not tight?
 (defthm plus-of-times-expt-bound2
@@ -187,9 +172,10 @@
                 (natp pos)
                 )
            (not (< (+ pos (* hv (expt 2 lowsize))) x)))
-  :hints (("Goal" :use ((:instance logtail-times-expt-bound (size lowsize))
+  :hints (("Goal" :use (;(:instance logtail-times-expt-bound (size lowsize))
                         (:instance low-bits-dont-matter (z lv) (n lowsize) (x hv) (y (LOGTAIL LOWSIZE X))))
-           :in-theory (disable bvchop-plus-times-expt-logtail low-bits-dont-matter LOGTAIL-TIMES-EXPT-BOUND))))
+           :in-theory (disable bvchop-plus-times-expt-logtail low-bits-dont-matter ;LOGTAIL-TIMES-EXPT-BOUND
+                               ))))
 
 (defthm logapp-less-than
   (implies (and (natp lowsize)
@@ -446,16 +432,6 @@
                         (BVCAT (+ -1 HIGHSIZE) HIGHVAL LOWSIZE LOWVAL)
                         X)))
   :hints (("Goal" :in-theory (enable bvlt))))
-
-;move
-(defthm not-<-of-slice-and-slice-same-low-and-val
-  (implies (and (<= high1 high2)
-                (natp high1)
-                (natp high2))
-           (not (< (slice high2 low x)
-                   (slice high1 low x))))
-  :hints (("Goal" :cases ((<= low high1))
-           :in-theory (enable slice))))
 
 (defthm not-bvlt-of-slice-and-slice-narrower
   (implies (and (<= high2 high1)

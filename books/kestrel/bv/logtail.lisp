@@ -345,6 +345,12 @@
                   (<= (* (+ 1 j) (expt 2 pos)) i)))
   :hints (("Goal" :in-theory (enable logtail))))
 
+(defthm <=-of-*-of-expt-and-logtail
+  (implies (and (integerp i)
+                (natp pos))
+           (<= (* (expt 2 pos) (logtail pos i)) i))
+  :hints (("Goal" :in-theory (enable logtail))))
+
 (defthm <=-of-*-of-expt-and-logtail-linear
   (implies (and (integerp i)
                 (natp pos))

@@ -759,3 +759,12 @@
   (equal (slice high low (ifix x))
          (slice high low x))
   :hints (("Goal" :in-theory (enable ifix))))
+
+(defthm not-<-of-slice-and-slice-same-low-and-val
+  (implies (and (<= high1 high2)
+                (natp high1)
+                (natp high2))
+           (not (< (slice high2 low x)
+                   (slice high1 low x))))
+  :hints (("Goal" :cases ((<= low high1))
+           :in-theory (enable slice))))

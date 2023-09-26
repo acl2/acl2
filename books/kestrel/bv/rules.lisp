@@ -56,7 +56,8 @@
 (include-book "slice-rules")
 (include-book "getbit-rules")
 (include-book "bvcat-rules")
-(include-book "bvsx-rules")
+(include-book "bvsx")
+;(include-book "bvsx-rules")
 (include-book "bitwise")
 (include-book "trim")
 (local (include-book "logxor-b"))
@@ -206,6 +207,7 @@
 
 ;(local (in-theory (disable MOD-X-Y-=-X)))
 
+;slow
 (defthm logbitp-of-logxor
   (implies (and (natp i)
                 (integerp j1)
