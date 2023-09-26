@@ -145,7 +145,6 @@
   :hints (("Goal"
            :use (:instance UNSIGNED-BYTE-P-shift-lemma (n (- n)))
            :in-theory (e/d (ash SLICE LOGTAIL ;floor
-                                floor-of-/
                                 )
                            (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
@@ -318,6 +317,7 @@
                                    ;BVPLUS-RECOLLAPSE ;looped!
                                    )))))
 
+;move to intro.lisp?
 (defthm logand-of-bvchop-becomes-bvand
   (implies (and (natp width)
                 (natp y)) ;gen

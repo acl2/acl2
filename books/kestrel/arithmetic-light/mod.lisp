@@ -131,6 +131,14 @@
                   x))
   :hints (("Goal" :in-theory (enable mod floor))))
 
+;; Trying to avoid name clash
+(defthm floor-mod-elim-rule
+  (implies (acl2-numberp i)
+           (equal (+ (mod i j) (* j (floor i j)))
+                  i))
+  :rule-classes :elim
+  :hints (("Goal" :in-theory (enable mod))))
+
 (local (include-book "../../arithmetic-3/floor-mod/floor-mod")) ;todo
 (local (in-theory (disable INTEGERP-MINUS-X))) ;slow
 
