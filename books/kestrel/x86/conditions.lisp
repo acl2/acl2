@@ -474,7 +474,7 @@
                             ACL2::MOD-OF-EXPT-OF-2
                             ACL2::MOD-EXPT-SPLIT))
            :use ((:instance acl2::split-bv
-                           (y (bvchop size x))
+                           (x (bvchop size x))
                            (n size)
                            (m (+ -1 size)))
                  (:instance ACL2::LOGEXT-OF-PLUS
@@ -666,7 +666,7 @@
   :otf-flg t
   :hints (("Goal"
            :use (:instance acl2::split-bv
-                           (y (bvchop 32 x))
+                           (x (bvchop 32 x))
                            (n 32)
                            (m 31))
            :in-theory (e/d (jnle-condition acl2::bvplus
@@ -708,7 +708,7 @@
   :otf-flg t
   :hints (("Goal"
            :use (:instance acl2::split-bv
-                           (y (bvchop 32 x))
+                           (x (bvchop 32 x))
                            (n 32)
                            (m 31))
            :in-theory (e/d (jnle-condition acl2::bvplus

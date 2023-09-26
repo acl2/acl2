@@ -88,7 +88,7 @@
                   (equal (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y))
                          a)))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y y)
+           :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
 (defthm equal-of-sum-of-low-bits-alt
@@ -112,7 +112,7 @@
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a b))))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y y)
+           :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
 (defthm equal-of-sum-of-low-bits-alt2b
@@ -125,7 +125,7 @@
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a b))))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y y)
+           :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
 ;; (defthm expt-of-one-less-combine
@@ -144,7 +144,7 @@
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a))))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y y)
+           :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
 (defthm unsigned-byte-p-of-RIPPLE-CARRY-ADDER
@@ -235,7 +235,7 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable bvcat logapp)
            :cases ((equal n 0))
-           :use (:instance split-bv (y x)
+           :use (:instance split-bv (x x)
                            (m (+ -1 n))))))
 
 
@@ -286,8 +286,8 @@
 ;(:instance getbit-of-plus (size n) (x carry))
 ;                  (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)) (y (+ 1(BVCHOP (+ -1 N) Y))))
 ;                 (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)))
-;                  (:instance split-bv (y x) (n n) (m (+ -1 n)))
- ;                 (:instance split-bv (y y) (n n) (m (+ -1 n)))
+;                  (:instance split-bv (x x) (n n) (m (+ -1 n)))
+ ;                 (:instance split-bv (x y) (n n) (m (+ -1 n)))
 ;                  )
             :in-theory (e/d (helper-helper
                              ;bvchop-recollapse
