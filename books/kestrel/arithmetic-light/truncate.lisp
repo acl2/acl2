@@ -233,10 +233,10 @@
                           (and (< i 0) (= 0 j))
                           (and (< i 0) (< 0 j))
                           (and (<= 0 i) (< 0 j)))
-           :in-theory (e/d (acl2::truncate-becomes-floor-gen
+           :in-theory (e/d (truncate-becomes-floor-gen
                             signed-byte-p
                             floor-when-integerp-of-quotient
-                            acl2::*-of-floor-of-same-when-multiple)
+                            *-of-floor-of-same-when-multiple)
                            (<-of-*-of-/-arg2
                             <-of-*-of-/-arg1)))))
 

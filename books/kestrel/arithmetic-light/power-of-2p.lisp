@@ -52,11 +52,11 @@
 
 
 (defthm expt-2-of-+-of--1-and-integer-length-when-power-of-2p-cheap
-  (implies (acl2::power-of-2p x)
+  (implies (power-of-2p x)
            (equal (expt 2 (+ -1 (integer-length x)))
                   x))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable acl2::power-of-2p))))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
 
 (defthm integerp-of-power2-hack
   (implies (and (syntaxp (quotep k))

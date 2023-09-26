@@ -341,11 +341,6 @@
                   (BVIF ACL2::SIZE ACL2::TEST ACL2::Z (BVuminus ACL2::SIZE X))))
   :HINTS (("Goal" :IN-THEORY (ENABLE BVIF BVuminus bvminus))))
 
-(DEFTHM ACL2::INTEGERP-OF---when-integerp
-  (implies (INTEGERP X)
-           (INTEGERP (- X)))
-)
-
 (defthm bvdiv-tighten-64-32 ;gen
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
