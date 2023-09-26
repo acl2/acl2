@@ -12,21 +12,12 @@
 (in-package "ACL2")
 
 (local (include-book "times"))
+(local (include-book "times-and-divide"))
 (local (include-book "plus"))
 (local (include-book "numerator"))
 (local (include-book "denominator"))
 
 (in-theory (disable nonnegative-integer-quotient))
-
-;; stronger than INVERSE-OF-*
-;move
-(defthm *-of-/-same
-  (equal (* x (/ x))
-         (if (equal 0 (fix x))
-             0
-           1))
-  :hints (("Goal" :in-theory (e/d (--becomes-*-of--1)
-                                  (*-OF--1)))))
 
 ;move
 (defthm *-of-/-and---same

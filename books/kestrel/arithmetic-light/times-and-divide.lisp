@@ -13,6 +13,7 @@
 (local (include-book "times"))
 (local (include-book "divide"))
 
+;; A stronger rewrite rule than the built-in axiom INVERSE-OF-*.
 (defthm *-of-/-same
   (equal (* x (/ x))
          (if (equal 0 (fix x))
