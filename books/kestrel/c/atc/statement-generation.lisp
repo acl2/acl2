@@ -306,7 +306,7 @@
                      (consp uterm)))
         (raise "Internal error: unexpected term ~x0." uterm)
         (mv nil nil nil))
-       ((when (eq (car uterm) 'mv))
+       ((when (eq (car uterm) 'list))
         (b* ((uterms (cdr uterm))
              ((unless (eql (len uterms) comps))
               (raise "Internal error: ~x0 components for ~x1." comps uterm)
@@ -4125,9 +4125,7 @@
        (term (if mvp
                  (acl2::make-cons-nest (cons expr.term gin.affect))
                expr.term))
-       (uterm (if mvp
-                  `(mv ,expr.result ,@gin.affect)
-                (untranslate$ expr.term nil state)))
+       (uterm (untranslate$ term nil state))
        ((when (not expr.thm-name))
         (retok (make-stmt-gout
                 :items (list (block-item-stmt stmt))
@@ -6492,7 +6490,9 @@
                     gin.fn term))))
           (cond
            ((equal terms gin.affect)
-            (retok (atc-gen-block-item-list-none `(mv ,@terms) gin state)))
+            (retok (atc-gen-block-item-list-none (acl2::make-cons-nest terms)
+                                                 gin
+                                                 state)))
            ((equal (cdr terms) gin.affect)
             (atc-gen-return-stmt (car terms) t gin state))
            (t (reterr
