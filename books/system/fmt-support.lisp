@@ -1292,7 +1292,7 @@
 ; Eliminates nearly 2/3 of the time for flag-lemma-for-ppr-tuple-p-ppr1:
            :ruler-extenders (:lambdas))
 
-; I now develop a computed hint for this the theorem that ppr1/ppr1-lst 
+; I now develop a computed hint for this the theorem that ppr1/ppr1-lst
 ; produces ppr-tuple-ps.
 
 (mutual-recursion
@@ -1301,7 +1301,7 @@
          ((fquotep term) ans)
          ((eq (ffn-symb term) fn)
           (cond ((member-equal term ans) ans)
-                (t (find-all-calls-lst fn (fargs term) (cons term ans))))) 
+                (t (find-all-calls-lst fn (fargs term) (cons term ans)))))
          (t (find-all-calls-lst fn (fargs term) ans))))
  (defun find-all-calls-lst (fn lst ans)
    (cond ((endp lst) ans)
@@ -1390,7 +1390,7 @@
     :flag ppr1-lst)
   :hints ((when-stable-open-concl-and-later-enable
            nil nil clause stable-under-simplificationp state)
-          ("Goal" 
+          ("Goal"
            :in-theory (disable fix ppr1 ppr1-lst)
            :do-not-induct t) ; to stop on first checkpoint
           ))
@@ -2292,7 +2292,7 @@
            (state-p1
             (update-iprint-ar-fal iprint-alist iprint-fal-new iprint-fal-old
                                   state))))
-  
+
 
 (in-theory (disable (:definition array-order)
                     (:definition aset1)
@@ -3116,7 +3116,7 @@
             (iprint-array-p (aset1-lst name iprint-alist ar)
                             max))
    :hints (("Goal" :in-theory (enable aset1-lst aset1 iprint-alistp1
-                                      iprint-array-p))))) 
+                                      iprint-array-p)))))
 (local
  (defthm main-1-2-3
    (implies (and (iprint-array-p ar max)
