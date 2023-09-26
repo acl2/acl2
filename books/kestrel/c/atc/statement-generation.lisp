@@ -255,7 +255,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-uterm-to-components ((uterm "An untranslated term.") (comps posp))
-  :returns (mv (uterms true-listp "Untranslated terms.")
+  :returns (mv (uterms true-listp
+                       :rule-classes :type-prescription
+                       "Untranslated terms.")
                (varps boolean-listp)
                (bound-vars symbol-listp))
   :short "Split a term into component terms."
@@ -517,6 +519,32 @@
                                                       (cdr affected-vars)
                                                       prec-tags)))
        (append conjuncts more-conjuncts)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-uterm-result-and-type-formula
+  ((uterm "An untranslated term.")
+   (type typep)
+   (affect symbol-listp)
+   (inscope atc-symbol-varinfo-alist-listp)
+   (prec-tags atc-string-taginfo-alistp))
+  :returns (mv (result "An untranslated term.")
+               (type-formula "An untranslated term.")
+               (type-thms symbol-listp))
+  :short "Generates a result term and a type formula for a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This extends @(tsee atc-gen-term-type-formula)
+     to also return a term that is the result (in the C sense) of @('uterm'),
+     if @('type') is not @('void'), otherwise the result is @('nil').
+     We should probably integrate this code
+     with @(tsee atc-gen-term-type-formula)."))
+  (b* (((mv type-formula type-thms)
+        (atc-gen-term-type-formula uterm type affect inscope prec-tags))
+       ((when (type-case type :void)) (mv nil type-formula type-thms))
+       ((mv uterms & &) (atc-uterm-to-components uterm (1+ (len affect)))))
+    (mv (car uterms) type-formula type-thms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3725,7 +3753,7 @@
      and use it to contextualize the computation state variable,
      obtaining the computation state after all the items;
      note that, at that spot in the generated theorem,
-     the computation state variables already accumulates
+     the computation state variable already accumulates
      the contextual premises in @('gin').")
    (xdoc::p
     "The @('new-inscope') input is the variable table after all the items.")
@@ -3759,16 +3787,17 @@
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
                                                  new-context))
-       (uterm (untranslate$ term nil state))
-       (voidp (type-case items-type :void))
+       ((mv result type-formula &)
+        (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
+                                               items-type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
        (exec-formula `(equal (exec-block-item-list ',all-items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,(if voidp
-                                      nil
-                                    uterm)
-                                 ,new-compst)))
+                             (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3778,9 +3807,6 @@
                                         all-items-limit
                                         t
                                         wrld))
-       ((mv type-formula &)
-        (atc-gen-term-type-formula
-         uterm items-type gin.affect gin.inscope gin.prec-tags))
        (type-formula (atc-contextualize type-formula
                                         gin.context
                                         gin.fn
