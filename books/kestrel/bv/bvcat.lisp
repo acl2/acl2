@@ -1222,16 +1222,15 @@
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize highval lowsize (bvchop lowsize lowval)))))
 
-;; todo: rename y to x
 (defthm split-bv
-  (implies (and (unsigned-byte-p n y)
+  (implies (and (unsigned-byte-p n x)
                 (natp m)
                 (< 0 m)
                 (natp n)
                 (<= m n))
-           (equal y
-                  (bvcat (+ n (- m)) (slice (+ -1 n) m y)
-                         m (bvchop m y))))
+           (equal x
+                  (bvcat (+ n (- m)) (slice (+ -1 n) m x)
+                         m (bvchop m x))))
   :rule-classes nil)
 
 ;; special case that splits of the top bit
@@ -1239,7 +1238,7 @@
 (defthm split-bv-top
   (implies (unsigned-byte-p size x)
            (equal x (bvcat 1 (getbit (+ -1 size) x) (+ -1 size) (bvchop (+ -1 size) x))))
-  :hints (("Goal" :use (:instance split-bv (y x) (n size) (m (+ -1 size)))
+  :hints (("Goal" :use (:instance split-bv (x x) (n size) (m (+ -1 size)))
            :cases ((equal size 1))
            :in-theory (e/d ( getbit) (bvchop-1-becomes-getbit))))
   :rule-classes nil)
@@ -1289,7 +1288,7 @@
                   (equal 0 (slice (+ -1 n) size x))))
   :hints (("Goal"
            :use (:instance split-bv
-                           (y (bvchop n x))
+                           (x (bvchop n x))
                            (m size)
                            (n n))
            :in-theory (disable bvcat-of-bvchop-low
@@ -1469,8 +1468,8 @@
                          (slice (+ -1 n) free y))))
   :hints (("Goal"
            :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE)
-           :use ((:instance split-bv (n n) (m free) (y (bvchop n x)))
-                 (:instance split-bv (n n) (m free) (y (bvchop n y)))))))
+           :use ((:instance split-bv (n n) (m free) (x (bvchop n x)))
+                 (:instance split-bv (n n) (m free) (x (bvchop n y)))))))
 
 ;keep disabled
 ;move?
