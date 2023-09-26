@@ -4219,37 +4219,25 @@
                                   :thm-index thm-index
                                   :names-to-avoid names-to-avoid)
                                  state))
-       ((when mvp)
-        (retok (make-stmt-gout
-                :items (list (block-item-stmt stmt))
-                :type expr.type
-                :term term
-                :context (make-atc-context :preamble nil :premises nil)
-                :inscope nil
-                :limit (pseudo-term-fncall
-                        'binary-+
-                        (list (pseudo-term-quote 3)
-                              expr.limit))
-                :events item-events
-                :thm-name nil
-                :thm-index thm-index
-                :names-to-avoid names-to-avoid))))
-    (retok (atc-gen-block-item-list-one expr.term
-                                        expr.type
-                                        item
-                                        item-limit
-                                        item-events
-                                        item-thm-name
-                                        expr.result
-                                        gin.compst-var
-                                        gin.context
-                                        nil
-                                        (change-stmt-gin
-                                         gin
-                                         :thm-index thm-index
-                                         :names-to-avoid names-to-avoid
-                                         :proofs (and item-thm-name t))
-                                        state)))
+       (gout (atc-gen-block-item-list-one term
+                                          expr.type
+                                          item
+                                          item-limit
+                                          item-events
+                                          item-thm-name
+                                          expr.result
+                                          expr.new-compst
+                                          gin.context
+                                          nil
+                                          (change-stmt-gin
+                                           gin
+                                           :thm-index thm-index
+                                           :names-to-avoid names-to-avoid
+                                           :proofs (and item-thm-name t))
+                                          state)))
+    (retok (if mvp
+               (change-stmt-gout gout :thm-name nil) ; temporary
+             gout)))
   :guard-hints
   (("Goal"
     :in-theory (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite)
