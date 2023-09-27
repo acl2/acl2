@@ -307,6 +307,10 @@
                 (rp-evlt term a))
            (valid-sc-subterms (RP-EXTRACT-CONTEXT term) a))
   :hints (("Goal"
+           :expand ((:free (x)
+                           (is-rp (cons 'equal x)))
+                    (:free (x)
+                           (is-if (cons 'equal x))))
            :in-theory (e/d (rp-extract-context
                             is-if
                             valid-sc-subterms
