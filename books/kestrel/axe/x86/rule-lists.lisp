@@ -15,7 +15,7 @@
 (include-book "kestrel/x86/rule-lists" :dir :system)
 
 ;; these are used both for lifting and proving
-(defun extra-rules ()
+(defun extra-tester-rules ()
   (declare (xargs :guard t))
   (append '(acl2::bvchop-of-*
             acl2::integerp-of-expt
@@ -175,10 +175,11 @@
           (acl2::boolean-rules-safe)
           (acl2::type-rules)))
 
-(defun extra-lifting-rules ()
+;; beyond what def-unrolled uses
+(defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
   (append (lifter-rules64-new)
-          (extra-rules)
+          (extra-tester-rules)
           '(X86ISA::WX32$inline ; more?
             X86ISA::WZ32$inline ; more?
             <-of-fp-to-rat ; do we want this?
@@ -405,7 +406,7 @@
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
 
-(defun proof-rules ()
+(defun tester-proof-rules ()
   (declare (xargs :guard t))
   (append '(myif-of-sub-zf-spec32-arg2
             myif-of-sub-zf-spec32-arg3
@@ -470,7 +471,7 @@
             jnp-condition
             jz-condition
             jnz-condition)
-          (extra-rules)
+          (extra-tester-rules)
           (lifter-rules64-new) ; overkill?
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
