@@ -937,12 +937,7 @@
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
              ((when (or (not gin.proofs)
-                        (not called-fn-thm)
-                        ;; temporary:
-                        (and (atc-fn-info->out-type fninfo)
-                             (not (type-case (atc-fn-info->out-type fninfo)
-                                             :void))
-                             (consp (atc-fn-info->affect fninfo)))))
+                        (not called-fn-thm)))
               (retok expr
                      out-type
                      term
@@ -1076,7 +1071,34 @@
                    ,@(atc-string-taginfo-alist-to-valuep-thms gin.prec-tags)
                    compustatep-of-add-var
                    compustatep-of-enter-scope
-                   compustatep-of-add-frame))))
+                   compustatep-of-add-frame
+                   write-object-to-update-object
+                   write-object-okp-when-valuep-of-read-object-no-syntaxp
+                   write-object-okp-of-update-object-same
+                   write-object-okp-of-update-object-disjoint
+                   object-disjointp-commutative
+                   type-of-value-when-ucharp
+                   type-of-value-when-scharp
+                   type-of-value-when-ushortp
+                   type-of-value-when-sshortp
+                   type-of-value-when-uintp
+                   type-of-value-when-sintp
+                   type-of-value-when-ulongp
+                   type-of-value-when-slongp
+                   type-of-value-when-ullongp
+                   type-of-value-when-sllongp
+                   type-of-value-when-uchar-arrayp
+                   type-of-value-when-schar-arrayp
+                   type-of-value-when-ushort-arrayp
+                   type-of-value-when-sshort-arrayp
+                   type-of-value-when-uint-arrayp
+                   type-of-value-when-sint-arrayp
+                   type-of-value-when-ulong-arrayp
+                   type-of-value-when-slong-arrayp
+                   type-of-value-when-ullong-arrayp
+                   type-of-value-when-sllong-arrayp
+                   ,@(atc-string-taginfo-alist-to-type-of-value-thms
+                      gin.prec-tags)))))
              ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                        :formula call-formula
                                                        :hints call-hints
