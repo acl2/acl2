@@ -7774,11 +7774,43 @@
 ; or
 ; Performance Notes on the "Type-Set Objective" Idea and Double Whammy
 
-; "DWP" stands for "double whammy flag".  It does not affect the
-; soundness of the result returned but, when t, makes type-set "try
-; harder" to get a narrow type.  It was added Feb 7, 1995 and replaces
-; a heuristic hack controlling the "double whammy" idea.  The
-; historical comment below explains.
+; "DWP" stands for "double whammy flag".  It does not affect the soundness of
+; the result returned but, when t, makes type-set "try harder" to get a narrow
+; type.  It was added Feb 7, 1995 and replaces a heuristic hack controlling the
+; "double whammy" idea.  The historical comment below explains, but first we
+; address the question: why not do away with the DWP flag and effectively
+; always use dwp=t?
+
+; In September 2023 we ran "make regression-everything" using a modification of
+; ACL2 in which dwp is always t for both type-set (and type-set-bc) and
+; assume-true-false (and assume-true-false-bc).  There were a dozen
+; certification failures, not surprisingly, but they were easily fixed because
+; we used an attachment -- its default made dwp=t but we could change the
+; attachment to revert behavior to use the supplied dwp.  A subsequent
+; error-free regression-everything took 3.9% more user+system time than an
+; ordinary regression-everything without any dwp changes.  When we restricted
+; the changes to type-set (and type-set-bc), the excess time was less but was
+; still 2.6%.  Not surprisingly, some books suffered considerably more than
+; that.  In particular, time$ reports almost twice the time below even when
+; effectively setting dwp=t only for type-set (and type-set-bc), not for
+; assume-true-false (or assume-true-false-bc).
+
+;   (ld "nonstd/workshops/2017/cayley/cayley1c.port" :dir :system)
+;   (set-inhibit-output-lst (remove1 'comment *valid-output-names*))
+;   (time$ (ld "nonstd/workshops/2017/cayley/cayley1c.lisp" :dir :system))
+
+;;; Existing ACL2:
+; 64.47 seconds realtime, 64.46 seconds runtime
+; (1,962,643,776 bytes allocated).
+
+;;; ACL2 with dwp=t for type-set and type-set-bc:
+; 123.33 seconds realtime, 123.33 seconds runtime
+; (3,594,079,520 bytes allocated).
+
+; As a result we did not change the handling of dwp, except for allowing it to
+; be effectively t by using an attachment; see :DOC set-dwp.
+
+; Historical Comment on the DWP flag
 
 ; I have tried an experiment in which type-set gets the type of x in
 ; two ways and intersects them.  The first way is to look x up on the
@@ -11397,22 +11429,24 @@
 
 ; See type-set-rec.
 
-  (type-set-rec x force-flg dwp type-alist
-                nil ; ancestors
-                ens w ttree
-                pot-lst pt
-                (backchain-limit w :ts)))
+  (let ((dwp (get-dwp dwp w)))
+    (type-set-rec x force-flg dwp type-alist
+                  nil ; ancestors
+                  ens w ttree
+                  pot-lst pt
+                  (backchain-limit w :ts))))
 
 (defun type-set-bc (x force-flg dwp type-alist ens w ttree pot-lst pt
                       ts-backchain-limit)
 
 ; See type-set-rec.
 
-  (type-set-rec x force-flg dwp type-alist
-                nil ; ancestors
-                ens w ttree
-                pot-lst pt
-                ts-backchain-limit))
+  (let ((dwp (get-dwp dwp w)))
+    (type-set-rec x force-flg dwp type-alist
+                  nil ; ancestors
+                  ens w ttree
+                  pot-lst pt
+                  ts-backchain-limit)))
 
 (defstub assume-true-false-aggressive-p () t)
 (defattach assume-true-false-aggressive-p constant-nil-function-arity-0)
@@ -11571,7 +11605,8 @@
 
 (defun assume-true-false (x xttree force-flg dwp type-alist ens w pot-lst pt
                             ignore0)
-  (let ((bound (assume-true-false-aggressive-p)))
+  (let ((bound (assume-true-false-aggressive-p))
+        (dwp (get-dwp dwp w)))
     (cond
      (bound
       (assume-true-false-aggressive x xttree force-flg dwp type-alist
@@ -11586,7 +11621,8 @@
 
 (defun assume-true-false-bc (x xttree force-flg dwp type-alist ens w pot-lst pt
                                ignore0 ts-backchain-limit)
-  (let ((bound (assume-true-false-aggressive-p)))
+  (let ((bound (assume-true-false-aggressive-p))
+        (dwp (get-dwp dwp w)))
     (cond
      (bound
       (assume-true-false-aggressive x xttree force-flg dwp type-alist
