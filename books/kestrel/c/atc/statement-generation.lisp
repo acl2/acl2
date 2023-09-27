@@ -4721,14 +4721,19 @@
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (uterm (untranslate$ term nil state))
-       (uterm/nil (if voidp nil uterm))
+       ((mv if-result if-stmt-type-formula if-stmt-type-thms)
+        (atc-gen-uterm-result-and-type-formula uterm
+                                               type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
        (test-uterm (untranslate$ test-term nil state))
        (new-compst `(if* ,test-uterm ,then-new-compst ,else-new-compst))
        (if-stmt-exec-formula `(equal (exec-stmt ',stmt
                                                 ,gin.compst-var
                                                 ,gin.fenv-var
                                                 ,gin.limit-var)
-                                     (mv ,uterm/nil ,new-compst)))
+                                     (mv ,if-result ,new-compst)))
        (if-stmt-exec-formula (atc-contextualize if-stmt-exec-formula
                                                 gin.context
                                                 gin.fn
@@ -4738,12 +4743,6 @@
                                                 if-stmt-limit
                                                 t
                                                 wrld))
-       ((mv if-stmt-type-formula if-stmt-type-thms)
-        (atc-gen-term-type-formula uterm
-                                   type
-                                   gin.affect
-                                   gin.inscope
-                                   gin.prec-tags))
        (if-stmt-type-formula (atc-contextualize if-stmt-type-formula
                                                 gin.context
                                                 gin.fn
@@ -4881,7 +4880,7 @@
                                  if-stmt-thm
                                  (untranslate$ term nil state)
                                  type
-                                 uterm/nil
+                                 if-result
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -4931,7 +4930,7 @@
                                   (append item-events
                                           new-inscope-events)
                                   item-thm-name
-                                  uterm/nil
+                                  if-result
                                   new-compst
                                   new-context
                                   (and voidp new-inscope)
