@@ -18,9 +18,8 @@
 
 ;; TODO: Somehow distinguish between a run failing to finish and a query failing with a cex -- for now, we just use must-fail.
 
-(include-book "kestrel/axe/bv-rules-axe" :dir :system) ;for trim-does-nothing-dag
 ;(include-book "kestrel/bv/rotate" :dir :system) ;for INTEGERP-OF-LEFTROTATE32
-(include-book "kestrel/bv/intro" :dir :system)
+;(include-book "kestrel/bv/intro" :dir :system)
 ;(include-book "kestrel/axe/rules1" :dir :system)
 ;(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
@@ -31,14 +30,18 @@
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod2" :dir :system)) ; reduce?
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/top" :dir :system)) ; todo
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
 ;(local (include-book "kestrel/alists-light/alistp" :dir :system))
 
@@ -683,7 +686,7 @@
   (equal (X86ISA::!RFLAGS v (if test x86_1 x86_2))
          (if test (X86ISA::!RFLAGS v x86_1) (X86ISA::!RFLAGS v x86_2))))
 
-(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+
 
 (defthm <-of-fp-to-rat
   (implies (and (natp frac)
@@ -713,8 +716,6 @@
 ;;                (INTEGERP J))
 ;;           (<= (- k) (FLOOR I J))))
 
-(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/top" :dir :system)) ; todo
 
 ;gen!
 (defthm *-of-/-linear-when-both-negative-free-linear
