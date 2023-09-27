@@ -937,7 +937,12 @@
                              called-fn)))
              (called-fn-thm (atc-fn-info->correct-mod-thm fninfo))
              ((when (or (not gin.proofs)
-                        (not called-fn-thm)))
+                        (not called-fn-thm)
+                        ;; temporary:
+                        (and (atc-fn-info->out-type fninfo)
+                             (not (type-case (atc-fn-info->out-type fninfo)
+                                             :void))
+                             (consp (atc-fn-info->affect fninfo)))))
               (retok expr
                      out-type
                      term
@@ -4257,9 +4262,7 @@
                                            :names-to-avoid names-to-avoid
                                            :proofs (and item-thm-name t))
                                           state)))
-    (retok (if mvp
-               (change-stmt-gout gout :thm-name nil) ; temporary
-             gout)))
+    (retok gout))
   :guard-hints
   (("Goal"
     :in-theory (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite)
