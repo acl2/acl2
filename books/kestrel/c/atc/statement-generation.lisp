@@ -4566,12 +4566,18 @@
        (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
-       (then-uterm/nil (if voidp
-                           nil
-                         then-uterm))
-       (else-uterm/nil (if voidp
-                           nil
-                         else-uterm))
+       ((mv then-result then-stmt-type-formula &)
+        (atc-gen-uterm-result-and-type-formula then-uterm
+                                               type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
+       ((mv else-result else-stmt-type-formula &)
+        (atc-gen-uterm-result-and-type-formula else-uterm
+                                               type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
        (then-context-end
         (atc-context-extend then-context-end
                             (list (make-atc-premise-compustate
@@ -4592,7 +4598,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv ,then-uterm/nil ,then-new-compst)))
+                                       (mv ,then-result ,then-new-compst)))
        (then-stmt-exec-formula (atc-contextualize then-stmt-exec-formula
                                                   then-context-start
                                                   gin.fn
@@ -4606,7 +4612,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv ,else-uterm/nil ,else-new-compst)))
+                                       (mv ,else-result ,else-new-compst)))
        (else-stmt-exec-formula (atc-contextualize else-stmt-exec-formula
                                                   else-context-start
                                                   gin.fn
@@ -4616,12 +4622,6 @@
                                                   else-stmt-limit
                                                   t
                                                   wrld))
-       ((mv then-stmt-type-formula &)
-        (atc-gen-term-type-formula then-uterm
-                                   type
-                                   gin.affect
-                                   gin.inscope
-                                   gin.prec-tags))
        (then-stmt-type-formula (atc-contextualize then-stmt-type-formula
                                                   then-context-start
                                                   gin.fn
@@ -4631,12 +4631,6 @@
                                                   nil
                                                   nil
                                                   wrld))
-       ((mv else-stmt-type-formula &)
-        (atc-gen-term-type-formula else-uterm
-                                   type
-                                   gin.affect
-                                   gin.inscope
-                                   gin.prec-tags))
        (else-stmt-type-formula (atc-contextualize else-stmt-type-formula
                                                   else-context-start
                                                   gin.fn
