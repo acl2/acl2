@@ -1896,7 +1896,7 @@
            (equal (bvchop i c)
                   (+ -1 (expt 2 i))))
   :hints (("subGoal *1/5" :use (:instance acl2::split-bv
-                                          (y (BVCHOP I C))
+                                          (x (BVCHOP I C))
                                           (n i)
                                           (m (+ -1 i)))
            :in-theory (enable bvcat acl2::logapp))))

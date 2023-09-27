@@ -5539,7 +5539,7 @@
            :use ((:instance integerp-squeeze
                             (x (* x 1/2147483648)))
                  (:instance SPLIT-BV
-                            (y x)
+                            (x x)
                             (n 32)
                             (m 31)))
            :in-theory (e/d ( ;; sbvlt-rewrite
@@ -6632,7 +6632,7 @@
                        acl2::split-bv
                        (n 32)
                        (m 31)
-                       (y (bvchop 32 x)))
+                       (x (bvchop 32 x)))
           :in-theory (e/d (bvcat logapp) (acl2::logapp-of-bvchop-same)))))
 
 
@@ -6715,7 +6715,7 @@
                 (<= low high))
            (equal (unsigned-byte-p size (slice high low x))
                   (equal 0 (getbit high x))))
-  :hints (("Goal" :use (:instance split-bv (y (slice high low x)) (n (+ 1 (- low) high)) (m (- high low)))
+  :hints (("Goal" :use (:instance split-bv (x (slice high low x)) (n (+ 1 (- low) high)) (m (- high low)))
            :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
 
 ;; if the top bit is clear, there's no way dividing can make it set
@@ -6844,11 +6844,11 @@
                            (bvlt (+ -1 size) x y)))))
   :hints  (("Goal" :use ((:instance split-bv
                                     (n size)
-                                    (y (bvchop size x))
+                                    (x (bvchop size x))
                                     (m (+ -1 size)))
                          (:instance split-bv
                                     (n size)
-                                    (y (bvchop size y))
+                                    (x (bvchop size y))
                                     (m (+ -1 size))))
             :in-theory (e/d (bvlt bvcat logapp
                                   UNSIGNED-BYTE-P-OF-BVCHOP-TIGHTER
@@ -6910,7 +6910,7 @@
                           :trigger-terms ((BVCHOP SIZE X))
                           ))
   :hints (("Goal" :use (:instance split-bv
-                                  (y (bvchop size x))
+                                  (x (bvchop size x))
                                   (n size)
                                   (m (+ -1 size)))
            :in-theory (enable bvcat logapp))))
@@ -6924,7 +6924,7 @@
                           :trigger-terms ((BVCHOP SIZE X))
                           ))
   :hints (("Goal" :use (:instance split-bv
-                                  (y (bvchop size x))
+                                  (x (bvchop size x))
                                   (n size)
                                   (m (+ -1 size)))
            :in-theory (enable bvcat logapp))))

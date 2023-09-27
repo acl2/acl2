@@ -79,7 +79,7 @@
                       t
                     (equal 0 (getbit (+ -1 size) x)))))
   :hints (("Goal" :cases ((equal 0 size))
-           :use (:instance split-bv (y (bvchop size x))
+           :use (:instance split-bv (x (bvchop size x))
                                   (m (+ -1 size))
                                   (n size)))))
 

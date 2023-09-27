@@ -219,7 +219,7 @@
            (equal (bvcount size (bvchop xsize x))
                   (bvcount size x)))
   :hints (("Goal" :use (:instance split-bv
-                                  (y (bvchop size x))
+                                  (x (bvchop size x))
                                   (n size)
                                   (m xsize))
            :in-theory (disable bvcat-of-getbit-and-x-adjacent
