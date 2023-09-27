@@ -211,6 +211,9 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    GET-DWP
+    SET-DWP
+    SET-DWP!
     TRANS*
     TRANS*-
 

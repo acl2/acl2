@@ -8815,15 +8815,15 @@
                       acl2-customization):~&~s~&"
                      '(set-debugger-enable t)))
            (force-output t)
-           (let* ((x (standard-oi state))
-                  (chan (if (and (consp x)
-                                 (symbolp (cdr (last x))))
-                            (cdr (last x))
-                            (and (symbolp x)
-                                 x))))
-             (when (and chan
-                        (open-input-channel-p chan :object state))
-               (clear-input (get-input-stream-from-channel chan))))
+           (when (eq (standard-oi state) *standard-oi*)
+
+; In Version_8.5 we called clear-input regardless of the non-nil value of
+; (standard-oi state).  But that could lead to discarding of valid input or an
+; attempt to read values from within a comment, as illustrated respectively in
+; community book files clear-input-1.lsp and clear-input-2.lsp in directory
+; books/system/tests/.
+
+             (clear-input (get-input-stream-from-channel *standard-oi*)))
            (cond (continue-p
                   (setq *acl2-time-limit* 0)
                   (invoke-restart 'continue))
