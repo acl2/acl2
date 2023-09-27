@@ -40,7 +40,7 @@
            (<= x (+ (- (expt 2 size) (expt 2 size2)) k)))
   :rule-classes :forward-chaining
   :hints (("Goal" :use (:instance split-bv
-                                  (y x)
+                                  (x x)
                                   (n size)
                                   (m size2))
            :in-theory (enable bvcat logapp bvchop-of-sum-cases unsigned-byte-p))))
@@ -58,7 +58,7 @@
            (< x (+ (- (expt 2 size) (expt 2 size2)) k)))
   :rule-classes :forward-chaining
   :hints (("Goal" :use (:instance split-bv
-                                  (y x)
+                                  (x x)
                                   (n size)
                                   (m size2))
            :in-theory (enable bvcat logapp bvchop-of-sum-cases unsigned-byte-p))))
@@ -72,7 +72,7 @@
             (equal (< x k)
                    (< (+ (expt 2 31) (bvchop 31 x)) k)))
    :hints (("Goal" :use (:instance split-bv
-                                   (y x)
+                                   (x x)
                                    (n 32)
                                    (m 31))
             :in-theory (enable bvcat logapp bvchop-of-sum-cases unsigned-byte-p)))))
@@ -90,7 +90,7 @@
             (<= (bvchop size x) (+ (expt 2 size) (- (expt 2 lowsize)) k)))
    :rule-classes ((:linear :trigger-terms ((bvchop size x))))
    :hints (("Goal" :use (:instance split-bv
-                                   (y (bvchop size x))
+                                   (x (bvchop size x))
                                    (n size)
                                    (m lowsize))
             :in-theory (enable bvcat logapp bvchop-of-sum-cases unsigned-byte-p)))))

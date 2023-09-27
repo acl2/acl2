@@ -760,7 +760,7 @@
            :use (:instance acl2::split-bv
                            (n 64)
                            (m 63)
-                           (y (acl2::bvchop 64 k))))))
+                           (x (acl2::bvchop 64 k))))))
 
 
 ;add one for the upper bound as well?
@@ -904,7 +904,7 @@
            :use (:instance acl2::split-bv
                            (n 64)
                            (m 63)
-                           (y k)))))
+                           (x k)))))
 
 ;todo: fix this rule
 ;; (defthm signed-byte-p-of-+-between

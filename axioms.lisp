@@ -14386,7 +14386,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-ruler-extenders
     delete-include-book-dir delete-include-book-dir! certify-book progn!
     f-put-global push-untouchable
-    set-backchain-limit set-default-hints!
+    set-backchain-limit set-default-hints! set-dwp!
     set-rw-cache-state! set-induction-depth-limit! set-override-hints-macro
     deftheory pstk verify-guards defchoose
     set-default-backchain-limit set-state-ok
@@ -23865,6 +23865,29 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro remove-override-hints (lst)
   `(local
     (set-override-hints-macro ,lst :remove 'remove-override-hints)))
+
+(defmacro set-dwp (dwp)
+  `(local (set-dwp! ,dwp)))
+
+#+acl2-loop-only
+(defmacro set-dwp! (dwp)
+  `(with-output
+     :off (event summary)
+     (progn (table dwp-table t ,dwp)
+            (table dwp-table t))))
+
+#-acl2-loop-only
+(defmacro set-dwp! (dwp)
+  (declare (ignore dwp))
+  nil)
+
+(defun get-dwp (dwp wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (alistp (table-alist 'dwp-table wrld)))))
+  (cond ((eq dwp t) t)
+        (t (if (cdr (assoc-eq t (table-alist 'dwp-table wrld)))
+               t
+             dwp))))
 
 (defmacro set-rw-cache-state (val)
 

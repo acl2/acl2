@@ -255,7 +255,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-uterm-to-components ((uterm "An untranslated term.") (comps posp))
-  :returns (mv (uterms true-listp "Untranslated terms.")
+  :returns (mv (uterms true-listp
+                       :rule-classes :type-prescription
+                       "Untranslated terms.")
                (varps boolean-listp)
                (bound-vars symbol-listp))
   :short "Split a term into component terms."
@@ -520,6 +522,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-uterm-result-and-type-formula
+  ((uterm "An untranslated term.")
+   (type typep)
+   (affect symbol-listp)
+   (inscope atc-symbol-varinfo-alist-listp)
+   (prec-tags atc-string-taginfo-alistp))
+  :returns (mv (result "An untranslated term.")
+               (type-formula "An untranslated term.")
+               (type-thms symbol-listp))
+  :short "Generates a result term and a type formula for a term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This extends @(tsee atc-gen-term-type-formula)
+     to also return a term that is the result (in the C sense) of @('uterm'),
+     if @('type') is not @('void'), otherwise the result is @('nil').
+     We should probably integrate this code
+     with @(tsee atc-gen-term-type-formula)."))
+  (b* (((mv type-formula type-thms)
+        (atc-gen-term-type-formula uterm type affect inscope prec-tags))
+       ((when (type-case type :void)) (mv nil type-formula type-thms))
+       ((mv uterms & &) (atc-uterm-to-components uterm (1+ (len affect)))))
+    (mv (car uterms) type-formula type-thms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-call-result-and-endstate
   ((type typep "Return type of the C function.")
    (affect symbol-listp "Variables affected by the C function.")
@@ -547,10 +575,10 @@
      by updating the affected object with the call.")
    (xdoc::p
     "Otherwise, there are two cases.
-     If the function is void, we return @('nil') as result term,
+     If the function is @('void'), we return @('nil') as result term,
      and as new computation state we return the nest of object updates
      for all the @(tsee mv-nth) components of the call, starting with index 0.
-     If the function is not void,
+     If the function is not @('void'),
      we return the @(tsee mv-nth) of index 0 of the call as result term,
      and as new computation state the nest of object updates
      with the @(tsee mv-nth) components starting with index 1.
@@ -1043,7 +1071,34 @@
                    ,@(atc-string-taginfo-alist-to-valuep-thms gin.prec-tags)
                    compustatep-of-add-var
                    compustatep-of-enter-scope
-                   compustatep-of-add-frame))))
+                   compustatep-of-add-frame
+                   write-object-to-update-object
+                   write-object-okp-when-valuep-of-read-object-no-syntaxp
+                   write-object-okp-of-update-object-same
+                   write-object-okp-of-update-object-disjoint
+                   object-disjointp-commutative
+                   type-of-value-when-ucharp
+                   type-of-value-when-scharp
+                   type-of-value-when-ushortp
+                   type-of-value-when-sshortp
+                   type-of-value-when-uintp
+                   type-of-value-when-sintp
+                   type-of-value-when-ulongp
+                   type-of-value-when-slongp
+                   type-of-value-when-ullongp
+                   type-of-value-when-sllongp
+                   type-of-value-when-uchar-arrayp
+                   type-of-value-when-schar-arrayp
+                   type-of-value-when-ushort-arrayp
+                   type-of-value-when-sshort-arrayp
+                   type-of-value-when-uint-arrayp
+                   type-of-value-when-sint-arrayp
+                   type-of-value-when-ulong-arrayp
+                   type-of-value-when-slong-arrayp
+                   type-of-value-when-ullong-arrayp
+                   type-of-value-when-sllong-arrayp
+                   ,@(atc-string-taginfo-alist-to-type-of-value-thms
+                      gin.prec-tags)))))
              ((mv call-event &) (evmac-generate-defthm call-thm-name
                                                        :formula call-formula
                                                        :hints call-hints
@@ -3725,7 +3780,7 @@
      and use it to contextualize the computation state variable,
      obtaining the computation state after all the items;
      note that, at that spot in the generated theorem,
-     the computation state variables already accumulates
+     the computation state variable already accumulates
      the contextual premises in @('gin').")
    (xdoc::p
     "The @('new-inscope') input is the variable table after all the items.")
@@ -3759,16 +3814,17 @@
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
                                                  new-context))
-       (uterm (untranslate$ term nil state))
-       (voidp (type-case items-type :void))
+       ((mv result type-formula &)
+        (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
+                                               items-type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
        (exec-formula `(equal (exec-block-item-list ',all-items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,(if voidp
-                                      nil
-                                    uterm)
-                                 ,new-compst)))
+                             (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3778,9 +3834,6 @@
                                         all-items-limit
                                         t
                                         wrld))
-       ((mv type-formula &)
-        (atc-gen-term-type-formula
-         uterm items-type gin.affect gin.inscope gin.prec-tags))
        (type-formula (atc-contextualize type-formula
                                         gin.context
                                         gin.fn
@@ -3945,16 +3998,17 @@
        (new-compst (atc-contextualize-compustate gin.compst-var
                                                  gin.context
                                                  new-context))
-       (uterm (untranslate$ term nil state))
-       (voidp (type-case type :void))
+       ((mv result type-formula &)
+        (atc-gen-uterm-result-and-type-formula (untranslate$ term nil state)
+                                               type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
        (exec-formula `(equal (exec-block-item-list ',items
                                                    ,gin.compst-var
                                                    ,gin.fenv-var
                                                    ,gin.limit-var)
-                             (mv ,(if voidp
-                                      nil
-                                    uterm)
-                                 ,new-compst)))
+                             (mv ,result ,new-compst)))
        (exec-formula (atc-contextualize exec-formula
                                         gin.context
                                         gin.fn
@@ -3964,9 +4018,6 @@
                                         items-limit
                                         t
                                         wrld))
-       ((mv type-formula &)
-        (atc-gen-term-type-formula
-         uterm type gin.affect gin.inscope gin.prec-tags))
        (type-formula (atc-contextualize type-formula
                                         gin.context
                                         gin.fn
@@ -4233,9 +4284,7 @@
                                            :names-to-avoid names-to-avoid
                                            :proofs (and item-thm-name t))
                                           state)))
-    (retok (if mvp
-               (change-stmt-gout gout :thm-name nil) ; temporary
-             gout)))
+    (retok gout))
   :guard-hints
   (("Goal"
     :in-theory (e/d (acl2::true-listp-when-pseudo-event-form-listp-rewrite)
@@ -4542,12 +4591,18 @@
        (else-stmt-limit `(binary-+ '1 ,else-limit))
        (then-uterm (untranslate$ then-term nil state))
        (else-uterm (untranslate$ else-term nil state))
-       (then-uterm/nil (if voidp
-                           nil
-                         then-uterm))
-       (else-uterm/nil (if voidp
-                           nil
-                         else-uterm))
+       ((mv then-result then-stmt-type-formula &)
+        (atc-gen-uterm-result-and-type-formula then-uterm
+                                               type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
+       ((mv else-result else-stmt-type-formula &)
+        (atc-gen-uterm-result-and-type-formula else-uterm
+                                               type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
        (then-context-end
         (atc-context-extend then-context-end
                             (list (make-atc-premise-compustate
@@ -4568,7 +4623,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv ,then-uterm/nil ,then-new-compst)))
+                                       (mv ,then-result ,then-new-compst)))
        (then-stmt-exec-formula (atc-contextualize then-stmt-exec-formula
                                                   then-context-start
                                                   gin.fn
@@ -4582,7 +4637,7 @@
                                                   ,gin.compst-var
                                                   ,gin.fenv-var
                                                   ,gin.limit-var)
-                                       (mv ,else-uterm/nil ,else-new-compst)))
+                                       (mv ,else-result ,else-new-compst)))
        (else-stmt-exec-formula (atc-contextualize else-stmt-exec-formula
                                                   else-context-start
                                                   gin.fn
@@ -4592,12 +4647,6 @@
                                                   else-stmt-limit
                                                   t
                                                   wrld))
-       ((mv then-stmt-type-formula &)
-        (atc-gen-term-type-formula then-uterm
-                                   type
-                                   gin.affect
-                                   gin.inscope
-                                   gin.prec-tags))
        (then-stmt-type-formula (atc-contextualize then-stmt-type-formula
                                                   then-context-start
                                                   gin.fn
@@ -4607,12 +4656,6 @@
                                                   nil
                                                   nil
                                                   wrld))
-       ((mv else-stmt-type-formula &)
-        (atc-gen-term-type-formula else-uterm
-                                   type
-                                   gin.affect
-                                   gin.inscope
-                                   gin.prec-tags))
        (else-stmt-type-formula (atc-contextualize else-stmt-type-formula
                                                   else-context-start
                                                   gin.fn
@@ -4703,14 +4746,19 @@
        (if-stmt-limit
         `(binary-+ '1 (binary-+ ,then-stmt-limit ,else-stmt-limit)))
        (uterm (untranslate$ term nil state))
-       (uterm/nil (if voidp nil uterm))
+       ((mv if-result if-stmt-type-formula if-stmt-type-thms)
+        (atc-gen-uterm-result-and-type-formula uterm
+                                               type
+                                               gin.affect
+                                               gin.inscope
+                                               gin.prec-tags))
        (test-uterm (untranslate$ test-term nil state))
        (new-compst `(if* ,test-uterm ,then-new-compst ,else-new-compst))
        (if-stmt-exec-formula `(equal (exec-stmt ',stmt
                                                 ,gin.compst-var
                                                 ,gin.fenv-var
                                                 ,gin.limit-var)
-                                     (mv ,uterm/nil ,new-compst)))
+                                     (mv ,if-result ,new-compst)))
        (if-stmt-exec-formula (atc-contextualize if-stmt-exec-formula
                                                 gin.context
                                                 gin.fn
@@ -4720,12 +4768,6 @@
                                                 if-stmt-limit
                                                 t
                                                 wrld))
-       ((mv if-stmt-type-formula if-stmt-type-thms)
-        (atc-gen-term-type-formula uterm
-                                   type
-                                   gin.affect
-                                   gin.inscope
-                                   gin.prec-tags))
        (if-stmt-type-formula (atc-contextualize if-stmt-type-formula
                                                 gin.context
                                                 gin.fn
@@ -4863,7 +4905,7 @@
                                  if-stmt-thm
                                  (untranslate$ term nil state)
                                  type
-                                 uterm/nil
+                                 if-result
                                  new-compst
                                  (change-stmt-gin
                                   gin
@@ -4913,7 +4955,7 @@
                                   (append item-events
                                           new-inscope-events)
                                   item-thm-name
-                                  uterm/nil
+                                  if-result
                                   new-compst
                                   new-context
                                   (and voidp new-inscope)

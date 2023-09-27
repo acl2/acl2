@@ -53,7 +53,7 @@
            (equal (+ x y)
                   (bvcat (- newsize newsize2) (slice (+ -1 newsize) newsize2 y) newsize2 x)))
   :hints (("Goal"
-           :use (:instance split-bv (n newsize) (m newsize2))
+           :use (:instance split-bv (x y) (n newsize) (m newsize2))
            :in-theory (e/d (BVCAT LOGAPP bvchop)
                            (;mod-=-0
                             NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))))
@@ -2567,7 +2567,7 @@
                         (GETBIT n x)))
                   (bvchop (+ 1 n) x)))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y (bvchop (+ 1 n) x)) (n (+ 1 n)) (m n)))))
+           :use (:instance split-bv (x (bvchop (+ 1 n) x)) (n (+ 1 n)) (m n)))))
 
 
 
@@ -2588,7 +2588,7 @@
                         (getbit 0 x)))
                   (* (expt 2 (+ -1 n)) (slice 1 0 x))))
   :hints (("Goal" :in-theory (enable logapp bvcat expt-of-+)
-           :use (:instance split-bv (y (bvchop 2 x)) (n 2) (m 1)))))
+           :use (:instance split-bv (x (bvchop 2 x)) (n 2) (m 1)))))
 ;gen the 8
 (defthm unsigned-byte-p-1-of-*
   (implies (integerp x)
