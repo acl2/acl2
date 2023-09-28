@@ -690,7 +690,7 @@
 ;hyps should be a list of terms over the formals of the function (can include syntaxp, etc.)
 ;; KEEP IN SYNC WITH DEFOPENERS-NAMES.
 (defmacro defopeners (fn &key
-                         (hyps 'nil)
+                         (hyps 'nil) ; untranslated terms
                          (disable 'nil)
                          (verbose 'nil)
                          (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names
@@ -698,6 +698,8 @@
   (control-screen-output
    (if (member-eq verbose '(t 't)) t nil) ;verbose
    `(make-event (defopeners-fn ',fn ',hyps ',disable ',suffix ',verbose state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;for non-mut-rec.  Returns a list of names
 ;; KEEP IN SYNC WITH DEFOPENERS-FN.
