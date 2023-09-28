@@ -657,6 +657,11 @@
     x86isa::adc-af-spec8$inline-constant-opener
     x86isa::add-af-spec8$inline-constant-opener
     x86isa::sub-af-spec8$inline-constant-opener
+    x86isa::sub-cf-spec8-constant-opener
+    x86isa::sub-of-spec8-constant-opener
+    x86isa::sub-pf-spec8-constant-opener
+    x86isa::sub-sf-spec8-constant-opener
+    x86isa::sub-zf-spec8-constant-opener
 
     x86isa::cf-spec16$inline-constant-opener
     x86isa::of-spec16$inline-constant-opener
@@ -665,6 +670,11 @@
     x86isa::adc-af-spec16$inline-constant-opener
     x86isa::add-af-spec16$inline-constant-opener
     x86isa::sub-af-spec16$inline-constant-opener
+    x86isa::sub-cf-spec16-constant-opener
+    x86isa::sub-of-spec16-constant-opener
+    x86isa::sub-pf-spec16-constant-opener
+    x86isa::sub-sf-spec16-constant-opener
+    x86isa::sub-zf-spec16-constant-opener
 
     x86isa::cf-spec32$inline-constant-opener
     x86isa::of-spec32$inline-constant-opener
@@ -673,14 +683,30 @@
     x86isa::adc-af-spec32$inline-constant-opener
     x86isa::add-af-spec32$inline-constant-opener
     x86isa::sub-af-spec32$inline-constant-opener
+    x86isa::sub-cf-spec32-constant-opener
+    x86isa::sub-of-spec32-constant-opener
+    x86isa::sub-pf-spec32-constant-opener
+    x86isa::sub-sf-spec32-constant-opener
+    x86isa::sub-zf-spec32-constant-opener
+    
+    x86isa::cf-spec64$inline-constant-opener
+    x86isa::of-spec64$inline-constant-opener
+    x86isa::pf-spec64$inline-constant-opener
+    x86isa::sf-spec64$inline-constant-opener
+    x86isa::adc-af-spec64$inline-constant-opener
+    x86isa::add-af-spec64$inline-constant-opener
+    x86isa::sub-af-spec64$inline-constant-opener
+    x86isa::sub-cf-spec64-constant-opener
+    x86isa::sub-of-spec64-constant-opener
+    x86isa::sub-pf-spec64-constant-opener
+    x86isa::sub-sf-spec64-constant-opener
+    x86isa::sub-zf-spec64-constant-opener
 
     acl2::bool->bit$inline-constant-opener
 ;    byte-ify-base
 ;    x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
 ;    x86isa::byte-listp-base-1
 
-    ;; These are needed just because Axe cannot evaluate calls to these
-    ;; functions:
     jo-condition-constant-opener
     jno-condition-constant-opener
     jb-condition-constant-opener

@@ -10,6 +10,10 @@
 
 (in-package "ACL2")
 
+;; Support files:
+(include-book "rule-lists")
+(include-book "support-axe")
+
 ;;Lifters:
 (include-book "unroll-x86-code")
 (include-book "lifter")
