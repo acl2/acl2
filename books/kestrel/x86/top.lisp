@@ -39,5 +39,3 @@
 
 (include-book "run-until-return")
 (include-book "support")
-
-(include-book "rule-lists")
