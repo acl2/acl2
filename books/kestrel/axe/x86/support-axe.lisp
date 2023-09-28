@@ -19,14 +19,12 @@
 ;; TODO: Make sure there are non-axe versions of all of these.
 
 (include-book "kestrel/x86/bitops" :dir :system) ; needed for part-install-width-low-becomes-bvcat-axe
-;(include-book "kestrel/x86/support" :dir :system)
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/known-booleans" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
-;(include-book "kestrel/axe/bv-rules-axe" :dir :system) ;for MYIF-BECOMES-BOOLIF-AXE and perhaps ACL2::BVNOT-TRIM-AXE-ALL (move myif-becomes-boolif?)
 (local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
 ;; Register a bunch of x86-related functions as known booleans:
@@ -44,13 +42,12 @@
 (acl2::add-known-boolean no-duplicates-p)
 (acl2::add-known-boolean member-p)
 (acl2::add-known-boolean separate)
-
-(acl2::add-known-boolean separate)
-(acl2::add-known-boolean x86p)
 (acl2::add-known-boolean alignment-checking-enabled-p)
 
+;; I'm not sure if these are necessary:
 (acl2::add-known-boolean jnl-condition) ;todo: more
 
+;; 32-bit stuff:
 (acl2::add-known-boolean segment-is-32-bitsp)
 (acl2::add-known-boolean well-formed-32-bit-segmentp)
 (acl2::add-known-boolean code-segment-well-formedp)
@@ -58,6 +55,7 @@
 (acl2::add-known-boolean eff-addrs-okp)
 (acl2::add-known-boolean eff-addr-okp)
 (acl2::add-known-boolean segments-separate)
+
 (acl2::add-known-boolean acl2::bitp)
 (acl2::add-known-boolean return-address-okp)
 
@@ -118,9 +116,9 @@
   (implies (and (disjoint-p (create-canonical-address-list m addr) ;this hyp is commuted
                             (create-canonical-address-list n prog-addr))
                 (member-p e (create-canonical-address-list m addr)))
-           (equal (member-p e (create-canonical-address-list n prog-addr))
-                  nil)))
+           (not (member-p e (create-canonical-address-list n prog-addr)))))
 
+;We'll use aref1-rewrite to handle the aref1s.
 (defthmd aref1-rewrite ;for axe
   (implies (and (not (equal :header n))
                 (not (equal :default n))
@@ -129,12 +127,9 @@
                   (acl2::lookup-equal n l)))
   :hints (("Goal" :in-theory (e/d (acl2::lookup-equal aref1) ()))))
 
-;We'll use aref1-rewrite to handle the aref1s.
-;todo: use defopeners
-
 (acl2::defopeners x86isa::64-bit-mode-two-byte-opcode-modr/m-p
                   :hyps ((syntaxp (quotep x86isa::opcode))
-                         (unsigned-byte-p '8 x86isa::opcode))) ;todo: allow an unquoted 8 here
+                         (unsigned-byte-p 8 x86isa::opcode)))
 
 ;why did this cause loops?
 ;move
@@ -154,7 +149,7 @@
 (acl2::def-constant-opener nonnegative-integer-quotient)
 (acl2::def-constant-opener evenp)
 
-;; Flag-related functions (these seem safe to execute without tha requiring
+;; Flag-related functions (these seem safe to execute without that requiring
 ;; more rules; for example, we expect jle-condition to always be called on flag
 ;; functions with the same arguments (dst and src), so either all the args to
 ;; jle-condition get evaluated or none of them do).
@@ -168,6 +163,11 @@
 (acl2::def-constant-opener x86isa::adc-af-spec8$inline)
 (acl2::def-constant-opener x86isa::add-af-spec8$inline)
 (acl2::def-constant-opener x86isa::sub-af-spec8$inline)
+(acl2::def-constant-opener x86isa::sub-cf-spec8) ; todo: make these inline, like the others
+(acl2::def-constant-opener x86isa::sub-of-spec8)
+(acl2::def-constant-opener x86isa::sub-pf-spec8)
+(acl2::def-constant-opener x86isa::sub-sf-spec8)
+(acl2::def-constant-opener x86isa::sub-zf-spec8)
 
 (acl2::def-constant-opener x86isa::cf-spec16$inline)
 (acl2::def-constant-opener x86isa::of-spec16$inline)
@@ -176,6 +176,11 @@
 (acl2::def-constant-opener x86isa::adc-af-spec16$inline)
 (acl2::def-constant-opener x86isa::add-af-spec16$inline)
 (acl2::def-constant-opener x86isa::sub-af-spec16$inline)
+(acl2::def-constant-opener x86isa::sub-cf-spec16)
+(acl2::def-constant-opener x86isa::sub-of-spec16)
+(acl2::def-constant-opener x86isa::sub-pf-spec16)
+(acl2::def-constant-opener x86isa::sub-sf-spec16)
+(acl2::def-constant-opener x86isa::sub-zf-spec16)
 
 (acl2::def-constant-opener x86isa::cf-spec32$inline)
 (acl2::def-constant-opener x86isa::of-spec32$inline)
@@ -184,6 +189,24 @@
 (acl2::def-constant-opener x86isa::adc-af-spec32$inline)
 (acl2::def-constant-opener x86isa::add-af-spec32$inline)
 (acl2::def-constant-opener x86isa::sub-af-spec32$inline)
+(acl2::def-constant-opener x86isa::sub-cf-spec32)
+(acl2::def-constant-opener x86isa::sub-of-spec32)
+(acl2::def-constant-opener x86isa::sub-pf-spec32)
+(acl2::def-constant-opener x86isa::sub-sf-spec32)
+(acl2::def-constant-opener x86isa::sub-zf-spec32)
+
+(acl2::def-constant-opener x86isa::cf-spec64$inline)
+(acl2::def-constant-opener x86isa::of-spec64$inline)
+(acl2::def-constant-opener x86isa::pf-spec64$inline)
+(acl2::def-constant-opener x86isa::sf-spec64$inline)
+(acl2::def-constant-opener x86isa::adc-af-spec64$inline)
+(acl2::def-constant-opener x86isa::add-af-spec64$inline)
+(acl2::def-constant-opener x86isa::sub-af-spec64$inline)
+(acl2::def-constant-opener x86isa::sub-cf-spec64)
+(acl2::def-constant-opener x86isa::sub-of-spec64)
+(acl2::def-constant-opener x86isa::sub-pf-spec64)
+(acl2::def-constant-opener x86isa::sub-sf-spec64)
+(acl2::def-constant-opener x86isa::sub-zf-spec64)
 
 (acl2::def-constant-opener x86isa::!rflagsbits->ac$inline)
 (acl2::def-constant-opener x86isa::!rflagsbits->af$inline)
@@ -205,15 +228,12 @@
 (acl2::def-constant-opener byte-listp)
 
 (acl2::defopeners acl2::get-symbol-entry-mach-o)
-
 (acl2::defopeners acl2::get-all-sections-from-mach-o-load-commands)
-
 (acl2::defopeners acl2::get-section-number-mach-o-aux)
 
 (acl2::defopeners addresses-of-subsequent-stack-slots-aux)
 
 (acl2::defopeners acl2::get-pe-section-aux)
-
 (acl2::defopeners acl2::lookup-pe-symbol)
 
 ;; ;todo
