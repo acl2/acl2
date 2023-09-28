@@ -23,11 +23,11 @@
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
-(include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
+(include-book "kestrel/axe/known-booleans" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
-(include-book "kestrel/axe/bv-rules-axe" :dir :system) ;for MYIF-BECOMES-BOOLIF-AXE and perhaps ACL2::BVNOT-TRIM-AXE-ALL (move myif-becomes-boolif?)
-;(include-book "rule-lists")
+;(include-book "kestrel/axe/bv-rules-axe" :dir :system) ;for MYIF-BECOMES-BOOLIF-AXE and perhaps ACL2::BVNOT-TRIM-AXE-ALL (move myif-becomes-boolif?)
+(local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
 ;; Register a bunch of x86-related functions as known booleans:
 
@@ -137,6 +137,7 @@
                          (unsigned-byte-p '8 x86isa::opcode))) ;todo: allow an unquoted 8 here
 
 ;why did this cause loops?
+;move
 (defthm canonical-address-listp-of-cdr
   (implies (canonical-address-listp lst)
            (canonical-address-listp (cdr lst))))
