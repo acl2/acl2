@@ -1632,7 +1632,10 @@
           'dot))
   :hints (("Goal"
            :expand
-           ((ppr1 x print-base print-radix width rpc state eviscp)))))
+           ((ppr1 x print-base print-radix width rpc state eviscp))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (defthm ppr-tuple-lst-p-list-list
   (implies (and (unsigned-byte-p #.*small-nat-bits* width)
@@ -1651,7 +1654,10 @@
                            (PPR1 (CADR X)
                                  PRINT-BASE
                                  PRINT-RADIX (ROUND-TO-SMALL T (+ -1 WIDTH))
-                                 RPC STATE NIL)))))
+                                 RPC STATE NIL))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (defthm small-nat-max-difference-0
   (implies (and (unsigned-byte-p #.*small-nat-bits* x)
@@ -1670,7 +1676,10 @@
                              PRINT-RADIX WIDTH RPC STATE NIL))))
   :hints (("Goal" :expand ((PPR1 x
                                  PRINT-BASE
-                                 PRINT-RADIX WIDTH RPC STATE NIL)))))
+                                 PRINT-RADIX WIDTH RPC STATE NIL))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (defthm not-cdddr-ppr1-flat-not-evisceration-mark
   (implies (and (NOT (EQUAL x :EVISCERATION-MARK))
@@ -1683,7 +1692,10 @@
                              PRINT-RADIX WIDTH RPC STATE eviscp))))
   :hints (("Goal" :expand ((PPR1 x
                                  PRINT-BASE
-                                 PRINT-RADIX WIDTH RPC STATE eviscp)))))
+                                 PRINT-RADIX WIDTH RPC STATE eviscp))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (verify-guards ppr1
   :hints ((verify-guards-ppr1/ppr1-lst-strategy nil nil clause stable-under-simplificationp state)
