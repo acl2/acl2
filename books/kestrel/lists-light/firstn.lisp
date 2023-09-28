@@ -1,6 +1,6 @@
 ; A lightweight book about firstn.
 ;
-; Copyright (C) 2018-2021 Kestrel Institute
+; Copyright (C) 2018-2023 Kestrel Institute
 ; See books/coi/lists/basic.lisp for the copyright on firstn itself.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -171,3 +171,19 @@
                 (<= n2 (len x)))
            (equal (equal (firstn n1 x) (firstn n2 x))
                   (equal n1 n2))))
+
+(defthm equal-of-firstn-same
+  (equal (equal x (firstn n x))
+         (and (true-listp x)
+              (<= (len x) (nfix n))))
+  :hints (("Goal" :in-theory (enable firstn))))
+
+(defthm nth-when-equal-of-firstn-and-constant
+  (implies (and (equal k (firstn m x))
+                (syntaxp (and (quotep k)
+                              (not (quotep x)))) ;gen to that k is a smaller term?
+                (< n m)
+                (natp n)
+                (natp m))
+           (equal (nth n x)
+                  (nth n k))))

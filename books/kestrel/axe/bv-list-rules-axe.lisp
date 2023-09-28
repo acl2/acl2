@@ -25,7 +25,6 @@
 (add-known-boolean items-have-len)
 (add-known-boolean all-true-listp)
 (add-known-boolean all-all-unsigned-byte-p)
-(add-known-boolean prefixp) ;move?
 (add-known-boolean all-integerp)
 (add-known-boolean byte-listp)
 

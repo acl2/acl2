@@ -2278,3 +2278,17 @@
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd <-of-logext-true
+  (implies (<= (expt 2 (+ -1 size)) k)
+           (< (logext size x) k))
+  :hints (("Goal" :in-theory (enable logext logapp))))
+
+(defthmd <-of-logext-false
+  (implies (and (<= k (- (expt 2 (+ -1 size))))
+                (posp size)
+                )
+           (not (< (logext size x) k)))
+  :hints (("Goal" :in-theory (enable logext logapp))))
