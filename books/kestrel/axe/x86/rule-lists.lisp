@@ -881,6 +881,10 @@
             x86isa::separate-from-separate-lemma-1b-alt
             x86isa::separate-from-separate-lemma-1c-alt
             x86isa::separate-from-separate-lemma-1d-alt
+            ;; these 2 may be all we need:
+            x86isa::separate-when-separate
+            x86isa::separate-when-separate-alt
+            
             x86isa::rb-wb-equal
             x86isa::rb-of-if-arg2
 
