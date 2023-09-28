@@ -33,7 +33,7 @@
   :stack-slots 2
   :output (:register 0)
   ;; Introduce x as the input var:
-  :assumptions '((equal (xr :rgf *rdi* x86) x)))
+  :assumptions '((equal (rdi x86) x)))
 
 ;; Prove equivalence of the lifted code and the spec (3 seconds):
 (prove-equivalence '(popcount_32 x) ; lifted code
