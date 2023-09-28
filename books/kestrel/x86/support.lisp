@@ -1805,6 +1805,48 @@
                                   (;x86isa::RGFI-IS-I64P
                                    )))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Quite powerful
+(defthm separate-when-separate
+  (implies (and (separate rwx n3 ad3 rwx n4 ad4)
+                (<= ad3 ad1)
+                (<= (+ n1 ad1) (+ n3 ad3))
+                (<= ad4 ad2)
+                (<= (+ n2 ad2) (+ n4 ad4))
+                (integerp n1)
+                (integerp n2)
+                (integerp n3)
+                (integerp n4)
+                (integerp ad1)
+                (integerp ad2)
+                (integerp ad3)
+                (integerp ad4))
+           (separate rwx n1 ad1 rwx n2 ad2))
+  :hints (("Goal" :in-theory (e/d (separate)
+                                  (;x86isa::RGFI-IS-I64P
+                                   )))))
+
+;; Quite powerful
+(defthm separate-when-separate-alt
+  (implies (and (separate rwx n3 ad3 rwx n4 ad4)
+                (<= ad4 ad1)
+                (<= (+ n1 ad1) (+ n4 ad4))
+                (<= ad3 ad2)
+                (<= (+ n2 ad2) (+ n3 ad3))
+                (integerp n1)
+                (integerp n2)
+                (integerp n3)
+                (integerp n4)
+                (integerp ad1)
+                (integerp ad2)
+                (integerp ad3)
+                (integerp ad4))
+           (separate rwx n1 ad1 rwx n2 ad2))
+  :hints (("Goal" :in-theory (e/d (separate)
+                                  (;x86isa::RGFI-IS-I64P
+                                   )))))
+
 ;; ;see also !flgi-and-wb-in-app-view (but that seems like a bad rule -- reuse of val -- tell shilpi)
 ;; (defthm !flgi-of-mv-nth-1-of-wb
 ;;   (implies (app-view x86)
