@@ -1,7 +1,7 @@
 ; Lists of DAG function args ("dargs") whose nodenum elemements are bounded
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -253,3 +253,12 @@
                 (natp n))
            (dargp (nth n args)))
   :hints (("Goal" :in-theory (e/d (all-dargp) ()))))
+
+(defthm bounded-darg-listp-when-bounded-darg-listp-of-cdr-cheap
+  (implies (bounded-darg-listp (cdr items) bound)
+           (equal (bounded-darg-listp items bound)
+                  (if (not (consp items))
+                      (null items)
+                    (dargp-less-than (car items) bound))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
