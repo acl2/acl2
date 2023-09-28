@@ -817,6 +817,7 @@
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
                (thm-index posp)
                (names-to-avoid symbol-listp))
   :short "Generate a C expression from an ACL2 term
@@ -875,7 +876,7 @@
      to not stop right away due to the limit being 0.
      In this case, @('result') is essentially the untranslated input term,
      and @('new-compst') is the computation state variable unchanged."))
-  (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil nil nil 1 nil)
+  (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil nil nil nil 1 nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((erp okp
@@ -946,6 +947,7 @@
                      `(binary-+ '2 ,limit)
                      args.events
                      nil
+                     gin.inscope
                      args.thm-index
                      args.names-to-avoid))
              (guard-lemma-name
@@ -1113,6 +1115,7 @@
                          (list guard-lemma-event
                                call-event))
                  nil ; TODO: call-thm-name
+                 gin.inscope
                  thm-index
                  names-to-avoid)))
        ((erp (expr-gout pure))
@@ -1137,6 +1140,7 @@
                bound
                pure.events
                nil
+               gin.inscope
                pure.thm-index
                pure.names-to-avoid))
        (thm-name (pack gin.fn '-correct- pure.thm-index))
@@ -1202,6 +1206,7 @@
            bound
            (append pure.events (list event))
            thm-name
+           gin.inscope
            (1+ pure.thm-index)
            names-to-avoid))
   :guard-hints
@@ -1567,6 +1572,7 @@
              init.limit
              init.events
              init.thm-name
+             & ; init.new-inscope
              init.thm-index
              init.names-to-avoid)
         (atc-gen-expr val-term
@@ -1774,6 +1780,7 @@
              rhs.limit
              rhs.events
              rhs.thm-name
+             & ; rhs.new-inscope
              rhs.thm-index
              rhs.names-to-avoid)
         (atc-gen-expr val-term
@@ -4150,6 +4157,7 @@
              expr.limit
              expr.events
              expr.thm-name
+             & ; expr.new-inscope
              expr.thm-index
              expr.names-to-avoid)
         (atc-gen-expr term
@@ -5865,6 +5873,7 @@
                          init.limit
                          init.events
                          & ; init.thm-name
+                         & ; init.new-inscope
                          init.thm-index
                          init.names-to-avoid)
                     (atc-gen-expr val-term
@@ -5949,6 +5958,7 @@
                          rhs.limit
                          rhs.events
                          & ; rhs.thm-name
+                         & ; rhs.new-inscope
                          rhs.thm-index
                          rhs.names-to-avoid)
                     (atc-gen-expr val-term
