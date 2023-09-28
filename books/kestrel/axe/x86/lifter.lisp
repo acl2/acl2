@@ -54,7 +54,7 @@
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
-(include-book "kestrel/x86/rule-lists" :dir :system)
+(include-book "rule-lists")
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/assumptions" :dir :system)
 (include-book "kestrel/x86/assumptions32" :dir :system)
