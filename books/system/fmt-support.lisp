@@ -1155,8 +1155,8 @@
 
 (defthm general-type-of-max-width
   (implies (and (ppr-tuple-lst-p lst)
-		(signed-byte-p #.*small-bits* maximum))
-	   (if (consp lst)
+                (signed-byte-p #.*small-bits* maximum))
+           (if (consp lst)
                (unsigned-byte-p #.*small-nat-bits* (max-width lst maximum))
                (equal (max-width lst maximum) maximum)))
   :hints (("Goal" :in-theory (enable signed-byte-p unsigned-byte-p)))
@@ -1520,7 +1520,7 @@
 (defthm integerp-max-width
   (implies (and (ppr-tuple-lst-p lst)
                 (integerp ac))
-	   (integerp (max-width lst ac)))
+           (integerp (max-width lst ac)))
   :hints (("Goal" :in-theory (enable max-width)))
   :rule-classes (:rewrite :type-prescription))
 
@@ -1648,7 +1648,7 @@
                                  PRINT-BASE
                                  PRINT-RADIX (ROUND-TO-SMALL T (+ -1 WIDTH))
                                  RPC STATE EVISCP)
-			   (PPR1 (CADR X)
+                           (PPR1 (CADR X)
                                  PRINT-BASE
                                  PRINT-RADIX (ROUND-TO-SMALL T (+ -1 WIDTH))
                                  RPC STATE NIL)))))
