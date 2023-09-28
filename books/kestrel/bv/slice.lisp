@@ -301,9 +301,9 @@
            :in-theory (disable slice-too-high-helper))))
 
 (defthm slice-upper-bound-linear
-  (implies (and (integerp high)
-                (integerp low)
-                (<= low high))
+  (implies (and (<= low high)
+                (integerp high)
+                (integerp low))
            (<= (slice high low x) (+ -1 (expt 2 (+ 1 high (- low))))))
   :rule-classes (:linear)
   :hints (("Goal" :use (:instance unsigned-byte-p-of-slice-gen (n (+ 1 high (- low))))
@@ -311,16 +311,15 @@
            :in-theory (e/d (unsigned-byte-p)
                            (unsigned-byte-p-of-slice-gen)))))
 
-(defthm slice-upper-bound-linear-constant-version
+;; Disabled since we have the other
+(defthmd slice-upper-bound-linear-constant-version
   (implies (and (syntaxp (and (quotep high)
                               (quotep low)))
+                (<= low high)
                 (integerp high)
-                (integerp low)
-                (<= low high))
+                (integerp low))
            (<= (slice high low x) (+ -1 (expt 2 (+ 1 high (- low))))))
   :rule-classes (:linear))
-
-
 
 (defthm <-of-slice-and-constant
   (implies (and (syntaxp (and (quotep k)
