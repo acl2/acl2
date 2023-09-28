@@ -17,7 +17,6 @@
 ;; lifter and prove equivalent to spec.
 
 (include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
-(include-book "kestrel/axe/x86/rule-lists" :dir :system) ; todo: include in lifter?
 (include-book "kestrel/axe/x86/tester-rules" :dir :system) ; todo: rename
 
 ;; Lift the subroutine into logic:
