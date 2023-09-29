@@ -10,11 +10,9 @@
 
 (in-package "JAVA")
 
-; the order of the following INCLUDE-BOOKs determines
-; the order of the subtopics of the JAVA topic below:
+(include-book "language/top")
 (include-book "aij/top")
 (include-book "atj/top")
-(include-book "language/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,7 +61,9 @@
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))
-  :order-subtopics t)
+  :order-subtopics (language
+                    aij
+                    atj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
