@@ -25,11 +25,11 @@
     "Currently this library contains:")
    (xdoc::ul
     (xdoc::li
+     "A formalization in ACL2 of some aspects of the Java language.")
+    (xdoc::li
      "A deep embedding of ACL2 in Java.")
     (xdoc::li
-     "A Java code generator for ACL2.")
-    (xdoc::li
-     "A formalization in ACL2 of some aspects of the Java language."))
+     "A Java code generator for ACL2."))
    (xdoc::p
     "It is expected that this library will be extended with more
      Java-related formalizations and tools.")
